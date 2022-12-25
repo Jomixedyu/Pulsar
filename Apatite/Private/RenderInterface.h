@@ -6,7 +6,7 @@ namespace apatite
 {
     namespace detail::RenderInterface
     {
-        void Clear(uint8_t r, uint8_t g, uint8_t b, uint8_t a);
+        void Clear(float r, float g, float b, float a);
         void EnableDepthTest();
         void DisableDepthTest();
 

@@ -6,6 +6,7 @@
 #include <Apatite/Private/RenderInterface.h>
 #include <filesystem>
 #include <Apatite/ImGuiImpl.h>
+#include <Apatite/Private/InputInterface.h>
 
 namespace apatite
 {
@@ -38,15 +39,18 @@ namespace apatite
 
         RenderInterface::SetViewport(0, 0, (int)size.x, (int)size.y);
 
+        ImGui_Engine_Initialize();
+
         World::Reset(new World);
     }
     void EngineAppInstance::OnTerminate()
     {
+        ImGui_Engine_Terminate();
         World::Reset(nullptr);
     }
     void EngineAppInstance::OnTick(float dt)
     {
-        auto bgc = Color8b4{ 36,36,36,36 };
+        auto bgc = LinearColorf{ 0.2f, 0.2f ,0.2f, 0.2 };
         RenderInterface::Clear(bgc.r, bgc.g, bgc.b, bgc.a);
         ImGui_Engine_NewFrame();
 
@@ -56,7 +60,7 @@ namespace apatite
 
         RenderInterface::Render();
         SystemInterface::PollEvents();
-
+        InputInterface::PollEvents();
     }
     bool EngineAppInstance::IsQuit()
     {
