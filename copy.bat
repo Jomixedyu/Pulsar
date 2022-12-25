@@ -1,0 +1,1 @@
+copy .\DroidSans.ttf .\out\build\x64-Debug\

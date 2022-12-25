@@ -1,3 +1,5 @@
+#include "EditorAppInstance.h"
+#include "EditorAppInstance.h"
 #include <ApatiteEd/EditorAppInstance.h>
 #include <Apatite/Application.h>
 #include <Apatite/World.h>
@@ -7,6 +9,10 @@
 #include <filesystem>
 #include <Apatite/ImGuiImpl.h>
 #include <Apatite/Private/InputInterface.h>
+#include <ApatiteEd/Windows/EditorWindowManager.h>
+#include <ApatiteEd/EdUIConfig.h>
+#include <CoreLib/File.h>
+#include <CoreLib.Serialization/JsonSerializer.h>
 
 namespace apatiteed
 {
@@ -49,12 +55,24 @@ namespace apatiteed
     {
     }
 
-    const string& EditorAppInstance::AppRootDir()
+    string EditorAppInstance::AppRootDir()
     {
         return StringUtil::StringCast(std::filesystem::current_path().generic_u8string());
     }
+
     void EditorAppInstance::OnInitialize(string_view title, Vector2f size)
     {
+        using namespace std::filesystem;
+
+        auto uicfg = PathUtil::Combine(AppRootDir(), "uiconfig.json");
+        if (exists(path{ uicfg }))
+        {
+            auto json = FileUtil::ReadAllText(uicfg);
+            auto cfg = ser::JsonSerializer::Deserialize<EdUIConfig>(json);
+
+            size = cfg->window_size;
+        }
+
         Logger::Info("application initialize");
 
         SystemInterface::InitializeWindow(title, (int)size.x, (int)size.y);
@@ -66,12 +84,23 @@ namespace apatiteed
 
         ImGui_Engine_Initialize();
 
+        apatiteed::EditorWindowManager::GetInstance()->Reset();
         World::Reset(new World);
     }
     void EditorAppInstance::OnTerminate()
     {
         ImGui_Engine_Terminate();
         World::Reset(nullptr);
+
+        using namespace std::filesystem;
+
+        auto uicfg_path = PathUtil::Combine(AppRootDir(), "uiconfig.json");
+        auto cfg = mksptr(new EdUIConfig);
+
+        cfg->window_size = GetAppSize();
+        auto json = ser::JsonSerializer::Serialize(cfg.get(), {});
+        FileUtil::WriteAllText(uicfg_path, json);
+
     }
     void EditorAppInstance::OnTick(float dt)
     {
@@ -81,6 +110,7 @@ namespace apatiteed
 
         World::Current()->Tick(dt);
 
+        apatiteed::EditorWindowManager::GetInstance()->Draw();
         ImGui_Engine_EndFrame();
 
         RenderInterface::Render();
@@ -90,5 +120,16 @@ namespace apatiteed
     bool EditorAppInstance::IsQuit()
     {
         return SystemInterface::GetIsQuit();
+    }
+
+    Vector2f apatiteed::EditorAppInstance::GetAppSize()
+    {
+        int32_t w, h;
+        RenderInterface::GetViewport(&w, &h);
+        return Vector2f(w, h);
+    }
+    void apatiteed::EditorAppInstance::SetAppSize(Vector2f size)
+    {
+        RenderInterface::SetViewport(0, 0, (int)size.x, (int)size.y);
     }
 }

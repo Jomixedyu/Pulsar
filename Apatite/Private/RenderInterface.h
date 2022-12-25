@@ -10,6 +10,7 @@ namespace apatite
         void EnableDepthTest();
         void DisableDepthTest();
 
+        void GetViewport(int32_t* width, int32_t* height);
         void SetViewport(int32_t x, int32_t y, int32_t width, int32_t height);
 
         void LoadTexture2D(uint32_t channel_count, int32_t width, int32_t height, uint8_t* data, uint32_t* out_id);

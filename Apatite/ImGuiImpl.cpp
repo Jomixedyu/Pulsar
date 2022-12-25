@@ -32,10 +32,22 @@ namespace apatite
         //io.ConfigFlags |= ImGuiWindowFlags_NoTitleBar;
         io.ConfigFlags &= ~ImGuiConfigFlags_ViewportsEnable;
         
-        io.Fonts->AddFontFromFileTTF("DroidSans.ttf", 16.0f);
+        io.Fonts->AddFontFromFileTTF("DroidSans.ttf", 18.0f);
         ImGui::StyleColorsDark();
         //ImGui::StyleColorsClassic();
         ImGuiStyle& style = ImGui::GetStyle();
+        
+        //custom
+        {
+            style.FrameRounding = 12;
+            style.FramePadding = { 12,5 };
+            style.ItemSpacing = { 10,8 };
+            style.ScrollbarSize = 18;
+            //bug:
+            //style.WindowMenuButtonPosition = ImGuiDir_::ImGuiDir_Right;
+        }
+
+
 
         ImGui_ImplGlfw_InitForOpenGL((GLFWwindow*)SystemInterface::GetWindow(), true);
         ImGui_ImplOpenGL3_Init("#version 330");

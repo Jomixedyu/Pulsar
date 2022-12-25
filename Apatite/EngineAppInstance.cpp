@@ -87,7 +87,7 @@ namespace apatite
     void EngineAppInstance::SetTitle(string_view title)
     {
     }
-    const string& EngineAppInstance::AppRootDir()
+    string EngineAppInstance::AppRootDir()
     {
         return StringUtil::StringCast(std::filesystem::current_path().generic_u8string());
     }

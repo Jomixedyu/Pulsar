@@ -16,7 +16,7 @@ namespace apatite
         virtual void SetScreenSize(Vector2f size) override;
         virtual string GetTitle() override;
         virtual void SetTitle(string_view title) override;
-        virtual const string& AppRootDir() override;
+        virtual string AppRootDir() override;
     };
 
 }

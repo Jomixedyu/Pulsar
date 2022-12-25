@@ -8,6 +8,8 @@
 #include <cassert>
 #include <CoreLib/CommonException.h>
 
+#define WITH_APATITE_EDITOR
+
 namespace apatite
 {
     using namespace jxcorlib;
