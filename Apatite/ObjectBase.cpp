@@ -5,12 +5,6 @@
 namespace apatite
 {
 
-    struct object_ref
-    {
-        wptr<ObjectBase> obj;
-        bool has_pointer;
-    };
-
     static inline std::map<runtime_instance_t, wptr<ObjectBase>> _object_table;
     static runtime_instance_t _current;
 
