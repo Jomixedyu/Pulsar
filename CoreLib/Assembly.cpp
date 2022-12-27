@@ -33,10 +33,6 @@ namespace jxcorlib
         }
         return nullptr;
     }
-    Assembly* Assembly::StaticFindAssembly(const AssemblyTypeObject& obj)
-    {
-        return StaticFindAssemblyByName(obj.name);
-    }
 
     void Assembly::StaticUnloadAssemblyByName(string_view name)
     {
@@ -51,9 +47,6 @@ namespace jxcorlib
         }
         return ass;
     }
-    Assembly* Assembly::StaticBuildAssembly(const AssemblyTypeObject& obj)
-    {
-        return StaticBuildAssemblyByName(obj.name);
-    }
+
 }
 

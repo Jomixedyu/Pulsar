@@ -37,6 +37,7 @@ namespace apatiteed
             window->DrawImGui();
         }
     }
+
     const std::vector<EditorWindow*>& EditorWindowManager::GetWindows() const
     {
         return this->windows;

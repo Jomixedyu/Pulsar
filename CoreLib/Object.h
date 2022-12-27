@@ -15,7 +15,7 @@
 
 #define CORELIB_DECL_ASSEMBLY(NAME) \
     inline struct __corelib_AssemblyClass_##NAME : public ::jxcorlib::AssemblyTypeObject \
-    {  __corelib_AssemblyClass_##NAME##() { name = #NAME; } } AssemblyObject_##NAME;
+    {  const char* name() { return #NAME; } } AssemblyObject_##NAME;
 
 #define CORELIB_DECL_SHORTSPTR(CLASS) using CLASS##_sp = ::jxcorlib::sptr<class CLASS>; using CLASS##_rsp = const ::jxcorlib::sptr<class CLASS>&; using CLASS##_wp = ::jxcorlib::wptr<class CLASS>;
 
@@ -40,7 +40,7 @@ namespace jxcorlib
 
     struct AssemblyTypeObject
     {
-        const char* name;
+        virtual const char* name() = 0;
     };
 
     CORELIB_DECL_ASSEMBLY(jxcorlib);

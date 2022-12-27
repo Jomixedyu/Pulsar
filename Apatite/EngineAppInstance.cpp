@@ -1,4 +1,4 @@
-#include <Apatite/EngineAppInstance.h>
+ï»¿#include <Apatite/EngineAppInstance.h>
 #include <Apatite/Application.h>
 #include <Apatite/World.h>
 #include <Apatite/Logger.h>
@@ -18,14 +18,14 @@ namespace apatite
 
     static bool _RequestQuit()
     {
-        //ÇëÇó¹Ø±Õ³ÌÐò
+        //è¯·æ±‚å…³é—­ç¨‹åº
         return Application::inst()->RequestQuitEvents.IsValidReturnInvoke();
     }
     static void _quitting()
     {
         Logger::Info("engine application is quitting");
 
-        //Í¨Öª³ÌÐò¼´½«¹Ø±Õ
+        //é€šçŸ¥ç¨‹åºå³å°†å…³é—­
         Application::inst()->QuittingEvents.Invoke();
     }
     void EngineAppInstance::OnInitialize(string_view title, Vector2f size)

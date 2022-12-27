@@ -5,6 +5,7 @@
 
 namespace apatiteed
 {
+
     class EdUIConfig : public Object
     {
         CORELIB_DEF_TYPE(AssemblyObject_ApatiteEd, apatiteed::EdUIConfig, Object);

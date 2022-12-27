@@ -22,10 +22,8 @@ namespace jxcorlib
         //static inline FunctionEvents<Action<>> OnReset;
 
         static Assembly* StaticBuildAssemblyByName(string_view name);
-        static Assembly* StaticBuildAssembly(const AssemblyTypeObject& obj);
 
         static Assembly* StaticFindAssemblyByName(string_view name);
-        static Assembly* StaticFindAssembly(const AssemblyTypeObject& obj);
 
         static void StaticUnloadAssemblyByName(string_view name);
     private:

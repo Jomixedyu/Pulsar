@@ -1,5 +1,4 @@
-#include "EditorAppInstance.h"
-#include "EditorAppInstance.h"
+ï»¿#include "EditorAppInstance.h"
 #include <ApatiteEd/EditorAppInstance.h>
 #include <Apatite/Application.h>
 #include <Apatite/World.h>
@@ -13,6 +12,7 @@
 #include <ApatiteEd/EdUIConfig.h>
 #include <CoreLib/File.h>
 #include <CoreLib.Serialization/JsonSerializer.h>
+#include <ApatiteEd/Menus/Menu.h>
 
 namespace apatiteed
 {
@@ -20,14 +20,14 @@ namespace apatiteed
 
     static bool _RequestQuit()
     {
-        //ÇëÇó¹Ø±Õ³ÌÐò
+        //è¯·æ±‚å…³é—­ç¨‹åº
         return Application::inst()->RequestQuitEvents.IsValidReturnInvoke();
     }
     static void _quitting()
     {
         Logger::Info("engine application is quitting");
 
-        //Í¨Öª³ÌÐò¼´½«¹Ø±Õ
+        //é€šçŸ¥ç¨‹åºå³å°†å…³é—­
         Application::inst()->QuittingEvents.Invoke();
     }
 
@@ -60,6 +60,47 @@ namespace apatiteed
         return StringUtil::StringCast(std::filesystem::current_path().generic_u8string());
     }
 
+    static void InitBasicMenu()
+    {
+        auto main_menu = MenuManager::AddMenu("Main");
+        {
+            MenuEntrySubMenu_sp file = mksptr(new MenuEntrySubMenu);
+            file->name = "File";
+            main_menu->AddEntry(file);
+        }
+        {
+            MenuEntrySubMenu_sp file = mksptr(new MenuEntrySubMenu);
+            file->name = "Edit";
+            main_menu->AddEntry(file);
+        }
+        {
+            MenuEntrySubMenu_sp file = mksptr(new MenuEntrySubMenu);
+            file->name = "Assets";
+            main_menu->AddEntry(file);
+        }
+        {
+            MenuEntrySubMenu_sp file = mksptr(new MenuEntrySubMenu);
+            file->name = "Build";
+            main_menu->AddEntry(file);
+        }
+        {
+            MenuEntrySubMenu_sp file = mksptr(new MenuEntrySubMenu);
+            file->name = "Tool";
+            main_menu->AddEntry(file);
+        }
+        {
+            MenuEntrySubMenu_sp file = mksptr(new MenuEntrySubMenu);
+            file->name = "Window";
+            main_menu->AddEntry(file);
+        }
+        {
+            MenuEntrySubMenu_sp file = mksptr(new MenuEntrySubMenu);
+            file->name = "Help";
+            main_menu->AddEntry(file);
+        }
+
+    }
+
     void EditorAppInstance::OnInitialize(string_view title, Vector2f size)
     {
         using namespace std::filesystem;
@@ -85,6 +126,8 @@ namespace apatiteed
         ImGui_Engine_Initialize();
 
         apatiteed::EditorWindowManager::GetInstance()->Reset();
+        InitBasicMenu();
+
         World::Reset(new World);
     }
     void EditorAppInstance::OnTerminate()
@@ -132,4 +175,6 @@ namespace apatiteed
     {
         RenderInterface::SetViewport(0, 0, (int)size.x, (int)size.y);
     }
+
+
 }

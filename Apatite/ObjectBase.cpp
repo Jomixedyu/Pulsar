@@ -6,7 +6,7 @@ namespace apatite
 {
 
     static inline std::map<runtime_instance_t, wptr<ObjectBase>> _object_table;
-    static runtime_instance_t _current;
+    static runtime_instance_t _current = 1;
 
     static runtime_instance_t _NewId()
     {
@@ -43,6 +43,7 @@ namespace apatite
 
     void RuntimeObjectWrapper::ForceDestroyObject(runtime_instance_t id)
     {
+        if (id == 0) return;
         _object_table.erase(id);
     }
 
@@ -53,6 +54,20 @@ namespace apatite
 
     ObjectBase::~ObjectBase()
     {
+        if (this->runtime_instance_id_ != 0)
+        {
+            this->Destroy();
+        }
+    }
+    void ObjectBase::Destroy()
+    {
+        this->OnDestroy();
         RuntimeObjectWrapper::ForceDestroyObject(this->runtime_instance_id_);
+        this->runtime_instance_id_ = 0;
+    }
+
+    void ObjectBase::OnDestroy()
+    {
+
     }
 }

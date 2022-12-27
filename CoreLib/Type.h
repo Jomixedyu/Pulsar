@@ -34,7 +34,7 @@ public: static inline ::jxcorlib::Type* StaticType() \
             { \
                 dynptr = ::jxcorlib::TypeTraits::get_zeroparam_object<ThisClass>::get(); \
             } \
-            ::jxcorlib::Assembly* assm = ::jxcorlib::Assembly::StaticBuildAssembly(ASSEMBLY); \
+            ::jxcorlib::Assembly* assm = ::jxcorlib::Assembly::StaticBuildAssemblyByName(ASSEMBLY.name()); \
             type = new ::jxcorlib::Type(dynptr, assm, ::jxcorlib::cltypeof<BASE>(), #NAME, typeid(NAME), sizeof(NAME)); \
             assm->RegisterType(type); \
         } \
@@ -72,7 +72,7 @@ public: static inline ::jxcorlib::Type* StaticType() \
             { \
                 dynptr = ::jxcorlib::TypeTraits::get_zeroparam_object<ThisClass>::get(); \
             } \
-            ::jxcorlib::Assembly* assm = ::jxcorlib::Assembly::StaticBuildAssembly(ASSEMBLY); \
+            ::jxcorlib::Assembly* assm = ::jxcorlib::Assembly::StaticBuildAssemblyByName(ASSEMBLY.name()); \
             type = new ::jxcorlib::Type(dynptr, assm, ::jxcorlib::cltypeof<BASE>(), #NAME, typeid(NAME), sizeof(NAME)); \
             assm->RegisterType(type); \
             ::jxcorlib::TypeBuilder::RegisterEnum(type, &ThisClass::StaticGetDefinitions); \
@@ -102,7 +102,7 @@ public: static inline ::jxcorlib::Type* StaticType() \
         static ::jxcorlib::Type* type = nullptr; \
         if (type == nullptr) \
         { \
-            ::jxcorlib::Assembly* assm = ::jxcorlib::Assembly::StaticBuildAssembly(ASSEMBLY); \
+            ::jxcorlib::Assembly* assm = ::jxcorlib::Assembly::StaticBuildAssemblyByName(ASSEMBLY.name()); \
             type = new ::jxcorlib::Type(nullptr, assm, ::jxcorlib::cltypeof<BASE>(), #NAME, typeid(NAME), sizeof(NAME)); \
             assm->RegisterType(type); \
         } \
@@ -127,7 +127,7 @@ public: static inline ::jxcorlib::Type* StaticType() \
         static ::jxcorlib::Type* type = nullptr; \
         if (type == nullptr) \
         { \
-            ::jxcorlib::Assembly* assm = ::jxcorlib::Assembly::StaticBuildAssembly(ASSEMBLY); \
+            ::jxcorlib::Assembly* assm = ::jxcorlib::Assembly::StaticBuildAssemblyByName(ASSEMBLY.name()); \
             type = new ::jxcorlib::Type(nullptr, assm, ::jxcorlib::cltypeof<BASE>(), #NAME, typeid(NAME<__VA_ARGS__>), sizeof(NAME<__VA_ARGS__>)); \
             assm->RegisterType(type); \
         } \
@@ -157,7 +157,7 @@ public: static inline ::jxcorlib::Type* StaticType() \
             dynptr = ::jxcorlib::TypeTraits::get_zeroparam_object<ThisClass>::get(); \
         } \
         using TemplateType = ::jxcorlib::TemplateTypePair<__VA_ARGS__>; \
-        ::jxcorlib::Assembly* assm = ::jxcorlib::Assembly::StaticBuildAssembly(ASSEMBLY); \
+        ::jxcorlib::Assembly* assm = ::jxcorlib::Assembly::StaticBuildAssemblyByName(ASSEMBLY.name()); \
         type = new ::jxcorlib::Type(dynptr, assm, ::jxcorlib::cltypeof<BASE>(), ::jxcorlib::StringUtil::Concat(#NAME, "<", typeid(TemplateType).name(), ">"), typeid(NAME<__VA_ARGS__>), sizeof(NAME<__VA_ARGS__>)); \
         assm->RegisterType(type); \
     } \

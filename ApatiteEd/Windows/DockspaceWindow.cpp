@@ -63,15 +63,10 @@ namespace apatiteed
 
         if (ImGui::BeginMenuBar())
         {
-            
-            ImGui::Button("T");
-            ImGui::Button("R");
-            ImGui::Button("S");
-
             ImGui::Separator();
 
-            ImGui::SmallButton("RUN");
-            ImGui::SmallButton("STOP");
+            ImGui::SmallButton("Render");
+            ImGui::SmallButton("Stop");
             ImGui::EndMenuBar();
         }
         ImGui::End();

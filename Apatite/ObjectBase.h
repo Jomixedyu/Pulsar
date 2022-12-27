@@ -7,6 +7,7 @@
 #include <memory>
 #include <cassert>
 #include <CoreLib/CommonException.h>
+#include <CoreLib/Events.hpp>
 
 #define WITH_APATITE_EDITOR
 
@@ -34,10 +35,11 @@ namespace apatite
         virtual ~ObjectBase() override;
     public:
 
-    public:
         runtime_instance_t get_instance_id() const { return this->runtime_instance_id_; }
+    public:
+        void Destroy();
     protected:
-        virtual void OnDestroy() {};
+        virtual void OnDestroy();
     protected:
 
         runtime_instance_t runtime_instance_id_;
@@ -53,6 +55,9 @@ namespace apatite
         static runtime_instance_t NewInstance(sptr<ObjectBase> obj);
         static void DestroyObject(const sptr<ObjectBase>& obj);
         static void ForceDestroyObject(runtime_instance_t id);
+
+        //<id, type, is_create>
+        static Action<runtime_instance_t, Type*, bool> ObjectHook;
     };
 
 
