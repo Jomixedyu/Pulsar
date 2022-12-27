@@ -10,45 +10,41 @@ namespace apatiteed
         if (index < 0) return string{ path };
         return string{ path.substr(0, index) };
     }
+
+    static void _ImGuiMenu(ISubMenu* menu)
+    {
+        for (auto& menu_item : menu->GetEntries())
+        {
+            if (auto submenu = interface_cast<ISubMenu>(menu_item.get()))
+            {
+                if (ImGui::BeginMenu(menu_item->name.data(), true))
+                {
+                    _ImGuiMenu(submenu);
+                    ImGui::EndMenu();
+                }
+            }
+            else if(auto check = sptr_cast<MenuEntryCheck>(submenu))
+            {
+                if(ImGui::Checkbox(menu_item->name.data(), ))
+                if (ImGui::Button())
+                {
+
+                }
+            }
+           
+        }
+    }
+
     void MainMenuBarWindow::OnDrawImGui()
     {
         if (ImGui::BeginMainMenuBar())
         {
-            for (auto& menu_item : MenuManager::GetMenu("Main")->GetEntries())
-            {
-                if (ImGui::BeginMenu(menu_item->name.data(), true))
-                {
-                    ImGui::EndMenu();
-                }
-            }
-            //if (ImGui::BeginMenu("File"))
-            //{
-            //    ImGui::EndMenu();
-            //}
-            //if (ImGui::BeginMenu("Edit"))
-            //{
-            //    ImGui::EndMenu();
-            //}
-            //if (ImGui::BeginMenu("Build"))
-            //{
-            //    ImGui::EndMenu();
-            //}
-            //if (ImGui::BeginMenu("Window"))
-            //{
-            //    for (auto& window : EditorWindowManager::GetInstance()->GetWindows())
-            //    {
-            //        bool opened = window->get_is_opened();
-            //        ImGui::MenuItem(window->GetWindowName().data(), nullptr, &opened, true);
-
-            //    }
-
-            //    ImGui::EndMenu();
-            //}
-            //if (ImGui::BeginMenu("Help"))
-            //{
-            //    ImGui::EndMenu();
-            //}
+            _ImGuiMenu(MenuManager::GetMenu("Main").get());
             ImGui::EndMainMenuBar();
         }
+    }
+    MainMenuBarWindow::MainMenuBarWindow()
+    {
+
     }
 }

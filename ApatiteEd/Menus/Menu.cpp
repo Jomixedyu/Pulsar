@@ -4,12 +4,21 @@
 namespace apatiteed
 {
 
-    static array_list<Menu*> menus;
+    static array_list<Menu_sp> menus;
 
 
-    Menu* MenuManager::AddMenu(string_view menu_name)
+    Menu_sp MenuManager::GetOrAddMenu(string_view menu_name)
     {
-        auto menu = new Menu;
+        if (auto menu = GetMenu(menu_name))
+        {
+            return menu;
+        }
+        return AddMenu(menu_name);
+    }
+
+    Menu_sp MenuManager::AddMenu(string_view menu_name)
+    {
+        auto menu = mksptr(new Menu);
         menu->menu_name = menu_name;
         menus.push_back(menu);
         return menu;
@@ -17,15 +26,14 @@ namespace apatiteed
 
     void MenuManager::RemoveMenu(string_view menu_name)
     {
-        auto it = std::find_if(menus.begin(), menus.end(), [&](Menu* menu) { return menu->menu_name == menu_name; });
+        auto it = std::find_if(menus.begin(), menus.end(), [&](Menu_sp menu) { return menu->menu_name == menu_name; });
         if (it != menus.end())
         {
-            delete* it;
             menus.erase(it);
         }
     }
 
-    Menu* MenuManager::GetMenu(string_view menu_name)
+    Menu_sp MenuManager::GetMenu(string_view menu_name)
     {
         for (auto& item : menus)
         {
@@ -37,7 +45,7 @@ namespace apatiteed
         return nullptr;
     }
 
-    const array_list<Menu*>& MenuManager::GetMenus()
+    const array_list<Menu_sp>& MenuManager::GetMenus()
     {
         return menus;
     }

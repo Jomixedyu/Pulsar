@@ -1,4 +1,5 @@
-#include <apatiteed/Windows/EditorWindow.h>
+#include <ApatiteEd/Windows/EditorWindow.h>
+#include <ApatiteEd/Menus/Menu.h>
 
 namespace apatiteed
 {
@@ -30,5 +31,9 @@ namespace apatiteed
         if (!this->is_opened) return;
         this->is_opened = false;
         this->OnClose();
+    }
+    EditorWindow::EditorWindow()
+    {
+
     }
 }

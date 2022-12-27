@@ -209,16 +209,22 @@ namespace jxcorlib
 
     struct UnboxUtil
     {
+
         template<typename T>
         static inline T Unbox(const sptr<Object>& value)
         {
-            if constexpr (cltype_sptr_concept<T>)
+            return static_cast<get_boxing_type<T>::type*>(value.get())->get_unboxing_value();
+        }
+        template<typename T>
+        static inline auto TryUnbox(const sptr<Object>& value)
+        {
+            if constexpr (std::is_base_of_v<BoxingObject, T>)
             {
-                return sptr_cast<T>(value);
+                return static_cast<get_boxing_type<T>::type*>(value.get())->get_unboxing_value();
             }
             else
             {
-                return static_cast<get_boxing_type<T>::type*>(value.get())->get_unboxing_value();
+                return sptr_cast<T>(value);
             }
         }
 

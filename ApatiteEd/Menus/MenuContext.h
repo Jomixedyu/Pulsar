@@ -9,9 +9,13 @@ namespace apatiteed
     public:
     };
 
-    struct MenuContexts
+    class MenuContexts : public Object
     {
+        CORELIB_DEF_TYPE(AssemblyObject_Apatite, apatiteed::MenuContexts, Object);
+    public:
         array_list<sptr<MenuContextBase>> contexts;
+
+        string entry_name;
 
         template<typename T>
         sptr<T> FindContext()
@@ -27,5 +31,5 @@ namespace apatiteed
             return nullptr;
         }
     };
-
+    CORELIB_DECL_SHORTSPTR(MenuContexts);
 }

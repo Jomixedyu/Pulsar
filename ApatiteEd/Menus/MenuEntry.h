@@ -4,9 +4,11 @@
 
 namespace apatiteed
 {
-    using MenuCanOperate = FunctionDelegate<bool, const MenuContexts&>;
-    using MenuAction = FunctionDelegate<void, const MenuContexts&>;
-    using MenuCheckAction = FunctionDelegate<void, const MenuContexts&, bool>;
+    using MenuCanOperate = FunctionDelegate<bool, sptr<MenuContexts>>;
+    using MenuAction = FunctionDelegate<void, sptr<MenuContexts>>;
+    using MenuCheckAction = FunctionDelegate<void, sptr<MenuContexts>, bool>;
+
+
 
     class MenuEntry : public Object
     {
@@ -15,21 +17,31 @@ namespace apatiteed
         int priority;
         string name;
 
+        MenuEntry(const string& name) : name(name) {}
+
         virtual ~MenuEntry() override {}
     };
     CORELIB_DECL_SHORTSPTR(MenuEntry);
 
+    class ISubMenu : public IInterface
+    {
+        CORELIB_DEF_INTERFACE(AssemblyObject_ApatiteEd, apatiteed::ISubMenu, IInterface);
+    public:
+        virtual const array_list<MenuEntry_sp>& GetEntries() = 0;
+    };
 
-    class MenuEntrySubMenu : public MenuEntry
+    class MenuEntrySubMenu : public MenuEntry, public ISubMenu
     {
         CORELIB_DEF_TYPE(AssemblyObject_ApatiteEd, apatiteed::MenuEntrySubMenu, MenuEntry);
+        CORELIB_IMPL_INTERFACES(ISubMenu);
     public:
+        using base::base;
 
         void AddEntry(MenuEntry_rsp entry)
         {
             this->entries.push_back(entry);
         }
-        const array_list<MenuEntry_sp>& GetEntries()
+        virtual const array_list<MenuEntry_sp>& GetEntries() override
         {
             return this->entries;
         }
@@ -54,8 +66,8 @@ namespace apatiteed
     {
         CORELIB_DEF_TYPE(AssemblyObject_ApatiteEd, apatiteed::MenuEntryCheck, MenuEntry);
     public:
-        MenuEntryCheck(bool is_check, const sptr<MenuCheckAction>& check_action)
-            : is_check(is_check), check_action(check_action)
+        MenuEntryCheck(const string& name, bool is_check, const sptr<MenuCheckAction>& check_action)
+            : base(name), is_check(is_check), check_action(check_action)
         { }
 
         bool is_check;

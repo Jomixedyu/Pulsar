@@ -17,7 +17,7 @@ namespace apatiteed
         bool get_is_opened() const { return is_opened; }
         void Open();
         void Close();
-
+        EditorWindow();
     protected:
         virtual void OnDrawImGui();
         virtual void OnOpen() {}

@@ -62,40 +62,33 @@ namespace apatiteed
 
     static void InitBasicMenu()
     {
-        auto main_menu = MenuManager::AddMenu("Main");
+        auto main_menu = MenuManager::GetOrAddMenu("Main");
         {
-            MenuEntrySubMenu_sp file = mksptr(new MenuEntrySubMenu);
-            file->name = "File";
+            MenuEntrySubMenu_sp file = mksptr(new MenuEntrySubMenu("File"));
             main_menu->AddEntry(file);
         }
         {
-            MenuEntrySubMenu_sp file = mksptr(new MenuEntrySubMenu);
-            file->name = "Edit";
+            MenuEntrySubMenu_sp file = mksptr(new MenuEntrySubMenu("Edit"));
             main_menu->AddEntry(file);
         }
         {
-            MenuEntrySubMenu_sp file = mksptr(new MenuEntrySubMenu);
-            file->name = "Assets";
+            MenuEntrySubMenu_sp file = mksptr(new MenuEntrySubMenu("Assets"));
             main_menu->AddEntry(file);
         }
         {
-            MenuEntrySubMenu_sp file = mksptr(new MenuEntrySubMenu);
-            file->name = "Build";
+            MenuEntrySubMenu_sp file = mksptr(new MenuEntrySubMenu("Build"));
             main_menu->AddEntry(file);
         }
         {
-            MenuEntrySubMenu_sp file = mksptr(new MenuEntrySubMenu);
-            file->name = "Tool";
+            MenuEntrySubMenu_sp file = mksptr(new MenuEntrySubMenu("Tool"));
             main_menu->AddEntry(file);
         }
         {
-            MenuEntrySubMenu_sp file = mksptr(new MenuEntrySubMenu);
-            file->name = "Window";
+            MenuEntrySubMenu_sp file = mksptr(new MenuEntrySubMenu("Window"));
             main_menu->AddEntry(file);
         }
         {
-            MenuEntrySubMenu_sp file = mksptr(new MenuEntrySubMenu);
-            file->name = "Help";
+            MenuEntrySubMenu_sp file = mksptr(new MenuEntrySubMenu("Help"));
             main_menu->AddEntry(file);
         }
 
@@ -125,8 +118,8 @@ namespace apatiteed
 
         ImGui_Engine_Initialize();
 
-        apatiteed::EditorWindowManager::GetInstance()->Reset();
         InitBasicMenu();
+        apatiteed::EditorWindowManager::GetInstance()->Reset();
 
         World::Reset(new World);
     }

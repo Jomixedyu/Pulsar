@@ -14,14 +14,14 @@ namespace apatiteed
             return instance;
         }
 
-        void Reset();
+        static void Reset();
 
-        void Draw();
+        static void Draw();
 
-        const std::vector<EditorWindow*>& GetWindows() const;
-
+        static const std::vector<EditorWindow*>& GetWindows();
+        static EditorWindow* GetWindow(string_view name);
     private:
-        std::vector<EditorWindow*> windows;
+        
 
     };
 }

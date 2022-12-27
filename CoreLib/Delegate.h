@@ -16,7 +16,7 @@ namespace jxcorlib
         virtual Object_sp DynamicInvoke(const array_list<Object_sp>& params) = 0;
     };
 
-#define _CORELIB_DELEGATE_GETVALUE(T, index) UnboxUtil::Unbox<typename get_boxing_type<T>::type>(params[index])
+#define _CORELIB_DELEGATE_GETVALUE(TPi, index) UnboxUtil::TryUnbox<typename get_boxing_type<TPi>::type>(params[index])
 
 #define _CORELIB_DELEGATE_INVOKE1 (inst->*func)(_CORELIB_DELEGATE_GETVALUE(T1, 0))
 #define _CORELIB_DELEGATE_INVOKE2 (inst->*func)(_CORELIB_DELEGATE_GETVALUE(T1, 0), _CORELIB_DELEGATE_GETVALUE(T2, 1))
@@ -159,7 +159,8 @@ namespace jxcorlib
             virtual bool Equals(FunctionInfo* func) const override
             {
                 if (func == nullptr || this->type != func->type) return false;
-                return this->func_.target() == static_cast<LambdaFunctionInfo*>(func)->func_.target();
+                return false;
+                //return this->func_.target() == static_cast<LambdaFunctionInfo*>(func)->func_.target();
             }
             virtual TReturn Invoke(TArgs... args) override
             {
