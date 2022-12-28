@@ -109,15 +109,19 @@ public: static inline ::jxcorlib::Type* StaticType() \
         return type; \
     } \
 private: \
+    using base = BASE; \
     using ThisClass = NAME; \
     friend class ::jxcorlib::Type; \
     friend class ::jxcorlib::TypeTraits; \
+public: \
+    using base::base; \
 private: \
     static inline struct __corelib_type { \
         __corelib_type() { NAME::StaticType(); } \
     } __corelib_type_init_; \
 public:
 
+#define CORELIB_INIT_INTERFACE(INTERFACE) INTERFACE(StaticType())
 
 #define CORELIB_DEF_TINTERFACE(ASSEMBLY, NAME, BASE, ...) \
 public: static inline ::jxcorlib::Type* StaticType() \
@@ -199,6 +203,7 @@ namespace jxcorlib
 {
     struct ParameterPackage;
 
+    class Type;
     class MemberInfo;
     class FieldInfo;
     class MethodInfo;
@@ -228,7 +233,10 @@ namespace jxcorlib
         static inline struct __corelib_type {
             __corelib_type() { IInterface::StaticType(); }
         } __corelib_type_init_;
+        Type* owner_type_;
     public:
+        IInterface(Type* owner) : owner_type_(owner) {}
+        Type* GetType() const { return this->owner_type_; }
         static Type* StaticType();
     };
     CORELIB_DECL_SHORTSPTR(IInterface);
@@ -613,7 +621,7 @@ namespace jxcorlib
                 },
                 [](Object_rsp obj) -> IInterface_sp {
                     auto sobj = sptr_cast<T>(obj);
-                    return sptr_cast<IInterface>(sobj);
+                return sptr_cast<IInterface>(sobj);
                 }
                 );
             _RegisterInterfaces<T, TInterfaces...>(self);
@@ -630,7 +638,7 @@ namespace jxcorlib
         {
             type->enum_getter_ = enum_getter;
         }
-        
+
     };
 
 }

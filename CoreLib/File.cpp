@@ -1,5 +1,4 @@
 #include "File.h"
-#include "UString.h"
 
 #include <iostream>
 #include <fstream>
@@ -52,7 +51,14 @@ namespace jxcorlib
         }
         std::string GetFilename(std::string_view path)
         {
-            return StringUtil::StringCast(std::filesystem::path(path).filename().generic_u8string());
+            auto u8str = std::filesystem::path(path).filename().generic_u8string();
+
+            std::string ret( u8str.size(), '\0' );
+
+            memset(ret.data(), 0, u8str.size() + 1);
+            memcpy(const_cast<char*>(ret.c_str()), u8str.c_str(), u8str.size());
+            
+            return ret;
         }
         std::string GetFilenameExt(std::string_view path)
         {
@@ -61,14 +67,14 @@ namespace jxcorlib
                 char c = path[i];
                 if (c == '.')
                 {
-                    return string{ path.substr(i) };
+                    return std::string{ path.substr(i) };
                 }
                 else if (path[i] == '/' || path[i] == '\\')
                 {
-                    return string{};
+                    return std::string{};
                 }
             }
-            return string{};
+            return std::string{};
         }
         std::string GetDirectory(std::string_view path)
         {
@@ -77,10 +83,10 @@ namespace jxcorlib
                 char c = path[i];
                 if (path[i] == '/' || path[i] == '\\')
                 {
-                    return string{ path.substr(0, i) };
+                    return std::string{ path.substr(0, i) };
                 }
             }
-            return string{};
+            return std::string{};
         }
         std::string Combine(const std::string& p1, const std::string& p2)
         {
@@ -129,7 +135,7 @@ namespace jxcorlib
         std::vector<std::string> Dir(std::string_view path, const std::vector<std::string>& target)
         {
             std::vector<std::string> ret;
-            string pathstart = path.length() == 0 ? "" : string{ path } + '/';
+            std::string pathstart = path.length() == 0 ? "" : std::string{ path } + '/';
             for (auto& item : target)
             {
                 if (item.length() > path.length() && item.starts_with(pathstart))
@@ -142,6 +148,21 @@ namespace jxcorlib
             }
 
             return ret;
+        }
+
+        std::string GetRoot(std::string_view path)
+        {
+            if (path.empty()) return "";
+            int index = -1;
+            for (int i = 0; i < path.length(); i++)
+            {
+                if (path[i] == '/' || path[i] == '\\')
+                {
+                    index = i;
+                    break;
+                }
+            }
+            if (index == -1) return std::string{ path };
         }
     }
 }

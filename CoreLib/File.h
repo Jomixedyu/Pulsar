@@ -30,6 +30,7 @@ namespace jxcorlib
         bool AInB(std::string_view a, std::string_view b);
 
         std::vector<std::string> Dir(std::string_view path, const std::vector<std::string>& target);
+        std::string GetRoot(std::string_view path);
     };
 }
 
