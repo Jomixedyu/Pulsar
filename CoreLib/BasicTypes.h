@@ -209,12 +209,12 @@ namespace jxcorlib
 
     struct UnboxUtil
     {
-
         template<typename T>
         static inline T Unbox(const sptr<Object>& value)
         {
             return static_cast<get_boxing_type<T>::type*>(value.get())->get_unboxing_value();
         }
+		
         template<typename T>
         static inline auto TryUnbox(const sptr<Object>& value)
         {
@@ -227,7 +227,6 @@ namespace jxcorlib
                 return sptr_cast<T>(value);
             }
         }
-
     };
 
     template<typename T>
@@ -244,8 +243,8 @@ namespace jxcorlib
         static_assert((cltype_concept<T>&& is_shared_ptr<T>::value) || !cltype_concept<T>, "");
         constexpr static bool is_shared_cltype = cltype_concept<T> && is_shared_ptr<T>::value;
     public:
-        List() {}
-        List(std::initializer_list<T> list)
+        List() : CORELIB_INIT_INTERFACE(IList) {}
+        List(std::initializer_list<T> list) : CORELIB_INIT_INTERFACE(IList)
         {
             for (auto& item : list) this->push_back(item);
         }
