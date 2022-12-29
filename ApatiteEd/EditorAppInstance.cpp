@@ -92,6 +92,13 @@ namespace apatiteed
             main_menu->AddEntry(file);
         }
 
+        {
+            MenuEntryButton_sp about = mksptr(new MenuEntryButton("about"));
+            about->action = MenuAction::FromRaw([](auto ctx) {
+                std::cout << "CCCC" << std::endl;
+                });
+            main_menu->FindMenuEntry<MenuEntrySubMenu>("Help")->AddEntry(about);
+        }
     }
 
     void EditorAppInstance::OnInitialize(string_view title, Vector2f size)

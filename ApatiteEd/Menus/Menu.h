@@ -11,6 +11,10 @@ namespace apatiteed
         CORELIB_DEF_TYPE(AssemblyObject_ApatiteEd, apatiteed::Menu, Object);
         CORELIB_IMPL_INTERFACES(ISubMenu);
     public:
+        Menu() : CORELIB_INIT_INTERFACE(ISubMenu)
+        {
+
+        }
         void AddEntry(MenuEntry_rsp entry)
         {
             this->entries.push_back(entry);

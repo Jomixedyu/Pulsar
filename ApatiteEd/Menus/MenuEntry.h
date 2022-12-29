@@ -35,7 +35,8 @@ namespace apatiteed
         CORELIB_DEF_TYPE(AssemblyObject_ApatiteEd, apatiteed::MenuEntrySubMenu, MenuEntry);
         CORELIB_IMPL_INTERFACES(ISubMenu);
     public:
-        using base::base;
+        MenuEntrySubMenu(const string& name) : base(name), CORELIB_INIT_INTERFACE(ISubMenu)
+        { }
 
         void AddEntry(MenuEntry_rsp entry)
         {
@@ -56,6 +57,8 @@ namespace apatiteed
     {
         CORELIB_DEF_TYPE(AssemblyObject_ApatiteEd, apatiteed::MenuEntryButton, MenuEntry);
     public:
+        using base::base;
+
         sptr<MenuAction> action;
     };
     CORELIB_DECL_SHORTSPTR(MenuEntryButton);

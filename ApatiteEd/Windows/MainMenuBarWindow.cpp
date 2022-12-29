@@ -13,7 +13,7 @@ namespace apatiteed
 
     static void _ImGuiMenu(ISubMenu* menu)
     {
-        for (auto& menu_item : menu->GetEntries())
+        for (const MenuEntry_sp& menu_item : menu->GetEntries())
         {
             if (auto submenu = interface_cast<ISubMenu>(menu_item.get()))
             {
@@ -23,10 +23,19 @@ namespace apatiteed
                     ImGui::EndMenu();
                 }
             }
-            else if(auto check = sptr_cast<MenuEntryCheck>(submenu))
+            else if(sptr<MenuEntryButton> btn = sptr_cast<MenuEntryButton>(menu_item))
             {
-                if(ImGui::Checkbox(menu_item->name.data(), ))
-                if (ImGui::Button())
+                if (ImGui::Button(btn->name.c_str()))
+                {
+                    if (btn->action)
+                    {
+                        btn->action->Invoke(nullptr);
+                    }
+                }
+            }
+            else if (sptr<MenuEntryCheck> check = sptr_cast<MenuEntryCheck>(menu_item))
+            {
+                if (ImGui::Button(check->name.c_str()))
                 {
 
                 }
