@@ -49,14 +49,31 @@ namespace jxcorlib
     using sptr = std::shared_ptr<T>;
 
     template<typename Tout, typename Tin>
-    sptr<Tout> sptr_cast(const sptr<Tin>& other)
+    sptr<Tout> sptr_static_cast(const sptr<Tin>& other)
     {
         return std::static_pointer_cast<Tout, Tin>(other);
     }
     template<typename Tout, typename Tin>
-    sptr<Tout> sptr_cast(sptr<Tin>&& other)
+    sptr<Tout> sptr_static_cast(sptr<Tin>&& other)
     {
         return std::static_pointer_cast<Tout, Tin>(other);
+    }
+
+    template<typename Tout, typename Tin>
+    sptr<Tout> sptr_cast(const sptr<Tin>& other)
+    {
+        if (other == nullptr) return nullptr;
+        if (cltypeof<Tout>()->IsInstanceOfType(other.get()))
+            return std::static_pointer_cast<Tout, Tin>(other);
+        return nullptr;
+    }
+    template<typename Tout, typename Tin>
+    sptr<Tout> sptr_cast(sptr<Tin>&& other)
+    {
+        if (other == nullptr) return nullptr;
+        if (cltypeof<Tout>()->IsInstanceOfType(other.get()))
+            return std::static_pointer_cast<Tout, Tin>(other);
+        return nullptr;
     }
 
     template<typename T>

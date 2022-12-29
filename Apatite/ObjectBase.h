@@ -62,9 +62,9 @@ namespace apatite
 
 
     template<typename T>
-    concept baseof_mobject = std::is_base_of<ObjectBase, T>::value;
+    concept baseof_objectbase = std::is_base_of<ObjectBase, T>::value;
 
-    template<baseof_mobject T>
+    template<baseof_objectbase T>
     inline bool IsValid(const sptr<T>& object)
     {
         if (object == nullptr || !RuntimeObjectWrapper::IsValid(object->get_instance_id()))
@@ -74,7 +74,7 @@ namespace apatite
         return true;
     }
 
-    template<baseof_mobject T>
+    template<baseof_objectbase T>
     inline void ResetIfInvalid(sptr<T>& object)
     {
         if (!IsValid(object)) object = nullptr;

@@ -242,6 +242,9 @@ namespace jxcorlib
     CORELIB_DECL_SHORTSPTR(IInterface);
 
     template<typename T>
+    concept baseof_object = std::is_base_of_v<Object, T>;
+
+    template<typename T>
     concept cltype_concept =
         std::is_base_of<Object, typename remove_shared_ptr<typename std::remove_pointer<T>::type>::type>::value ||
         std::is_base_of<IInterface, typename remove_shared_ptr<typename std::remove_pointer<T>::type>::type>::value;
@@ -532,7 +535,7 @@ namespace jxcorlib
     sptr<T> interface_sptr_cast(Object_rsp obj)
     {
         if (obj == nullptr) return nullptr;
-        return sptr_cast<T>(obj->GetType()->GetSharedInterface(obj, cltypeof<T>()));
+        return sptr_static_cast<T>(obj->GetType()->GetSharedInterface(obj, cltypeof<T>()));
     }
 
     template<typename T>
