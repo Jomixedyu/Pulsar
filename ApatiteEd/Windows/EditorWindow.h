@@ -15,6 +15,7 @@ namespace apatiteed
 
     public:
         bool get_is_opened() const { return is_opened; }
+        virtual bool get_is_register_menu() const { return true; }
         void Open();
         void Close();
         EditorWindow();

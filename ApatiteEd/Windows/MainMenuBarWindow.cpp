@@ -35,9 +35,14 @@ namespace apatiteed
             }
             else if (sptr<MenuEntryCheck> check = sptr_cast<MenuEntryCheck>(menu_item))
             {
-                if (ImGui::Button(check->name.c_str()))
+                if (ImGui::MenuItem(check->name.c_str(), nullptr, check->is_check))
                 {
-
+                    if (check->check_action)
+                    {
+                        check->is_check = !check->is_check;
+                        auto ctx = MenuContexts::StaticMakeContext(check->name, nullptr);
+                        check->check_action->Invoke(ctx, check->is_check);
+                    }
                 }
             }
            

@@ -30,10 +30,12 @@ namespace apatiteed
         }
 
         auto main_menu = MenuManager::GetOrAddMenu("Main");
-        auto win = main_menu->FindMenuEntry<MenuEntrySubMenu>("Window");
+        auto win_menu = main_menu->FindMenuEntry<MenuEntrySubMenu>("Window");
 
-        auto check = MenuCheckAction::FromLambda(
-            [](MenuContexts_sp ctx, bool checked) {
+        auto check_action = MenuCheckAction::FromLambda(
+            [](MenuContexts_sp ctx, bool checked) 
+            {
+                if (!ctx) return;
                 auto win = GetWindow(ctx->entry_name);
                 if (!win) return;
                 if (checked)
@@ -47,7 +49,13 @@ namespace apatiteed
             }
         );
 
-        win->AddEntry(mksptr(new MenuEntryCheck{"SceneWindow", true, check}));
+        for (auto& window : _windows)
+        {
+            if (!window->get_is_register_menu())
+                continue;
+            win_menu->AddEntry(mksptr(new MenuEntryCheck{ string{ window->GetWindowName() }, window->get_is_opened(), check_action}));
+        }
+
     }
 
     void EditorWindowManager::Draw()
