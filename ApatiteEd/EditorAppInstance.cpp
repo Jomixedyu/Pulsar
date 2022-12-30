@@ -9,10 +9,11 @@
 #include <Apatite/ImGuiImpl.h>
 #include <Apatite/Private/InputInterface.h>
 #include <ApatiteEd/Windows/EditorWindowManager.h>
-#include <ApatiteEd/EdUIConfig.h>
+#include <ApatiteEd/EditorUIConfig.h>
 #include <CoreLib/File.h>
 #include <CoreLib.Serialization/JsonSerializer.h>
 #include <ApatiteEd/Menus/Menu.h>
+#include <ApatiteEd/IEditorTickable.h>
 
 namespace apatiteed
 {
@@ -109,7 +110,7 @@ namespace apatiteed
         if (exists(path{ uicfg }))
         {
             auto json = FileUtil::ReadAllText(uicfg);
-            auto cfg = ser::JsonSerializer::Deserialize<EdUIConfig>(json);
+            auto cfg = ser::JsonSerializer::Deserialize<EditorUIConfig>(json);
 
             size = cfg->window_size;
         }
@@ -138,7 +139,7 @@ namespace apatiteed
         using namespace std::filesystem;
 
         auto uicfg_path = PathUtil::Combine(AppRootDir(), "uiconfig.json");
-        auto cfg = mksptr(new EdUIConfig);
+        auto cfg = mksptr(new EditorUIConfig);
 
         cfg->window_size = GetAppSize();
         auto json = ser::JsonSerializer::Serialize(cfg.get(), {});
@@ -147,13 +148,15 @@ namespace apatiteed
     }
     void EditorAppInstance::OnTick(float dt)
     {
-        auto bgc = LinearColorf{ 0.2f, 0.2f ,0.2f, 0.2 };
+        auto bgc = LinearColorf{ 0.2f, 0.2f ,0.2f, 0.2f };
         RenderInterface::Clear(bgc.r, bgc.g, bgc.b, bgc.a);
         ImGui_Engine_NewFrame();
 
         World::Current()->Tick(dt);
 
         apatiteed::EditorWindowManager::GetInstance()->Draw();
+        apatiteed::EditorTickerManager::EdTicker.Invoke(dt);
+
         ImGui_Engine_EndFrame();
 
         RenderInterface::Render();

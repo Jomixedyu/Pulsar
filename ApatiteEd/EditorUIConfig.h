@@ -6,13 +6,13 @@
 namespace apatiteed
 {
 
-    class EdUIConfig : public Object
+    class EditorUIConfig : public Object
     {
-        CORELIB_DEF_TYPE(AssemblyObject_ApatiteEd, apatiteed::EdUIConfig, Object);
+        CORELIB_DEF_TYPE(AssemblyObject_ApatiteEd, apatiteed::EditorUIConfig, Object);
 
     public:
         CORELIB_REFL_DECL_FIELD(window_size);
         Vector2f window_size;
     };
-    CORELIB_DECL_SHORTSPTR(EdUIConfig);
+    CORELIB_DECL_SHORTSPTR(EditorUIConfig);
 }

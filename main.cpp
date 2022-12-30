@@ -1,7 +1,7 @@
 #include <Apatite/Application.h>
 #include <Apatite/EngineAppInstance.h>
 #include <ApatiteEd/EditorAppInstance.h>
-#include <ApatiteEd/EdUIConfig.h>
+#include <ApatiteEd/EditorUIConfig.h>
 #include <CoreLib/File.h>
 
 using namespace apatite;
