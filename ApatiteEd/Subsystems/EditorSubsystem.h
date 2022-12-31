@@ -1,5 +1,5 @@
 #pragma once
-#include "Assembly.h"
+#include <ApatiteEd/Assembly.h>
 #include <Apatite/Subsystem.h>
 
 namespace apatiteed
@@ -8,6 +8,7 @@ namespace apatiteed
     {
         CORELIB_DEF_TYPE(AssemblyObject_ApatiteEd, apatiteed::EditorSubsystem, Subsystem);
     public:
-
+        virtual void OnEditorStartRender() {}
+        virtual void OnEditorStopRender() {}
     };
 }

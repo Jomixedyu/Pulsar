@@ -1,5 +1,5 @@
 #pragma once
-#include "IEditorTickable.h"
+#include <ApatiteEd/IEditorTickable.h>
 
 namespace apatiteed
 {

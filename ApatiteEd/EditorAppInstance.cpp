@@ -16,7 +16,7 @@
 #include <ApatiteEd/Menus/MenuEntrySubMenu.h>
 #include <ApatiteEd/IEditorTickable.h>
 #include <ApatiteEd/LogRecorder.h>
-#include <ApatiteEd/EditorSubsystem.h>
+#include <ApatiteEd/Subsystems/EditorSubsystem.h>
 
 namespace apatiteed
 {
