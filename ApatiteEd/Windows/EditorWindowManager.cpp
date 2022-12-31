@@ -13,8 +13,7 @@
 namespace apatiteed
 {
     static array_list<sptr<EditorWindow>> _registered_windows;
-    static array_list<sptr<EditorWindow>> _registered_windows_wait;
-
+    static array_list<sptr<EditorWindow>> _registered_windows_wait_del;
 
     static map<string, Type*> _registered_menu;
 
@@ -83,11 +82,17 @@ namespace apatiteed
 
     void EditorWindowManager::Draw()
     {
-        for (auto& window : _registered_windows)
+        for (size_t i = 0; i < _registered_windows.size(); i++)
         {
-            window->DrawImGui();
+            auto& item = _registered_windows[i];
+            auto it = std::find(_registered_windows_wait_del.begin(), _registered_windows_wait_del.end(), item);
+            if (it == _registered_windows_wait_del.end())
+            {
+                item->DrawImGui();
+            }
         }
-        for (auto& window : _registered_windows_wait)
+
+        for (auto& window : _registered_windows_wait_del)
         {
             auto it = std::find(_registered_windows.begin(), _registered_windows.end(), window);
             if (it != _registered_windows.end())
@@ -139,7 +144,7 @@ namespace apatiteed
         auto it = std::find(_registered_windows.begin(), _registered_windows.end(), window);
         if (it != _registered_windows.end())
         {
-            _registered_windows_wait.push_back(window);
+            _registered_windows_wait_del.push_back(window);
         }
     }
 }
