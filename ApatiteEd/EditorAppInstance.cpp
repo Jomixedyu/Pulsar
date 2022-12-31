@@ -16,6 +16,7 @@
 #include <ApatiteEd/Menus/MenuEntrySubMenu.h>
 #include <ApatiteEd/IEditorTickable.h>
 #include <ApatiteEd/LogRecorder.h>
+#include <ApatiteEd/EditorSubsystem.h>
 
 namespace apatiteed
 {
@@ -109,6 +110,25 @@ namespace apatiteed
         using namespace std::filesystem;
         LogRecorder::Initialize();
 
+        //collect subsystem
+        for (Type* type : *__ApatiteSubsystemRegistry::types())
+        {
+            if (type->IsSubclassOf(cltypeof<EditorSubsystem>()))
+            {
+                sptr<Subsystem> subsys = sptr_cast<Subsystem>(type->CreateSharedInstance({}));
+                this->subsystems.push_back(subsys);
+            }
+        }
+        //initialize subsystem
+        for (auto& subsystem : this->subsystems)
+        {
+            subsystem->OnInitializing();
+        }
+        for (auto& subsystem : this->subsystems)
+        {
+            subsystem->OnInitialized();
+        }
+
         auto uicfg = PathUtil::Combine(AppRootDir(), "uiconfig.json");
         if (exists(path{ uicfg }))
         {
@@ -134,6 +154,7 @@ namespace apatiteed
 
         World::Reset(new World);
     }
+
     void EditorAppInstance::OnTerminate()
     {
         ImGui_Engine_Terminate();
@@ -148,8 +169,15 @@ namespace apatiteed
         auto json = ser::JsonSerializer::Serialize(cfg.get(), {});
         FileUtil::WriteAllText(uicfg_path, json);
 
+        //terminate subsystem
+        for (auto& subsystem : this->subsystems)
+        {
+            subsystem->OnTerminate();
+        }
+
         LogRecorder::Terminate();
     }
+
     void EditorAppInstance::OnTick(float dt)
     {
         auto bgc = LinearColorf{ 0.2f, 0.2f ,0.2f, 0.2f };
@@ -167,6 +195,7 @@ namespace apatiteed
         SystemInterface::PollEvents();
         InputInterface::PollEvents();
     }
+
     bool EditorAppInstance::IsQuit()
     {
         return SystemInterface::GetIsQuit();

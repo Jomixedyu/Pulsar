@@ -1,6 +1,7 @@
 #pragma once
 #include "AppInstance.h"
 
+
 namespace apatite
 {
     class EngineAppInstance : public AppInstance
@@ -17,6 +18,8 @@ namespace apatite
         virtual string GetTitle() override;
         virtual void SetTitle(string_view title) override;
         virtual string AppRootDir() override;
+
+
     };
 
 }

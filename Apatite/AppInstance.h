@@ -2,6 +2,7 @@
 #include <CoreLib/Events.hpp>
 #include <Apatite/Math.h>
 #include <Apatite/ObjectBase.h>
+#include "Subsystem.h"
 
 namespace apatite
 {
@@ -15,11 +16,22 @@ namespace apatite
         virtual void SetScreenSize(Vector2f size) = 0;
         virtual string GetTitle() = 0;
         virtual void SetTitle(string_view title) = 0;
-
         virtual string AppRootDir() = 0;
+
         jxcorlib::Action<> QuittingEvents;
         jxcorlib::Function<bool> RequestQuitEvents;
 
+        virtual Subsystem* GetSubsystemByType(Type* type);
+        virtual array_list<Subsystem*> GetSubsystemsByType(Type* type, bool include = true);
+
+        template<typename T>
+        sptr<T> GetSubsystem()
+        {
+            return sptr_cast<T>(GetSubsystemByType(cltypeof<T>()));
+        }
+
+    protected:
+        array_list<Subsystem_sp> subsystems;
     protected:
         virtual void OnInitialize(string_view title, Vector2f size) = 0;
         virtual void OnTerminate() = 0;

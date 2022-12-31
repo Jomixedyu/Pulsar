@@ -23,5 +23,6 @@ namespace apatiteed
 
         virtual Vector2f GetAppSize();
         virtual void SetAppSize(Vector2f size);
+
     };
 }
