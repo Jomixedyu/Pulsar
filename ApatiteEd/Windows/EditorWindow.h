@@ -4,8 +4,10 @@
 
 namespace apatiteed
 {
-    class EditorWindow
+    class EditorWindow : public Object
     {
+        CORELIB_DEF_TYPE(AssemblyObject_ApatiteEd, apatiteed::EditorWindow, Object);
+
     public:
         virtual string_view GetWindowName() const;
         virtual void DrawImGui();
@@ -15,10 +17,11 @@ namespace apatiteed
 
     public:
         bool get_is_opened() const { return is_opened; }
-        virtual bool get_is_register_menu() const { return true; }
+        int32_t get_window_id() const { return this->window_id_; }
+        EditorWindow();
+    public:
         void Open();
         void Close();
-        EditorWindow();
     protected:
         virtual void OnDrawImGui();
         virtual void OnOpen() {}
@@ -26,5 +29,8 @@ namespace apatiteed
 
     protected:
         bool is_opened = false;
+    private:
+        int32_t window_id_;
     };
+    CORELIB_DECL_SHORTSPTR(EditorWindow);
 }

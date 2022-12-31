@@ -7,7 +7,7 @@ namespace apatiteed
     class EditorTickerManager
     {
     public:
-        static Action<float> EdTicker;
+        static inline Action<float> Ticker;
     };
 
     class IEditorTickable
@@ -15,11 +15,11 @@ namespace apatiteed
     public:
         IEditorTickable()
         {
-            EditorTickerManager::EdTicker.AddListener(this, &IEditorTickable::OnEditorTick);
+            EditorTickerManager::Ticker.AddListener(this, &IEditorTickable::OnEditorTick);
         }
         virtual ~IEditorTickable()
         {
-            EditorTickerManager::EdTicker.RemoveListener(this, &IEditorTickable::OnEditorTick);
+            EditorTickerManager::Ticker.RemoveListener(this, &IEditorTickable::OnEditorTick);
         }
 
         virtual void OnEditorTick(float dt) = 0;

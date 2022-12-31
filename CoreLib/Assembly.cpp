@@ -20,11 +20,15 @@ namespace jxcorlib
         this->types.push_back(type);
     }
 
-    static array_list<Assembly*> assemblies;
+    static array_list<Assembly*>& assemblies()
+    {
+        static array_list<Assembly*> list;
+        return list;
+    }
 
     Assembly* Assembly::StaticFindAssemblyByName(string_view name)
     {
-        for (Assembly* assembly : assemblies)
+        for (Assembly* assembly : assemblies())
         {
             if (assembly->get_name() == name)
             {
@@ -36,6 +40,7 @@ namespace jxcorlib
 
     void Assembly::StaticUnloadAssemblyByName(string_view name)
     {
+
     }
     Assembly* Assembly::StaticBuildAssemblyByName(string_view name)
     {
@@ -43,7 +48,7 @@ namespace jxcorlib
         if (ass == nullptr)
         {
             ass = new Assembly(name);
-            assemblies.push_back(ass);
+            assemblies().push_back(ass);
         }
         return ass;
     }

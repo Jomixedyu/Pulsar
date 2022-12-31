@@ -1,5 +1,6 @@
 #include <ApatiteEd/Windows/EditorWindow.h>
 #include <ApatiteEd/Menus/Menu.h>
+#include <ApatiteEd/Windows/EditorWindowManager.h>
 
 namespace apatiteed
 {
@@ -24,6 +25,7 @@ namespace apatiteed
     {
         if (this->is_opened) return;
         this->is_opened = true;
+        EditorWindowManager::RegisterWindow(self());
         this->OnOpen();
     }
     void EditorWindow::Close()
@@ -31,8 +33,16 @@ namespace apatiteed
         if (!this->is_opened) return;
         this->is_opened = false;
         this->OnClose();
+        EditorWindowManager::UnRegisterWindow(self());
     }
-    EditorWindow::EditorWindow()
+
+    static int _NewId()
+    {
+        static int id = 0;
+        return ++id;
+    }
+
+    EditorWindow::EditorWindow() : window_id_(_NewId())
     {
 
     }

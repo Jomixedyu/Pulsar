@@ -5,12 +5,13 @@ namespace apatiteed
 {
     class MainMenuBarWindow : public EditorWindow
     {
+        CORELIB_DEF_TYPE(AssemblyObject_ApatiteEd, apatiteed::MainMenuBarWindow, EditorWindow);
     protected:
         virtual void OnDrawImGui() override;
     public:
-        virtual string_view GetWindowName() const override { return "MainMenuBar"; }
+        static string_view StaticWindowName() { return "MainMenuBar"; }
+        virtual string_view GetWindowName() const override { return StaticWindowName(); }
         virtual void DrawImGui() override { this->OnDrawImGui(); }
-        virtual bool get_is_register_menu() const override { return false; }
         MainMenuBarWindow();
     };
 }

@@ -9,74 +9,102 @@
 #include "DockspaceWindow.h"
 #include <ApatiteEd/Menus/Menu.h>
 
+
 namespace apatiteed
 {
-    static std::vector<EditorWindow*> _windows;
+    static array_list<sptr<EditorWindow>> _registered_windows;
+    static array_list<sptr<EditorWindow>> _registered_windows_wait;
+
+
+    static map<string, Type*> _registered_menu;
+
+    static sptr<DockspaceWindow> _DockspaceWindow;
+    static sptr<MainMenuBarWindow> _MainMenuBarWindow;
+
+    static void _CheckableLabelAction(MenuContexts_sp ctx, bool checked)
+    {
+        if (!ctx)
+        {
+            return;
+        }
+
+        if (checked)
+        {
+            auto it = _registered_menu.find(ctx->entry_name);
+            if (it == _registered_menu.end())
+            {
+                return;
+            }
+
+            auto ptr = sptr_cast<EditorWindow>(it->second->CreateSharedInstance({}));
+            assert(ptr);
+            ptr->Open();
+        }
+        else
+        {
+            if (auto win = EditorWindowManager::GetWindow(ctx->entry_name))
+            {
+                win->Close();
+            }
+        }
+
+    }
+
+
 
     void EditorWindowManager::Reset()
     {
-        _windows.push_back((new DockspaceWindow));
-        _windows.push_back((new MainMenuBarWindow));
-        _windows.push_back((new ProjectWindow));
-        _windows.push_back((new PropertiesWindow));
-        _windows.push_back((new ConsoleWindow));
-        _windows.push_back((new OutlinerWindow));
-        _windows.push_back((new SceneWindow));
-        _windows.push_back((new OutputWindow));
+        _registered_menu.emplace(ProjectWindow::StaticWindowName(), cltypeof<ProjectWindow>());
+        _registered_menu.emplace(PropertiesWindow::StaticWindowName(), cltypeof<PropertiesWindow>());
+        _registered_menu.emplace(ConsoleWindow::StaticWindowName(), cltypeof<ConsoleWindow>());
+        _registered_menu.emplace(OutlinerWindow::StaticWindowName(), cltypeof<OutlinerWindow>());
+        _registered_menu.emplace(SceneWindow::StaticWindowName(), cltypeof<SceneWindow>());
+        _registered_menu.emplace(OutputWindow::StaticWindowName(), cltypeof<OutputWindow>());
 
-        for (auto window : _windows)
-        {
-            window->Open();
-        }
 
         auto main_menu = MenuManager::GetOrAddMenu("Main");
+        assert(main_menu);
         auto win_menu = main_menu->FindMenuEntry<MenuEntrySubMenu>("Window");
+        assert(win_menu);
 
-        auto check_action = MenuCheckAction::FromLambda(
-            [](MenuContexts_sp ctx, bool checked) 
-            {
-                if (!ctx) return;
-                auto win = GetWindow(ctx->entry_name);
-                if (!win) return;
-                if (checked)
-                {
-                    win->Open();
-                }
-                else
-                {
-                    win->Close();
-                }
-            }
-        );
+        auto check_action = MenuCheckAction::FromRaw(_CheckableLabelAction);
 
-        for (auto& window : _windows)
+        for (auto& [name, type] : _registered_menu)
         {
-            if (!window->get_is_register_menu())
-                continue;
-            win_menu->AddEntry(mksptr(new MenuEntryCheck{ string{ window->GetWindowName() }, window->get_is_opened(), check_action}));
+            win_menu->AddEntry(mksptr(new MenuEntryCheck{ string{ name }, false, check_action }));
         }
 
+        _DockspaceWindow = mksptr(new DockspaceWindow);
+        _MainMenuBarWindow = mksptr(new MainMenuBarWindow);
+        _DockspaceWindow->Open();
+        _MainMenuBarWindow->Open();
     }
+
 
     void EditorWindowManager::Draw()
     {
-        for (const auto& window : _windows)
+        for (auto& window : _registered_windows)
         {
-            if (!window->get_is_opened())
-            {
-                continue;
-            }
             window->DrawImGui();
+        }
+        for (auto& window : _registered_windows_wait)
+        {
+            auto it = std::find(_registered_windows.begin(), _registered_windows.end(), window);
+            if (it != _registered_windows.end())
+            {
+                _registered_windows.erase(it);
+            }
         }
     }
 
-    const std::vector<EditorWindow*>& EditorWindowManager::GetWindows()
+    const std::vector<EditorWindow_sp>& EditorWindowManager::GetWindows()
     {
-        return _windows;
+        return _registered_windows;
     }
-    EditorWindow* EditorWindowManager::GetWindow(string_view name)
+
+    EditorWindow_sp EditorWindowManager::GetWindow(string_view name)
     {
-        for (auto& window : _windows)
+        for (auto& window : _registered_windows)
         {
             if (window->GetWindowName() == name)
             {
@@ -84,5 +112,34 @@ namespace apatiteed
             }
         }
         return nullptr;
+    }
+
+    EditorWindow_sp EditorWindowManager::GetWindow(Type* type)
+    {
+        for (auto& window : _registered_windows)
+        {
+            if (window->GetType() == type)
+            {
+                return window;
+            }
+        }
+        return nullptr;
+    }
+
+    void EditorWindowManager::RegisterWindow(EditorWindow_rsp window)
+    {
+        if (!window) return;
+        auto it = std::find(_registered_windows.begin(), _registered_windows.end(), window);
+        if (it == _registered_windows.end())
+            _registered_windows.push_back(window);
+    }
+    void EditorWindowManager::UnRegisterWindow(EditorWindow_rsp window)
+    {
+        if (!window) return;
+        auto it = std::find(_registered_windows.begin(), _registered_windows.end(), window);
+        if (it != _registered_windows.end())
+        {
+            _registered_windows_wait.push_back(window);
+        }
     }
 }

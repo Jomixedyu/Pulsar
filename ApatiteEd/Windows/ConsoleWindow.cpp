@@ -36,6 +36,6 @@ namespace apatiteed
     }
     ConsoleWindow::ConsoleWindow()
     {
-
+        int a = 3;
     }
 }

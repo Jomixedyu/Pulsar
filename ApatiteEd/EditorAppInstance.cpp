@@ -127,7 +127,7 @@ namespace apatiteed
         ImGui_Engine_Initialize();
 
         InitBasicMenu();
-        apatiteed::EditorWindowManager::GetInstance()->Reset();
+        apatiteed::EditorWindowManager::Reset();
 
         World::Reset(new World);
     }
@@ -154,8 +154,8 @@ namespace apatiteed
 
         World::Current()->Tick(dt);
 
-        apatiteed::EditorWindowManager::GetInstance()->Draw();
-        apatiteed::EditorTickerManager::EdTicker.Invoke(dt);
+        apatiteed::EditorWindowManager::Draw();
+        apatiteed::EditorTickerManager::Ticker.Invoke(dt);
 
         ImGui_Engine_EndFrame();
 

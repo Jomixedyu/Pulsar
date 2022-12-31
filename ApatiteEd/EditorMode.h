@@ -1,12 +1,13 @@
 #pragma once
+#include "IEditorTickable.h"
 
 namespace apatiteed
 {
 
-    class EditorMode
+    class EditorMode : public IEditorTickable
     {
 
     public:
-        virtual void Tick(float dt) = 0;
+        virtual void OnEditorTick(float dt) override {};
     };
 }
