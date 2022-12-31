@@ -3,6 +3,7 @@
 #include <CoreLib/Delegate.h>
 #include "MenuContext.h"
 #include "MenuEntry.h"
+#include "ISubMenu.h"
 
 namespace apatiteed
 {
@@ -27,24 +28,26 @@ namespace apatiteed
         {
             return this->menu_name;
         }
+
+        virtual MenuEntry_sp FindEntry(string_view name) override;
+
         template<typename T>
         sptr<T> FindMenuEntry(string_view name)
         {
-            for (auto& item : this->entries)
-            {
-                if (item->name == name)
-                {
-                    return sptr_cast<T>(item);
-                }
-            }
-            return nullptr;
+            return sptr_cast<T>(this->FindEntry(name));
         }
+
+       
     public:
         string menu_name;
     protected:
         array_list<MenuEntry_sp> entries;
+
+
     };
     CORELIB_DECL_SHORTSPTR(Menu);
+
+
 
     class MenuManager
     {
@@ -53,6 +56,7 @@ namespace apatiteed
         static Menu_sp AddMenu(string_view menu_name);
         static void RemoveMenu(string_view menu_name);
         static Menu_sp GetMenu(string_view menu_name);
+        static Menu_sp GetMainMenu();
         static const array_list<Menu_sp>& GetMenus();
     };
 }

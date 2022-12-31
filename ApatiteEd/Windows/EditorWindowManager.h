@@ -14,13 +14,13 @@ namespace apatiteed
 
         static inline Action<EditorWindow*, bool> OnWindowStateChanged;
 
-        static const std::vector<EditorWindow_sp>& GetWindows();
         static EditorWindow_sp GetWindow(string_view name);
         static EditorWindow_sp GetWindow(Type* type);
 
         //editor window add this
-        static void RegisterWindow(EditorWindow_rsp window);
+        static bool RegisterWindow(EditorWindow_rsp window);
         static void UnRegisterWindow(EditorWindow_rsp window);
+
     private:
         
 

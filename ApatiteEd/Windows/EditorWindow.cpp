@@ -1,6 +1,7 @@
 #include <ApatiteEd/Windows/EditorWindow.h>
 #include <ApatiteEd/Menus/Menu.h>
 #include <ApatiteEd/Windows/EditorWindowManager.h>
+#include <ApatiteEd/Menus/MenuEntry.h>
 
 namespace apatiteed
 {
@@ -11,8 +12,17 @@ namespace apatiteed
 
     void EditorWindow::DrawImGui()
     {
-        ImGui::Begin(GetWindowName().data(), &is_opened, GetGuiWindowFlags());
-        this->OnDrawImGui();
+        ImGui::Begin(GetWindowName().data(), &this->is_opened, GetGuiWindowFlags());
+        if (this->is_opened)
+        {
+            this->OnDrawImGui();
+        }
+        else
+        {
+            this->is_opened = true;
+            this->Close();
+        }
+
         ImGui::End();
     }
 
@@ -21,12 +31,17 @@ namespace apatiteed
 
     }
 
-    void EditorWindow::Open()
+    bool EditorWindow::Open()
     {
-        if (this->is_opened) return;
+        if (this->is_opened) return true;
+        
+        if (!EditorWindowManager::RegisterWindow(self()))
+        {
+            return false;
+        }
         this->is_opened = true;
-        EditorWindowManager::RegisterWindow(self());
         this->OnOpen();
+        return true;
     }
     void EditorWindow::Close()
     {

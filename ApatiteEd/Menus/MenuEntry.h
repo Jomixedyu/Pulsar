@@ -1,14 +1,13 @@
 #pragma once
 #include <CoreLib/Core.h>
 #include <CoreLib/Delegate.h>
+#include "MenuContext.h"
 
 namespace apatiteed
 {
     using MenuCanOperate = FunctionDelegate<bool, sptr<MenuContexts>>;
     using MenuAction = FunctionDelegate<void, sptr<MenuContexts>>;
     using MenuCheckAction = FunctionDelegate<void, sptr<MenuContexts>, bool>;
-
-
 
     class MenuEntry : public Object
     {
@@ -22,34 +21,6 @@ namespace apatiteed
         virtual ~MenuEntry() override {}
     };
     CORELIB_DECL_SHORTSPTR(MenuEntry);
-
-    class ISubMenu : public IInterface
-    {
-        CORELIB_DEF_INTERFACE(AssemblyObject_ApatiteEd, apatiteed::ISubMenu, IInterface);
-    public:
-        virtual const array_list<MenuEntry_sp>& GetEntries() = 0;
-    };
-
-    class MenuEntrySubMenu : public MenuEntry, public ISubMenu
-    {
-        CORELIB_DEF_TYPE(AssemblyObject_ApatiteEd, apatiteed::MenuEntrySubMenu, MenuEntry);
-        CORELIB_IMPL_INTERFACES(ISubMenu);
-    public:
-        MenuEntrySubMenu(const string& name) : base(name), CORELIB_INIT_INTERFACE(ISubMenu)
-        { }
-
-        void AddEntry(MenuEntry_rsp entry)
-        {
-            this->entries.push_back(entry);
-        }
-        virtual const array_list<MenuEntry_sp>& GetEntries() override
-        {
-            return this->entries;
-        }
-    protected:
-        array_list<MenuEntry_sp> entries;
-    };
-    CORELIB_DECL_SHORTSPTR(MenuEntrySubMenu);
 
 
 

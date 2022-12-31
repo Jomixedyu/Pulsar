@@ -20,7 +20,7 @@ namespace apatiteed
         int32_t get_window_id() const { return this->window_id_; }
         EditorWindow();
     public:
-        void Open();
+        bool Open();
         void Close();
     protected:
         virtual void OnDrawImGui();

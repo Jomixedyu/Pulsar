@@ -13,6 +13,7 @@
 #include <CoreLib/File.h>
 #include <CoreLib.Serialization/JsonSerializer.h>
 #include <ApatiteEd/Menus/Menu.h>
+#include <ApatiteEd/Menus/MenuEntrySubMenu.h>
 #include <ApatiteEd/IEditorTickable.h>
 
 namespace apatiteed
@@ -63,7 +64,7 @@ namespace apatiteed
 
     static void InitBasicMenu()
     {
-        auto main_menu = MenuManager::GetOrAddMenu("Main");
+        auto main_menu = MenuManager::GetMainMenu();
         {
             MenuEntrySubMenu_sp file = mksptr(new MenuEntrySubMenu("File"));
             main_menu->AddEntry(file);

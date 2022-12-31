@@ -45,9 +45,26 @@ namespace apatiteed
         return nullptr;
     }
 
+    Menu_sp MenuManager::GetMainMenu()
+    {
+        return GetOrAddMenu("Main");
+    }
+
     const array_list<Menu_sp>& MenuManager::GetMenus()
     {
         return menus;
+    }
+
+    MenuEntry_sp Menu::FindEntry(string_view name)
+    {
+        for (auto& item : this->entries)
+        {
+            if (item->name == name)
+            {
+                return item;
+            }
+        }
+        return nullptr;
     }
 
 }
