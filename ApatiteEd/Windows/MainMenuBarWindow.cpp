@@ -25,13 +25,15 @@ namespace apatiteed
             }
             else if(sptr<MenuEntryButton> btn = sptr_cast<MenuEntryButton>(menu_item))
             {
-                if (ImGui::Button(btn->name.c_str()))
+                
+                if (ImGui::MenuItem(btn->name.c_str(), nullptr))
                 {
                     if (btn->action)
                     {
                         btn->action->Invoke(nullptr);
                     }
                 }
+
             }
             else if (sptr<MenuEntryCheck> check = sptr_cast<MenuEntryCheck>(menu_item))
             {
