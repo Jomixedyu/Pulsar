@@ -26,7 +26,7 @@ namespace apatiteed
     }
     static void _quitting()
     {
-        Logger::Info("engine application is quitting");
+        Logger::Log(LogLevel::Info, "engine application is quitting");
 
         //通知程序即将关闭
         Application::inst()->QuittingEvents.Invoke();
@@ -96,7 +96,7 @@ namespace apatiteed
         {
             MenuEntryButton_sp about = mksptr(new MenuEntryButton("about"));
             about->action = MenuAction::FromRaw([](auto ctx) {
-                std::cout << "CCCC" << std::endl;
+                Logger::Log(LogLevel::Info, "ccccc");
                 });
             main_menu->FindMenuEntry<MenuEntrySubMenu>("Help")->AddEntry(about);
         }
@@ -115,7 +115,7 @@ namespace apatiteed
             size = cfg->window_size;
         }
 
-        Logger::Info("application initialize");
+        Logger::Log(LogLevel::Info, "application initialize");
 
         SystemInterface::InitializeWindow(title, (int)size.x, (int)size.y);
 

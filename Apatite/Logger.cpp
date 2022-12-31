@@ -4,17 +4,25 @@
 namespace apatite
 {
     using namespace std;
+    void Logger::Log(LogLevel level, string_view str)
+    {
+        switch (level)
+        {
+        case apatite::LogLevel::Info:
+            cout << "[INFO]";
+            break;
+        case apatite::LogLevel::Warning:
+            cout << "[WARNING]" ;
+            break;
+        case apatite::LogLevel::Error:
+            cout << "[ERROR]";
+            break;
+        default:
+            cout << "[Unknown]";
+            break;
+        }
+        cout << str << endl;
+        LogListener.Invoke(level, str);
+    }
 
-    void Logger::Info(string_view str)
-    {
-        cout << "[INFO]" << str << endl;
-    }
-    void Logger::Warning(string_view str)
-    {
-        cout << "[WARNING]" << str << endl;
-    }
-    void Logger::Error(string_view str)
-    {
-        cout << "[ERROR]" << str << endl;
-    }
 }

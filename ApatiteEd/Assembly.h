@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Apatite/AssetObject.h>
-
+#include <Apatite/Logger.h>
 
 namespace apatiteed
 {
