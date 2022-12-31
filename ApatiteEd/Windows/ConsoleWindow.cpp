@@ -1,9 +1,9 @@
 #include <ApatiteEd/Windows/ConsoleWindow.h>
 #include <Apatite/Logger.h>
+#include <ApatiteEd/LogRecorder.h>
 
 namespace apatiteed
 {
-    static array_list<string> log_recorder;
 
     void ConsoleWindow::OnDrawImGui()
     {
@@ -11,7 +11,7 @@ namespace apatiteed
         {
             if (ImGui::Button("Clear"))
             {
-                log_recorder.clear();
+                LogRecorder::Clear();
             }
 
             ImGui::Separator();
@@ -33,8 +33,7 @@ namespace apatiteed
         }
 
 
-        
-        for (auto& rec : log_recorder)
+        for (auto& rec : LogRecorder::loglist)
         {
             ImGui::Text(rec.c_str());
         }
@@ -43,33 +42,15 @@ namespace apatiteed
     {
         return ImGuiWindowFlags_MenuBar;
     }
-    static void _LoggerListener(LogLevel level, string_view log)
-    {
-        string info;
-        switch (level)
-        {
-        case apatite::LogLevel::Info:
-            info = "[Info]";
-            break;
-        case apatite::LogLevel::Warning:
-            info = "[Warning]";
-            break;
-        case apatite::LogLevel::Error:
-            info = "[Error]";
-            break;
-        default:
-            break;
-        }
-        log_recorder.push_back(info + string{ log });
-    }
+
     void ConsoleWindow::OnOpen()
     {
-        Logger::LogListener += _LoggerListener;
+
     }
 
     void ConsoleWindow::OnClose()
     {
-        Logger::LogListener -= _LoggerListener;
+
     }
 
     ConsoleWindow::ConsoleWindow()

@@ -15,6 +15,7 @@
 #include <ApatiteEd/Menus/Menu.h>
 #include <ApatiteEd/Menus/MenuEntrySubMenu.h>
 #include <ApatiteEd/IEditorTickable.h>
+#include <ApatiteEd/LogRecorder.h>
 
 namespace apatiteed
 {
@@ -95,9 +96,9 @@ namespace apatiteed
         }
 
         {
-            MenuEntryButton_sp about = mksptr(new MenuEntryButton("about"));
+            MenuEntryButton_sp about = mksptr(new MenuEntryButton("About"));
             about->action = MenuAction::FromRaw([](auto ctx) {
-                Logger::Log(LogLevel::Info, "ccccc");
+                Logger::Log(LogLevel::Info, "apatite engine");
                 });
             main_menu->FindMenuEntry<MenuEntrySubMenu>("Help")->AddEntry(about);
         }
@@ -106,6 +107,7 @@ namespace apatiteed
     void EditorAppInstance::OnInitialize(string_view title, Vector2f size)
     {
         using namespace std::filesystem;
+        LogRecorder::Initialize();
 
         auto uicfg = PathUtil::Combine(AppRootDir(), "uiconfig.json");
         if (exists(path{ uicfg }))
@@ -146,6 +148,7 @@ namespace apatiteed
         auto json = ser::JsonSerializer::Serialize(cfg.get(), {});
         FileUtil::WriteAllText(uicfg_path, json);
 
+        LogRecorder::Terminate();
     }
     void EditorAppInstance::OnTick(float dt)
     {

@@ -163,6 +163,8 @@ namespace apatiteed
         for (auto& [name, type] : _registered_menu)
         {
             win_menu->AddEntry(mksptr(new MenuEntryCheck{ string{ name }, false, check_action }));
+            //force show all
+            sptr_cast<EditorWindow>(type->CreateSharedInstance({}))->Open();
         }
 
     }
