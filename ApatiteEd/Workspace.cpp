@@ -1,12 +1,17 @@
 #include "Workspace.h"
 #include <CoreLib.Platform/Window.h>
 #include <CoreLib/File.h>
+#include <Apatite/Logger.h>
 
 namespace apatiteed
 {
     static string project_path;
     static string project_name;
     static bool is_opened = true;
+
+    Action<> Workspace::OnWorkspaceOpened;
+    Function<bool> Workspace::OnWorkspaceClosing;
+    Action<> Workspace::OnWorkspaceClosed;
 
     //.seproj
     class WorkspaceFile
@@ -39,6 +44,8 @@ namespace apatiteed
 
         project_path = path;
         project_name = PathUtil::GetFilenameWithoutExt(project_path);
+
+        Logger::Log(LogLevel::Info, "open workspace: " + project_path);
         OnWorkspaceOpened.Invoke();
     }
 
@@ -68,9 +75,9 @@ namespace apatiteed
     {
         return project_name;
     }
-    const string& Workspace::LibraryPath()
+    string Workspace::LibraryPath()
     {
-        return project_path + "/" + "Library";
+        return PathUtil::Combine(project_path, "Library");
     }
 }
 

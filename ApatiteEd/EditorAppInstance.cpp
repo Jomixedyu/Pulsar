@@ -163,6 +163,8 @@ namespace apatiteed
             Logger::Log(LogLevel::Info, "initialized subsystem: " + subsystem->GetType()->get_name());
             subsystem->OnInitialized();
         }
+
+        Workspace::OpenWorkspace(R"(D:\Codes\Apatite\out\build\x64-Debug)");
     }
 
     void EditorAppInstance::OnTerminate()

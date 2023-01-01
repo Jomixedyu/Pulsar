@@ -15,7 +15,7 @@ namespace apatiteed
         static bool IsOpened();
         static const string& WorkspacePath();
         static const string& WorkspaceName();
-        static const string& LibraryPath();
+        static string LibraryPath();
 
         static Action<> OnWorkspaceOpened;
         static Function<bool> OnWorkspaceClosing;
