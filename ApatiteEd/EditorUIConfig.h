@@ -1,7 +1,7 @@
 #pragma once
 #include <Apatite/Math.h>
 #include "Assembly.h"
-#include "Project.h"
+#include "Workspace.h"
 
 namespace apatiteed
 {

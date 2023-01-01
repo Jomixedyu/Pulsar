@@ -3,7 +3,7 @@
 
 namespace apatiteed
 {
-    class PlayController
+    class RenderController
     {
 
     public:

@@ -3,11 +3,11 @@
 
 namespace apatiteed
 {
-    class ProjectWindow : public EditorWindow
+    class WorkspaceWindow : public EditorWindow
     {
-        CORELIB_DEF_TYPE(AssemblyObject_ApatiteEd, apatiteed::ProjectWindow, EditorWindow);
+        CORELIB_DEF_TYPE(AssemblyObject_ApatiteEd, apatiteed::WorkspaceWindow, EditorWindow);
     public:
-        static string_view StaticWindowName() { return "Project"; }
+        static string_view StaticWindowName() { return "Workspace"; }
         virtual string_view GetWindowName() const override { return StaticWindowName(); }
         virtual void OnDrawImGui() override;
     };

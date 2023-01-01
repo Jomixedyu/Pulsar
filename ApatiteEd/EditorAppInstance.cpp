@@ -110,25 +110,6 @@ namespace apatiteed
         using namespace std::filesystem;
         LogRecorder::Initialize();
 
-        //collect subsystem
-        for (Type* type : *__ApatiteSubsystemRegistry::types())
-        {
-            if (type->IsSubclassOf(cltypeof<EditorSubsystem>()))
-            {
-                sptr<Subsystem> subsys = sptr_cast<Subsystem>(type->CreateSharedInstance({}));
-                this->subsystems.push_back(subsys);
-            }
-        }
-        //initialize subsystem
-        for (auto& subsystem : this->subsystems)
-        {
-            subsystem->OnInitializing();
-        }
-        for (auto& subsystem : this->subsystems)
-        {
-            subsystem->OnInitialized();
-        }
-
         auto uicfg = PathUtil::Combine(AppRootDir(), "uiconfig.json");
         if (exists(path{ uicfg }))
         {
@@ -138,7 +119,7 @@ namespace apatiteed
             size = cfg->window_size;
         }
 
-        Logger::Log(LogLevel::Info, "application initialize");
+        Logger::Log(LogLevel::Info, "initialize application");
 
         SystemInterface::InitializeWindow(title, (int)size.x, (int)size.y);
 
@@ -147,12 +128,41 @@ namespace apatiteed
 
         RenderInterface::SetViewport(0, 0, (int)size.x, (int)size.y);
 
+        Logger::Log(LogLevel::Info, "initialize imgui");
         ImGui_Engine_Initialize();
 
         InitBasicMenu();
+
+        Logger::Log(LogLevel::Info, "initialize editor window manager");
+        //init window uis
         apatiteed::EditorWindowManager::Reset();
 
+        Logger::Log(LogLevel::Info, "initialize world");
+        //world
         World::Reset(new World);
+
+        Logger::Log(LogLevel::Info, "initialize subsystems");
+        //collect subsystem
+        for (Type* type : *__ApatiteSubsystemRegistry::types())
+        {
+            if (type->IsSubclassOf(cltypeof<EditorSubsystem>()))
+            {
+                sptr<Subsystem> subsys = sptr_cast<Subsystem>(type->CreateSharedInstance({}));
+                this->subsystems.push_back(subsys);
+            }
+        }
+
+        //initialize subsystem
+        for (auto& subsystem : this->subsystems)
+        {
+            Logger::Log(LogLevel::Info, "initializing subsystem: " + subsystem->GetType()->get_name());
+            subsystem->OnInitializing();
+        }
+        for (auto& subsystem : this->subsystems)
+        {
+            Logger::Log(LogLevel::Info, "initialized subsystem: " + subsystem->GetType()->get_name());
+            subsystem->OnInitialized();
+        }
     }
 
     void EditorAppInstance::OnTerminate()

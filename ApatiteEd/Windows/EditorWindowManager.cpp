@@ -1,6 +1,6 @@
 #include "EditorWindowManager.h"
 #include "SceneWindow.h"
-#include "ProjectWindow.h"
+#include "WorkspaceWindow.h"
 #include "PropertiesWindow.h"
 #include "ConsoleWindow.h"
 #include "OutlinerWindow.h"
@@ -146,7 +146,7 @@ namespace apatiteed
 
 
 
-        _registered_menu.emplace(ProjectWindow::StaticWindowName(), cltypeof<ProjectWindow>());
+        _registered_menu.emplace(WorkspaceWindow::StaticWindowName(), cltypeof<WorkspaceWindow>());
         _registered_menu.emplace(PropertiesWindow::StaticWindowName(), cltypeof<PropertiesWindow>());
         _registered_menu.emplace(ConsoleWindow::StaticWindowName(), cltypeof<ConsoleWindow>());
         _registered_menu.emplace(OutlinerWindow::StaticWindowName(), cltypeof<OutlinerWindow>());
