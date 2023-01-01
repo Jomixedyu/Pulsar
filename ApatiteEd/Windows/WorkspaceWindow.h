@@ -10,5 +10,8 @@ namespace apatiteed
         static string_view StaticWindowName() { return "Workspace"; }
         virtual string_view GetWindowName() const override { return StaticWindowName(); }
         virtual void OnDrawImGui() override;
+        WorkspaceWindow();
+    protected:
+        char search_buf[256];
     };
 }
