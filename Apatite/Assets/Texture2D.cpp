@@ -7,13 +7,11 @@ namespace apatite
 {
     Texture2D::Texture2D()
     {
+
     }
     Texture2D::~Texture2D()
     {
-        if (this->tex_id_)
-        {
-            detail::RenderInterface::UnloadTexture2D(this->tex_id_);
-        }
+        this->UnBindGPU();
     }
 
     void Texture2D::Serialize(ser::Stream& stream, bool is_ser)
@@ -31,7 +29,7 @@ namespace apatite
         {
             this->data_ = new uint8_t[len];
             stream.ReadBytes(this->data_, 0, len);
-            detail::RenderInterface::LoadTexture2D(this->channel_, this->width_, this->height_, this->data_, &this->tex_id_);
+            
         }
     }
 
@@ -51,15 +49,24 @@ namespace apatite
         tex->width_ = this->width_;
     }
 
+    void Texture2D::BindGPU()
+    {
+        assert(this->GetIsBindGPU());
+        detail::RenderInterface::LoadTexture2D(this->channel_, this->width_, this->height_, this->data_, &this->tex_id_);
+    }
 
-    //AssetObject_sp Texture2DImporter::OnImport(const AssetImporterContext& ctx, Type* type)
-    //{
-    //    Texture2D* tex = new Texture2D;
-    //    int32_t width, height, channel;
-    //    uint8_t* data = Private::ResourceInterface::LoadBitmap(ctx.get_assetpath(), &width, &height, &channel);
+    void Texture2D::UnBindGPU()
+    {
+        if (this->GetIsBindGPU())
+        {
+            detail::RenderInterface::UnloadTexture2D(this->tex_id_);
+            this->tex_id_ = 0;
+        }
+    }
 
-    //    tex->SetData(ctx.get_filename_noext(), data, width, height, channel);
+    bool Texture2D::GetIsBindGPU()
+    {
+        return this->tex_id_ != 0;
+    }
 
-    //    return mksptr(static_cast<AssetObject*>(tex));
-    //}
 }
