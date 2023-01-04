@@ -6,7 +6,7 @@
 
 namespace apatite
 {
-    class Texture2D : public Texture, public IBindGPU
+    class Texture2D : public Texture
     {
         CORELIB_DEF_TYPE(AssemblyObject_Apatite, apatite::Texture2D, Texture);
     public:

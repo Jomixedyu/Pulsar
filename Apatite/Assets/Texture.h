@@ -1,10 +1,10 @@
 #pragma once
 #include <Apatite/AssetObject.h>
-
+#include <Apatite/IBindGPU.h>
 
 namespace apatite
 {
-    class Texture : public AssetObject
+    class Texture : public AssetObject, public IBindGPU
     {
         CORELIB_DEF_TYPE(AssemblyObject_Apatite, apatite::Texture, AssetObject);
 

@@ -2,7 +2,7 @@
 #include <Apatite/Assets/Shader.h>
 #include <ThirdParty/glad/glad.h>
 
-#include <Apatite/Assets/Texture2D.h>
+#include <Apatite/Assets/Texture.h>
 #include <CoreLib.Serialization/JsonSerializer.h>
 #include <Apatite/Private/RenderInterface.h>
 
@@ -25,6 +25,13 @@ namespace apatite
         return this->name_;
     }
 
+    void Shader::UseShader()
+    {
+        assert(this->GetIsBindGPU());
+
+
+    }
+
     static bool _CheckShaderProgram(int id)
     {
         int isSuccess;
@@ -32,35 +39,35 @@ namespace apatite
         return isSuccess;
     }
 
-    void Shader::UseProgram()
-    {
-        if (this->get_isused())
-        {
-            return;
-        }
-        glUseProgram(this->id_);
-        current_use_id = this->id_;
-    }
+    //void Shader::UseProgram()
+    //{
+    //    if (this->get_isused())
+    //    {
+    //        return;
+    //    }
+    //    glUseProgram(this->id_);
+    //    current_use_id = this->id_;
+    //}
 
-    void Shader::AttachShader(const Shader& shaderId)
-    {
-        glAttachShader(this->id_, shaderId.get_id());
-    }
+    //void Shader::AttachShader(const Shader& shaderId)
+    //{
+    //    glAttachShader(this->id_, shaderId.get_id());
+    //}
 
-    void Shader::Link()
-    {
-        glLinkProgram(this->id_);
-        if (!_CheckShaderProgram(this->id_)) {
-            int success;
-            char infoLog[512];
-            glGetProgramiv(this->id_, GL_LINK_STATUS, &success);
-            if (!success) {
-                glGetProgramInfoLog(this->id_, 512, NULL, infoLog);
-                throw ShaderCompileException(this->name_, this->ToString() + infoLog);
+    //void Shader::Link()
+    //{
+    //    glLinkProgram(this->id_);
+    //    if (!_CheckShaderProgram(this->id_)) {
+    //        int success;
+    //        char infoLog[512];
+    //        glGetProgramiv(this->id_, GL_LINK_STATUS, &success);
+    //        if (!success) {
+    //            glGetProgramInfoLog(this->id_, 512, NULL, infoLog);
+    //            throw ShaderCompileException(this->name_, this->ToString() + infoLog);
 
-            }
-        }
-    }
+    //        }
+    //    }
+    //}
 
     int32_t Shader::GetUniformLocaltion(std::string_view name)
     {
@@ -104,25 +111,21 @@ namespace apatite
 
     void Shader::SetUniformTexture(std::string_view name, Texture_rsp tex)
     {
-        //Texture2D* tex = nullptr;
-        //int i = 0;
-        //for (auto& item : this->textures_)
-        //{
-        //    if (item->get_name() == tex_name)
-        //    {
-        //        tex = item;
-        //        break;
-        //    }
-        //    ++i;
-        //}
-        //if (tex == nullptr)
-        //{
-        //    throw 0;
-        //}
-        //this->GetUniformLocaltion(name);
-        //this->SetUniformInt(name, i); //set sampler
-        //glActiveTexture(GL_TEXTURE0 + i);
-        //glBindTexture(GL_TEXTURE_2D, tex->get_id());
+        assert(tex->GetIsBindGPU());
+        this->SetUniformInt(name, tex->get_tex_id());
+    }
+
+    void Shader::BindGPU()
+    {
+    }
+
+    void Shader::UnBindGPU()
+    {
+    }
+
+    bool Shader::GetIsBindGPU()
+    {
+        return false;
     }
 
 }

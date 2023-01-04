@@ -3,6 +3,7 @@
 #include <Apatite/ObjectBase.h>
 #include <Apatite/AssetObject.h>
 #include <Apatite/Assets/Texture.h>
+#include <Apatite/IBindGPU.h>
 #include <Apatite/Math.h>
 
 namespace apatite
@@ -31,7 +32,8 @@ namespace apatite
         SrcAlpha_OneMinusSrcAlpha
     };
 
-    class ShaderPass
+
+    class ShaderPassConfig
     {
         string name;
         ShaderCullMode cull;
@@ -42,22 +44,30 @@ namespace apatite
         string frag_code;
     };
 
-    class Shader : public AssetObject
+    class ShaderPass
+    {
+
+    public:
+        ShaderPassConfig* config_;
+    };
+
+
+    class Shader : public AssetObject, public IBindGPU
     {
         CORELIB_DEF_TYPE(AssemblyObject_Apatite, apatite::Shader, AssetObject);
-    
     public:
         uint32_t get_id() const { return this->id_; }
-        bool get_isused() const { return this->id_ == current_use_id; }
     public:
         explicit Shader();
         virtual ~Shader() override;
         virtual string ToString() const override;
     public:
-        void UseProgram();
-        void AttachShader(const Shader& shaderId);
-        void Link();
-
+        void UseShader();
+    public:
+        virtual void BindGPU() override;
+        virtual void UnBindGPU() override;
+        virtual bool GetIsBindGPU() override;
+    public:
         int32_t GetUniformLocaltion(std::string_view name);
         void SetUniformInt(std::string_view name, const int32_t& i);
         void SetUniformFloat(std::string_view name, const float& f);
@@ -68,20 +78,13 @@ namespace apatite
         void SetUniformColor(std::string_view name, const Vector3f& value);
 
         void SetUniformTexture(std::string_view name, Texture_rsp tex);
-
     protected:
     public:
         //static Shader_sp StatiCreate(const string& vert_code, const string&);
     protected:
         string name_;
         uint32_t id_;
-        uint32_t vert_;
-        uint32_t frag_;
-
-        string vert_code_;
-        string frag_code;
     private:
-        inline static uint32_t current_use_id = 0;
     };
     CORELIB_DECL_SHORTSPTR(Shader);
 
