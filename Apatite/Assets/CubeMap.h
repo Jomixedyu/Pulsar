@@ -30,4 +30,5 @@ namespace apatite
     public:
         uint32_t id;
     };
+    CORELIB_DECL_SHORTSPTR(CubeMapAsset);
 }
