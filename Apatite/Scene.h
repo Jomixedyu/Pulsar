@@ -4,6 +4,7 @@
 #include <Apatite/ObjectBase.h>
 #include <Apatite/Node.h>
 #include <Apatite/AssetObject.h>
+#include <Apatite/Assets/CubeMap.h>
 
 namespace apatite
 {
@@ -26,6 +27,9 @@ namespace apatite
 
         CORELIB_REFL_DECL_FIELD(scene_nodes_);
         List_sp<Node_sp> scene_nodes_;
+
+        CORELIB_REFL_DECL_FIELD(cubemap_);
+        CubeMapAsset_sp cubemap_;
     };
     CORELIB_DECL_SHORTSPTR(Scene);
 }
