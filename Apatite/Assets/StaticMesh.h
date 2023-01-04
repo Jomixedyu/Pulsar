@@ -12,14 +12,14 @@ namespace apatite
     constexpr static int APATITE_STATICMESH_MAX_TEXTURE_COORDS = 8;
 
     //runtime vertex data
-    struct StaticMeshVertexData //128
+    struct StaticMeshVertexData     //128
     {
-        Vector3f Position;  //12
-        Vector3f Normal;     //12
-        Vector3f Tangent;    //12
-        Vector3f BitTangent; //12
+        Vector3f Position;          //12
+        Vector3f Normal;            //12
+        Vector3f Tangent;           //12
+        Vector3f BitTangent;        //12
         Vector2f Coords[APATITE_STATICMESH_MAX_TEXTURE_COORDS]; //8*n
-        LinearColorf VertColor; //16
+        LinearColorf VertColor;     //16
     };
     using StaticMeshVertexDataArray = array_list<StaticMeshVertexData>;
 
