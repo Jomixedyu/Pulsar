@@ -25,7 +25,6 @@ namespace apatite
 
     private:
 
-        CORELIB_REFL_DECL_FIELD(scene_nodes_);
         List_sp<Node_sp> scene_nodes_;
 
         CORELIB_REFL_DECL_FIELD(cubemap_);

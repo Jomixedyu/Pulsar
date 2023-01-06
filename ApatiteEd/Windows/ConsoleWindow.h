@@ -11,6 +11,7 @@ namespace apatiteed
 
         virtual void OnOpen() override;
         virtual void OnClose() override;
+        int32_t log_selected_index = -1;
     public:
         static string_view StaticWindowName() { return "Console"; }
         virtual string_view GetWindowName() const override { return StaticWindowName(); }

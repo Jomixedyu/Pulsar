@@ -48,8 +48,6 @@ namespace apatite
 
         virtual void Serialize(ser::Stream& stream, bool is_ser) override; 
     public:
-        //void BroadcastSendMessage(MessageType_t msg);
-        //virtual void SendMessage(MessageType_t msg);
         virtual void OnInitialize();
         virtual void OnDestory();
         virtual void OnUpdate();

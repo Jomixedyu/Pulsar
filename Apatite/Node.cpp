@@ -75,33 +75,6 @@ namespace apatite
     {
     }
 
-    //void Node::BroadcastSendMessage(MessageType_t msg)
-    //{
-    //    this->SendMessage(msg);
-    //    for (auto& item : *this->childs_)
-    //    {
-    //        item->BroadcastSendMessage(msg);
-    //    }
-    //}
-
-    //void Node::SendMessage(MessageType_t msg)
-    //{
-    //    switch (msg)
-    //    {
-    //    case MessageType::Initialize:
-    //        this->OnInitialize(); break;
-    //    case MessageType::Destory:
-    //        this->OnDestory(); break;
-    //    [[likely]] case MessageType::Update:
-    //        this->OnUpdate(); break;
-    //    }
-
-    //    for (auto& item : *this->components_)
-    //    {
-    //        item->SendMessage(msg);
-    //    }
-    //}
-
     void Node::OnInitialize()
     {
 

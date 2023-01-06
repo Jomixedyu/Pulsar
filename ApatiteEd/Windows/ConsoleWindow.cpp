@@ -1,6 +1,6 @@
 #include <ApatiteEd/Windows/ConsoleWindow.h>
 #include <Apatite/Logger.h>
-#include <ApatiteEd/LogRecorder.h>
+#include <ApatiteEd/EditorLogRecorder.h>
 
 namespace apatiteed
 {
@@ -11,7 +11,7 @@ namespace apatiteed
         {
             if (ImGui::Button("Clear"))
             {
-                LogRecorder::Clear();
+                EditorLogRecorder::Clear();
             }
 
             ImGui::Separator();
@@ -32,10 +32,29 @@ namespace apatiteed
             ImGui::EndMenuBar();
         }
 
-
-        for (auto& rec : LogRecorder::loglist)
+        auto& loglist = EditorLogRecorder::loglist;
+        if (ImGui::BeginListBox("##console", ImVec2(ImGui::GetContentRegionAvail().x * 0.5f, -FLT_MIN)))
         {
-            ImGui::Text(rec.c_str());
+            for (size_t i = 0; i < loglist.size(); i++)
+            {
+                bool selected = this->log_selected_index == i;
+                if (ImGui::Selectable(loglist[i].record_info.c_str(), selected))
+                {
+                    this->log_selected_index = i;
+                }
+
+                if (selected)
+                {
+                    ImGui::SetItemDefaultFocus();
+                }
+            }
+
+            ImGui::EndListBox();
+        }
+        ImGui::SameLine();
+        if (this->log_selected_index >= 0)
+        {
+            ImGui::Text(loglist[this->log_selected_index].stacktrace_info.c_str());
         }
     }
     ImGuiWindowFlags ConsoleWindow::GetGuiWindowFlags() const
