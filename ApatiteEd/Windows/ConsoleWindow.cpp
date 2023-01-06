@@ -12,14 +12,25 @@ namespace apatiteed
             if (ImGui::Button("Clear"))
             {
                 EditorLogRecorder::Clear();
+                this->UnSelectLog();
             }
 
             ImGui::Separator();
 
             ImGui::SetNextItemWidth(100);
-            if (ImGui::BeginCombo("Log Level", "All"))
-            {
 
+            static const char* log_levels[] = { "All", "Info", "Warning", "Error" };
+            if (ImGui::BeginCombo("Log Level", log_levels[this->log_level_filter]))
+            {
+                for (size_t i = 0; i < 4; i++)
+                {
+                    bool selected = this->log_level_filter == i;
+                    if (ImGui::Selectable(log_levels[i], selected))
+                    {
+                        this->log_level_filter = i;
+                        this->UnSelectLog();
+                    }
+                }
                 ImGui::EndCombo();
             }
 
@@ -37,6 +48,11 @@ namespace apatiteed
         {
             for (size_t i = 0; i < loglist.size(); i++)
             {
+                constexpr int kAllLevel = 0;
+                if (this->log_level_filter != kAllLevel && this->log_level_filter != (int32_t)loglist[i].level)
+                {
+                    continue;
+                }
                 bool selected = this->log_selected_index == i;
                 if (ImGui::Selectable(loglist[i].record_info.c_str(), selected))
                 {
@@ -52,10 +68,12 @@ namespace apatiteed
             ImGui::EndListBox();
         }
         ImGui::SameLine();
+        ImGui::BeginChild("##console detail");
         if (this->log_selected_index >= 0)
         {
             ImGui::Text(loglist[this->log_selected_index].stacktrace_info.c_str());
         }
+        ImGui::EndChild();
     }
     ImGuiWindowFlags ConsoleWindow::GetGuiWindowFlags() const
     {

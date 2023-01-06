@@ -8,7 +8,7 @@ namespace apatite
 {
     enum class LogLevel
     {
-        Info,
+        Info = 1,
         Warning,
         Error,
     };
