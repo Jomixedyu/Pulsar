@@ -19,10 +19,10 @@ namespace apatite
 
         virtual void Serialize(ser::Stream& stream, bool is_ser) override;
 
+        Scene();
     public:
         void AddNode(Node_rsp node);
         void RemoveNode(Node_rsp node);
-        void OnUpdate();
 
     private:
 

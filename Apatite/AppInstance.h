@@ -2,6 +2,7 @@
 #include <CoreLib/Events.hpp>
 #include <Apatite/Math.h>
 #include <Apatite/ObjectBase.h>
+#include <Apatite/World.h>
 #include "Subsystem.h"
 
 namespace apatite

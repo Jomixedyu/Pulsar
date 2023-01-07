@@ -29,6 +29,14 @@ namespace apatite
         this->is_active_ = value;
     }
 
+    //TransformComponent_sp Node::get_transform()
+    //{
+    //    assert(this->components_ && this->components_->size() != 0);
+    //    auto& transform = this->components_->at(0);
+    //    assert(cltypeof<TransformComponent>()->IsInstanceOfType(transform.get()));
+    //    return sptr_cast<TransformComponent>(transform);
+    //}
+
     Node_wp Node::get_parent() const
     {
         return this->parent_;
@@ -71,29 +79,30 @@ namespace apatite
     }
 
 
+    Node::Node()
+    {
+        this->childs_ = mksptr(new List<Node_sp>);
+        this->components_ = mksptr(new List<Component_sp>);
+    }
+
     void Node::Serialize(ser::Stream& stream, bool is_ser)
     {
     }
 
-    void Node::OnInitialize()
+    void Node::OnConstruct()
     {
 
     }
 
-    void Node::OnDestory()
-    {
-
-    }
-
-    void Node::OnUpdate()
+    void Node::OnDestroy()
     {
 
     }
 
     Component_sp Node::AddComponent(Type* type)
     {
-        auto obj = type->CreateSharedInstance({});
-        Component_sp component = sptr_cast<Component, Object>(obj);
+        Object_sp obj = type->CreateSharedInstance({});
+        Component_sp component = sptr_cast<Component>(obj);
         //init
         component->node_ = self_weak();
         this->components_->push_back(component);

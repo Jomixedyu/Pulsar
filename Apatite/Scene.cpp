@@ -25,13 +25,10 @@ namespace apatite
         }
     }
 
-    void Scene::OnUpdate()
+    Scene::Scene()
     {
-        for (auto& item : *this->scene_nodes_)
-        {
-            item->OnUpdate();
-            //item->BroadcastSendMessage(MessageType::Update);
-        }
+        this->scene_nodes_ = mksptr(new List<Node_sp>);
     }
+
 }
 

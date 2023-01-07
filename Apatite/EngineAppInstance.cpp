@@ -1,4 +1,5 @@
-﻿#include <Apatite/EngineAppInstance.h>
+﻿#include "EngineAppInstance.h"
+#include <Apatite/EngineAppInstance.h>
 #include <Apatite/Application.h>
 #include <Apatite/World.h>
 #include <Apatite/Logger.h>
@@ -91,4 +92,5 @@ namespace apatite
     {
         return StringUtil::StringCast(std::filesystem::current_path().generic_u8string());
     }
+
 }

@@ -8,9 +8,12 @@ namespace apatite
     public:
         static World* Current();
         static World* Reset(World* world);
+        static inline Action<> OnWorldChanged;
+    public:
+        sptr<class Scene> scene;
     public:
         virtual void Tick(float dt);
-        sptr<class Scene> scene;
+
     protected:
         virtual void OnWorldBegin();
         virtual void OnWorldEnd();

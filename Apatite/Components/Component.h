@@ -7,13 +7,6 @@
 
 namespace apatite
 {
-
-    //namespace MessageType
-    //{
-    //    constexpr inline MessageType_t Enabled = 12;
-    //    constexpr inline MessageType_t Disabled = 13;
-    //}
-
     class Node;
 
     class Component : public ObjectBase, public ITickable
@@ -21,25 +14,22 @@ namespace apatite
         friend class Node;
         CORELIB_DEF_TYPE(AssemblyObject_Apatite, apatite::Component, ObjectBase);
     public:
-        bool get_enabled() const { return enabled_; }
-        void set_enabled(bool value);
         wptr<Node> get_node() { return node_; }
+        virtual bool get_is_tickable() const { return true; }
     public:
 		virtual bool EqualsComponentType(Type* type);
 
+    public:
+        //engine object lifecycle
         virtual void OnDestroy() override {}
-
-        virtual void OnEnabled() {}
-        virtual void OnDisabled() {}
-
+    public:        
+        //ITickable interface
+        virtual void OnTick(Ticker ticker) override;
     public:
         Component() {}
     private:
         wptr<Node> node_;
-        bool enabled_ = true;
 
-        //ITickable
-        virtual void OnTick(Ticker ticker) override;
     };
     CORELIB_DECL_SHORTSPTR(Component);
 }

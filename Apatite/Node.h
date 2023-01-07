@@ -8,6 +8,7 @@
 #include <Apatite/Math.h>
 #include <Apatite/AssetObject.h>
 #include <Apatite/Components/Component.h>
+#include <Apatite/Components/TransformComponent.h>
 #include <Apatite/Ticker.h>
 
 namespace apatite
@@ -35,26 +36,27 @@ namespace apatite
         bool get_is_active() const;
         bool get_is_active_self() const;
         void set_is_active_self(bool value);
+        //TransformComponent_sp get_transform();
 
         wptr<Node> get_parent() const;
         void set_parent(wptr<Node> parent, bool keep_world_transform = false);
 
         int32_t get_child_count() const;
+
     public:
         Node(const Node& r) = delete;
         Node(Node&& r) = delete;
         Node& operator=(const Node& r) = delete;
     public:
-        Node() {};
+        Node();
 
         virtual void Serialize(ser::Stream& stream, bool is_ser) override; 
 
         //ITickable 
         virtual void OnTick(Ticker ticker) override;
     public:
-        virtual void OnInitialize();
-        virtual void OnDestory();
-        virtual void OnUpdate();
+        virtual void OnConstruct() override;
+        virtual void OnDestroy() override;
     public:
         sptr<Component> AddComponent(Type* type);
         template<typename T>

@@ -70,7 +70,7 @@ namespace apatite
     template<baseof_objectbase T>
     inline bool IsValid(const sptr<T>& object)
     {
-        if (object == nullptr || !RuntimeObjectWrapper::IsValid(object->get_object_id()))
+        if (object == nullptr || !object->IsAlive())
         {
             return false;
         }

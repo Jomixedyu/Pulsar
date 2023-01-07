@@ -1,5 +1,6 @@
 #pragma once
 #include "EditorWindow.h"
+#include <Apatite/Node.h>
 
 namespace apatiteed
 {
@@ -10,5 +11,7 @@ namespace apatiteed
         static string_view StaticWindowName() { return "Outliner"; }
         virtual string_view GetWindowName() const override { return StaticWindowName(); }
         virtual void OnDrawImGui() override;
+
+    public:
     };
 }

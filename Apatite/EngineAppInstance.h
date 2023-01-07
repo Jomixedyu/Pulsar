@@ -19,7 +19,6 @@ namespace apatite
         virtual void SetTitle(string_view title) override;
         virtual string AppRootDir() override;
 
-
     };
 
 }

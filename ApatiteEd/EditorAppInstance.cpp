@@ -17,6 +17,8 @@
 #include <ApatiteEd/IEditorTickable.h>
 #include <ApatiteEd/EditorLogRecorder.h>
 #include <ApatiteEd/Subsystems/EditorSubsystem.h>
+#include <Apatite/Scene.h>
+#include <ApatiteEd/EditorWorld.h>
 
 namespace apatiteed
 {
@@ -133,13 +135,15 @@ namespace apatiteed
 
         InitBasicMenu();
 
-        Logger::Log(LogLevel::Info, "initialize editor window manager");
-        //init window uis
-        apatiteed::EditorWindowManager::Reset();
 
         Logger::Log(LogLevel::Info, "initialize world");
         //world
-        World::Reset(new World);
+        World::Reset(new EditorWorld);
+        World::Current()->scene = mksptr(new Scene);
+
+        //init window uis
+        Logger::Log(LogLevel::Info, "initialize editor window manager");
+        apatiteed::EditorWindowManager::Reset();
 
         Logger::Log(LogLevel::Info, "initialize subsystems");
         //collect subsystem

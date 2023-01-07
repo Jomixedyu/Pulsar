@@ -20,7 +20,6 @@ namespace apatiteed
         virtual void OnTick(float dt) override;
         virtual bool IsQuit() override;
 
-
         virtual Vector2f GetAppSize();
         virtual void SetAppSize(Vector2f size);
 

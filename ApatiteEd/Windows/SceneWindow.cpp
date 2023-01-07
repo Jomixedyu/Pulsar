@@ -2,6 +2,10 @@
 #include <glad/glad.h>
 #include <glfw/include/GLFW/glfw3.h>
 #include <Apatite/Assets/Shader.h>
+#include <Apatite/Scene.h>
+#include <ApatiteEd/Assembly.h>
+#include <ApatiteEd/EditorNode.h>
+#include <Apatite/Components/CameraComponent.h>
 
 namespace apatiteed
 {
@@ -57,7 +61,10 @@ void main()
     static uint32_t quadVBO;
     void SceneWindow::OnOpen()
     {
-
+        EditorNode_sp node = mksptr(new EditorNode);
+        node->set_name("EditorSceneCamera");
+        node->AddComponent<CameraComponent>();
+        World::Current()->scene->AddNode(node);
 
         glGenFramebuffers(1, &fbo);
         glBindFramebuffer(GL_FRAMEBUFFER, fbo);
@@ -74,20 +81,6 @@ void main()
         glBindRenderbuffer(GL_RENDERBUFFER, rbo);
         glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, 800, 600);
         glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
-
-        //this->window_flags = ImGuiWindowFlags_MenuBar;
-
-        //string dataPath = Resource::GetLocalPath();
-        //string texturePath = dataPath + "/texture";
-        //string shaderPath = dataPath + "/shader";
-
-        //Shader vert = Shader::CreateVetexShader("UnlitVert", FileUtil::ReadAllText(shaderPath + "/Unlit.vert"));
-        //Shader frag = Shader::CreateFragmentShader("UnlitFrag", FileUtil::ReadAllText(shaderPath + "/Unlit.frag"));
-        //screenShader = new ShaderProgram{ "Unlit" };
-        //screenShader->AttachShader(vert);
-        //screenShader->AttachShader(frag);
-        //screenShader->Link();
-
 
         ShaderPass pass;
         pass.config_.name = "default";
