@@ -12,12 +12,13 @@ namespace apatite
 
     Shader::Shader()
     {
-        //this->id_ = glCreateProgram();
+        this->id_ = 0;
     }
 
     Shader::~Shader()
     {
-        glDeleteProgram(this->id_);
+        this->UnBindGPU();
+
     }
 
     string Shader::ToString() const
@@ -28,8 +29,7 @@ namespace apatite
     void Shader::UseShader()
     {
         assert(this->GetIsBindGPU());
-
-
+        glUseProgram(this->id_);
     }
 
     static bool _CheckShaderProgram(int id)
@@ -38,36 +38,18 @@ namespace apatite
         glGetProgramiv(id, GL_LINK_STATUS, &isSuccess);
         return isSuccess;
     }
-
-    //void Shader::UseProgram()
-    //{
-    //    if (this->get_isused())
-    //    {
-    //        return;
-    //    }
-    //    glUseProgram(this->id_);
-    //    current_use_id = this->id_;
-    //}
-
-    //void Shader::AttachShader(const Shader& shaderId)
-    //{
-    //    glAttachShader(this->id_, shaderId.get_id());
-    //}
-
-    //void Shader::Link()
-    //{
-    //    glLinkProgram(this->id_);
-    //    if (!_CheckShaderProgram(this->id_)) {
-    //        int success;
-    //        char infoLog[512];
-    //        glGetProgramiv(this->id_, GL_LINK_STATUS, &success);
-    //        if (!success) {
-    //            glGetProgramInfoLog(this->id_, 512, NULL, infoLog);
-    //            throw ShaderCompileException(this->name_, this->ToString() + infoLog);
-
-    //        }
-    //    }
-    //}
+    static bool _CheckShaderCompile(const uint32_t& shaderId)
+    {
+        int isSuccess;
+        glGetShaderiv(shaderId, GL_COMPILE_STATUS, &isSuccess);
+        return isSuccess;
+    }
+    string _GetShaderCompileErrorInfo(const uint32_t& shaderId)
+    {
+        char info[512];
+        glGetShaderInfoLog(shaderId, 512, nullptr, info);
+        return string(info);
+    }
 
     int32_t Shader::GetUniformLocaltion(std::string_view name)
     {
@@ -117,15 +99,69 @@ namespace apatite
 
     void Shader::BindGPU()
     {
+        assert(!this->GetIsBindGPU());
+
+        for (auto& pass : this->pass_)
+        {
+            pass.program = glCreateProgram();
+
+            pass.vert = glCreateShader(GL_VERTEX_SHADER);
+            pass.frag = glCreateShader(GL_FRAGMENT_SHADER);
+
+            const char* vertcode = pass.config_.vert_code.c_str();
+            glShaderSource(pass.vert, 1, &vertcode, nullptr);
+            glCompileShader(pass.vert);
+
+            if (!_CheckShaderCompile(pass.vert)) {
+                throw ShaderCompileException(pass.config_.name, _GetShaderCompileErrorInfo(pass.vert));
+            }
+
+            const char* fragcode = pass.config_.frag_code.c_str();
+            glShaderSource(pass.frag, 1, &fragcode, nullptr);
+            glCompileShader(pass.frag);
+            if (!_CheckShaderCompile(pass.frag)) {
+                throw ShaderCompileException(pass.config_.name, _GetShaderCompileErrorInfo(pass.frag));
+            }
+
+            glAttachShader(pass.program, pass.vert);
+            glAttachShader(pass.program, pass.frag);
+            glLinkProgram(pass.program);
+
+            if (!_CheckShaderProgram(pass.program)) {
+                int success;
+                char infoLog[512];
+                glGetProgramiv(pass.program, GL_LINK_STATUS, &success);
+                if (!success) {
+                    glGetProgramInfoLog(pass.program, 512, NULL, infoLog);
+                    throw ShaderCompileException(pass.config_.name, infoLog);
+                }
+            }
+        }
+
+        this->id_ = 1;
     }
 
     void Shader::UnBindGPU()
     {
+        if (this->GetIsBindGPU())
+        {
+            glDeleteProgram(this->id_);
+            this->id_ = 0;
+        }
     }
 
     bool Shader::GetIsBindGPU()
     {
-        return false;
+        return this->id_ != 0;
     }
 
+
+    Shader_sp Shader::StaticCreate(string_view name, array_list<ShaderPass>&& pass)
+    {
+        auto shader = mksptr(new Shader);
+        shader->Construct();
+        shader->set_name(name);
+        shader->pass_ = std::move(pass);
+        return shader;
+    }
 }

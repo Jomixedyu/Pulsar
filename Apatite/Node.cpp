@@ -97,17 +97,16 @@ namespace apatite
         //init
         component->node_ = self_weak();
         this->components_->push_back(component);
-        //component->SendMessage(MessageType::Initialize);
-        component->OnInitialize();
+        component->Construct();
         return component;
     }
 
 
     Component_sp Node::GetComponent(Type* type) const
     {
-        for (auto& item : *this->components_) 
+        for (auto& item : *this->components_)
         {
-            if (item->GetType() == type) 
+            if (item->GetType() == type)
             {
                 return item;
             }
@@ -167,7 +166,7 @@ namespace apatite
     Matrix4f Node::GetWorldMatrix() const
     {
         Matrix4f m = this->GetLocalMatrix();
-        
+
         if (!this->parent_.expired())
         {
             Node_sp p = this->parent_.lock();
@@ -187,11 +186,29 @@ namespace apatite
         return m;
     }
 
+    void Node::OnTick(Ticker ticker)
+    {
+        for (auto& comp : *this->components_)
+        {
+            if (comp->IsAlive())
+            {
+                comp->OnTick(ticker);
+            }
+        }
+        for (auto& node : *this->childs_)
+        {
+            if (node->IsAlive())
+            {
+                node->OnTick(ticker);
+            }
+        }
+    }
+
     Node_sp Node::GetChild(string_view name)
     {
-        for (auto& item : *this->childs_) 
+        for (auto& item : *this->childs_)
         {
-            if (item->name_ == name) 
+            if (item->name_ == name)
             {
                 return item;
             }

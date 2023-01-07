@@ -15,17 +15,4 @@ namespace apatite
         static void RegisterAsset(guid_t guid, std::function<AssetObject_sp(guid_t)>&& getter);
     };
 
-    template<typename T>
-    struct AssetReference
-    {
-        bool IsValid()
-        {
-            return AssetReferenceRegistry::IsValid(this->asset_guid);
-        }
-        sptr<T> GetAsset()
-        {
-            return sptr_cast<T>(AssetReferenceRegistry::FindAsset(this->asset_guid));
-        }
-        guid_t asset_guid;
-    };
 }

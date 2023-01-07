@@ -26,4 +26,5 @@ namespace apatite
     using math::Matrix4f;
     using math::Color8b4;
     using math::LinearColorf;
+    using math::Transform3Df;
 }

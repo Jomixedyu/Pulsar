@@ -8,6 +8,6 @@ namespace apatite
 	class RuntimePtr
 	{
 
-		runtime_instance_t inst;
+		object_id inst;
 	};
 }

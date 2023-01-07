@@ -3,14 +3,14 @@
 
 namespace apatite
 {
-    class World final
+    class World
     {
     public:
         static World* Current();
         static World* Reset(World* world);
     public:
-        void Tick(float dt);
-
+        virtual void Tick(float dt);
+        sptr<class Scene> scene;
     protected:
         virtual void OnWorldBegin();
         virtual void OnWorldEnd();

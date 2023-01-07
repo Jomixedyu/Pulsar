@@ -3,86 +3,98 @@
 * @Date        : 2021/05/15
 * @Author      : JomiXedYu
 * @Description : This file is part of jxcorlib : https://github.com/JomiXedYu/jxcorlib
-* @StdRequired : c++20
+* @StdRequired : c++23
 */
 
-#ifndef _CORELIB_EXCEPTION_H
-#define _CORELIB_EXCEPTION_H
-
+#pragma once
 #include <stdexcept>
 #include <cassert>
+#include <stacktrace>
 #include "Core.h"
-
-#define DEF_EXCEPTION_CTOR(class) \
-class() {} \
-class(const string& message) : base(message) {}
-
-#define sthrow(Exception) throw mksptr(new Exception)
 
 namespace jxcorlib
 {
-    class ExceptionBase : public std::exception, public Object
+    class ExceptionBase : public std::exception
     {
-        CORELIB_DEF_TYPE(AssemblyObject_jxcorlib, jxcorlib::ExceptionBase, Object);
     protected:
         string message_;
         mutable string whatcache_;
+        std::stacktrace stacktrace_;
     public:
-        ExceptionBase() {}
-        ExceptionBase(const string& message) : message_(message) {}
+        ExceptionBase()
+        {
+            this->stacktrace_ = std::stacktrace::current(1);
+        }
+        ExceptionBase(const string& message) : message_(message)
+        {
+            this->stacktrace_ = std::stacktrace::current(1);
+        }
     public:
+        virtual const char* name() const { return "ExceptionBase"; }
         virtual string get_message() const {
             return this->message_;
         }
-        virtual const char* what() const override {
-            this->whatcache_ = string(this->GetType()->get_name() + ": " + this->message_);
+        std::stacktrace get_stacktrace() const {
+            return this->stacktrace_;
+        }
+
+        virtual const char* what() const override
+        {
+            string stacktrace = std::to_string(this->stacktrace_);
+            string ret;
+            ret.reserve(64 + this->message_.size() + stacktrace.size());
+            ret.append(this->name());
+            ret.append(": ");
+            ret.append(this->message_);
+            ret.append("; stacktrace: ");
+            ret.append(std::move(stacktrace));
+            this->whatcache_ = std::move(ret);
             return this->whatcache_.c_str();
         }
-        virtual string ToString() const override {
+        virtual string ToString() const {
             return this->what();
         }
     };
 
     class RangeOutException : public ExceptionBase
     {
-        CORELIB_DEF_TYPE(AssemblyObject_jxcorlib, jxcorlib::RangeOutException, ExceptionBase);
     public:
-        DEF_EXCEPTION_CTOR(RangeOutException)
+        virtual const char* name() const override { return "RangeOutException"; }
+        using ExceptionBase::ExceptionBase;
     };
 
     class ArgumentException : public ExceptionBase
     {
-        CORELIB_DEF_TYPE(AssemblyObject_jxcorlib, jxcorlib::ArgumentException, ExceptionBase);
     public:
-        DEF_EXCEPTION_CTOR(ArgumentException)
+        virtual const char* name() const override { return "ArgumentException"; }
+        using ExceptionBase::ExceptionBase;
     };
 
     class ArgumentNullException : public ArgumentException
     {
-        CORELIB_DEF_TYPE(AssemblyObject_jxcorlib, jxcorlib::ArgumentNullException, ArgumentException);
     public:
-        DEF_EXCEPTION_CTOR(ArgumentNullException);
+        virtual const char* name() const override { return "ArgumentNullException"; }
+        using ArgumentException::ArgumentException;
     };
 
     class NotImplementException : public ArgumentException
     {
-        CORELIB_DEF_TYPE(AssemblyObject_jxcorlib, jxcorlib::NotImplementException, ArgumentException);
     public:
-        DEF_EXCEPTION_CTOR(NotImplementException);
+        virtual const char* name() const override { return "NotImplementException"; }
+        using ArgumentException::ArgumentException;
     };
 
     class NullPointerException : public ExceptionBase
     {
-        CORELIB_DEF_TYPE(AssemblyObject_jxcorlib, jxcorlib::NullPointerException, ExceptionBase);
     public:
-        DEF_EXCEPTION_CTOR(NullPointerException);
+        virtual const char* name() const override { return "NullPointerException"; }
+        using ExceptionBase::ExceptionBase;
     };
 
     class DivisionByZeroException : public ExceptionBase
     {
-        CORELIB_DEF_TYPE(AssemblyObject_jxcorlib, jxcorlib::DivisionByZeroException, ExceptionBase);
     public:
-        DEF_EXCEPTION_CTOR(DivisionByZeroException);
+        virtual const char* name() const override { return "DivisionByZeroException"; }
+        using ExceptionBase::ExceptionBase;
     };
 }
-#endif // !_CORELIB_EXCEPTION_H

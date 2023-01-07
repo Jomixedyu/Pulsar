@@ -5,15 +5,14 @@
 namespace apatite
 {
 
-    static inline std::map<runtime_instance_t, wptr<ObjectBase>> _object_table;
-    static runtime_instance_t _current = 1;
+    static inline std::map<object_id, wptr<ObjectBase>> _object_table;
 
-    static runtime_instance_t _NewId()
+    static inline object_id _NewId()
     {
-        return ++_current;
+        return object_id::create_new();
     }
 
-    bool RuntimeObjectWrapper::GetObject(runtime_instance_t id, wptr<ObjectBase>* out)
+    bool RuntimeObjectWrapper::GetObject(object_id id, wptr<ObjectBase>* out)
     {
         auto it = _object_table.find(id);
         if (it != _object_table.end())
@@ -24,37 +23,51 @@ namespace apatite
         return false;
     }
 
-    bool RuntimeObjectWrapper::IsValid(runtime_instance_t id)
+    bool RuntimeObjectWrapper::IsValid(object_id id)
     {
+        if (id.is_empty()) return false;
         return _object_table.find(id) != _object_table.end();
     }
-    runtime_instance_t RuntimeObjectWrapper::NewInstance(sptr<ObjectBase> ptr)
+    object_id RuntimeObjectWrapper::NewInstance(sptr<ObjectBase> ptr)
     {
         auto id = _NewId();
-        ptr->runtime_instance_id_ = id;
+        ptr->object_id_ = id;
         _object_table.insert({ id, wptr<ObjectBase>(ptr) });
         return id;
     }
 
     void RuntimeObjectWrapper::DestroyObject(const sptr<ObjectBase>& obj)
     {
-        _object_table.erase(obj->runtime_instance_id_);
+        _object_table.erase(obj->object_id_);
     }
 
-    void RuntimeObjectWrapper::ForceDestroyObject(runtime_instance_t id)
+    void RuntimeObjectWrapper::ForceDestroyObject(object_id id)
     {
-        if (id == 0) return;
+        if (id.is_empty()) return;
         _object_table.erase(id);
     }
 
     ObjectBase::ObjectBase()
     {
-        this->runtime_instance_id_ = RuntimeObjectWrapper::NewInstance(self());
+
+    }
+    void ObjectBase::Construct()
+    {
+        assert(!this->object_id_);
+        this->object_id_ = RuntimeObjectWrapper::NewInstance(self());
+        this->OnConstruct();
+    }
+    bool ObjectBase::IsAlive() const
+    {
+        return RuntimeObjectWrapper::IsValid(this->get_object_id());
+    }
+    void ObjectBase::OnConstruct()
+    {
     }
 
     ObjectBase::~ObjectBase()
     {
-        if (this->runtime_instance_id_ != 0)
+        if (!this->object_id_.is_empty())
         {
             this->Destroy();
         }
@@ -62,8 +75,8 @@ namespace apatite
     void ObjectBase::Destroy()
     {
         this->OnDestroy();
-        RuntimeObjectWrapper::ForceDestroyObject(this->runtime_instance_id_);
-        this->runtime_instance_id_ = 0;
+        RuntimeObjectWrapper::ForceDestroyObject(this->object_id_);
+        this->object_id_ = object_id{};
     }
 
     void ObjectBase::OnDestroy()

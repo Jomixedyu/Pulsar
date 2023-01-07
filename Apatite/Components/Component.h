@@ -3,6 +3,7 @@
 #include <CoreLib/CoreLib.h>
 #include <Apatite/ObjectBase.h>
 #include <Apatite/Math.h>
+#include <Apatite/Ticker.h>
 
 namespace apatite
 {
@@ -15,23 +16,18 @@ namespace apatite
 
     class Node;
 
-    class Component : public ObjectBase
+    class Component : public ObjectBase, public ITickable
     {
         friend class Node;
         CORELIB_DEF_TYPE(AssemblyObject_Apatite, apatite::Component, ObjectBase);
-        //SAPPHIRE_SCRIPTABLE_ASSET_GUID("223c87558d5e4910b72cf9f092f877e1");
-
     public:
         bool get_enabled() const { return enabled_; }
         void set_enabled(bool value);
         wptr<Node> get_node() { return node_; }
     public:
 		virtual bool EqualsComponentType(Type* type);
-        //virtual void SendMessage(MessageType_t msg);
 
-        virtual void OnInitialize() {}
-        virtual void OnTick() {}
-        virtual void OnDestory() {}
+        virtual void OnDestroy() override {}
 
         virtual void OnEnabled() {}
         virtual void OnDisabled() {}
@@ -41,6 +37,9 @@ namespace apatite
     private:
         wptr<Node> node_;
         bool enabled_ = true;
+
+        //ITickable
+        virtual void OnTick(Ticker ticker) override;
     };
     CORELIB_DECL_SHORTSPTR(Component);
 }

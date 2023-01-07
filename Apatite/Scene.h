@@ -14,7 +14,8 @@ namespace apatite
     {
         CORELIB_DEF_TYPE(AssemblyObject_Apatite, apatite::Scene, AssetObject)
     public:
-        List_rsp<Node_sp> get_nodes() const { return this->scene_nodes_; }
+        List_rsp<Node_sp> get_root_nodes() const { return this->scene_nodes_; }
+        List_sp<Node_sp> get_root_nodes() { return this->scene_nodes_; }
 
         virtual void Serialize(ser::Stream& stream, bool is_ser) override;
 

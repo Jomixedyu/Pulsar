@@ -24,6 +24,10 @@ namespace apatite
         return this->GetType() == type;
     }
 
+    void Component::OnTick(Ticker ticker)
+    {
+    }
+
     //void Component::SendMessage(MessageType_t msg)
     //{
     //    switch (msg)

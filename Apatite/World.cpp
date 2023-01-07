@@ -1,4 +1,5 @@
 #include <Apatite/World.h>
+#include <Apatite/Scene.h>
 
 namespace apatite
 {
@@ -25,6 +26,21 @@ namespace apatite
 
     void World::Tick(float dt)
     {
+        Ticker ticker;
+        ticker.deltatime = dt;
+
+        if (IsValid(this->scene))
+        {
+            for (auto& node : *this->scene->get_root_nodes())
+            {
+                if (node->IsAlive())
+                {
+                    node->OnTick(ticker);
+                }
+            }
+        }
+
+
     }
 
     void World::OnWorldBegin()

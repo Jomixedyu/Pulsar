@@ -8,6 +8,7 @@
 #include <cassert>
 #include <CoreLib/CommonException.h>
 #include <CoreLib/Events.hpp>
+#include <CoreLib/Guid.h>
 
 #define WITH_APATITE_EDITOR
 
@@ -19,12 +20,12 @@ namespace apatite
 
     class EngineException : public ExceptionBase
     {
-        CORELIB_DEF_TYPE(AssemblyObject_Apatite, apatite::EngineException, ExceptionBase);
     public:
-        DEF_EXCEPTION_CTOR(EngineException);
+        virtual const char* name() const override { return "EngineException"; }
+        using ExceptionBase::ExceptionBase;
     };
 
-    using runtime_instance_t = uint32_t;
+    using object_id = guid_t;
 
     class ObjectBase : public Object
     {
@@ -35,14 +36,16 @@ namespace apatite
         virtual ~ObjectBase() override;
     public:
 
-        runtime_instance_t get_instance_id() const { return this->runtime_instance_id_; }
+        object_id get_object_id() const { return this->object_id_; }
     public:
         void Destroy();
+        void Construct();
+        bool IsAlive() const;
     protected:
+        virtual void OnConstruct();
         virtual void OnDestroy();
     protected:
-
-        runtime_instance_t runtime_instance_id_;
+        object_id object_id_;
     };
     CORELIB_DECL_SHORTSPTR(ObjectBase);
 
@@ -50,14 +53,14 @@ namespace apatite
     class RuntimeObjectWrapper final
     {
     public:
-        static bool GetObject(runtime_instance_t id, wptr<ObjectBase>* out);
-        static bool IsValid(runtime_instance_t id);
-        static runtime_instance_t NewInstance(sptr<ObjectBase> obj);
+        static bool GetObject(object_id id, wptr<ObjectBase>* out);
+        static bool IsValid(object_id id);
+        static object_id NewInstance(sptr<ObjectBase> obj);
         static void DestroyObject(const sptr<ObjectBase>& obj);
-        static void ForceDestroyObject(runtime_instance_t id);
+        static void ForceDestroyObject(object_id id);
 
         //<id, type, is_create>
-        static Action<runtime_instance_t, Type*, bool> ObjectHook;
+        static Action<object_id, Type*, bool> ObjectHook;
     };
 
 
@@ -67,7 +70,7 @@ namespace apatite
     template<baseof_objectbase T>
     inline bool IsValid(const sptr<T>& object)
     {
-        if (object == nullptr || !RuntimeObjectWrapper::IsValid(object->get_instance_id()))
+        if (object == nullptr || !RuntimeObjectWrapper::IsValid(object->get_object_id()))
         {
             return false;
         }

@@ -8,6 +8,7 @@
 #include <Apatite/Math.h>
 #include <Apatite/AssetObject.h>
 #include <Apatite/Components/Component.h>
+#include <Apatite/Ticker.h>
 
 namespace apatite
 {
@@ -27,7 +28,7 @@ namespace apatite
     template<typename T>
     concept baseof_component_concept = std::is_base_of<Component, T>::value;
 
-    class Node : public AssetObject
+    class Node : public AssetObject, public ITickable
     {
         CORELIB_DEF_TYPE(AssemblyObject_Apatite, apatite::Node, AssetObject);
     public:
@@ -47,6 +48,9 @@ namespace apatite
         Node() {};
 
         virtual void Serialize(ser::Stream& stream, bool is_ser) override; 
+
+        //ITickable 
+        virtual void OnTick(Ticker ticker) override;
     public:
         virtual void OnInitialize();
         virtual void OnDestory();
@@ -98,6 +102,7 @@ namespace apatite
 
         CORELIB_REFL_DECL_FIELD(components_);
         List_sp<sptr<Component>> components_;
+
     };
     CORELIB_DECL_SHORTSPTR(Node);
 

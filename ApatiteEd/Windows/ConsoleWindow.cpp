@@ -68,7 +68,7 @@ namespace apatiteed
             ImGui::EndListBox();
         }
         ImGui::SameLine();
-        ImGui::BeginChild("##console detail");
+        ImGui::BeginChild("##console detail", ImVec2{}, false, ImGuiWindowFlags_::ImGuiWindowFlags_HorizontalScrollbar);
         if (this->log_selected_index >= 0)
         {
             ImGui::Text(loglist[this->log_selected_index].stacktrace_info.c_str());

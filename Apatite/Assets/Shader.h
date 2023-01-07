@@ -33,7 +33,7 @@ namespace apatite
     };
 
 
-    class ShaderPassConfig
+    struct ShaderPassConfig
     {
         string name;
         ShaderCullMode cull;
@@ -44,11 +44,14 @@ namespace apatite
         string frag_code;
     };
 
-    class ShaderPass
+    struct ShaderPass
     {
 
     public:
-        ShaderPassConfig* config_;
+        ShaderPassConfig config_;
+        uint32_t vert;
+        uint32_t frag;
+        uint32_t program;
     };
 
 
@@ -80,10 +83,11 @@ namespace apatite
         void SetUniformTexture(std::string_view name, Texture_rsp tex);
     protected:
     public:
-        //static Shader_sp StatiCreate(const string& vert_code, const string&);
+        static sptr<Shader> StaticCreate(string_view name, array_list<ShaderPass>&& pass);
     protected:
         string name_;
         uint32_t id_;
+        array_list<ShaderPass> pass_;
     private:
     };
     CORELIB_DECL_SHORTSPTR(Shader);
@@ -91,11 +95,13 @@ namespace apatite
 
     class ShaderCompileException : public EngineException
     {
-        CORELIB_DEF_TYPE(AssemblyObject_Apatite, apatite::ShaderCompileException, EngineException);
+        
     public:
-        ShaderCompileException(const string& name, const string& msg) : base(msg), name_(name)
+        virtual const char* name() const override { return "ShaderCompileException"; }
+
+        ShaderCompileException(const string& name, const string& msg) : EngineException(msg), name_(name)
         {
-            this->message_.insert(0, "filename: " + name + ", ");
+            this->message_.insert(0, "filename: " + name + "");
         }
 
         string name_;
