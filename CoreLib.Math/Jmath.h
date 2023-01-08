@@ -33,6 +33,7 @@ namespace jmath
         Vector4(T _x, T _y, T _z, T _w) : x(_x), y(_y), z(_z), w(_w) {}
 
         const T* get_value_ptr() const { return &this->x; }
+        T* get_value_ptr() { return &this->x; }
 
         static constexpr int column_count = 1;
         static constexpr int row_count = 4;
@@ -83,6 +84,7 @@ namespace jmath
         Vector3(T _x, T _y, T _z) : x(_x), y(_y), z(_z) {}
 
         const T* get_value_ptr() const { return &this->x; }
+        T* get_value_ptr() { return &this->x; }
 
         static constexpr int column_count = 1;
         static constexpr int row_count = 3;
@@ -180,6 +182,7 @@ namespace jmath
         Vector2(T _x, T _y) : x(_x), y(_y) {}
 
         const T* get_value_ptr() const { return &this->x; }
+        T* get_value_ptr() { return &this->x; }
 
         static constexpr int column_count = 1;
         static constexpr int row_count = 2;

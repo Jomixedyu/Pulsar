@@ -79,14 +79,13 @@ namespace apatiteed
             return false;
         }
 
-        bool ret = true;
         for (auto& item : this->selection)
         {
-            if (!item.expired())
+            if (!item.expired() && !type->IsInstanceOfType(item.lock().get()))
             {
-                ret &= type->IsInstanceOfType(item.lock()->GetType());
+                return false;
             }
         }
-        return ret;
+        return true;
     }
 }

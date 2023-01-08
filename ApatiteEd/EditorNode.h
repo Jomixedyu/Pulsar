@@ -6,7 +6,7 @@ namespace apatiteed
 {
     class EditorNode : public Node
     {
-        CORELIB_DEF_TYPE(AssemblyObject_Apatite, apatiteed::EditorNode, Node);
+        CORELIB_DEF_TYPE(AssemblyObject_ApatiteEd, apatiteed::EditorNode, Node);
 
     public:
 

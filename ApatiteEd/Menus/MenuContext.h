@@ -5,13 +5,13 @@ namespace apatiteed
 {
     class MenuContextBase : public Object
     {
-        CORELIB_DEF_TYPE(AssemblyObject_Apatite, apatiteed::MenuContextBase, Object);
+        CORELIB_DEF_TYPE(AssemblyObject_ApatiteEd, apatiteed::MenuContextBase, Object);
     public:
     };
 
     class MenuContexts : public Object
     {
-        CORELIB_DEF_TYPE(AssemblyObject_Apatite, apatiteed::MenuContexts, Object);
+        CORELIB_DEF_TYPE(AssemblyObject_ApatiteEd, apatiteed::MenuContexts, Object);
     public:
         array_list<sptr<MenuContextBase>> contexts;
 

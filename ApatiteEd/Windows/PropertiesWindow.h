@@ -9,13 +9,15 @@ __properties_panel(){ \
 
 namespace apatiteed
 {
-    class PropertiesPanel : public Object
+    class __declspec(dllexport) PropertiesPanel : public Object
     {
-        CORELIB_DEF_TYPE(AssemblyObject_Apatite, apatiteed::PropertiesPanel, Object);
+        CORELIB_DEF_TYPE(AssemblyObject_ApatiteEd, apatiteed::PropertiesPanel, Object);
 
     public:
         virtual void OnDrawImGui() = 0;
     };
+
+    CORELIB_DECL_SHORTSPTR(PropertiesPanel);
 
     class PropertiesWindow : public EditorWindow
     {
@@ -29,6 +31,8 @@ namespace apatiteed
 
     public:
         static void StaticRegisterPropertiesPanel(Type* target_type, Type* panel_type);
+    protected:
+        PropertiesPanel_sp current_panel;
     };
-
+    CORELIB_DECL_SHORTSPTR(PropertiesWindow);
 }

@@ -42,7 +42,16 @@ namespace apatite
         void set_parent(wptr<Node> parent, bool keep_world_transform = false);
 
         int32_t get_child_count() const;
+    public:
+        Vector3f get_self_position() const { return this->position_; }
+        Quat4f get_self_rotation() const { return this->rotation_; }
+        Vector3f get_self_euler_rotation() const { return this->rotation_.GetEuler(); }
+        Vector3f get_self_scale() const { return this->scale_; }
 
+        void set_self_position(Vector3f value) { this->position_ = value; }
+        void set_self_rotation(Quat4f value) { this->rotation_ = value; }
+        void set_self_euler_rotation(Vector3f value) { this->rotation_ = Quat4f(value); }
+        void set_self_scale(Vector3f value) { this->scale_ = value; }
     public:
         Node(const Node& r) = delete;
         Node(Node&& r) = delete;
@@ -50,7 +59,7 @@ namespace apatite
     public:
         Node();
 
-        virtual void Serialize(ser::Stream& stream, bool is_ser) override; 
+        virtual void Serialize(ser::Stream& stream, bool is_ser) override;
 
         //ITickable 
         virtual void OnTick(Ticker ticker) override;

@@ -7,8 +7,9 @@ namespace apatiteed
 
     class PropertiesNodePanel : public PropertiesPanel
     {
-        CORELIB_DEF_TYPE(AssemblyObject_Apatite, apatiteed::PropertiesPanel, Object);
+        CORELIB_DEF_TYPE(AssemblyObject_ApatiteEd, apatiteed::PropertiesNodePanel, PropertiesPanel);
         APATITEED_PROPERTIES_PANEL(cltypeof<Node>());
+
     public:
 
         virtual void OnDrawImGui() override;
