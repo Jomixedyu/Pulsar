@@ -26,6 +26,12 @@ namespace apatiteed
             {
                 base_flags |= ImGuiTreeNodeFlags_Selected;
             }
+            bool is_editor_node = false;
+            if (cltypeof<EditorNode>()->IsInstanceOfType(node.get()))
+            {
+                is_editor_node = true;
+                ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Text, ImVec4(0.6, 0.6, 0.3, 1));
+            }
             if (ImGui::TreeNodeEx(node->get_name().c_str(), base_flags))
             {
                 if (ImGui::IsItemClicked())
@@ -34,6 +40,10 @@ namespace apatiteed
                 }
                 _Show(children);
                 ImGui::TreePop();
+            }
+            if (is_editor_node)
+            {
+                ImGui::PopStyleColor();
             }
         }
     }
