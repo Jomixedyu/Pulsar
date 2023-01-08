@@ -176,6 +176,13 @@ namespace apatiteed
         ImGui_Engine_Terminate();
         World::Reset(nullptr);
 
+
+        //terminate subsystem
+        for (auto& subsystem : this->subsystems)
+        {
+            subsystem->OnTerminate();
+        }
+
         using namespace std::filesystem;
 
         auto uicfg_path = PathUtil::Combine(AppRootDir(), "uiconfig.json");
@@ -184,12 +191,6 @@ namespace apatiteed
         cfg->window_size = GetAppSize();
         auto json = ser::JsonSerializer::Serialize(cfg.get(), {});
         FileUtil::WriteAllText(uicfg_path, json);
-
-        //terminate subsystem
-        for (auto& subsystem : this->subsystems)
-        {
-            subsystem->OnTerminate();
-        }
 
         EditorLogRecorder::Terminate();
     }

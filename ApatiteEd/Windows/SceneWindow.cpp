@@ -60,13 +60,15 @@ void main()
     static uint32_t quadVAO;
     static uint32_t quadVBO;
 
+    static Shader_sp default_shader;
+
     void SceneWindow::OnOpen()
     {
         EditorNode_sp node = mksptr(new EditorNode);
         node->set_name("EditorSceneCamera");
         auto cam = node->AddComponent<CameraComponent>();
         cam->cameraMode = CameraMode::Perspective;
-        cam->backgroundColor = LinearColorf{ 0.6,0.2,0.2,1 }; 
+        cam->backgroundColor = LinearColorf{ 0.2,0.2,0.2,1 }; 
 
         auto rt = mksptr(new RenderTexture);
         rt->PostInitialize(1024, 1024);
@@ -76,37 +78,6 @@ void main()
 
         World::Current()->scene->AddNode(node);
 
-        //glGenFramebuffers(1, &fbo);
-        //glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-
-        //glGenTextures(1, &tex);
-        //glBindTexture(GL_TEXTURE_2D, tex);
-
-        //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 800, 600, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        //glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
-
-        ShaderPass pass;
-        pass.config_.name = "default";
-        pass.config_.vert_code = vertcode;
-        pass.config_.frag_code = fragcode;
-        
-        auto shader = Shader::StaticCreate("default", { std::move(pass) });
-        shader->BindGPU();
-
-        //glGenVertexArrays(1, &quadVAO);
-        //glGenBuffers(1, &quadVBO);
-        //glBindVertexArray(quadVAO);
-        //glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
-        //glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
-        //glEnableVertexAttribArray(0);
-        //glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
-        //glEnableVertexAttribArray(1);
-        //glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
-
-        //glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        //glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
 
     void SceneWindow::OnClose()
@@ -119,42 +90,40 @@ void main()
 
         if (ImGui::BeginMenuBar())
         {
-            const char* items[] = { "Shade" };
-            static int item_current_idx = 0;
-            const char* combo_preview_value = items[item_current_idx];
+            const char* items[] = { "Default", "Shade", "Wire", "Unlit" };
             ImGui::SetNextItemWidth(150);
-            if (ImGui::BeginCombo("Draw Mode", combo_preview_value))
+            if (ImGui::BeginCombo("Draw Mode", items[this->drawmode_select_index]))
             {
-
+                for (size_t i = 0; i < 4; i++)
+                {
+                    bool selected = this->drawmode_select_index == i;
+                    if (ImGui::Selectable(items[i], selected))
+                    {
+                        this->drawmode_select_index = i;
+                        this->drawmode_select_index = 0;
+                    }
+                }
                 ImGui::EndCombo();
             }
             ImGui::EndMenuBar();
         }
 
-
-        //glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-
         auto cam = World::Current()->scene->get_root_nodes()->at(0)->GetComponent<CameraComponent>();
+
         cam->Render();
-
-        //pbr_render();
-        //glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        //glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-        //glClear(GL_COLOR_BUFFER_BIT);
-
-        //screenShader->UseProgram();
-        //glBindVertexArray(quadVAO);
-        //glDisable(GL_DEPTH_TEST);
-        //glBindTexture(GL_TEXTURE_2D, tex);
-        //glDrawArrays(GL_TRIANGLES, 0, 6);
-
         
+        ImVec2 vMin = ImGui::GetWindowContentRegionMin();
+        ImVec2 vMax = ImGui::GetWindowContentRegionMax();
 
-        ImVec2 wsize = ImGui::GetWindowSize();
-        //Screen::set_size({ wsize.x, wsize.y });
+        vMin.x += ImGui::GetWindowPos().x;
+        vMin.y += ImGui::GetWindowPos().y;
+        vMax.x += ImGui::GetWindowPos().x;
+        vMax.y += ImGui::GetWindowPos().y;
 
-        ImGui::Image((ImTextureID)cam->render_target->get_tex_id(), wsize, ImVec2(0, 1), ImVec2(1, 0));
+        //ImGui::GetForegroundDrawList()->AddRect(vMin, vMax, IM_COL32(255, 255, 0, 255));
+        ImVec2 content_size = { vMax.x - vMin.x, vMax.y - vMin.y };
+        
+        ImGui::Image((ImTextureID)cam->render_target->get_tex_id(), content_size, ImVec2(0, 1), ImVec2(1, 0));
 
-        //cam->render_target->UnBindGPU();
     }
 }

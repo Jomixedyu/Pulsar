@@ -7,11 +7,17 @@ namespace apatiteed
     {
         CORELIB_DEF_TYPE(AssemblyObject_ApatiteEd, apatiteed::SceneWindow, EditorWindow);
     public:
+        virtual ImGuiWindowFlags GetGuiWindowFlags() const override {
+            return ImGuiWindowFlags_None | ImGuiWindowFlags_::ImGuiWindowFlags_MenuBar;
+        }
         SceneWindow();
         virtual void OnOpen() override;
         virtual void OnClose() override;
         static string_view StaticWindowName() { return "Scene"; }
         virtual string_view GetWindowName() const override { return StaticWindowName(); }
         virtual void OnDrawImGui() override;
+
+    private:
+        int32_t drawmode_select_index = 0;
     };
 }
