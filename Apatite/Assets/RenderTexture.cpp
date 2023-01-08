@@ -30,6 +30,8 @@ namespace apatite
     {
         if (this->GetIsBindGPU())
         {
+
+
             this->tex_id_ = 0;
         }
     }

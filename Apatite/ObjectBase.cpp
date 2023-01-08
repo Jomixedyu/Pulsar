@@ -5,7 +5,11 @@
 namespace apatite
 {
 
-    static inline std::map<object_id, wptr<ObjectBase>> _object_table;
+    static auto _object_table()
+    {
+        static auto table = new std::map<object_id, wptr<ObjectBase>>;
+        return table;
+    }
 
     static inline object_id _NewId()
     {
@@ -14,8 +18,8 @@ namespace apatite
 
     bool RuntimeObjectWrapper::GetObject(object_id id, wptr<ObjectBase>* out)
     {
-        auto it = _object_table.find(id);
-        if (it != _object_table.end())
+        auto it = _object_table()->find(id);
+        if (it != _object_table()->end())
         {
             *out = it->second;
             return true;
@@ -26,25 +30,24 @@ namespace apatite
     bool RuntimeObjectWrapper::IsValid(object_id id)
     {
         if (id.is_empty()) return false;
-        return _object_table.find(id) != _object_table.end();
+        return _object_table()->find(id) != _object_table()->end();
     }
-    object_id RuntimeObjectWrapper::NewInstance(sptr<ObjectBase> ptr)
+    void RuntimeObjectWrapper::NewInstance(sptr<ObjectBase> ptr)
     {
         auto id = _NewId();
         ptr->object_id_ = id;
-        _object_table.insert({ id, wptr<ObjectBase>(ptr) });
-        return id;
+        _object_table()->insert({ id, wptr<ObjectBase>(ptr) });
     }
 
     void RuntimeObjectWrapper::DestroyObject(const sptr<ObjectBase>& obj)
     {
-        _object_table.erase(obj->object_id_);
+        _object_table()->erase(obj->get_object_id());
     }
 
     void RuntimeObjectWrapper::ForceDestroyObject(object_id id)
     {
         if (id.is_empty()) return;
-        _object_table.erase(id);
+        _object_table()->erase(id);
     }
 
     ObjectBase::ObjectBase()
@@ -54,7 +57,7 @@ namespace apatite
     void ObjectBase::Construct()
     {
         assert(!this->object_id_);
-        this->object_id_ = RuntimeObjectWrapper::NewInstance(self());
+        RuntimeObjectWrapper::NewInstance(self());
         this->OnConstruct();
     }
     bool ObjectBase::IsAlive() const

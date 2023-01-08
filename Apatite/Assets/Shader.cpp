@@ -5,6 +5,7 @@
 #include <Apatite/Assets/Texture.h>
 #include <CoreLib.Serialization/JsonSerializer.h>
 #include <Apatite/Private/RenderInterface.h>
+#include <Apatite/Logger.h>
 
 namespace apatite
 {
@@ -17,8 +18,11 @@ namespace apatite
 
     Shader::~Shader()
     {
-        this->UnBindGPU();
-
+        if (this->GetIsBindGPU())
+        {
+            Logger::Log(LogLevel::Warning, std::format("unbind in destructor: {}", this->name_));
+            this->UnBindGPU();
+        }
     }
 
     string Shader::ToString() const

@@ -54,9 +54,31 @@ namespace apatiteed
                     continue;
                 }
                 bool selected = this->log_selected_index == i;
+
+                bool modify_color = false;
+                if (loglist[i].level == LogLevel::Info)
+                {
+                    ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Text, ImVec4{ 0.9,0.9,0.9,1 });
+                    modify_color = true;
+                }
+                else if (loglist[i].level == LogLevel::Warning)
+                {
+                    ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Text, ImVec4{ 1,1,0.3,1 });
+                    modify_color = true;
+                }
+                else if (loglist[i].level == LogLevel::Error)
+                {
+                    ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Text, ImVec4{ 1,0.2,0.2,1 });
+                    modify_color = true;
+                }
+
                 if (ImGui::Selectable(loglist[i].record_info.c_str(), selected))
                 {
                     this->log_selected_index = i;
+                }
+                if (modify_color)
+                {
+                    ImGui::PopStyleColor();
                 }
 
                 if (selected)

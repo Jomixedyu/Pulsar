@@ -55,7 +55,7 @@ namespace apatite
     public:
         static bool GetObject(object_id id, wptr<ObjectBase>* out);
         static bool IsValid(object_id id);
-        static object_id NewInstance(sptr<ObjectBase> obj);
+        static void NewInstance(sptr<ObjectBase> obj);
         static void DestroyObject(const sptr<ObjectBase>& obj);
         static void ForceDestroyObject(object_id id);
 

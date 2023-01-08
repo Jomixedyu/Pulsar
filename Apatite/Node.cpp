@@ -115,7 +115,7 @@ namespace apatite
     {
         for (auto& item : *this->components_)
         {
-            if (item->GetType() == type)
+            if (type->IsInstanceOfType(item.get()))
             {
                 return item;
             }

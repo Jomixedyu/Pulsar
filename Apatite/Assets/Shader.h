@@ -85,7 +85,6 @@ namespace apatite
     public:
         static sptr<Shader> StaticCreate(string_view name, array_list<ShaderPass>&& pass);
     protected:
-        string name_;
         uint32_t id_;
         array_list<ShaderPass> pass_;
     private:
