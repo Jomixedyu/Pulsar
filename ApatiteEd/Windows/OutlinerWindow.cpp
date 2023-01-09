@@ -16,7 +16,7 @@ namespace apatiteed
                 ImGuiTreeNodeFlags_OpenOnArrow |
                 ImGuiTreeNodeFlags_OpenOnDoubleClick |
                 ImGuiTreeNodeFlags_SpanFullWidth;
-            ImGuiTreeNodeFlags_Selected;
+
 
             if (children->size() == 0)
             {
@@ -36,6 +36,7 @@ namespace apatiteed
             {
                 if (ImGui::IsItemClicked())
                 {
+                    EditorSelection::Selection.Clear();
                     EditorSelection::Selection.Select(node);
                 }
                 _Show(children);

@@ -3,6 +3,8 @@
 #include <Apatite/AssetObject.h>
 #include <Apatite/Logger.h>
 #include <Apatite/Application.h>
+#include <Apatite/Node.h>
+
 
 namespace apatiteed
 {

@@ -1,3 +1,5 @@
+#include "Node.h"
+#include "Node.h"
 #include <Apatite/Node.h>
 #include <Apatite/Components/Component.h>
 
@@ -99,6 +101,8 @@ namespace apatite
 
     }
 
+
+
     Component_sp Node::AddComponent(Type* type)
     {
         Object_sp obj = type->CreateSharedInstance({});
@@ -129,6 +133,10 @@ namespace apatite
         {
             list->push_back(item);
         }
+    }
+    array_list<Component_sp> Node::GetAllComponentArray() const
+    {
+        return *this->components_;
     }
     void Node::GetChildren(List_sp<Node_sp>& list)
     {
@@ -228,6 +236,15 @@ namespace apatite
     Node_sp Node::GetChildAt(int index)
     {
         return this->childs_->at(index);
+    }
+
+    Node_sp Node::StaticCreate(string_view name)
+    {
+        Node_sp node = mksptr(new Node);
+        node->Construct();
+        node->set_name(name);
+
+        return node;
     }
 
 }

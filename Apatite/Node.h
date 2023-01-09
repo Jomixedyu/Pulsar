@@ -83,11 +83,14 @@ namespace apatite
         }
 
         void GetAllComponents(List_sp<sptr<Component>>& list);
-
+        array_list<Component_sp> GetAllComponentArray() const;
+        size_t GetComponentCount() const { return this->components_->size(); }
         void GetChildren(List_sp<sptr<Node>>& list);
 
         sptr<Node> GetChild(string_view name);
         sptr<Node> GetChildAt(int index);
+    public:
+        static sptr<Node> StaticCreate(string_view name);
     protected:
         virtual void OnInstantiateAsset(sptr<AssetObject>& obj) override;
     public:

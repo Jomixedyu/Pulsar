@@ -6,6 +6,7 @@
 #include <ApatiteEd/Assembly.h>
 #include <ApatiteEd/EditorNode.h>
 #include <Apatite/Components/CameraComponent.h>
+#include <ApatiteEd/Importers/FBXImporter.h>
 
 namespace apatiteed
 {
@@ -78,6 +79,9 @@ void main()
 
         World::Current()->scene->AddNode(node);
 
+
+        Node_sp fbx = FBXImporter::Import(R"(C:/Users/JomiXedYu/Desktop/test.fbx)");
+        World::Current()->scene->AddNode(fbx);
     }
 
     void SceneWindow::OnClose()
