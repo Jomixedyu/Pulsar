@@ -60,20 +60,19 @@ namespace apatite
         this->UnBindGPU();
     }
 
-    StaticMesh_sp StaticMesh::StaticCreate(sptr<StaticMeshVertexDataArray>&& managed_data)
+    StaticMesh_sp StaticMesh::StaticCreate(sptr<StaticMeshVertexDataArray>&& managed_data, array_list<uint32_t>&& indices_data)
     {
-        auto mesh = new StaticMesh;
-
+        auto mesh = mksptr(new StaticMesh);
+        mesh->Construct();
         mesh->raw_data_ = managed_data;
-        mesh->BindGPU();
-
-        return mksptr(mesh);
+        mesh->indices = std::move(indices_data);
+        return mesh;
     }
 
 
     void StaticMesh::BindGPU()
     {
-        assert(this->GetIsBindGPU());
+        assert(!this->GetIsBindGPU());
 
         uint32_t& vao = this->render_handle_;
         glGenVertexArrays(1, &vao);
@@ -131,7 +130,7 @@ namespace apatite
 
     bool StaticMesh::GetIsBindGPU()
     {
-        return this->render_handle_;
+        return this->render_handle_ != 0;
     }
 
 }

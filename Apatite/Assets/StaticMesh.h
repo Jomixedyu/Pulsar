@@ -25,15 +25,15 @@ namespace apatite
 
     ser::Stream& ReadWriteStream(ser::Stream& stream, bool is_write, StaticMeshVertexData& vert);
 
-    struct StaticMeshRawData
-    {
-        array_list<Vector3f> Positions;
-        array_list<Vector3f> Normals;
-        array_list<Vector3f> Tangent;
-        array_list<uint32_t> Indices;
-        array_list<LinearColorf> VertColors;
-        array_list<Vector2f> TexCoords[APATITE_STATICMESH_MAX_TEXTURE_COORDS];
-    };
+    //struct StaticMeshRawData
+    //{
+    //    array_list<Vector3f> Positions;
+    //    array_list<Vector3f> Normals;
+    //    array_list<Vector3f> Tangent;
+    //    array_list<uint32_t> Indices;
+    //    array_list<LinearColorf> VertColors;
+    //    array_list<Vector2f> TexCoords[APATITE_STATICMESH_MAX_TEXTURE_COORDS];
+    //};
 
     class StaticMesh : public AssetObject, public IBindGPU
     {
@@ -44,7 +44,7 @@ namespace apatite
         StaticMesh() {}
         ~StaticMesh();
     public://static
-        static sptr<StaticMesh> StaticCreate(sptr<StaticMeshVertexDataArray>&& managed_data);
+        static sptr<StaticMesh> StaticCreate(sptr<StaticMeshVertexDataArray>&& managed_data, array_list<uint32_t>&& indices_data);
 
     public://member
         virtual void Serialize(ser::Stream& stream, bool is_ser) override;
