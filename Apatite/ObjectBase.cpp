@@ -56,6 +56,7 @@ namespace apatite
     }
     void ObjectBase::Construct()
     {
+        assert(this);
         assert(!this->object_id_);
         RuntimeObjectWrapper::NewInstance(self());
         this->OnConstruct();
