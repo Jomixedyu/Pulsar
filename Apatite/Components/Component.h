@@ -14,7 +14,7 @@ namespace apatite
         friend class Node;
         CORELIB_DEF_TYPE(AssemblyObject_Apatite, apatite::Component, ObjectBase);
     public:
-        wptr<Node> get_node() { return node_; }
+        sptr<Node> get_node();
         virtual bool get_is_tickable() const { return true; }
     public:
 		virtual bool EqualsComponentType(Type* type);
