@@ -10,7 +10,14 @@ namespace jmath
     template<typename T = float> inline constexpr T deg2rad() { return static_cast<T>(0.017453292519943f); }
     template<typename T = float> inline constexpr T rad2deg() { return static_cast<T>(57.295779513082320876798154814105f); }
 
-    template<typename T> constexpr T Radians(T degree) { return deg2rad<typename T::value_type>() * degree; }
+    template<typename T> constexpr T Radians(T degree)
+    {
+        if constexpr (std::is_arithmetic_v<T>)
+            return deg2rad<T>() * degree;
+        else
+            return deg2rad<typename T::value_type>() * degree;
+    }
+
     template<typename T> constexpr T Degrees(T rad) { return rad2deg<typename T::value_type>() * rad; }
     template<typename T> constexpr T Clamp(T x, T min, T max)
     {
@@ -119,6 +126,10 @@ namespace jmath
         static inline T Dot(const Vector3<T>& l, const Vector3<T>& r)
         {
             return l.x * r.x + l.y * r.y + l.z * r.z;
+        }
+        static inline Vector3 Mul(const Vector3<T>& l, const Vector3<T>& r)
+        {
+            return { l.x * r.x, l.y * r.y, l.z * r.z };
         }
         static Vector3<T> Normalize(const Vector3<T>& target);
         void Normalized() { *this = Normalize(*this); }
@@ -257,7 +268,6 @@ namespace jmath
     struct Matrix2
     {
         using value_type = T;
-
         Vector2<T> M[2];
 
         Matrix2(
@@ -369,8 +379,43 @@ namespace jmath
                 T(0), T(0), T(0), T(k)
             );
         }
+
     };
 
+    template<typename MAT>
+    inline void Transpose(MAT* mat)
+    {
+        static_assert(MAT::column_count == MAT::row_count);
+
+        for (int c = 0; c < MAT::column_count; c++)
+        {
+            for (int r = 0; r < MAT::column_count; r++)
+            {
+                if (c == r) break;
+                auto a = mat->M[c][r];
+                mat->M[c][r] = mat->M[r][c];
+                mat->M[r][c] = a;
+            }
+        }
+    }
+
+    template<typename T>
+    inline std::string to_string(const Matrix4<T>& v)
+    {
+        std::string s;
+        s.reserve(64);
+        for (int r = 0; r < 4; r++)
+        {
+            for (int c = 0; c < 4; c++)
+            {
+                s.append(std::to_string(v[c][r]));
+                if (c != 3)
+                    s.append(", ");
+            }
+            s.append("\n");
+        }
+        return s;
+    }
 
     template<typename T>
     Matrix4<T> operator*(const Matrix4<T>& a, const Matrix4<T>& b)
@@ -454,12 +499,23 @@ namespace jmath
             return std::asin(Clamp(static_cast<T>(-2) * (q.x * q.z - q.w * q.y), static_cast<T>(-1), static_cast<T>(1)));
         }
     public:
-        Quaternion operator*(const Quaternion& b)
+        Quaternion& operator*=(const Quaternion& q) 
         {
-            Quaternion& a = *this;
-            return new Quaternion(a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y, a.w * b.y + a.y * b.w + a.z * b.x - a.x * b.z, a.w * b.z + a.z * b.w + a.x * b.y - a.y * b.x, a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z);
+            const Quaternion& p = *this;
+
+            this->w = p.w * q.w - p.x * q.x - p.y * q.y - p.z * q.z;
+            this->x = p.w * q.x + p.x * q.w + p.y * q.z - p.z * q.y;
+            this->y = p.w * q.y + p.y * q.w + p.z * q.x - p.x * q.z;
+            this->z = p.w * q.z + p.z * q.w + p.x * q.y - p.y * q.x;
+
+            return *this;
         }
-        Quaternion& operator*=(const Quaternion& b) { *this = this->operator*(*this, b); return *this; }
+        Quaternion operator*(const Quaternion& q)
+        {
+            Quaternion nq = *this;
+            nq *= q;
+            return nq;
+        }
     public:
         void RotateEuler(const Vector3<T>& euler)
         {
@@ -482,7 +538,7 @@ namespace jmath
     template<typename T>
     Matrix4<T> Rotate(const Quaternion<T>& q)
     {
-        Matrix4<T> Result;
+        Matrix4<T> Result = Matrix4<T>::StaticScalar();
         T qxx(q.x * q.x);
         T qyy(q.y * q.y);
         T qzz(q.z * q.z);
