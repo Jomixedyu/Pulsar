@@ -1,7 +1,12 @@
 #include "Node.h"
 #include "Node.h"
+#include "Node.h"
+#include "Node.h"
+#include "Node.h"
+#include "Node.h"
 #include <Apatite/Node.h>
 #include <Apatite/Components/Component.h>
+#include <Apatite/TransformUtil.h>
 
 using namespace std;
 
@@ -78,6 +83,52 @@ namespace apatite
     int32_t Node::get_child_count() const
     {
         return this->childs_->size();
+    }
+
+    Vector3f Node::get_world_position() const
+    {
+        Vector3f pos;
+        auto node = self();
+        while (node)
+        {
+            pos += node->get_self_position();
+            node = node->get_parent().lock();
+        }
+        return pos;
+    }
+
+    Quat4f Node::get_world_rotation() const
+    {
+        Quat4f rot = this->get_self_rotation();
+        auto node = this->get_parent().lock();
+        while (node)
+        {
+            rot *= node->get_self_rotation();
+            node = node->get_parent().lock();
+        }
+        return rot;
+    }
+
+    Vector3f Node::get_world_scale() const
+    {
+        Vector3f scale = this->get_self_scale();
+        auto node = this->get_parent().lock();
+        while (node)
+        {
+            scale = Vector3f::Mul(scale, node->get_self_scale());
+            node = node->get_parent().lock();
+        }
+        return scale;
+    }
+
+    Matrix4f Node::GetModelMatrix() const
+    {
+        Matrix4f ret = Matrix4f::StaticScalar();
+        transutil::Scale(&ret, this->get_world_scale());
+        transutil::Rotate(&ret, this->get_self_rotation());
+        transutil::Translate(&ret, this->get_world_position());
+
+        return ret;
     }
 
 
