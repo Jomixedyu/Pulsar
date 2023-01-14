@@ -13,8 +13,8 @@ namespace apatite
     public:
         virtual const char* AppType() = 0;
         virtual void RequestQuit() = 0;
-        virtual Vector2f ScreenSize() = 0;
-        virtual void SetScreenSize(Vector2f size) = 0;
+        virtual Vector2f GetOutputScreenSize() = 0;
+        virtual void SetOutputScreenSize(Vector2f size) = 0;
         virtual string GetTitle() = 0;
         virtual void SetTitle(string_view title) = 0;
         virtual string AppRootDir() = 0;
