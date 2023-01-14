@@ -28,7 +28,7 @@ namespace apatite
         int32_t height_ = 0;
         int32_t channel_ = 0;
     public:
-        // Í¨¹ý IBindGPU ¼Ì³Ð
+        //IBindGPU
         virtual void BindGPU() override;
         virtual void UnBindGPU() override;
         virtual bool GetIsBindGPU() override;

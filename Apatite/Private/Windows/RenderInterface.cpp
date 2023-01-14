@@ -30,11 +30,14 @@ namespace apatite::detail
             glDisable(GL_DEPTH_TEST);
         }
 
-        void GetViewport(int32_t* width, int32_t* height)
+        void GetDefaultBufferViewport(int32_t* width, int32_t* height)
         {
             glfwGetFramebufferSize(g_glfw_window_instance, width, height);
         }
-
+        void GetViewport(int32_t* width, int32_t* height)
+        {
+            
+        }
         void SetViewport(int32_t x, int32_t y, int32_t width, int32_t height)
         {
             glViewport(x, y, width, height);

@@ -28,7 +28,7 @@ namespace apatite
     {
         CORELIB_DEF_TYPE(AssemblyObject_Apatite, apatite::CubeMapAsset, AssetObject);
     public:
-        uint32_t id;
+        //uint32_t id;
     };
     CORELIB_DECL_SHORTSPTR(CubeMapAsset);
 }

@@ -19,7 +19,7 @@
 #include <ApatiteEd/Subsystems/EditorSubsystem.h>
 #include <Apatite/Scene.h>
 #include <ApatiteEd/EditorWorld.h>
-
+#include <ThirdParty/glad/glad.h>
 namespace apatiteed
 {
     using namespace detail;
@@ -45,13 +45,13 @@ namespace apatiteed
     {
         SystemInterface::RequestQuitEvents();
     }
-    Vector2f EditorAppInstance::ScreenSize()
+    Vector2f EditorAppInstance::GetOutputScreenSize()
     {
-        return Vector2f();
+        return this->output_size_;
     }
-    void EditorAppInstance::SetScreenSize(Vector2f size)
+    void EditorAppInstance::SetOutputScreenSize(Vector2f size)
     {
-        RenderInterface::SetViewport(0, 0, (int)size.x, (int)size.y);
+        this->output_size_ = size;
     }
     string EditorAppInstance::GetTitle()
     {
@@ -135,7 +135,6 @@ namespace apatiteed
 
         InitBasicMenu();
 
-
         Logger::Log(LogLevel::Info, "initialize world");
         //world
         World::Reset(new EditorWorld);
@@ -197,6 +196,7 @@ namespace apatiteed
 
     void EditorAppInstance::OnTick(float dt)
     {
+
         auto bgc = LinearColorf{ 0.2f, 0.2f ,0.2f, 0.2f };
         RenderInterface::Clear(bgc.r, bgc.g, bgc.b, bgc.a);
         ImGui_Engine_NewFrame();
@@ -211,6 +211,11 @@ namespace apatiteed
         RenderInterface::Render();
         SystemInterface::PollEvents();
         InputInterface::PollEvents();
+
+        for (GLenum err; (err = glGetError()) != GL_NO_ERROR;)
+        {
+            Logger::Log(LogLevel::Info, std::to_string(err));
+        }
     }
 
     bool EditorAppInstance::IsQuit()
@@ -221,7 +226,7 @@ namespace apatiteed
     Vector2f apatiteed::EditorAppInstance::GetAppSize()
     {
         int32_t w, h;
-        RenderInterface::GetViewport(&w, &h);
+        RenderInterface::GetDefaultBufferViewport(&w, &h);
         return Vector2f(w, h);
     }
     void apatiteed::EditorAppInstance::SetAppSize(Vector2f size)

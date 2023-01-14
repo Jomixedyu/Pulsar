@@ -7,6 +7,7 @@
 #include <ApatiteEd/EditorNode.h>
 #include <Apatite/Components/CameraComponent.h>
 #include <ApatiteEd/Importers/FBXImporter.h>
+#include <ApatiteEd/CoordinateGrid.h>
 
 namespace apatiteed
 {
@@ -65,28 +66,34 @@ void main()
 
     void SceneWindow::OnOpen()
     {
+
         EditorNode_sp node = mksptr(new EditorNode);
+        this->camera_node = node;
         node->set_name("EditorSceneCamera");
         auto cam = node->AddComponent<CameraComponent>();
         cam->cameraMode = CameraMode::Perspective;
         cam->backgroundColor = LinearColorf{ 0.2,0.2,0.2,1 }; 
 
         auto rt = mksptr(new RenderTexture);
-        rt->PostInitialize(1024, 1024);
+        rt->PostInitialize(256, 256);
         rt->Construct();
         rt->BindGPU();
         cam->render_target = rt;
 
+        node->set_self_position({ 0,1,0 });
+        //node->set_self_euler_rotation({ 45,45,0 });
         World::Current()->scene->AddNode(node);
 
 
         Node_sp fbx = FBXImporter::Import(R"(C:/Users/JomiXedYu/Desktop/test.fbx)");
         World::Current()->scene->AddNode(fbx);
+        CoordinateGrid::Init();
+
     }
 
     void SceneWindow::OnClose()
     {
-
+        
     }
 
     void SceneWindow::OnDrawImGui()
@@ -103,7 +110,7 @@ void main()
                     bool selected = this->drawmode_select_index == i;
                     if (ImGui::Selectable(items[i], selected))
                     {
-                        this->drawmode_select_index = i;
+                        this->drawmode_select_index = static_cast<int>(i);
                         this->drawmode_select_index = 0;
                     }
                 }
@@ -112,10 +119,6 @@ void main()
             ImGui::EndMenuBar();
         }
 
-        auto cam = World::Current()->scene->get_root_nodes()->at(0)->GetComponent<CameraComponent>();
-
-        cam->Render();
-        
         ImVec2 vMin = ImGui::GetWindowContentRegionMin();
         ImVec2 vMax = ImGui::GetWindowContentRegionMax();
 
@@ -123,11 +126,16 @@ void main()
         vMin.y += ImGui::GetWindowPos().y;
         vMax.x += ImGui::GetWindowPos().x;
         vMax.y += ImGui::GetWindowPos().y;
-
-        //ImGui::GetForegroundDrawList()->AddRect(vMin, vMax, IM_COL32(255, 255, 0, 255));
         ImVec2 content_size = { vMax.x - vMin.x, vMax.y - vMin.y };
+
+
+        auto cam = World::Current()->scene->get_root_nodes()->at(0)->GetComponent<CameraComponent>();
+
+        cam->size_ = { content_size.x, content_size.y };
+        cam->Render();
         
         ImGui::Image((ImTextureID)cam->render_target->get_tex_id(), content_size, ImVec2(0, 1), ImVec2(1, 0));
 
     }
+
 }

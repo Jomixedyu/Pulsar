@@ -1,5 +1,6 @@
 #include "RenderTexture.h"
 #include <glad/glad.h>
+#include <Apatite/Private/RenderInterface.h>
 
 namespace apatite
 {
@@ -42,12 +43,14 @@ namespace apatite
 
     void RenderTexture::EnableRenderTarget()
     {
+        glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &this->last_buffer_);
         glBindFramebuffer(GL_FRAMEBUFFER, this->buffer_);
+        detail::RenderInterface::SetViewport(0, 0, this->width_, this->height_);
     }
 
     void RenderTexture::DisableRenderTarget()
     {
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glBindFramebuffer(GL_FRAMEBUFFER, this->last_buffer_);
     }
 
     int32_t RenderTexture::get_width() const
@@ -63,5 +66,17 @@ namespace apatite
         this->width_ = width;
         this->height_ = height;
 
+    }
+
+
+    RenderTextureScope::RenderTextureScope(RenderTexture_sp tex)
+        : tex_(tex)
+    {
+        tex->EnableRenderTarget();
+    }
+
+    RenderTextureScope::~RenderTextureScope()
+    {
+        this->tex_->DisableRenderTarget();
     }
 }

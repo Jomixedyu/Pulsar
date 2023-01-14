@@ -22,7 +22,7 @@ namespace apatiteed
 
 //        auto name = StringUtil::Concat(dir, "/", PathUtil::GetFilename(str.C_Str()));
 
-//        //TODO: 临时修改
+//        //TODO:
 //        //texture->SetData(str.C_Str(), typeName, Resource::Load<Bitmap>(name, true));
 //        //Texture2D* texture = Resource::Load<Texture2D>(name);
 
@@ -94,7 +94,7 @@ namespace apatiteed
             }
         }
 
-        // 处理材质
+        //
         //if (mesh->mMaterialIndex >= 0)
         //{
         //    aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];

@@ -10,6 +10,7 @@ namespace apatite
         void EnableDepthTest();
         void DisableDepthTest();
 
+        void GetDefaultBufferViewport(int32_t* width, int32_t* height);
         void GetViewport(int32_t* width, int32_t* height);
         void SetViewport(int32_t x, int32_t y, int32_t width, int32_t height);
 

@@ -35,7 +35,8 @@ namespace apatiteed
         }
         bool Contains(const T& t)
         {
-            for (int i = waitlist.size() - 1; i >= 0; i--)
+            int size = (int)waitlist.size();
+            for (int i = size - 1; i >= 0; i--)
             {
                 auto& [type, value] = waitlist[i];
                 if (value != t)
@@ -55,7 +56,7 @@ namespace apatiteed
             return it != items.end();
         }
 
-        void Tick()
+        void Refresh()
         {
             decltype(waitlist) list;
             list.swap(waitlist);
@@ -177,7 +178,7 @@ namespace apatiteed
             auto& item = _registered_windows.items[i];
             item->DrawImGui();
         }
-        _registered_windows.Tick();
+        _registered_windows.Refresh();
     }
 
     EditorWindow_sp EditorWindowManager::GetWindow(string_view name)
@@ -198,7 +199,7 @@ namespace apatiteed
         {
             if (window->GetType() == type)
             {
-                if (_HasRegistered)
+                if (_HasRegistered(window))
                     return window;
             }
         }

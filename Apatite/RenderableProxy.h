@@ -1,5 +1,5 @@
 #pragma once
-#include "Assembly.h"
+#include "ObjectBase.h"
 
 namespace apatite
 {
@@ -7,6 +7,6 @@ namespace apatite
     {
 
     public:
-        virtual void SingleDraw() = 0;
+        virtual void DrawSingle() = 0;
     };
 }

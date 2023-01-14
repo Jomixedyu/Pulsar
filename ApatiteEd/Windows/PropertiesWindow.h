@@ -9,7 +9,7 @@ __properties_panel(){ \
 
 namespace apatiteed
 {
-    class __declspec(dllexport) PropertiesPanel : public Object
+    class PropertiesPanel : public Object
     {
         CORELIB_DEF_TYPE(AssemblyObject_ApatiteEd, apatiteed::PropertiesPanel, Object);
 

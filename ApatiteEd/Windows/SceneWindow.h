@@ -1,5 +1,6 @@
 #pragma once
 #include "EditorWindow.h"
+#include <Apatite/Components/CameraComponent.h>
 
 namespace apatiteed
 {
@@ -17,7 +18,12 @@ namespace apatiteed
         virtual string_view GetWindowName() const override { return StaticWindowName(); }
         virtual void OnDrawImGui() override;
 
+
+        Node_sp GetSceneCameraNode() { return this->camera_node; }
+        CameraComponent_sp GetSceneCamera() { return this->camera_node->GetComponent<CameraComponent>(); }
+
     private:
         int32_t drawmode_select_index = 0;
+        Node_sp camera_node;
     };
 }

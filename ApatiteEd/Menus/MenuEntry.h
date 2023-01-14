@@ -16,7 +16,7 @@ namespace apatiteed
         int priority;
         string name;
 
-        MenuEntry(const string& name) : name(name) {}
+        MenuEntry(const string& name) : name(name), priority(9999) {}
 
         virtual ~MenuEntry() override {}
     };

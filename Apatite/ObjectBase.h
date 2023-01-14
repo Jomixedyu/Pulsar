@@ -9,6 +9,7 @@
 #include <CoreLib/CommonException.h>
 #include <CoreLib/Events.hpp>
 #include <CoreLib/Guid.h>
+#include <Apatite/Math.h>
 
 #define WITH_APATITE_EDITOR
 

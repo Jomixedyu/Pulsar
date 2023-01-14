@@ -6,12 +6,18 @@ namespace apatiteed
 
     void PropertiesNodePanel::OnDrawImGui()
     {
-        static char namebuf[255] = "GameObject 1";
-
         Node_sp selected = sptr_cast<Node>(EditorSelection::Selection.GetSelected());
 
         char name[255];
         strcpy_s(name, 255, selected->get_name().c_str());
+        
+        bool is_active = selected->get_is_active_self();
+        ImGui::Checkbox("##active", &is_active);
+        if (is_active != selected->get_is_active_self())
+        {
+            selected->set_is_active_self(is_active);
+        }
+        ImGui::SameLine();
         if (ImGui::InputText("Name", name, 255))
         {
             if (selected->get_name() != name)

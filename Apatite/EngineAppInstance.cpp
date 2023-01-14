@@ -22,6 +22,7 @@ namespace apatite
         //请求关闭程序
         return Application::inst()->RequestQuitEvents.IsValidReturnInvoke();
     }
+
     static void _quitting()
     {
         Logger::Log (LogLevel::Info, "engine application is quitting");
@@ -29,26 +30,24 @@ namespace apatite
         //通知程序即将关闭
         Application::inst()->QuittingEvents.Invoke();
     }
+
     void EngineAppInstance::OnInitialize(string_view title, Vector2f size)
     {
         Logger::Log(LogLevel::Info, "application initialize");
-
         SystemInterface::InitializeWindow(title, (int)size.x, (int)size.y);
-
         SystemInterface::SetRequestQuitCallBack(_RequestQuit);
         SystemInterface::SetQuitCallBack(_quitting);
-
         RenderInterface::SetViewport(0, 0, (int)size.x, (int)size.y);
-
         ImGui_Engine_Initialize();
-
         World::Reset(new World);
     }
+
     void EngineAppInstance::OnTerminate()
     {
         ImGui_Engine_Terminate();
         World::Reset(nullptr);
     }
+
     void EngineAppInstance::OnTick(float dt)
     {
         auto bgc = LinearColorf{ 0.2f, 0.2f ,0.2f, 0.2 };
@@ -72,13 +71,15 @@ namespace apatite
         SystemInterface::RequestQuitEvents();
     }
 
-    Vector2f EngineAppInstance::ScreenSize()
+    Vector2f EngineAppInstance::GetOutputScreenSize()
     {
-        return Vector2f();
+        int32_t x, y;
+        detail::RenderInterface::GetDefaultBufferViewport(&x, &y);
+        return Vector2f(x, y);
     }
-    void EngineAppInstance::SetScreenSize(Vector2f size)
+    void EngineAppInstance::SetOutputScreenSize(Vector2f size)
     {
-        RenderInterface::SetViewport(0, 0, (int)size.x, (int)size.y);
+        detail::RenderInterface::SetViewport(0, 0, (int)size.x, (int)size.y);
     }
 
     string EngineAppInstance::GetTitle()

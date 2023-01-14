@@ -5,6 +5,7 @@
 #include <Apatite/Assets/Texture.h>
 #include <Apatite/IBindGPU.h>
 #include <Apatite/Math.h>
+#include <Apatite/Rendering/ShaderProgram.h>
 
 namespace apatite
 {
@@ -44,6 +45,7 @@ namespace apatite
         string frag_code;
     };
 
+    //shader program
     struct ShaderPass
     {
 
