@@ -274,6 +274,7 @@ namespace jxcorlib
         using EnumGetter = const EnumDatas* (*)();
     private:
         string name_;
+        string short_name_;
         int32_t structure_size_;
         Type* base_;
         c_inst_ptr_t c_inst_ptr_;
@@ -300,6 +301,7 @@ namespace jxcorlib
     public:
         virtual int32_t get_structure_size() const { return this->structure_size_; }
         const string& get_name() const { return this->name_; }
+        const string get_short_name() const { return this->short_name_; }
         Type* get_base() const { return this->base_; }
         const std::type_info& get_typeinfo() const { return this->typeinfo_; }
         bool is_primitive_type() const;
@@ -336,6 +338,15 @@ namespace jxcorlib
             is_interface_(false),
             enum_getter_(nullptr)
         {
+            auto pos = name.find_last_of("::");
+            if (pos != name.npos)
+            {
+                short_name_ = name.substr(pos + 1, name.size() - pos - 1);
+            }
+            else
+            {
+                short_name_ = name;
+            }
         }
 
         template<cltype_concept T>
