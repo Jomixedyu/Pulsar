@@ -214,7 +214,7 @@ namespace apatiteed
 
         for (GLenum err; (err = glGetError()) != GL_NO_ERROR;)
         {
-            Logger::Log(LogLevel::Info, std::to_string(err));
+            Logger::Log(LogLevel::Error, "opengl error: " + std::to_string(err));
         }
     }
 
