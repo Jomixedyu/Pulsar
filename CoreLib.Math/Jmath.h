@@ -192,6 +192,9 @@ namespace jmath
         Vector2() : x(0), y(0) {}
         Vector2(T _x, T _y) : x(_x), y(_y) {}
 
+        template<typename U>
+        Vector2(const U& r) : x((T)r.x), y((T)r.y) {}
+
         const T* get_value_ptr() const { return &this->x; }
         T* get_value_ptr() { return &this->x; }
 
