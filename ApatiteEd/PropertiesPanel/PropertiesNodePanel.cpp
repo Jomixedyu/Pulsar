@@ -3,7 +3,17 @@
 
 namespace apatiteed
 {
-
+    static string _GetComponentDisplayName(Component* com)
+    {
+        string name = com->GetType()->get_short_name();
+        
+        static char com_str[] = "Component";
+        if (name.ends_with("Component"))
+        {
+            name = name.substr(0, name.size() - sizeof(com_str) + 1);
+        }
+        return name;
+    }
     void PropertiesNodePanel::OnDrawImGui()
     {
         Node_sp selected = sptr_cast<Node>(EditorSelection::Selection.GetSelected());
@@ -50,9 +60,11 @@ namespace apatiteed
         for (auto& comp : selected->GetAllComponentArray())
         {
             static bool opened = true;
-            if (ImGui::CollapsingHeader(comp->GetType()->get_name().c_str(), &opened, ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_DefaultOpen))
+            if (ImGui::CollapsingHeader(_GetComponentDisplayName(comp.get()).c_str(), &opened, ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_DefaultOpen))
             {
-
+                //debug
+                //ImGui::Text("fullname: %s", comp->GetType()->get_name().c_str());
+                //ImGui::Text("guid: %s", comp->get_object_id().to_string().c_str());
             }
         }
 

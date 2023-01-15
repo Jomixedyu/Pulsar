@@ -14,16 +14,16 @@ layout (location = 1) in vec4 aColor;
 
 out vec4 vertexColor;
 
-//uniform mat4 PROJECTION;
-//uniform mat4 VIEW;
-//uniform mat4 MODEL;
+uniform mat4 PROJECTION;
+uniform mat4 VIEW;
+uniform mat4 MODEL;
 
 
 void main()
 {
-    //mat4 transform = PROJECTION * VIEW * MODEL;
-    //gl_Position = transform * vec4(aPos, 1.0);
-    gl_Position = vec4(aPos, 1.0);
+    mat4 transform = PROJECTION * VIEW * MODEL;
+    gl_Position = transform * vec4(aPos, 1.0);
+    //gl_Position = vec4(aPos, 1.0);
     vertexColor = aColor;
 
 })___REGION__";
@@ -47,26 +47,36 @@ void main()
     void CoordinateGrid::Init()
     {
 
-        int line_count = 11;
+        int line_count = 20;
         float detail_distance = 1;
-        float total_width = detail_distance * line_count;
+        float total_width = detail_distance * line_count ;
 
         for (int x = -line_count / 2; x <= line_count / 2; x++)
         {
-            vert.push_back({ 1 / (detail_distance * x), 1 / (total_width / 2) ,0 });
-            vert.push_back({ 1 / (total_width / 2), 1 / (detail_distance * x), 0 });
-
-            //vert.push_back({ 1 / (-detail_distance * x), 1 / (total_width / 2),  0 });
-            colors.push_back({ 1,1,1,1 });
-            colors.push_back({ 1,1,1,1 });
+            vert.push_back({ total_width / 2, 0, detail_distance * x });
+            vert.push_back({ -total_width / 2, 0 , detail_distance * x });
+            
+            LinearColorf color = { 0.1f, 0.1f, 0.1f, 1 };
+            if (x == 0)
+            {
+                color.r = 0.9f;
+            }
+            colors.push_back(color);
+            colors.push_back(color);
         }
         for (int z = -line_count / 2; z <= line_count / 2; z++)
         {
-            //vert.push_back({ 1 / (total_width / 2), 1 / (detail_distance * z), 0 });
-            vert.push_back({ 1 / (detail_distance * z), 1 / (total_width / 2) ,0 });
-            vert.push_back({ 1 / (total_width / 2),1 / (-detail_distance * z), 0 });
-            colors.push_back({ 1,1,0,1 });
-            colors.push_back({ 1,1,0,1 });
+            vert.push_back({ detail_distance * z, 0, total_width / 2 });
+            vert.push_back({ detail_distance * z, 0, -total_width / 2 });
+            LinearColorf color = { 0.1f, 0.1f, 0.1f, 1 };
+            if (z == 0)
+            {
+                color.r = 0.2f;
+                color.g = 0.2f;
+                color.b = 1.f;
+            }
+            colors.push_back(color);
+            colors.push_back(color);
         }
         glGenVertexArrays(1, &vao);
         glGenBuffers(1, &vbo);
@@ -91,19 +101,19 @@ void main()
     }
     void CoordinateGrid::Render()
     {
-        ShaderProgramRAII sp(program);
+        ShaderProgramScope sp(program);
 
         glBindVertexArray(vao);
         auto scenewin = EditorWindowManager::GetWindow<SceneWindow>();
-        //sp->SetUniformMatrix4fv("MODEL", Matrix4f::StaticScalar());
+        sp->SetUniformMatrix4fv("MODEL", Matrix4f::StaticScalar());
         //sp->SetUniformMatrix4fv("MODEL", scenewin->GetSceneCameraNode()->GetModelMatrix());
-        //sp->SetUniformMatrix4fv("VIEW", scenewin->GetSceneCamera()->GetViewMat());
-        //sp->SetUniformMatrix4fv("PROJECTION", scenewin->GetSceneCamera()->GetProjectionMat());
+        sp->SetUniformMatrix4fv("VIEW", scenewin->GetSceneCamera()->GetViewMat());
+        sp->SetUniformMatrix4fv("PROJECTION", scenewin->GetSceneCamera()->GetProjectionMat());
         //
         assert(scenewin && scenewin->get_is_opened());
 
         auto a = vert.size();
-        glLineWidth(3);
+
         glDrawArrays(GL_LINES, 0, a);
 
         glBindVertexArray(0);

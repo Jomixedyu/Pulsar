@@ -30,14 +30,14 @@ namespace apatite
         int32_t last_program_id;
     };
 
-    struct ShaderProgramRAII
+    struct ShaderProgramScope
     {
         ShaderProgram* program_;
-        ShaderProgramRAII(ShaderProgram* program) : program_(program)
+        ShaderProgramScope(ShaderProgram* program) : program_(program)
         {
             program_->EnableProgram();
         }
-        ~ShaderProgramRAII()
+        ~ShaderProgramScope()
         {
             program_->DisableProgram();
         }

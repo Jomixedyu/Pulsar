@@ -21,4 +21,5 @@
 #define zero$(num) (num == (decltype(num))(0) ? throw jxcorlib::DivisionByZeroException(DEBUG_INFO(#num)) : num)
 #define assert_zero(num) if(num == 0) throw jxcorlib::DivisionByZeroException(DEBUG_INFO(#num));
 
+
 #endif // !_CORELIB_DEBUGTOOL

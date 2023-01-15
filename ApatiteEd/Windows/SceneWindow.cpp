@@ -8,6 +8,7 @@
 #include <Apatite/Components/CameraComponent.h>
 #include <ApatiteEd/Importers/FBXImporter.h>
 #include <ApatiteEd/CoordinateGrid.h>
+#include <ApatiteEd/Components/StdEditCameraControllerComponent.h>
 
 namespace apatiteed
 {
@@ -73,15 +74,20 @@ void main()
         auto cam = node->AddComponent<CameraComponent>();
         cam->cameraMode = CameraMode::Perspective;
         cam->backgroundColor = LinearColorf{ 0.2,0.2,0.2,1 }; 
+        cam->fov = 45.f;
+        cam->near = 0.01f;
+        cam->far = 10000.f;
+        cam->size_ = { 1280,720 };
+
+        node->AddComponent<StdEditCameraControllerComponent>();
 
         auto rt = mksptr(new RenderTexture);
-        rt->PostInitialize(256, 256);
+        rt->PostInitialize(1280, 720);
         rt->Construct();
         rt->BindGPU();
         cam->render_target = rt;
 
-        node->set_self_position({ 0,1,0 });
-        //node->set_self_euler_rotation({ 45,45,0 });
+        node->set_self_position({ 15.f, 15, 15 });
         World::Current()->scene->AddNode(node);
 
 
@@ -126,16 +132,39 @@ void main()
         vMin.y += ImGui::GetWindowPos().y;
         vMax.x += ImGui::GetWindowPos().x;
         vMax.y += ImGui::GetWindowPos().y;
-        ImVec2 content_size = { vMax.x - vMin.x, vMax.y - vMin.y };
+        int content_size_x = vMax.x - vMin.x;
+        int content_size_y = vMax.y - vMin.y;
 
+        if (this->win_size_.x != content_size_x || this->win_size_.y != content_size_y)
+        {
+            this->win_size_ = { content_size_x, content_size_y };
+            this->OnWindowResize();
+        }
 
         auto cam = World::Current()->scene->get_root_nodes()->at(0)->GetComponent<CameraComponent>();
 
-        cam->size_ = { content_size.x, content_size.y };
+        cam->size_ = this->win_size_;
         cam->Render();
         
-        ImGui::Image((ImTextureID)cam->render_target->get_tex_id(), content_size, ImVec2(0, 1), ImVec2(1, 0));
+        ImGui::Image((ImTextureID)cam->render_target->get_tex_id(), ImVec2(content_size_x ,content_size_y), ImVec2(0, 1), ImVec2(1, 0));
 
+    }
+
+    void SceneWindow::OnWindowResize()
+    {
+        auto cam = this->GetSceneCamera();
+
+        assert(cam);
+        assert(cam->render_target);
+
+        cam->render_target->UnBindGPU();
+        cam->render_target = nullptr;
+
+        auto rt = mksptr(new RenderTexture);
+        rt->PostInitialize(this->win_size_.x, this->win_size_.y);
+        rt->Construct();
+        rt->BindGPU();
+        cam->render_target = rt;
     }
 
 }

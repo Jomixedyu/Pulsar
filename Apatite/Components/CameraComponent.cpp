@@ -59,7 +59,8 @@ namespace apatite
     Matrix4f CameraComponent::GetViewMat()
     {
         auto node = this->get_node();
-        return _GetViewMat(node->get_world_position(), node->get_world_rotation());
+        return math::LookAt(this->get_node()->get_world_position(), { 0,0,0 }, transutil::Vector3Up());
+        //return _GetViewMat(node->get_world_position(), node->get_world_rotation());
     }
 
     Matrix4f CameraComponent::GetProjectionMat()

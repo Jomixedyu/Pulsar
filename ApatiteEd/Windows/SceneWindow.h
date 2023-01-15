@@ -21,9 +21,11 @@ namespace apatiteed
 
         Node_sp GetSceneCameraNode() { return this->camera_node; }
         CameraComponent_sp GetSceneCamera() { return this->camera_node->GetComponent<CameraComponent>(); }
-
+    private:
+        virtual void OnWindowResize();
     private:
         int32_t drawmode_select_index = 0;
         Node_sp camera_node;
+        Vector2i win_size_;
     };
 }
