@@ -20,7 +20,7 @@ namespace apatite
     {
         if (this->GetIsBindGPU())
         {
-            Logger::Log(LogLevel::Warning, std::format("unbind in destructor: {}", this->name_));
+            Logger::Log(std::format("unbind in destructor: {}", this->name_), LogLevel::Warning);
             this->UnBindGPU();
         }
     }

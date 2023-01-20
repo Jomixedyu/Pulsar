@@ -27,7 +27,7 @@ namespace apatite
     }
 
     using namespace std;
-    void Logger::Log(LogLevel level, string_view str)
+    void Logger::Log(string_view str, LogLevel level)
     {
         LogRecord record;
         record.level = level;

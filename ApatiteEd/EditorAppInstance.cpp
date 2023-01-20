@@ -31,7 +31,7 @@ namespace apatiteed
     }
     static void _quitting()
     {
-        Logger::Log(LogLevel::Info, "engine application is quitting");
+        Logger::Log("engine application is quitting");
 
         //通知程序即将关闭
         Application::inst()->QuittingEvents.Invoke();
@@ -101,7 +101,7 @@ namespace apatiteed
         {
             MenuEntryButton_sp about = mksptr(new MenuEntryButton("About"));
             about->action = MenuAction::FromRaw([](auto ctx) {
-                Logger::Log(LogLevel::Info, "apatite engine");
+                Logger::Log("apatite engine");
                 });
             main_menu->FindMenuEntry<MenuEntrySubMenu>("Help")->AddEntry(about);
         }
@@ -121,7 +121,7 @@ namespace apatiteed
             size = cfg->window_size;
         }
 
-        Logger::Log(LogLevel::Info, "initialize application");
+        Logger::Log("initialize application");
 
         SystemInterface::InitializeWindow(title, (int)size.x, (int)size.y);
 
@@ -130,21 +130,21 @@ namespace apatiteed
 
         RenderInterface::SetViewport(0, 0, (int)size.x, (int)size.y);
 
-        Logger::Log(LogLevel::Info, "initialize imgui");
+        Logger::Log("initialize imgui");
         ImGui_Engine_Initialize();
 
         InitBasicMenu();
 
-        Logger::Log(LogLevel::Info, "initialize world");
+        Logger::Log("initialize world");
         //world
         World::Reset(new EditorWorld);
         World::Current()->scene = mksptr(new Scene);
 
         //init window uis
-        Logger::Log(LogLevel::Info, "initialize editor window manager");
+        Logger::Log("initialize editor window manager");
         apatiteed::EditorWindowManager::Reset();
 
-        Logger::Log(LogLevel::Info, "initialize subsystems");
+        Logger::Log("initialize subsystems");
         //collect subsystem
         for (Type* type : *__ApatiteSubsystemRegistry::types())
         {
@@ -158,12 +158,12 @@ namespace apatiteed
         //initialize subsystem
         for (auto& subsystem : this->subsystems)
         {
-            Logger::Log(LogLevel::Info, "initializing subsystem: " + subsystem->GetType()->get_name());
+            Logger::Log("initializing subsystem: " + subsystem->GetType()->get_name());
             subsystem->OnInitializing();
         }
         for (auto& subsystem : this->subsystems)
         {
-            Logger::Log(LogLevel::Info, "initialized subsystem: " + subsystem->GetType()->get_name());
+            Logger::Log("initialized subsystem: " + subsystem->GetType()->get_name());
             subsystem->OnInitialized();
         }
 
@@ -214,7 +214,7 @@ namespace apatiteed
 
         for (GLenum err; (err = glGetError()) != GL_NO_ERROR;)
         {
-            Logger::Log(LogLevel::Error, "opengl error: " + std::to_string(err));
+            Logger::Log("opengl error: " + std::to_string(err), LogLevel::Error);
         }
     }
 

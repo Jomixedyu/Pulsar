@@ -45,7 +45,7 @@ namespace apatiteed
         project_path = path;
         project_name = PathUtil::GetFilenameWithoutExt(project_path);
 
-        Logger::Log(LogLevel::Info, "open workspace: " + project_path);
+        Logger::Log("open workspace: " + project_path);
         OnWorkspaceOpened.Invoke();
     }
 

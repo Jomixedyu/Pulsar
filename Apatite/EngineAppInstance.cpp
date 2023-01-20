@@ -25,7 +25,7 @@ namespace apatite
 
     static void _quitting()
     {
-        Logger::Log (LogLevel::Info, "engine application is quitting");
+        Logger::Log ("engine application is quitting");
 
         //通知程序即将关闭
         Application::inst()->QuittingEvents.Invoke();
@@ -33,7 +33,7 @@ namespace apatite
 
     void EngineAppInstance::OnInitialize(string_view title, Vector2f size)
     {
-        Logger::Log(LogLevel::Info, "application initialize");
+        Logger::Log("application initialize");
         SystemInterface::InitializeWindow(title, (int)size.x, (int)size.y);
         SystemInterface::SetRequestQuitCallBack(_RequestQuit);
         SystemInterface::SetQuitCallBack(_quitting);

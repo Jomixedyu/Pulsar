@@ -29,7 +29,7 @@ namespace apatite::detail
         glfwMakeContextCurrent(g_glfw_window_instance);
 
         if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-            Logger::Log(LogLevel::Error, "glad: Failed to initialize glad");
+            Logger::Log("glad: Failed to initialize glad", LogLevel::Error);
             
             return false;
         }
