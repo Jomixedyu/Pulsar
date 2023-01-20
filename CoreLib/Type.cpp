@@ -155,7 +155,7 @@ namespace jxcorlib
             }
             out.push_back(static_cast<FieldInfo*>(info));
         }
-        if (this->get_base())
+        if (EnumHasFlag(attr, TypeBinding::IncludeSuper) && this->get_base())
         {
             this->get_base()->get_fieldinfos(out, attr);
         }

@@ -214,7 +214,8 @@ namespace jxcorlib
     {
         None = 0,
         NonPublic = 1,
-        Static = 1 << 1,
+        /*deprecated*/ Static = 1 << 1,
+        IncludeSuper = 1 << 2,
     };
     ENUM_CLASS_FLAGS(TypeBinding);
 
