@@ -124,6 +124,7 @@ namespace jxcorlib
         string Substring(string_view str, size_t offset_char_pos, size_t char_count);
         string& TrimSelf(string& str);
         string Trim(string_view str);
+        string FriendlyName(const string& name);
 
         inline size_t Size(const char* str) { return ::strlen(str); }
         inline size_t Size(const string& str) { return str.length(); }

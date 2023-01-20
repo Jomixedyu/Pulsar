@@ -655,7 +655,7 @@ namespace jxcorlib
                     start_bpos = bpos;
                     return false;
                 }
-                return true;
+        return true;
             });
 
         int32_t ch_count = 0;
@@ -713,7 +713,53 @@ namespace jxcorlib
         return ret;
     }
 
+    string StringUtil::FriendlyName(const string& name)
+    {
+        if (name.size() == 0) return name;
 
+        string ret;
+        ret.reserve((size_t)((float)name.size() * 1.5f));
+
+        bool is_new = true;
+        bool last_space = false;
+        for (size_t i = 0; i < name.size(); i++)
+        {
+            char c = name[i];
+            if (c == '_' || c == ' ')
+            {
+                if (!last_space && i != 0 && i != name.size() - 1)
+                {
+                    ret.push_back(' ');
+                }
+                is_new = true;
+                last_space = true;
+            }
+            else if (std::isupper(c))
+            {
+                if (!last_space && i != 0 && i != name.size() - 1)
+                {
+                    ret.push_back(' ');
+                }
+                ret.push_back(c);
+                is_new = false;
+                last_space = false;
+            }
+            else
+            {
+                char new_c = c;
+
+                if (is_new)
+                {
+                    new_c = (char)std::toupper(new_c);
+                    is_new = false;
+                }
+                ret.push_back(new_c);
+                last_space = false;
+            }
+        }
+
+        return ret;
+    }
 }
 
 #include <Windows.h>
