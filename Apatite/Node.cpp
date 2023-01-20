@@ -95,10 +95,6 @@ namespace apatite
         {
             node = this->get_parent().lock();
             auto v4 = node->GetLocalTransformMatrix() * (Vector4f)pos;
-            Logger::Log("a: " + to_string(node->GetLocalTransformMatrix()));
-            Logger::Log("b: " + to_string(pos));
-            Logger::Log("c: " + to_string(v4));
-            Logger::Log("----------------");
             pos = { v4.x, v4.y, v4.z };
         }
         return pos;
