@@ -25,12 +25,22 @@ namespace apatite
             Vector3f const& center,
             Vector3f const& up);
 
+        void LookAt(const Vector3f& pos);
     public:
+        CORELIB_REFL_DECL_FIELD(fov);
         float fov;
+
+        CORELIB_REFL_DECL_FIELD(near);
         float near;
+
+        CORELIB_REFL_DECL_FIELD(far);
         float far;
+
+        CORELIB_REFL_DECL_FIELD(size_);
         Vector2f size_;
         CameraMode cameraMode;
+
+        CORELIB_REFL_DECL_FIELD(backgroundColor);
         LinearColorf backgroundColor;
     };
     CORELIB_DECL_SHORTSPTR(CameraComponent);

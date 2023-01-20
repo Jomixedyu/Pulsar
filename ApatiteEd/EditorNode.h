@@ -11,6 +11,7 @@ namespace apatiteed
     public:
 
 
+        static sptr<EditorNode> StaticCreate(const string& name, sptr<Node> parent = nullptr);
     };
     CORELIB_DECL_SHORTSPTR(EditorNode);
 }

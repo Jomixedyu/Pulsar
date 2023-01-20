@@ -45,9 +45,15 @@ namespace jmath
         static constexpr int column_count = 1;
         static constexpr int row_count = 4;
 
+        static inline Vector4 Mul(const Vector4<T>& l, const Vector4<T>& r)
+        {
+            return { l.x * r.x, l.y * r.y, l.z * r.z, l.w * r.w };
+        }
+
         T& operator[](int index) { return *(&x + index); }
         const T& operator[](int index) const { return *(&x + index); }
     };
+
     template<typename T> std::string to_string(const Vector4<T>& v)
     {
         std::string s;
@@ -114,7 +120,7 @@ namespace jmath
         Vector3& operator /=(T v) { x /= v; y /= v; z /= v; return *this; }
         Vector3 operator-() { return Vector3(-x, -y, -z); }
 
-        operator Vector4<T>() const { return Vector4<T>{ T(x), T(y), T(z), T(0) }; }
+        operator Vector4<T>() const { return Vector4<T>{ T(x), T(y), T(z), T(1) }; }
 
         static inline T Distance(const Vector3& l, const Vector3& r)
         {
@@ -434,6 +440,18 @@ namespace jmath
         return m;
     }
 
+    template<typename T>
+    Vector4<T> operator*(const Matrix4<T>& a, const Vector4<T>& b)
+    {
+        Vector4<T> v;
+        for (int r = 0; r < 4; r++)
+        {
+            v[r] = Sum(Vector4<T>::Mul(a.GetRow(r), b));
+        }
+        return v;
+    }
+
+
     using Matrix4f = Matrix4<float>;
     using Matrix4d = Matrix4<double>;
     using Matrix4i = Matrix4<int>;
@@ -502,7 +520,7 @@ namespace jmath
             return std::asin(Clamp(static_cast<T>(-2) * (q.x * q.z - q.w * q.y), static_cast<T>(-1), static_cast<T>(1)));
         }
     public:
-        Quaternion& operator*=(const Quaternion& q) 
+        Quaternion& operator*=(const Quaternion& q)
         {
             const Quaternion& p = *this;
 
@@ -570,7 +588,7 @@ namespace jmath
     {
         Matrix4<T> m;
         m[0][0] = v.x;
-        m[1][1] = v.x;
+        m[1][1] = v.y;
         m[2][2] = v.z;
         m[3][3] = T(1);
         return m;

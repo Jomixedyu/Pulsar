@@ -30,9 +30,12 @@ namespace apatiteed
             if (cltypeof<EditorNode>()->IsInstanceOfType(node.get()))
             {
                 is_editor_node = true;
-                ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Text, ImVec4(0.6, 0.6, 0.3, 1));
+                ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Text, ImVec4(0.2, 0.6, 0.5, 1));
             }
-            if (ImGui::TreeNodeEx(node->get_name().c_str(), base_flags))
+            string name = node->get_name();
+            if (is_editor_node)
+                name.append(" (EditorOnly)");
+            if (ImGui::TreeNodeEx(name.c_str(), base_flags))
             {
                 if (ImGui::IsItemClicked())
                 {
@@ -51,7 +54,7 @@ namespace apatiteed
     void OutlinerWindow::OnDrawImGui()
     {
         static bool open;
-        //ImGui::ShowDemoWindow(&open);
+        ImGui::ShowDemoWindow(&open);
 
         auto world = World::Current();
         if (!world)

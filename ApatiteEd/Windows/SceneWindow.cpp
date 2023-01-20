@@ -67,19 +67,24 @@ void main()
 
     void SceneWindow::OnOpen()
     {
+        EditorNode_sp center_node = EditorNode::StaticCreate("EditorSceneCamera");
 
-        EditorNode_sp node = mksptr(new EditorNode);
-        this->camera_node = node;
-        node->set_name("EditorSceneCamera");
-        auto cam = node->AddComponent<CameraComponent>();
+        EditorNode_sp camera_node = EditorNode::StaticCreate("EditorCamera", center_node);
+
+        this->camera_node = camera_node;
+        this->camera_ctrl_node = center_node;
+
+        auto cam = camera_node->AddComponent<CameraComponent>();
+
         cam->cameraMode = CameraMode::Perspective;
         cam->backgroundColor = LinearColorf{ 0.2,0.2,0.2,1 }; 
         cam->fov = 45.f;
         cam->near = 0.01f;
         cam->far = 10000.f;
         cam->size_ = { 1280,720 };
+        camera_node->set_self_position({ 0.f, 3, 15 });
 
-        node->AddComponent<StdEditCameraControllerComponent>();
+        center_node->AddComponent<StdEditCameraControllerComponent>();
 
         auto rt = mksptr(new RenderTexture);
         rt->PostInitialize(1280, 720);
@@ -87,8 +92,9 @@ void main()
         rt->BindGPU();
         cam->render_target = rt;
 
-        node->set_self_position({ 15.f, 15, 15 });
-        World::Current()->scene->AddNode(node);
+        
+        //node->set_self_euler_rotation({ 0,-90,0 });
+        World::Current()->scene->AddNode(center_node);
 
 
         Node_sp fbx = FBXImporter::Import(R"(C:/Users/JomiXedYu/Desktop/test.fbx)");
@@ -141,8 +147,7 @@ void main()
             this->OnWindowResize();
         }
 
-        auto cam = World::Current()->scene->get_root_nodes()->at(0)->GetComponent<CameraComponent>();
-
+        auto cam = this->GetSceneCamera();
         cam->size_ = this->win_size_;
         cam->Render();
         

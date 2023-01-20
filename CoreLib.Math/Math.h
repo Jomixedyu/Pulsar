@@ -11,6 +11,56 @@ namespace jxcorlib::math
 {
     using namespace jmath;
 
+    //class BoxingColor8b4 : public jxcorlib::BoxingObject
+    //{
+    //    CORELIB_DEF_TYPE(AssemblyObject_JxMath, jxcorlib::math::BoxingColor8b4, jxcorlib::BoxingObject);
+    //public:
+
+    //    CORELIB_REFL_DECL_FIELD(r);
+    //    int r;
+    //    CORELIB_REFL_DECL_FIELD(g);
+    //    int g;
+    //    CORELIB_REFL_DECL_FIELD(b);
+    //    int b;
+    //    CORELIB_REFL_DECL_FIELD(a);
+    //    int a;
+
+    //    using unboxing_type = Color8b4;
+    //    Vector2f get_unboxing_value() { return Color8b4(r, g, b, a); }
+
+    //    BoxingColor8b4() : r(0), g(0), b(0), a(0) {}
+    //    BoxingColor8b4(Color8b4 value) : r(value.r), g(value.g), b(value.b), a(value.a) {}
+
+    //    virtual string ToString() const override { return to_string(unboxing_type(r, g, b, a)); }
+    //};
+    //template<> struct get_boxing_type<Color8b4> { using type = BoxingColor8b4; };
+
+
+    class BoxingLinearColorf : public jxcorlib::BoxingObject
+    {
+        CORELIB_DEF_TYPE(AssemblyObject_JxMath, jxcorlib::math::BoxingLinearColorf, jxcorlib::BoxingObject);
+    public:
+
+        CORELIB_REFL_DECL_FIELD(r);
+        float r;
+        CORELIB_REFL_DECL_FIELD(g);
+        float g;
+        CORELIB_REFL_DECL_FIELD(b);
+        float b;
+        CORELIB_REFL_DECL_FIELD(a);
+        float a;
+
+        using unboxing_type = LinearColorf;
+        LinearColorf get_unboxing_value() { return LinearColorf(r, g, b, a); }
+
+        BoxingLinearColorf() : r(0), g(0), b(0), a(0) {}
+        BoxingLinearColorf(LinearColorf value) : r(value.r), g(value.g), b(value.b), a(value.a) {}
+
+        virtual string ToString() const override { return to_string(unboxing_type(r, g, b, a)); }
+    };
+    template<> struct get_boxing_type<LinearColorf> { using type = BoxingLinearColorf; };
+
+
     class BoxingVector2f : public jxcorlib::BoxingObject
     {
         CORELIB_DEF_TYPE(AssemblyObject_JxMath, jxcorlib::math::BoxingVector2f, jxcorlib::BoxingObject);

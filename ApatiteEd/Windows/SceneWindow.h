@@ -20,12 +20,14 @@ namespace apatiteed
 
 
         Node_sp GetSceneCameraNode() { return this->camera_node; }
+        Node_sp GetSceneCameraControllerNode() { return this->camera_ctrl_node; }
         CameraComponent_sp GetSceneCamera() { return this->camera_node->GetComponent<CameraComponent>(); }
     private:
         virtual void OnWindowResize();
     private:
         int32_t drawmode_select_index = 0;
         Node_sp camera_node;
+        Node_sp camera_ctrl_node;
         Vector2i win_size_;
     };
 }

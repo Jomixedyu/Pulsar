@@ -38,27 +38,30 @@ namespace apatite
         void set_is_active_self(bool value);
         //TransformComponent_sp get_transform();
 
+        bool has_parent() const { return this->has_parent_; }
         wptr<Node> get_parent() const;
-        void set_parent(wptr<Node> parent, bool keep_world_transform = false);
+        void set_parent(sptr<Node> parent, bool keep_world_transform = false);
 
         int32_t get_child_count() const;
     public:
         Vector3f get_self_position() const { return this->position_; }
         void set_self_position(Vector3f value) { this->position_ = value; }
         Vector3f get_world_position() const;
-        
+
         Quat4f get_self_rotation() const { return this->rotation_; }
         void set_self_rotation(Quat4f value) { this->rotation_ = value; }
         Quat4f get_world_rotation() const;
         Vector3f get_self_euler_rotation() const { return this->rotation_.GetEuler(); }
         void set_self_euler_rotation(Vector3f value) { this->rotation_ = Quat4f(value); }
+        Vector3f get_world_euler_rotation() const;
 
         Vector3f get_self_scale() const { return this->scale_; }
         void set_self_scale(Vector3f value) { this->scale_ = value; }
         Vector3f get_world_scale() const;
 
         Matrix4f GetModelMatrix() const;
-
+        Matrix4f GetLocalTransformMatrix() const;
+        Vector3f GetForward() const;
     public:
         Node(const Node& r) = delete;
         Node(Node&& r) = delete;
@@ -105,18 +108,18 @@ namespace apatite
         void Rotate(Quat4f v);
         void RotateEuler(Vector3f v);
         void Scale(Vector3f v);
-        Matrix4f GetLocalMatrix() const;
-        Matrix4f GetWorldMatrix() const;
+
     private:
         bool is_active_;
         wptr<Node> parent_;
+        bool has_parent_ = false;
 
         CORELIB_REFL_DECL_FIELD(position_);
         Vector3f position_;
         CORELIB_REFL_DECL_FIELD(rotation_);
         Quat4f rotation_;
         CORELIB_REFL_DECL_FIELD(scale_);
-        Vector3f scale_;
+        Vector3f scale_{ 1.f,1.f,1.f };
 
         CORELIB_REFL_DECL_FIELD(childs_);
         List_sp<sptr<Node>> childs_;

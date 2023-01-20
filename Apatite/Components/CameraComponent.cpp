@@ -59,8 +59,8 @@ namespace apatite
     Matrix4f CameraComponent::GetViewMat()
     {
         auto node = this->get_node();
-        return math::LookAt(this->get_node()->get_world_position(), { 0,0,0 }, transutil::Vector3Up());
-        //return _GetViewMat(node->get_world_position(), node->get_world_rotation());
+        auto wpos = node->get_world_position();
+        return math::LookAt(wpos, wpos + node->GetForward(), transutil::Vector3Up());
     }
 
     Matrix4f CameraComponent::GetProjectionMat()
@@ -90,4 +90,8 @@ namespace apatite
         return ret;
     }
 
+    void CameraComponent::LookAt(const Vector3f& pos)
+    {
+        transutil::LookAt(this->get_node()->get_world_position(), pos, transutil::Vector3Up());
+    }
 }

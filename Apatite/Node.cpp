@@ -1,12 +1,9 @@
 #include "Node.h"
-#include "Node.h"
-#include "Node.h"
-#include "Node.h"
-#include "Node.h"
-#include "Node.h"
 #include <Apatite/Node.h>
 #include <Apatite/Components/Component.h>
 #include <Apatite/TransformUtil.h>
+#include <stack>
+#include <Apatite/Logger.h>
 
 using namespace std;
 
@@ -48,35 +45,40 @@ namespace apatite
     {
         return this->parent_;
     }
-    void Node::set_parent(wptr<Node> parent, bool keep_world_transform)
+    void Node::set_parent(sptr<Node> parent, bool keep_world_transform)
     {
-        if (this->parent_.expired()) //top node
+        if (!this->has_parent_) // top node
         {
-            if (!parent.expired())
+            if (parent != nullptr)
             {
-                auto new_parent = parent.lock();
-                new_parent->childs_->push_back(self());
+                parent->childs_->push_back(self());
+                this->has_parent_ = true;
                 if (keep_world_transform)
                 {
-                    //todo transform matrix
+                    // todo transform matrix
 
                 }
             }
         }
-        else
+        else // has parent
         {
-            auto _parnet = parent.lock();
+            // remove 
+            auto my_parent = this->parent_.lock();
+            assert(my_parent);
+            auto it = std::find(my_parent->childs_->begin(), my_parent->childs_->end(), self());
+            assert(it != my_parent->childs_->end());
+            my_parent->childs_->erase(it);
 
-            auto self_parent = this->parent_.lock();
-
-            auto it = std::find_if(self_parent->childs_->begin(), self_parent->childs_->end(), [this](auto& child) { return child.get() == this; });
-            self_parent->childs_->erase(it);
-
-            if (!parent.expired())
+            if (parent == nullptr) //set empty parent
             {
-                parent.lock()->childs_->push_back(self());
+                this->has_parent_ = false;
+            }
+            else
+            {
+                parent->childs_->push_back(self());
             }
         }
+
         this->parent_ = parent;
     }
 
@@ -87,12 +89,17 @@ namespace apatite
 
     Vector3f Node::get_world_position() const
     {
-        Vector3f pos;
-        auto node = self();
-        while (node)
+        Vector3f pos = this->get_self_position();
+        Node_sp node;
+        if (this->has_parent())
         {
-            pos += node->get_self_position();
-            node = node->get_parent().lock();
+            node = this->get_parent().lock();
+            auto v4 = node->GetLocalTransformMatrix() * (Vector4f)pos;
+            Logger::Log("a: " + to_string(node->GetLocalTransformMatrix()));
+            Logger::Log("b: " + to_string(pos));
+            Logger::Log("c: " + to_string(v4));
+            Logger::Log("----------------");
+            pos = { v4.x, v4.y, v4.z };
         }
         return pos;
     }
@@ -109,6 +116,11 @@ namespace apatite
         return rot;
     }
 
+    Vector3f Node::get_world_euler_rotation() const
+    {
+        return this->get_world_rotation().GetEuler();
+    }
+
     Vector3f Node::get_world_scale() const
     {
         Vector3f scale = this->get_self_scale();
@@ -123,12 +135,23 @@ namespace apatite
 
     Matrix4f Node::GetModelMatrix() const
     {
+        assert(false);
         Matrix4f ret = Matrix4f::StaticScalar();
-        transutil::Scale(&ret, this->get_world_scale());
-        transutil::Rotate(&ret, this->get_self_rotation());
         transutil::Translate(&ret, this->get_world_position());
+        transutil::Rotate(&ret, this->get_self_rotation());
+        transutil::Scale(&ret, this->get_world_scale());
 
         return ret;
+    }
+
+    Vector3f Node::GetForward() const
+    {
+        auto rot = this->get_world_euler_rotation();
+        rot.y -= 90.f;
+        float x = cos(math::Radians(rot.y)) * cos(math::Radians(rot.x));
+        float y = sin(math::Radians(rot.x));
+        float z = sin(math::Radians(rot.y)) * cos(math::Radians(rot.x));
+        return Vector3f::Normalize({ x,y,z });
     }
 
 
@@ -225,33 +248,9 @@ namespace apatite
     void Node::Scale(Vector3f v)
     {
     }
-    Matrix4f Node::GetLocalMatrix() const
+    Matrix4f Node::GetLocalTransformMatrix() const
     {
-        return {};
-        //return Math::Translate(Matrix4f::StaticScalar(), this->position_) * Math::Rotate(this->rotation_) * Math::Scale(this->scale_);
-    }
-
-    Matrix4f Node::GetWorldMatrix() const
-    {
-        Matrix4f m = this->GetLocalMatrix();
-
-        if (!this->parent_.expired())
-        {
-            Node_sp p = this->parent_.lock();
-            while (p != nullptr)
-            {
-                m = p->GetLocalMatrix() * m;
-                if (p->parent_.expired())
-                {
-                    p = nullptr;
-                }
-                else
-                {
-                    p = p->parent_.lock();
-                }
-            }
-        }
-        return m;
+        return math::Translate(this->position_) * math::Rotate(this->rotation_) * math::Scale(this->scale_);
     }
 
     void Node::OnTick(Ticker ticker)

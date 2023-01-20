@@ -47,6 +47,7 @@ namespace apatite
             style.Colors[ImGuiCol_::ImGuiCol_FrameBg] = ImColor(12, 12, 12, 255);
             //bug:
             //style.WindowMenuButtonPosition = ImGuiDir_::ImGuiDir_Right;
+            io.FontGlobalScale = 1.25f;
         }
 
 
