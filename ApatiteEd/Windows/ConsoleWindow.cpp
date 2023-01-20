@@ -72,10 +72,13 @@ namespace apatiteed
                     modify_color = true;
                 }
 
+                ImGui::PushID(i);
                 if (ImGui::Selectable(loglist[i].record_info.c_str(), selected))
                 {
                     this->log_selected_index = i;
                 }
+                ImGui::PopID();
+
                 if (modify_color)
                 {
                     ImGui::PopStyleColor();
