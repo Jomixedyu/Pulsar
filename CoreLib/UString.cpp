@@ -642,7 +642,6 @@ namespace jxcorlib
         add.clear();
         return vec;
     }
-
     string StringUtil::Substring(string_view str, size_t offset_char_pos, size_t char_count)
     {
 

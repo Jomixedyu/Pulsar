@@ -27,7 +27,7 @@ namespace jxcorlib
     struct u8char final
     {
         char value[8]{ 0 };
-        inline static int U8Length(const char* c)
+        inline static int CharLength(const char* c)
         {
             for (int i = 0; i < 8; i++)
             {
@@ -43,8 +43,8 @@ namespace jxcorlib
         }
         inline static bool Charcmp(const char* l, const char* r)
         {
-            int len = U8Length(l);
-            if (len != U8Length(r))
+            int len = CharLength(l);
+            if (len != CharLength(r))
             {
                 return false;
             }
