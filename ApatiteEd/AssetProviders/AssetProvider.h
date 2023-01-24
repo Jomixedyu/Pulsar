@@ -2,7 +2,7 @@
 
 namespace apatiteed
 {
-    class AssetImporter
+    class AssetProvider
     {
 
     };
