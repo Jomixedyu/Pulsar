@@ -9,6 +9,8 @@
 #include "DockspaceWindow.h"
 #include <ApatiteEd/Menus/_include.h>
 
+#include <ThirdParty/glad/glad.h>
+
 #include <queue>
 #include <tuple>
 
@@ -140,12 +142,11 @@ namespace apatiteed
 
     void EditorWindowManager::Reset()
     {
+        assert(glGetError() == GL_NO_ERROR);
         _DockspaceWindow = mksptr(new DockspaceWindow);
         _MainMenuBarWindow = mksptr(new MainMenuBarWindow);
         _DockspaceWindow->Open();
         _MainMenuBarWindow->Open();
-
-
 
         _registered_menu.emplace(WorkspaceWindow::StaticWindowName(), cltypeof<WorkspaceWindow>());
         _registered_menu.emplace(PropertiesWindow::StaticWindowName(), cltypeof<PropertiesWindow>());

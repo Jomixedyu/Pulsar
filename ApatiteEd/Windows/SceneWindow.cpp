@@ -7,15 +7,15 @@
 #include <ApatiteEd/EditorNode.h>
 #include <Apatite/Components/CameraComponent.h>
 #include <ApatiteEd/Importers/FBXImporter.h>
-#include <ApatiteEd/CoordinateGrid.h>
 #include <ApatiteEd/Components/StdEditCameraControllerComponent.h>
+#include <ApatiteEd/Components/Grid3DComponent.h>
 
 namespace apatiteed
 {
     //    static uint32_t fbo;
     //    static uint32_t tex;
     //    static uint32_t rbo;
-    //    ShaderProgram* screenShader;
+    //    ShaderPass* screenShader;
     //    static unsigned int quadVAO, quadVBO;
     //
     static float quadVertices[] = {
@@ -67,45 +67,45 @@ void main()
 
     void SceneWindow::OnOpen()
     {
-        EditorNode_sp center_node = EditorNode::StaticCreate("EditorSceneCamera");
-
+        EditorNode_sp center_node = EditorNode::StaticCreate("EditorCameraController");
         EditorNode_sp camera_node = EditorNode::StaticCreate("EditorCamera", center_node);
-
         this->camera_node = camera_node;
         this->camera_ctrl_node = center_node;
 
         auto cam = camera_node->AddComponent<CameraComponent>();
 
         cam->cameraMode = CameraMode::Perspective;
-        cam->backgroundColor = LinearColorf{ 0.2,0.2,0.2,1 }; 
+        cam->backgroundColor = LinearColorf{ 0.33,0.33,0.33,1 };
         cam->fov = 45.f;
         cam->near = 0.01f;
         cam->far = 10000.f;
         cam->size_ = { 1280,720 };
-        camera_node->set_self_position({ 0.f, 3, 15 });
+        camera_node->set_self_position({ 10.f, 7, 10 });
+        camera_node->set_self_euler_rotation({ -25.f, -45, 0 });
 
         center_node->AddComponent<StdEditCameraControllerComponent>();
 
         auto rt = mksptr(new RenderTexture);
-        rt->PostInitialize(1280, 720);
+        rt->PostInitializeData(1280, 720);
         rt->Construct();
         rt->BindGPU();
         cam->render_target = rt;
 
-        
+
         //node->set_self_euler_rotation({ 0,-90,0 });
         World::Current()->scene->AddNode(center_node);
 
-
-        Node_sp fbx = FBXImporter::Import(R"(C:/Users/JomiXedYu/Desktop/test.fbx)");
+        EditorNode_sp grid3d = EditorNode::StaticCreate("Grid3d");
+        grid3d->AddComponent<Grid3DComponent>();
+        World::Current()->scene->AddNode(grid3d);
+        Node_sp fbx = FBXImporter::Import(R"(C:/Users/JomiXedYu/Desktop/sphere.fbx)");
         World::Current()->scene->AddNode(fbx);
-        CoordinateGrid::Init();
-
+        
     }
 
     void SceneWindow::OnClose()
     {
-        
+
     }
 
     void SceneWindow::OnDrawImGui()
@@ -128,6 +128,9 @@ void main()
                 }
                 ImGui::EndCombo();
             }
+
+            ImGui::Button("Gizmos");
+
             ImGui::EndMenuBar();
         }
 
@@ -150,8 +153,8 @@ void main()
         auto cam = this->GetSceneCamera();
         cam->size_ = this->win_size_;
         cam->Render();
-        
-        ImGui::Image((ImTextureID)cam->render_target->get_tex_id(), ImVec2(content_size_x ,content_size_y), ImVec2(0, 1), ImVec2(1, 0));
+
+        ImGui::Image((ImTextureID)cam->render_target->get_tex_id(), ImVec2(content_size_x, content_size_y), ImVec2(0, 1), ImVec2(1, 0));
 
     }
 
@@ -166,7 +169,7 @@ void main()
         cam->render_target = nullptr;
 
         auto rt = mksptr(new RenderTexture);
-        rt->PostInitialize(this->win_size_.x, this->win_size_.y);
+        rt->PostInitializeData(this->win_size_.x, this->win_size_.y);
         rt->Construct();
         rt->BindGPU();
         cam->render_target = rt;

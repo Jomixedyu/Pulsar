@@ -35,6 +35,7 @@ namespace apatiteed
             string name = node->get_name();
             if (is_editor_node)
                 name.append(" (EditorOnly)");
+            ImGui::PushID(node->get_object_id().to_string().c_str());
             if (ImGui::TreeNodeEx(name.c_str(), base_flags))
             {
                 if (ImGui::IsItemClicked())
@@ -45,6 +46,7 @@ namespace apatiteed
                 _Show(children);
                 ImGui::TreePop();
             }
+            ImGui::PopID();
             if (is_editor_node)
             {
                 ImGui::PopStyleColor();
@@ -53,9 +55,6 @@ namespace apatiteed
     }
     void OutlinerWindow::OnDrawImGui()
     {
-        static bool open;
-        ImGui::ShowDemoWindow(&open);
-
         auto world = World::Current();
         if (!world)
         {
