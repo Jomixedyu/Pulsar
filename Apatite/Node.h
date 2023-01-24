@@ -69,6 +69,7 @@ namespace apatite
     public:
         Node();
 
+        void Draw();
         virtual void Serialize(ser::Stream& stream, bool is_ser) override;
 
         //ITickable 
@@ -96,6 +97,7 @@ namespace apatite
         array_list<Component_sp> GetAllComponentArray() const;
         size_t GetComponentCount() const { return this->components_->size(); }
         void GetChildren(List_sp<sptr<Node>>& list);
+        array_list<sptr<Node>> GetChildrenArray();
 
         sptr<Node> GetChild(string_view name);
         sptr<Node> GetChildAt(int index);

@@ -1,12 +1,11 @@
 #pragma once
-#include <Apatite/Components/CameraComponent.h>
-#include <ApatiteEd/Assembly.h>
+#include "EditorComponent.h"
 
 namespace apatiteed
 {
-	class StdEditCameraControllerComponent : public Component
+	class StdEditCameraControllerComponent : public EditorComponent
 	{
-		CORELIB_DEF_TYPE(AssemblyObject_ApatiteEd, apatiteed::StdEditCameraControllerComponent, Component);
+		CORELIB_DEF_TYPE(AssemblyObject_ApatiteEd, apatiteed::StdEditCameraControllerComponent, EditorComponent);
 
 	public:
 	};

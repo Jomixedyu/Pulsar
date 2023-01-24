@@ -61,7 +61,7 @@ namespace apatite
     {
         return this->height_;
     }
-    void RenderTexture::PostInitialize(int32_t width, int32_t height)
+    void RenderTexture::PostInitializeData(int32_t width, int32_t height)
     {
         this->width_ = width;
         this->height_ = height;

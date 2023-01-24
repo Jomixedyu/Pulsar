@@ -1,6 +1,7 @@
 #pragma once
 #include "Assembly.h"
 #include <Apatite/AppInstance.h>
+#include <Apatite/BuiltinRP/BuiltinRP.h>
 
 namespace apatiteed
 {
@@ -19,11 +20,13 @@ namespace apatiteed
         virtual void OnTerminate() override;
         virtual void OnTick(float dt) override;
         virtual bool IsQuit() override;
+        virtual rendering::Pipeline* GetPipeline() override;
 
         virtual Vector2f GetAppSize();
         virtual void SetAppSize(Vector2f size);
 
     protected:
         Vector2f output_size_;
+        builtinrp::BultinRP* render_pipeline_;
     };
 }

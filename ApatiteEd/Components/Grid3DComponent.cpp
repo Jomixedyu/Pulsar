@@ -1,11 +1,11 @@
-#include "CoordinateGrid.h"
+#include "Grid3DComponent.h"
 #include <ThirdParty/glad/glad.h>
-#include <Apatite/Rendering/ShaderProgram.h>
+#include <Apatite/Rendering/ShaderPass.h>
 #include <ApatiteEd/Windows/EditorWindowManager.h>
+#include <ApatiteEd/Windows/SceneWindow.h>
 
 namespace apatiteed
 {
-
 
     static const char* vertcode = R"___REGION__(
 #version 330 core
@@ -38,24 +38,22 @@ void main()
     FragColor = vertexColor;
 })___REGION__";
 
-
-    static ShaderProgram* program;
+    static ShaderPass* program;
     static array_list<Vector3f> vert;
     static array_list<LinearColorf> colors;
     static uint32_t vao, vbo, colorvbo;
 
-    void CoordinateGrid::Init()
+    void Grid3DComponent::OnInitialize()
     {
-
         int line_count = 20;
         float detail_distance = 1;
-        float total_width = detail_distance * line_count ;
+        float total_width = detail_distance * line_count;
 
         for (int x = -line_count / 2; x <= line_count / 2; x++)
         {
             vert.push_back({ total_width / 2, 0, detail_distance * x });
             vert.push_back({ -total_width / 2, 0 , detail_distance * x });
-            
+
             LinearColorf color = { 0.1f, 0.1f, 0.1f, 1 };
             if (x == 0)
             {
@@ -97,11 +95,11 @@ void main()
 
         glBindVertexArray(0);
 
-        program = new ShaderProgram("test", vertcode, fragcode);
+        program = new ShaderPass("Editor/Grid3D", vertcode, fragcode);
     }
-    void CoordinateGrid::Render()
+    void Grid3DComponent::OnDraw()
     {
-        ShaderProgramScope sp(program);
+        ShaderPassScope sp(program);
 
         glBindVertexArray(vao);
         auto scenewin = EditorWindowManager::GetWindow<SceneWindow>();

@@ -4,10 +4,23 @@
 
 namespace apatite
 {
+    static void _InitializeNode(Node_sp node)
+    {
+        for (auto& com : node->GetAllComponentArray())
+        {
+            com->OnInitialize();
+        } 
+
+        for (auto& child : node->GetChildrenArray())
+        {
+            _InitializeNode(child);
+        } 
+    }
     void Scene::AddNode(Node_rsp node)
     {
         assert(node->IsAlive());
         this->scene_nodes_->push_back(node);
+        _InitializeNode(node);
     }
     void Scene::RemoveNode(Node_rsp node)
     {

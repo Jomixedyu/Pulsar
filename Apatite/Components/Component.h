@@ -18,12 +18,14 @@ namespace apatite
         virtual bool get_is_tickable() const { return true; }
     public:
 		virtual bool EqualsComponentType(Type* type);
-
     public:
-        //engine object lifecycle
+        virtual void OnDraw() {}
+    public:
+        // Engine object lifecycle
         virtual void OnDestroy() override {}
+        virtual void OnInitialize() {}
     public:        
-        //ITickable interface
+        // ITickable interface
         virtual void OnTick(Ticker ticker) override;
     public:
         Component() {}

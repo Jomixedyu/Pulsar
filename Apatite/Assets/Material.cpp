@@ -17,21 +17,9 @@ namespace apatite
         this->shader_->SetUniformTexture(name, tex);
     }
 
-    //void Material::BindGPU()
-    //{
-    //    this->shader_->UseProgram();
-
-    //    int32_t i = 0;
-    //    for (auto& [name, tex] : this->textures)
-    //    {
-    //        glActiveTexture(GL_TEXTURE1 + i);
-    //        glBindTexture(GL_TEXTURE_2D, tex->get_id());
-    //        this->program->SetUniformInt(name, tex->get_id());
-    //        i++;
-    //    }
-
-    //    glActiveTexture(GL_TEXTURE0);
-
-    //}
+    void Material::UseMaterial()
+    {
+        this->shader_->UseShader();
+    }
 
 }

@@ -6,6 +6,7 @@
 #include <ThirdParty/assimp/scene.h>
 #include <ThirdParty/assimp/postprocess.h>
 #include <Apatite/Components/StaticMeshRendererComponent.h>
+#include <Apatite/Application.h>
 
 namespace apatiteed
 {
@@ -128,7 +129,9 @@ namespace apatiteed
             n->set_parent(pnode);
 
             n->AddComponent<MeshContainerComponent>()->set_mesh(ProcessMesh(mesh, scene, dir, scale_factor));
-            n->AddComponent<StaticMeshRendererComponent>();
+
+            auto default_mat = Application::inst()->GetPipeline()->GetDefaultMaterial();
+            n->AddComponent<StaticMeshRendererComponent>()->get_materials()->Add(default_mat);
         }
         for (unsigned int i = 0; i < node->mNumChildren; i++)
         {

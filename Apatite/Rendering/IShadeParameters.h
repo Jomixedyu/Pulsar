@@ -4,7 +4,7 @@
 namespace apatite
 {
 
-    class IShaderParam
+    class IShadeParameters
     {
     public:
         virtual int32_t GetUniformLocaltion(string_view name) = 0;

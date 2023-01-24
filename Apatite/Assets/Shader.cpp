@@ -11,6 +11,75 @@ namespace apatite
 {
     using namespace std;
 
+    struct _ShaderInfo
+    {
+        string shader_name;
+        string shader_config;
+        array_list<string> pass_configs;
+        array_list<string> pass_verts;
+        array_list<string> pass_frags;
+    };
+
+    // temp impl
+    static _ShaderInfo _ParseShaderInfo(const string& shaderbuilder)
+    {
+        auto arr = StringUtil::Split(shaderbuilder, u8char("\n"));
+        _ShaderInfo info;
+        int step = 0;
+
+        constexpr int kShaderConfig = 1;
+        constexpr int kPass = 2;
+        constexpr int kVert = 3;
+        constexpr int kFrag = 4;
+
+        for (size_t i = 0; i < arr.size(); i++)
+        {
+            if (arr[i].starts_with("#pragma config"))
+            {
+                step = kShaderConfig;
+                continue;
+            }
+            if (arr[i].starts_with("#pragma pass"))
+            {
+                step = kPass;
+                continue;
+            }
+            if (arr[i].starts_with("#pragma vert"))
+            {
+                step = kVert;
+                continue;
+            }
+            if (arr[i].starts_with("#pragma frag"))
+            {
+                step = kFrag;
+                continue;
+            }
+            
+            if (step == kShaderConfig)
+            {
+                info.shader_config.append(std::move(arr[i]));
+            }
+            if (step == kPass)
+            {
+                // new pass
+                info.pass_configs.push_back({});
+                info.pass_verts.push_back({});
+                info.pass_frags.push_back({});
+
+                info.pass_configs.at(info.pass_configs.size() - 1).append(std::move(arr[i]));
+            }
+            if (step == kVert)
+            {
+                info.pass_verts.at(info.pass_configs.size() - 1).append(std::move(arr[i]));
+            }
+            if (step == kFrag)
+            {
+                info.pass_frags.at(info.pass_configs.size() - 1).append(std::move(arr[i]));
+            }
+        }
+    }
+
+
     Shader::Shader()
     {
         this->id_ = 0;
@@ -105,44 +174,6 @@ namespace apatite
     {
         assert(!this->GetIsBindGPU());
 
-        for (auto& pass : this->pass_)
-        {
-            pass.program = glCreateProgram();
-
-            pass.vert = glCreateShader(GL_VERTEX_SHADER);
-            pass.frag = glCreateShader(GL_FRAGMENT_SHADER);
-
-            const char* vertcode = pass.config_.vert_code.c_str();
-            glShaderSource(pass.vert, 1, &vertcode, nullptr);
-            glCompileShader(pass.vert);
-
-            if (!_CheckShaderCompile(pass.vert)) {
-                throw ShaderCompileException(pass.config_.name, _GetShaderCompileErrorInfo(pass.vert));
-            }
-
-            const char* fragcode = pass.config_.frag_code.c_str();
-            glShaderSource(pass.frag, 1, &fragcode, nullptr);
-            glCompileShader(pass.frag);
-            if (!_CheckShaderCompile(pass.frag)) {
-                throw ShaderCompileException(pass.config_.name, _GetShaderCompileErrorInfo(pass.frag));
-            }
-
-            glAttachShader(pass.program, pass.vert);
-            glAttachShader(pass.program, pass.frag);
-            glLinkProgram(pass.program);
-
-            if (!_CheckShaderProgram(pass.program)) {
-                int success;
-                char infoLog[512];
-                glGetProgramiv(pass.program, GL_LINK_STATUS, &success);
-                if (!success) {
-                    glGetProgramInfoLog(pass.program, 512, NULL, infoLog);
-                    throw ShaderCompileException(pass.config_.name, infoLog);
-                }
-            }
-        }
-
-        this->id_ = 1;
     }
 
     void Shader::UnBindGPU()

@@ -1,4 +1,6 @@
 #include "Node.h"
+#include "Node.h"
+#include "Node.h"
 #include <Apatite/Node.h>
 #include <Apatite/Components/Component.h>
 #include <Apatite/TransformUtil.h>
@@ -157,6 +159,18 @@ namespace apatite
         this->components_ = mksptr(new List<Component_sp>);
     }
 
+    void Node::Draw()
+    {
+        for (auto& com : *this->components_)
+        {
+            com->OnDraw();
+        }
+        for (auto& i : *this->childs_)
+        {
+            i->Draw();
+        }
+    }
+
     void Node::Serialize(ser::Stream& stream, bool is_ser)
     {
     }
@@ -214,6 +228,15 @@ namespace apatite
         {
             list->push_back(item);
         }
+    }
+    array_list<sptr<Node>> Node::GetChildrenArray()
+    {
+        array_list<sptr<Node>> ret;
+        for (auto& item : *this->childs_)
+        {
+            ret.push_back(item);
+        }
+        return ret;
     }
     void Node::OnInstantiateAsset(sptr<AssetObject>& obj)
     {

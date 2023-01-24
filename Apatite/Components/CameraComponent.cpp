@@ -1,9 +1,9 @@
 #include "CameraComponent.h"
 #include <Apatite/Private/RenderInterface.h>
-#include <ApatiteEd/CoordinateGrid.h>
 #include <Apatite/Application.h>
 #include <Apatite/AppInstance.h>
 #include <Apatite/TransformUtil.h>
+#include <Apatite/Node.h>
 
 namespace apatite
 {
@@ -18,8 +18,7 @@ namespace apatite
             auto [r, g, b, a] = this->backgroundColor;
             detail::RenderInterface::Clear(r, g, b, a);
             //draw ...
-            apatiteed::CoordinateGrid::Render();
-
+            World::Current()->Draw();
         }
     }
 

@@ -5,56 +5,11 @@
 #include <Apatite/Assets/Texture.h>
 #include <Apatite/IBindGPU.h>
 #include <Apatite/Math.h>
-#include <Apatite/Rendering/ShaderProgram.h>
+#include <Apatite/Rendering/ShaderPass.h>
 
 namespace apatite
 {
     class Texture2D;
-
-    enum class ShaderCullMode
-    {
-        CullOff,
-        CullBack,
-        CullFront,
-    };
-    enum class ShaderZTest
-    {
-        Always,
-        NotEqual,
-        Less,
-        LEqual,
-        Equal,
-        GEqual,
-        Greater
-    };
-    enum class ShaderBlendMode
-    {
-        None,
-        SrcAlpha_OneMinusSrcAlpha
-    };
-
-
-    struct ShaderPassConfig
-    {
-        string name;
-        ShaderCullMode cull;
-        ShaderBlendMode blend;
-        ShaderZTest ztest;
-        bool zwrite;
-        string vert_code;
-        string frag_code;
-    };
-
-    //shader program
-    struct ShaderPass
-    {
-
-    public:
-        ShaderPassConfig config_;
-        uint32_t vert;
-        uint32_t frag;
-        uint32_t program;
-    };
 
 
     class Shader : public AssetObject, public IBindGPU
@@ -92,6 +47,7 @@ namespace apatite
     private:
     };
     CORELIB_DECL_SHORTSPTR(Shader);
+
 
 
     class ShaderCompileException : public EngineException

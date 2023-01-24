@@ -19,7 +19,7 @@ namespace apatite
         virtual int32_t get_width() const override;
         virtual int32_t get_height() const override;
     public:
-        void PostInitialize(int32_t width, int32_t height);
+        void PostInitializeData(int32_t width, int32_t height);
     public:
         //IBindGPU
         virtual void BindGPU() override;

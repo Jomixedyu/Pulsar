@@ -49,12 +49,6 @@ namespace apatite
         mesh->raw_data_ = this->raw_data_;
     }
 
-    void StaticMesh::Render()
-    {
-        assert(this->GetIsBindGPU());
-
-    }
-
     StaticMesh::~StaticMesh()
     {
         this->UnBindGPU();
@@ -77,13 +71,18 @@ namespace apatite
         uint32_t& vao = this->render_handle_;
         glGenVertexArrays(1, &vao);
 
+
         uint32_t& vbo = this->render_buffer_;
         glGenBuffers(1, &vbo);
+
 
         glBindVertexArray(vao);
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
-        glBufferData(GL_ARRAY_BUFFER, this->raw_data_->size() * sizeof(float), this->raw_data_->data(), GL_STATIC_DRAW);
+        auto vertex_arr_size = this->raw_data_->size();
+        glBufferData(GL_ARRAY_BUFFER, this->raw_data_->size() * sizeof(StaticMeshVertexData), this->raw_data_->data(), GL_STATIC_DRAW);
+
+
 
         int attr_index = 0;
 
@@ -103,7 +102,7 @@ namespace apatite
         glEnableVertexAttribArray(attr_index);
         ++attr_index;
 
-        glVertexAttribPointer(attr_index, 2 * APATITE_STATICMESH_MAX_TEXTURE_COORDS, GL_FLOAT, GL_FALSE, sizeof(StaticMeshVertexData::Coords), (void*)offsetof(StaticMeshVertexData, Coords));
+        glVertexAttribPointer(attr_index, 2, GL_FLOAT, GL_FALSE, 8, (void*)offsetof(StaticMeshVertexData, Coords));
         glEnableVertexAttribArray(attr_index);
         ++attr_index;
 
@@ -111,9 +110,16 @@ namespace apatite
         glEnableVertexAttribArray(attr_index);
         ++attr_index;
 
+        uint32_t ebo;
+        glGenBuffers(1, &ebo);
+        this->ebo_buffer_ = ebo;
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * this->indices.size(), this->indices.data(), GL_STATIC_DRAW);
 
-        glBindBuffer(GL_ARRAY_BUFFER, GL_NONE);
         glBindVertexArray(GL_NONE);
+        glBindBuffer(GL_ARRAY_BUFFER, GL_NONE);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_NONE);
+
     }
 
     void StaticMesh::UnBindGPU()

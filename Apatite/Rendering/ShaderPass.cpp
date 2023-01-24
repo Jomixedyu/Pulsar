@@ -1,4 +1,4 @@
-#include "ShaderProgram.h"
+#include "ShaderPass.h"
 #include <ThirdParty/glad/glad.h>
 #include <Apatite/Assets/Shader.h>
 
@@ -24,7 +24,7 @@ namespace apatite
         return string(info);
     }
 
-    ShaderProgram::ShaderProgram(const char* name, const char* vert_code, const char* frag_code)
+    ShaderPass::ShaderPass(const char* name, const char* vert_code, const char* frag_code)
     {
         this->program_id = glCreateProgram();
 
@@ -62,50 +62,50 @@ namespace apatite
         }
     }
 
-    int32_t ShaderProgram::GetUniformLocaltion(string_view name)
+    int32_t ShaderPass::GetUniformLocaltion(string_view name)
     {
         return glGetUniformLocation(this->program_id, name.data());
     }
-    void ShaderProgram::SetUniformInt(string_view name, const int32_t& i)
+    void ShaderPass::SetUniformInt(string_view name, const int32_t& i)
     {
         glUniform1i(this->GetUniformLocaltion(name), i);
     }
-    void ShaderProgram::SetUniformFloat(string_view name, const float& f)
+    void ShaderPass::SetUniformFloat(string_view name, const float& f)
     {
         glUniform1f(this->GetUniformLocaltion(name), f);
     }
-    void ShaderProgram::SetUniformMatrix4fv(string_view name, const float* value)
+    void ShaderPass::SetUniformMatrix4fv(string_view name, const float* value)
     {
         glUniformMatrix4fv(this->GetUniformLocaltion(name), 1, GL_FALSE, value);
     }
-    void ShaderProgram::SetUniformMatrix4fv(string_view name, const Matrix4f& mat)
+    void ShaderPass::SetUniformMatrix4fv(string_view name, const Matrix4f& mat)
     {
         SetUniformMatrix4fv(name, mat.get_value_ptr());
     }
-    void ShaderProgram::SetUniformVector3(string_view name, const Vector3f& value)
+    void ShaderPass::SetUniformVector3(string_view name, const Vector3f& value)
     {
         glUniform3fv(this->GetUniformLocaltion(name), 1, value.get_value_ptr());
     }
-    void ShaderProgram::SetUniformColor(string_view name, const LinearColorf& value)
+    void ShaderPass::SetUniformColor(string_view name, const LinearColorf& value)
     {
         glUniform4fv(this->GetUniformLocaltion(name), 1, value.get_value_ptr());
     }
-    void ShaderProgram::SetUniformColor(string_view name, const Vector3f& value)
+    void ShaderPass::SetUniformColor(string_view name, const Vector3f& value)
     {
         SetUniformColor(name, LinearColorf(value.x, value.y, value.z));
     }
 
-    ShaderProgram::~ShaderProgram()
+    ShaderPass::~ShaderPass()
     {
         glDeleteProgram(this->program_id);
     }
 
-    void ShaderProgram::EnableProgram()
+    void ShaderPass::EnableProgram()
     {
         glGetIntegerv(GL_CURRENT_PROGRAM, &this->last_program_id);
         glUseProgram(this->program_id);
     }
-    void ShaderProgram::DisableProgram()
+    void ShaderPass::DisableProgram()
     {
         glUseProgram(this->last_program_id);
     }

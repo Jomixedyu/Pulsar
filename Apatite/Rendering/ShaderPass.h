@@ -1,14 +1,45 @@
 #pragma once
 #include <Apatite/ObjectBase.h>
-#include "IShaderParam.h"
+#include "IShadeParameters.h"
 
 namespace apatite
 {
-    class ShaderProgram : public IShaderParam
+    enum class ShaderCullMode
+    {
+        CullOff,
+        CullBack,
+        CullFront,
+    };
+    enum class ShaderZTest
+    {
+        Always,
+        NotEqual,
+        Less,
+        LEqual,
+        Equal,
+        GEqual,
+        Greater
+    };
+    enum class ShaderBlendMode
+    {
+        None,
+        SrcAlpha_OneMinusSrcAlpha
+    };
+
+    struct ShaderPassConfig
+    {
+        string name;
+        ShaderCullMode cull;
+        ShaderBlendMode blend;
+        ShaderZTest ztest;
+        bool zwrite;
+    };
+
+    class ShaderPass : public IShadeParameters
     {
     public:
-        ShaderProgram(const char* name, const char* vert_code, const char* frag_code);
-        virtual ~ShaderProgram();
+        ShaderPass(const char* name, const char* vert_code, const char* frag_code);
+        virtual ~ShaderPass();
         
     public:
         void EnableProgram();
@@ -30,18 +61,18 @@ namespace apatite
         int32_t last_program_id;
     };
 
-    struct ShaderProgramScope
+    struct ShaderPassScope
     {
-        ShaderProgram* program_;
-        ShaderProgramScope(ShaderProgram* program) : program_(program)
+        ShaderPass* program_;
+        ShaderPassScope(ShaderPass* program) : program_(program)
         {
             program_->EnableProgram();
         }
-        ~ShaderProgramScope()
+        ~ShaderPassScope()
         {
             program_->DisableProgram();
         }
-        ShaderProgram* operator->()
+        ShaderPass* operator->()
         {
             return this->program_;
         }

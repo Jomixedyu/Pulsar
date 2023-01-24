@@ -1,4 +1,5 @@
 ﻿#include "EditorAppInstance.h"
+#include "EditorAppInstance.h"
 #include <ApatiteEd/EditorAppInstance.h>
 #include <Apatite/Application.h>
 #include <Apatite/World.h>
@@ -130,6 +131,13 @@ namespace apatiteed
 
         RenderInterface::SetViewport(0, 0, (int)size.x, (int)size.y);
 
+        for (GLenum err; (err = glGetError()) != GL_NO_ERROR;)
+        {
+            Logger::Log("opengl init error: " + std::to_string(err), LogLevel::Error);
+        }
+
+        this->render_pipeline_ = new builtinrp::BultinRP;
+
         Logger::Log("initialize imgui");
         ImGui_Engine_Initialize();
 
@@ -168,6 +176,7 @@ namespace apatiteed
         }
 
         Workspace::OpenWorkspace(R"(D:\Codes\Apatite\out\build\x64-Debug)");
+
     }
 
     void EditorAppInstance::OnTerminate()
@@ -181,6 +190,8 @@ namespace apatiteed
         {
             subsystem->OnTerminate();
         }
+
+        delete this->render_pipeline_;
 
         using namespace std::filesystem;
 
@@ -221,6 +232,11 @@ namespace apatiteed
     bool EditorAppInstance::IsQuit()
     {
         return SystemInterface::GetIsQuit();
+    }
+
+    rendering::Pipeline* EditorAppInstance::GetPipeline()
+    {
+        return this->render_pipeline_;
     }
 
     Vector2f apatiteed::EditorAppInstance::GetAppSize()

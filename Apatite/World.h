@@ -14,6 +14,7 @@ namespace apatite
     public:
         virtual void Tick(float dt);
 
+        void Draw();
     protected:
         virtual void OnWorldBegin();
         virtual void OnWorldEnd();

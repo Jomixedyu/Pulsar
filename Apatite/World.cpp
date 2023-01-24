@@ -1,3 +1,4 @@
+#include "World.h"
 #include <Apatite/World.h>
 #include <Apatite/Scene.h>
 
@@ -41,6 +42,15 @@ namespace apatite
         }
 
 
+    }
+
+    void World::Draw()
+    {
+        for (auto& node : *this->scene->get_root_nodes())
+        {
+            node->Draw();
+        }
+        
     }
 
     void World::OnWorldBegin()

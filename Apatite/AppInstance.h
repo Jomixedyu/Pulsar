@@ -4,6 +4,7 @@
 #include <Apatite/ObjectBase.h>
 #include <Apatite/World.h>
 #include "Subsystem.h"
+#include <Apatite/Rendering/Pipelines/Pipeline.h>
 
 namespace apatite
 {
@@ -18,6 +19,7 @@ namespace apatite
         virtual string GetTitle() = 0;
         virtual void SetTitle(string_view title) = 0;
         virtual string AppRootDir() = 0;
+        virtual rendering::Pipeline* GetPipeline() = 0;
 
         jxcorlib::Action<> QuittingEvents;
         jxcorlib::Function<bool> RequestQuitEvents;
