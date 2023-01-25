@@ -2,7 +2,7 @@
 
 namespace apatite
 {
-    void AssetObject::Serialize(ser::Stream& stream, bool is_ser)
+    void AssetObject::SerializeBuildData(ser::Stream& stream, bool is_ser)
     {
 
     }

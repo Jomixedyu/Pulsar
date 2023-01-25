@@ -31,6 +31,8 @@ namespace jxcorlib
 
         std::vector<std::string> Dir(std::string_view path, const std::vector<std::string>& target);
         std::string GetRoot(std::string_view path);
+
+        void GenericSelf(std::string* path);
     };
 }
 

@@ -15,7 +15,7 @@ namespace apatite
         CORELIB_DEF_TYPE(AssemblyObject_Apatite, apatite::AssetObject, ObjectBase);
         friend class ::apatiteed::AssetSourcePackage; //editor
     public:
-        virtual void Serialize(ser::Stream& stream, bool is_ser);
+        virtual void SerializeBuildData(ser::Stream& stream, bool is_ser);
         sptr<AssetObject> InstantiateAsset();
     public:
         guid_t get_source_package() const { return this->package_guid_; }

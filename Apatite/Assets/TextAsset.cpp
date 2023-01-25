@@ -4,7 +4,7 @@
 namespace apatite
 {
 
-    void TextAsset::Serialize(ser::Stream& stream, bool is_ser)
+    void TextAsset::SerializeBuildData(ser::Stream& stream, bool is_ser)
     {
         ser::ReadWriteStream(stream, is_ser, this->text_);
     }

@@ -50,12 +50,12 @@ namespace apatiteed
 
     static StaticMesh_sp ProcessMesh(aiMesh* mesh, const aiScene* scene, const string& dir, float scale_factor)
     {
-        StaticMeshVertexDataArray* vert_arr = new StaticMeshVertexDataArray;
+        StaticMeshVertexBuildDataArray* vert_arr = new StaticMeshVertexBuildDataArray;
         vert_arr->reserve(mesh->mNumVertices);
 
         for (unsigned int vertnum = 0; vertnum < mesh->mNumVertices; ++vertnum)
         {
-            StaticMeshVertexData vert;
+            StaticMeshVertexBuildData vert;
             vert.Position = _Vec3(mesh->mVertices[vertnum]);
             vert.Normal = _Vec3(mesh->mNormals[vertnum]);
             if (mesh->mTangents)

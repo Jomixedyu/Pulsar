@@ -28,7 +28,7 @@ namespace apatite
         this->scene_nodes_->erase(it);
     }
 
-    void Scene::Serialize(ser::Stream& stream, bool is_ser)
+    void Scene::SerializeBuildData(ser::Stream& stream, bool is_ser)
     {
         int node_len = this->scene_nodes_->size();
         ser::ReadWriteStream(stream, is_ser, node_len);

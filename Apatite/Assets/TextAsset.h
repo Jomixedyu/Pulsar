@@ -9,7 +9,7 @@ namespace apatite
         CORELIB_DEF_TYPE(AssemblyObject_Apatite, apatite::TextAsset, AssetObject);
         friend class TextAssetImporter;
     public:
-        virtual void Serialize(ser::Stream& stream, bool is_ser) override;
+        virtual void SerializeBuildData(ser::Stream& stream, bool is_ser) override;
         virtual void OnInstantiateAsset(sptr<AssetObject>& obj) override;
     public:
         static sptr<TextAsset> StaticCreate(const string& str);

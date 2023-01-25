@@ -70,7 +70,7 @@ namespace apatite
         Node();
 
         void Draw();
-        virtual void Serialize(ser::Stream& stream, bool is_ser) override;
+        virtual void SerializeBuildData(ser::Stream& stream, bool is_ser) override;
 
         //ITickable 
         virtual void OnTick(Ticker ticker) override;

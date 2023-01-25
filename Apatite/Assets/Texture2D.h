@@ -12,7 +12,7 @@ namespace apatite
     public:
         Texture2D();
         ~Texture2D() override;
-        virtual void Serialize(ser::Stream& stream, bool is_ser) override;
+        virtual void SerializeBuildData(ser::Stream& stream, bool is_ser) override;
     public:
         virtual int32_t get_width() const override { return width_; }
         virtual int32_t get_height() const override { return height_; }

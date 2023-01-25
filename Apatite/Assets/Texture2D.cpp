@@ -14,7 +14,7 @@ namespace apatite
         this->UnBindGPU();
     }
 
-    void Texture2D::Serialize(ser::Stream& stream, bool is_ser)
+    void Texture2D::SerializeBuildData(ser::Stream& stream, bool is_ser)
     {
         ser::ReadWriteStream(stream, is_ser, this->width_);
         ser::ReadWriteStream(stream, is_ser, this->height_);

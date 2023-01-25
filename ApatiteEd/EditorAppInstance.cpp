@@ -21,6 +21,8 @@
 #include <Apatite/Scene.h>
 #include <ApatiteEd/EditorWorld.h>
 #include <ThirdParty/glad/glad.h>
+#include <ApatiteEd/AssetDatabase.h>
+
 namespace apatiteed
 {
     using namespace detail;
@@ -136,6 +138,8 @@ namespace apatiteed
             Logger::Log("opengl init error: " + std::to_string(err), LogLevel::Error);
         }
 
+        AssetDatabase::Initialize();
+
         this->render_pipeline_ = new builtinrp::BultinRP;
 
         Logger::Log("initialize imgui");
@@ -202,6 +206,7 @@ namespace apatiteed
         auto json = ser::JsonSerializer::Serialize(cfg.get(), {});
         FileUtil::WriteAllText(uicfg_path, json);
 
+        AssetDatabase::Terminate();
         EditorLogRecorder::Terminate();
     }
 

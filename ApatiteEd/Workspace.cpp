@@ -2,18 +2,19 @@
 #include <CoreLib.Platform/Window.h>
 #include <CoreLib/File.h>
 #include <Apatite/Logger.h>
+#include <filesystem>
 
 namespace apatiteed
 {
     static string project_path;
     static string project_name;
-    static bool is_opened = true;
+    static bool is_opened = false;
 
     Action<> Workspace::OnWorkspaceOpened;
     Function<bool> Workspace::OnWorkspaceClosing;
     Action<> Workspace::OnWorkspaceClosed;
 
-    //.seproj
+    //.apatite
     class WorkspaceFile
     {
 
@@ -43,6 +44,7 @@ namespace apatiteed
         //open
 
         project_path = path;
+        PathUtil::GenericSelf(&project_path);
         project_name = PathUtil::GetFilenameWithoutExt(project_path);
 
         Logger::Log("open workspace: " + project_path);
@@ -53,7 +55,7 @@ namespace apatiteed
     {
         if (OnWorkspaceClosing.IsValidReturnInvoke())
         {
-            OnWorkspaceOpened.Invoke();
+            OnWorkspaceClosed.Invoke();
 
             project_path.clear();
             project_name.clear();

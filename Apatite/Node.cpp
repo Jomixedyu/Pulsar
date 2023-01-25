@@ -171,7 +171,7 @@ namespace apatite
         }
     }
 
-    void Node::Serialize(ser::Stream& stream, bool is_ser)
+    void Node::SerializeBuildData(ser::Stream& stream, bool is_ser)
     {
     }
 
