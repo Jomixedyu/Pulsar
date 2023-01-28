@@ -2,7 +2,6 @@
 
 #include "ObjectBase.h"
 #include "AssetObject.h"
-#include "AssetTable.h"
 
 namespace apatite
 {

@@ -22,6 +22,7 @@
 #include <ApatiteEd/EditorWorld.h>
 #include <ThirdParty/glad/glad.h>
 #include <ApatiteEd/AssetDatabase.h>
+#include <Apatite/AssetRegistry.h>
 
 namespace apatiteed
 {
@@ -124,6 +125,17 @@ namespace apatiteed
             size = cfg->window_size;
         }
 
+        //temp
+        {
+            AssetRegisterInfo info;
+            info.path = "Engine/Assets/Shaders/BuiltinRP.DefaultLit";
+            info.getter = [&](guid_t) {
+                auto shader_src = FileUtil::ReadAllText(R"(D:\Codes\Apatite\Engine\Assets\pbr.shader)");
+                return Material::StaticCreate(info.path, Shader::StaticCreate(shader_src));
+            };
+            AssetRegistry::RegisterAsset(guid_t::create_new(), info);
+        }
+
         Logger::Log("initialize application");
 
         SystemInterface::InitializeWindow(title, (int)size.x, (int)size.y);
@@ -179,7 +191,7 @@ namespace apatiteed
             subsystem->OnInitialized();
         }
 
-        Workspace::OpenWorkspace(R"(D:\Codes\Apatite\out\build\x64-Debug)");
+        Workspace::OpenWorkspace(R"(D:\Codes\Apatite\TestProject)");
 
     }
 

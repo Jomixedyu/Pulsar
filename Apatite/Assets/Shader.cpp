@@ -1,3 +1,5 @@
+#include "Shader.h"
+#include "Shader.h"
 
 #include <Apatite/Assets/Shader.h>
 #include <ThirdParty/glad/glad.h>
@@ -27,21 +29,27 @@ namespace apatite
         _ShaderInfo info;
         int step = 0;
 
-        constexpr int kShaderConfig = 1;
-        constexpr int kPass = 2;
-        constexpr int kVert = 3;
-        constexpr int kFrag = 4;
+        enum
+        {
+            kShaderConfig = 1,
+            kNewPass = 1 << 1,
+            kPass = 1 << 2,
+            kVert = 1 << 3,
+            kFrag = 1 << 4
+        };
 
         for (size_t i = 0; i < arr.size(); i++)
         {
             if (arr[i].starts_with("#pragma config"))
             {
+                auto configs = StringUtil::Split(arr[i], u8char(" "));
+                info.shader_name = configs[configs.size() - 1];
                 step = kShaderConfig;
                 continue;
             }
             if (arr[i].starts_with("#pragma pass"))
             {
-                step = kPass;
+                step = kNewPass | kPass;
                 continue;
             }
             if (arr[i].starts_with("#pragma vert"))
@@ -54,29 +62,39 @@ namespace apatite
                 step = kFrag;
                 continue;
             }
-            
+
             if (step == kShaderConfig)
             {
                 info.shader_config.append(std::move(arr[i]));
             }
-            if (step == kPass)
+
+            if (step & kPass)
             {
                 // new pass
-                info.pass_configs.push_back({});
-                info.pass_verts.push_back({});
-                info.pass_frags.push_back({});
+                if (step & kNewPass)
+                {
+                    info.pass_configs.emplace_back();
+                    info.pass_verts.emplace_back();
+                    info.pass_frags.emplace_back();
+                    step &= ~kNewPass;
+                }
 
                 info.pass_configs.at(info.pass_configs.size() - 1).append(std::move(arr[i]));
+                info.pass_configs.at(info.pass_configs.size() - 1).append("\n");
             }
             if (step == kVert)
             {
-                info.pass_verts.at(info.pass_configs.size() - 1).append(std::move(arr[i]));
+                info.pass_verts.at(info.pass_verts.size() - 1).append(std::move(arr[i]));
+                info.pass_verts.at(info.pass_verts.size() - 1).append("\n");
             }
             if (step == kFrag)
             {
-                info.pass_frags.at(info.pass_configs.size() - 1).append(std::move(arr[i]));
+                info.pass_frags.at(info.pass_frags.size() - 1).append(std::move(arr[i]));
+                info.pass_frags.at(info.pass_frags.size() - 1).append("\n");
             }
         }
+
+        return info;
     }
 
 
@@ -99,10 +117,15 @@ namespace apatite
         return this->name_;
     }
 
-    void Shader::UseShader()
+    void Shader::UseShader(int32_t pass_index)
     {
-        assert(this->GetIsBindGPU());
-        glUseProgram(this->id_);
+        
+    }
+
+    ShaderPass* Shader::GetPass(int32_t index)
+    {
+        assert(index >= 0 && index < this->pass_.size());
+        return this->pass_[index];
     }
 
     static bool _CheckShaderProgram(int id)
@@ -180,7 +203,6 @@ namespace apatite
     {
         if (this->GetIsBindGPU())
         {
-            glDeleteProgram(this->id_);
             this->id_ = 0;
         }
     }
@@ -191,12 +213,26 @@ namespace apatite
     }
 
 
-    Shader_sp Shader::StaticCreate(string_view name, array_list<ShaderPass>&& pass)
+    Shader_sp Shader::StaticCreate(string_view name, array_list<ShaderPass*>&& pass)
     {
         auto shader = mksptr(new Shader);
         shader->Construct();
         shader->set_name(name);
         shader->pass_ = std::move(pass);
+        return shader;
+    }
+    sptr<Shader> Shader::StaticCreate(const string& shader_source)
+    {
+        auto info = _ParseShaderInfo(shader_source);
+
+        auto shader = mksptr(new Shader);
+        shader->Construct();
+        shader->set_name(info.shader_name);
+
+        for (size_t i = 0; i < info.pass_configs.size(); i++)
+        {
+            shader->pass_.push_back(new ShaderPass(info.shader_name.c_str(), info.pass_verts[i].c_str(), info.pass_frags[i].c_str()));
+        }
         return shader;
     }
 }

@@ -1,6 +1,11 @@
 #include "Node.h"
 #include "Node.h"
 #include "Node.h"
+#include "Node.h"
+#include "Node.h"
+#include "Node.h"
+#include "Node.h"
+#include "Node.h"
 #include <Apatite/Node.h>
 #include <Apatite/Components/Component.h>
 #include <Apatite/TransformUtil.h>
@@ -92,26 +97,67 @@ namespace apatite
     Vector3f Node::get_world_position() const
     {
         Vector3f pos = this->get_self_position();
-        Node_sp node;
-        if (this->has_parent())
+        auto node = self();
+        if (node->has_parent())
         {
             node = this->get_parent().lock();
-            auto v4 = node->GetLocalTransformMatrix() * (Vector4f)pos;
+            auto mat = node->GetLocalTransformMatrix();
+            //mat[3][0] = 0;
+            //mat[3][1] = 0;
+            //mat[3][2] = 0;
+            //mat[3][3] = 1;
+            auto v4 = mat * Vector4f(pos.x, pos.y, pos.z, 1);
             pos = { v4.x, v4.y, v4.z };
         }
         return pos;
     }
-
+    //static Vector3f chgsign(const Vector3f& x, const Vector3f& y)
+    //{
+    //    return chgsign(float4(as_native(x)), float4(as_native(y))).xyz;
+    //}
+    //static Vector4f scaleMulQuat(const Vector3f& scale, const Vector4f& q)
+    //{
+    //    Vector3f s = chgsign(Vector3f(1,1,1), scale);
+    //    return chgsign(q, Vector4f(s.yxx * s.zzy, 0));
+    //}
+    static Quat4f _ScaleMulQuat(const Vector3f& scale, const Quat4f& q)
+    {
+        auto s = jmath::Chgsign(Vector3f::Identity(), scale);
+        return jmath::Chgsign(q, Quat4f(s.y * s.z, s.x * s.z, s.x * s.y, 0));
+    }
+    static Quat4f _QuatMul(const Quat4f& q1, const Quat4f& q2)
+    {
+        auto q = Quat4f(q1.y * q2.x, q1.w * q2.w, q1.z * q2.y, q1.x * q2.z) - Quat4f(q1.w * q2.z, q1.x * q2.x, q1.y * q2.z, q1.z * q2.x)
+            - Quat4f(q1.z * q2.w, q1.z * q2.z, q1.w * q2.x, q1.w * q2.y) - Quat4f(q1.x * q2.y, q1.y * q2.y, q1.x * q2.w, q1.y * q2.w);
+        return jmath::Chgsign(Quat4f(q.z, q.w, q.x, q.y), Quat4f(-1.f, -1.f, -1.f, 1.f));
+    }
     Quat4f Node::get_world_rotation() const
     {
         Quat4f rot = this->get_self_rotation();
         auto node = this->get_parent().lock();
         while (node)
         {
-            rot *= node->get_self_rotation();
+            rot = _ScaleMulQuat(node->scale_, rot);
+            rot = _QuatMul(node->rotation_, rot);
+
             node = node->get_parent().lock();
         }
         return rot;
+    }
+
+    void Node::set_world_rotation(const Quat4f& q)
+    {
+
+    }
+
+    Vector3f Node::get_self_euler_rotation() const
+    {
+        return this->rotation_.GetEuler();
+    }
+
+    void Node::set_self_euler_rotation(const Vector3f& value)
+    {
+        this->rotation_ = Quat4f::FromEuler(value);
     }
 
     Vector3f Node::get_world_euler_rotation() const
@@ -157,6 +203,7 @@ namespace apatite
     {
         this->childs_ = mksptr(new List<Node_sp>);
         this->components_ = mksptr(new List<Component_sp>);
+        this->rotation_ = Quat4f::FromEuler({ 0,0,0 });
     }
 
     void Node::Draw()
@@ -255,18 +302,17 @@ namespace apatite
         //    that->components_->push_back(sptr_cast<Component>(item->InstantiateAsset()));
         //}
     }
-    void Node::Translate(Vector3f v)
+
+    void Node::RotateEulerLocal(Vector3f v)
     {
+        this->rotation_ *= Quat4f::FromEuler(v);
     }
-    void Node::Rotate(Quat4f v)
+    void Node::RotateEulerWorld(Vector3f v)
     {
+        auto w_rot = this->get_world_rotation();
+        this->set_world_rotation(w_rot * (jmath::Inverse(w_rot) * Quat4f::FromEuler(v) * w_rot));
     }
-    void Node::RotateEuler(Vector3f v)
-    {
-    }
-    void Node::Scale(Vector3f v)
-    {
-    }
+
     Matrix4f Node::GetLocalTransformMatrix() const
     {
         return math::Translate(this->position_) * math::Rotate(this->rotation_) * math::Scale(this->scale_);

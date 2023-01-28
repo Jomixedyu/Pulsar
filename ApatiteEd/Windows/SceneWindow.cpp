@@ -9,6 +9,7 @@
 #include <ApatiteEd/Importers/FBXImporter.h>
 #include <ApatiteEd/Components/StdEditCameraControllerComponent.h>
 #include <ApatiteEd/Components/Grid3DComponent.h>
+#include <Apatite/Rendering/RenderContext.h>
 
 namespace apatiteed
 {
@@ -81,7 +82,7 @@ void main()
         cam->far = 10000.f;
         cam->size_ = { 1280,720 };
         camera_node->set_self_position({ 10.f, 7, 10 });
-        camera_node->set_self_euler_rotation({ -25.f, -45, 0 });
+        //camera_node->set_self_euler_rotation({ -25.f, -45, 0 });
 
         center_node->AddComponent<StdEditCameraControllerComponent>();
 
@@ -110,6 +111,7 @@ void main()
 
     void SceneWindow::OnDrawImGui()
     {
+        RenderContext::PushCamera(this->GetSceneCamera());
 
         if (ImGui::BeginMenuBar())
         {
@@ -156,6 +158,7 @@ void main()
 
         ImGui::Image((ImTextureID)cam->render_target->get_tex_id(), ImVec2(content_size_x, content_size_y), ImVec2(0, 1), ImVec2(1, 0));
 
+        RenderContext::PopCamera();
     }
 
     void SceneWindow::OnWindowResize()

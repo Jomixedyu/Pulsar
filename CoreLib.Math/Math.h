@@ -152,4 +152,63 @@ namespace jxcorlib::math
     };
     template<> struct get_boxing_type<Quat4f> { using type = BoxingQuat4f; };
 
+
+    class BoxingMatrix4f : public jxcorlib::BoxingObject
+    {
+        CORELIB_DEF_TYPE(AssemblyObject_JxMath, jxcorlib::math::BoxingMatrix4f, jxcorlib::BoxingObject);
+    public:
+        CORELIB_REFL_DECL_FIELD(v1x);
+        float v1x;
+        CORELIB_REFL_DECL_FIELD(v1y);
+        float v1y;
+        CORELIB_REFL_DECL_FIELD(v1z);
+        float v1z;
+        CORELIB_REFL_DECL_FIELD(v1w);
+        float v1w;
+
+        CORELIB_REFL_DECL_FIELD(v2x);
+        float v2x;
+        CORELIB_REFL_DECL_FIELD(v2y);
+        float v2y;
+        CORELIB_REFL_DECL_FIELD(v2z);
+        float v2z;
+        CORELIB_REFL_DECL_FIELD(v2w);
+        float v2w;
+
+        CORELIB_REFL_DECL_FIELD(v3x);
+        float v3x;
+        CORELIB_REFL_DECL_FIELD(v3y);
+        float v3y;
+        CORELIB_REFL_DECL_FIELD(v3z);
+        float v3z;
+        CORELIB_REFL_DECL_FIELD(v3w);
+        float v3w;
+
+        CORELIB_REFL_DECL_FIELD(v4x);
+        float v4x;
+        CORELIB_REFL_DECL_FIELD(v4y);
+        float v4y;
+        CORELIB_REFL_DECL_FIELD(v4z);
+        float v4z;
+        CORELIB_REFL_DECL_FIELD(v4w);
+        float v4w;
+
+        using unboxing_type = Matrix4f;
+        Matrix4f get_unboxing_value() const
+        { 
+            return Matrix4f({ v1x,v1y,v1z,v1w }, { v2x,v2y,v2z,v2w }, { v3x,v3y,v3z,v3w }, { v4x,v4y,v4z,v4w });
+        }
+
+        BoxingMatrix4f() {}
+        BoxingMatrix4f(const Matrix4f& value)
+        {
+            v1x = value[0][0]; v2x = value[1][0]; v3x = value[2][0]; v4x = value[3][0];
+            v1y = value[0][1]; v2y = value[1][1]; v3y = value[2][1]; v4y = value[3][1];
+            v1z = value[0][2]; v2z = value[1][2]; v3z = value[2][2]; v4z = value[3][2];
+            v1w = value[0][3]; v2w = value[1][3]; v3w = value[2][3]; v4w = value[3][3];
+        }
+
+        virtual string ToString() const override { return to_string(this->get_unboxing_value()); }
+    };
+    template<> struct get_boxing_type<Matrix4f> { using type = BoxingMatrix4f; };
 }

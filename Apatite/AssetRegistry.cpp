@@ -1,11 +1,11 @@
-#include "AssetTable.h"
+#include "AssetRegistry.h"
 
 namespace apatite
 {
 
     static auto table()
     {
-        static auto table = new map<guid_t, std::function<AssetObject_sp(guid_t)>>;
+        static auto table = new map<guid_t, AssetRegisterInfo>;
         return table;
     }
 
@@ -30,23 +30,35 @@ namespace apatite
         return it != table()->end();
     }
 
-    bool AssetReferenceRegistry::IsLoadable(guid_t guid)
+    bool AssetRegistry::IsLoadable(guid_t guid)
     {
         return _HasCache(guid) || _HasTable(guid);
     }
 
-    AssetObject_sp AssetReferenceRegistry::FindAsset(guid_t guid)
+    AssetObject_sp AssetRegistry::FindAsset(guid_t guid)
     {
         return AssetObject_sp();
     }
+
+    AssetObject_sp AssetRegistry::FindAssetAtPath(string_view path)
+    {
+        for (auto& item : *table())
+        {
+            if (item.second.path == path)
+            {
+                return item.second.getter(item.first);
+            }
+        }
+        return nullptr;
+    }
     
-    void AssetReferenceRegistry::Reset()
+    void AssetRegistry::Reset()
     {
         table()->clear();
         cache()->clear();
     }
-    void AssetReferenceRegistry::RegisterAsset(guid_t guid, std::function<AssetObject_sp(guid_t)>&& getter)
+    void AssetRegistry::RegisterAsset(guid_t guid, AssetRegisterInfo info)
     {
-        table()->emplace(guid, std::move(getter));
+        table()->emplace(guid, std::move(info));
     }
 }

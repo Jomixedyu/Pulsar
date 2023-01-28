@@ -42,6 +42,11 @@ namespace apatite
 
         CORELIB_REFL_DECL_FIELD(backgroundColor);
         LinearColorf backgroundColor;
+
+#ifdef WITH_APATITE_EDITOR
+        CORELIB_REFL_DECL_FIELD(debug_view_mat);
+        Matrix4f debug_view_mat;
+#endif
     };
     CORELIB_DECL_SHORTSPTR(CameraComponent);
 }

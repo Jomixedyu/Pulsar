@@ -69,6 +69,7 @@ namespace apatite
     public:
         // Override
         size_t GetVertexCount() override { return this->raw_data_->size(); }
+        size_t GetIndicesCount() { return this->indices.size(); }
     public:
         uint32_t ebo_buffer_ = 0;
     protected:

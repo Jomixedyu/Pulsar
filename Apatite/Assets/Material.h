@@ -17,10 +17,10 @@ namespace apatite
         void SetFloat(string_view name, float f);
         void SetVector3(string_view name, Vector3f vec);
 
-        void UseMaterial();
-
         void set_shader(Shader_sp shader) { this->shader_ = shader; }
         Shader_sp get_shader() const { return this->shader_; }
+
+        static sptr<Material> StaticCreate(string_view name, Shader_rsp shader);
     private:
         Shader_sp shader_;
     };

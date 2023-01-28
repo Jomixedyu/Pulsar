@@ -7,7 +7,7 @@ namespace apatite::builtinrp
     {
 
     public:
-        virtual Material_sp GetDefaultMaterial() override { return default_lit_; }
+        virtual Material_sp GetDefaultMaterial() override;
         BultinRP();
 
     protected:

@@ -59,7 +59,10 @@ namespace apatite
     {
         auto node = this->get_node();
         auto wpos = node->get_world_position();
-        return math::LookAt(wpos, wpos + node->GetForward(), transutil::Vector3Up());
+        Matrix4f mat = node->get_world_rotation().ToMatrix();
+        jmath::Transpose(&mat);
+        transutil::Translate(&mat, -wpos);
+        return mat;
     }
 
     Matrix4f CameraComponent::GetProjectionMat()

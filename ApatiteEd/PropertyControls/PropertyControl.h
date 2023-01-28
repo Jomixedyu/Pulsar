@@ -21,5 +21,8 @@ namespace apatiteed
     public:
         static void RegisterControl(Type* type, PropertyControl* control);
         static PropertyControl* FindControl(Type* type);
+
+        static void ShowProperty(const string& name, const sptr<Object>& obj);
+        
     };
 }

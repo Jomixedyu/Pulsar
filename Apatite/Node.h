@@ -49,15 +49,18 @@ namespace apatite
         Vector3f get_world_position() const;
 
         Quat4f get_self_rotation() const { return this->rotation_; }
-        void set_self_rotation(Quat4f value) { this->rotation_ = value; }
+        void set_self_rotation(const Quat4f& value) { this->rotation_ = value; }
         Quat4f get_world_rotation() const;
-        Vector3f get_self_euler_rotation() const { return this->rotation_.GetEuler(); }
-        void set_self_euler_rotation(Vector3f value) { this->rotation_ = Quat4f(value); }
+        void set_world_rotation(const Quat4f& q);
+
+        Vector3f get_self_euler_rotation() const;
+        void set_self_euler_rotation(const Vector3f& value);
         Vector3f get_world_euler_rotation() const;
 
         Vector3f get_self_scale() const { return this->scale_; }
         void set_self_scale(Vector3f value) { this->scale_ = value; }
         Vector3f get_world_scale() const;
+
 
         Matrix4f GetModelMatrix() const;
         Matrix4f GetLocalTransformMatrix() const;
@@ -106,10 +109,9 @@ namespace apatite
     protected:
         virtual void OnInstantiateAsset(sptr<AssetObject>& obj) override;
     public:
-        void Translate(Vector3f v);
-        void Rotate(Quat4f v);
-        void RotateEuler(Vector3f v);
-        void Scale(Vector3f v);
+
+        void RotateEulerLocal(Vector3f v);
+        void RotateEulerWorld(Vector3f v);
 
     private:
         bool is_active_;

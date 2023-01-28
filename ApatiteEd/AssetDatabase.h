@@ -16,6 +16,7 @@ namespace apatiteed
     class AssetDatabase
     {
     public:
+        static AssetObject_sp LoadAssetAtPath(string_view path);
         static void Initialize();
         static void Refresh();
         static void Terminate();

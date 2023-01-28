@@ -17,17 +17,15 @@ namespace apatiteed
         }
         return StringUtil::FriendlyName(name);
     }
-
-    static void _PropertyLine(const char* name, sptr<Object>& obj)
+    
+    static void _PropertyLine(const string& name, sptr<Object>& obj)
     {
         ImGui::TableNextRow();
         ImGui::TableSetColumnIndex(0);
-        ImGui::Text(name);
+        ImGui::Text(StringUtil::FriendlyName(name).c_str());
         ImGui::TableSetColumnIndex(1);
-        auto prop_ctrl = PropertyControlManager::FindControl(obj->GetType());
 
-        prop_ctrl->OnDrawImGui(name, obj);
-
+        PropertyControlManager::ShowProperty(name, obj);
     }
 
     static constexpr int kTableRowHeight = 30;
@@ -68,9 +66,13 @@ namespace apatiteed
             _PropertyLine("Position", boxpos);
             selected->set_self_position(UnboxUtil::Unbox<Vector3f>(boxpos));
 
-            auto boxrot = BoxUtil::Box(selected->get_self_euler_rotation());
+            auto boxrot = BoxUtil::Box(selected->get_self_rotation());
             _PropertyLine("Rotation", boxrot);
-            selected->set_self_euler_rotation(UnboxUtil::Unbox<Vector3f>(boxrot));
+            //selected->set_self_rotation(UnboxUtil::Unbox<Quat4f>(boxrot));
+
+            auto boxeuler = BoxUtil::Box(selected->get_self_euler_rotation());
+            _PropertyLine("Euler", boxeuler);
+            selected->set_self_euler_rotation(UnboxUtil::Unbox<Vector3f>(boxeuler));
 
             auto boxscale = BoxUtil::Box(selected->get_self_scale());
             _PropertyLine("Scale", boxscale);
@@ -100,22 +102,25 @@ namespace apatiteed
                 {
                     for (auto& field : fields)
                     {
-                        ImGui::TableNextRow(0, kTableRowHeight);
-                        ImGui::TableSetColumnIndex(0);
-                        ImGui::Text(StringUtil::FriendlyName(field->get_name()).c_str());
-                        ImGui::TableSetColumnIndex(1);
+                        //ImGui::TableNextRow(0, kTableRowHeight);
+                        //ImGui::TableSetColumnIndex(0);
+                        //ImGui::Text(StringUtil::FriendlyName(field->get_name()).c_str());
+                        //ImGui::TableSetColumnIndex(1);
 
-                        auto prop_control = PropertyControlManager::FindControl(field->get_field_type());
-                        if (prop_control)
-                        {
-                            auto field_inst = field->GetValue(comp.get());
-                            prop_control->OnDrawImGui(field->get_name(), field_inst);
-                            field->SetValue(comp.get(), field_inst);
-                        }
-                        else
-                        {
-                            ImGui::Text("not supported property");
-                        }
+                        auto field_inst = field->GetValue(comp.get());
+                        _PropertyLine(field->get_name(), field_inst);
+
+                        //auto prop_control = PropertyControlManager::FindControl(field->get_field_type());
+                        //if (prop_control)
+                        //{
+                        //    auto field_inst = field->GetValue(comp.get());
+                        //    prop_control->OnDrawImGui(field->get_name(), field_inst);
+                        //    field->SetValue(comp.get(), field_inst);
+                        //}
+                        //else
+                        //{
+                        //    ImGui::Text("not supported property");
+                        //}
                     }
 
                     //debug info

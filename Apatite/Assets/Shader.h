@@ -22,7 +22,9 @@ namespace apatite
         virtual ~Shader() override;
         virtual string ToString() const override;
     public:
-        void UseShader();
+        void UseShader(int32_t pass_index);
+    public:
+        ShaderPass* GetPass(int32_t index);
     public:
         virtual void BindGPU() override;
         virtual void UnBindGPU() override;
@@ -40,10 +42,11 @@ namespace apatite
         void SetUniformTexture(std::string_view name, Texture_rsp tex);
     protected:
     public:
-        static sptr<Shader> StaticCreate(string_view name, array_list<ShaderPass>&& pass);
+        static sptr<Shader> StaticCreate(string_view name, array_list<ShaderPass*>&& pass);
+        static sptr<Shader> StaticCreate(const string& shader_source);
     protected:
         uint32_t id_;
-        array_list<ShaderPass> pass_;
+        array_list<ShaderPass*> pass_;
     private:
     };
     CORELIB_DECL_SHORTSPTR(Shader);

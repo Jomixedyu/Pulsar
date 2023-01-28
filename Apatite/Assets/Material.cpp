@@ -1,3 +1,4 @@
+#include "Material.h"
 #include <Apatite/Assets/Material.h>
 #include <ThirdParty/glad/glad.h>
 
@@ -17,9 +18,15 @@ namespace apatite
         this->shader_->SetUniformTexture(name, tex);
     }
 
-    void Material::UseMaterial()
+
+    Material_sp Material::StaticCreate(string_view name, Shader_rsp shader)
     {
-        this->shader_->UseShader();
+        Material_sp material = mksptr(new Material);
+        material->Construct();
+        material->set_name(name);
+        material->shader_ = shader;
+
+        return material;
     }
 
 }

@@ -86,27 +86,30 @@ namespace apatite
 
         int attr_index = 0;
 
-        glVertexAttribPointer(attr_index, decltype(StaticMeshVertexBuildData::Position)::row_count, GL_FLOAT, GL_FALSE, sizeof(StaticMeshVertexBuildData::Position), (void*)offsetof(StaticMeshVertexBuildData, Position));
+        size_t stride = sizeof(StaticMeshVertexBuildData);
+
+        glVertexAttribPointer(attr_index, decltype(StaticMeshVertexBuildData::Position)::row_count, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(StaticMeshVertexBuildData, Position));
         glEnableVertexAttribArray(attr_index);
         ++attr_index;
 
-        glVertexAttribPointer(attr_index, decltype(StaticMeshVertexBuildData::Normal)::row_count, GL_FLOAT, GL_FALSE, sizeof(StaticMeshVertexBuildData::Normal), (void*)offsetof(StaticMeshVertexBuildData, Normal));
+
+        glVertexAttribPointer(attr_index, decltype(StaticMeshVertexBuildData::Normal)::row_count, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(StaticMeshVertexBuildData, Normal));
         glEnableVertexAttribArray(attr_index);
         ++attr_index;
 
-        glVertexAttribPointer(attr_index, decltype(StaticMeshVertexBuildData::Tangent)::row_count, GL_FLOAT, GL_FALSE, sizeof(StaticMeshVertexBuildData::Tangent), (void*)offsetof(StaticMeshVertexBuildData, Tangent));
+        glVertexAttribPointer(attr_index, decltype(StaticMeshVertexBuildData::Tangent)::row_count, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(StaticMeshVertexBuildData, Tangent));
         glEnableVertexAttribArray(attr_index);
         ++attr_index;
 
-        glVertexAttribPointer(attr_index, decltype(StaticMeshVertexBuildData::BitTangent)::row_count, GL_FLOAT, GL_FALSE, sizeof(StaticMeshVertexBuildData::BitTangent), (void*)offsetof(StaticMeshVertexBuildData, BitTangent));
+        glVertexAttribPointer(attr_index, decltype(StaticMeshVertexBuildData::BitTangent)::row_count, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(StaticMeshVertexBuildData, BitTangent));
         glEnableVertexAttribArray(attr_index);
         ++attr_index;
 
-        glVertexAttribPointer(attr_index, 2, GL_FLOAT, GL_FALSE, 8, (void*)offsetof(StaticMeshVertexBuildData, Coords));
+        glVertexAttribPointer(attr_index, 2, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(StaticMeshVertexBuildData, Coords));
         glEnableVertexAttribArray(attr_index);
         ++attr_index;
 
-        glVertexAttribPointer(attr_index, 4, GL_FLOAT, GL_FALSE, sizeof(StaticMeshVertexBuildData::VertColor), (void*)offsetof(StaticMeshVertexBuildData, VertColor));
+        glVertexAttribPointer(attr_index, 4, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(StaticMeshVertexBuildData, VertColor));
         glEnableVertexAttribArray(attr_index);
         ++attr_index;
 

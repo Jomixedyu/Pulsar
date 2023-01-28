@@ -14,5 +14,11 @@ using namespace apatiteed;
 
 int main()
 {
+
+    //auto q4 = Quat4f::FromEuler({ 50,90,45 });
+    //cout << to_string(q4) << endl;
+    //auto e = q4.GetEuler();
+    //cout << to_string(e) << endl;
+    //return 0;
     return Application::Exec(new EditorAppInstance, "apatite", { 1280,720 });
 }

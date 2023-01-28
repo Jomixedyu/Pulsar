@@ -37,6 +37,11 @@ namespace apatiteed
 
         AssetDatabase::FileTree = node;
     }
+    AssetObject_sp AssetDatabase::LoadAssetAtPath(string_view path)
+    {
+
+        return AssetObject_sp();
+    }
     void AssetDatabase::Initialize()
     {
         Workspace::OnWorkspaceOpened += _OnWorkspaceOpened;

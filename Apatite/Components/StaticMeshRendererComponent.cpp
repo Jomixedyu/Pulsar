@@ -2,6 +2,7 @@
 #include "MeshContainerComponent.h"
 #include <Apatite/Logger.h>
 #include <ThirdParty/glad/glad.h>
+#include <Apatite/Rendering/RenderContext.h>
 
 namespace apatite
 {
@@ -15,6 +16,7 @@ namespace apatite
         }
         assert(this->materials_->size() > 0);
         auto mesh = filter->get_mesh();
+
     }
 
     void StaticMeshRendererComponent::OnDraw()
@@ -24,18 +26,30 @@ namespace apatite
         {
             Logger::Log("empty mesh container", LogLevel::Warning);
             return;
-        }
-        //auto mat = this->materials_->at(0);
-        //mat->UseMaterial();
+        } 
 
-        //auto mesh = filter->get_mesh();
-        //assert(IsValid(mesh));
-        //assert(mesh->GetIsBindGPU());
-        //auto a = mesh->GetRenderHandle();
-        //assert(glGetError() == GL_NO_ERROR);
-        //glBindVertexArray(mesh->GetRenderHandle());
-        //assert(glGetError() == GL_NO_ERROR);
-        //glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-        //glBindVertexArray(0);
+        auto mat = this->materials_->at(0);
+
+        {
+            ShaderPassScope pass(mat->get_shader()->GetPass(0));
+            pass->SetUniformMatrix4fv("MODEL", Matrix4f::StaticScalar());
+            pass->SetUniformMatrix4fv("VIEW", RenderContext::GetCurrentCamera()->GetViewMat());
+            pass->SetUniformMatrix4fv("PROJECTION", RenderContext::GetCurrentCamera()->GetProjectionMat());
+
+            auto mesh = filter->get_mesh();
+            assert(IsValid(mesh));
+            assert(mesh->GetIsBindGPU());
+
+            auto a = mesh->GetRenderHandle();
+
+            glBindVertexArray(mesh->GetRenderHandle());
+ 
+            glDrawElements(GL_TRIANGLES, mesh->GetIndicesCount(), GL_UNSIGNED_INT, 0);
+
+
+        }
+        
+
+
     }
 }
