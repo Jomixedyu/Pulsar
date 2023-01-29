@@ -10,7 +10,7 @@ namespace apatite
 {
     class Texture2D;
 
-    constexpr static int APATITE_STATICMESH_MAX_TEXTURE_COORDS = 8;
+    constexpr static int APATITE_STATICMESH_MAX_TEXTURE_COORDS = 4;
 
     //build vertex data
     struct StaticMeshVertexBuildData
@@ -19,8 +19,8 @@ namespace apatite
         Vector3f Normal;
         Vector3f Tangent;
         Vector3f BitTangent;
-        Vector2f Coords[APATITE_STATICMESH_MAX_TEXTURE_COORDS];
         LinearColorf VertColor;
+        Vector2f Coords[APATITE_STATICMESH_MAX_TEXTURE_COORDS];
     };
     using StaticMeshVertexBuildDataArray = array_list<StaticMeshVertexBuildData>;
 

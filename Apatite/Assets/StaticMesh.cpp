@@ -86,7 +86,7 @@ namespace apatite
 
         int attr_index = 0;
 
-        size_t stride = sizeof(StaticMeshVertexBuildData);
+        constexpr size_t stride = sizeof(StaticMeshVertexBuildData);
 
         glVertexAttribPointer(attr_index, decltype(StaticMeshVertexBuildData::Position)::row_count, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(StaticMeshVertexBuildData, Position));
         glEnableVertexAttribArray(attr_index);
@@ -105,13 +105,18 @@ namespace apatite
         glEnableVertexAttribArray(attr_index);
         ++attr_index;
 
-        glVertexAttribPointer(attr_index, 2, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(StaticMeshVertexBuildData, Coords));
-        glEnableVertexAttribArray(attr_index);
-        ++attr_index;
-
         glVertexAttribPointer(attr_index, 4, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(StaticMeshVertexBuildData, VertColor));
         glEnableVertexAttribArray(attr_index);
         ++attr_index;
+
+        for (size_t i = 0; i < APATITE_STATICMESH_MAX_TEXTURE_COORDS; i++)
+        {
+            //TEXCOORD N
+            glVertexAttribPointer(attr_index, 2, GL_FLOAT, GL_FALSE, stride, (void*)(offsetof(StaticMeshVertexBuildData, Coords) + sizeof(Vector2f) * i));
+            glEnableVertexAttribArray(attr_index);
+            ++attr_index;
+        }
+
 
         uint32_t ebo;
         glGenBuffers(1, &ebo);

@@ -15,28 +15,62 @@
 #pragma vert
 
 #version 330 core
-layout(location = 0) in vec3 aPos;
-layout(location = 1) in vec3 aNormal;
-layout(location = 2) in vec3 Tangent;
-layout(location = 3) in vec3 BitTangent;
-layout(location = 4) in vec2 aTexCoords;
-layout(location = 5) in vec4 VertColor;
+layout(location = 0) in vec3 InPosition;
+layout(location = 1) in vec3 InNormal;
+layout(location = 2) in vec3 InTangent;
+layout(location = 3) in vec3 InBitTangent;
+layout(location = 4) in vec4 InVertColor;
+layout(location = 5) in vec2 InTexCoords0;
+layout(location = 6) in vec2 InTexCoords1;
+layout(location = 7) in vec2 InTexCoords2;
+layout(location = 8) in vec2 InTexCoords3;
 
-out vec2 TexCoords;
-out vec3 WorldPos;
-out vec3 Normal;
+out vec3 OutWorldPosition;
+out vec3 OutNormal;
+out vec4 OutVertColor;
+out vec2 OutTexCoords0;
+out vec2 OutTexCoords1;
+out vec2 OutTexCoords2;
+out vec2 OutTexCoords3;
 
-uniform mat4 PROJECTION;
-uniform mat4 VIEW;
-uniform mat4 MODEL;
+struct LightingStruct
+{
+    int Type;
+    vec3 Position;
+    vec3 Direction;
+    vec3 Color;
+};
+
+layout() uniform CB_Lighting
+{
+    LightingStruct Lights[32];
+}
+CB_Lighting;
+
+layout() uniform CB_Matrix
+{
+    mat4 ProjectionMatrix;
+    mat4 ViewMatrix;
+    mat4 ModelMatrix;
+}
+CB_Matrix;
+
+uniform mat4 uProjectionMatrix;
+uniform mat4 uViewMatrix;
+uniform mat4 uModelMatrix;
 
 void main()
 {
-    TexCoords = aTexCoords;
-    WorldPos = vec3(MODEL * vec4(aPos, 1.0));
-    Normal = mat3(MODEL) * aNormal;
 
-    gl_Position = PROJECTION * VIEW * vec4(WorldPos, 1.0);
+    OutWorldPosition = vec3(uModelMatrix * vec4(aPos, 1.0));
+    OutNormal = mat3(uModelMatrix) * InNormal;
+    OutTexCoords0 = InTexCoords0;
+    OutTexCoords1 = InTexCoords1;
+    OutTexCoords2 = InTexCoords2;
+    OutTexCoords3 = InTexCoords3;
+    OutVertColor = InVertColor;
+
+    gl_Position = uProjectionMatrix * uViewMatrix * vec4(OutWorldPosition, 1.0);
 }
 
 #pragma frag
