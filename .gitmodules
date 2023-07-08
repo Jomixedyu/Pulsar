@@ -1,0 +1,3 @@
+[submodule "Pulsar/ThirdParty/jxcorlib"]
+	path = Pulsar/ThirdParty/jxcorlib
+	url = https://github.com/JomiXedYu/jxcorlib.git
