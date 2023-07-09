@@ -69,6 +69,14 @@ namespace pulsared
             ImGui::SmallButton("Stop");
             ImGui::EndMenuBar();
         }
+        if (ImGui::BeginMenuBar())
+        {
+            ImGui::Separator();
+
+            ImGui::SmallButton("Render");
+            ImGui::SmallButton("Stop");
+            ImGui::EndMenuBar();
+        }
         ImGui::End();
     }
 }

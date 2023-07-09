@@ -7,6 +7,7 @@
 #include "Windows/OutputWindow.h"
 #include "Windows/MainMenuBarWindow.h"
 #include "Windows/DockspaceWindow.h"
+#include "Windows/StatusBarWindow.h"
 #include <PulsarEd/Menus/_include.h>
 
 #include <ThirdParty/glad/glad.h>
@@ -87,6 +88,7 @@ namespace pulsared
 
     static sptr<DockspaceWindow> _DockspaceWindow;
     static sptr<MainMenuBarWindow> _MainMenuBarWindow;
+    static sptr<StatusBarWindow> _StatusBarWindow;
 
     static bool _HasRegistered(const sptr<EditorWindow>& win)
     {
@@ -145,8 +147,10 @@ namespace pulsared
         assert(glGetError() == GL_NO_ERROR);
         _DockspaceWindow = mksptr(new DockspaceWindow);
         _MainMenuBarWindow = mksptr(new MainMenuBarWindow);
+        _StatusBarWindow = mksptr(new StatusBarWindow);
         _DockspaceWindow->Open();
         _MainMenuBarWindow->Open();
+        _StatusBarWindow->Open();
 
         _registered_menu.emplace(WorkspaceWindow::StaticWindowName(), cltypeof<WorkspaceWindow>());
         _registered_menu.emplace(PropertiesWindow::StaticWindowName(), cltypeof<PropertiesWindow>());
