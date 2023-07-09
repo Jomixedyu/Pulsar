@@ -1,4 +1,4 @@
-#include "MaterialPropertyControl.h"
+#include "PropertyControls/MaterialPropertyControl.h"
 #include <ThirdParty/imgui/imgui.h>
 
 namespace pulsared

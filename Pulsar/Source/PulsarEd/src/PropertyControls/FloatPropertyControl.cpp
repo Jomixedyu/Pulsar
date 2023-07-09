@@ -1,4 +1,4 @@
-#include "FloatPropertyControl.h"
+#include "PropertyControls/FloatPropertyControl.h"
 #include <ThirdParty/imgui/imgui.h>
 
 namespace pulsared

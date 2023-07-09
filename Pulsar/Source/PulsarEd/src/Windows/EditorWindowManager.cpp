@@ -1,12 +1,12 @@
-#include "EditorWindowManager.h"
-#include "SceneWindow.h"
-#include "WorkspaceWindow.h"
-#include "PropertiesWindow.h"
-#include "ConsoleWindow.h"
-#include "OutlinerWindow.h"
-#include "OutputWindow.h"
-#include "MainMenuBarWindow.h"
-#include "DockspaceWindow.h"
+#include "Windows/EditorWindowManager.h"
+#include "Windows/SceneWindow.h"
+#include "Windows/WorkspaceWindow.h"
+#include "Windows/PropertiesWindow.h"
+#include "Windows/ConsoleWindow.h"
+#include "Windows/OutlinerWindow.h"
+#include "Windows/OutputWindow.h"
+#include "Windows/MainMenuBarWindow.h"
+#include "Windows/DockspaceWindow.h"
 #include <PulsarEd/Menus/_include.h>
 
 #include <ThirdParty/glad/glad.h>

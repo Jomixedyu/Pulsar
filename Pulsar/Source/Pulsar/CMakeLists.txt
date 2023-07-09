@@ -18,7 +18,7 @@ add_subdirectory("../ThirdParty/jxcorlib/CoreLib.Serialization" jxcorlib.ser.out
 add_subdirectory("../ThirdParty/jxcorlib/CoreLib.Math" jxcorlib.math)
 add_subdirectory("../ThirdParty/jxcorlib/CoreLib.Platform" jxcorlib.platform.out)
 
-add_library(${PROJECT_NAME} STATIC ${Pulsar_SRC})
+add_library(${PROJECT_NAME} OBJECT ${Pulsar_SRC})
 
 target_include_directories(${PROJECT_NAME} PUBLIC "include")
 target_include_directories(${PROJECT_NAME} PRIVATE "include/Pulsar")

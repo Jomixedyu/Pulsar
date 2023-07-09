@@ -1,4 +1,4 @@
-#include "Grid3DComponent.h"
+#include "Components/Grid3DComponent.h"
 #include <ThirdParty/glad/glad.h>
 #include <Pulsar/Rendering/ShaderPass.h>
 #include <PulsarEd/Windows/EditorWindowManager.h>

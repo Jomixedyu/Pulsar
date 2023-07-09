@@ -1,4 +1,4 @@
-#include "AssetProvider.h"
+#include "AssetProviders/AssetProvider.h"
 
 namespace pulsared
 {

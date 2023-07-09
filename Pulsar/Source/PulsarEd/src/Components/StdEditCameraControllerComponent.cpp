@@ -1,4 +1,4 @@
-#include "StdEditCameraControllerComponent.h"
+#include "Components/StdEditCameraControllerComponent.h"
 
 namespace pulsared
 {

@@ -25,7 +25,7 @@ namespace pulsared
         using namespace jxcorlib::platform;
 
         string selected_path;
-        if (window::OpenFileDialog(window::MainWindow(), "seproj(*.seproj)|*.seproj", "", &selected_path))
+        if (window::OpenFileDialog(window::GetMainWindowHandle(), "seproj(*.seproj)|*.seproj", "", &selected_path))
         {
             OpenWorkspace(selected_path);
             return OpenWorkspace(selected_path);

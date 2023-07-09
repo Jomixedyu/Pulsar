@@ -1,5 +1,5 @@
-#include "DockspaceWindow.h"
-#include "EditorWindowManager.h"
+#include "Windows/DockspaceWindow.h"
+#include "Windows/EditorWindowManager.h"
 
 namespace pulsared
 {

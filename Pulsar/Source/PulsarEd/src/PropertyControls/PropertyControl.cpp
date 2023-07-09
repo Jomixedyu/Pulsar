@@ -1,4 +1,4 @@
-#include "PropertyControl.h"
+#include "PropertyControls/PropertyControl.h"
 #include <ThirdParty/imgui/imgui.h>
 
 namespace pulsared

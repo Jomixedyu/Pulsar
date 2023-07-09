@@ -1,4 +1,4 @@
-#include "ColorPropertyControl.h"
+#include "PropertyControls/ColorPropertyControl.h"
 #include <ThirdParty/imgui/imgui.h>
 
 namespace pulsared

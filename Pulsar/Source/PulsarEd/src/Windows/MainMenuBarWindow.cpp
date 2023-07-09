@@ -1,4 +1,4 @@
-#include "MainMenuBarWindow.h"
+#include "Windows/MainMenuBarWindow.h"
 #include <PulsarEd/Windows/EditorWindowManager.h>
 #include <PulsarEd/Menus/Menu.h>
 

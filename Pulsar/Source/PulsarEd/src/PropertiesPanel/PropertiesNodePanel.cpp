@@ -1,4 +1,4 @@
-#include "PropertiesNodePanel.h"
+#include "PropertiesPanel/PropertiesNodePanel.h"
 #include <PulsarEd/EditorSelection.h>
 #include <PulsarEd/PropertyControls/PropertyControl.h>
 
@@ -97,7 +97,7 @@ namespace pulsared
             {
                 auto com_guid = comp->get_object_id().to_string();
                 Type* com_type = comp->GetType();
-                auto fields = com_type->get_fieldinfos(TypeBinding::NonPublic | TypeBinding::IncludeSuper);
+                auto fields = com_type->GetFieldInfos(TypeBinding::NonPublic);
                 if (ImGui::BeginTable(com_guid.c_str(), 2))
                 {
                     for (auto& field : fields)
@@ -108,7 +108,7 @@ namespace pulsared
                         //ImGui::TableSetColumnIndex(1);
 
                         auto field_inst = field->GetValue(comp.get());
-                        _PropertyLine(field->get_name(), field_inst);
+                        _PropertyLine(field->GetName(), field_inst);
 
                         //auto prop_control = PropertyControlManager::FindControl(field->get_field_type());
                         //if (prop_control)
@@ -131,7 +131,7 @@ namespace pulsared
                         ImGui::TableSetColumnIndex(0);
                         ImGui::Text("Fullname");
                         ImGui::TableSetColumnIndex(1);
-                        ImGui::Text(comp->GetType()->get_name().c_str());
+                        ImGui::Text(comp->GetType()->GetName().c_str());
 
                         ImGui::TableNextRow(0, kTableRowHeight);
                         ImGui::TableSetColumnIndex(0);

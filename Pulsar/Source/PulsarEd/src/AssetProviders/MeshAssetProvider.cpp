@@ -1,4 +1,4 @@
-#include "MeshAssetProvider.h"
+#include "AssetProviders/MeshAssetProvider.h"
 
 namespace pulsared
 {

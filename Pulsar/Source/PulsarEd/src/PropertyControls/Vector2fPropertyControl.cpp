@@ -1,4 +1,4 @@
-#include "Vector2fPropertyControl.h"
+#include "PropertyControls/Vector2fPropertyControl.h"
 #include <ThirdParty/imgui/imgui.h>
 
 namespace pulsared

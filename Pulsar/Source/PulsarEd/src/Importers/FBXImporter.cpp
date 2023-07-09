@@ -1,4 +1,4 @@
-#include "FBXImporter.h"
+#include "Importers/FBXImporter.h"
 #include <Pulsar/Assets/StaticMesh.h>
 #include <Pulsar/Assets/Material.h>
 #include <Pulsar/Components/MeshContainerComponent.h>

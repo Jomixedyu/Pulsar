@@ -1,6 +1,6 @@
-#include "ISubMenu.h"
-#include "MenuEntry.h"
-#include "MenuEntrySubMenu.h"
+#include "Menus/ISubMenu.h"
+#include "Menus/MenuEntry.h"
+#include "Menus/MenuEntrySubMenu.h"
 
 namespace pulsared
 {

@@ -1,4 +1,4 @@
-#include "Quat4fPropertyControl.h"
+#include "PropertyControls/Quat4fPropertyControl.h"
 #include <ThirdParty/imgui/imgui.h>
 
 namespace pulsared

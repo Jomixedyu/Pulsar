@@ -1,4 +1,4 @@
-#include "EditorMode.h"
+#include "EditorModes/EditorMode.h"
 
 
 namespace pulsared
