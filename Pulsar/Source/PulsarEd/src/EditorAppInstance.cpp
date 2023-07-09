@@ -182,12 +182,12 @@ namespace pulsared
         //initialize subsystem
         for (auto& subsystem : this->subsystems)
         {
-            Logger::Log("initializing subsystem: " + subsystem->GetType()->get_name());
+            Logger::Log("initializing subsystem: " + subsystem->GetType()->GetName());
             subsystem->OnInitializing();
         }
         for (auto& subsystem : this->subsystems)
         {
-            Logger::Log("initialized subsystem: " + subsystem->GetType()->get_name());
+            Logger::Log("initialized subsystem: " + subsystem->GetType()->GetName());
             subsystem->OnInitialized();
         }
 

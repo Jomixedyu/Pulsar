@@ -8,7 +8,7 @@ namespace pulsared
 
     static string _GetComponentDisplayName(Component* com)
     {
-        string name = com->GetType()->get_short_name();
+        string name = com->GetType()->GetShortName();
 
         static char com_str[] = "Component";
         if (name.ends_with("Component"))

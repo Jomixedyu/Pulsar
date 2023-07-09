@@ -1,7 +1,7 @@
 #pragma once
 #include "Assembly.h"
 #include <Pulsar/AppInstance.h>
-#include <Pulsar/BuiltinRP/BuiltinRP.h>
+#include <Pulsar/BuiltinRP.h>
 
 namespace pulsared
 {

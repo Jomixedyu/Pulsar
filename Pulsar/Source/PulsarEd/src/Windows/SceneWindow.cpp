@@ -1,6 +1,6 @@
 #include <PulsarEd/Windows/SceneWindow.h>
-#include <glad/glad.h>
-#include <glfw/include/GLFW/glfw3.h>
+#include <ThirdParty/glad/glad.h>
+#include <ThirdParty/glfw/include/GLFW/glfw3.h>
 #include <Pulsar/Assets/Shader.h>
 #include <Pulsar/Scene.h>
 #include <PulsarEd/Assembly.h>

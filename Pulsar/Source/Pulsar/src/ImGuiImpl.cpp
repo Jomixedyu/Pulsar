@@ -6,6 +6,7 @@
 #include <ThirdParty/imgui/imgui_impl_opengl3.h>
 
 #include <Pulsar/Private/SystemInterface.h>
+#include <CoreLib.Platform/Window.h>
 
 namespace pulsar
 {
@@ -66,7 +67,7 @@ namespace pulsar
 
             //bug:
             //style.WindowMenuButtonPosition = ImGuiDir_::ImGuiDir_Right;
-            io.FontGlobalScale = 1.f;
+            io.FontGlobalScale = jxcorlib::platform::window::GetUIScaling();
             io.MouseDrawCursor = true;
         }
 

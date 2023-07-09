@@ -1,6 +1,6 @@
 #pragma once
 #include "PropertyControl.h"
-#include <Pulsar/Math.h>
+#include <Pulsar/EngineMath.h>
 
 namespace pulsared
 {
