@@ -2,7 +2,7 @@
 #include <CoreLib.Math/Math.h>
 #include <CoreLib.Serialization/DataSerializer.h>
 
-namespace pulsar::math
+namespace pulsar::emath
 {
     using namespace jxcorlib;
     using namespace jxcorlib::math;
