@@ -1,6 +1,4 @@
-#include "TextAsset.h"
-#include "TextAsset.h"
-
+#include "Assets/TextAsset.h"
 namespace pulsar
 {
 

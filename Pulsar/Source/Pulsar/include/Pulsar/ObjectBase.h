@@ -1,6 +1,7 @@
 #pragma once
 
 #include <CoreLib/Core.h>
+#include <CoreLib/List.h>
 #include <CoreLib/Reflection.h>
 #include <cstdint>
 #include <string>
