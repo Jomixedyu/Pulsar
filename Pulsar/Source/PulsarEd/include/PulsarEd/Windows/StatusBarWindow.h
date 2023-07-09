@@ -7,9 +7,9 @@ namespace pulsared
     {
         CORELIB_DEF_TYPE(AssemblyObject_PulsarEd, pulsared::StatusBarWindow, EditorWindow);
     public:
-        virtual ImGuiWindowFlags GetGuiWindowFlags() const override {
-            return ImGuiWindowFlags_None | ImGuiWindowFlags_::ImGuiWindowFlags_MenuBar;
-        }
+        //virtual ImGuiWindowFlags GetGuiWindowFlags() const override {
+        //    return ImGuiWindowFlags_None | ImGuiWindowFlags_::ImGuiWindowFlags_MenuBar;
+        //}
         StatusBarWindow() {}
         virtual void OnOpen() override;
         virtual void OnClose() override;
