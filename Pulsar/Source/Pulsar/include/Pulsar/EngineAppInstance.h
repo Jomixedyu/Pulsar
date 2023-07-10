@@ -8,7 +8,7 @@ namespace pulsar
     {
     public:
         virtual const char* AppType() override;
-        virtual void OnInitialize(string_view title, Vector2f size) override;
+        virtual void OnInitialized() override;
         virtual void OnTerminate() override;
         virtual void OnTick(float dt) override;
         virtual bool IsQuit() override;

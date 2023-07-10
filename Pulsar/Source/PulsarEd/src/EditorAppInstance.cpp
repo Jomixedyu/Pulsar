@@ -23,9 +23,18 @@
 #include <ThirdParty/glad/glad.h>
 #include <PulsarEd/AssetDatabase.h>
 #include <Pulsar/AssetRegistry.h>
+#include <gfx/GFXRenderPipeline.h>
 
 namespace pulsared
 {
+    class RenderPipeline : public gfx::GFXRenderPipeline
+    {
+        virtual void OnRender(gfx::GFXRenderContext* context, const std::vector<gfx::GFXFrameBufferObject*>& renderTargets)
+        {
+
+        }
+    };
+
     using namespace detail;
 
     static bool _RequestQuit()
@@ -70,6 +79,15 @@ namespace pulsared
         return StringUtil::StringCast(std::filesystem::current_path().generic_u8string());
     }
 
+    void EditorAppInstance::OnPreInitialize(gfx::GFXGlobalConfig* config)
+    {
+        config->EnableValid = true;
+        config->WindowWidth = 1280;
+        config->WindowHeight = 720;
+        strcpy(config->ProgramName, "Pulsar");
+        strcpy(config->Title, "Pulsar Editor v0.1 - Vulkan1.3");
+    }
+
     static void InitBasicMenu()
     {
         auto main_menu = MenuManager::GetMainMenu();
@@ -111,7 +129,7 @@ namespace pulsared
         }
     }
 
-    void EditorAppInstance::OnInitialize(string_view title, Vector2f size)
+    void EditorAppInstance::OnInitialized()
     {
         using namespace std::filesystem;
         EditorLogRecorder::Initialize();
@@ -136,14 +154,16 @@ namespace pulsared
             //AssetRegistry::RegisterAsset(guid_t::create_new(), info);
         }
 
-        Logger::Log("initialize application");
+        Logger::Log("initialize gfx application");
 
-        SystemInterface::InitializeWindow(title, (int)size.x, (int)size.y);
 
-        SystemInterface::SetRequestQuitCallBack(_RequestQuit);
-        SystemInterface::SetQuitCallBack(_quitting);
 
-        RenderInterface::SetViewport(0, 0, (int)size.x, (int)size.y);
+        //SystemInterface::InitializeWindow(title, (int)size.x, (int)size.y);
+
+        //SystemInterface::SetRequestQuitCallBack(_RequestQuit);
+        //SystemInterface::SetQuitCallBack(_quitting);
+
+        //RenderInterface::SetViewport(0, 0, (int)size.x, (int)size.y);
 
         for (GLenum err; (err = glGetError()) != GL_NO_ERROR;)
         {

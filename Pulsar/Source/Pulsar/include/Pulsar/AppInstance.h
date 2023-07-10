@@ -4,6 +4,7 @@
 #include <Pulsar/World.h>
 #include "Subsystem.h"
 #include <Pulsar/Rendering/Pipelines/Pipeline.h>
+#include <gfx/GFXApplication.h>
 
 namespace pulsar
 {
@@ -32,12 +33,15 @@ namespace pulsar
             return sptr_cast<T>(GetSubsystemByType(cltypeof<T>()));
         }
 
+        virtual void OnPreInitialize(gfx::GFXGlobalConfig* cfg) {};
+        virtual void OnInitialized() {};
+        virtual void OnTerminate() {};
+        virtual void OnTick(float dt) {};
+        virtual bool IsQuit() = 0;
+
     protected:
         array_list<Subsystem_sp> subsystems;
     protected:
-        virtual void OnInitialize(string_view title, Vector2f size) = 0;
-        virtual void OnTerminate() = 0;
-        virtual void OnTick(float dt) = 0;
-        virtual bool IsQuit() = 0;
+
     };
 }

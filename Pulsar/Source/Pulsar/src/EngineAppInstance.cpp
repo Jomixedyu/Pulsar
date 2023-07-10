@@ -31,7 +31,7 @@ namespace pulsar
         Application::inst()->QuittingEvents.Invoke();
     }
 
-    void EngineAppInstance::OnInitialize(string_view title, Vector2f size)
+    void EngineAppInstance::OnInitialized(string_view title, Vector2f size)
     {
         Logger::Log("application initialize");
         SystemInterface::InitializeWindow(title, (int)size.x, (int)size.y);

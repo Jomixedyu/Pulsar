@@ -17,6 +17,8 @@ add_subdirectory("../ThirdParty/jxcorlib/CoreLib" jxcorlib.out)
 add_subdirectory("../ThirdParty/jxcorlib/CoreLib.Serialization" jxcorlib.ser.out)
 add_subdirectory("../ThirdParty/jxcorlib/CoreLib.Math" jxcorlib.math)
 add_subdirectory("../ThirdParty/jxcorlib/CoreLib.Platform" jxcorlib.platform.out)
+add_subdirectory("../ThirdParty/gfx" gfx.out)
+add_subdirectory("../ThirdParty/gfx-vk" gfx-vk.out)
 
 add_library(${PROJECT_NAME} STATIC ${Pulsar_SRC})
 
@@ -24,12 +26,17 @@ target_include_directories(${PROJECT_NAME} PUBLIC "include")
 target_include_directories(${PROJECT_NAME} PRIVATE "include/Pulsar")
 target_include_directories(${PROJECT_NAME} PUBLIC "..")
 
+target_include_directories(${PROJECT_NAME} PUBLIC "../ThirdParty/gfx/include")
+target_include_directories(${PROJECT_NAME} PUBLIC "../ThirdParty/gfx-vk/include")
+
 target_link_libraries(${PROJECT_NAME} PUBLIC
 	jxcorlib
 	jxcorlib.ser
 	jxcorlib.math
 	jxcorlib.platform
 	glfw3_mt
+	gfx
+	gfx-vk
 	imgui
 	PRIVATE
 	glad

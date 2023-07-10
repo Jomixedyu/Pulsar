@@ -16,7 +16,8 @@ namespace pulsared
         virtual string GetTitle() override;
         virtual void SetTitle(string_view title) override;
         virtual string AppRootDir() override;
-        virtual void OnInitialize(string_view title, Vector2f size) override;
+        virtual void OnPreInitialize(gfx::GFXGlobalConfig* config) override;
+        virtual void OnInitialized() override;
         virtual void OnTerminate() override;
         virtual void OnTick(float dt) override;
         virtual bool IsQuit() override;
@@ -26,6 +27,7 @@ namespace pulsared
         virtual void SetAppSize(Vector2f size);
 
     protected:
+
         Vector2f output_size_;
         builtinrp::BultinRP* render_pipeline_;
     };
