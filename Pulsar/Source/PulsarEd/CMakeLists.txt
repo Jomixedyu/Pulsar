@@ -22,9 +22,9 @@ target_include_directories(${PROJECT_NAME} PRIVATE "include/PulsarEd")
 target_include_directories(${PROJECT_NAME} PUBLIC "..")
 target_include_directories(${PROJECT_NAME} PUBLIC "../ThirdParty")
 
-target_link_directories(${PROJECT_NAME} PUBLIC "D:/Codes/Pulsar/Pulsar/Source/PulsarEd/build/Pulsar/Debug")
-target_link_directories(${PROJECT_NAME} PUBLIC "D:/Codes/Pulsar/Pulsar/Source/ThirdParty")
-target_link_directories(${PROJECT_NAME} PUBLIC "D:/Codes/Pulsar/Pulsar/Source/ThirdParty/glfw")
+target_link_directories(${PROJECT_NAME} PUBLIC "build/Pulsar/Debug")
+target_link_directories(${PROJECT_NAME} PUBLIC "../ThirdParty")
+target_link_directories(${PROJECT_NAME} PUBLIC "../ThirdParty/glfw")
 target_link_libraries(${PROJECT_NAME} PUBLIC
 	pulsar
 	assimp-vc143-mt
