@@ -15,7 +15,7 @@ namespace gfx
     constexpr static float kToSrgb = 1.0f / 2.2f;
     constexpr static float kToLinear = 2.2f;
 
-    std::vector<uint8_t> LoadImage(
+    std::vector<uint8_t> LoadImageFromMemory(
         const void* filedata, size_t size,
         int32_t* outWidth, int32_t* outHeight, int32_t* outChannel, int32_t reqComponents, bool isSrgb)
     {

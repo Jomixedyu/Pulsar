@@ -90,7 +90,6 @@ namespace gfx
         BufferInfo.offset = 0;
         BufferInfo.range = size;
 
-        VkWriteDescriptorSet write;
         WriteInfo.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         WriteInfo.dstSet = m_descriptorSet->GetVkDescriptorSet();
         WriteInfo.dstBinding = m_bindingPoint;
@@ -156,7 +155,7 @@ namespace gfx
         {
             writeInfos.push_back(descriptor->WriteInfo);
         }
-        vkUpdateDescriptorSets(m_pool->GetApplication()->GetVkDevice(), writeInfos.size(), writeInfos.data(), 0, nullptr);
+        vkUpdateDescriptorSets(m_pool->GetApplication()->GetVkDevice(), static_cast<uint32_t>(writeInfos.size()), writeInfos.data(), 0, nullptr);
     }
 
     GFXVulkanApplication* GFXVulkanDescriptorSet::GetApplication() const

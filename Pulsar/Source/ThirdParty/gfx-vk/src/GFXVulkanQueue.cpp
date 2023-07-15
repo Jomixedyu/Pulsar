@@ -18,7 +18,7 @@ namespace gfx
     {
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        submitInfo.commandBufferCount = len;
+        submitInfo.commandBufferCount = static_cast<uint32_t>(len);
         submitInfo.pCommandBuffers = buffer;
 
         VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };

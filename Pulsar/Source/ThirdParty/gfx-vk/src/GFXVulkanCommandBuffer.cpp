@@ -98,7 +98,7 @@ namespace gfx
             vkbuffers.push_back(static_cast<GFXVulkanBuffer*>(item)->GetVkBuffer());
         }
         VkDeviceSize offsets[] = { 0 };
-        vkCmdBindVertexBuffers(m_cmdBuffer, 0, buffers.size(), vkbuffers.data(), offsets);
+        vkCmdBindVertexBuffers(m_cmdBuffer, 0, static_cast<uint32_t>(buffers.size()), vkbuffers.data(), offsets);
     }
 
     void GFXVulkanCommandBuffer::CmdBindIndexBuffer(GFXBuffer* buffer)

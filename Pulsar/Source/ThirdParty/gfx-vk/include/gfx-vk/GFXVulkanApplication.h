@@ -29,7 +29,7 @@ namespace gfx
         virtual void ExecLoop() override;
         virtual void RequestStop() override;
         virtual void Terminate() override;
-        static constexpr int32_t StaticGetApiType() { return 486541598549; }
+        static constexpr int32_t StaticGetApiType() { return 543514; }
         virtual int32_t GetApiType() const override { return StaticGetApiType(); }
         virtual const char* GetApiLevelName() const override { return "Vulkan 1.3"; }
 

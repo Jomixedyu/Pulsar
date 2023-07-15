@@ -1,10 +1,9 @@
 #include "GFXVulkanTexture2D.h"
-#include "GFXVulkanTexture2D.h"
 #include <gfx-vk/BufferHelper.h>
 #include <gfx-vk/GFXVulkanTexture2D.h>
 #include <gfx-vk/GFXVulkanCommandBuffer.h>
+#include <gfx/GFXImage.h>
 #include <stdexcept>
-#include <stb_image.h>
 #include <cassert>
 
 namespace gfx
@@ -34,11 +33,6 @@ namespace gfx
         base(width, height, channel, samplerCfg, enableReadWrite),
         m_app(app), m_imageFormat(format)
     {
-        //读取图片至暂存buffer
-        //创建图片资源
-        //变换到最佳布局
-        //暂存buffer拷贝到图像资源
-
         VkBuffer stagingBuffer;
         VkDeviceMemory stagingBufferMemory;
         VkDeviceSize imageSize = width * height * channel;
@@ -60,7 +54,7 @@ namespace gfx
 
         BufferHelper::TransitionImageLayout(app, m_textureImage, m_imageFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
         BufferHelper::CopyBufferToImage(app, stagingBuffer, m_textureImage, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
-        //变换为采样最佳
+        
         BufferHelper::TransitionImageLayout(app, m_textureImage, m_imageFormat, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         m_imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
@@ -74,7 +68,7 @@ namespace gfx
     }
 
     GFXVulkanTexture2D::GFXVulkanTexture2D(
-        GFXVulkanApplication* app, int32_t width, int32_t height, 
+        GFXVulkanApplication* app, int32_t width, int32_t height,
         bool enableReadWrite, VkImageLayout layout, VkFormat format, const GFXSamplerConfig& samplerCfg)
         : base(width, height, 0, samplerCfg, enableReadWrite),
         m_app(app), m_imageLayout(layout), m_imageFormat(format)
@@ -99,7 +93,7 @@ namespace gfx
         int32_t width, int32_t height, int32_t channel,
         VkFormat format, VkImage image, VkDeviceMemory memory, VkImageView imageView,
         bool enableReadWrite, VkImageLayout layout, const GFXSamplerConfig& samplerCfg)
-        : 
+        :
         base(width, height, channel, samplerCfg, enableReadWrite),
         m_app(app), m_textureImage(image), m_textureImageMemory(memory), m_textureImageView(imageView),
         m_imageLayout(layout), m_imageFormat(format), m_isManaged(true)
@@ -112,7 +106,7 @@ namespace gfx
     }
 
     GFXVulkanTexture2D::GFXVulkanTexture2D(
-        GFXVulkanApplication* app, int32_t width, int32_t height, int32_t channel, 
+        GFXVulkanApplication* app, int32_t width, int32_t height, int32_t channel,
         VkFormat format, VkImage image, VkImageView imageView, VkImageLayout layout)
         :
         base(width, height, channel, {}, false),
@@ -129,19 +123,8 @@ namespace gfx
     }
 
 
-
-    static std::vector<uint8_t> _FloatToByte(float* data, size_t len)
-    {
-        std::vector<uint8_t> newData(len);
-
-        for (size_t i = 0; i < len; i++)
-        {
-            newData[i] = (uint8_t)(data[i] * 255);
-        }
-        return newData;
-    }
     std::shared_ptr<GFXVulkanTexture2D> GFXVulkanTexture2D::CreateFromMemory(
-        GFXVulkanApplication* app, const uint8_t* fileData, int32_t length, bool enableReadWrite, 
+        GFXVulkanApplication* app, const uint8_t* fileData, int32_t length, bool enableReadWrite,
         GFXTextureFormat format, const GFXSamplerConfig& samplerCfg)
     {
         int x, y, channel;
@@ -151,20 +134,12 @@ namespace gfx
         {
         case gfx::GFXTextureFormat::R8G8B8A8:
         {
-            auto loaded = stbi_loadf_from_memory(fileData, length, &x, &y, &channel, 4);
-            channel = 4;
-            buffer = _FloatToByte(loaded, x * y * 4);
-            stbi_image_free(loaded);
+            buffer = gfx::LoadImageFromMemory(fileData, length, &x, &y, &channel, 4, false);
         }
         break;
         case gfx::GFXTextureFormat::R8G8B8A8_SRGB:
         {
-            auto loaded = stbi_load_from_memory(fileData, length, &x, &y, &channel, 4);
-            channel = 4;
-            auto len = x * y * 4;
-            buffer.resize(len);
-            memcpy(buffer.data(), loaded, len);
-            stbi_image_free(loaded);
+            buffer = gfx::LoadImageFromMemory(fileData, length, &x, &y, &channel, 4, true);
         }
         break;
         default:

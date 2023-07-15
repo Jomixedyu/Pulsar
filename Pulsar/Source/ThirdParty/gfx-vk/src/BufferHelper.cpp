@@ -131,7 +131,7 @@ namespace gfx
         {
             throw std::runtime_error("failed to allocate image memory!");
         }
-        //图像关联内存
+
         vkBindImageMemory(app->GetVkDevice(), image, imageMemory, 0);
     }
 
@@ -286,7 +286,7 @@ namespace gfx
         samplerInfo.anisotropyEnable = VK_TRUE;
         samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy;
         samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-        samplerInfo.unnormalizedCoordinates = VK_FALSE; //采样范围0-1
+        samplerInfo.unnormalizedCoordinates = VK_FALSE; // range 0 ~ 1
 
         samplerInfo.compareEnable = VK_FALSE;
         samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;

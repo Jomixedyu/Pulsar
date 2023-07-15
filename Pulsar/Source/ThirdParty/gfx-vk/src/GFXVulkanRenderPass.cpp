@@ -32,8 +32,10 @@ namespace gfx
             return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
             break;
         default:
+            assert(false);
             break;
         }
+        return {};
     }
 
     //GFXVulkanRenderPass::GFXVulkanRenderPass(GFXVulkanApplication* app, VkFormat colorFormat)
@@ -139,7 +141,7 @@ namespace gfx
             }
 
             VkAttachmentReference ref{};
-            ref.attachment = i;
+            ref.attachment = static_cast<uint32_t>(i);
             ref.layout = _GetRefLayout(rt->GetRenderTargetType());
 
             attachmentDesc.push_back(attachment);
@@ -158,7 +160,7 @@ namespace gfx
         VkSubpassDescription subpass{};
         {
             subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-            subpass.colorAttachmentCount = colorAttachmentRef.size();
+            subpass.colorAttachmentCount = static_cast<uint32_t>(colorAttachmentRef.size());
             subpass.pColorAttachments = colorAttachmentRef.data();
             subpass.pDepthStencilAttachment = depthAttachmentRef.data();
         }

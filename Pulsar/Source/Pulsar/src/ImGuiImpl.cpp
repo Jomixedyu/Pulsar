@@ -94,7 +94,6 @@ namespace pulsar
 
         gfx::GFXVulkanApplication* m_app;
 
-        // Í¨¹ý ImGuiObject ¼Ì³Ð
         virtual void Initialize() override
         {
             IMGUI_CHECKVERSION();
