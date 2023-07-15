@@ -9,6 +9,7 @@
 #include <PulsarEd/Components/StdEditCameraControllerComponent.h>
 #include <PulsarEd/Components/Grid3DComponent.h>
 #include <Pulsar/Rendering/RenderContext.h>
+#include <imgui/imgui.h>
 
 namespace pulsared
 {
@@ -100,6 +101,9 @@ void main()
 
     void SceneWindow::OnDrawImGui()
     {
+        static bool demowin = true;
+        if(demowin)
+            ImGui::ShowDemoWindow(&demowin);
         //RenderContext::PushCamera(this->GetSceneCamera());
 
         //if (ImGui::BeginMenuBar())

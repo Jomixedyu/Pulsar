@@ -30,7 +30,7 @@ namespace pulsared
             if (cltypeof<EditorNode>()->IsInstanceOfType(node.get()))
             {
                 is_editor_node = true;
-                ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Text, ImVec4(0.2, 0.6, 0.5, 1));
+                ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Text, ImVec4(0.9, 0.7, 0.6, 1));
             }
             string name = node->get_name();
             if (is_editor_node)

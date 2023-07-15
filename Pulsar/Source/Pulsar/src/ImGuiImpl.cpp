@@ -52,18 +52,26 @@ namespace pulsar
         //style.FramePadding = { 12,3 };
         style.ItemSpacing = { 10,5 };
         style.ScrollbarSize = 10;
+        style.ItemInnerSpacing = { 10,4 };
+        style.GrabMinSize = 20;
+        style.GrabRounding = 12;
+        style.WindowTitleAlign = { 0.5,0.5 };
+        style.SeparatorTextBorderSize = 3;
+        style.SeparatorTextAlign = { 0.5,0.5 };
+        style.SeparatorTextPadding = { 20,15 };
+        style.DockingSeparatorSize = 3;
 
 
         style.Colors[ImGuiCol_Text] = ImColor(214, 214, 214, 255);
         style.Colors[ImGuiCol_TextDisabled] = ImColor(110, 110, 110, 255);
-        style.Colors[ImGuiCol_WindowBg] = ImColor(31, 31, 31, 255);
+        style.Colors[ImGuiCol_WindowBg] = ImColor(38, 38, 38, 255);
         style.Colors[ImGuiCol_ChildBg] = ImColor(30, 30, 30, 128);
         style.Colors[ImGuiCol_Border] = ImColor(140, 136, 138, 79);
-        style.Colors[ImGuiCol_FrameBg] = ImColor(66, 66, 66, 255);
+        style.Colors[ImGuiCol_FrameBg] = ImColor(55, 55, 55, 255);
         style.Colors[ImGuiCol_FrameBgHovered] = ImColor(97, 96, 148, 102);
         style.Colors[ImGuiCol_FrameBgActive] = ImColor(53, 46, 68, 172);
-        style.Colors[ImGuiCol_TitleBg] = ImColor(50, 50, 50, 255);
-        style.Colors[ImGuiCol_TitleBgActive] = ImColor(90, 90, 90, 255);
+        style.Colors[ImGuiCol_TitleBg] = ImColor(28, 28, 28, 255);
+        style.Colors[ImGuiCol_TitleBgActive] = ImColor(50, 50, 50, 255);
         style.Colors[ImGuiCol_MenuBarBg] = ImColor(36, 36, 36, 255);
         style.Colors[ImGuiCol_CheckMark] = ImColor(128, 99, 244, 255);
         style.Colors[ImGuiCol_SliderGrab] = ImColor(120, 90, 205, 255);
@@ -74,10 +82,14 @@ namespace pulsar
         style.Colors[ImGuiCol_Header] = ImColor(101, 74, 169, 255);
         style.Colors[ImGuiCol_HeaderHovered] = ImColor(66, 150, 126, 204);
         style.Colors[ImGuiCol_HeaderActive] = ImColor(66, 150, 156, 255);
-        style.Colors[ImGuiCol_Tab] = ImColor(46, 46, 46, 255);
+        style.Colors[ImGuiCol_Tab] = ImColor(28, 28, 28, 0);
+        style.Colors[ImGuiCol_TabUnfocused] = ImColor(28, 28, 28, 0);
+        style.Colors[ImGuiCol_TabUnfocusedActive] = ImColor(38, 38, 38, 255);
         style.Colors[ImGuiCol_TabHovered] = ImColor(113, 96, 232, 255);
         style.Colors[ImGuiCol_TabActive] = ImColor(113, 96, 232, 255);
         style.Colors[ImGuiCol_TextSelectedBg] = ImColor(141, 98, 254, 255);
+        style.Colors[ImGuiCol_Border] = ImColor(28, 28, 28, 255);
+
     }
 
 
