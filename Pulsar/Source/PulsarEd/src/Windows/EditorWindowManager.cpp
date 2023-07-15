@@ -10,8 +10,6 @@
 #include "Windows/StatusBarWindow.h"
 #include <PulsarEd/Menus/_include.h>
 
-#include <ThirdParty/glad/glad.h>
-
 #include <queue>
 #include <tuple>
 
@@ -146,10 +144,10 @@ namespace pulsared
     {
         _DockspaceWindow = mksptr(new DockspaceWindow);
         _MainMenuBarWindow = mksptr(new MainMenuBarWindow);
-        _StatusBarWindow = mksptr(new StatusBarWindow);
+        //_StatusBarWindow = mksptr(new StatusBarWindow);
         _DockspaceWindow->Open();
         _MainMenuBarWindow->Open();
-        _StatusBarWindow->Open();
+        //_StatusBarWindow->Open();
 
         _registered_menu.emplace(WorkspaceWindow::StaticWindowName(), cltypeof<WorkspaceWindow>());
         _registered_menu.emplace(PropertiesWindow::StaticWindowName(), cltypeof<PropertiesWindow>());
@@ -179,8 +177,7 @@ namespace pulsared
     {
         for (size_t i = 0; i < _registered_windows.items.size(); i++)
         {
-            auto& item = _registered_windows.items[i];
-            item->DrawImGui();
+            _registered_windows.items[i]->DrawImGui();
         }
         _registered_windows.Refresh();
     }

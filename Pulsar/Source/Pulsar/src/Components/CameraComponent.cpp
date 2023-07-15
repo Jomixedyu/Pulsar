@@ -1,5 +1,4 @@
 #include "Components/CameraComponent.h"
-#include <Pulsar/Private/RenderInterface.h>
 #include <Pulsar/Application.h>
 #include <Pulsar/AppInstance.h>
 #include <Pulsar/TransformUtil.h>
@@ -16,7 +15,7 @@ namespace pulsar
             RenderTextureScope rt{ this->render_target };
 
             auto [r, g, b, a] = this->backgroundColor;
-            detail::RenderInterface::Clear(r, g, b, a);
+            //detail::RenderInterface::Clear(r, g, b, a);
             //draw ...
             World::Current()->Draw();
         }

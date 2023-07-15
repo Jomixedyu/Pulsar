@@ -1,5 +1,4 @@
 #include <PulsarEd/Windows/SceneWindow.h>
-#include <ThirdParty/glad/glad.h>
 #include <ThirdParty/glfw/include/GLFW/glfw3.h>
 #include <Pulsar/Assets/Shader.h>
 #include <Pulsar/Scene.h>
@@ -13,12 +12,7 @@
 
 namespace pulsared
 {
-    //    static uint32_t fbo;
-    //    static uint32_t tex;
-    //    static uint32_t rbo;
-    //    ShaderPass* screenShader;
-    //    static unsigned int quadVAO, quadVBO;
-    //
+
     static float quadVertices[] = {
         -1.0f,  1.0f,  0.0f, 1.0f,
         -1.0f, -1.0f,  0.0f, 0.0f,
@@ -58,33 +52,28 @@ void main()
     {
 
     }
-    static uint32_t fbo;
-    static uint32_t tex;
-    static uint32_t rbo;
-    static uint32_t quadVAO;
-    static uint32_t quadVBO;
 
     static Shader_sp default_shader;
 
     void SceneWindow::OnOpen()
     {
-        //EditorNode_sp center_node = EditorNode::StaticCreate("EditorCameraController");
-        //EditorNode_sp camera_node = EditorNode::StaticCreate("EditorCamera", center_node);
-        //this->camera_node = camera_node;
-        //this->camera_ctrl_node = center_node;
+        EditorNode_sp center_node = EditorNode::StaticCreate("EditorCameraController");
+        EditorNode_sp camera_node = EditorNode::StaticCreate("EditorCamera", center_node);
+        this->camera_node = camera_node;
+        this->camera_ctrl_node = center_node;
 
-        //auto cam = camera_node->AddComponent<CameraComponent>();
-
-        //cam->cameraMode = CameraMode::Perspective;
-        //cam->backgroundColor = LinearColorf{ 0.33,0.33,0.33,1 };
-        //cam->fov = 45.f;
-        //cam->near = 0.01f;
-        //cam->far = 10000.f;
-        //cam->size_ = { 1280,720 };
-        //camera_node->set_self_position({ 0.f, 7, 30 });
+        auto cam = camera_node->AddComponent<CameraComponent>();
+        
+        cam->cameraMode = CameraMode::Perspective;
+        cam->backgroundColor = LinearColorf{ 0.33,0.33,0.33,1 };
+        cam->fov = 45.f;
+        cam->near = 0.01f;
+        cam->far = 10000.f;
+        cam->size_ = { 1280,720 };
+        camera_node->set_self_position({ 0.f, 7, 30 });
         ////camera_node->set_self_euler_rotation({ -25.f, -45, 0 });
 
-        //center_node->AddComponent<StdEditCameraControllerComponent>();
+        center_node->AddComponent<StdEditCameraControllerComponent>();
 
         //auto rt = mksptr(new RenderTexture);
         //rt->PostInitializeData(1280, 720);
@@ -94,7 +83,7 @@ void main()
 
 
         ////node->set_self_euler_rotation({ 0,-90,0 });
-        //World::Current()->scene->AddNode(center_node);
+        World::Current()->scene->AddNode(center_node);
 
         //EditorNode_sp grid3d = EditorNode::StaticCreate("Grid3d");
         //grid3d->AddComponent<Grid3DComponent>();

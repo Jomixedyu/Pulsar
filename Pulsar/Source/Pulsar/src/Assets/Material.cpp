@@ -1,6 +1,5 @@
 #include "Assets/Material.h"
 #include <Pulsar/Assets/Material.h>
-#include <ThirdParty/glad/glad.h>
 
 namespace pulsar
 {

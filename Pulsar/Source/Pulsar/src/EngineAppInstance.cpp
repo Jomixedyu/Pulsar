@@ -3,8 +3,6 @@
 #include <Pulsar/Application.h>
 #include <Pulsar/World.h>
 #include <Pulsar/Logger.h>
-#include <Pulsar/Private/SystemInterface.h>
-#include <Pulsar/Private/RenderInterface.h>
 #include <filesystem>
 #include <Pulsar/ImGuiImpl.h>
 #include <Pulsar/Private/InputInterface.h>
@@ -35,8 +33,8 @@ namespace pulsar
     {
         Logger::Log("application initialize");
         //SystemInterface::InitializeWindow(title, (int)size.x, (int)size.y);
-        SystemInterface::SetRequestQuitCallBack(_RequestQuit);
-        SystemInterface::SetQuitCallBack(_quitting);
+        //SystemInterface::SetRequestQuitCallBack(_RequestQuit);
+        //SystemInterface::SetQuitCallBack(_quitting);
         //RenderInterface::SetViewport(0, 0, (int)size.x, (int)size.y);
 
         World::Reset(new World);
@@ -51,32 +49,33 @@ namespace pulsar
     void EngineAppInstance::OnBeginRender(float dt)
     {
         auto bgc = LinearColorf{ 0.2f, 0.2f ,0.2f, 0.2 };
-        RenderInterface::Clear(bgc.r, bgc.g, bgc.b, bgc.a);
+        //RenderInterface::Clear(bgc.r, bgc.g, bgc.b, bgc.a);
 
         World::Current()->Tick(dt);
 
-        RenderInterface::Render();
-        SystemInterface::PollEvents();
+        //RenderInterface::Render();
+        //SystemInterface::PollEvents();
         InputInterface::PollEvents();
     }
     bool EngineAppInstance::IsQuit()
     {
-        return SystemInterface::GetIsQuit();
+        return false;
+        //return SystemInterface::GetIsQuit();
     }
     void EngineAppInstance::RequestQuit()
     {
-        SystemInterface::RequestQuitEvents();
+        //SystemInterface::RequestQuitEvents();
     }
 
     Vector2f EngineAppInstance::GetOutputScreenSize()
     {
         int32_t x, y;
-        detail::RenderInterface::GetDefaultBufferViewport(&x, &y);
+        //detail::RenderInterface::GetDefaultBufferViewport(&x, &y);
         return Vector2f(x, y);
     }
     void EngineAppInstance::SetOutputScreenSize(Vector2f size)
     {
-        detail::RenderInterface::SetViewport(0, 0, (int)size.x, (int)size.y);
+        //detail::RenderInterface::SetViewport(0, 0, (int)size.x, (int)size.y);
     }
 
     string EngineAppInstance::GetTitle()

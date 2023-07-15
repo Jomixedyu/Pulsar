@@ -36,5 +36,4 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 	glfw3_mt
 	imgui
 	PRIVATE
-	glad
 )

@@ -1,6 +1,4 @@
 ﻿#include <Pulsar/Application.h>
-#include <Pulsar/Private/SystemInterface.h>
-#include <Pulsar/Private/RenderInterface.h>
 #include <gfx-vk/GFXVulkanApplication.h>
 
 namespace pulsar

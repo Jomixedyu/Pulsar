@@ -4,8 +4,6 @@
 #include <ThirdParty/imgui/imgui.h>
 #include <ThirdParty/imgui/imgui_impl_glfw.h>
 
-
-#include <Pulsar/Private/SystemInterface.h>
 #include <CoreLib.Platform/Window.h>
 #include <gfx/GFXApplication.h>
 
@@ -27,6 +25,7 @@ namespace pulsar
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
         io.ConfigFlags |= ImGuiWindowFlags_MenuBar;
+        //io.ConfigFlags |= ImGuiConfigFlags_IsSRGB;
         //io.ConfigFlags |= ImGuiWindowFlags_NoTitleBar;
         io.ConfigFlags &= ~ImGuiConfigFlags_ViewportsEnable;
 
@@ -45,36 +44,16 @@ namespace pulsar
 
         ImGuiStyle& style = ImGui::GetStyle();
 
-
         //custom
-        {
-            style.WindowPadding = { 2.f, 2.f };
-            style.WindowRounding = 8;
-            style.FrameRounding = 6;
-            style.FramePadding = { 12,3 };
-            style.ItemSpacing = { 10,5 };
-            style.ScrollbarSize = 10;
 
-            //style.Colors[ImGuiCol_::ImGuiCol_Button] = ImColor(58, 58, 58, 255);
+        style.WindowPadding = { 2.f, 2.f };
+        style.WindowRounding = 8;
+        style.FrameRounding = 6;
+        //style.FramePadding = { 12,3 };
+        style.ItemSpacing = { 10,5 };
+        style.ScrollbarSize = 10;
 
-            //style.Colors[ImGuiCol_::ImGuiCol_WindowBg] = ImColor(26, 26, 26, 255);
-            //style.Colors[ImGuiCol_::ImGuiCol_FrameBg] = ImColor(12, 12, 12, 255);
-            //style.Colors[ImGuiCol_::ImGuiCol_TitleBg] = ImColor(25, 25, 28, 255);
-            //style.Colors[ImGuiCol_::ImGuiCol_TitleBgActive] = ImColor(60, 60, 60, 255);
 
-            ////tab
-            //style.Colors[ImGuiCol_::ImGuiCol_Tab] = ImColor(38, 38, 38, 255);
-            //style.Colors[ImGuiCol_::ImGuiCol_TabActive] = ImColor(255, 79, 79, 255);
-            //style.Colors[ImGuiCol_::ImGuiCol_TabHovered] = ImColor(255, 79, 79, 255);
-            //style.Colors[ImGuiCol_::ImGuiCol_TabUnfocused] = ImColor(38, 38, 38, 255);
-            //style.Colors[ImGuiCol_::ImGuiCol_TabUnfocusedActive] = ImColor(79, 79, 79, 255);
-
-            //style.Colors[ImGuiCol_::ImGuiCol_Header] = ImColor(48, 48, 48, 255);
-
-            //bug:
-            //style.WindowMenuButtonPosition = ImGuiDir_::ImGuiDir_Right;
-
-        }
         style.Colors[ImGuiCol_Text] = ImColor(214, 214, 214, 255);
         style.Colors[ImGuiCol_TextDisabled] = ImColor(110, 110, 110, 255);
         style.Colors[ImGuiCol_WindowBg] = ImColor(31, 31, 31, 255);

@@ -1,6 +1,4 @@
 #include <Pulsar/Assets/CubeMap.h>
-#include <ThirdParty/glad/glad.h>
-#include <Pulsar/Private/ResourceInterface.h>
 #include <CoreLib/File.h>
 #include <CoreLib.Serialization/JsonSerializer.h>
 

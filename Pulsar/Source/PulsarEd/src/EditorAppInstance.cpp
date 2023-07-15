@@ -4,8 +4,6 @@
 #include <Pulsar/Application.h>
 #include <Pulsar/World.h>
 #include <Pulsar/Logger.h>
-#include <Pulsar/Private/SystemInterface.h>
-#include <Pulsar/Private/RenderInterface.h>
 #include <filesystem>
 #include <Pulsar/ImGuiImpl.h>
 #include <Pulsar/Private/InputInterface.h>
@@ -20,7 +18,6 @@
 #include <PulsarEd/Subsystems/EditorSubsystem.h>
 #include <Pulsar/Scene.h>
 #include <PulsarEd/EditorWorld.h>
-#include <ThirdParty/glad/glad.h>
 #include <PulsarEd/AssetDatabase.h>
 #include <Pulsar/AssetRegistry.h>
 #include <gfx/GFXRenderPipeline.h>
@@ -84,7 +81,7 @@ namespace pulsared
     }
     void EditorAppInstance::RequestQuit()
     {
-        SystemInterface::RequestQuitEvents();
+        //SystemInterface::RequestQuitEvents();
     }
     Vector2f EditorAppInstance::GetOutputScreenSize()
     {
@@ -316,7 +313,8 @@ namespace pulsared
     }
     bool EditorAppInstance::IsQuit()
     {
-        return SystemInterface::GetIsQuit();
+        //return SystemInterface::GetIsQuit();
+        return false;
     }
 
     rendering::Pipeline* EditorAppInstance::GetPipeline()
@@ -329,12 +327,12 @@ namespace pulsared
         return { 1280,720 };
         int32_t w, h;
         
-        RenderInterface::GetDefaultBufferViewport(&w, &h);
+        //RenderInterface::GetDefaultBufferViewport(&w, &h);
         return Vector2f(w, h);
     }
     void pulsared::EditorAppInstance::SetAppSize(Vector2f size)
     {
-        RenderInterface::SetViewport(0, 0, (int)size.x, (int)size.y);
+        //RenderInterface::SetViewport(0, 0, (int)size.x, (int)size.y);
     }
 
 

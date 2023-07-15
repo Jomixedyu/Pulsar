@@ -1,7 +1,6 @@
 #include "Components/StaticMeshRendererComponent.h"
 #include "Components/MeshContainerComponent.h"
 #include <Pulsar/Logger.h>
-#include <ThirdParty/glad/glad.h>
 #include <Pulsar/Rendering/RenderContext.h>
 
 namespace pulsar

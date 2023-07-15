@@ -1,11 +1,10 @@
 #include "Assets/Shader.h"
 
 #include <Pulsar/Assets/Shader.h>
-#include <ThirdParty/glad/glad.h>
 
 #include <Pulsar/Assets/Texture.h>
 #include <CoreLib.Serialization/JsonSerializer.h>
-#include <Pulsar/Private/RenderInterface.h>
+
 #include <Pulsar/Logger.h>
 
 namespace pulsar
@@ -130,40 +129,40 @@ namespace pulsar
     static bool _CheckShaderProgram(int id)
     {
         int isSuccess;
-        glGetProgramiv(id, GL_LINK_STATUS, &isSuccess);
+
         return isSuccess;
     }
     static bool _CheckShaderCompile(const uint32_t& shaderId)
     {
         int isSuccess;
-        glGetShaderiv(shaderId, GL_COMPILE_STATUS, &isSuccess);
+
         return isSuccess;
     }
     string _GetShaderCompileErrorInfo(const uint32_t& shaderId)
     {
         char info[512];
-        glGetShaderInfoLog(shaderId, 512, nullptr, info);
+
         return string(info);
     }
 
     int32_t Shader::GetUniformLocaltion(std::string_view name)
     {
-        return glGetUniformLocation(this->id_, name.data());
+        return 0;
     }
 
     void Shader::SetUniformInt(std::string_view name, const int32_t& i)
     {
-        glUniform1i(this->GetUniformLocaltion(name), i);
+
     }
 
     void Shader::SetUniformFloat(std::string_view name, const float& f)
     {
-        glUniform1f(this->GetUniformLocaltion(name), f);
+
     }
 
     void Shader::SetUniformMatrix4fv(std::string_view name, const float* value)
     {
-        glUniformMatrix4fv(this->GetUniformLocaltion(name), 1, GL_FALSE, value);
+
     }
 
     void Shader::SetUniformMatrix4fv(std::string_view name, const Matrix4f& mat)
@@ -173,12 +172,12 @@ namespace pulsar
 
     void Shader::SetUniformVector3(std::string_view name, const Vector3f& value)
     {
-        glUniform3fv(this->GetUniformLocaltion(name), 1, value.get_value_ptr());
+
     }
 
     void Shader::SetUniformColor(std::string_view name, const LinearColorf& value)
     {
-        glUniform4fv(this->GetUniformLocaltion(name), 1, value.get_value_ptr());
+
     }
 
     void Shader::SetUniformColor(std::string_view name, const Vector3f& value)

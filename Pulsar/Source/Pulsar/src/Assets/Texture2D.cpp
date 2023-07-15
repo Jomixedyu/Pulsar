@@ -1,6 +1,4 @@
 #include <Pulsar/Assets/Texture2D.h>
-#include <Pulsar/Private/RenderInterface.h>
-#include <Pulsar/Private/ResourceInterface.h>
 #include <CoreLib/File.h>
 #include <Pulsar/Application.h>
 
@@ -67,7 +65,7 @@ namespace pulsar
     {
         if (this->GetIsBindGPU())
         {
-            detail::RenderInterface::UnloadTexture2D(this->tex_id_);
+            //detail::RenderInterface::UnloadTexture2D(this->tex_id_);
             this->tex_id_ = 0;
         }
     }

@@ -29,8 +29,6 @@ namespace pulsared
     }
     void WorkspaceWindow::OnDrawImGui()
     {
-        static bool open;
-        ImGui::ShowDemoWindow(&open);
 
         ImGui::InputText("Search", this->search_buf, sizeof(this->search_buf));
 

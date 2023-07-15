@@ -1,5 +1,4 @@
 #include "Components/Grid3DComponent.h"
-#include <ThirdParty/glad/glad.h>
 #include <Pulsar/Rendering/ShaderPass.h>
 #include <PulsarEd/Windows/EditorWindowManager.h>
 #include <PulsarEd/Windows/SceneWindow.h>
@@ -76,24 +75,6 @@ void main()
             colors.push_back(color);
             colors.push_back(color);
         }
-        glGenVertexArrays(1, &vao);
-        glGenBuffers(1, &vbo);
-        glGenBuffers(1, &colorvbo);
-
-        glBindVertexArray(vao);
-        glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        glBufferData(GL_ARRAY_BUFFER, vert.size() * sizeof(Vector3f), vert.data(), GL_STATIC_DRAW);
-
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-        glEnableVertexAttribArray(0);
-
-        glBindBuffer(GL_ARRAY_BUFFER, colorvbo);
-        glBufferData(GL_ARRAY_BUFFER, colors.size() * sizeof(LinearColorf), colors.data(), GL_STATIC_DRAW);
-
-        glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
-        glEnableVertexAttribArray(1);
-
-        glBindVertexArray(0);
 
         program = new ShaderPass("Editor/Grid3D", vertcode, fragcode);
     }
@@ -101,7 +82,7 @@ void main()
     {
         ShaderPassScope sp(program);
 
-        glBindVertexArray(vao);
+        //glBindVertexArray(vao);
         auto scenewin = EditorWindowManager::GetWindow<SceneWindow>();
         sp->SetUniformMatrix4fv("MODEL", Matrix4f::StaticScalar());
         //sp->SetUniformMatrix4fv("MODEL", scenewin->GetSceneCameraNode()->GetModelMatrix());
@@ -112,8 +93,8 @@ void main()
 
         auto a = vert.size();
 
-        glDrawArrays(GL_LINES, 0, a);
+        //glDrawArrays(GL_LINES, 0, a);
 
-        glBindVertexArray(0);
+        //glBindVertexArray(0);
     }
 }
