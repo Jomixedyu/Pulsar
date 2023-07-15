@@ -41,7 +41,7 @@ namespace pulsared
             auto& buffer = static_cast<gfx::GFXCommandBuffer&>(context->AddCommandBuffer());
             buffer.Begin();
             buffer.SetFrameBuffer(rt);
-            buffer.CmdClearColor(1.0, 0.0, 0.0, 1);
+            buffer.CmdClearColor(0.0, 0.0, 0.0, 1);
             buffer.CmdBeginFrameBuffer();
             buffer.CmdSetViewport(0, 0, rt->GetWidth(), rt->GetHeight());
             //being render
@@ -266,7 +266,6 @@ namespace pulsared
         delete Application::GetGfxApp()->GetRenderPipeline();
         Application::GetGfxApp()->SetRenderPipeline(nullptr);
 
-
         World::Reset(nullptr);
 
 
@@ -327,6 +326,7 @@ namespace pulsared
 
     Vector2f pulsared::EditorAppInstance::GetAppSize()
     {
+        return { 1280,720 };
         int32_t w, h;
         
         RenderInterface::GetDefaultBufferViewport(&w, &h);

@@ -15,7 +15,7 @@
 #include <gfx-vk/GFXVulkanDescriptorManager.h>
 #include <gfx-vk/GFXVulkanCommandBuffer.h>
 #endif
-
+#include <ThirdParty/imgui/imgui_impl_win32.h>
 namespace pulsar
 {
 
@@ -35,15 +35,15 @@ namespace pulsar
         //io.FontGlobalScale = jxcorlib::platform::window::GetUIScaling();
         io.MouseDrawCursor = true;
 
-        io.Fonts->AddFontFromMemoryTTF(FILE_DroidSans_ttf, sizeof(FILE_DroidSans_ttf), 14.4f);
+        ImFontConfig fontConfig{};
+        fontConfig.FontDataOwnedByAtlas = false;
+        io.Fonts->AddFontFromMemoryTTF(FILE_DroidSans_ttf, sizeof(FILE_DroidSans_ttf), 14.4f, &fontConfig);
+
+        io.FontGlobalScale = jxcorlib::platform::window::GetUIScaling();
         //io.Fonts->AddFontFromFileTTF("DroidSans.ttf", 14.4f);
         ImGui::StyleColorsDark();
 
         ImGuiStyle& style = ImGui::GetStyle();
-
-
-            style.WindowRounding = 0.0f;
-            style.Colors[ImGuiCol_WindowBg].w = 1.0f;
 
 
         //custom
@@ -75,32 +75,30 @@ namespace pulsar
             //style.WindowMenuButtonPosition = ImGuiDir_::ImGuiDir_Right;
 
         }
-        //style.Colors[ImGuiCol_Text] = ImColor(214, 214, 214, 255);
-        //style.Colors[ImGuiCol_TextDisabled] = ImColor(110, 110, 110, 255);
-        //style.Colors[ImGuiCol_WindowBg] = ImColor(31, 31, 31, 255);
-        ////style.Colors[ImGuiCol_WindowBg] = ImColor(1, 0, 0, 255);
-
-        //style.Colors[ImGuiCol_ChildBg] = ImColor(30, 30, 30, 128);
-        //style.Colors[ImGuiCol_Border] = ImColor(140, 136, 138, 79);
-        //style.Colors[ImGuiCol_FrameBg] = ImColor(66, 66, 66, 255);
-        //style.Colors[ImGuiCol_FrameBgHovered] = ImColor(97, 96, 148, 102);
-        //style.Colors[ImGuiCol_FrameBgActive] = ImColor(53, 46, 68, 172);
-        //style.Colors[ImGuiCol_TitleBg] = ImColor(50, 50, 50, 255);
-        //style.Colors[ImGuiCol_TitleBgActive] = ImColor(90, 90, 90, 255);
-        //style.Colors[ImGuiCol_MenuBarBg] = ImColor(36, 36, 36, 255);
-        //style.Colors[ImGuiCol_CheckMark] = ImColor(128, 99, 244, 255);
-        //style.Colors[ImGuiCol_SliderGrab] = ImColor(120, 90, 205, 255);
-        //style.Colors[ImGuiCol_SliderGrabActive] = ImColor(118, 66, 255, 255);
-        //style.Colors[ImGuiCol_Button] = ImColor(66, 66, 66, 255);
-        //style.Colors[ImGuiCol_ButtonHovered] = ImColor(64, 53, 130, 255);
-        //style.Colors[ImGuiCol_ButtonActive] = ImColor(145, 131, 238, 255);
-        //style.Colors[ImGuiCol_Header] = ImColor(101, 74, 169, 255);
-        //style.Colors[ImGuiCol_HeaderHovered] = ImColor(66, 150, 126, 204);
-        //style.Colors[ImGuiCol_HeaderActive] = ImColor(66, 150, 156, 255);
-        //style.Colors[ImGuiCol_Tab] = ImColor(46, 46, 46, 255);
-        //style.Colors[ImGuiCol_TabHovered] = ImColor(113, 96, 232, 255);
-        //style.Colors[ImGuiCol_TabActive] = ImColor(113, 96, 232, 255);
-        //style.Colors[ImGuiCol_TextSelectedBg] = ImColor(141, 98, 254, 255);
+        style.Colors[ImGuiCol_Text] = ImColor(214, 214, 214, 255);
+        style.Colors[ImGuiCol_TextDisabled] = ImColor(110, 110, 110, 255);
+        style.Colors[ImGuiCol_WindowBg] = ImColor(31, 31, 31, 255);
+        style.Colors[ImGuiCol_ChildBg] = ImColor(30, 30, 30, 128);
+        style.Colors[ImGuiCol_Border] = ImColor(140, 136, 138, 79);
+        style.Colors[ImGuiCol_FrameBg] = ImColor(66, 66, 66, 255);
+        style.Colors[ImGuiCol_FrameBgHovered] = ImColor(97, 96, 148, 102);
+        style.Colors[ImGuiCol_FrameBgActive] = ImColor(53, 46, 68, 172);
+        style.Colors[ImGuiCol_TitleBg] = ImColor(50, 50, 50, 255);
+        style.Colors[ImGuiCol_TitleBgActive] = ImColor(90, 90, 90, 255);
+        style.Colors[ImGuiCol_MenuBarBg] = ImColor(36, 36, 36, 255);
+        style.Colors[ImGuiCol_CheckMark] = ImColor(128, 99, 244, 255);
+        style.Colors[ImGuiCol_SliderGrab] = ImColor(120, 90, 205, 255);
+        style.Colors[ImGuiCol_SliderGrabActive] = ImColor(118, 66, 255, 255);
+        style.Colors[ImGuiCol_Button] = ImColor(66, 66, 66, 255);
+        style.Colors[ImGuiCol_ButtonHovered] = ImColor(64, 53, 130, 255);
+        style.Colors[ImGuiCol_ButtonActive] = ImColor(145, 131, 238, 255);
+        style.Colors[ImGuiCol_Header] = ImColor(101, 74, 169, 255);
+        style.Colors[ImGuiCol_HeaderHovered] = ImColor(66, 150, 126, 204);
+        style.Colors[ImGuiCol_HeaderActive] = ImColor(66, 150, 156, 255);
+        style.Colors[ImGuiCol_Tab] = ImColor(46, 46, 46, 255);
+        style.Colors[ImGuiCol_TabHovered] = ImColor(113, 96, 232, 255);
+        style.Colors[ImGuiCol_TabActive] = ImColor(113, 96, 232, 255);
+        style.Colors[ImGuiCol_TextSelectedBg] = ImColor(141, 98, 254, 255);
     }
 
 
@@ -126,6 +124,7 @@ namespace pulsar
             //ImGui::StyleColorsClassic();
             //ImGui::StyleColorsDark();
             ImGui_Style_Initialize();
+
             ImGui_ImplGlfw_InitForVulkan(m_app->GetWindow(), true);
             ImGui_ImplVulkan_InitInfo init_info = {};
             init_info.Instance = m_app->GetVkInstance();
@@ -146,7 +145,7 @@ namespace pulsar
                 VkCommandBufferBeginInfo beginInfo{};
                 {
                     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-                    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+                    beginInfo.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
                 }
                 font.Begin();
                 ImGui_ImplVulkan_CreateFontsTexture(font.GetVkCommandBuffer());
@@ -174,6 +173,7 @@ namespace pulsar
         }
         virtual void EndFrame() override
         {
+            ImGui::EndFrame();
         }
         virtual void Terminate() override
         {

@@ -29,7 +29,6 @@ target_link_directories(${PROJECT_NAME} PUBLIC "../ThirdParty")
 target_link_directories(${PROJECT_NAME} PUBLIC "../ThirdParty/glfw")
 
 target_link_options(${PROJECT_NAME} PUBLIC "/WHOLEARCHIVE:Pulsar")
-target_link_options(${PROJECT_NAME} PUBLIC "/JMC")
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
 	Pulsar

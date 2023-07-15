@@ -16,6 +16,8 @@ set(_imgui_Sources
     imgui_impl_vulkan.cpp
 	imgui_impl_glfw.h
 	imgui_impl_glfw.cpp
+	imgui_impl_win32.h
+	imgui_impl_win32.cpp
     LICENSE.txt
 )
 include_directories("../glfw/include")
