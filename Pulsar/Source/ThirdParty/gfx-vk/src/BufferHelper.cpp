@@ -97,7 +97,6 @@ namespace gfx
     }
 
     void BufferHelper::CreateImage(GFXVulkanApplication* app, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory)
-
     {
         VkImageCreateInfo imageInfo{};
         imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -333,5 +332,45 @@ namespace gfx
             VK_IMAGE_TILING_OPTIMAL,
             VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
         );
+    }
+    VkFilter BufferHelper::GetVkFilter(GFXSamplerFilter filter)
+    {
+        switch (filter)
+        {
+        case gfx::GFXSamplerFilter::Nearest: return VkFilter::VK_FILTER_NEAREST;
+        case gfx::GFXSamplerFilter::Linear: return VkFilter::VK_FILTER_LINEAR;
+        case gfx::GFXSamplerFilter::Cubic: return VkFilter::VK_FILTER_CUBIC_IMG;
+        default:
+            assert(false);
+            break;
+        }
+        return {};
+    }
+    VkSamplerAddressMode BufferHelper::GetVkAddressMode(GFXSamplerAddressMode mode)
+    {
+        switch (mode)
+        {
+        case gfx::GFXSamplerAddressMode::Repeat: return VkSamplerAddressMode::VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        case gfx::GFXSamplerAddressMode::MirroredRepeat: return VkSamplerAddressMode::VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
+        case gfx::GFXSamplerAddressMode::ClampToEdge: return VkSamplerAddressMode::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        default:
+            assert(false);
+            break;
+        }
+        return {};
+    }
+    VkFormat BufferHelper::GetVkFormat(GFXTextureFormat format)
+    {
+        switch (format)
+        {
+        case gfx::GFXTextureFormat::R8: return VK_FORMAT_R8_UNORM;
+        case gfx::GFXTextureFormat::R8G8B8: return VK_FORMAT_R8G8B8_UNORM;
+        case gfx::GFXTextureFormat::R8G8B8A8: return VK_FORMAT_R8G8B8A8_UNORM;
+        case gfx::GFXTextureFormat::R8G8B8A8_SRGB: return VK_FORMAT_R8G8B8A8_SRGB;
+        default:
+            assert(false);
+            break;
+        }
+        return {};
     }
 }

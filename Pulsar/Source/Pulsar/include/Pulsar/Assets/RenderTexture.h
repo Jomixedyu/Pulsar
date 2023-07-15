@@ -3,10 +3,13 @@
 #include <Pulsar/Assets/Texture.h>
 #include <Pulsar/IBindGPU.h>
 #include "Texture.h"
-
+#include <gfx/GFXRenderTarget.h>
+#include <Pulsar/Application.h>
 
 namespace pulsar
 {
+    using RenderTargetType = gfx::GFXRenderTargetType;
+
     class RenderTexture : public Texture
     {
         CORELIB_DEF_TYPE(AssemblyObject_Pulsar, pulsar::RenderTexture, Texture);
@@ -16,10 +19,14 @@ namespace pulsar
         ~RenderTexture();
     public:
         //Texture
-        virtual int32_t get_width() const override;
-        virtual int32_t get_height() const override;
+        virtual int32_t GetWidth() const override;
+        virtual int32_t GetHeight() const override;
     public:
+        
         void PostInitializeData(int32_t width, int32_t height);
+
+        void Initialize(int32_t width, int32_t height, TextureFormat format, bool enableDepthStencil);
+
     public:
         //IBindGPU
         virtual void BindGPU() override;
@@ -34,6 +41,9 @@ namespace pulsar
 
         uint32_t buffer_;
         int32_t last_buffer_;
+
+        std::shared_ptr<gfx::GFXRenderTarget> m_color0;
+        std::shared_ptr<gfx::GFXRenderTarget> m_depth;
     };
     CORELIB_DECL_SHORTSPTR(RenderTexture);
 

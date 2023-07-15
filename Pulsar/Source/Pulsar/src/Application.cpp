@@ -12,8 +12,11 @@ namespace pulsar
     {
         return g_currentInst;
     }
-    static gfx::GFXVulkanApplication* g_gfxApp;
-
+    static gfx::GFXVulkanApplication* g_gfxApp = nullptr;
+    gfx::GFXApplication* Application::GetGfxApp()
+    {
+        return g_gfxApp;
+    }
     int Application::Exec(AppInstance* instance, string_view title, Vector2f size)
     {
         g_currentInst = instance;
@@ -32,11 +35,11 @@ namespace pulsar
 
         g_gfxApp->OnPreRender = [](float dt)
         {
-            g_currentInst->OnTick(dt);
+            g_currentInst->OnBeginRender(dt);
         };
         g_gfxApp->OnPostRender = [](float dt)
         {
-
+            g_currentInst->OnEndRender(dt);
         };
         g_gfxApp->ExecLoop();
         instance->OnTerminate();

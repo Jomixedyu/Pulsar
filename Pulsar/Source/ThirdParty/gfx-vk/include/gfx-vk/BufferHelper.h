@@ -44,5 +44,10 @@ namespace gfx
             VkSamplerAddressMode addressMode = VkSamplerAddressMode::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
 
         static VkFormat FindDepthFormat(GFXVulkanApplication* app);
+
+
+        static VkFilter GetVkFilter(GFXSamplerFilter filter);
+        static VkSamplerAddressMode GetVkAddressMode(GFXSamplerAddressMode mode);
+        static VkFormat GetVkFormat(GFXTextureFormat format);
     };
 }

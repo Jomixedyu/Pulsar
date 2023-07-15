@@ -144,7 +144,6 @@ namespace pulsared
 
     void EditorWindowManager::Reset()
     {
-        assert(glGetError() == GL_NO_ERROR);
         _DockspaceWindow = mksptr(new DockspaceWindow);
         _MainMenuBarWindow = mksptr(new MainMenuBarWindow);
         _StatusBarWindow = mksptr(new StatusBarWindow);

@@ -478,14 +478,30 @@ namespace gfx
         return GFXVulkanTexture2D::CreateFromMemory(this, data, length, enableReadWrite, format, samplerConfig);
     }
 
+    std::shared_ptr<GFXFrameBufferObject> GFXVulkanApplication::CreateFrameBufferObject(
+        const std::vector<GFXRenderTarget*>& renderTargets,
+        const std::shared_ptr<GFXRenderPassLayout>& renderPassLayout)
+    {
+        std::vector<GFXVulkanRenderTarget*> rts;
+        rts.reserve(renderTargets.size());
+
+        std::transform(
+            renderTargets.begin(), renderTargets.end(),
+            std::back_insert_iterator<decltype(rts)>(rts),
+            [](GFXRenderTarget* rt) { return static_cast<GFXVulkanRenderTarget*>(rt); });
+
+        auto buf = new GFXVulkanFrameBufferObject(this, rts, std::static_pointer_cast<GFXVulkanRenderPass>(renderPassLayout));
+        return std::shared_ptr<GFXFrameBufferObject>(buf);
+    }
+
     std::shared_ptr<GFXShaderModule> GFXVulkanApplication::CreateShaderModule(const std::vector<uint8_t>& vert, const std::vector<uint8_t>& frag)
     {
         return std::shared_ptr<GFXShaderModule>(new GFXVulkanShaderModule(this, vert, frag));
     }
 
     std::shared_ptr<GFXShaderPass> GFXVulkanApplication::CreateGraphicsPipeline(
-        const GFXShaderPassConfig& config, 
-        std::shared_ptr<GFXVertexLayoutDescription> vertexLayout, 
+        const GFXShaderPassConfig& config,
+        std::shared_ptr<GFXVertexLayoutDescription> vertexLayout,
         std::shared_ptr<GFXShaderModule> shaderModule,
         const std::shared_ptr<GFXDescriptorSetLayout>& descSetLayout,
         GFXRenderPassLayout* renderPass)
@@ -493,6 +509,23 @@ namespace gfx
         auto vkRenderPass = static_cast<GFXVulkanRenderPass*>(renderPass);
         auto vkPipeline = new GFXVulkanShaderPass(this, config, vertexLayout, shaderModule, descSetLayout, vkRenderPass);
         return std::shared_ptr<GFXShaderPass>(vkPipeline);
+    }
+
+    std::shared_ptr<GFXRenderPassLayout> GFXVulkanApplication::CreateRenderPassLayout(const std::vector<GFXRenderTarget*>& renderTargets)
+    {
+        std::vector<GFXVulkanRenderTarget*> rt;
+        for (auto i : renderTargets)
+        {
+            rt.push_back(static_cast<GFXVulkanRenderTarget*>(i));
+        }
+        return std::shared_ptr<GFXRenderPassLayout>(new GFXVulkanRenderPass(this, rt));
+    }
+
+    std::shared_ptr<GFXRenderTarget> GFXVulkanApplication::CreateRenderTarget(
+        int32_t width, int32_t height, GFXRenderTargetType type, GFXTextureFormat format, const GFXSamplerConfig& samplerCfg)
+    {
+        auto rt = new GFXVulkanRenderTarget(this, width, height, type, format, samplerCfg);
+        return std::shared_ptr<GFXRenderTarget>(rt);
     }
 
     GFXDescriptorManager* GFXVulkanApplication::GetDescriptorManager()

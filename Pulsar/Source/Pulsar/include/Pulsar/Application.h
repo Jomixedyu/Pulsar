@@ -4,6 +4,7 @@
 #include <Pulsar/ObjectBase.h>
 #include "AppInstance.h"
 #include "Math.h"
+#include <gfx/GFXApplication.h>
 
 namespace pulsar
 {
@@ -13,6 +14,7 @@ namespace pulsar
         Application() = delete;
     public:
         static AppInstance* inst();
+        static gfx::GFXApplication* GetGfxApp();
         //start
         static int Exec(AppInstance* instance, string_view title, Vector2f size);
 

@@ -25,13 +25,41 @@
 #include <Pulsar/AssetRegistry.h>
 #include <gfx/GFXRenderPipeline.h>
 
+#include <gfx/GFXFrameBufferObject.h>
+
 namespace pulsared
 {
     class RenderPipeline : public gfx::GFXRenderPipeline
     {
+    public:
+        std::shared_ptr<ImGuiObject> ImGuiObject;
+
         virtual void OnRender(gfx::GFXRenderContext* context, const std::vector<gfx::GFXFrameBufferObject*>& renderTargets)
         {
+            auto rt = static_cast<gfx::GFXFrameBufferObject*>(renderTargets[0]);
 
+            auto& buffer = static_cast<gfx::GFXCommandBuffer&>(context->AddCommandBuffer());
+            buffer.Begin();
+            buffer.SetFrameBuffer(rt);
+            buffer.CmdClearColor(1.0, 0.0, 0.0, 1);
+            buffer.CmdBeginFrameBuffer();
+            buffer.CmdSetViewport(0, 0, rt->GetWidth(), rt->GetHeight());
+            //being render
+            
+            //buffer.CmdBindShaderPass(Shaderpass);
+            //buffer.CmdBindVertexBuffers(VertBuffers);
+            //buffer.CmdBindIndexBuffer(IndexBuffer);
+            //buffer.CmdBindDescriptorSets(DescriptorSet, Shaderpass);
+            //buffer.CmdDrawIndexed(IndexBuffer->GetSize() / sizeof(uint16_t));
+
+            ImGuiObject->Render(&buffer);
+
+            //end render
+            buffer.CmdEndFrameBuffer();
+            buffer.SetFrameBuffer(nullptr);
+            buffer.End();
+
+            context->Submit();
         }
     };
 
@@ -79,14 +107,6 @@ namespace pulsared
         return StringUtil::StringCast(std::filesystem::current_path().generic_u8string());
     }
 
-    void EditorAppInstance::OnPreInitialize(gfx::GFXGlobalConfig* config)
-    {
-        config->EnableValid = true;
-        config->WindowWidth = 1280;
-        config->WindowHeight = 720;
-        strcpy(config->ProgramName, "Pulsar");
-        strcpy(config->Title, "Pulsar Editor v0.1 - Vulkan1.3");
-    }
 
     static void InitBasicMenu()
     {
@@ -129,20 +149,41 @@ namespace pulsared
         }
     }
 
-    void EditorAppInstance::OnInitialized()
+
+    void EditorAppInstance::OnPreInitialize(gfx::GFXGlobalConfig* config)
     {
         using namespace std::filesystem;
         EditorLogRecorder::Initialize();
 
         auto uicfg = PathUtil::Combine(AppRootDir(), "uiconfig.json");
+
+        // load config
         if (exists(path{ uicfg }))
         {
             auto json = FileUtil::ReadAllText(uicfg);
             auto cfg = ser::JsonSerializer::Deserialize<EditorUIConfig>(json);
 
-            size = cfg->window_size;
-        }
+            Vector2f winSize = cfg->WindowSize;
 
+            config->WindowWidth = static_cast<int>(winSize.x);
+            config->WindowHeight = static_cast<int>(winSize.y);
+        }
+        else
+        {
+            config->WindowHeight = 720;
+            config->WindowWidth = 1280;
+        }
+        
+        config->EnableValid = true;
+
+        strcpy(config->ProgramName, "Pulsar");
+        strcpy(config->Title, "Pulsar Editor v0.1 - Vulkan1.3");
+
+
+    }
+
+    void EditorAppInstance::OnInitialized()
+    {
         //temp
         {
             //AssetRegisterInfo info;
@@ -155,8 +196,17 @@ namespace pulsared
         }
 
         Logger::Log("initialize gfx application");
+        
+        auto renderPipeline = new RenderPipeline();
+        
+        Application::GetGfxApp()->SetRenderPipeline(renderPipeline);
 
+        Logger::Log("initialize imgui");
+        m_gui = CreateImGui(Application::GetGfxApp());
+        m_gui->Initialize();
+        
 
+        renderPipeline->ImGuiObject = m_gui;
 
         //SystemInterface::InitializeWindow(title, (int)size.x, (int)size.y);
 
@@ -165,17 +215,10 @@ namespace pulsared
 
         //RenderInterface::SetViewport(0, 0, (int)size.x, (int)size.y);
 
-        for (GLenum err; (err = glGetError()) != GL_NO_ERROR;)
-        {
-            Logger::Log("opengl init error: " + std::to_string(err), LogLevel::Error);
-        }
-
         AssetDatabase::Initialize();
 
         this->render_pipeline_ = new builtinrp::BultinRP;
 
-        Logger::Log("initialize imgui");
-        ImGui_Engine_Initialize();
 
         InitBasicMenu();
 
@@ -217,7 +260,13 @@ namespace pulsared
 
     void EditorAppInstance::OnTerminate()
     {
-        ImGui_Engine_Terminate();
+        m_gui->Terminate();
+        m_gui.reset();
+
+        delete Application::GetGfxApp()->GetRenderPipeline();
+        Application::GetGfxApp()->SetRenderPipeline(nullptr);
+
+
         World::Reset(nullptr);
 
 
@@ -234,7 +283,7 @@ namespace pulsared
         auto uicfg_path = PathUtil::Combine(AppRootDir(), "uiconfig.json");
         auto cfg = mksptr(new EditorUIConfig);
 
-        cfg->window_size = GetAppSize();
+        cfg->WindowSize = GetAppSize();
         auto json = ser::JsonSerializer::Serialize(cfg.get(), {});
         FileUtil::WriteAllText(uicfg_path, json);
 
@@ -242,30 +291,30 @@ namespace pulsared
         EditorLogRecorder::Terminate();
     }
 
-    void EditorAppInstance::OnTick(float dt)
+    void EditorAppInstance::OnBeginRender(float dt)
     {
 
-        auto bgc = LinearColorf{ 0.2f, 0.2f ,0.2f, 0.2f };
-        RenderInterface::Clear(bgc.r, bgc.g, bgc.b, bgc.a);
-        ImGui_Engine_NewFrame();
+        //auto bgc = LinearColorf{ 0.2f, 0.2f ,0.2f, 0.2f };
+        //RenderInterface::Clear(bgc.r, bgc.g, bgc.b, bgc.a);
+        
+        m_gui->NewFrame();
 
         World::Current()->Tick(dt);
 
         pulsared::EditorWindowManager::Draw();
         pulsared::EditorTickerManager::Ticker.Invoke(dt);
 
-        ImGui_Engine_EndFrame();
+        m_gui->EndFrame();
 
-        RenderInterface::Render();
-        SystemInterface::PollEvents();
-        InputInterface::PollEvents();
+        //RenderInterface::Render();
+        //SystemInterface::PollEvents();
+        //InputInterface::PollEvents();
 
-        for (GLenum err; (err = glGetError()) != GL_NO_ERROR;)
-        {
-            Logger::Log("opengl error: " + std::to_string(err), LogLevel::Error);
-        }
     }
+    void EditorAppInstance::OnEndRender(float dt)
+    {
 
+    }
     bool EditorAppInstance::IsQuit()
     {
         return SystemInterface::GetIsQuit();
@@ -279,6 +328,7 @@ namespace pulsared
     Vector2f pulsared::EditorAppInstance::GetAppSize()
     {
         int32_t w, h;
+        
         RenderInterface::GetDefaultBufferViewport(&w, &h);
         return Vector2f(w, h);
     }

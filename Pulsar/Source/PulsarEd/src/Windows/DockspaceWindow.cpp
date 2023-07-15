@@ -10,7 +10,7 @@ namespace pulsared
         static bool opt_padding = false;
 
         static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
-
+        /*
         // We are using the ImGuiWindowFlags_NoDocking flag to make the parent window not dockable into,
         // because it would be confusing to have two docking targets within each others.
         ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
@@ -49,27 +49,24 @@ namespace pulsared
         if (opt_fullscreen)
             ImGui::PopStyleVar(2);
 
+        */
         // Submit the DockSpace
-        ImGuiIO& io = ImGui::GetIO();
-        if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable)
-        {
-            ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
-            ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
-        }
-        //else
+        //ImGuiIO& io = ImGui::GetIO();
+        //if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable)
         //{
-        //    //ShowDockingDisabledMessage();
+        //    ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
+        //    ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
         //}
 
-        if (ImGui::BeginMenuBar())
-        {
-            ImGui::Separator();
+        //if (ImGui::BeginMenuBar())
+        //{
+        //    ImGui::Separator();
 
-            ImGui::SmallButton("Render");
-            ImGui::SmallButton("Stop");
-            ImGui::EndMenuBar();
-        }
+        //    ImGui::SmallButton("Render");
+        //    ImGui::SmallButton("Stop");
+        //    ImGui::EndMenuBar();
+        //}
 
-        ImGui::End();
+        //ImGui::End();
     }
 }

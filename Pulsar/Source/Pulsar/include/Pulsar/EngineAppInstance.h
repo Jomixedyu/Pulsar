@@ -10,7 +10,7 @@ namespace pulsar
         virtual const char* AppType() override;
         virtual void OnInitialized() override;
         virtual void OnTerminate() override;
-        virtual void OnTick(float dt) override;
+        virtual void OnBeginRender(float dt) override;
         virtual bool IsQuit() override;
         virtual void RequestQuit() override;
         virtual Vector2f GetOutputScreenSize() override;

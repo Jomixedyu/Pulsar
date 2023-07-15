@@ -36,7 +36,8 @@ namespace pulsar
         virtual void OnPreInitialize(gfx::GFXGlobalConfig* cfg) {};
         virtual void OnInitialized() {};
         virtual void OnTerminate() {};
-        virtual void OnTick(float dt) {};
+        virtual void OnBeginRender(float dt) {};
+        virtual void OnEndRender(float d4) {}
         virtual bool IsQuit() = 0;
 
     protected:

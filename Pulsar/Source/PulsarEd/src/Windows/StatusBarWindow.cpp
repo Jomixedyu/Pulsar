@@ -57,11 +57,11 @@ namespace pulsared
 
         // When the user has left the menu layer (typically: closed menus through activation of an item), we restore focus to the previous window
         // FIXME: With this strategy we won't be able to restore a NULL focus.
-        ImGuiContext& g = *GImGui;
-        if (g.CurrentWindow == g.NavWindow && g.NavLayer == ImGuiNavLayer_Main && !g.NavAnyRequest)
-            ImGui::FocusTopMostWindowUnderOne(g.NavWindow, NULL);
+        //ImGuiContext& g = *GImGui;
+        //if (g.CurrentWindow == g.NavWindow && g.NavLayer == ImGuiNavLayer_Main && !g.NavAnyRequest)
+        //    ImGui::FocusTopMostWindowUnderOne(g.NavWindow, NULL);
 
-        ImGui::End();
+        //ImGui::End();
     }
 
 
@@ -77,10 +77,10 @@ namespace pulsared
 
     void StatusBarWindow::OnDrawImGui()
     {
-        if (HY_ImGui_BeginMainStatusBar())
-        {
-            HY_ImGui_EndMainStatusBar();
-        }
+        //if (HY_ImGui_BeginMainStatusBar())
+        //{
+        //    HY_ImGui_EndMainStatusBar();
+        //}
     }
 
     void StatusBarWindow::OnWindowResize()

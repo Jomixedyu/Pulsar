@@ -9,8 +9,8 @@ endif()
 
 
 include_directories("../ThirdParty/jxcorlib")
-add_subdirectory("../Pulsar" Pulsar)
-add_subdirectory("../ThirdParty" ThirdParty)
+add_subdirectory("../Pulsar" Pulsar.out)
+add_subdirectory("../ThirdParty" ThirdParty.out)
 
 #add_library(${PROJECT_NAME} STATIC ${Pulsared_SRC})
 file(GLOB_RECURSE Pulsared_SRC "src/*.h" "src/*.hpp" "src/*.cpp" "include/*.h" "include/*.hpp")
@@ -24,12 +24,15 @@ target_include_directories(${PROJECT_NAME} PUBLIC "../ThirdParty")
 target_include_directories(${PROJECT_NAME} PUBLIC "../ThirdParty/gfx/include")
 target_include_directories(${PROJECT_NAME} PUBLIC "../ThirdParty/gfx-vk/include")
 
-target_link_directories(${PROJECT_NAME} PUBLIC "build/Pulsar/Debug")
+target_link_directories(${PROJECT_NAME} PUBLIC "out/build/x64-Debug/Pulsar.out")
 target_link_directories(${PROJECT_NAME} PUBLIC "../ThirdParty")
 target_link_directories(${PROJECT_NAME} PUBLIC "../ThirdParty/glfw")
 
+target_link_options(${PROJECT_NAME} PUBLIC "/WHOLEARCHIVE:Pulsar")
+target_link_options(${PROJECT_NAME} PUBLIC "/JMC")
+
 target_link_libraries(${PROJECT_NAME} PUBLIC
-	pulsar
+	Pulsar
 	assimp-vc143-mt
 	glfw3_mt
 	imgui

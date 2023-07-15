@@ -11,8 +11,8 @@ namespace pulsared
         CORELIB_DEF_TYPE(AssemblyObject_PulsarEd, pulsared::EditorUIConfig, Object);
 
     public:
-        CORELIB_REFL_DECL_FIELD(window_size);
-        Vector2f window_size;
+        CORELIB_REFL_DECL_FIELD(WindowSize);
+        Vector2f WindowSize;
     };
     CORELIB_DECL_SHORTSPTR(EditorUIConfig);
 }

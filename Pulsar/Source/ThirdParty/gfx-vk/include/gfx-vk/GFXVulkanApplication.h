@@ -29,6 +29,9 @@ namespace gfx
         virtual void ExecLoop() override;
         virtual void RequestStop() override;
         virtual void Terminate() override;
+        static constexpr int32_t StaticGetApiType() { return 486541598549; }
+        virtual int32_t GetApiType() const override { return StaticGetApiType(); }
+        virtual const char* GetApiLevelName() const override { return "Vulkan 1.3"; }
 
         void TickRender(float deltaTime);
         virtual GFXBuffer* CreateBuffer(GFXBufferUsage usage, size_t bufferSize) override;
@@ -45,8 +48,19 @@ namespace gfx
         virtual std::shared_ptr<GFXTexture2D> CreateTexture2DFromMemory(
             const uint8_t* data, int32_t length,
             const GFXSamplerConfig& samplerConfig,
-            bool enableReadWrite = false, 
+            bool enableReadWrite = false,
             GFXTextureFormat format = GFXTextureFormat::R8G8B8A8_SRGB) override;
+
+
+        virtual std::shared_ptr<GFXFrameBufferObject> CreateFrameBufferObject(
+            const std::vector<GFXRenderTarget*>& renderTargets,
+            const std::shared_ptr<GFXRenderPassLayout>& renderPassLayout) override;
+
+        virtual std::shared_ptr<GFXRenderPassLayout> CreateRenderPassLayout(const std::vector<GFXRenderTarget*>& renderTargets) override;
+
+        virtual std::shared_ptr<GFXRenderTarget> CreateRenderTarget(
+            int32_t width, int32_t height, GFXRenderTargetType type,
+            GFXTextureFormat format, const GFXSamplerConfig& samplerCfg) override;
 
         virtual GFXDescriptorManager* GetDescriptorManager() override;
         class GFXVulkanDescriptorManager* GetVulkanDescriptorManager() const { return m_descriptorManager; }
@@ -66,11 +80,11 @@ namespace gfx
         virtual GFXViewport* GetViewport() override { return m_viewport; }
         GFXVulkanViewport* GetVulkanViewport() { return m_viewport; }
 
-        void SetRenderPipeline(GFXRenderPipeline* pipeline)
+        virtual void SetRenderPipeline(GFXRenderPipeline* pipeline) override
         {
             m_renderPipeline = pipeline;
         }
-        GFXRenderPipeline* GetRenderPipeline() const
+        virtual GFXRenderPipeline* GetRenderPipeline() const override
         {
             return m_renderPipeline;
         }

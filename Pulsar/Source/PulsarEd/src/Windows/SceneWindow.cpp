@@ -68,40 +68,40 @@ void main()
 
     void SceneWindow::OnOpen()
     {
-        EditorNode_sp center_node = EditorNode::StaticCreate("EditorCameraController");
-        EditorNode_sp camera_node = EditorNode::StaticCreate("EditorCamera", center_node);
-        this->camera_node = camera_node;
-        this->camera_ctrl_node = center_node;
+        //EditorNode_sp center_node = EditorNode::StaticCreate("EditorCameraController");
+        //EditorNode_sp camera_node = EditorNode::StaticCreate("EditorCamera", center_node);
+        //this->camera_node = camera_node;
+        //this->camera_ctrl_node = center_node;
 
-        auto cam = camera_node->AddComponent<CameraComponent>();
+        //auto cam = camera_node->AddComponent<CameraComponent>();
 
-        cam->cameraMode = CameraMode::Perspective;
-        cam->backgroundColor = LinearColorf{ 0.33,0.33,0.33,1 };
-        cam->fov = 45.f;
-        cam->near = 0.01f;
-        cam->far = 10000.f;
-        cam->size_ = { 1280,720 };
-        camera_node->set_self_position({ 0.f, 7, 30 });
-        //camera_node->set_self_euler_rotation({ -25.f, -45, 0 });
+        //cam->cameraMode = CameraMode::Perspective;
+        //cam->backgroundColor = LinearColorf{ 0.33,0.33,0.33,1 };
+        //cam->fov = 45.f;
+        //cam->near = 0.01f;
+        //cam->far = 10000.f;
+        //cam->size_ = { 1280,720 };
+        //camera_node->set_self_position({ 0.f, 7, 30 });
+        ////camera_node->set_self_euler_rotation({ -25.f, -45, 0 });
 
-        center_node->AddComponent<StdEditCameraControllerComponent>();
+        //center_node->AddComponent<StdEditCameraControllerComponent>();
 
-        auto rt = mksptr(new RenderTexture);
-        rt->PostInitializeData(1280, 720);
-        rt->Construct();
-        rt->BindGPU();
-        cam->render_target = rt;
+        //auto rt = mksptr(new RenderTexture);
+        //rt->PostInitializeData(1280, 720);
+        //rt->Construct();
+        //rt->BindGPU();
+        //cam->render_target = rt;
 
 
-        //node->set_self_euler_rotation({ 0,-90,0 });
-        World::Current()->scene->AddNode(center_node);
+        ////node->set_self_euler_rotation({ 0,-90,0 });
+        //World::Current()->scene->AddNode(center_node);
 
-        EditorNode_sp grid3d = EditorNode::StaticCreate("Grid3d");
-        grid3d->AddComponent<Grid3DComponent>();
-        World::Current()->scene->AddNode(grid3d);
-        //Node_sp fbx = FBXImporter::Import(R"(C:/Users/JomiXedYu/Desktop/sphere.fbx)");
-        //World::Current()->scene->AddNode(fbx);
-        
+        //EditorNode_sp grid3d = EditorNode::StaticCreate("Grid3d");
+        //grid3d->AddComponent<Grid3DComponent>();
+        //World::Current()->scene->AddNode(grid3d);
+
+
+
     }
 
     void SceneWindow::OnClose()
@@ -111,71 +111,71 @@ void main()
 
     void SceneWindow::OnDrawImGui()
     {
-        RenderContext::PushCamera(this->GetSceneCamera());
+        //RenderContext::PushCamera(this->GetSceneCamera());
 
-        if (ImGui::BeginMenuBar())
-        {
-            const char* items[] = { "Default", "Shade", "Wire", "Unlit" };
-            ImGui::SetNextItemWidth(150);
-            if (ImGui::BeginCombo("Draw Mode", items[this->drawmode_select_index]))
-            {
-                for (size_t i = 0; i < 4; i++)
-                {
-                    bool selected = this->drawmode_select_index == i;
-                    if (ImGui::Selectable(items[i], selected))
-                    {
-                        this->drawmode_select_index = static_cast<int>(i);
-                        this->drawmode_select_index = 0;
-                    }
-                }
-                ImGui::EndCombo();
-            }
+        //if (ImGui::BeginMenuBar())
+        //{
+        //    const char* items[] = { "Default", "Shade", "Wire", "Unlit" };
+        //    ImGui::SetNextItemWidth(150);
+        //    if (ImGui::BeginCombo("Draw Mode", items[this->drawmode_select_index]))
+        //    {
+        //        for (size_t i = 0; i < 4; i++)
+        //        {
+        //            bool selected = this->drawmode_select_index == i;
+        //            if (ImGui::Selectable(items[i], selected))
+        //            {
+        //                this->drawmode_select_index = static_cast<int>(i);
+        //                this->drawmode_select_index = 0;
+        //            }
+        //        }
+        //        ImGui::EndCombo();
+        //    }
 
-            ImGui::Button("Gizmos");
+        //    ImGui::Button("Gizmos");
 
-            ImGui::EndMenuBar();
-        }
+        //    ImGui::EndMenuBar();
+        //}
 
-        ImVec2 vMin = ImGui::GetWindowContentRegionMin();
-        ImVec2 vMax = ImGui::GetWindowContentRegionMax();
+        //ImVec2 vMin = ImGui::GetWindowContentRegionMin();
+        //ImVec2 vMax = ImGui::GetWindowContentRegionMax();
 
-        vMin.x += ImGui::GetWindowPos().x;
-        vMin.y += ImGui::GetWindowPos().y;
-        vMax.x += ImGui::GetWindowPos().x;
-        vMax.y += ImGui::GetWindowPos().y;
-        int content_size_x = vMax.x - vMin.x;
-        int content_size_y = vMax.y - vMin.y;
+        //vMin.x += ImGui::GetWindowPos().x;
+        //vMin.y += ImGui::GetWindowPos().y;
+        //vMax.x += ImGui::GetWindowPos().x;
+        //vMax.y += ImGui::GetWindowPos().y;
+        //int content_size_x = vMax.x - vMin.x;
+        //int content_size_y = vMax.y - vMin.y;
 
-        if (this->win_size_.x != content_size_x || this->win_size_.y != content_size_y)
-        {
-            this->win_size_ = { content_size_x, content_size_y };
-            this->OnWindowResize();
-        }
+        //if (this->win_size_.x != content_size_x || this->win_size_.y != content_size_y)
+        //{
+        //    this->win_size_ = { content_size_x, content_size_y };
+        //    this->OnWindowResize();
+        //}
 
-        auto cam = this->GetSceneCamera();
-        cam->size_ = this->win_size_;
-        cam->Render();
+        //auto cam = this->GetSceneCamera();
+        //cam->size_ = this->win_size_;
+        //cam->Render();
 
-        ImGui::Image((ImTextureID)cam->render_target->get_tex_id(), ImVec2(content_size_x, content_size_y), ImVec2(0, 1), ImVec2(1, 0));
+        //ImGui::Image((ImTextureID)cam->render_target->get_tex_id(), ImVec2(content_size_x, content_size_y), ImVec2(0, 1), ImVec2(1, 0));
 
-        RenderContext::PopCamera();
+        //RenderContext::PopCamera();
     }
 
     void SceneWindow::OnWindowResize()
     {
-        auto cam = this->GetSceneCamera();
+        //auto cam = this->GetSceneCamera();
 
-        assert(cam);
-        assert(cam->render_target);
+        //assert(cam);
+        //assert(cam->render_target);
 
-        cam->render_target->UnBindGPU();
-        cam->render_target = nullptr;
+        //cam->render_target->UnBindGPU();
+        //cam->render_target = nullptr;
 
-        auto rt = mksptr(new RenderTexture);
-        rt->PostInitializeData(this->win_size_.x, this->win_size_.y);
-        rt->Construct();
-        rt->BindGPU();
-        cam->render_target = rt;
+        //auto rt = mksptr(new RenderTexture);
+        //rt->PostInitializeData(this->win_size_.x, this->win_size_.y);
+        //rt->Construct();
+        //rt->BindGPU();
+        //cam->render_target = rt;
     }
 
 }

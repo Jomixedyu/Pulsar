@@ -19,7 +19,7 @@ namespace gfx
     public:
         virtual ~GFXVulkanTexture2D() override;
 
-        //create
+        //create by pic data
         GFXVulkanTexture2D(
             GFXVulkanApplication* app,
             const uint8_t* imageData,
@@ -27,6 +27,11 @@ namespace gfx
             VkFormat format,
             bool enableReadWrite,
             const GFXSamplerConfig& samplerCfg);
+
+        //create empty
+        GFXVulkanTexture2D(
+            GFXVulkanApplication* app, int32_t width, int32_t height, 
+            bool enableReadWrite, VkImageLayout layout, VkFormat format, const GFXSamplerConfig& samplerCfg);
 
         //managed
         GFXVulkanTexture2D(GFXVulkanApplication* app, int32_t width, int32_t height, int32_t channel,

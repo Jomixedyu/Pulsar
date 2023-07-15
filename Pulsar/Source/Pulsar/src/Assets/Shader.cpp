@@ -189,7 +189,7 @@ namespace pulsar
     void Shader::SetUniformTexture(std::string_view name, Texture_rsp tex)
     {
         assert(tex->GetIsBindGPU());
-        this->SetUniformInt(name, tex->get_tex_id());
+        //this->SetUniformInt(name, tex->get_tex_id());
     }
 
     void Shader::BindGPU()

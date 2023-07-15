@@ -29,6 +29,8 @@ target_include_directories(${PROJECT_NAME} PUBLIC "..")
 target_include_directories(${PROJECT_NAME} PUBLIC "../ThirdParty/gfx/include")
 target_include_directories(${PROJECT_NAME} PUBLIC "../ThirdParty/gfx-vk/include")
 
+target_compile_definitions(${PROJECT_NAME} PUBLIC PULSAR_GFX_BUILD_VULKAN)
+
 target_link_libraries(${PROJECT_NAME} PUBLIC
 	jxcorlib
 	jxcorlib.ser

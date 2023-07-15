@@ -31,32 +31,29 @@ namespace pulsar
         Application::inst()->QuittingEvents.Invoke();
     }
 
-    void EngineAppInstance::OnInitialized(string_view title, Vector2f size)
+    void EngineAppInstance::OnInitialized()
     {
         Logger::Log("application initialize");
-        SystemInterface::InitializeWindow(title, (int)size.x, (int)size.y);
+        //SystemInterface::InitializeWindow(title, (int)size.x, (int)size.y);
         SystemInterface::SetRequestQuitCallBack(_RequestQuit);
         SystemInterface::SetQuitCallBack(_quitting);
-        RenderInterface::SetViewport(0, 0, (int)size.x, (int)size.y);
-        ImGui_Engine_Initialize();
+        //RenderInterface::SetViewport(0, 0, (int)size.x, (int)size.y);
+
         World::Reset(new World);
     }
 
     void EngineAppInstance::OnTerminate()
     {
-        ImGui_Engine_Terminate();
+
         World::Reset(nullptr);
     }
 
-    void EngineAppInstance::OnTick(float dt)
+    void EngineAppInstance::OnBeginRender(float dt)
     {
         auto bgc = LinearColorf{ 0.2f, 0.2f ,0.2f, 0.2 };
         RenderInterface::Clear(bgc.r, bgc.g, bgc.b, bgc.a);
-        ImGui_Engine_NewFrame();
 
         World::Current()->Tick(dt);
-
-        ImGui_Engine_EndFrame();
 
         RenderInterface::Render();
         SystemInterface::PollEvents();

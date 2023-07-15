@@ -72,31 +72,26 @@ namespace gfx
 
         m_inited = true;
     }
-    static VkFilter _GetVkFilter(GFXSamplerFilter filter)
+
+    GFXVulkanTexture2D::GFXVulkanTexture2D(
+        GFXVulkanApplication* app, int32_t width, int32_t height, 
+        bool enableReadWrite, VkImageLayout layout, VkFormat format, const GFXSamplerConfig& samplerCfg)
+        : base(width, height, 0, samplerCfg, enableReadWrite),
+        m_app(app), m_imageLayout(layout), m_imageFormat(format)
     {
-        switch (filter)
-        {
-        case gfx::GFXSamplerFilter::Nearest: return VkFilter::VK_FILTER_NEAREST;
-        case gfx::GFXSamplerFilter::Linear: return VkFilter::VK_FILTER_LINEAR;
-        case gfx::GFXSamplerFilter::Cubic: return VkFilter::VK_FILTER_CUBIC_IMG;
-        default:
-            assert(false);
-            break;
-        }
-        return {};
-    }
-    static VkSamplerAddressMode _GetVkAddressMode(GFXSamplerAddressMode mode)
-    {
-        switch (mode)
-        {
-        case gfx::GFXSamplerAddressMode::Repeat: return VkSamplerAddressMode::VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        case gfx::GFXSamplerAddressMode::MirroredRepeat: return VkSamplerAddressMode::VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
-        case gfx::GFXSamplerAddressMode::ClampToEdge: return VkSamplerAddressMode::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        default:
-            assert(false);
-            break;
-        }
-        return {};
+
+        BufferHelper::CreateImage(app, width, height,
+            m_imageFormat,
+            VK_IMAGE_TILING_OPTIMAL,
+            VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_textureImage, m_textureImageMemory);
+
+        BufferHelper::TransitionImageLayout(app, m_textureImage, m_imageFormat, VK_IMAGE_LAYOUT_UNDEFINED, layout);
+
+        m_textureImageView = BufferHelper::CreateImageView(m_app, m_textureImage, m_imageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
+        m_textureSampler = BufferHelper::CreateTextureSampler(m_app);
+
+        m_inited = true;
     }
 
     GFXVulkanTexture2D::GFXVulkanTexture2D(
@@ -109,8 +104,8 @@ namespace gfx
         m_app(app), m_textureImage(image), m_textureImageMemory(memory), m_textureImageView(imageView),
         m_imageLayout(layout), m_imageFormat(format), m_isManaged(true)
     {
-        auto filter = _GetVkFilter(samplerCfg.Filter);
-        auto addressMode = _GetVkAddressMode(samplerCfg.AddressMode);
+        auto filter = BufferHelper::GetVkFilter(samplerCfg.Filter);
+        auto addressMode = BufferHelper::GetVkAddressMode(samplerCfg.AddressMode);
 
         m_textureSampler = BufferHelper::CreateTextureSampler(m_app, filter, addressMode);
         m_inited = true;
@@ -134,20 +129,7 @@ namespace gfx
     }
 
 
-    static VkFormat _GetVkFormat(GFXTextureFormat format)
-    {
-        switch (format)
-        {
-        case gfx::GFXTextureFormat::R8: return VK_FORMAT_R8_UNORM;
-        case gfx::GFXTextureFormat::R8G8B8: return VK_FORMAT_R8G8B8_UNORM;
-        case gfx::GFXTextureFormat::R8G8B8A8: return VK_FORMAT_R8G8B8A8_UNORM;
-        case gfx::GFXTextureFormat::R8G8B8A8_SRGB: return VK_FORMAT_R8G8B8A8_SRGB;
-        default:
-            assert(false);
-            break;
-        }
-        return {};
-    }
+
     static std::vector<uint8_t> _FloatToByte(float* data, size_t len)
     {
         std::vector<uint8_t> newData(len);
@@ -190,7 +172,7 @@ namespace gfx
             break;
         }
 
-        auto tex = new GFXVulkanTexture2D(app, buffer.data(), x, y, channel, _GetVkFormat(format), enableReadWrite, samplerCfg);
+        auto tex = new GFXVulkanTexture2D(app, buffer.data(), x, y, channel, BufferHelper::GetVkFormat(format), enableReadWrite, samplerCfg);
 
         return std::shared_ptr<GFXVulkanTexture2D>(tex);
     }
