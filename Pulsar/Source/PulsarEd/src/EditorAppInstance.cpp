@@ -26,7 +26,7 @@
 
 namespace pulsared
 {
-    class RenderPipeline : public gfx::GFXRenderPipeline
+    class ImGuiRenderPipeline : public gfx::GFXRenderPipeline
     {
     public:
         std::shared_ptr<ImGuiObject> ImGuiObject;
@@ -44,7 +44,6 @@ namespace pulsared
 
             ImGuiObject->Render(&buffer);
 
-            //end render
             buffer.CmdEndFrameBuffer();
             buffer.SetFrameBuffer(nullptr);
             buffer.End();
@@ -52,6 +51,8 @@ namespace pulsared
             context->Submit();
         }
     };
+
+    
 
     using namespace detail;
 
@@ -187,7 +188,7 @@ namespace pulsared
 
         Logger::Log("initialize gfx application");
         
-        auto renderPipeline = new RenderPipeline();
+        auto renderPipeline = new ImGuiRenderPipeline();
         
         Application::GetGfxApp()->SetRenderPipeline(renderPipeline);
 
