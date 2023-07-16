@@ -10,13 +10,15 @@ namespace pulsar
     {
         if (IsValid(this->m_renderTarget))
         {
-            assert(this->m_renderTarget->GetIsBindGPU());
+            //assert(this->m_renderTarget->GetIsBindGPU());
 
-            RenderTextureScope rt{ this->m_renderTarget };
+            //RenderTextureScope rt{ this->m_renderTarget };
 
-            auto [r, g, b, a] = this->backgroundColor;
+            //auto [r, g, b, a] = this->backgroundColor;
             //detail::RenderInterface::Clear(r, g, b, a);
             //draw ...
+
+
             World::Current()->Draw();
         }
     }

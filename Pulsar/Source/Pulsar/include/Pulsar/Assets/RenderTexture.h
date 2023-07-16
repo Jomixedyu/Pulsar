@@ -4,8 +4,8 @@
 #include <Pulsar/IBindGPU.h>
 #include "Texture.h"
 #include <gfx/GFXRenderTarget.h>
+#include <gfx/GFXFrameBufferObject.h>
 #include <Pulsar/Application.h>
-
 namespace pulsar
 {
     using RenderTargetType = gfx::GFXRenderTargetType;
@@ -19,8 +19,8 @@ namespace pulsar
         ~RenderTexture();
     public:
         //Texture
-        virtual int32_t GetWidth() const override;
-        virtual int32_t GetHeight() const override;
+        virtual int32_t GetWidth() const override { return m_width; }
+        virtual int32_t GetHeight() const override { return m_height; }
     public:
         
         void PostInitializeData(int32_t width, int32_t height);
@@ -36,24 +36,22 @@ namespace pulsar
         void EnableRenderTarget();
         void DisableRenderTarget();
 
-    protected:
-        int32_t width_;
-        int32_t height_;
+        const std::shared_ptr<gfx::GFXRenderTarget>& GetGfxRenderTarget0() const { return m_color0; }
 
-        uint32_t buffer_;
-        int32_t last_buffer_;
+    protected:
+        //int32_t width_;
+        //int32_t height_;
+
+        //uint32_t buffer_;
+        //int32_t last_buffer_;
+
+        int32_t m_width;
+        int32_t m_height;
 
         std::shared_ptr<gfx::GFXRenderTarget> m_color0;
         std::shared_ptr<gfx::GFXRenderTarget> m_depth;
+        std::shared_ptr<gfx::GFXFrameBufferObject> m_framebuffer;
     };
     CORELIB_DECL_SHORTSPTR(RenderTexture);
 
-    struct RenderTextureScope
-    {
-        RenderTexture_sp tex_;
-        Vector2i last_size_;
-    public:
-        RenderTextureScope(RenderTexture_sp tex);
-        ~RenderTextureScope();
-    };
 }

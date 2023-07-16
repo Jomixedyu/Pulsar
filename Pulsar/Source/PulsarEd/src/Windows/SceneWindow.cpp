@@ -10,51 +10,15 @@
 #include <PulsarEd/Components/Grid3DComponent.h>
 #include <Pulsar/Rendering/RenderContext.h>
 #include <imgui/imgui.h>
-
+#include <imgui/imgui_impl_vulkan.h>
+#include <gfx-vk/GFXVulkanRenderTarget.h>
 namespace pulsared
 {
-
-    static float quadVertices[] = {
-        -1.0f,  1.0f,  0.0f, 1.0f,
-        -1.0f, -1.0f,  0.0f, 0.0f,
-         1.0f, -1.0f,  1.0f, 0.0f,
-
-        -1.0f,  1.0f,  0.0f, 1.0f,
-         1.0f, -1.0f,  1.0f, 0.0f,
-         1.0f,  1.0f,  1.0f, 1.0f
-    };
-    static const char* vertcode = R"___REGION__(
-#version 330 core
-layout (location = 0) in vec2 aPos;
-layout (location = 1) in vec2 aTexCoords;
-
-out vec2 TexCoords;
-
-void main()
-{
-    gl_Position = vec4(aPos.x, aPos.y, 0.0, 1.0);
-    TexCoords = aTexCoords;
-})___REGION__";
-
-    static const char* fragcode = R"___REGION__(
-#version 330 core
-out vec4 FragColor;
-
-in vec2 TexCoords;
-
-uniform sampler2D screenTexture;
-
-void main()
-{
-    FragColor = texture(screenTexture, TexCoords);
-})___REGION__";
 
     SceneWindow::SceneWindow()
     {
 
     }
-
-    static Shader_sp default_shader;
 
     void SceneWindow::OnOpen()
     {
@@ -100,49 +64,86 @@ void main()
             ImGui::ShowDemoWindow(&demowin);
         //RenderContext::PushCamera(this->GetSceneCamera());
 
-        //if (ImGui::BeginMenuBar())
-        //{
-        //    const char* items[] = { "Default", "Shade", "Wire", "Unlit" };
-        //    ImGui::SetNextItemWidth(150);
-        //    if (ImGui::BeginCombo("Draw Mode", items[this->drawmode_select_index]))
-        //    {
-        //        for (size_t i = 0; i < 4; i++)
-        //        {
-        //            bool selected = this->drawmode_select_index == i;
-        //            if (ImGui::Selectable(items[i], selected))
-        //            {
-        //                this->drawmode_select_index = static_cast<int>(i);
-        //                this->drawmode_select_index = 0;
-        //            }
-        //        }
-        //        ImGui::EndCombo();
-        //    }
+        if (ImGui::BeginMenuBar())
+        {
+            const char* items[] = { "Shade", "Wire", "Unlit" };
 
-        //    ImGui::Button("Gizmos");
+            ImGui::Text("Draw Mode");
 
-        //    ImGui::EndMenuBar();
-        //}
+            ImGui::SetNextItemWidth(150);
+            if (ImGui::BeginCombo("##Draw Mode", items[this->drawmode_select_index]))
+            {
+                for (size_t i = 0; i < 3; i++)
+                {
+                    bool selected = this->drawmode_select_index == i;
+                    if (ImGui::Selectable(items[i], selected))
+                    {
+                        this->drawmode_select_index = static_cast<int>(i);
+                        this->drawmode_select_index = 0;
+                    }
+                }
+                ImGui::EndCombo();
+            }
 
-        //ImVec2 vMin = ImGui::GetWindowContentRegionMin();
-        //ImVec2 vMax = ImGui::GetWindowContentRegionMax();
+            const char* editMode[] = { "SceneEditor", "Modeling" };
+            ImGui::Text("Edit Mode");
+            ImGui::SetNextItemWidth(150);
+            if (ImGui::BeginCombo("##Edit Mode", editMode[this->m_editModeIndex]))
+            {
+                for (size_t i = 0; i < 2; i++)
+                {
+                    bool selected = this->m_editModeIndex == i;
+                    if (ImGui::Selectable(editMode[i], selected))
+                    {
+                        this->m_editModeIndex = static_cast<int>(i);
+                        this->m_editModeIndex = 0;
+                    }
+                }
+                ImGui::EndCombo();
+            }
 
-        //vMin.x += ImGui::GetWindowPos().x;
-        //vMin.y += ImGui::GetWindowPos().y;
-        //vMax.x += ImGui::GetWindowPos().x;
-        //vMax.y += ImGui::GetWindowPos().y;
-        //int content_size_x = vMax.x - vMin.x;
-        //int content_size_y = vMax.y - vMin.y;
+            ImGui::Button(ICON_FK_ARROWS " Gizmos###Gizmos");
+            ImGui::Button(ICON_FK_CUBE " 2D###2D");
+            ImGui::Button(ICON_FK_TABLE " Grid###Grid");
 
-        //if (this->win_size_.x != content_size_x || this->win_size_.y != content_size_y)
-        //{
-        //    this->win_size_ = { content_size_x, content_size_y };
-        //    this->OnWindowResize();
-        //}
+            ImGui::EndMenuBar();
+        }
 
-        //auto cam = this->GetSceneCamera();
-        //cam->size_ = this->win_size_;
-        //cam->Render();
+        ImVec2 vMin = ImGui::GetWindowContentRegionMin();
+        ImVec2 vMax = ImGui::GetWindowContentRegionMax();
 
+
+
+        vMin.x += ImGui::GetWindowPos().x;
+        vMin.y += ImGui::GetWindowPos().y;
+        vMax.x += ImGui::GetWindowPos().x;
+        vMax.y += ImGui::GetWindowPos().y;
+        int content_size_x = vMax.x - vMin.x;
+        int content_size_y = vMax.y - vMin.y;
+
+
+        static VkDescriptorSet vkset;
+        auto cam = this->GetSceneCamera();
+        cam->size_ = m_viewportSize;
+
+        if (this->m_viewportSize.x != content_size_x || this->m_viewportSize.y != content_size_y)
+        {
+            this->m_viewportSize = { content_size_x, content_size_y };
+            this->OnWindowResize();
+            auto rt = cam->GetRenderTarget()->GetGfxRenderTarget0();
+            auto vkrt = static_cast<gfx::GFXVulkanRenderTarget*>(rt.get());
+            vkset = ImGui_ImplVulkan_AddTexture(
+                vkrt->GetVulkanTexture2d()->GetVkSampler(),
+                vkrt->GetVulkanTexture2d()->GetVkImageView(),
+                vkrt->GetVulkanTexture2d()->GetVkImageLayout());
+        }
+
+        
+        cam->Render();
+
+        //GetSceneCamera()->GetRenderTarget()->;
+        ImGui::Image(&vkset, ImVec2(content_size_x, content_size_y), ImVec2(0, 1), ImVec2(1, 0));
+        // 
         //ImGui::Image((ImTextureID)cam->render_target->get_tex_id(), ImVec2(content_size_x, content_size_y), ImVec2(0, 1), ImVec2(1, 0));
 
         //RenderContext::PopCamera();

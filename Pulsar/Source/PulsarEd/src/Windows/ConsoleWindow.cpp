@@ -42,9 +42,17 @@ namespace pulsared
 
             ImGui::EndMenuBar();
         }
-
         auto& loglist = EditorLogRecorder::loglist;
-        if (ImGui::BeginListBox("##console", ImVec2(ImGui::GetContentRegionAvail().x * 0.5f, -FLT_MIN)))
+
+
+        ImGui::BeginChild("##console detail", ImVec2{ -FLT_MIN, ImGui::GetContentRegionAvail().y * 0.8f }, false, ImGuiWindowFlags_::ImGuiWindowFlags_HorizontalScrollbar);
+        if (this->log_selected_index >= 0)
+        {
+            ImGui::Text(loglist[this->log_selected_index].stacktrace_info.c_str());
+        }
+        ImGui::EndChild();
+
+        if (ImGui::BeginListBox("##console", ImVec2(-FLT_MIN, -FLT_MIN)))
         {
             for (size_t i = 0; i < loglist.size(); i++)
             {
@@ -92,13 +100,8 @@ namespace pulsared
 
             ImGui::EndListBox();
         }
-        ImGui::SameLine();
-        ImGui::BeginChild("##console detail", ImVec2{}, false, ImGuiWindowFlags_::ImGuiWindowFlags_HorizontalScrollbar);
-        if (this->log_selected_index >= 0)
-        {
-            ImGui::Text(loglist[this->log_selected_index].stacktrace_info.c_str());
-        }
-        ImGui::EndChild();
+ 
+
     }
     ImGuiWindowFlags ConsoleWindow::GetGuiWindowFlags() const
     {

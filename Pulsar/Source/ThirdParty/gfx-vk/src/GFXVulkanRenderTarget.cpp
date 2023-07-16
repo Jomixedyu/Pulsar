@@ -9,7 +9,23 @@ namespace gfx
         GFXRenderTargetType type, GFXTextureFormat format, const GFXSamplerConfig& samplerCfg)
         : m_app(app), m_tex2d(nullptr), m_type(type)
     {
-        m_tex2d = new GFXVulkanTexture2D(app, width, height, false, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, BufferHelper::GetVkFormat(format), samplerCfg);
+
+        VkImageLayout finalLayout;
+
+        switch (type)
+        {
+        case gfx::GFXRenderTargetType::Color:
+            finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            break;
+        case gfx::GFXRenderTargetType::Depth:
+            finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+            break;
+        default:
+            assert(false);
+            break;
+        }
+
+        m_tex2d = new GFXVulkanTexture2D(app, width, height, false, finalLayout, BufferHelper::GetVkFormat(format), samplerCfg);
 
     }
     GFXVulkanRenderTarget::~GFXVulkanRenderTarget()

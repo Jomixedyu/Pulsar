@@ -57,7 +57,6 @@ namespace pulsar
             io.Fonts->AddFontFromMemoryTTF(FILE_DroidSans_ttf, sizeof(FILE_DroidSans_ttf), 14.f, &fontConfig);
         }
 
-        
         {
             ImFontConfig fontConfig{};
             fontConfig.FontDataOwnedByAtlas = true;

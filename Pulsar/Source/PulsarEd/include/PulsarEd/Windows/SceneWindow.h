@@ -26,6 +26,7 @@ namespace pulsared
         virtual void OnWindowResize();
     private:
         int32_t drawmode_select_index = 0;
+        int32_t m_editModeIndex = 0;
         Node_sp m_camNode;
         Node_sp m_camCtrlNode;
         Vector2i m_viewportSize;

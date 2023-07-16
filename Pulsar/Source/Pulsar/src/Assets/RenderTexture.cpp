@@ -62,36 +62,31 @@ namespace pulsar
 
     sptr<RenderTexture> RenderTexture::StaticCreate(int width, int height, bool hasColor, bool hasDepth)
     {
-        auto rt = mksptr(new RenderTexture);
-        rt->Construct();
-        return rt;
+        auto self = mksptr(new RenderTexture);
+        self->Construct();
+
+        auto gfx = Application::GetGfxApp();
+
+        self->m_color0 = gfx->CreateRenderTarget(width, height, gfx::GFXRenderTargetType::Color, gfx::GFXTextureFormat::R8G8B8A8_SRGB, {});
+        self->m_depth = gfx->CreateRenderTarget(width, height, gfx::GFXRenderTargetType::Depth, gfx::GFXTextureFormat::R8, {});
+
+        std::vector rts = { self->m_color0.get(), self->m_depth.get() };
+
+        auto renderPass = gfx->CreateRenderPassLayout(rts);
+        self->m_framebuffer = gfx->CreateFrameBufferObject(rts, renderPass);
+
+        self->m_width = width;
+        self->m_height = height;
+
+        return self;
     }
 
-    int32_t RenderTexture::GetWidth() const
-    {
-        return this->width_;
-    }
-    int32_t RenderTexture::GetHeight() const
-    {
-        return this->height_;
-    }
+
     void RenderTexture::PostInitializeData(int32_t width, int32_t height)
     {
-        this->width_ = width;
-        this->height_ = height;
+
 
     }
 
-
-    RenderTextureScope::RenderTextureScope(RenderTexture_sp tex)
-        : tex_(tex)
-    {
-        tex->EnableRenderTarget();
-    }
-
-    RenderTextureScope::~RenderTextureScope()
-    {
-        this->tex_->DisableRenderTarget();
-    }
 
 }
