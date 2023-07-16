@@ -3,6 +3,8 @@
 
 namespace pulsar
 {
+    class Scene;
+
     class World
     {
     public:
@@ -10,14 +12,16 @@ namespace pulsar
         static World* Reset(World* world);
         static inline Action<> OnWorldChanged;
     public:
-        sptr<class Scene> scene;
+        World();
     public:
         virtual void Tick(float dt);
-
-        void Draw();
     protected:
         virtual void OnWorldBegin();
         virtual void OnWorldEnd();
-    private:
+    public:
+        const sptr<Scene>& GetScene() const { return m_scene; }
+        void ChangeScene(sptr<Scene> scene);
+    protected :
+        sptr<Scene> m_scene;
     };
 }

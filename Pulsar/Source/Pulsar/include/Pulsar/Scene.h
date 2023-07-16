@@ -24,6 +24,7 @@ namespace pulsar
         void AddNode(Node_rsp node);
         void RemoveNode(Node_rsp node);
 
+        static sptr<Scene> StaticCreate();
     private:
 
         List_sp<Node_sp> scene_nodes_;

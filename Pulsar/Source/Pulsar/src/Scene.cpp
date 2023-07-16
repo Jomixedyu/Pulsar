@@ -43,6 +43,13 @@ namespace pulsar
     {
         this->scene_nodes_ = mksptr(new List<Node_sp>);
     }
+    
+    sptr<Scene> Scene::StaticCreate()
+    {
+        auto self = mksptr(new Scene);
+        self->Construct();
 
+        return self;
+    }
 }
 

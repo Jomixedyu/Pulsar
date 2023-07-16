@@ -52,9 +52,19 @@ namespace pulsared
         }
     };
 
+    class SceneRenderPipeline : public gfx::GFXRenderPipeline
+    {
+    public:
+        virtual void OnRender(gfx::GFXRenderContext* context, const std::vector<gfx::GFXFrameBufferObject*>& renderTargets)
+        {
+            auto world = World::Current();
+            assert(world);
+
+            world->scene
+        }
+    };
     
 
-    using namespace detail;
 
     static bool _RequestQuit()
     {
@@ -216,7 +226,6 @@ namespace pulsared
         Logger::Log("initialize world");
         //world
         World::Reset(new EditorWorld);
-        World::Current()->scene = mksptr(new Scene);
 
         //init window uis
         Logger::Log("initialize editor window manager");

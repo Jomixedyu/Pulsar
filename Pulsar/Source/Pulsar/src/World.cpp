@@ -24,15 +24,19 @@ namespace pulsar
         }
         return _world_inst;
     }
+    World::World()
+    {
+        m_scene = Scene::StaticCreate();
+    }
 
     void World::Tick(float dt)
     {
         Ticker ticker;
         ticker.deltatime = dt;
 
-        if (IsValid(this->scene))
+        if (IsValid(m_scene))
         {
-            for (auto& node : *this->scene->get_root_nodes())
+            for (auto& node : *m_scene->get_root_nodes())
             {
                 if (node->IsAlive())
                 {
@@ -43,14 +47,9 @@ namespace pulsar
 
 
     }
-
-    void World::Draw()
+    void World::ChangeScene(sptr<Scene> scene)
     {
-        for (auto& node : *this->scene->get_root_nodes())
-        {
-            node->Draw();
-        }
-        
+        m_scene = scene;
     }
 
     void World::OnWorldBegin()
