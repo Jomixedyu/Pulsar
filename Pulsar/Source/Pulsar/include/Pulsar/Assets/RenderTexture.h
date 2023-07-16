@@ -27,6 +27,7 @@ namespace pulsar
 
         void Initialize(int32_t width, int32_t height, TextureFormat format, bool enableDepthStencil);
 
+        static sptr<RenderTexture> StaticCreate(int width, int height, bool hasColor, bool hasDepth);
     public:
         //IBindGPU
         virtual void BindGPU() override;

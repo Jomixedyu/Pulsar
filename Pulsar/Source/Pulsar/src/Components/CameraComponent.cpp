@@ -8,11 +8,11 @@ namespace pulsar
 {
     void CameraComponent::Render()
     {
-        if (IsValid(this->render_target))
+        if (IsValid(this->m_renderTarget))
         {
-            assert(this->render_target->GetIsBindGPU());
+            assert(this->m_renderTarget->GetIsBindGPU());
 
-            RenderTextureScope rt{ this->render_target };
+            RenderTextureScope rt{ this->m_renderTarget };
 
             auto [r, g, b, a] = this->backgroundColor;
             //detail::RenderInterface::Clear(r, g, b, a);
@@ -66,7 +66,7 @@ namespace pulsar
 
     Matrix4f CameraComponent::GetProjectionMat()
     {
-        const Vector2f& size = this->render_target ? this->render_target->GetSize2df() : this->size_;
+        const Vector2f& size = this->m_renderTarget ? this->m_renderTarget->GetSize2df() : this->size_;
         Matrix4f ret;
         if (this->cameraMode == CameraMode::Perspective)
         {

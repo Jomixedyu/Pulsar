@@ -15,7 +15,7 @@ namespace pulsared
         int32_t log_level_filter = 0;
         void UnSelectLog() { this->log_selected_index = -1; }
     public:
-        static string_view StaticWindowName() { return "Console"; }
+        static string_view StaticWindowName() { return ICON_FK_WINDOW_MAXIMIZE " Console###" "Console"; }
         virtual string_view GetWindowName() const override { return StaticWindowName(); }
         ConsoleWindow();
     };

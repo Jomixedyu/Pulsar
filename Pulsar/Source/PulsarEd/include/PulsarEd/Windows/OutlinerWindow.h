@@ -8,7 +8,7 @@ namespace pulsared
     {
         CORELIB_DEF_TYPE(AssemblyObject_PulsarEd, pulsared::OutlinerWindow, EditorWindow);
     public:
-        static string_view StaticWindowName() { return "Outliner"; }
+        static string_view StaticWindowName() { return ICON_FK_TREE " Outliner###" "Outerliner"; }
         virtual string_view GetWindowName() const override { return StaticWindowName(); }
         virtual void OnDrawImGui() override;
 

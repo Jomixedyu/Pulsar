@@ -14,7 +14,7 @@ namespace pulsar
     {
         CORELIB_DEF_TYPE(AssemblyObject_Pulsar, pulsar::CameraComponent, Component);
     public:
-        RenderTexture_sp render_target;
+        
         void Render();
     public:
         Matrix4f GetViewMat();
@@ -46,6 +46,11 @@ namespace pulsar
         CORELIB_REFL_DECL_FIELD(debug_view_mat);
         Matrix4f debug_view_mat;
 #endif
+    public:
+        const RenderTexture_sp& GetRenderTarget() const { return m_renderTarget; }
+        void SetRenderTarget(const RenderTexture_sp& value) { m_renderTarget = value; }
+    protected:
+        RenderTexture_sp m_renderTarget;
     };
     CORELIB_DECL_SHORTSPTR(CameraComponent);
 }

@@ -1,8 +1,11 @@
 #include "ImGuiImpl.h"
 #include <Pulsar/ImGuiImpl.h>
-#include "DroidSans.ttf.h"
 #include <ThirdParty/imgui/imgui.h>
 #include <ThirdParty/imgui/imgui_impl_glfw.h>
+
+#include "DroidSans.ttf.h"
+#include "forkawesome-webfont.ttf.h"
+#include "IconsForkAwesome.h"
 
 #include <CoreLib.Platform/Window.h>
 #include <gfx/GFXApplication.h>
@@ -14,12 +17,12 @@
 #include <gfx-vk/GFXVulkanCommandBuffer.h>
 #endif
 #include <ThirdParty/imgui/imgui_impl_win32.h>
+
 namespace pulsar
 {
 
     void ImGui_Style_Initialize()
     {
-
         //ImGui::StyleColorsDark();
         ImGuiIO& io = ImGui::GetIO(); (void)io;
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
@@ -30,13 +33,42 @@ namespace pulsar
         io.ConfigFlags &= ~ImGuiConfigFlags_ViewportsEnable;
 
         io.ConfigWindowsMoveFromTitleBarOnly = true;
-
-        //io.FontGlobalScale = jxcorlib::platform::window::GetUIScaling();
         io.MouseDrawCursor = true;
 
-        ImFontConfig fontConfig{};
-        fontConfig.FontDataOwnedByAtlas = false;
-        io.Fonts->AddFontFromMemoryTTF(FILE_DroidSans_ttf, sizeof(FILE_DroidSans_ttf), 14.4f, &fontConfig);
+        {
+            ImFontConfig fontConfig{};
+            fontConfig.FontDataOwnedByAtlas = false;
+            fontConfig.MergeMode = false;
+            fontConfig.OversampleH = 2;
+            fontConfig.OversampleV = 2;
+            fontConfig.GlyphExtraSpacing.x = 0.5f;
+            strcpy(fontConfig.Name, "ForkAwesome");
+            static const ImWchar icon_ranges[] = { ICON_MIN_FK, ICON_MAX_FK, 0 };
+            io.Fonts->AddFontFromMemoryTTF(FILE_forkawesome_webfont_ttf, sizeof(FILE_forkawesome_webfont_ttf), 13, &fontConfig, icon_ranges);
+        }
+        {
+            ImFontConfig fontConfig{};
+            fontConfig.FontDataOwnedByAtlas = false;
+            fontConfig.MergeMode = true;
+            fontConfig.OversampleH = 2;
+            fontConfig.OversampleV = 2;
+            fontConfig.GlyphExtraSpacing.x = 0.5f;
+            strcpy(fontConfig.Name, "DroidSans");
+            io.Fonts->AddFontFromMemoryTTF(FILE_DroidSans_ttf, sizeof(FILE_DroidSans_ttf), 14.f, &fontConfig);
+        }
+
+        
+        {
+            ImFontConfig fontConfig{};
+            fontConfig.FontDataOwnedByAtlas = true;
+            fontConfig.MergeMode = true;
+            //fontConfig.OversampleH = 2;
+            //fontConfig.OversampleV = 2;
+            //strcpy(fontConfig.Name, "YaHei");
+            io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\STZHONGS.TTF", 16.f, &fontConfig, io.Fonts->GetGlyphRangesChineseSimplifiedCommon());
+        }
+
+       
 
         io.FontGlobalScale = jxcorlib::platform::window::GetUIScaling();
         //io.Fonts->AddFontFromFileTTF("DroidSans.ttf", 14.4f);

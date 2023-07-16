@@ -60,6 +60,13 @@ namespace pulsar
 
     }
 
+    sptr<RenderTexture> RenderTexture::StaticCreate(int width, int height, bool hasColor, bool hasDepth)
+    {
+        auto rt = mksptr(new RenderTexture);
+        rt->Construct();
+        return rt;
+    }
+
     int32_t RenderTexture::GetWidth() const
     {
         return this->width_;
@@ -86,4 +93,5 @@ namespace pulsar
     {
         this->tex_->DisableRenderTarget();
     }
+
 }

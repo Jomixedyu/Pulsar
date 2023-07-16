@@ -23,7 +23,7 @@ namespace pulsared
     {
         CORELIB_DEF_TYPE(AssemblyObject_PulsarEd, pulsared::PropertiesWindow, EditorWindow);
     public:
-        static string_view StaticWindowName() { return "Properties"; }
+        static string_view StaticWindowName() { return ICON_FK_TH_LIST " Properties###" "Properties"; }
         virtual string_view GetWindowName() const override { return StaticWindowName(); }
         virtual void OnDrawImGui() override;
         virtual void OnOpen() override;

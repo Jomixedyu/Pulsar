@@ -1,6 +1,7 @@
 #pragma once
 #include <pulsared/Assembly.h>
 #include <ThirdParty/imgui/imgui.h>
+#include "EditorUI.h"
 
 namespace pulsared
 {

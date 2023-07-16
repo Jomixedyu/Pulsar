@@ -61,8 +61,9 @@ namespace pulsared
         {
             ImGui::Separator();
 
-            ImGui::SmallButton("Render");
-            ImGui::SmallButton("Stop");
+            ImGui::Button(ICON_FK_FLOPPY_O);
+            ImGui::Button(ICON_FK_PLAY);
+            ImGui::Button(ICON_FK_STOP);
             ImGui::EndMenuBar();
         }
 

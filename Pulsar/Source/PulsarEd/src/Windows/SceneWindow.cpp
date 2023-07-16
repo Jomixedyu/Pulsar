@@ -58,39 +58,33 @@ void main()
 
     void SceneWindow::OnOpen()
     {
-        EditorNode_sp center_node = EditorNode::StaticCreate("EditorCameraController");
-        EditorNode_sp camera_node = EditorNode::StaticCreate("EditorCamera", center_node);
-        this->camera_node = camera_node;
-        this->camera_ctrl_node = center_node;
+        EditorNode_sp camCtrlNode = EditorNode::StaticCreate("EdCameraController");
+        EditorNode_sp camNode = EditorNode::StaticCreate("EdCamera", camCtrlNode);
+        this->m_camNode = camNode;
+        this->m_camCtrlNode = camCtrlNode;
 
-        auto cam = camera_node->AddComponent<CameraComponent>();
-        
+        auto cam = camNode->AddComponent<CameraComponent>();
+
         cam->cameraMode = CameraMode::Perspective;
         cam->backgroundColor = LinearColorf{ 0.33,0.33,0.33,1 };
         cam->fov = 45.f;
         cam->near = 0.01f;
         cam->far = 10000.f;
         cam->size_ = { 1280,720 };
-        camera_node->set_self_position({ 0.f, 7, 30 });
+        camNode->set_self_position({ 0.f, 7, 30 });
         ////camera_node->set_self_euler_rotation({ -25.f, -45, 0 });
 
-        center_node->AddComponent<StdEditCameraControllerComponent>();
+        camCtrlNode->AddComponent<StdEditCameraControllerComponent>();
 
-        //auto rt = mksptr(new RenderTexture);
-        //rt->PostInitializeData(1280, 720);
-        //rt->Construct();
-        //rt->BindGPU();
-        //cam->render_target = rt;
-
+        auto rt = RenderTexture::StaticCreate(1280, 720, true, true);
+        cam->SetRenderTarget(rt);
 
         ////node->set_self_euler_rotation({ 0,-90,0 });
-        World::Current()->scene->AddNode(center_node);
+        World::Current()->scene->AddNode(camCtrlNode);
 
         //EditorNode_sp grid3d = EditorNode::StaticCreate("Grid3d");
         //grid3d->AddComponent<Grid3DComponent>();
         //World::Current()->scene->AddNode(grid3d);
-
-
 
     }
 
@@ -102,7 +96,7 @@ void main()
     void SceneWindow::OnDrawImGui()
     {
         static bool demowin = true;
-        if(demowin)
+        if (demowin)
             ImGui::ShowDemoWindow(&demowin);
         //RenderContext::PushCamera(this->GetSceneCamera());
 
@@ -156,19 +150,12 @@ void main()
 
     void SceneWindow::OnWindowResize()
     {
-        //auto cam = this->GetSceneCamera();
+        auto cam = this->GetSceneCamera();
 
-        //assert(cam);
-        //assert(cam->render_target);
+        assert(cam);
+        assert(cam->GetRenderTarget());
 
-        //cam->render_target->UnBindGPU();
-        //cam->render_target = nullptr;
-
-        //auto rt = mksptr(new RenderTexture);
-        //rt->PostInitializeData(this->win_size_.x, this->win_size_.y);
-        //rt->Construct();
-        //rt->BindGPU();
-        //cam->render_target = rt;
+        cam->SetRenderTarget(RenderTexture::StaticCreate(m_viewportSize.x, m_viewportSize.y, true, true));
     }
 
 }

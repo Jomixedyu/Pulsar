@@ -1,6 +1,7 @@
-#include <PulsarEd/Windows/WorkspaceWindow.h>
+﻿#include <PulsarEd/Windows/WorkspaceWindow.h>
 #include <PulsarEd/AssetDatabase.h>
 #include <PulsarEd/Workspace.h>
+
 
 namespace pulsared
 {
@@ -27,11 +28,11 @@ namespace pulsared
             ImGui::TreePop();
         }
     }
+
     void WorkspaceWindow::OnDrawImGui()
     {
 
         ImGui::InputText("Search", this->search_buf, sizeof(this->search_buf));
-
 
         if (!Workspace::IsOpened())
         {
