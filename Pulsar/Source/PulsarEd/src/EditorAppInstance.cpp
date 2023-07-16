@@ -35,19 +35,12 @@ namespace pulsared
         {
             auto rt = static_cast<gfx::GFXFrameBufferObject*>(renderTargets[0]);
 
-            auto& buffer = static_cast<gfx::GFXCommandBuffer&>(context->AddCommandBuffer());
+            auto& buffer = context->AddCommandBuffer();
             buffer.Begin();
             buffer.SetFrameBuffer(rt);
             buffer.CmdClearColor(0.0, 0.0, 0.0, 1);
             buffer.CmdBeginFrameBuffer();
             buffer.CmdSetViewport(0, 0, rt->GetWidth(), rt->GetHeight());
-            //being render
-            
-            //buffer.CmdBindShaderPass(Shaderpass);
-            //buffer.CmdBindVertexBuffers(VertBuffers);
-            //buffer.CmdBindIndexBuffer(IndexBuffer);
-            //buffer.CmdBindDescriptorSets(DescriptorSet, Shaderpass);
-            //buffer.CmdDrawIndexed(IndexBuffer->GetSize() / sizeof(uint16_t));
 
             ImGuiObject->Render(&buffer);
 
@@ -324,15 +317,13 @@ namespace pulsared
 
     Vector2f pulsared::EditorAppInstance::GetAppSize()
     {
-        return { 1280,720 };
         int32_t w, h;
-        
-        //RenderInterface::GetDefaultBufferViewport(&w, &h);
+        Application::GetGfxApp()->GetViewport()->GetSize(&w, &h);
         return Vector2f(w, h);
     }
     void pulsared::EditorAppInstance::SetAppSize(Vector2f size)
     {
-        //RenderInterface::SetViewport(0, 0, (int)size.x, (int)size.y);
+        Application::GetGfxApp()->GetViewport()->SetSize(size.x, size.y);
     }
 
 

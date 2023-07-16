@@ -308,6 +308,17 @@ namespace gfx
 
         InitSwapChain();
     }
+
+    void GFXVulkanViewport::SetSize(int width, int height)
+    {
+        glfwSetWindowSize(m_window, width, height);
+    }
+
+    void GFXVulkanViewport::GetSize(int* width, int* height) const
+    {
+        *width = m_swapChainExtent.width;
+        *height = m_swapChainExtent.height;
+    }
     VkResult GFXVulkanViewport::AcquireNextImage(uint32_t* outIndex)
     {
         m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;

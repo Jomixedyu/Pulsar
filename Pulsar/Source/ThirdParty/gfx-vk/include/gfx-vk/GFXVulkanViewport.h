@@ -32,6 +32,9 @@ namespace gfx
 
         void ReInitSwapChain();
     public:
+        virtual void SetSize(int width, int height) override;
+        virtual void GetSize(int* width, int* height) const override;
+    public:
         VkSwapchainKHR GetVkSwapChain() const { return m_swapChain; }
         VkImage GetVkSwapChainImage() const { return m_swapChainImages[m_imageIndex]; }
         VkImageView GetVkSwapChainImageView() const { return m_swapChainImageViews[m_imageIndex]; }
