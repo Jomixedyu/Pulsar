@@ -19,6 +19,12 @@ namespace pulsar
         virtual void SetTitle(string_view title) override;
         virtual string AppRootDir() override;
 
+        virtual rendering::Pipeline* GetPipeline() override;
+
+        virtual void OnPreInitialize(gfx::GFXGlobalConfig* cfg) override;
+
+        virtual void OnEndRender(float d4) override;
+
     };
 
 }

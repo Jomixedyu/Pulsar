@@ -19,7 +19,6 @@ namespace pulsar
             //draw ...
 
 
-            World::Current()->Draw();
         }
     }
 

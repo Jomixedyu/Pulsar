@@ -64,7 +64,7 @@ namespace pulsared
         ImGuiTreeNodeFlags base_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_DefaultOpen;
         if (ImGui::TreeNodeEx("SceneRoot", base_flags))
         {
-            _Show(World::Current()->scene->get_root_nodes());
+            _Show(World::Current()->GetScene()->get_root_nodes());
             ImGui::TreePop();
         }
     }

@@ -33,11 +33,11 @@ namespace pulsar
             return sptr_cast<T>(GetSubsystemByType(cltypeof<T>()));
         }
 
-        virtual void OnPreInitialize(gfx::GFXGlobalConfig* cfg) {};
-        virtual void OnInitialized() {};
-        virtual void OnTerminate() {};
-        virtual void OnBeginRender(float dt) {};
-        virtual void OnEndRender(float d4) {}
+        virtual void OnPreInitialize(gfx::GFXGlobalConfig* cfg) =0;
+        virtual void OnInitialized() =0;
+        virtual void OnTerminate() = 0;
+        virtual void OnBeginRender(float dt) = 0;
+        virtual void OnEndRender(float d4) = 0;
         virtual bool IsQuit() = 0;
 
     protected:

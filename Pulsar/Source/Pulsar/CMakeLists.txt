@@ -19,8 +19,10 @@ add_subdirectory("../ThirdParty/jxcorlib/CoreLib.Math" jxcorlib.math)
 add_subdirectory("../ThirdParty/jxcorlib/CoreLib.Platform" jxcorlib.platform.out)
 add_subdirectory("../ThirdParty/gfx" gfx.out)
 add_subdirectory("../ThirdParty/gfx-vk" gfx-vk.out)
+add_subdirectory("../ThirdParty/imgui" imgui.out)
 
-add_library(${PROJECT_NAME} STATIC ${Pulsar_SRC})
+#add_library(${PROJECT_NAME} STATIC ${Pulsar_SRC})
+add_executable(${PROJECT_NAME} ${Pulsar_SRC})
 
 target_include_directories(${PROJECT_NAME} PUBLIC "include")
 target_include_directories(${PROJECT_NAME} PRIVATE "include/Pulsar")
@@ -30,6 +32,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC "../ThirdParty/gfx/include")
 target_include_directories(${PROJECT_NAME} PUBLIC "../ThirdParty/gfx-vk/include")
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC PULSAR_GFX_BUILD_VULKAN)
+
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
 	jxcorlib

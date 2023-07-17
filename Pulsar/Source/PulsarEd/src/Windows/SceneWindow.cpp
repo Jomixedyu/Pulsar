@@ -44,7 +44,7 @@ namespace pulsared
         cam->SetRenderTarget(rt);
 
         ////node->set_self_euler_rotation({ 0,-90,0 });
-        World::Current()->scene->AddNode(camCtrlNode);
+        World::Current()->GetScene()->AddNode(camCtrlNode);
 
         //EditorNode_sp grid3d = EditorNode::StaticCreate("Grid3d");
         //grid3d->AddComponent<Grid3DComponent>();

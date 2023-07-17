@@ -46,7 +46,7 @@ namespace gfx::vk
         return indices;
     }
 
-    //检查设备扩展支持，如交换链扩展
+
     static bool _CheckDeviceExtensionSupport(VkPhysicalDevice device)
     {
         const std::vector<const char*> deviceExtensions = {

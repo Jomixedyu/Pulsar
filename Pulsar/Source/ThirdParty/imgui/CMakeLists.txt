@@ -22,7 +22,7 @@ set(_imgui_Sources
 )
 include_directories("../glfw/include")
 
-add_library(${PROJECT_NAME} STATIC ${_imgui_Sources})
+add_library(${PROJECT_NAME} OBJECT ${_imgui_Sources})
 #target_include_directories(${PROJECT_NAME} INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 
 find_package(Vulkan REQUIRED)

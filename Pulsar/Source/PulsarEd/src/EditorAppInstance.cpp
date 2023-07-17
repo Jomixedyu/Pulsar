@@ -60,7 +60,6 @@ namespace pulsared
             auto world = World::Current();
             assert(world);
 
-            world->scene
         }
     };
     
@@ -226,6 +225,7 @@ namespace pulsared
         Logger::Log("initialize world");
         //world
         World::Reset(new EditorWorld);
+        World::Current()->ChangeScene(Scene::StaticCreate());
 
         //init window uis
         Logger::Log("initialize editor window manager");

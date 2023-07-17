@@ -24,12 +24,12 @@ target_include_directories(${PROJECT_NAME} PUBLIC "../ThirdParty")
 target_include_directories(${PROJECT_NAME} PUBLIC "../ThirdParty/gfx/include")
 target_include_directories(${PROJECT_NAME} PUBLIC "../ThirdParty/gfx-vk/include")
 
-target_link_directories(${PROJECT_NAME} PUBLIC "out/build/x64-Debug/Pulsar.out")
+target_link_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}/Pulsar.out")
 target_link_directories(${PROJECT_NAME} PUBLIC "../ThirdParty")
 target_link_directories(${PROJECT_NAME} PUBLIC "../ThirdParty/glfw")
 
 target_link_options(${PROJECT_NAME} PUBLIC "/WHOLEARCHIVE:Pulsar")
-
+file(COPY "../ThirdParty/assimp-vc143-mt.dll" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 target_link_libraries(${PROJECT_NAME} PUBLIC
 	Pulsar
 	assimp-vc143-mt
