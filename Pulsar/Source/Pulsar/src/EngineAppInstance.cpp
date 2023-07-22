@@ -8,7 +8,7 @@
 #include <Pulsar/Private/InputInterface.h>
 
 #include "Assets/StaticMesh.h"
-
+#include "Scene.h"
 
 namespace pulsar
 {
@@ -24,17 +24,42 @@ namespace pulsar
         }
     }
 
+
     class EngineRenderPipeline : public gfx::GFXRenderPipeline
     {
     public:
-
-
-        virtual void OnRender(gfx::GFXRenderContext* context, const std::vector<gfx::GFXFrameBufferObject*>& renderTargets) override
+        World* m_world;
+        EngineRenderPipeline(World* world)
+            : m_world(world)
         {
-            //clear
-            //render all object to fbo
-            //post process fbo
-            //enable srgb
+        }
+
+        virtual void OnRender(gfx::GFXRenderContext* context, const std::vector<gfx::GFXFrameBufferObject*>& framebuffers) override
+        {
+            for (auto& fb : framebuffers)
+            {
+                auto& buffer = context->AddCommandBuffer();
+                buffer.Begin();
+                buffer.SetFrameBuffer(fb);
+
+                buffer.CmdClearColor(1, 0, 1, 1);
+                buffer.CmdBeginFrameBuffer();
+                buffer.CmdSetViewport(0, 0, fb->GetWidth(), fb->GetHeight());
+
+                //array_list< renderObjects = m_world->GetRenderObjects();
+                ////batch render
+                //for (auto& i : renderObjects)
+                //{
+                //    
+                //}
+
+                //post processing
+
+                buffer.CmdEndFrameBuffer();
+                buffer.SetFrameBuffer(nullptr);
+                buffer.End();
+            }
+            context->Submit();
         }
 
     };
@@ -58,6 +83,16 @@ namespace pulsar
         Application::inst()->QuittingEvents.Invoke();
     }
 
+    void EngineAppInstance::OnPreInitialize(gfx::GFXGlobalConfig* cfg)
+    {
+        cfg->EnableValid = true;
+        cfg->WindowWidth = 1280;
+        cfg->WindowHeight = 720;
+        strcpy(cfg->Title, "Pulsar v0.1 - vulkan 1.3");
+        strcpy(cfg->ProgramName, "Pulsar");
+
+    }
+
     void EngineAppInstance::OnInitialized()
     {
         Logger::Log("application initialize");
@@ -67,6 +102,7 @@ namespace pulsar
         //RenderInterface::SetViewport(0, 0, (int)size.x, (int)size.y);
 
         World::Reset(new World);
+        Application::GetGfxApp()->SetRenderPipeline(new EngineRenderPipeline(World::Current()));
     }
 
     void EngineAppInstance::OnTerminate()
@@ -86,6 +122,10 @@ namespace pulsar
         //SystemInterface::PollEvents();
         
     }
+    void EngineAppInstance::OnEndRender(float d4)
+    {
+    }
+
     bool EngineAppInstance::IsQuit()
     {
         return false;
@@ -124,18 +164,8 @@ namespace pulsar
         return nullptr;
     }
 
-    void EngineAppInstance::OnPreInitialize(gfx::GFXGlobalConfig* cfg)
-    {
-        cfg->EnableValid = true;
-        cfg->WindowWidth = 1280;
-        cfg->WindowHeight = 720;
-        strcpy(cfg->Title, "Pulsar v0.1 - vulkan 1.3");
-        strcpy(cfg->ProgramName, "Pulsar");
 
-    }
 
-    void EngineAppInstance::OnEndRender(float d4)
-    {
-    }
+
 
 }

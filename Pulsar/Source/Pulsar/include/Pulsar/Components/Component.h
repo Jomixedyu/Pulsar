@@ -14,12 +14,12 @@ namespace pulsar
         friend class Node;
         CORELIB_DEF_TYPE(AssemblyObject_Pulsar, pulsar::Component, ObjectBase);
     public:
-        sptr<Node> get_node();
+        sptr<Node> GetAttachmentNode();
+        sptr<Node> GetOnwerNode();
         virtual bool get_is_tickable() const { return true; }
+        
     public:
 		virtual bool EqualsComponentType(Type* type);
-    public:
-        virtual void OnDraw() {}
     public:
         // Engine object lifecycle
         virtual void OnDestroy() override {}
@@ -30,7 +30,8 @@ namespace pulsar
     public:
         Component() {}
     private:
-        wptr<Node> node_;
+        wptr<Node> m_ownerNode;
+        wptr<Node> m_attachmentNode;
 
     };
     CORELIB_DECL_SHORTSPTR(Component);

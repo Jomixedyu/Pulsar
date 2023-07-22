@@ -71,7 +71,6 @@ namespace pulsar
     public:
         Node();
 
-        void Draw();
         virtual void SerializeBuildData(ser::Stream& stream, bool is_ser) override;
 
         //ITickable 

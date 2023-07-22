@@ -26,7 +26,7 @@ namespace pulsar
     }
     World::World()
     {
-        m_scene = Scene::StaticCreate();
+        m_scenes.push_back(Scene::StaticCreate("PresistentScene"));
     }
 
     void World::Tick(float dt)
@@ -34,22 +34,34 @@ namespace pulsar
         Ticker ticker;
         ticker.deltatime = dt;
 
-        if (IsValid(m_scene))
+        for (auto& scene : m_scenes)
         {
-            for (auto& node : *m_scene->get_root_nodes())
+            if (IsValid(scene))
             {
-                if (node->IsAlive())
+                for (auto& node : *scene->GetRootNodes())
                 {
-                    node->OnTick(ticker);
+                    if (node->IsAlive())
+                    {
+                        node->OnTick(ticker);
+                    }
                 }
             }
         }
 
-
     }
-    void World::ChangeScene(sptr<Scene> scene)
+    void World::ChangeScene(sptr<Scene> scene, bool clearPresistentScene)
     {
-        m_scene = scene;
+        if (clearPresistentScene)
+        {
+            m_scenes.clear();
+        }
+        else
+        {
+            auto presistent = m_scenes[0];
+            m_scenes.clear();
+            m_scenes.push_back(presistent);
+        }
+        m_scenes.push_back(scene);
     }
 
     void World::OnWorldBegin()

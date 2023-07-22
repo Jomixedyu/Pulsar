@@ -14,8 +14,8 @@ namespace pulsar
     {
         CORELIB_DEF_TYPE(AssemblyObject_Pulsar, pulsar::Scene, AssetObject)
     public:
-        List_rsp<Node_sp> get_root_nodes() const { return this->scene_nodes_; }
-        List_sp<Node_sp> get_root_nodes() { return this->scene_nodes_; }
+        List_rsp<Node_sp> GetRootNodes() const { return this->scene_nodes_; }
+        List_sp<Node_sp> GetRootNodes() { return this->scene_nodes_; }
 
         virtual void SerializeBuildData(ser::Stream& stream, bool is_ser) override;
 
@@ -24,7 +24,7 @@ namespace pulsar
         void AddNode(Node_rsp node);
         void RemoveNode(Node_rsp node);
 
-        static sptr<Scene> StaticCreate();
+        static sptr<Scene> StaticCreate(string_view name);
     private:
 
         List_sp<Node_sp> scene_nodes_;

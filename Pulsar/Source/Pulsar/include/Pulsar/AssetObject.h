@@ -10,6 +10,8 @@ namespace pulsared
 }
 namespace pulsar
 {
+
+
     class AssetObject : public ObjectBase
     {
         CORELIB_DEF_TYPE(AssemblyObject_Pulsar, pulsar::AssetObject, ObjectBase);

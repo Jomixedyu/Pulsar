@@ -4,13 +4,14 @@
 
 namespace pulsar
 {
-    sptr<Node> Component::get_node()
+
+    sptr<Node> Component::GetAttachmentNode()
     {
-        if (this->node_.expired())
-        {
-            return nullptr;
-        }
-        return this->node_.lock();
+        return m_attachmentNode.lock();
+    }
+    sptr<Node> Component::GetOnwerNode()
+    {
+        return m_ownerNode.lock();
     }
     bool Component::EqualsComponentType(Type* type)
     {

@@ -44,10 +44,11 @@ namespace pulsar
         this->scene_nodes_ = mksptr(new List<Node_sp>);
     }
     
-    sptr<Scene> Scene::StaticCreate()
+    sptr<Scene> Scene::StaticCreate(string_view name)
     {
         auto self = mksptr(new Scene);
         self->Construct();
+        self->name_ = name;
 
         return self;
     }

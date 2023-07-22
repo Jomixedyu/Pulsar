@@ -8,6 +8,6 @@ namespace gfx
     class GFXRenderPipeline
     {
     public:
-        virtual void OnRender(GFXRenderContext* context, const std::vector<GFXFrameBufferObject*>& renderTargets) = 0;
+        virtual void OnRender(GFXRenderContext* context, const std::vector<GFXFrameBufferObject*>& framebuffers) = 0;
     };
 }

@@ -30,59 +30,32 @@ namespace pulsar
 
         if (!is_ser)
         {
-            this->raw_data_ = mksptr(new StaticMeshVertexBuildDataArray);
+            this->m_rawData = mksptr(new StaticMeshVertexBuildDataArray);
         }
-        ReadWriteStream(stream, is_ser, *this->raw_data_);
-
-
-        if (!is_ser)
-        {
-            this->BindGPU();
-        }
+        ReadWriteStream(stream, is_ser, *this->m_rawData);
     }
 
     void StaticMesh::OnInstantiateAsset(sptr<AssetObject>& obj)
     {
         auto mesh = sptr_cast<StaticMesh>(obj);
         assert(mesh);
-        mesh->raw_data_ = this->raw_data_;
+        mesh->m_rawData = this->m_rawData;
     }
 
     StaticMesh::~StaticMesh()
     {
-        this->UnBindGPU();
+
     }
 
     StaticMesh_sp StaticMesh::StaticCreate(sptr<StaticMeshVertexBuildDataArray>&& managed_data, array_list<uint32_t>&& indices_data)
     {
         auto mesh = mksptr(new StaticMesh);
         mesh->Construct();
-        mesh->raw_data_ = managed_data;
+        mesh->m_rawData = std::move(managed_data);
         mesh->indices = std::move(indices_data);
+        
         return mesh;
     }
 
-
-    void StaticMesh::BindGPU()
-    {
-        assert(!this->GetIsBindGPU());
-
-
-    }
-
-    void StaticMesh::UnBindGPU()
-    {
-        if (this->GetIsBindGPU())
-        {
-
-            this->render_handle_ = 0;
-            this->render_buffer_ = 0;
-        }
-    }
-
-    bool StaticMesh::GetIsBindGPU()
-    {
-        return this->render_handle_ != 0;
-    }
 
 }

@@ -198,18 +198,6 @@ namespace pulsar
         this->rotation_ = Quat4f::FromEuler({ 0,0,0 });
     }
 
-    void Node::Draw()
-    {
-        for (auto& com : *this->components_)
-        {
-            com->OnDraw();
-        }
-        for (auto& i : *this->childs_)
-        {
-            i->Draw();
-        }
-    }
-
     void Node::SerializeBuildData(ser::Stream& stream, bool is_ser)
     {
     }
@@ -231,7 +219,8 @@ namespace pulsar
         Object_sp obj = type->CreateSharedInstance({});
         Component_sp component = sptr_cast<Component>(obj);
         //init
-        component->node_ = self_weak();
+        component->m_attachmentNode = self_weak();
+        component->m_ownerNode = self_weak();
         this->components_->push_back(component);
         component->Construct();
         return component;

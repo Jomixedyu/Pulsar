@@ -41,7 +41,7 @@ namespace pulsar
         }
     };
 
-    class StaticMesh : public Mesh, public IBindGPU
+    class StaticMesh : public Mesh
     {
         friend class StaticMeshAssetSerializer;
         CORELIB_DEF_TYPE(AssemblyObject_Pulsar, pulsar::StaticMesh, Mesh)
@@ -59,23 +59,23 @@ namespace pulsar
     public:
 
     public:
-        // IBindGPU
-        virtual void BindGPU() override;
-        virtual void UnBindGPU() override;
-        virtual bool GetIsBindGPU() override;
+
     public:
         uint32_t GetRenderHandle() const { return this->render_handle_; }
+        const sptr<StaticMeshVertexBuildDataArray>& GetRawData() const { return m_rawData; }
     public:
         // Override
-        size_t GetVertexCount() override { return this->raw_data_->size(); }
+        virtual size_t GetVertexCount() override { return this->m_rawData->size(); }
         size_t GetIndicesCount() { return this->indices.size(); }
     public:
         uint32_t ebo_buffer_ = 0;
     protected:
-        sptr<StaticMeshVertexBuildDataArray> raw_data_ = nullptr;
+        sptr<StaticMeshVertexBuildDataArray> m_rawData = nullptr;
         array_list<uint32_t> indices;
         uint32_t render_handle_ = 0;
         uint32_t render_buffer_ = 0;
+
+        array_list<sptr<Material>> m_materials;
     };
     CORELIB_DECL_SHORTSPTR(StaticMesh);
 

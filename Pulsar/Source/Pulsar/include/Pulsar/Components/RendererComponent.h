@@ -11,15 +11,19 @@ namespace pulsar
     class Material;
     class ShaderPass;
 
+    class IRenderObject
+    {
+    public:
+
+    };
+
     class RendererComponent : public Component
     {
         CORELIB_DEF_TYPE(AssemblyObject_Pulsar, pulsar::RendererComponent, Component)
     public:
-        virtual void OnConstruct() override;
-        List_sp<Material_sp> get_materials() const { return this->materials_; }
-    protected:
-        CORELIB_REFL_DECL_FIELD(materials_);
-        List_sp<Material_sp> materials_;
+        virtual sptr<IRenderObject> CreateRenderObject() = 0;
+
+
     };
     CORELIB_DECL_SHORTSPTR(RendererComponent);
 }
