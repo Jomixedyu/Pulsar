@@ -7,17 +7,18 @@ namespace pulsar
 
     static auto _object_table()
     {
-        static auto table = new std::map<object_id, wptr<ObjectBase>>;
+        static auto table = new std::map<ObjectHandle, wptr<ObjectBase>>;
         return table;
     }
 
-    static inline object_id _NewId()
+    static inline ObjectHandle _NewId()
     {
-        return object_id::create_new();
+        return ObjectHandle::create_new();
     }
 
-    bool RuntimeObjectWrapper::GetObject(object_id id, wptr<ObjectBase>* out)
+    bool RuntimeObjectWrapper::GetObject(ObjectHandle id, wptr<ObjectBase>* out)
     {
+        if (id.is_empty()) return false;
         auto it = _object_table()->find(id);
         if (it != _object_table()->end())
         {
@@ -27,7 +28,7 @@ namespace pulsar
         return false;
     }
 
-    bool RuntimeObjectWrapper::IsValid(object_id id)
+    bool RuntimeObjectWrapper::IsValid(ObjectHandle id)
     {
         if (id.is_empty()) return false;
         return _object_table()->find(id) != _object_table()->end();
@@ -35,16 +36,16 @@ namespace pulsar
     void RuntimeObjectWrapper::NewInstance(sptr<ObjectBase> ptr)
     {
         auto id = _NewId();
-        ptr->object_id_ = id;
-        _object_table()->insert(std::pair<object_id, wptr<ObjectBase>>{ id, wptr<ObjectBase>(ptr) });
+        ptr->m_objectHandle = id;
+        _object_table()->insert(std::pair<ObjectHandle, wptr<ObjectBase>>{ id, wptr<ObjectBase>(ptr) });
     }
 
     void RuntimeObjectWrapper::DestroyObject(const sptr<ObjectBase>& obj)
     {
-        _object_table()->erase(obj->get_object_id());
+        _object_table()->erase(obj->GetObjectHandle());
     }
 
-    void RuntimeObjectWrapper::ForceDestroyObject(object_id id)
+    void RuntimeObjectWrapper::ForceDestroyObject(ObjectHandle id)
     {
         if (id.is_empty()) return;
         _object_table()->erase(id);
@@ -57,13 +58,13 @@ namespace pulsar
     void ObjectBase::Construct()
     {
         assert(this);
-        assert(!this->object_id_);
+        assert(!this->m_objectHandle);
         RuntimeObjectWrapper::NewInstance(self());
         this->OnConstruct();
     }
     bool ObjectBase::IsAlive() const
     {
-        return RuntimeObjectWrapper::IsValid(this->get_object_id());
+        return RuntimeObjectWrapper::IsValid(this->GetObjectHandle());
     }
     void ObjectBase::OnConstruct()
     {
@@ -71,7 +72,7 @@ namespace pulsar
 
     ObjectBase::~ObjectBase()
     {
-        if (!this->object_id_.is_empty())
+        if (!this->m_objectHandle.is_empty())
         {
             this->Destroy();
         }
@@ -79,12 +80,21 @@ namespace pulsar
     void ObjectBase::Destroy()
     {
         this->OnDestroy();
-        RuntimeObjectWrapper::ForceDestroyObject(this->object_id_);
-        this->object_id_ = object_id{};
+        RuntimeObjectWrapper::ForceDestroyObject(this->m_objectHandle);
+        this->m_objectHandle = ObjectHandle{};
     }
 
     void ObjectBase::OnDestroy()
     {
 
+    }
+
+    ser::Stream& ReadWriteStream(ser::Stream& stream, bool isWrite, ObjectPtrBase& obj)
+    {
+        ser::ReadWriteStream(stream, isWrite, obj.handle.x);
+        ser::ReadWriteStream(stream, isWrite, obj.handle.y);
+        ser::ReadWriteStream(stream, isWrite, obj.handle.z);
+        ser::ReadWriteStream(stream, isWrite, obj.handle.w);
+        return stream;
     }
 }

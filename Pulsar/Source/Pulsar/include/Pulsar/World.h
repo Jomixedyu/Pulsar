@@ -1,6 +1,8 @@
 #pragma once
-#include <Pulsar/ObjectBase.h>
+#include "ObjectBase.h"
 #include "Components/Component.h"
+#include "Rendering/RenderObject.h"
+
 namespace pulsar
 {
     class Scene;
@@ -23,12 +25,16 @@ namespace pulsar
         virtual void OnWorldEnd();
     public:
         const sptr<Scene>& GetScene(int index) const { return m_scenes[index]; }
-        const sptr<Scene>& GetPresistentScene() const { return m_scenes[0]; }
+        const Scene* GetPresistentScene() const { return m_scenes[0].get(); }
 
         void ChangeScene(sptr<Scene> scene, bool clearPresistentScene = true);
-        const array_list<class IRenderObject*>& GetRenderObjects() const { return m_renderObjects; }
+
+
+        const array_list<rendering::RenderObject*>& GetRenderObjects() const { return m_renderObjects; }
+    private:
+        void InitializePresistentScene();
     protected:
-        array_list<class IRenderObject*> m_renderObjects;
-        array_list<sptr<Scene>> m_scenes;
+        array_list<rendering::RenderObject*>  m_renderObjects;
+        array_list<sptr<Scene>>                m_scenes;
     };
 }

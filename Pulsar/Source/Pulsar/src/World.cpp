@@ -26,7 +26,7 @@ namespace pulsar
     }
     World::World()
     {
-        m_scenes.push_back(Scene::StaticCreate("PresistentScene"));
+        InitializePresistentScene();
     }
 
     void World::Tick(float dt)
@@ -54,6 +54,7 @@ namespace pulsar
         if (clearPresistentScene)
         {
             m_scenes.clear();
+            InitializePresistentScene();
         }
         else
         {
@@ -62,6 +63,11 @@ namespace pulsar
             m_scenes.push_back(presistent);
         }
         m_scenes.push_back(scene);
+    }
+
+    void World::InitializePresistentScene()
+    {
+        m_scenes.push_back(Scene::StaticCreate("PresistentScene"));
     }
 
     void World::OnWorldBegin()

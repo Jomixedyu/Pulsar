@@ -8,6 +8,7 @@
 
 namespace pulsar
 {
+
     class Node;
 
     class Scene : public AssetObject
@@ -31,6 +32,8 @@ namespace pulsar
 
         CORELIB_REFL_DECL_FIELD(cubemap_);
         CubeMapAsset_sp cubemap_;
+
+
     };
     CORELIB_DECL_SHORTSPTR(Scene);
 }

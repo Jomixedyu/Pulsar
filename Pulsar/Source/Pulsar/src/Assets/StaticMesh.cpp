@@ -1,45 +1,49 @@
 ﻿#include "Assets/StaticMesh.h"
 #include <Pulsar/Assets/Shader.h>
 #include <Pulsar/Assets/Texture2D.h>
+#include "EngineMath.h"
 
 namespace pulsar
 {
-    ser::Stream& ReadWriteStream(ser::Stream& stream, bool is_write, StaticMeshVertexBuildData& vert)
+    ser::Stream& ReadWriteStream(ser::Stream& stream, bool isWrite, StaticMeshSectionSerializeData& data)
     {
-        math::ReadWriteStream(stream, is_write, vert.Position);
-        math::ReadWriteStream(stream, is_write, vert.Normal);
-        math::ReadWriteStream(stream, is_write, vert.Tangent);
-        math::ReadWriteStream(stream, is_write, vert.BitTangent);
-        for (size_t i = 0; i < APATITE_STATICMESH_MAX_TEXTURE_COORDS; i++)
-        {
-            math::ReadWriteStream(stream, is_write, vert.Coords[i]);
-        }
-        math::ReadWriteStream(stream, is_write, vert.VertColor);
+        using namespace pulsar::math;
+        using namespace jxcorlib::math;
+        using namespace ser;
+        using namespace jmath;
+        ReadWriteStream(stream, isWrite, data.Position);
+        ser::ReadWriteStream(stream, isWrite, data.Normal);
+        ser::ReadWriteStream(stream, isWrite, data.Bitangent);
+        ser::ReadWriteStream(stream, isWrite, data.Indices);
+        ser::ReadWriteStream(stream, isWrite, data.Color);
 
+        int32_t coordCount = isWrite ? data.TexCoordsCount : 0;
+        ser::ReadWriteStream(stream, isWrite, coordCount);
+
+        for (int32_t i = 0; i < coordCount; i++)
+        {
+            ser::ReadWriteStream(stream, isWrite, data.TexCoords[i]);
+        }
         return stream;
     }
-
-
-    void StaticMesh::SerializeBuildData(ser::Stream& stream, bool is_ser)
+    ser::Stream& ReadWriteStream(ser::Stream& stream, bool isWrite, StaticMeshSerializeData& data)
     {
-        int32_t ser_ver;
-        if (is_ser) ser_ver = SerializeVersion;
+        using namespace math;
+        using namespace ser;
 
-        ReadWriteStream(stream, is_ser, ser_ver);
-        assert(!is_ser && ser_ver == SerializeVersion);
+        ReadWriteStream(stream, isWrite, data.Sections);
+        ReadWriteStream(stream, isWrite, data.Materials);
 
-        if (!is_ser)
-        {
-            this->m_rawData = mksptr(new StaticMeshVertexBuildDataArray);
-        }
-        ReadWriteStream(stream, is_ser, *this->m_rawData);
+        return stream;
     }
 
     void StaticMesh::OnInstantiateAsset(sptr<AssetObject>& obj)
     {
         auto mesh = sptr_cast<StaticMesh>(obj);
         assert(mesh);
-        mesh->m_rawData = this->m_rawData;
+        mesh->m_sections = m_sections;
+        mesh->m_materials = m_materials;
+        base::OnInstantiateAsset(obj);
     }
 
     StaticMesh::~StaticMesh()
@@ -47,15 +51,22 @@ namespace pulsar
 
     }
 
-    StaticMesh_sp StaticMesh::StaticCreate(sptr<StaticMeshVertexBuildDataArray>&& managed_data, array_list<uint32_t>&& indices_data)
+    StaticMesh_sp StaticMesh::StaticCreate(StaticMeshSerializeData&& vertData)
     {
         auto mesh = mksptr(new StaticMesh);
         mesh->Construct();
-        mesh->m_rawData = std::move(managed_data);
-        mesh->indices = std::move(indices_data);
-        
+        mesh->m_sections = std::move(vertData.Sections);
+        mesh->m_materials.reserve(vertData.Materials.size());
+
+        for (auto& mat : vertData.Materials)
+        {
+            mesh->m_materials.push_back(mat.Get());
+        }
+
         return mesh;
     }
+
+
 
 
 }

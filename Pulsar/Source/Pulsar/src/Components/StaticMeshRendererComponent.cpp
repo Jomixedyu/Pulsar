@@ -7,7 +7,7 @@
 namespace pulsar
 {
 
-    class StaticMeshRenderObject : public IRenderObject
+    class StaticMeshRenderObject : public rendering::RenderObject
     {
     public:
         void OnCreateResource()
@@ -19,16 +19,17 @@ namespace pulsar
             delete m_meshBuffer;
         }
         gfx::GFXBuffer* m_meshBuffer;
+        gfx::GFXShaderPass* m_shaderPass;
     };
 
-    sptr<IRenderObject> StaticMeshRendererComponent::CreateRenderObject()
+    sptr<rendering::RenderObject> StaticMeshRendererComponent::CreateRenderObject()
     {
         auto obj = new StaticMeshRenderObject;
 
-        auto allocSize = m_staticMesh->GetVertexCount() * sizeof(StaticMeshVertexBuildDataArray);
+        auto allocSize = 0;
         obj->m_meshBuffer = Application::GetGfxApp()->CreateBuffer(gfx::GFXBufferUsage::Vertex, sizeof(allocSize));
 
-        return sptr<IRenderObject>(obj);
+        return mksptr(obj);
     }
 
     void StaticMeshRendererComponent::OnInitialize()

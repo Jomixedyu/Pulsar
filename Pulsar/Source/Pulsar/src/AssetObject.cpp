@@ -10,7 +10,7 @@ namespace pulsar
     AssetObject_sp AssetObject::InstantiateAsset()
     {
         AssetObject_sp obj = sptr_cast<AssetObject>(this->GetType()->CreateSharedInstance({}));
-
+        obj->Construct();
         this->OnInstantiateAsset(obj);
 
         return obj;

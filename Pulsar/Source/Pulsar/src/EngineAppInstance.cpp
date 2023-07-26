@@ -8,21 +8,11 @@
 #include <Pulsar/Private/InputInterface.h>
 
 #include "Assets/StaticMesh.h"
+#include "Components/StaticMeshRendererComponent.h"
 #include "Scene.h"
 
 namespace pulsar
 {
-    static StaticMeshVertexBuildDataArray BuildUVSphere(float radius, int u, int v)
-    {
-        StaticMeshVertexBuildDataArray mesh;
-        
-        StaticMeshVertexBuildData point;
-        point.Position = { 0,1,0 };
-        for (size_t i = 0; i < v - 1; i++)
-        {
-
-        }
-    }
 
 
     class EngineRenderPipeline : public gfx::GFXRenderPipeline
@@ -36,29 +26,31 @@ namespace pulsar
 
         virtual void OnRender(gfx::GFXRenderContext* context, const std::vector<gfx::GFXFrameBufferObject*>& framebuffers) override
         {
+            array_list<rendering::RenderObject*> renderObjects = m_world->GetRenderObjects();
+
+            auto& buffer = context->AddCommandBuffer();
+            buffer.Begin();
+
             for (auto& fb : framebuffers)
             {
-                auto& buffer = context->AddCommandBuffer();
-                buffer.Begin();
                 buffer.SetFrameBuffer(fb);
 
                 buffer.CmdClearColor(1, 0, 1, 1);
                 buffer.CmdBeginFrameBuffer();
                 buffer.CmdSetViewport(0, 0, fb->GetWidth(), fb->GetHeight());
 
-                //array_list< renderObjects = m_world->GetRenderObjects();
-                ////batch render
-                //for (auto& i : renderObjects)
-                //{
-                //    
-                //}
+                //batch render
+                for (rendering::RenderObject* renderObject : renderObjects)
+                {
+                    
+                }
 
                 //post processing
 
                 buffer.CmdEndFrameBuffer();
                 buffer.SetFrameBuffer(nullptr);
-                buffer.End();
             }
+            buffer.End();
             context->Submit();
         }
 

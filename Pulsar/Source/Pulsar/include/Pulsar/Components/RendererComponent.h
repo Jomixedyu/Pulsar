@@ -1,9 +1,8 @@
 #pragma once
 
-#include <Pulsar/ObjectBase.h>
-#include <Pulsar/Assets/Material.h>
 #include "Component.h"
-
+#include "Assets/Material.h"
+#include "Rendering/RenderObject.h"
 
 namespace pulsar
 {
@@ -11,17 +10,13 @@ namespace pulsar
     class Material;
     class ShaderPass;
 
-    class IRenderObject
-    {
-    public:
-
-    };
-
     class RendererComponent : public Component
     {
         CORELIB_DEF_TYPE(AssemblyObject_Pulsar, pulsar::RendererComponent, Component)
     public:
-        virtual sptr<IRenderObject> CreateRenderObject() = 0;
+        virtual sptr<rendering::RenderObject> CreateRenderObject() = 0;
+
+
 
 
     };

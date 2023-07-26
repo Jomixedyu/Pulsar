@@ -17,7 +17,7 @@ namespace pulsar
     {
         CORELIB_DEF_TYPE(AssemblyObject_Pulsar, pulsar::StaticMeshRendererComponent, RendererComponent)
     public:
-        virtual sptr<IRenderObject> CreateRenderObject() override;
+        virtual sptr<rendering::RenderObject> CreateRenderObject() override;
     public:
         virtual void OnInitialize() override;
         List_sp<Material_sp> GetMaterials() const { return this->m_materials; }
@@ -28,6 +28,8 @@ namespace pulsar
 
         CORELIB_REFL_DECL_FIELD(m_staticMesh);
         StaticMesh_sp m_staticMesh;
+
+        bool m_isCastShadow;
     };
     CORELIB_DECL_SHORTSPTR(StaticMeshRendererComponent);
 }

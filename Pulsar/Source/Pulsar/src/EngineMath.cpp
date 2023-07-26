@@ -1,7 +1,9 @@
 #include "EngineMath.h"
 
-namespace pulsar::math
+namespace jmath
 {
+    using namespace jxcorlib;
+
     ser::Stream& ReadWriteStream(ser::Stream& stream, bool is_write, Vector2f& vec)
     {
         ser::ReadWriteStream(stream, is_write, vec.x);

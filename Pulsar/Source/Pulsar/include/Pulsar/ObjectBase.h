@@ -27,7 +27,7 @@ namespace pulsar
         using ExceptionBase::ExceptionBase;
     };
 
-    using object_id = guid_t;
+    using ObjectHandle = guid_t;
 
     class ObjectBase : public Object
     {
@@ -38,7 +38,7 @@ namespace pulsar
         virtual ~ObjectBase() override;
     public:
 
-        object_id get_object_id() const { return this->object_id_; }
+        ObjectHandle GetObjectHandle() const { return this->m_objectHandle; }
     public:
         void Destroy();
         void Construct();
@@ -47,7 +47,7 @@ namespace pulsar
         virtual void OnConstruct();
         virtual void OnDestroy();
     protected:
-        object_id object_id_;
+        ObjectHandle m_objectHandle;
     };
     CORELIB_DECL_SHORTSPTR(ObjectBase);
 
@@ -55,14 +55,14 @@ namespace pulsar
     class RuntimeObjectWrapper final
     {
     public:
-        static bool GetObject(object_id id, wptr<ObjectBase>* out);
-        static bool IsValid(object_id id);
+        static bool GetObject(ObjectHandle id, wptr<ObjectBase>* out);
+        static bool IsValid(ObjectHandle id);
         static void NewInstance(sptr<ObjectBase> obj);
         static void DestroyObject(const sptr<ObjectBase>& obj);
-        static void ForceDestroyObject(object_id id);
+        static void ForceDestroyObject(ObjectHandle id);
 
         //<id, type, is_create>
-        static Action<object_id, Type*, bool> ObjectHook;
+        static Action<ObjectHandle, Type*, bool> ObjectHook;
     };
 
 
@@ -84,4 +84,43 @@ namespace pulsar
     {
         if (!IsValid(object)) object = nullptr;
     }
+
+    struct ObjectPtrBase
+    {
+        ObjectHandle handle{};
+    };
+
+    template<typename T>
+    struct ObjectPtr : public ObjectPtrBase
+    {
+        ObjectPtr() {}
+        ObjectPtr(const sptr<T>& object)
+        {
+            if (object != nullptr)
+            {
+                handle = object->GetObjectId();
+            }
+        }
+
+        bool IsValid() const
+        {
+            return RuntimeObjectWrapper::IsValid(handle);
+        }
+        sptr<T> Get()
+        {
+            ObjectBase_wp obj;
+            if (RuntimeObjectWrapper::GetObject(handle, &obj))
+            {
+                return sptr_cast<T>(obj.lock());
+            }
+            return nullptr;
+        }
+        ObjectHandle GetHandle() const
+        {
+            return handle;
+        }
+    };
+
+    ser::Stream& ReadWriteStream(ser::Stream& stream, bool isWrite, ObjectPtrBase& obj);
+
 }

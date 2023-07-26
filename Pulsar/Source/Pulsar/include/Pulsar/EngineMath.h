@@ -2,17 +2,20 @@
 #include <CoreLib.Math/Math.h>
 #include <CoreLib.Serialization/DataSerializer.h>
 
+namespace jmath
+{
+    jxcorlib::ser::Stream& ReadWriteStream(jxcorlib::ser::Stream& stream, bool is_write, Vector2f& vec);
+    jxcorlib::ser::Stream& ReadWriteStream(jxcorlib::ser::Stream& stream, bool is_write, Vector3f& vec);
+    jxcorlib::ser::Stream& ReadWriteStream(jxcorlib::ser::Stream& stream, bool is_write, Vector4f& vec);
+    jxcorlib::ser::Stream& ReadWriteStream(jxcorlib::ser::Stream& stream, bool is_write, Quat4f& q);
+    jxcorlib::ser::Stream& ReadWriteStream(jxcorlib::ser::Stream& stream, bool is_write, Color8b4& c);
+    jxcorlib::ser::Stream& ReadWriteStream(jxcorlib::ser::Stream& stream, bool is_write, LinearColorf& c);
+}
+
 namespace pulsar::math
 {
     using namespace jxcorlib;
     using namespace jxcorlib::math;
-
-    ser::Stream& ReadWriteStream(ser::Stream& stream, bool is_write, Vector2f& vec);
-    ser::Stream& ReadWriteStream(ser::Stream& stream, bool is_write, Vector3f& vec);
-    ser::Stream& ReadWriteStream(ser::Stream& stream, bool is_write, Vector4f& vec);
-    ser::Stream& ReadWriteStream(ser::Stream& stream, bool is_write, Quat4f& q);
-    ser::Stream& ReadWriteStream(ser::Stream& stream, bool is_write, Color8b4& c);
-    ser::Stream& ReadWriteStream(ser::Stream& stream, bool is_write, LinearColorf& c);
 
     inline Matrix4f Perspective(const float& fovy, const float& aspect, const float& zNear, const float& zFar)
     {
