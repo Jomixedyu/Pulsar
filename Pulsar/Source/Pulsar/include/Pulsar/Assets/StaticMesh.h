@@ -30,6 +30,8 @@ namespace pulsar
         array_list<ObjectPtr<Material>>            Materials;
     };
 
+
+
     ser::Stream& ReadWriteStream(ser::Stream& stream, bool isWrite, StaticMeshSectionSerializeData& data);
     ser::Stream& ReadWriteStream(ser::Stream& stream, bool isWrite, StaticMeshSerializeData& data);
 

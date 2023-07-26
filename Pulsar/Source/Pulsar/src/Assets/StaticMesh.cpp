@@ -7,11 +7,7 @@ namespace pulsar
 {
     ser::Stream& ReadWriteStream(ser::Stream& stream, bool isWrite, StaticMeshSectionSerializeData& data)
     {
-        using namespace pulsar::math;
-        using namespace jxcorlib::math;
-        using namespace ser;
-        using namespace jmath;
-        ReadWriteStream(stream, isWrite, data.Position);
+        ser::ReadWriteStream(stream, isWrite, data.Position);
         ser::ReadWriteStream(stream, isWrite, data.Normal);
         ser::ReadWriteStream(stream, isWrite, data.Bitangent);
         ser::ReadWriteStream(stream, isWrite, data.Indices);

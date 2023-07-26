@@ -110,6 +110,13 @@ namespace pulsar
 
         World::Current()->Tick(dt);
 
+        static int a = 0;
+        a++;
+        if (a == 1)
+        {
+
+        }
+
         //RenderInterface::Render();
         //SystemInterface::PollEvents();
         

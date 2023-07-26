@@ -10,7 +10,12 @@ namespace pulsared
 }
 namespace pulsar
 {
-
+    struct EngineSerializer
+    {
+        ser::Stream* Stream;
+        bool IsWrite;
+        bool HasAnalysisData;
+    };
 
     class AssetObject : public ObjectBase
     {
