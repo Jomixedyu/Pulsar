@@ -11,28 +11,6 @@ namespace pulsar
 
     constexpr int STATICMESH_MAX_TEXTURE_COORDS = 4;
 
-    //struct StaticMeshSectionSerializeData
-    //{
-    //    array_list<Vector3f> Position;
-    //    array_list<Vector3f> Normal;
-    //    array_list<Vector3f> Tangent;
-    //    array_list<Vector3f> Bitangent;
-    //    array_list<uint32_t> Indices;
-    //    array_list<Color8b4> Color;
-    //    array_list<Vector2f> TexCoords[STATICMESH_MAX_TEXTURE_COORDS];
-    //    int32_t              TexCoordsCount;
-    //    int32_t              MaterialIndex;
-    //};
-
-    //struct StaticMeshSerializeData
-    //{
-    //    array_list<StaticMeshSectionSerializeData> Sections;
-    //    array_list<ObjectPtr<Material>>            Materials;
-    //};
-
-    //ser::Stream& ReadWriteStream(ser::Stream& stream, bool isWrite, StaticMeshSectionSerializeData& data);
-    //ser::Stream& ReadWriteStream(ser::Stream& stream, bool isWrite, StaticMeshSerializeData& data);
-
     struct StaticMeshVertex
     {
         Vector3f Position;

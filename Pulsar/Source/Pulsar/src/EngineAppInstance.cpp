@@ -27,30 +27,38 @@ namespace pulsar
         virtual void OnRender(gfx::GFXRenderContext* context, const std::vector<gfx::GFXFrameBufferObject*>& framebuffers) override
         {
             array_list<rendering::RenderObject*> renderObjects = m_world->GetRenderObjects();
+            auto pipelineMgr = context->GetApplication()->GetGraphicsPipelineManager();
 
-            auto& buffer = context->AddCommandBuffer();
-            buffer.Begin();
+            auto& cmd = context->AddCommandBuffer();
+            cmd.Begin();
 
             for (auto& fb : framebuffers)
             {
-                buffer.SetFrameBuffer(fb);
+                cmd.SetFrameBuffer(fb);
 
-                buffer.CmdClearColor(1, 0, 1, 1);
-                buffer.CmdBeginFrameBuffer();
-                buffer.CmdSetViewport(0, 0, fb->GetWidth(), fb->GetHeight());
+                cmd.CmdClearColor(1, 0, 1, 1);
+                cmd.CmdBeginFrameBuffer();
+                cmd.CmdSetViewport(0, 0, fb->GetWidth(), fb->GetHeight());
 
                 //batch render
                 for (rendering::RenderObject* renderObject : renderObjects)
                 {
                     
+                    auto pipeline = pipelineMgr->GetGraphicsPipeline(renderObject.);
+
+                    cmd.CmdBindGraphicsPipeline();
+                    cmd.CmdBindVertexBuffers();
+                    cmd.CmdBindIndexBuffer();
+                    cmd.CmdBindDescriptorSets();
+                    cmd.CmdDrawIndexed();
                 }
 
                 //post processing
 
-                buffer.CmdEndFrameBuffer();
-                buffer.SetFrameBuffer(nullptr);
+                cmd.CmdEndFrameBuffer();
+                cmd.SetFrameBuffer(nullptr);
             }
-            buffer.End();
+            cmd.End();
             context->Submit();
         }
 

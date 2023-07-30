@@ -5,34 +5,6 @@
 
 namespace pulsar
 {
-    //ser::Stream& ReadWriteStream(ser::Stream& stream, bool isWrite, StaticMeshSectionSerializeData& data)
-    //{
-    //    ser::ReadWriteStream(stream, isWrite, data.Position);
-    //    ser::ReadWriteStream(stream, isWrite, data.Normal);
-    //    ser::ReadWriteStream(stream, isWrite, data.Bitangent);
-    //    ser::ReadWriteStream(stream, isWrite, data.Indices);
-    //    ser::ReadWriteStream(stream, isWrite, data.Color);
-
-    //    int32_t coordCount = isWrite ? data.TexCoordsCount : 0;
-    //    ser::ReadWriteStream(stream, isWrite, coordCount);
-
-    //    for (int32_t i = 0; i < coordCount; i++)
-    //    {
-    //        ser::ReadWriteStream(stream, isWrite, data.TexCoords[i]);
-    //    }
-    //    return stream;
-    //}
-    //ser::Stream& ReadWriteStream(ser::Stream& stream, bool isWrite, StaticMeshSerializeData& data)
-    //{
-    //    using namespace math;
-    //    using namespace ser;
-
-    //    ReadWriteStream(stream, isWrite, data.Sections);
-    //    ReadWriteStream(stream, isWrite, data.Materials);
-
-    //    return stream;
-    //}
-
     void StaticMesh::OnInstantiateAsset(sptr<AssetObject>& obj)
     {
         base::OnInstantiateAsset(obj);

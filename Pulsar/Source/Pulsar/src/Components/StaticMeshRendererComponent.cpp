@@ -20,6 +20,10 @@ namespace pulsar
         {
             delete m_meshBuffer;
         }
+        StaticMeshSection GetSection()
+        {
+
+        }
         gfx::GFXBuffer* m_meshBuffer;
         gfx::GFXShaderPass* m_shaderPass;
     };
