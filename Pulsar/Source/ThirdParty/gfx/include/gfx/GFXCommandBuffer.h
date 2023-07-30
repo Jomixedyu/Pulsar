@@ -3,6 +3,8 @@
 #include "GFXShaderPass.h"
 #include "GFXDescriptorSet.h"
 #include "GFXFrameBufferObject.h"
+#include "GFXGraphicsPipeline.h"
+
 namespace gfx
 {
     class GFXApplication;
@@ -18,10 +20,10 @@ namespace gfx
         virtual void Begin() = 0;
         virtual void End() = 0;
         virtual void SetFrameBuffer(GFXFrameBufferObject* framebuffer) = 0;
-        virtual void CmdBindShaderPass(GFXShaderPass* pipeline) = 0;
+        virtual void CmdBindGraphicsPipeline(GFXGraphicsPipeline* pipeline) = 0;
         virtual void CmdBindVertexBuffers(const std::vector<GFXBuffer*>& buffers) = 0;
         virtual void CmdBindIndexBuffer(GFXBuffer* buffer) = 0;
-        virtual void CmdBindDescriptorSets(GFXDescriptorSet* descriptorSet, GFXShaderPass* shaderPass) = 0;
+        virtual void CmdBindDescriptorSets(GFXDescriptorSet* descriptorSet, GFXGraphicsPipeline* pipeline) = 0;
         virtual void CmdDrawIndexed(size_t indicesCount) = 0;
         virtual void CmdClearColor(float r, float g, float b, float a) = 0;
         virtual void CmdBeginFrameBuffer() = 0;

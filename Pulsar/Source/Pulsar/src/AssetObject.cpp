@@ -2,10 +2,6 @@
 
 namespace pulsar
 {
-    void AssetObject::SerializeBuildData(ser::Stream& stream, bool is_ser)
-    {
-
-    }
 
     AssetObject_sp AssetObject::InstantiateAsset()
     {

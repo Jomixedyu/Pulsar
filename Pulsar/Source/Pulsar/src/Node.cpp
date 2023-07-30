@@ -198,9 +198,6 @@ namespace pulsar
         this->rotation_ = Quat4f::FromEuler({ 0,0,0 });
     }
 
-    void Node::SerializeBuildData(ser::Stream& stream, bool is_ser)
-    {
-    }
 
     void Node::OnConstruct()
     {

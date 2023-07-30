@@ -10,11 +10,15 @@ namespace pulsared
 }
 namespace pulsar
 {
-    struct EngineSerializer
+    struct AssetSerializer
     {
-        ser::Stream* Stream;
-        bool IsWrite;
-        bool HasAnalysisData;
+        AssetSerializer(ser::Stream& stream, bool isWrite, bool analysis)
+            : Stream(stream), IsWrite(IsWrite), HasAnalysisData(analysis)
+        {
+        }
+        ser::Stream& Stream;
+        const bool IsWrite;
+        const bool HasAnalysisData;
     };
 
     class AssetObject : public ObjectBase
@@ -22,7 +26,7 @@ namespace pulsar
         CORELIB_DEF_TYPE(AssemblyObject_Pulsar, pulsar::AssetObject, ObjectBase);
         friend class ::pulsared::AssetSourcePackage; //editor
     public:
-        virtual void SerializeBuildData(ser::Stream& stream, bool is_ser);
+        virtual void OnSerialize(AssetSerializer* serializer) {}
         sptr<AssetObject> InstantiateAsset();
     public:
         guid_t get_source_package() const { return this->package_guid_; }

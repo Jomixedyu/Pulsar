@@ -37,13 +37,17 @@ namespace gfx
         virtual GFXBuffer* CreateBuffer(GFXBufferUsage usage, size_t bufferSize) override;
         virtual std::shared_ptr<GFXCommandBuffer> CreateCommandBuffer() override;
         virtual std::shared_ptr<GFXVertexLayoutDescription> CreateVertexLayoutDescription() override;
-        virtual std::shared_ptr<GFXShaderModule> CreateShaderModule(const std::vector<uint8_t>& vert, const std::vector<uint8_t>& frag) override;
-        virtual std::shared_ptr<GFXShaderPass> CreateGraphicsPipeline(
+        virtual std::shared_ptr<GFXGpuProgram> CreateGpuProgram(const std::vector<uint8_t>& vert, const std::vector<uint8_t>& frag) override;
+        virtual std::shared_ptr<GFXShaderPass> CreateShaderPass(
             const GFXShaderPassConfig& config,
-            std::shared_ptr<GFXVertexLayoutDescription> VertexLayout,
-            std::shared_ptr<GFXShaderModule> ShaderModule,
+            const std::shared_ptr<GFXGpuProgram>& gpuProgram,
             const std::shared_ptr<GFXDescriptorSetLayout>& descSetLayout,
-            GFXRenderPassLayout* renderPass) override;
+            const std::shared_ptr<GFXVertexLayoutDescription>& vertexLayout) override;
+
+        virtual GFXGraphicsPipelineManager* GetGraphicsPipelineManager() const override
+        {
+            return m_graphicsPipelineManager;
+        }
 
         virtual std::shared_ptr<GFXTexture2D> CreateTexture2DFromMemory(
             const uint8_t* data, int32_t length,
@@ -63,6 +67,10 @@ namespace gfx
             GFXTextureFormat format, const GFXSamplerConfig& samplerCfg) override;
 
         virtual GFXDescriptorManager* GetDescriptorManager() override;
+
+        virtual std::shared_ptr<GFXDescriptorSetLayout> CreateDescriptorSetLayout(
+            const std::vector<GFXDescriptorSetLayoutInfo>& layoutInfos) override;
+
         class GFXVulkanDescriptorManager* GetVulkanDescriptorManager() const { return m_descriptorManager; }
         virtual GFXExtensions GetExtensionNames() override;
         virtual intptr_t GetWindowHandle() override;
@@ -128,6 +136,8 @@ namespace gfx
         class GFXVulkanRenderer* m_renderer = nullptr;
 
         class GFXVulkanCommandBufferPool* m_cmdPool = nullptr;
+
+        GFXGraphicsPipelineManager* m_graphicsPipelineManager = nullptr;
 
         array_list<char*> m_extensions;
         size_t m_count = 0;

@@ -24,10 +24,10 @@ namespace gfx
         virtual void End() override;
         virtual void SetFrameBuffer(GFXFrameBufferObject* framebuffer) override;
 
-        virtual void CmdBindShaderPass(GFXShaderPass* pipeline) override;
+        virtual void CmdBindGraphicsPipeline(GFXGraphicsPipeline* pipeline) override;
         virtual void CmdBindVertexBuffers(const std::vector<GFXBuffer*>& buffers) override;
         virtual void CmdBindIndexBuffer(GFXBuffer* buffer) override;
-        virtual void CmdBindDescriptorSets(GFXDescriptorSet* descriptorSet, GFXShaderPass* shaderPass) override;
+        virtual void CmdBindDescriptorSets(GFXDescriptorSet* descriptorSet, GFXGraphicsPipeline* pipeline) override;
         virtual void CmdDrawIndexed(size_t indicesCount) override;
         virtual void CmdClearColor(float r, float g, float b, float a) override;
         virtual void CmdBeginFrameBuffer() override;

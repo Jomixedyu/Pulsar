@@ -27,7 +27,8 @@ namespace pulsar::rendering
         void SetTransform(const Matrix4f& localToWorld)
         {
             m_localToWorld = localToWorld;
-            m_isLocalToWorldDeterminantNegative = localToWorld.Determinant() < 0;
+            //m_isLocalToWorldDeterminantNegative = localToWorld.Determinant() < 0;
+            m_isLocalToWorldDeterminantNegative = false;
             UpdateConstantBuffer();
         }
         void UpdateConstantBuffer()

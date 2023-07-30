@@ -40,6 +40,20 @@ namespace gfx
         }
         return {};
     }
+    static VkShaderStageFlagBits _GetShaderStage(GFXShaderStageFlags flags)
+    {
+        std::underlying_type_t<VkShaderStageFlagBits> stage{};
+        if (HasFlags(flags, GFXShaderStageFlags::Vertex))
+        {
+            stage |= VK_SHADER_STAGE_VERTEX_BIT;
+        }
+        if (HasFlags(flags, GFXShaderStageFlags::Fragment))
+        {
+            stage |= VK_SHADER_STAGE_FRAGMENT_BIT;
+        }
+        assert(stage != 0);
+        return VkShaderStageFlagBits(stage);
+    }
 
     GFXVulkanDescriptorSetLayout::GFXVulkanDescriptorSetLayout(
         GFXVulkanApplication* app,
@@ -55,7 +69,8 @@ namespace gfx
             binding.binding = layout.BindingPoint;
             binding.descriptorType = _GetDescriptorType(layout.Type);
             binding.descriptorCount = 1;
-            binding.stageFlags = (uint32_t)layout.Stage;
+            binding.stageFlags = _GetShaderStage(layout.Stage);
+            
             binding.pImmutableSamplers = nullptr;
 
             bindings.push_back(binding);

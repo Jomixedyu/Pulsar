@@ -26,14 +26,14 @@ namespace pulsar
         SrcAlpha_OneMinusSrcAlpha
     };
 
-    struct ShaderPassConfig
-    {
-        string name;
-        ShaderCullMode cull;
-        ShaderBlendMode blend;
-        ShaderZTest ztest;
-        bool zwrite;
-    };
+    //struct ShaderPassConfig
+    //{
+    //    string name;
+    //    ShaderCullMode cull;
+    //    ShaderBlendMode blend;
+    //    ShaderZTest ztest;
+    //    bool zwrite;
+    //};
 
     class ShaderPass : public IShadeParameters
     {

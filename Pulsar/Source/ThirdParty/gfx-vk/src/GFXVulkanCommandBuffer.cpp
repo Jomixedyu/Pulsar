@@ -3,7 +3,7 @@
 #include "GFXVulkanApplication.h"
 #include "GFXVulkanCommandBufferPool.h"
 #include "GFXVulkanShaderPass.h"
-
+#include "GFXVulkanGraphicsPipeline.h"
 
 namespace gfx
 {
@@ -84,9 +84,9 @@ namespace gfx
         m_fbo = static_cast<GFXVulkanFrameBufferObject*>(framebuffer);
     }
 
-    void GFXVulkanCommandBuffer::CmdBindShaderPass(GFXShaderPass* pipeline)
+    void GFXVulkanCommandBuffer::CmdBindGraphicsPipeline(GFXGraphicsPipeline* pipeline)
     {
-        auto vkpipeline = static_cast<GFXVulkanShaderPass*>(pipeline);
+        auto vkpipeline = static_cast<GFXVulkanGraphicsPipeline*>(pipeline);
         vkCmdBindPipeline(m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vkpipeline->GetVkPipeline());
     }
 
@@ -106,11 +106,11 @@ namespace gfx
         vkCmdBindIndexBuffer(m_cmdBuffer, static_cast<GFXVulkanBuffer*>(buffer)->GetVkBuffer(), 0, VK_INDEX_TYPE_UINT16);
     }
 
-    void GFXVulkanCommandBuffer::CmdBindDescriptorSets(GFXDescriptorSet* descriptorSet, GFXShaderPass* shaderPass)
+    void GFXVulkanCommandBuffer::CmdBindDescriptorSets(GFXDescriptorSet* descriptorSet, GFXGraphicsPipeline* pipeline)
     {
         auto vkDescSet = static_cast<GFXVulkanDescriptorSet*>(descriptorSet);
-        auto vkShaderPass = static_cast<GFXVulkanShaderPass*>(shaderPass);
-        vkCmdBindDescriptorSets(m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vkShaderPass->GetVkPipelineLayout(), 0, 1, &vkDescSet->GetVkDescriptorSet(), 0, nullptr);
+        auto vkGpipeline = static_cast<GFXVulkanGraphicsPipeline*>(pipeline);
+        vkCmdBindDescriptorSets(m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vkGpipeline->GetVkPipelineLayout(), 0, 1, &vkDescSet->GetVkDescriptorSet(), 0, nullptr);
     }
 
     void GFXVulkanCommandBuffer::CmdDrawIndexed(size_t indicesCount)

@@ -88,25 +88,52 @@ namespace pulsar
     struct ObjectPtrBase
     {
         ObjectHandle handle{};
+
+        ObjectHandle GetHandle() const
+        {
+            return handle;
+        }
     };
 
     template<typename T>
     struct ObjectPtr : public ObjectPtrBase
     {
+    private:
+        sptr<T> m_ptr;
+    public:
         ObjectPtr() {}
         ObjectPtr(const sptr<T>& object)
         {
             if (object != nullptr)
             {
-                handle = object->GetObjectId();
+                m_ptr = object;
+                handle = object->GetObjectHandle();
             }
         }
 
-        bool IsValid() const
+        bool IsValid() const { return m_ptr != nullptr; }
+        sptr<T> Get() const { return m_ptr; }
+        T* GetPtr() const { return m_ptr.get(); }
+        sptr<T>& operator->() { return m_ptr; }
+
+        void Reset()
         {
-            return RuntimeObjectWrapper::IsValid(handle);
+            handle = {};
         }
-        sptr<T> Get()
+    };
+
+    template<typename T>
+    struct WeakPtr : public ObjectPtrBase
+    {
+        WeakPtr() {}
+        WeakPtr(const sptr<T>& object)
+        {
+            if (object != nullptr)
+            {
+                handle = object->GetObjectHandle();
+            }
+        }
+        sptr<T> Get() const
         {
             ObjectBase_wp obj;
             if (RuntimeObjectWrapper::GetObject(handle, &obj))
@@ -115,9 +142,13 @@ namespace pulsar
             }
             return nullptr;
         }
-        ObjectHandle GetHandle() const
+        bool IsValid() const
         {
-            return handle;
+            return RuntimeObjectWrapper::IsValid(handle);
+        }
+        void Reset()
+        {
+            handle = {};
         }
     };
 

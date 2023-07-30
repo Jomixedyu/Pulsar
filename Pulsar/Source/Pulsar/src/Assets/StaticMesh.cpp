@@ -5,41 +5,39 @@
 
 namespace pulsar
 {
-    ser::Stream& ReadWriteStream(ser::Stream& stream, bool isWrite, StaticMeshSectionSerializeData& data)
-    {
-        ser::ReadWriteStream(stream, isWrite, data.Position);
-        ser::ReadWriteStream(stream, isWrite, data.Normal);
-        ser::ReadWriteStream(stream, isWrite, data.Bitangent);
-        ser::ReadWriteStream(stream, isWrite, data.Indices);
-        ser::ReadWriteStream(stream, isWrite, data.Color);
+    //ser::Stream& ReadWriteStream(ser::Stream& stream, bool isWrite, StaticMeshSectionSerializeData& data)
+    //{
+    //    ser::ReadWriteStream(stream, isWrite, data.Position);
+    //    ser::ReadWriteStream(stream, isWrite, data.Normal);
+    //    ser::ReadWriteStream(stream, isWrite, data.Bitangent);
+    //    ser::ReadWriteStream(stream, isWrite, data.Indices);
+    //    ser::ReadWriteStream(stream, isWrite, data.Color);
 
-        int32_t coordCount = isWrite ? data.TexCoordsCount : 0;
-        ser::ReadWriteStream(stream, isWrite, coordCount);
+    //    int32_t coordCount = isWrite ? data.TexCoordsCount : 0;
+    //    ser::ReadWriteStream(stream, isWrite, coordCount);
 
-        for (int32_t i = 0; i < coordCount; i++)
-        {
-            ser::ReadWriteStream(stream, isWrite, data.TexCoords[i]);
-        }
-        return stream;
-    }
-    ser::Stream& ReadWriteStream(ser::Stream& stream, bool isWrite, StaticMeshSerializeData& data)
-    {
-        using namespace math;
-        using namespace ser;
+    //    for (int32_t i = 0; i < coordCount; i++)
+    //    {
+    //        ser::ReadWriteStream(stream, isWrite, data.TexCoords[i]);
+    //    }
+    //    return stream;
+    //}
+    //ser::Stream& ReadWriteStream(ser::Stream& stream, bool isWrite, StaticMeshSerializeData& data)
+    //{
+    //    using namespace math;
+    //    using namespace ser;
 
-        ReadWriteStream(stream, isWrite, data.Sections);
-        ReadWriteStream(stream, isWrite, data.Materials);
+    //    ReadWriteStream(stream, isWrite, data.Sections);
+    //    ReadWriteStream(stream, isWrite, data.Materials);
 
-        return stream;
-    }
+    //    return stream;
+    //}
 
     void StaticMesh::OnInstantiateAsset(sptr<AssetObject>& obj)
     {
-        auto mesh = sptr_cast<StaticMesh>(obj);
-        assert(mesh);
-        mesh->m_sections = m_sections;
-        mesh->m_materials = m_materials;
         base::OnInstantiateAsset(obj);
+        auto mesh = sptr_cast<StaticMesh>(obj);
+        mesh->m_sections = m_sections;
     }
 
     StaticMesh::~StaticMesh()
@@ -47,22 +45,42 @@ namespace pulsar
 
     }
 
-    StaticMesh_sp StaticMesh::StaticCreate(StaticMeshSerializeData&& vertData)
+    void StaticMesh::OnSerialize(AssetSerializer* serializer)
     {
-        auto mesh = mksptr(new StaticMesh);
-        mesh->Construct();
-        mesh->m_sections = std::move(vertData.Sections);
-        mesh->m_materials.reserve(vertData.Materials.size());
+        base::OnSerialize(serializer);
 
-        for (auto& mat : vertData.Materials)
-        {
-            mesh->m_materials.push_back(mat.Get());
-        }
+        ReadWriteStream(serializer->Stream, serializer->IsWrite, m_sections);
+    }
 
-        return mesh;
+
+    StaticMesh_sp StaticMesh::StaticCreate(array_list<StaticMeshSection>&& vertData)
+    {
+        StaticMesh_sp self = mksptr(new StaticMesh);
+        self->Construct();
+        self->m_sections = std::move(vertData);
+
+        return self;
     }
 
 
 
+    ser::Stream& ReadWriteStream(ser::Stream& stream, bool isWrite, StaticMeshVertex& data)
+    {
+        ReadWriteStream(stream, isWrite, data.Position);
+        ReadWriteStream(stream, isWrite, data.Normal);
+        ReadWriteStream(stream, isWrite, data.Tangent);
+        ReadWriteStream(stream, isWrite, data.Bitangent);
+        ReadWriteStream(stream, isWrite, data.Color);
+        ReadWriteStream(stream, isWrite, data.TexCoords);
+        return stream;
+    }
+
+    ser::Stream& ReadWriteStream(ser::Stream& stream, bool isWrite, StaticMeshSection& data)
+    {
+        ReadWriteStream(stream, isWrite, data.Vertex);
+        ReadWriteStream(stream, isWrite, data.Indices);
+        ReadWriteStream(stream, isWrite, data.MaterialIndex);
+        return stream;
+    }
 
 }

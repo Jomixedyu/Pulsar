@@ -23,5 +23,7 @@ namespace gfx
         uint32_t BindingPoint;
         uint32_t Stride;
         std::vector<GFXVertexInputAttribute> Attributes;
+    public:
+        virtual ~GFXVertexLayoutDescription() {}
     };
 }

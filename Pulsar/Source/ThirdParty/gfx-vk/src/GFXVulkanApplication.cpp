@@ -9,12 +9,14 @@
 #include "GFXVulkanVertexLayoutDescription.h"
 #include "GFXVulkanTexture2D.h"
 #include "GFXVulkanDescriptorManager.h"
-#include "GFXVulkanShaderModule.h"
+#include "GFXVulkanGpuProgram.h"
 #include "GFXVulkanShaderPass.h"
+#include "GFXVulkanGraphicsPipeline.h"
 #include "GFXVulkanRenderer.h"
 #include "GFXVulkanRenderPass.h"
 #include "GFXVulkanViewport.h"
 #include "GFXVulkanCommandBufferPool.h"
+#include "GFXVulkanGraphicsPipelineManager.h"
 #include <set>
 #include <cmath>
 #include <array>
@@ -371,14 +373,16 @@ namespace gfx
         this->InitPickPhysicalDevice();
         this->InitLogicalDevice();
 
-        // command pool
+
         m_cmdPool = new GFXVulkanCommandBufferPool(this);
-        // descriptor
+
         m_descriptorManager = new GFXVulkanDescriptorManager(this);
-        // viewport
+
         m_viewport = new GFXVulkanViewport(this, m_window);
-        // renderer
+
         m_renderer = new GFXVulkanRenderer(this);
+
+        m_graphicsPipelineManager = new GFXVulkanGraphicsPipelineManager(this);
     }
 
     void GFXVulkanApplication::ExecLoop()
@@ -436,8 +440,8 @@ namespace gfx
     {
         delete m_renderer;
         delete m_viewport;
+        delete m_graphicsPipelineManager;
         delete m_descriptorManager;
-        //
         delete m_cmdPool;
 
         vkDestroyDevice(m_device, nullptr);
@@ -494,21 +498,19 @@ namespace gfx
         return std::shared_ptr<GFXFrameBufferObject>(buf);
     }
 
-    std::shared_ptr<GFXShaderModule> GFXVulkanApplication::CreateShaderModule(const std::vector<uint8_t>& vert, const std::vector<uint8_t>& frag)
+    std::shared_ptr<GFXGpuProgram> GFXVulkanApplication::CreateGpuProgram(const std::vector<uint8_t>& vert, const std::vector<uint8_t>& frag)
     {
-        return std::shared_ptr<GFXShaderModule>(new GFXVulkanShaderModule(this, vert, frag));
+        return std::shared_ptr<GFXGpuProgram>(new GFXVulkanGpuProgram(this, vert, frag));
     }
 
-    std::shared_ptr<GFXShaderPass> GFXVulkanApplication::CreateGraphicsPipeline(
+    std::shared_ptr<GFXShaderPass> GFXVulkanApplication::CreateShaderPass(
         const GFXShaderPassConfig& config,
-        std::shared_ptr<GFXVertexLayoutDescription> vertexLayout,
-        std::shared_ptr<GFXShaderModule> shaderModule,
+        const std::shared_ptr<GFXGpuProgram>& gpuProgram,
         const std::shared_ptr<GFXDescriptorSetLayout>& descSetLayout,
-        GFXRenderPassLayout* renderPass)
+        const std::shared_ptr<GFXVertexLayoutDescription>& vertexLayout)
     {
-        auto vkRenderPass = static_cast<GFXVulkanRenderPass*>(renderPass);
-        auto vkPipeline = new GFXVulkanShaderPass(this, config, vertexLayout, shaderModule, descSetLayout, vkRenderPass);
-        return std::shared_ptr<GFXShaderPass>(vkPipeline);
+        auto pass = new GFXVulkanShaderPass(this, config, std::static_pointer_cast<GFXVulkanGpuProgram>(gpuProgram), descSetLayout, vertexLayout);
+        return std::shared_ptr<GFXShaderPass>(pass);
     }
 
     std::shared_ptr<GFXRenderPassLayout> GFXVulkanApplication::CreateRenderPassLayout(const std::vector<GFXRenderTarget*>& renderTargets)
@@ -531,5 +533,11 @@ namespace gfx
     GFXDescriptorManager* GFXVulkanApplication::GetDescriptorManager()
     {
         return m_descriptorManager;
+    }
+
+    std::shared_ptr<GFXDescriptorSetLayout> GFXVulkanApplication::CreateDescriptorSetLayout(
+        const std::vector<GFXDescriptorSetLayoutInfo>& layoutInfos)
+    {
+        return std::shared_ptr<GFXDescriptorSetLayout>(new GFXVulkanDescriptorSetLayout(this, layoutInfos));
     }
 }

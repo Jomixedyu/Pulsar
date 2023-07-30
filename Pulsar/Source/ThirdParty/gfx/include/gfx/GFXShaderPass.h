@@ -1,7 +1,8 @@
 #pragma once
 #include <memory>
-#include "GFXShaderModule.h"
+#include "GFXGpuProgram.h"
 #include "GFXVertexLayoutDescription.h"
+#include "GFXDescriptorSet.h"
 #include "GFXRenderPass.h"
 
 namespace gfx
@@ -24,6 +25,7 @@ namespace gfx
         GreaterOrEqual,
         Always
     };
+
     struct GFXShaderPassConfig
     {
     public:
@@ -38,5 +40,9 @@ namespace gfx
     {
     public:
         virtual ~GFXShaderPass() {}
+
+        virtual std::shared_ptr<GFXDescriptorSetLayout> GetDescriptorSetLayout() const = 0;
+        virtual std::shared_ptr<GFXVertexLayoutDescription> GetVertexLayout() const = 0;
+        virtual GFXShaderPassConfig GetStateConfig() const = 0;
     };
 }

@@ -9,5 +9,6 @@ namespace gfx
     {
     public:
         virtual void OnRender(GFXRenderContext* context, const std::vector<GFXFrameBufferObject*>& framebuffers) = 0;
+        virtual ~GFXRenderPipeline() {}
     };
 }

@@ -15,7 +15,6 @@ namespace pulsar
     public:
         Texture2D();
         ~Texture2D() override;
-        virtual void SerializeBuildData(ser::Stream& stream, bool is_ser) override;
     public:
         virtual int32_t GetWidth() const override { return m_init ? m_tex->GetWidth() : 0; }
         virtual int32_t GetHeight() const override { return m_init ? m_tex->GetHeight() : 0; }

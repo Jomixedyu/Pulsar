@@ -39,7 +39,8 @@ namespace gfx
 
 		virtual int32_t GetWidth() const override { return m_width; }
 		virtual int32_t GetHeight() const override { return m_height; }
-		
+		virtual std::shared_ptr<GFXRenderPassLayout> GetRenderPassLayout() const override { return m_renderPass; }
+
 		VkRenderPass GetVkRenderPass() const { return m_renderPass->GetVkRenderPass(); }
 
 	protected:

@@ -28,17 +28,6 @@ namespace pulsar
         this->scene_nodes_->erase(it);
     }
 
-    void Scene::SerializeBuildData(ser::Stream& stream, bool is_ser)
-    {
-        int node_len = this->scene_nodes_->size();
-        ser::ReadWriteStream(stream, is_ser, node_len);
-
-        for (size_t i = 0; i < node_len; i++)
-        {
-
-        }
-    }
-
     Scene::Scene()
     {
         this->scene_nodes_ = mksptr(new List<Node_sp>);

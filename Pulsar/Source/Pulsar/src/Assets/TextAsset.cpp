@@ -2,11 +2,6 @@
 namespace pulsar
 {
 
-    void TextAsset::SerializeBuildData(ser::Stream& stream, bool is_ser)
-    {
-        ser::ReadWriteStream(stream, is_ser, this->text_);
-    }
-
     void TextAsset::OnInstantiateAsset(sptr<AssetObject>& obj)
     {
         auto i = sptr_cast<TextAsset>(obj);

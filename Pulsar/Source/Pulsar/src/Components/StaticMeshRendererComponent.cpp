@@ -7,6 +7,8 @@
 namespace pulsar
 {
 
+
+
     class StaticMeshRenderObject : public rendering::RenderObject
     {
     public:

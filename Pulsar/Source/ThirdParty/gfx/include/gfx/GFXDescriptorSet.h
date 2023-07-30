@@ -11,18 +11,35 @@ namespace gfx
         ConstantBuffer,
         CombinedImageSampler
     };
-    enum class GFXShaderStage : uint32_t
+    enum class GFXShaderStageFlags : uint32_t
     {
         Vertex = 1,
-        Fragment = 16,
+        Fragment = 1 << 1,
     };
+    inline GFXShaderStageFlags operator &(GFXShaderStageFlags a, GFXShaderStageFlags b)
+    {
+        return GFXShaderStageFlags(std::underlying_type_t<GFXShaderStageFlags>(a) & std::underlying_type_t<GFXShaderStageFlags>(b));
+    }
+    inline GFXShaderStageFlags operator |(GFXShaderStageFlags a, GFXShaderStageFlags b)
+    {
+        return GFXShaderStageFlags(std::underlying_type_t<GFXShaderStageFlags>(a) | std::underlying_type_t<GFXShaderStageFlags>(b));
+    }
+    inline bool HasFlags(GFXShaderStageFlags a, GFXShaderStageFlags b)
+    {
+        return (bool)std::underlying_type_t<GFXShaderStageFlags>(a & b);
+    }
 
     struct GFXDescriptorSetLayoutInfo
     {
     public:
         uint32_t BindingPoint;
         GFXDescriptorType Type;
-        GFXShaderStage Stage;
+        GFXShaderStageFlags Stage;
+
+        GFXDescriptorSetLayoutInfo(uint32_t bindingPoint, GFXDescriptorType type, GFXShaderStageFlags stage)
+            : BindingPoint(bindingPoint), Type(type), Stage(stage)
+        {
+        }
     };
 
     class GFXDescriptorSetLayout

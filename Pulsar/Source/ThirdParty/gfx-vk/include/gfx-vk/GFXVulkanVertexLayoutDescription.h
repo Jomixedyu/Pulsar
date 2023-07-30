@@ -8,7 +8,7 @@ namespace gfx
     {
         using base = GFXVertexLayoutDescription;
     public:
-        VkVertexInputBindingDescription GetVkBindingDescription();
-        std::vector<VkVertexInputAttributeDescription> GetVkAttributeDescriptions();
+        VkVertexInputBindingDescription GetVkBindingDescription() const;
+        std::vector<VkVertexInputAttributeDescription> GetVkAttributeDescriptions() const;
     };
 }

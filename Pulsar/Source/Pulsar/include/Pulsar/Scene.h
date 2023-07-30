@@ -18,8 +18,6 @@ namespace pulsar
         List_rsp<Node_sp> GetRootNodes() const { return this->scene_nodes_; }
         List_sp<Node_sp> GetRootNodes() { return this->scene_nodes_; }
 
-        virtual void SerializeBuildData(ser::Stream& stream, bool is_ser) override;
-
         Scene();
     public:
         void AddNode(Node_rsp node);

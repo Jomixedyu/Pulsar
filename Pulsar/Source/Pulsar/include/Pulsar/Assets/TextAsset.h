@@ -9,7 +9,6 @@ namespace pulsar
         CORELIB_DEF_TYPE(AssemblyObject_Pulsar, pulsar::TextAsset, AssetObject);
         friend class TextAssetImporter;
     public:
-        virtual void SerializeBuildData(ser::Stream& stream, bool is_ser) override;
         virtual void OnInstantiateAsset(sptr<AssetObject>& obj) override;
     public:
         static sptr<TextAsset> StaticCreate(const string& str);

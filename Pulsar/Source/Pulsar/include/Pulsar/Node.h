@@ -71,7 +71,6 @@ namespace pulsar
     public:
         Node();
 
-        virtual void SerializeBuildData(ser::Stream& stream, bool is_ser) override;
 
         //ITickable 
         virtual void OnTick(Ticker ticker) override;

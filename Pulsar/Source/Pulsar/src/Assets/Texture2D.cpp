@@ -13,27 +13,6 @@ namespace pulsar
         this->UnBindGPU();
     }
 
-    void Texture2D::SerializeBuildData(ser::Stream& stream, bool is_ser)
-    {
-        //ser::ReadWriteStream(stream, is_ser, this->width_);
-        //ser::ReadWriteStream(stream, is_ser, this->height_);
-        //ser::ReadWriteStream(stream, is_ser, this->channel_);
-        //int32_t len = this->width_ * this->height_;
-        //ser::ReadWriteStream(stream, is_ser, len);
-        //if (is_ser)
-        //{
-        //    stream.WriteBytes(this->data_, 0, len);
-        //}
-        //else
-        //{
-        //    this->data_ = new uint8_t[len];
-        //    stream.ReadBytes(this->data_, 0, len);
-        //    
-        //}
-    }
-
-
-
     const uint8_t* Texture2D::GetNativeData() const
     {
         return this->m_data;

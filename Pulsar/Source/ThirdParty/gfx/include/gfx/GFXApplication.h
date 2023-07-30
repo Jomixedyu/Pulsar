@@ -6,12 +6,13 @@
 #include "GFXTexture2D.h"
 #include "GFXVertexLayoutDescription.h"
 #include "GFXDescriptorManager.h"
-#include "GFXShaderModule.h"
+#include "GFXGpuProgram.h"
 #include "GFXShaderPass.h"
 #include "GFXRenderTarget.h"
 #include "GFXViewport.h"
 #include "GFXRenderPipeline.h"
 #include "GFXRenderPass.h"
+#include "GFXGraphicsPipelineManager.h"
 #include <functional>
 #include <memory>
 #include <vector>
@@ -57,15 +58,19 @@ namespace gfx
         virtual GFXBuffer* CreateBuffer(GFXBufferUsage usage, size_t bufferSize) = 0;
         virtual std::shared_ptr<GFXCommandBuffer> CreateCommandBuffer() = 0;
         virtual std::shared_ptr<GFXVertexLayoutDescription> CreateVertexLayoutDescription() = 0;
-        virtual std::shared_ptr<GFXShaderModule> CreateShaderModule(const std::vector<uint8_t>& vert, const std::vector<uint8_t>& frag) = 0;
-        virtual GFXDescriptorManager* GetDescriptorManager() = 0;
-
-        virtual std::shared_ptr<GFXShaderPass> CreateGraphicsPipeline(
+        virtual std::shared_ptr<GFXGpuProgram> CreateGpuProgram(const std::vector<uint8_t>& vert, const std::vector<uint8_t>& frag) = 0;
+        virtual std::shared_ptr<GFXShaderPass> CreateShaderPass(
             const GFXShaderPassConfig& config,
-            std::shared_ptr<GFXVertexLayoutDescription> VertexLayout,
-            std::shared_ptr<GFXShaderModule> ShaderModule,
+            const std::shared_ptr<GFXGpuProgram>& gpuProgram,
             const std::shared_ptr<GFXDescriptorSetLayout>& descSetLayout,
-            GFXRenderPassLayout* renderPass) = 0;
+            const std::shared_ptr<GFXVertexLayoutDescription>& vertexLayout) = 0;
+
+        virtual GFXDescriptorManager* GetDescriptorManager() = 0;
+        
+        virtual std::shared_ptr<GFXDescriptorSetLayout> CreateDescriptorSetLayout(
+            const std::vector<GFXDescriptorSetLayoutInfo>& layoutInfos) = 0;
+
+        virtual GFXGraphicsPipelineManager* GetGraphicsPipelineManager() const = 0;
 
         virtual std::shared_ptr<GFXTexture2D> CreateTexture2DFromMemory(
             const uint8_t* data, int32_t length,

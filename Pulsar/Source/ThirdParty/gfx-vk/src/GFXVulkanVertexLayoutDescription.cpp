@@ -4,7 +4,7 @@
 
 namespace gfx
 {
-    VkVertexInputBindingDescription GFXVulkanVertexLayoutDescription::GetVkBindingDescription()
+    VkVertexInputBindingDescription GFXVulkanVertexLayoutDescription::GetVkBindingDescription() const
     {
         VkVertexInputBindingDescription bindingDescription{};
         bindingDescription.binding = this->BindingPoint;
@@ -24,7 +24,7 @@ namespace gfx
         assert(it != map.end());
         return it->second;
     }
-    std::vector<VkVertexInputAttributeDescription> GFXVulkanVertexLayoutDescription::GetVkAttributeDescriptions()
+    std::vector<VkVertexInputAttributeDescription> GFXVulkanVertexLayoutDescription::GetVkAttributeDescriptions() const
     {
         std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
 

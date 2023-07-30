@@ -5,48 +5,87 @@
 #include <Pulsar/Assets/Texture.h>
 #include <Pulsar/IBindGPU.h>
 #include <Pulsar/Rendering/ShaderPass.h>
+#include <gfx/GFXShaderPass.h>
+#include <Pulsar/Rendering/Types.h>
 
 namespace pulsar
 {
     class Texture2D;
 
+    class ShaderPassConfig : public Object
+    {
+        CORELIB_DEF_TYPE(AssemblyObject_Pulsar, pulsar::ShaderPassConfig, Object);
 
-    class Shader : public AssetObject, public IBindGPU
+    public:
+        CORELIB_REFL_DECL_FIELD(VertShaderName);
+        string VertShaderName;
+
+        CORELIB_REFL_DECL_FIELD(PixelShaderName);
+        string PixelShaderName;
+        
+        CORELIB_REFL_DECL_FIELD(CullMode);
+        CullMode CullMode;
+
+        CORELIB_REFL_DECL_FIELD(DepthTestEnable);
+        bool DepthTestEnable;
+
+        CORELIB_REFL_DECL_FIELD(DepthWriteEnable);
+        bool DepthWriteEnable;
+
+        CORELIB_REFL_DECL_FIELD(DepthCompareOp);
+        CompareMode DepthCompareOp;
+
+        CORELIB_REFL_DECL_FIELD(StencilTestEnable);
+        bool StencilTestEnable;
+    };
+    CORELIB_DECL_SHORTSPTR(ShaderPassConfig);
+
+    enum class ShaderParameterType
+    {
+        Float,
+        Sampler2D,
+        Vector3
+    };
+
+    class ShaderParameter
+    {
+
+    };
+
+    class ShaderConfig
+    {
+
+        array_list<ShaderPassConfig_sp> configs;
+    };
+
+    struct ShaderPassSerializeData
+    {
+        ShaderPassConfig_sp Config;
+        array_list<uint8_t> VertBytes;
+        array_list<uint8_t> PixelBytes;
+    };
+    ser::Stream& ReadWriteStream(ser::Stream& stream, bool isWrite, ShaderPassSerializeData& data);
+
+
+
+    class Shader final: public AssetObject, public IBindGPU
     {
         CORELIB_DEF_TYPE(AssemblyObject_Pulsar, pulsar::Shader, AssetObject);
     public:
-        uint32_t get_id() const { return this->id_; }
-    public:
-        explicit Shader();
-        virtual ~Shader() override;
-        virtual string ToString() const override;
-    public:
-        void UseShader(int32_t pass_index);
-    public:
-        ShaderPass* GetPass(int32_t index);
+        virtual void OnSerialize(AssetSerializer* serializer) override;
+
+        static sptr<Shader> StaticCreate(
+            string_view name, 
+            array_list<ShaderPassSerializeData>&& pass);
+
     public:
         virtual void BindGPU() override;
         virtual void UnBindGPU() override;
         virtual bool GetIsBindGPU() override;
-    public:
-        int32_t GetUniformLocaltion(std::string_view name);
-        void SetUniformInt(std::string_view name, const int32_t& i);
-        void SetUniformFloat(std::string_view name, const float& f);
-        void SetUniformMatrix4fv(std::string_view name, const float* value);
-        void SetUniformMatrix4fv(std::string_view name, const Matrix4f& mat);
-        void SetUniformVector3(std::string_view name, const Vector3f& value);
-        void SetUniformColor(std::string_view name, const LinearColorf& value);
-        void SetUniformColor(std::string_view name, const Vector3f& value);
-
-        void SetUniformTexture(std::string_view name, Texture_rsp tex);
-    protected:
-    public:
-        static sptr<Shader> StaticCreate(string_view name, array_list<ShaderPass*>&& pass);
-        static sptr<Shader> StaticCreate(const string& shader_source);
-    protected:
-        uint32_t id_;
-        array_list<ShaderPass*> pass_;
     private:
+        array_list<ShaderPassSerializeData> m_shaderSource;
+    private:
+        array_list<std::shared_ptr<gfx::GFXShaderPass>> m_shaderPass;
     };
     CORELIB_DECL_SHORTSPTR(Shader);
 
