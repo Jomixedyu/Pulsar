@@ -15,5 +15,5 @@ namespace pulsar
     private:
         StaticMesh_sp m_mesh;
     };
-    CORELIB_DECL_SHORTSPTR(MeshContainerComponent);
+    DECL_PTR(MeshContainerComponent);
 }

@@ -31,5 +31,5 @@ namespace pulsar
 
         bool m_isCastShadow;
     };
-    CORELIB_DECL_SHORTSPTR(StaticMeshRendererComponent);
+    DECL_PTR(StaticMeshRendererComponent);
 }

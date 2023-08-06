@@ -55,5 +55,5 @@ namespace pulsar
     protected:
         RenderTexture_sp m_renderTarget;
     };
-    CORELIB_DECL_SHORTSPTR(CameraComponent);
+    DECL_PTR(CameraComponent);
 }

@@ -20,5 +20,5 @@ namespace pulsar
 
 
     };
-    CORELIB_DECL_SHORTSPTR(RendererComponent);
+    DECL_PTR(RendererComponent);
 }

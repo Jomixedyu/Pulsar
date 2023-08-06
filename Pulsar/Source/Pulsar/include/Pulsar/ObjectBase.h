@@ -17,7 +17,7 @@
 
 #define DECL_PTR(Class) \
 CORELIB_DECL_SHORTSPTR(Class); \
-
+using Class##_ref = ::pulsar::ObjectPtr<Class>;
 
 
 namespace pulsar
@@ -58,7 +58,7 @@ namespace pulsar
     protected:
         ObjectHandle m_objectHandle;
     };
-    CORELIB_DECL_SHORTSPTR(ObjectBase);
+    
 
     struct ObjectPtrBase
     {
@@ -128,6 +128,8 @@ namespace pulsar
 
     ser::Stream& ReadWriteStream(ser::Stream& stream, bool isWrite, ObjectPtrBase& obj);
 
+
+    DECL_PTR(ObjectBase);
 }
 
 namespace std

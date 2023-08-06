@@ -20,7 +20,7 @@ namespace pulsar
         Shader_sp shader_;
         int m_renderQueue;
     };
-    CORELIB_DECL_SHORTSPTR(Material);
+    DECL_PTR(Material);
 
 
 }

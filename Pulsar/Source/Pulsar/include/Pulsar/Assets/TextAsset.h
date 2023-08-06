@@ -19,6 +19,6 @@ namespace pulsar
     private:
         string text_;
     };
-    CORELIB_DECL_SHORTSPTR(TextAsset);
+    DECL_PTR(TextAsset);
 
 }

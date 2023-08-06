@@ -22,5 +22,5 @@ namespace pulsar
     protected:
         uint32_t tex_id_ = 0;
     };
-    CORELIB_DECL_SHORTSPTR(Texture);
+    DECL_PTR(Texture);
 }

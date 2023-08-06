@@ -38,7 +38,7 @@ namespace pulsar
         CORELIB_REFL_DECL_FIELD(StencilTestEnable);
         bool StencilTestEnable;
     };
-    CORELIB_DECL_SHORTSPTR(ShaderPassConfig);
+    DECL_PTR(ShaderPassConfig);
 
     enum class ShaderParameterType
     {
@@ -92,7 +92,7 @@ namespace pulsar
     private:
         array_list<gfx::GFXShaderPass_sp> m_shaderPass;
     };
-    CORELIB_DECL_SHORTSPTR(Shader);
+    DECL_PTR(Shader);
 
 
 

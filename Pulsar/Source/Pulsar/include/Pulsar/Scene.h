@@ -37,6 +37,6 @@ namespace pulsar
 
 
     };
-    CORELIB_DECL_SHORTSPTR(Scene);
+    DECL_PTR(Scene);
 }
 

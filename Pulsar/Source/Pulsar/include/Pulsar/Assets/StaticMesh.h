@@ -67,7 +67,7 @@ namespace pulsar
 
         array_list<string> m_materialNames;
     };
-    CORELIB_DECL_SHORTSPTR(StaticMesh);
+    DECL_PTR(StaticMesh);
 
 
 }

@@ -30,5 +30,5 @@ namespace pulsar
     public:
         //uint32_t id;
     };
-    CORELIB_DECL_SHORTSPTR(CubeMapAsset);
+    DECL_PTR(CubeMapAsset);
 }

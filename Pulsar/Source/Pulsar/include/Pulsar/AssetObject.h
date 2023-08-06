@@ -51,7 +51,7 @@ namespace pulsar
         CORELIB_REFL_DECL_FIELD(name_);
         string name_;
     };
-    CORELIB_DECL_SHORTSPTR(AssetObject);
+    DECL_PTR(AssetObject);
 
 
     template<typename T>

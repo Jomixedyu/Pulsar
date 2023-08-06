@@ -53,6 +53,6 @@ namespace pulsar
         std::shared_ptr<gfx::GFXRenderTarget> m_depth;
         std::shared_ptr<gfx::GFXFrameBufferObject> m_framebuffer;
     };
-    CORELIB_DECL_SHORTSPTR(RenderTexture);
+    DECL_PTR(RenderTexture);
 
 }

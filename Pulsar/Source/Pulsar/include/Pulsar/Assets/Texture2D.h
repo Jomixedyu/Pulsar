@@ -43,5 +43,5 @@ namespace pulsar
         virtual void UnBindGPU() override;
         virtual bool GetIsBindGPU() override;
     };
-    CORELIB_DECL_SHORTSPTR(Texture2D);
+    DECL_PTR(Texture2D);
 }

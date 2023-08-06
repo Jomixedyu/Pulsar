@@ -36,5 +36,5 @@ namespace pulsar
         wptr<Node> m_attachedNode;
 
     };
-    CORELIB_DECL_SHORTSPTR(Component);
+    DECL_PTR(Component);
 }
