@@ -33,12 +33,12 @@ namespace pulsared
         auto cam = camNode->AddComponent<CameraComponent>();
 
         cam->cameraMode = CameraMode::Perspective;
-        cam->backgroundColor = LinearColorf{ 0.33,0.33,0.33,1 };
+        cam->backgroundColor = LinearColorf{ 0.33f, 0.33f, 0.33f, 1.0f };
         cam->fov = 45.f;
         cam->near = 0.01f;
         cam->far = 10000.f;
-        cam->size_ = { 1280,720 };
-        camNode->set_self_position({ 0.f, 7, 30 });
+        cam->size_ = { 1280.f, 720.f };
+        camNode->set_self_position({ 0.f, 7.f, 30.f });
         ////camera_node->set_self_euler_rotation({ -25.f, -45, 0 });
 
         camCtrlNode->AddComponent<StdEditCameraControllerComponent>();

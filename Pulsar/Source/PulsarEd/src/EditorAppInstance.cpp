@@ -275,7 +275,7 @@ namespace pulsared
     }
     void pulsared::EditorAppInstance::SetAppSize(Vector2f size)
     {
-        Application::GetGfxApp()->GetViewport()->SetSize(size.x, size.y);
+        Application::GetGfxApp()->GetViewport()->SetSize((int)size.x, (int)size.y);
     }
 
     bool EditorAppInstance::IsInteractiveRendering() const

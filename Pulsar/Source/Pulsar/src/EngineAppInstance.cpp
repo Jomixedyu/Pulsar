@@ -99,7 +99,7 @@ namespace pulsar
 
     Vector2f EngineAppInstance::GetOutputScreenSize()
     {
-        int32_t x, y;
+        float x, y;
         //detail::RenderInterface::GetDefaultBufferViewport(&x, &y);
         return Vector2f(x, y);
     }

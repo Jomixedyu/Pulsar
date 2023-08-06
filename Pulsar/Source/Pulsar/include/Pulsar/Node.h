@@ -133,6 +133,6 @@ namespace pulsar
         List_sp<sptr<Component>> components_;
 
     };
-    CORELIB_DECL_SHORTSPTR(Node);
+    DECL_PTR(Node);
 
 }

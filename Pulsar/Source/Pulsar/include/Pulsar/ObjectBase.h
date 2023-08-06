@@ -58,7 +58,7 @@ namespace pulsar
     protected:
         ObjectHandle m_objectHandle;
     };
-    
+
 
     struct ObjectPtrBase
     {
@@ -69,6 +69,23 @@ namespace pulsar
         }
     };
 
+    class BoxingObjectPtrBase : public Object
+    {
+        CORELIB_DEF_TYPE(AssemblyObject_Pulsar, pulsar::BoxingObjectPtrBase, Object);
+    public:
+        using unboxing_type = ObjectPtrBase;
+        ObjectPtrBase get_unboxing_value() { return { handle }; }
+        BoxingObjectPtrBase() {}
+        BoxingObjectPtrBase(ObjectPtrBase invalue) : handle(invalue.handle) {}
+        
+        CORELIB_REFL_DECL_FIELD(handle);
+        ObjectHandle handle;
+    };
+}
+CORELIB_DECL_BOXING(pulsar::ObjectPtrBase, pulsar::BoxingObjectPtrBase);
+
+namespace pulsar
+{
     class RuntimeObjectWrapper final
     {
     public:
@@ -100,6 +117,7 @@ namespace pulsar
     template<typename T>
     struct ObjectPtr : public ObjectPtrBase
     {
+        using element_type = T;
         ObjectPtr() {}
         ObjectPtr(const sptr<T>& object)
         {
@@ -108,6 +126,7 @@ namespace pulsar
                 handle = object->GetObjectHandle();
             }
         }
+
         sptr<T> GetShared() const
         {
             return sptr_cast<T>(RuntimeObjectWrapper::GetSharedObject(handle));
@@ -128,10 +147,22 @@ namespace pulsar
 
     ser::Stream& ReadWriteStream(ser::Stream& stream, bool isWrite, ObjectPtrBase& obj);
 
+}
+namespace jxcorlib
+{
+    template<typename T> struct fulldecay<pulsar::ObjectPtr<T>> : fulldecay<T> { };
 
-    DECL_PTR(ObjectBase);
+    template<typename T>
+    struct type_redirect<pulsar::ObjectPtr<T>>
+    {
+        using type = pulsar::ObjectPtrBase;
+    };
 }
 
+namespace pulsar
+{
+    DECL_PTR(ObjectBase);
+}
 namespace std
 {
     template<>

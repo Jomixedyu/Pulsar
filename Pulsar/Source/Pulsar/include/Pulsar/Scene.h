@@ -15,8 +15,8 @@ namespace pulsar
     {
         CORELIB_DEF_TYPE(AssemblyObject_Pulsar, pulsar::Scene, AssetObject)
     public:
-        List_rsp<Node_sp> GetRootNodes() const { return this->scene_nodes_; }
-        List_sp<Node_sp> GetRootNodes() { return this->scene_nodes_; }
+        List_rsp<Node_sp> GetRootNodes() const { return nullptr; }
+        List_sp<Node_sp> GetRootNodes() { return nullptr; }
 
         Scene();
         virtual ~Scene() override
@@ -33,7 +33,7 @@ namespace pulsar
         List_sp<Node_sp> scene_nodes_;
 
         CORELIB_REFL_DECL_FIELD(cubemap_);
-        CubeMapAsset_sp cubemap_;
+        CubeMapAsset_ref cubemap_;
 
 
     };
