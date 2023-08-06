@@ -110,7 +110,7 @@ namespace pulsared
             sections[i].MaterialIndex = materials.size() - 1;
         }
         
-        auto n = pnode->NewChildNode(node->mName.C_Str());
+        auto newNode = pnode->NewChildNode(node->mName.C_Str());
 
         array_list<string> materialNames;
         for (auto& mat : materials)
@@ -118,24 +118,27 @@ namespace pulsared
             materialNames.push_back(mat->GetName());
         }
 
-        auto staticMesh = StaticMesh::StaticCreate(node->mName.C_Str(), std::move(sections), std::move(materialNames));
-
-        n->AddComponent<MeshContainerComponent>()->SetMesh(staticMesh);
-
-        auto renderer = n->AddComponent<StaticMeshRendererComponent>();
-        for (auto& mat : materials)
+        if (node->mNumMeshes > 0)
         {
-            renderer->GetMaterials()->Add(mat);
+            auto staticMesh = StaticMesh::StaticCreate(node->mName.C_Str(), std::move(sections), std::move(materialNames));
+
+            newNode->AddComponent<MeshContainerComponent>()->SetMesh(staticMesh);
+
+            auto renderer = newNode->AddComponent<StaticMeshRendererComponent>();
+            for (auto& mat : materials)
+            {
+                renderer->GetMaterials()->Add(mat);
+            }
         }
 
         // process children
         for (unsigned int i = 0; i < node->mNumChildren; i++)
         {
-            _ProcessNode(node->mChildren[i], scene, pnode, dir, scale_factor);
+            _ProcessNode(node->mChildren[i], scene, newNode, dir, scale_factor);
         }
     }
 
-    Node_ref FBXImporter::Import(string_view path)
+    Node_ref FBXImporter::Import(string_view path, string& error)
     {
         float scale_factor = 1;
 
@@ -146,12 +149,15 @@ namespace pulsared
 
         if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
         {
-            throw importer.GetErrorString();
+            error = importer.GetErrorString();
             return nullptr;
         }
         string directory = string{ path.substr(0, path.find_last_of('/')) };
 
-        _ProcessNode(scene->mRootNode, scene, node, directory, scale_factor);
+        for (unsigned int i = 0; i < scene->mRootNode->mNumChildren; i++)
+        {
+            _ProcessNode(scene->mRootNode->mChildren[i], scene, node, directory, scale_factor);
+        }
 
         return node;
     }

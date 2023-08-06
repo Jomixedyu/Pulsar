@@ -23,6 +23,7 @@
 #include <gfx/GFXRenderPipeline.h>
 
 #include <gfx/GFXFrameBufferObject.h>
+#include "Importers/FBXImporter.h"
 
 namespace pulsared
 {
@@ -76,6 +77,12 @@ namespace pulsared
         {
             MenuEntrySubMenu_sp file = mksptr(new MenuEntrySubMenu("File"));
             main_menu->AddEntry(file);
+
+            auto openWorkSpace = mksptr(new MenuEntryButton("Open Workspace"));
+            openWorkSpace->action = MenuAction::FromRaw([](sptr<MenuContexts> ctx) {
+                Workspace::OpenDialogUserWorkspace();
+                });
+            file->AddEntry(openWorkSpace);
         }
         {
             MenuEntrySubMenu_sp file = mksptr(new MenuEntrySubMenu("Edit"));
@@ -146,18 +153,7 @@ namespace pulsared
 
     void EditorAppInstance::OnInitialized()
     {
-        //temp
-        {
-            //AssetRegisterInfo info;
-            //info.path = "Engine/Assets/Shaders/BuiltinRP.DefaultLit";
-            //info.getter = [&](guid_t) {
-            //    auto shader_src = FileUtil::ReadAllText(R"(D:\Codes\Pulsar\Engine\Assets\pbr.shader)");
-            //    return Material::StaticCreate(info.path, Shader::StaticCreate(shader_src));
-            //};
-            //AssetRegistry::RegisterAsset(guid_t::create_new(), info);
-        }
-
-        Logger::Log("initialize gfx application");
+        Logger::Log("initialize world");
 
         //world
         World::Reset<EditorWorld>();
@@ -175,9 +171,6 @@ namespace pulsared
         AssetDatabase::Initialize();
 
         InitBasicMenu();
-
-        Logger::Log("initialize world");
-
 
         Logger::Log("initialize subsystems");
         //collect subsystem
@@ -207,6 +200,9 @@ namespace pulsared
         //init window uis
         Logger::Log("initialize editor window manager");
         pulsared::EditorWindowManager::Initialize();
+
+        string error;
+        World::Current()->GetPresistentScene()->AddNode(FBXImporter::Import(R"(C:\Users\JomiXedYu\Desktop\sphere.fbx)", error));
 
     }
 
@@ -256,6 +252,7 @@ namespace pulsared
     {
 
     }
+
     bool EditorAppInstance::IsQuit()
     {
         //return SystemInterface::GetIsQuit();

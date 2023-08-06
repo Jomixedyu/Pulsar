@@ -9,16 +9,13 @@ namespace pulsar
     class Mesh;
     class Material;
     class ShaderPass;
-
-    class RendererComponent : public Component
+    
+    class IRendererComponent : public IInterface
     {
-        CORELIB_DEF_TYPE(AssemblyObject_Pulsar, pulsar::RendererComponent, Component)
     public:
+        CORELIB_DEF_INTERFACE(AssemblyObject_Pulsar, pulsar::IRendererComponent, IInterface);
+
         virtual sptr<rendering::RenderObject> CreateRenderObject() = 0;
-
-
-
-
     };
-    DECL_PTR(RendererComponent);
+
 }

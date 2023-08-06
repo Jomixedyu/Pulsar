@@ -13,21 +13,26 @@ namespace pulsar
     class Material;
     class ShaderPass;
 
-    class StaticMeshRendererComponent : public RendererComponent
+    class StaticMeshRendererComponent : public Component, public IRendererComponent
     {
-        CORELIB_DEF_TYPE(AssemblyObject_Pulsar, pulsar::StaticMeshRendererComponent, RendererComponent)
+        CORELIB_DEF_TYPE(AssemblyObject_Pulsar, pulsar::StaticMeshRendererComponent, Component);
+        CORELIB_IMPL_INTERFACES(IRendererComponent);
     public:
         virtual sptr<rendering::RenderObject> CreateRenderObject() override;
     public:
         virtual void OnInitialize() override;
-        List_sp<Material_sp> GetMaterials() const { return this->m_materials; }
+        List_sp<Material_ref> GetMaterials() const { return this->m_materials; }
 
+        StaticMeshRendererComponent() : CORELIB_INIT_INTERFACE(IRendererComponent)
+        {
+            m_materials = mksptr(new List<Material_ref>);
+        }
     protected:
         CORELIB_REFL_DECL_FIELD(m_materials);
-        List_sp<Material_sp> m_materials;
+        List_sp<Material_ref> m_materials;
 
         CORELIB_REFL_DECL_FIELD(m_staticMesh);
-        StaticMesh_sp m_staticMesh;
+        StaticMesh_ref m_staticMesh;
 
         bool m_isCastShadow;
     };

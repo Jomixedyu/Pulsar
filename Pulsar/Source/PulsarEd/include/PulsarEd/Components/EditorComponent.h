@@ -1,6 +1,7 @@
 #pragma once
 #include <Pulsar/Components/Component.h>
 #include <PulsarEd/Assembly.h>
+#include <Pulsar/Components/RendererComponent.h>
 
 namespace pulsared
 {
@@ -8,6 +9,7 @@ namespace pulsared
     {
         CORELIB_DEF_TYPE(AssemblyObject_PulsarEd, pulsared::EditorComponent, Component);
     public:
-
+        
     };
+
 }
