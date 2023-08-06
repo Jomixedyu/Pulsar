@@ -6,6 +6,8 @@
 
 struct DestroyedInsight
 {
+    static inline std::vector<DestroyedInsight*> instances;
+
     struct Info
     {
         std::string FileInfo;
@@ -17,10 +19,11 @@ struct DestroyedInsight
     std::string DefinePosition;
     const char* Name;
 
+public:
     DestroyedInsight(const char* name, const std::string& definePosition) :
         Name(name), DefinePosition(definePosition)
     {
-
+        instances.push_back(this);
     }
 
     void Add(const std::string& fileInfo, void* ptr)

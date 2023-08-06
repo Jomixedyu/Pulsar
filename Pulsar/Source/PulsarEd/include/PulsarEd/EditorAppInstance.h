@@ -27,7 +27,7 @@ namespace pulsared
 
         virtual void OnRender(gfx::GFXRenderContext* context, const std::vector<gfx::GFXFrameBufferObject*>& renderTargets)
         {
-            //m_engineRenderPipeline->OnRender(context, m_frameBuffers);
+            m_engineRenderPipeline->OnRender(context, m_frameBuffers);
 
             // view port
             auto rt = static_cast<gfx::GFXFrameBufferObject*>(renderTargets[0]);
