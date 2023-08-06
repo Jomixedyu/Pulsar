@@ -35,14 +35,18 @@ namespace pulsared
             string name = node->GetName();
             if (is_editor_node)
                 name.append(" (EditorOnly)");
+
             ImGui::PushID(node->GetObjectHandle().to_string().c_str());
-            if (ImGui::TreeNodeEx(name.c_str(), base_flags))
+            bool isOpened = ImGui::TreeNodeEx(node.GetPtr(), base_flags, name.c_str());
+
+            if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen())
             {
-                if (ImGui::IsItemClicked())
-                {
-                    EditorSelection::Selection.Clear();
-                    EditorSelection::Selection.Select(node);
-                }
+                EditorSelection::Selection.Clear();
+                EditorSelection::Selection.Select(node);
+            }
+
+            if (isOpened)
+            {
                 _Show(children);
                 ImGui::TreePop();
             }
