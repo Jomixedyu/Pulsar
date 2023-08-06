@@ -8,18 +8,7 @@ namespace pulsar
 {
     void CameraComponent::Render()
     {
-        if (IsValid(this->m_renderTarget))
-        {
-            //assert(this->m_renderTarget->GetIsBindGPU());
 
-            //RenderTextureScope rt{ this->m_renderTarget };
-
-            //auto [r, g, b, a] = this->backgroundColor;
-            //detail::RenderInterface::Clear(r, g, b, a);
-            //draw ...
-
-
-        }
     }
 
     static Matrix4f _GetViewMat(const Vector3f& eye, const Quat4f& rotation)

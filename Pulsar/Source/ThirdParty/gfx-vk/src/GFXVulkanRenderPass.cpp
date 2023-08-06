@@ -54,11 +54,14 @@ namespace gfx
 
             attachmentDesc.push_back(attachment);
 
-            if (rt->GetRenderTargetType() == GFXRenderTargetType::Color)
+            auto rtType = rt->GetRenderTargetType();
+
+            if (rtType == GFXRenderTargetType::Color)
             {
                 colorAttachmentRef.push_back(ref);
             }
-            else if (rt->GetRenderTargetType() == GFXRenderTargetType::Depth)
+            if (HasFlag(rtType, GFXRenderTargetType::Depth) ||
+                HasFlag(rtType, GFXRenderTargetType::Stencil))
             {
                 depthAttachmentRef.push_back(ref);
             }

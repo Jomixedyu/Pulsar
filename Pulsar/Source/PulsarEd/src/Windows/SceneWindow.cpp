@@ -25,8 +25,8 @@ namespace pulsared
     void SceneWindow::OnOpen()
     {
 
-        EditorNode_sp camCtrlNode = EditorNode::StaticCreate("EdCameraController");
-        EditorNode_sp camNode = EditorNode::StaticCreate("EdCamera", camCtrlNode);
+        auto camCtrlNode = EditorNode::StaticCreate("EdCameraController");
+        auto camNode = EditorNode::StaticCreate("EdCamera", camCtrlNode);
         this->m_camNode = camNode;
         this->m_camCtrlNode = camCtrlNode;
 
@@ -48,7 +48,7 @@ namespace pulsared
         ////node->set_self_euler_rotation({ 0,-90,0 });
         World::Current()->GetPresistentScene()->AddNode(camCtrlNode);
 
-        EditorNode_sp grid3d = EditorNode::StaticCreate("Grid3d");
+        auto grid3d = EditorNode::StaticCreate("Grid3d");
         grid3d->AddComponent<Grid3DComponent>();
         World::Current()->GetPresistentScene()->AddNode(grid3d);
 
@@ -59,9 +59,11 @@ namespace pulsared
 
     void SceneWindow::OnClose()
     {
+        auto cam = this->GetSceneCamera();
+        DestroyObject(cam->GetRenderTarget());
+
         World::Current()->GetPresistentScene()->RemoveNode(this->GetSceneCameraControllerNode());
-        m_camNode.reset();
-        m_camCtrlNode.reset();
+
         m_descriptorLayout = nullptr;
         m_descriptorSet = nullptr;
     }
@@ -147,6 +149,8 @@ namespace pulsared
 
         assert(cam);
         assert(cam->GetRenderTarget());
+
+        DestroyObject(cam->GetRenderTarget());
 
         cam->SetRenderTarget(RenderTexture::StaticCreate(m_viewportSize.x, m_viewportSize.y, true, true));
 

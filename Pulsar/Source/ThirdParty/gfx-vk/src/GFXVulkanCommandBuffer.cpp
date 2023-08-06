@@ -125,6 +125,7 @@ namespace gfx
             auto type = rt->GetRenderTargetType();
             auto image = rt->GetVkImage();
             VkImageLayout clearLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+
             switch (type)
             {
             case gfx::GFXRenderTargetType::Color:
@@ -181,6 +182,7 @@ namespace gfx
             case gfx::GFXRenderTargetType::DepthStencil:
             case gfx::GFXRenderTargetType::Depth:
             {
+                VkImageAspectFlagBits aspectMask = (VkImageAspectFlagBits)rt->GetAspectFlags();
                 {
                     VkImageMemoryBarrier barrier{};
                     barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -189,12 +191,12 @@ namespace gfx
                     barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
                     barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
                     barrier.image = image;
-                    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+                    barrier.subresourceRange.aspectMask = aspectMask;
                     barrier.subresourceRange.baseMipLevel = 0;
                     barrier.subresourceRange.levelCount = 1;
                     barrier.subresourceRange.baseArrayLayer = 0;
                     barrier.subresourceRange.layerCount = 1;
-
+                    
                     vkCmdPipelineBarrier(
                         m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
                         0, 0, nullptr, 0, nullptr, 1, &barrier);
@@ -203,9 +205,9 @@ namespace gfx
                 VkClearDepthStencilValue depthClearValue{};
                 depthClearValue.depth = 1;
                 depthClearValue.stencil = 0;
-
+                
                 VkImageSubresourceRange srRange2{};
-                srRange2.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+                srRange2.aspectMask = aspectMask;
                 srRange2.baseMipLevel = 0;
                 srRange2.levelCount = 1;
                 srRange2.baseArrayLayer = 0;
@@ -223,7 +225,7 @@ namespace gfx
                     barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
                     barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
                     barrier.image = image;
-                    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+                    barrier.subresourceRange.aspectMask = aspectMask;
                     barrier.subresourceRange.baseMipLevel = 0;
                     barrier.subresourceRange.levelCount = 1;
                     barrier.subresourceRange.baseArrayLayer = 0;

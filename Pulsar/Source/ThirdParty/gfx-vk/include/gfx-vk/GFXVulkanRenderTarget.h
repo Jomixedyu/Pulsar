@@ -23,13 +23,8 @@ namespace gfx
         // create view
         GFXVulkanRenderTarget(
             int32_t width, int32_t height,
-            VkImage image, VkImageView imageView, VkFormat format, VkImageLayout layout, GFXRenderTargetType type)
-            :
-            m_width(width), m_height(height), m_textureImage(image), m_textureImageView(imageView),
-            m_imageFormat(format), m_imageLayout(layout), m_type(type), m_mode(CreateMode_View)
-        {
+            VkImage image, VkImageView imageView, VkFormat format, VkImageLayout layout, GFXRenderTargetType type);
 
-        }
         // create new
         GFXVulkanRenderTarget(
             GFXVulkanApplication* app, int32_t width, int32_t height, 
@@ -47,6 +42,7 @@ namespace gfx
         VkImage GetVkImage() const { return m_textureImage; }
         VkSampler GetVkSampler() const { return m_textureSampler; }
         VkFormat GetVkFormat() const { return m_imageFormat; }
+        VkImageAspectFlags GetAspectFlags() const { return m_aspectFlags; }
         virtual int32_t GetWidth() const override { return m_width; }
         virtual int32_t GetHeight() const override { return m_height; }
     protected:
@@ -64,8 +60,8 @@ namespace gfx
         VkImageLayout m_imageLayout;
         VkDeviceMemory m_textureImageMemory;
         VkImageView m_textureImageView;
-        VkSampler m_textureSampler;
+        VkSampler m_textureSampler{};
         VkFormat m_imageFormat;
-
+        VkImageAspectFlags m_aspectFlags;
     };
 }

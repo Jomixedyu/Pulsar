@@ -50,10 +50,10 @@ namespace pulsar
         Matrix4f debug_view_mat;
 #endif
     public:
-        const RenderTexture_sp& GetRenderTarget() const { return m_renderTarget; }
-        void SetRenderTarget(const RenderTexture_sp& value) { m_renderTarget = value; }
+        const RenderTexture_ref& GetRenderTarget() const { return m_renderTarget; }
+        void SetRenderTarget(const RenderTexture_ref& value) { m_renderTarget = value; }
     protected:
-        RenderTexture_sp m_renderTarget;
+        RenderTexture_ref m_renderTarget;
     };
     DECL_PTR(CameraComponent);
 }

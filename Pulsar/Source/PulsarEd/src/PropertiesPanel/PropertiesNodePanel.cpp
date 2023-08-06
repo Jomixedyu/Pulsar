@@ -32,7 +32,18 @@ namespace pulsared
 
     void PropertiesNodePanel::OnDrawImGui()
     {
-        Node_sp selected = sptr_cast<Node>(EditorSelection::Selection.GetSelected());
+        auto selectedObj = EditorSelection::Selection.GetSelected();
+        
+        Node_ref selected;
+        if (cltypeof<Node>()->IsInstanceOfType(selectedObj.GetPtr()))
+        {
+            selected = selectedObj;
+        }
+        else
+        {
+            return;
+        }
+
 
         char name[255];
         strcpy_s(name, 255, selected->GetName().c_str());
@@ -93,7 +104,7 @@ namespace pulsared
         for (auto& comp : selected->GetAllComponentArray())
         {
             static bool opened = true;
-            if (ImGui::CollapsingHeader(_GetComponentDisplayName(comp.get()).c_str(), &opened, ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_DefaultOpen))
+            if (ImGui::CollapsingHeader(_GetComponentDisplayName(comp.GetPtr()).c_str(), &opened, ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_DefaultOpen))
             {
                 auto com_guid = comp->GetObjectHandle().to_string();
                 Type* com_type = comp->GetType();
@@ -107,7 +118,7 @@ namespace pulsared
                         //ImGui::Text(StringUtil::FriendlyName(field->get_name()).c_str());
                         //ImGui::TableSetColumnIndex(1);
 
-                        auto field_inst = field->GetValue(comp.get());
+                        auto field_inst = field->GetValue(comp.GetPtr());
                         _PropertyLine(field->GetName(), field_inst);
 
                         //auto prop_control = PropertyControlManager::FindControl(field->get_field_type());

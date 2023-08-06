@@ -16,8 +16,8 @@ namespace pulsar
     //    CORELIB_REFL_DECL_FIELD(scale_);
     //    Vector3f scale_;
 
-    //    CORELIB_REFL_DECL_FIELD(childs_);
-    //    List_sp<sptr<TransformComponent>> childs_;
+    //    CORELIB_REFL_DECL_FIELD(m_children);
+    //    List_sp<sptr<TransformComponent>> m_children;
     //};
     //CORELIB_DECL_SHORTSPTR(TransformComponent);
 }

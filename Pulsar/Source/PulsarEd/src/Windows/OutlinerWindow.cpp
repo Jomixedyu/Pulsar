@@ -6,11 +6,11 @@
 
 namespace pulsared
 {
-    static void _Show(List_sp<Node_sp> nodes)
+    static void _Show(List_sp<Node_ref> nodes)
     {
         for (auto& node : *nodes)
         {
-            List_sp<Node_sp> children = mksptr(new List<Node_sp>);
+            List_sp<Node_ref> children = mksptr(new List<Node_ref>);
             node->GetChildren(children);
             ImGuiTreeNodeFlags base_flags =
                 ImGuiTreeNodeFlags_OpenOnArrow |
@@ -27,7 +27,7 @@ namespace pulsared
                 base_flags |= ImGuiTreeNodeFlags_Selected;
             }
             bool is_editor_node = false;
-            if (cltypeof<EditorNode>()->IsInstanceOfType(node.get()))
+            if (cltypeof<EditorNode>()->IsInstanceOfType(node.GetPtr()))
             {
                 is_editor_node = true;
                 ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Text, ImVec4(0.9, 0.7, 0.6, 1));

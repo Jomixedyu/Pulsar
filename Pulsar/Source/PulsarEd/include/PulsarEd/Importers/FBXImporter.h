@@ -7,6 +7,6 @@ namespace pulsared
 	class FBXImporter
 	{
 	public:
-		static Node_sp Import(string_view path);
+		static Node_ref Import(string_view path);
 	};
 }

@@ -5,10 +5,10 @@
 
 namespace pulsar
 {
-    void StaticMesh::OnInstantiateAsset(sptr<AssetObject>& obj)
+    void StaticMesh::OnInstantiateAsset(AssetObject_ref& obj)
     {
         base::OnInstantiateAsset(obj);
-        auto mesh = sptr_cast<StaticMesh>(obj);
+        StaticMesh_ref mesh = obj;
         mesh->m_sections = m_sections;
     }
 

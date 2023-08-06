@@ -23,7 +23,7 @@ namespace pulsar
     public:
         const uint8_t* GetNativeData() const;
     protected:
-        virtual void OnInstantiateAsset(sptr<AssetObject>& obj) override;
+        virtual void OnInstantiateAsset(AssetObject_ref& obj) override;
 
     public:
         void InitializeFromPictureMemory(const uint8_t* data, int32_t length, const SamplerConfig& samplerConfig, bool enableReadWrite, TextureFormat format);

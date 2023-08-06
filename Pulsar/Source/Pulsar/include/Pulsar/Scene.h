@@ -15,22 +15,22 @@ namespace pulsar
     {
         CORELIB_DEF_TYPE(AssemblyObject_Pulsar, pulsar::Scene, AssetObject)
     public:
-        List_rsp<Node_sp> GetRootNodes() const { return nullptr; }
-        List_sp<Node_sp> GetRootNodes() { return nullptr; }
+        List_sp<Node_ref> GetRootNodes() { return m_sceneNodes; }
 
         Scene();
         virtual ~Scene() override
         {
-            int a = 3;
         }
     public:
-        void AddNode(Node_rsp node);
-        void RemoveNode(Node_rsp node);
+        void AddNode(Node_ref node);
+        void RemoveNode(Node_ref node);
 
-        static sptr<Scene> StaticCreate(string_view name);
+        static ObjectPtr<Scene> StaticCreate(string_view name);
+    protected:
+        virtual void OnDestroy() override;
     private:
 
-        List_sp<Node_sp> scene_nodes_;
+        List_sp<Node_ref> m_sceneNodes;
 
         CORELIB_REFL_DECL_FIELD(cubemap_);
         CubeMapAsset_ref cubemap_;

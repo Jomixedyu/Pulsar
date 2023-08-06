@@ -18,9 +18,9 @@ namespace pulsar
         return this->m_data;
     }
 
-    void Texture2D::OnInstantiateAsset(sptr<AssetObject>& obj)
+    void Texture2D::OnInstantiateAsset(AssetObject_ref& obj)
     {
-        Texture2D* tex = static_cast<Texture2D*>(obj.get());
+        Texture2D* tex = static_cast<Texture2D*>(obj.GetPtr());
 
     }
 

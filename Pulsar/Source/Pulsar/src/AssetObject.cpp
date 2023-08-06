@@ -7,11 +7,14 @@ namespace pulsar
     {
         AssetObject_sp obj = sptr_cast<AssetObject>(this->GetType()->CreateSharedInstance({}));
         obj->Construct();
-        this->OnInstantiateAsset(obj);
+
+        ObjectPtr<AssetObject> mobj = obj;
+
+        this->OnInstantiateAsset(mobj);
 
         return obj;
     }
-    void AssetObject::OnInstantiateAsset(sptr<AssetObject>& obj)
+    void AssetObject::OnInstantiateAsset(ObjectPtr<AssetObject>& obj)
     {
         obj->name_ = this->name_;
         assert(false);

@@ -29,6 +29,11 @@ namespace pulsar
         InitializePresistentScene();
     }
 
+    World::~World()
+    {
+
+    }
+
     void World::Tick(float dt)
     {
         Ticker ticker;
@@ -49,7 +54,7 @@ namespace pulsar
         }
 
     }
-    void World::ChangeScene(sptr<Scene> scene, bool clearPresistentScene)
+    void World::ChangeScene(ObjectPtr<Scene> scene, bool clearPresistentScene)
     {
         if (clearPresistentScene)
         {
@@ -76,6 +81,10 @@ namespace pulsar
 
     void World::OnWorldEnd()
     {
+        for (auto& scene : m_scenes)
+        {
+            DestroyObject(scene);
+        }
     }
 
 

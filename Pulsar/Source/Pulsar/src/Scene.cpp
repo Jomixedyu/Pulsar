@@ -4,7 +4,7 @@
 
 namespace pulsar
 {
-    static void _InitializeNode(Node_sp node)
+    static void _InitializeNode(Node_ref node)
     {
         for (auto& com : node->GetAllComponentArray())
         {
@@ -16,30 +16,39 @@ namespace pulsar
             _InitializeNode(child);
         } 
     }
-    void Scene::AddNode(Node_rsp node)
+    void Scene::AddNode(Node_ref node)
     {
-        assert(node->IsAlive());
-        this->scene_nodes_->push_back(node);
+        assert(IsValid(node));
+
+        this->m_sceneNodes->push_back(node);
         _InitializeNode(node);
     }
-    void Scene::RemoveNode(Node_rsp node)
+    void Scene::RemoveNode(Node_ref node)
     {
-        auto it = std::find(this->scene_nodes_->begin(), this->scene_nodes_->end(), node);
-        this->scene_nodes_->erase(it);
+        auto it = std::find(this->m_sceneNodes->begin(), this->m_sceneNodes->end(), node);
+        this->m_sceneNodes->erase(it);
     }
 
     Scene::Scene()
     {
-        this->scene_nodes_ = mksptr(new List<Node_sp>);
+        this->m_sceneNodes = mksptr(new List<Node_ref>);
     }
     
-    sptr<Scene> Scene::StaticCreate(string_view name)
+    ObjectPtr<Scene> Scene::StaticCreate(string_view name)
     {
         auto self = mksptr(new Scene);
         self->Construct();
         self->name_ = name;
 
         return self;
+    }
+    void Scene::OnDestroy()
+    {
+        base::OnDestroy();
+        for (auto& node : *m_sceneNodes)
+        {
+            DestroyObject(node);
+        }
     }
 }
 

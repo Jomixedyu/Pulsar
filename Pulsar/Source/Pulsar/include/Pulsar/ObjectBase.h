@@ -77,7 +77,7 @@ namespace pulsar
         ObjectPtrBase get_unboxing_value() { return { handle }; }
         BoxingObjectPtrBase() {}
         BoxingObjectPtrBase(ObjectPtrBase invalue) : handle(invalue.handle) {}
-        
+
         CORELIB_REFL_DECL_FIELD(handle);
         ObjectHandle handle;
     };
@@ -104,40 +104,77 @@ namespace pulsar
     template<typename T>
     concept baseof_objectbase = std::is_base_of<ObjectBase, T>::value;
 
-    template<baseof_objectbase T>
-    inline bool IsValid(const sptr<T>& object)
+    inline bool IsValid(const ObjectPtrBase& object)
     {
-        if (object == nullptr || !object->IsAlive())
+        return RuntimeObjectWrapper::IsValid(object.handle);
+    }
+
+    inline void DestroyObject(const ObjectPtrBase& object)
+    {
+        if (!object.handle.is_empty())
         {
-            return false;
+            if (auto obj = RuntimeObjectWrapper::GetObject(object.handle))
+            {
+                obj->Destroy();
+            }
         }
-        return true;
     }
 
     template<typename T>
     struct ObjectPtr : public ObjectPtrBase
     {
         using element_type = T;
+        T* Ptr;
+
+        ObjectPtr(ObjectHandle inHandle)
+        {
+            handle = inHandle;
+            Ptr = GetPtr();
+        }
+        ObjectPtr(ObjectPtrBase ptr)
+        {
+            handle = ptr.handle;
+            Ptr = GetPtr();
+        }
+        template<typename U>
+        ObjectPtr(const ObjectPtr<U>& other)
+        {
+            handle = other.handle;
+            Ptr = GetPtr();
+        }
         ObjectPtr() {}
+        ObjectPtr(std::nullptr_t) {}
         ObjectPtr(const sptr<T>& object)
         {
             if (object != nullptr)
             {
                 handle = object->GetObjectHandle();
             }
+            Ptr = GetPtr();
         }
 
         sptr<T> GetShared() const
         {
             return sptr_cast<T>(RuntimeObjectWrapper::GetSharedObject(handle));
         }
+        T* GetPtr() const
+        {
+            return static_cast<T*>(RuntimeObjectWrapper::GetObject(handle));
+        }
         T* operator->() const
         {
-            return RuntimeObjectWrapper::GetObject(handle);
+            return GetPtr();
         }
+        bool operator==(const ObjectPtrBase& r) const { return handle == r.handle; }
+        bool operator!=(const ObjectPtrBase& r) const { return handle != r.handle; }
+
         bool IsValid() const
         {
             return RuntimeObjectWrapper::IsValid(handle);
+        }
+        operator bool() const noexcept
+        {
+            return IsValid();
         }
         void Reset()
         {
@@ -150,8 +187,6 @@ namespace pulsar
 }
 namespace jxcorlib
 {
-    template<typename T> struct fulldecay<pulsar::ObjectPtr<T>> : fulldecay<T> { };
-
     template<typename T>
     struct type_redirect<pulsar::ObjectPtr<T>>
     {

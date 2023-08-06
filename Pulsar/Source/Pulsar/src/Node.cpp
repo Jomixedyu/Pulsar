@@ -11,15 +11,15 @@ namespace pulsar
 
     bool Node::get_is_active() const
     {
-        auto node = self();
-        while (node != nullptr)
-        {
-            if (!node->get_is_active())
-            {
-                return false;
-            }
-            node = this->get_parent().lock();
-        }
+        //auto node = self();
+        //while (node != nullptr)
+        //{
+        //    if (!node->get_is_active())
+        //    {
+        //        return false;
+        //    }
+        //    node = this->GetParent();
+        //}
         return true;
     }
 
@@ -34,25 +34,25 @@ namespace pulsar
 
     //TransformComponent_sp Node::get_transform()
     //{
-    //    assert(this->components_ && this->components_->size() != 0);
-    //    auto& transform = this->components_->at(0);
+    //    assert(this->m_components && this->m_components->size() != 0);
+    //    auto& transform = this->m_components->at(0);
     //    assert(cltypeof<TransformComponent>()->IsInstanceOfType(transform.get()));
     //    return sptr_cast<TransformComponent>(transform);
     //}
 
-    Node_wp Node::get_parent() const
+    ObjectPtr<Node> Node::GetParent() const
     {
-        return this->parent_;
+        return this->m_parent;
     }
-    void Node::set_parent(sptr<Node> parent, bool keep_world_transform)
+    void Node::SetParent(ObjectPtr<Node> parent, bool keepWorldTransform)
     {
         if (!this->has_parent_) // top node
         {
-            if (parent != nullptr)
+            if (parent)
             {
-                parent->childs_->push_back(self());
+                parent->m_children->push_back(self_ref());
                 this->has_parent_ = true;
-                if (keep_world_transform)
+                if (keepWorldTransform)
                 {
                     // todo transform matrix
 
@@ -62,46 +62,54 @@ namespace pulsar
         else // has parent
         {
             // remove 
-            auto my_parent = this->parent_.lock();
+            auto my_parent = this->m_parent;
             assert(my_parent);
-            auto it = std::find(my_parent->childs_->begin(), my_parent->childs_->end(), self());
-            assert(it != my_parent->childs_->end());
-            my_parent->childs_->erase(it);
+            auto it = std::find(my_parent->m_children->begin(), my_parent->m_children->end(), self_ref());
+            assert(it != my_parent->m_children->end());
+            my_parent->m_children->erase(it);
 
-            if (parent == nullptr) //set empty parent
+            if (parent) //set empty parent
             {
                 this->has_parent_ = false;
             }
             else
             {
-                parent->childs_->push_back(self());
+                parent->m_children->push_back(self_ref());
             }
         }
 
-        this->parent_ = parent;
+        this->m_parent = parent;
+    }
+
+    ObjectPtr<Node> Node::NewChildNode(string_view name)
+    {
+        auto newNode = StaticCreate(name);
+        newNode->SetParent(self_ref());
+        return newNode;
     }
 
     int32_t Node::get_child_count() const
     {
-        return this->childs_->size();
+        return this->m_children->size();
     }
 
     Vector3f Node::get_world_position() const
     {
-        Vector3f pos = this->get_self_position();
-        auto node = self();
-        if (node->has_parent())
-        {
-            node = this->get_parent().lock();
-            auto mat = node->GetLocalTransformMatrix();
-            //mat[3][0] = 0;
-            //mat[3][1] = 0;
-            //mat[3][2] = 0;
-            //mat[3][3] = 1;
-            auto v4 = mat * Vector4f(pos.x, pos.y, pos.z, 1);
-            pos = { v4.x, v4.y, v4.z };
-        }
-        return pos;
+        return {};
+        //Vector3f pos = this->get_self_position();
+        //auto node = self();
+        //if (node->has_parent())
+        //{
+        //    node = this->GetParent();
+        //    auto mat = node->GetLocalTransformMatrix();
+        //    //mat[3][0] = 0;
+        //    //mat[3][1] = 0;
+        //    //mat[3][2] = 0;
+        //    //mat[3][3] = 1;
+        //    auto v4 = mat * Vector4f(pos.x, pos.y, pos.z, 1);
+        //    pos = { v4.x, v4.y, v4.z };
+        //}
+        //return pos;
     }
     //static Vector3f chgsign(const Vector3f& x, const Vector3f& y)
     //{
@@ -126,13 +134,13 @@ namespace pulsar
     Quat4f Node::get_world_rotation() const
     {
         Quat4f rot = this->get_self_rotation();
-        auto node = this->get_parent().lock();
+        auto node = this->GetParent();
         while (node)
         {
             rot = _ScaleMulQuat(node->scale_, rot);
             rot = _QuatMul(node->rotation_, rot);
 
-            node = node->get_parent().lock();
+            node = node->GetParent();
         }
         return rot;
     }
@@ -160,11 +168,11 @@ namespace pulsar
     Vector3f Node::get_world_scale() const
     {
         Vector3f scale = this->get_self_scale();
-        auto node = this->get_parent().lock();
+        auto node = this->GetParent();
         while (node)
         {
             scale = Vector3f::Mul(scale, node->get_self_scale());
-            node = node->get_parent().lock();
+            node = node->GetParent();
         }
         return scale;
     }
@@ -193,8 +201,8 @@ namespace pulsar
 
     Node::Node()
     {
-        this->childs_ = mksptr(new List<Node_sp>);
-        this->components_ = mksptr(new List<Component_sp>);
+        this->m_children = mksptr(new List<ObjectPtr<Node>>);
+        this->m_components = mksptr(new List<ObjectPtr<Component>>);
         this->rotation_ = Quat4f::FromEuler({ 0,0,0 });
     }
 
@@ -206,29 +214,35 @@ namespace pulsar
 
     void Node::OnDestroy()
     {
-
+        base::OnDestroy();
+        for (auto& comp : *m_components)
+        {
+            DestroyObject(comp);
+        }
     }
 
 
 
-    Component_sp Node::AddComponent(Type* type)
+    ObjectPtr<Component> Node::AddComponent(Type* type)
     {
         Object_sp obj = type->CreateSharedInstance({});
         Component_sp component = sptr_cast<Component>(obj);
+        component->Construct();
+
         //init
         component->m_attachedNode = self_weak();
         component->m_ownerNode = self_weak();
-        this->components_->push_back(component);
-        component->Construct();
+        this->m_components->push_back(component);
+
         return component;
     }
 
 
-    Component_sp Node::GetComponent(Type* type) const
+    ObjectPtr<Component> Node::GetComponent(Type* type) const
     {
-        for (auto& item : *this->components_)
+        for (auto& item : *this->m_components)
         {
-            if (type->IsInstanceOfType(item.get()))
+            if (type->IsInstanceOfType(item.GetPtr()))
             {
                 return item;
             }
@@ -236,53 +250,53 @@ namespace pulsar
         return nullptr;
     }
 
-    void Node::GetAllComponents(List_sp<Component_sp>& list)
+    void Node::GetAllComponents(List_sp<ObjectPtr<Component>>& list)
     {
-        for (auto& item : *this->components_)
+        for (auto& item : *this->m_components)
         {
             list->push_back(item);
         }
     }
-    array_list<Component_sp> Node::GetAllComponentArray() const
+    array_list<ObjectPtr<Component>> Node::GetAllComponentArray() const
     {
-        return *this->components_;
+        return *this->m_components;
     }
-    void Node::GetChildren(List_sp<Node_sp>& list)
+    void Node::GetChildren(List_sp<ObjectPtr<Node>>& list)
     {
-        for (auto& item : *this->childs_)
+        for (auto& item : *this->m_children)
         {
             list->push_back(item);
         }
     }
-    array_list<sptr<Node>> Node::GetChildrenArray()
+    array_list<ObjectPtr<Node>> Node::GetChildrenArray()
     {
-        array_list<sptr<Node>> ret;
-        for (auto& item : *this->childs_)
+        array_list<ObjectPtr<Node>> ret;
+        for (auto& item : *this->m_children)
         {
             ret.push_back(item);
         }
         return ret;
     }
-    void Node::OnInstantiateAsset(sptr<AssetObject>& obj)
+    void Node::OnInstantiateAsset(ObjectPtr<AssetObject>& obj)
     {
-        auto that = sptr_cast<Node>(obj);
+        //auto that = sptr_cast<Node>(obj);
 
-        for (auto& item : *this->childs_)
-        {
-            auto n = sptr_cast<Node>(item->InstantiateAsset());
-            n->parent_ = that;
-            that->childs_->push_back(n);
-        }
+        //for (auto& item : *this->m_children)
+        //{
+        //    auto n = sptr_cast<Node>(item->InstantiateAsset());
+        //    n->m_parent = that;
+        //    that->m_children->push_back(n);
+        //}
 
         //todo: ser component panel data
-        //for (auto& item : *this->components_)
+        //for (auto& item : *this->m_components)
         //{
-        //    that->components_->push_back(sptr_cast<Component>(item->InstantiateAsset()));
+        //    that->m_components->push_back(sptr_cast<Component>(item->InstantiateAsset()));
         //}
     }
     void Node::SendMessage(MessageId id)
     {
-        for (auto& comp : *this->components_)
+        for (auto& comp : *this->m_components)
         {
             comp->OnReceiveMessage(id);
         }
@@ -304,14 +318,14 @@ namespace pulsar
 
     void Node::OnTick(Ticker ticker)
     {
-        for (auto& comp : *this->components_)
+        for (auto& comp : *this->m_components)
         {
             if (comp->IsAlive())
             {
                 comp->OnTick(ticker);
             }
         }
-        for (auto& node : *this->childs_)
+        for (auto& node : *this->m_children)
         {
             if (node->IsAlive())
             {
@@ -320,9 +334,9 @@ namespace pulsar
         }
     }
 
-    Node_sp Node::GetChild(string_view name)
+    ObjectPtr<Node> Node::GetChild(string_view name)
     {
-        for (auto& item : *this->childs_)
+        for (auto& item : *this->m_children)
         {
             if (item->name_ == name)
             {
@@ -332,12 +346,12 @@ namespace pulsar
         return nullptr;
     }
 
-    Node_sp Node::GetChildAt(int index)
+    ObjectPtr<Node> Node::GetChildAt(int index)
     {
-        return this->childs_->at(index);
+        return this->m_children->at(index);
     }
 
-    Node_sp Node::StaticCreate(string_view name)
+    ObjectPtr<Node> Node::StaticCreate(string_view name)
     {
         Node_sp node = mksptr(new Node);
         node->Construct();

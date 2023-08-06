@@ -2,20 +2,20 @@
 namespace pulsar
 {
 
-    void TextAsset::OnInstantiateAsset(sptr<AssetObject>& obj)
+    void TextAsset::OnInstantiateAsset(AssetObject_ref& obj)
     {
-        auto i = sptr_cast<TextAsset>(obj);
+        TextAsset_ref i = obj;
         i->text_ = this->text_;
     }
 
-    sptr<TextAsset> TextAsset::StaticCreate(const string& str)
+    ObjectPtr<TextAsset> TextAsset::StaticCreate(const string& str)
     {
         TextAsset* txt = new TextAsset;
         txt->text_ = str;
         return mksptr(txt);
     }
 
-    sptr<TextAsset> TextAsset::StaticCreate(string&& str)
+    ObjectPtr<TextAsset> TextAsset::StaticCreate(string&& str)
     {
         TextAsset* txt = new TextAsset;
         txt->text_ = std::move(str);

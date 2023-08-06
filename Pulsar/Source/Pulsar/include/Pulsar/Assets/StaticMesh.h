@@ -49,7 +49,7 @@ namespace pulsar
             array_list<StaticMeshSection>&& vertData,
             array_list<string>&& materialNames);
     protected:
-        virtual void OnInstantiateAsset(sptr<AssetObject>& obj) override;
+        virtual void OnInstantiateAsset(AssetObject_ref& obj) override;
     public:
 
     public:

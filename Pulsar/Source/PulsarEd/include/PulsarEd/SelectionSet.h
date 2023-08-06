@@ -7,15 +7,15 @@ namespace pulsared
     class SelectionSet
     {
     public:
-        ObjectBase_sp GetSelected();
-        array_list<ObjectBase_sp> GetSelection();
-        void Select(ObjectBase_rsp obj);
-        void UnSelect(ObjectBase_rsp obj);
+        ObjectBase_ref GetSelected();
+        array_list<ObjectBase_ref> GetSelection();
+        void Select(ObjectBase_ref obj);
+        void UnSelect(ObjectBase_ref obj);
         bool IsEmpty();
         void Clear();
         bool IsType(Type* type);
     protected:
-        array_list<wptr<ObjectBase>> selection;
+        array_list<ObjectBase_ref> selection;
     };
 
 }

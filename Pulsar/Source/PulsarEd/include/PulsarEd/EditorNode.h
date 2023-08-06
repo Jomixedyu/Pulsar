@@ -11,7 +11,7 @@ namespace pulsared
     public:
 
 
-        static sptr<EditorNode> StaticCreate(const string& name, sptr<Node> parent = nullptr);
+        static ObjectPtr<EditorNode> StaticCreate(const string& name, Node_ref parent = nullptr);
     };
     CORELIB_DECL_SHORTSPTR(EditorNode);
 }

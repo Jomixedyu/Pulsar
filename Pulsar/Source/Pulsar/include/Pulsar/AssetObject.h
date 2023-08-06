@@ -36,7 +36,7 @@ namespace pulsar
         AssetObject(AssetObject&&) = delete;
         AssetObject& operator=(const AssetObject&) = delete;
     protected:
-        virtual void OnInstantiateAsset(sptr<AssetObject>& obj);
+        virtual void OnInstantiateAsset(ObjectPtr<AssetObject>& obj);
 
     protected:
         CORELIB_REFL_DECL_FIELD(guid_);

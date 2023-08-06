@@ -93,7 +93,7 @@ namespace pulsared
 
     }
 
-    static void _ProcessNode(aiNode* node, const aiScene* scene, Node_sp pnode, const string& dir, float scale_factor)
+    static void _ProcessNode(aiNode* node, const aiScene* scene, Node_ref pnode, const string& dir, float scale_factor)
     {
         array_list<StaticMeshSection> sections;
         sections.resize(node->mNumMeshes);
@@ -109,9 +109,8 @@ namespace pulsared
 
             sections[i].MaterialIndex = materials.size() - 1;
         }
-
-        Node_sp n = Node::StaticCreate(node->mName.C_Str());
-        n->set_parent(pnode);
+        
+        auto n = pnode->NewChildNode(node->mName.C_Str());
 
         array_list<string> materialNames;
         for (auto& mat : materials)
@@ -136,11 +135,11 @@ namespace pulsared
         }
     }
 
-    Node_sp FBXImporter::Import(string_view path)
+    Node_ref FBXImporter::Import(string_view path)
     {
         float scale_factor = 1;
 
-        Node_sp node = Node::StaticCreate(PathUtil::GetFilenameWithoutExt(path));
+        auto node = Node::StaticCreate(PathUtil::GetFilenameWithoutExt(path));
 
         Assimp::Importer importer;
         const aiScene* scene = importer.ReadFile(path.data(), aiProcess_Triangulate | aiProcess_FlipUVs);

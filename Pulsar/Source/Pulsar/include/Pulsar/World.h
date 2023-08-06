@@ -23,18 +23,18 @@ namespace pulsar
         static inline Action<> OnWorldChanged;
     public:
         World();
-        virtual ~World() {}
+        virtual ~World();
     public:
         virtual void Tick(float dt);
     protected:
         virtual void OnWorldBegin();
         virtual void OnWorldEnd();
     public:
-        const sptr<Scene>& GetScene(int index) const { return m_scenes[index]; }
+        const ObjectPtr<Scene>& GetScene(int index) const { return m_scenes[index]; }
         size_t GetSceneCount() const { return m_scenes.size(); }
-        Scene* GetPresistentScene() const { return m_scenes[0].get(); }
+        ObjectPtr<Scene> GetPresistentScene() const { return m_scenes[0]; }
 
-        void ChangeScene(sptr<Scene> scene, bool clearPresistentScene = true);
+        void ChangeScene(ObjectPtr<Scene> scene, bool clearPresistentScene = true);
 
 
         const array_list<rendering::RenderObject*>& GetRenderObjects() const { return m_renderObjects; }
@@ -42,6 +42,6 @@ namespace pulsar
         void InitializePresistentScene();
     protected:
         array_list<rendering::RenderObject*>  m_renderObjects;
-        array_list<sptr<Scene>>                m_scenes;
+        array_list<ObjectPtr<Scene>>          m_scenes;
     };
 }

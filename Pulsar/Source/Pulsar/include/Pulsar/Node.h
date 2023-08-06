@@ -31,6 +31,7 @@ namespace pulsar
     class Node : public AssetObject, public ITickable
     {
         CORELIB_DEF_TYPE(AssemblyObject_Pulsar, pulsar::Node, AssetObject);
+        ObjectPtr<Node> self_ref() const { return GetObjectHandle(); }
     public:
         bool get_is_active() const;
         bool get_is_active_self() const;
@@ -38,8 +39,9 @@ namespace pulsar
         //TransformComponent_sp get_transform();
 
         bool has_parent() const { return this->has_parent_; }
-        wptr<Node> get_parent() const;
-        void set_parent(sptr<Node> parent, bool keep_world_transform = false);
+        ObjectPtr<Node> GetParent() const;
+        void SetParent(ObjectPtr<Node> parent, bool keepWorldTransform = false);
+        ObjectPtr<Node> NewChildNode(string_view name);
 
         int32_t get_child_count() const;
     public:
@@ -82,33 +84,33 @@ namespace pulsar
         virtual void OnConstruct() override;
         virtual void OnDestroy() override;
     public:
-        sptr<Component> AddComponent(Type* type);
+        ObjectPtr<Component> AddComponent(Type* type);
         template<typename T>
-        sptr<T> AddComponent()
+        ObjectPtr<T> AddComponent()
         {
-            return sptr_cast<T>(this->AddComponent(cltypeof<T>()));
+            return this->AddComponent(cltypeof<T>());
         }
 
-        sptr<Component> GetComponent(Type* type) const;
+        ObjectPtr<Component> GetComponent(Type* type) const;
 
         template<baseof_component_concept T>
-        sptr<T> GetComponent()
+        ObjectPtr<T> GetComponent()
         {
-            return sptr_cast<T>(this->GetComponent(cltypeof<T>()));
+            return this->GetComponent(cltypeof<T>());
         }
 
-        void GetAllComponents(List_sp<sptr<Component>>& list);
-        array_list<Component_sp> GetAllComponentArray() const;
-        size_t GetComponentCount() const { return this->components_->size(); }
-        void GetChildren(List_sp<sptr<Node>>& list);
-        array_list<sptr<Node>> GetChildrenArray();
+        void GetAllComponents(List_sp<ObjectPtr<Component>>& list);
+        array_list<ObjectPtr<Component>> GetAllComponentArray() const;
+        size_t GetComponentCount() const { return this->m_components->size(); }
+        void GetChildren(List_sp<ObjectPtr<Node>>& list);
+        array_list<ObjectPtr<Node>> GetChildrenArray();
 
-        sptr<Node> GetChild(string_view name);
-        sptr<Node> GetChildAt(int index);
+        ObjectPtr<Node> GetChild(string_view name);
+        ObjectPtr<Node> GetChildAt(int index);
     public:
-        static sptr<Node> StaticCreate(string_view name);
+        static ObjectPtr<Node> StaticCreate(string_view name);
     protected:
-        virtual void OnInstantiateAsset(sptr<AssetObject>& obj) override;
+        virtual void OnInstantiateAsset(ObjectPtr<AssetObject>& obj) override;
     public:
 
         void RotateEulerLocal(Vector3f v);
@@ -116,7 +118,7 @@ namespace pulsar
 
     private:
         bool is_active_;
-        wptr<Node> parent_;
+        ObjectPtr<Node> m_parent;
         bool has_parent_ = false;
 
         CORELIB_REFL_DECL_FIELD(position_);
@@ -126,11 +128,11 @@ namespace pulsar
         CORELIB_REFL_DECL_FIELD(scale_);
         Vector3f scale_{ 1.f,1.f,1.f };
 
-        CORELIB_REFL_DECL_FIELD(childs_);
-        List_sp<sptr<Node>> childs_;
+        CORELIB_REFL_DECL_FIELD(m_children);
+        List_sp<ObjectPtr<Node>> m_children;
 
-        CORELIB_REFL_DECL_FIELD(components_);
-        List_sp<sptr<Component>> components_;
+        CORELIB_REFL_DECL_FIELD(m_components);
+        List_sp<ObjectPtr<Component>> m_components;
 
     };
     DECL_PTR(Node);
