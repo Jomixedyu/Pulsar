@@ -8,7 +8,7 @@ namespace pulsar
     {
         Material_sp material = mksptr(new Material);
         material->Construct();
-        material->set_name(name);
+        material->SetName(name);
         material->shader_ = shader;
 
         return material;

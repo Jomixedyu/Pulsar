@@ -67,8 +67,14 @@ namespace pulsar
 
         auto gfx = Application::GetGfxApp();
 
+        auto depthFormats = gfx->GetSupportedDepthFormats();
+        assert(depthFormats.size() != 0);
+
+        
         self->m_color0 = gfx->CreateRenderTarget(width, height, gfx::GFXRenderTargetType::Color, gfx::GFXTextureFormat::R8G8B8A8_SRGB, {});
-        self->m_depth = gfx->CreateRenderTarget(width, height, gfx::GFXRenderTargetType::Depth, gfx::GFXTextureFormat::R8, {});
+        self->m_depth = gfx->CreateRenderTarget(width, height, gfx::GFXRenderTargetType::DepthStencil, depthFormats[0], {});
+
+
 
         std::vector rts = { self->m_color0.get(), self->m_depth.get() };
 

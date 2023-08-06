@@ -37,6 +37,7 @@ namespace pulsar
         void DisableRenderTarget();
 
         const std::shared_ptr<gfx::GFXRenderTarget>& GetGfxRenderTarget0() const { return m_color0; }
+        const std::shared_ptr<gfx::GFXFrameBufferObject>& GetGfxFrameBufferObject() const { return m_framebuffer; }
 
     protected:
         //int32_t width_;

@@ -88,6 +88,8 @@ namespace gfx
 
         virtual std::shared_ptr<GFXRenderPassLayout> CreateRenderPassLayout(const std::vector<GFXRenderTarget*>& renderTargets) = 0;
 
+        virtual std::vector<GFXTextureFormat> GetSupportedDepthFormats() = 0;
+
         virtual intptr_t GetWindowHandle() = 0;
 
         virtual GFXViewport* GetViewport() = 0;

@@ -36,7 +36,7 @@ namespace gfx
 
         }
         virtual void SetConstantBuffer(size_t size, GFXBuffer* buffer) override;
-        virtual void SetTextureSampler2D(GFXTexture2D* texture) override;
+        virtual void SetTextureSampler2D(GFXTexture* texture) override;
     public:
         VkDescriptorBufferInfo BufferInfo{};
         VkDescriptorImageInfo ImageInfo{};
@@ -59,6 +59,7 @@ namespace gfx
     public:
         virtual GFXDescriptor* AddDescriptor(uint32_t bindingPoint) override;
         virtual void Submit() override;
+        virtual intptr_t GetId() override;
     public:
         GFXVulkanApplication* GetApplication() const;
         const VkDescriptorSet& GetVkDescriptorSet() const { return m_descriptorSet; }

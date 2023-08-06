@@ -7,7 +7,7 @@ namespace pulsared
     {
         sptr<EditorNode> node = mksptr(new EditorNode);
         node->Construct();
-        node->set_name(name);
+        node->SetName(name);
         node->set_parent(parent);
         return node;
     }

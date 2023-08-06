@@ -58,5 +58,7 @@ namespace gfx
 
 		int32_t m_width;
 		int32_t m_height;
+
+		int32_t m_id;
 	};
 }

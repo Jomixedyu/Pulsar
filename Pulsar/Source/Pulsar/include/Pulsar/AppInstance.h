@@ -39,7 +39,6 @@ namespace pulsar
         virtual void OnBeginRender(float dt) = 0;
         virtual void OnEndRender(float d4) = 0;
         virtual bool IsQuit() = 0;
-
     protected:
         array_list<Subsystem_sp> subsystems;
     protected:

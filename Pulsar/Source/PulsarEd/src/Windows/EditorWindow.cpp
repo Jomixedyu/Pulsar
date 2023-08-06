@@ -12,18 +12,24 @@ namespace pulsared
 
     void EditorWindow::DrawImGui()
     {
-        ImGui::Begin(GetWindowName().data(), &this->is_opened, GetGuiWindowFlags());
-        if (this->is_opened)
+        bool isOpened;
+        bool isDrawable = ImGui::Begin(GetWindowName().data(), &isOpened, GetGuiWindowFlags());
+        if (isOpened)
         {
-            this->OnDrawImGui();
+            m_isOpened = isOpened;
+            if (isDrawable)
+            {
+                this->OnDrawImGui();
+            }
         }
         else
         {
-            this->is_opened = true;
+            //close
             this->Close();
         }
 
         ImGui::End();
+
     }
 
     void EditorWindow::OnDrawImGui()
@@ -33,20 +39,20 @@ namespace pulsared
 
     bool EditorWindow::Open()
     {
-        if (this->is_opened) return true;
+        if (this->m_isOpened) return true;
         
         if (!EditorWindowManager::RegisterWindow(self()))
         {
             return false;
         }
-        this->is_opened = true;
+        this->m_isOpened = true;
         this->OnOpen();
         return true;
     }
     void EditorWindow::Close()
     {
-        if (!this->is_opened) return;
-        this->is_opened = false;
+        if (!this->m_isOpened) return;
+        this->m_isOpened = false;
         this->OnClose();
         EditorWindowManager::UnRegisterWindow(self());
     }
@@ -57,7 +63,7 @@ namespace pulsared
         return ++id;
     }
 
-    EditorWindow::EditorWindow() : window_id_(_NewId())
+    EditorWindow::EditorWindow() : m_windowId(_NewId())
     {
 
     }

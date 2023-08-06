@@ -9,15 +9,21 @@ namespace pulsar
     class Material;
 
 
-
     class World
     {
     public:
         static World* Current();
-        static World* Reset(World* world);
+        static World* Reset(std::unique_ptr<World>&& world);
+        template<typename T>
+        static T* Reset()
+        {
+            return static_cast<T*>(Reset(std::unique_ptr<World>(new T)));
+        }
+
         static inline Action<> OnWorldChanged;
     public:
         World();
+        virtual ~World() {}
     public:
         virtual void Tick(float dt);
     protected:
@@ -25,7 +31,8 @@ namespace pulsar
         virtual void OnWorldEnd();
     public:
         const sptr<Scene>& GetScene(int index) const { return m_scenes[index]; }
-        const Scene* GetPresistentScene() const { return m_scenes[0].get(); }
+        size_t GetSceneCount() const { return m_scenes.size(); }
+        Scene* GetPresistentScene() const { return m_scenes[0].get(); }
 
         void ChangeScene(sptr<Scene> scene, bool clearPresistentScene = true);
 

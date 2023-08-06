@@ -63,10 +63,8 @@ namespace gfx
         std::vector< std::unique_ptr<GFXVulkanQueue> > m_queues;
 
         std::vector<std::unique_ptr<GFXVulkanRenderTarget>> m_swapRenderTarget;
-        std::vector<std::unique_ptr<GFXVulkanTexture2D>> m_swapTex;
 
         std::unique_ptr<GFXVulkanRenderTarget> m_depthRenderTarget = nullptr;
-        std::unique_ptr<GFXVulkanTexture2D> m_depthTex = nullptr;
 
         std::shared_ptr<GFXVulkanRenderPass> m_renderPass;
 

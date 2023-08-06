@@ -8,6 +8,6 @@ namespace pulsared
         CORELIB_DEF_TYPE(AssemblyObject_PulsarEd, pulsared::Grid3DComponent, EditorComponent);
     public:
         virtual void OnInitialize() override;
-        virtual void OnDraw() override;
+        //virtual void OnDraw() override;
     };
 }

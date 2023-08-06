@@ -14,7 +14,10 @@ namespace pulsar
     {
         CORELIB_DEF_TYPE(AssemblyObject_Pulsar, pulsar::CameraComponent, Component);
     public:
-        
+        virtual ~CameraComponent() override
+        {
+            int a = 3;
+        }
         void Render();
     public:
         Matrix4f GetViewMat();

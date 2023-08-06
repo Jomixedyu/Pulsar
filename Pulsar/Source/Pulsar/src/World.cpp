@@ -4,25 +4,25 @@
 
 namespace pulsar
 {
-    static World* _world_inst;
+    static std::unique_ptr<World> _world_inst = nullptr;
 
     World* World::Current()
     {
-        return _world_inst;
+        return _world_inst.get();
     }
 
-    World* World::Reset(World* world)
+    World* World::Reset(std::unique_ptr<World>&& world)
     {
         if (_world_inst)
         {
             _world_inst->OnWorldEnd();
         }
-        _world_inst = world;
+        _world_inst = std::move(world);
         if (_world_inst)
         {
             _world_inst->OnWorldBegin();
         }
-        return _world_inst;
+        return _world_inst.get();
     }
     World::World()
     {

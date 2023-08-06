@@ -3,11 +3,8 @@
 #include <Pulsar/ObjectBase.h>
 #include <CoreLib/Guid.h>
 #include <CoreLib.Serialization/DataSerializer.h>
+#include <CoreLib/index_string.hpp>
 
-namespace pulsared
-{
-    class AssetSourcePackage;
-}
 namespace pulsar
 {
     struct AssetSerializer
@@ -24,7 +21,6 @@ namespace pulsar
     class AssetObject : public ObjectBase
     {
         CORELIB_DEF_TYPE(AssemblyObject_Pulsar, pulsar::AssetObject, ObjectBase);
-        friend class ::pulsared::AssetSourcePackage; //editor
     public:
         virtual void OnSerialize(AssetSerializer* serializer) {}
         sptr<AssetObject> InstantiateAsset();
@@ -32,8 +28,8 @@ namespace pulsar
         guid_t get_source_package() const { return this->package_guid_; }
         guid_t get_guid() const { return this->guid_; }
         string get_virtual_path() const { return this->virtual_path_; };
-        const string& get_name() const { return this->name_; }
-        void set_name(string_view name) { this->name_ = name; }
+        const string& GetName() const { return this->name_; }
+        void SetName(string_view name) { this->name_ = name; }
     public:
         AssetObject() = default;
         AssetObject(const AssetObject&) = delete;

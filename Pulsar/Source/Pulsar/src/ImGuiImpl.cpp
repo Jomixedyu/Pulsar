@@ -33,7 +33,7 @@ namespace pulsar
         io.ConfigFlags &= ~ImGuiConfigFlags_ViewportsEnable;
 
         io.ConfigWindowsMoveFromTitleBarOnly = true;
-        io.MouseDrawCursor = true;
+        //io.MouseDrawCursor = true;
 
         {
             ImFontConfig fontConfig{};

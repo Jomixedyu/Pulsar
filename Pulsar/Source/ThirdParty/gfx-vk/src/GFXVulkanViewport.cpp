@@ -208,27 +208,17 @@ namespace gfx
         m_swapChainImageFormat = surfaceFormat.format;
         m_swapChainExtent = extent;
 
-        GFXVulkanTexture2D* depthTexture = nullptr;
+
         //create depth image
         {
-            VkFormat depthFormat = BufferHelper::FindDepthFormat(m_app);
             auto extent = m_swapChainExtent;
 
-            VkImage depthImage;
-            VkDeviceMemory depthMemory;
+            auto depthRtPtr = new GFXVulkanRenderTarget(m_app,
+                extent.width, extent.height,
+                gfx::GFXRenderTargetType::DepthStencil,
+                m_app->GetSupportedDepthFormats()[0], {});
 
-            BufferHelper::CreateImage(
-                m_app, extent.width, extent.height, depthFormat,
-                VK_IMAGE_TILING_OPTIMAL,
-                VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                depthImage, depthMemory);
-            auto depthImageView = BufferHelper::CreateImageView(m_app, depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
-            BufferHelper::TransitionImageLayout(m_app, depthImage, depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-
-            depthTexture = new GFXVulkanTexture2D(m_app, extent.width, extent.height, 1, depthFormat, depthImage, depthMemory, depthImageView, false, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, GFXSamplerConfig{});
-            m_depthTex = std::unique_ptr<GFXVulkanTexture2D>{ depthTexture };
-            m_depthRenderTarget = std::unique_ptr<GFXVulkanRenderTarget>(new GFXVulkanRenderTarget(m_depthTex.get(), GFXRenderTargetType::Depth));
+            m_depthRenderTarget = std::unique_ptr<GFXVulkanRenderTarget>(depthRtPtr);
         }
 
 
@@ -257,20 +247,24 @@ namespace gfx
                 throw std::runtime_error("failed to create image views!");
             }
 
-            auto tex2d = std::unique_ptr<GFXVulkanTexture2D>{ new GFXVulkanTexture2D(m_app, extent.width, extent.height, 4, m_swapChainImageFormat, m_swapChainImages[i], m_swapChainImageViews[i], VK_IMAGE_LAYOUT_PRESENT_SRC_KHR) };
-
-            auto texRt = new GFXVulkanRenderTarget(tex2d.get(), GFXRenderTargetType::Color);
+            auto texRt = new GFXVulkanRenderTarget(
+                extent.width, extent.height,
+                m_swapChainImages[i],
+                m_swapChainImageViews[i],
+                m_swapChainImageFormat,
+                VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+                gfx::GFXRenderTargetType::Color);
 
             m_swapRenderTarget.push_back(std::unique_ptr<GFXVulkanRenderTarget>(texRt));
 
-            m_swapTex.push_back(std::move(tex2d));
         }
 
         m_renderPass = std::shared_ptr<GFXVulkanRenderPass>{ new GFXVulkanRenderPass(m_app, { m_swapRenderTarget[0].get(), m_depthRenderTarget.get() }) };
 
         for (size_t i = 0; i < m_swapChainImages.size(); i++)
         {
-            m_framebuffer.push_back(std::unique_ptr<GFXVulkanFrameBufferObject>{ new GFXVulkanFrameBufferObject(m_app, { m_swapRenderTarget[i].get() , m_depthRenderTarget.get() }, m_renderPass) });
+            auto fbo = new GFXVulkanFrameBufferObject(m_app, { m_swapRenderTarget[i].get() , m_depthRenderTarget.get() }, m_renderPass);
+            m_framebuffer.push_back(std::unique_ptr<GFXVulkanFrameBufferObject>{fbo});
         }
     }
 
@@ -278,10 +272,7 @@ namespace gfx
     {
         m_framebuffer.clear();
         m_swapRenderTarget.clear();
-        m_swapTex.clear();
-
         m_depthRenderTarget.reset();
-        m_depthTex.reset();
 
         for (size_t i = 0; i < m_swapChainImageViews.size(); i++)
         {

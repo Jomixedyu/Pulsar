@@ -14,5 +14,5 @@ using namespace pulsared;
 
 int main()
 {
-    return Application::Exec(new EditorAppInstance, "pulsar", { 1280,720 });
+    return Application::Exec(new EditorAppInstance, "Pulsar Editor", { 1280,720 });
 }

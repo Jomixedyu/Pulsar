@@ -71,6 +71,8 @@ namespace gfx
         virtual std::shared_ptr<GFXDescriptorSetLayout> CreateDescriptorSetLayout(
             const std::vector<GFXDescriptorSetLayoutInfo>& layoutInfos) override;
 
+        virtual std::vector<GFXTextureFormat> GetSupportedDepthFormats() override;
+
         class GFXVulkanDescriptorManager* GetVulkanDescriptorManager() const { return m_descriptorManager; }
         virtual GFXExtensions GetExtensionNames() override;
         virtual intptr_t GetWindowHandle() override;
@@ -148,6 +150,9 @@ namespace gfx
 
         std::chrono::steady_clock::time_point m_startTime;
         std::chrono::steady_clock::time_point m_lastTime;
+
+
+        std::vector<GFXTextureFormat> m_depthFormatCache;
     };
 
     class IGFXVulkanDevice

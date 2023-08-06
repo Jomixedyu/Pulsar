@@ -5,7 +5,7 @@
 #include "RendererComponent.h"
 #include <Pulsar/Node.h>
 #include <Pulsar/Assets/Material.h>
-#include "Assets/StaticMesh.h"
+#include <Pulsar/Assets/StaticMesh.h>
 
 namespace pulsar
 {

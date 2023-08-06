@@ -6,7 +6,9 @@ namespace gfx
 	enum class GFXRenderTargetType
 	{
 		Color,
-		Depth
+		Depth,
+		Stencil,
+		DepthStencil
 	};
 
 	class GFXRenderTarget : public GFXTexture

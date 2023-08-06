@@ -5,9 +5,9 @@
 namespace pulsar
 {
 
-    sptr<Node> Component::GetAttachmentNode()
+    sptr<Node> Component::GetAttachedNode()
     {
-        return m_attachmentNode.lock();
+        return m_attachedNode.lock();
     }
     sptr<Node> Component::GetOnwerNode()
     {

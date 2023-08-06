@@ -11,7 +11,7 @@ namespace pulsared
 
         ImGui::PushItemWidth(-1);
         
-        ImGui::Text(material->get_name().c_str());
+        ImGui::Text(material->GetName().c_str());
 
         ImGui::PopItemWidth();
     }

@@ -8,16 +8,18 @@
 namespace pulsar
 {
     class Node;
+    
+    using MessageId = size_t;
 
     class Component : public ObjectBase, public ITickable
     {
         friend class Node;
         CORELIB_DEF_TYPE(AssemblyObject_Pulsar, pulsar::Component, ObjectBase);
     public:
-        sptr<Node> GetAttachmentNode();
+        sptr<Node> GetAttachedNode();
         sptr<Node> GetOnwerNode();
         virtual bool get_is_tickable() const { return true; }
-        
+        virtual void OnReceiveMessage(MessageId id) {}
     public:
 		virtual bool EqualsComponentType(Type* type);
     public:
@@ -31,7 +33,7 @@ namespace pulsar
         Component() {}
     private:
         wptr<Node> m_ownerNode;
-        wptr<Node> m_attachmentNode;
+        wptr<Node> m_attachedNode;
 
     };
     CORELIB_DECL_SHORTSPTR(Component);

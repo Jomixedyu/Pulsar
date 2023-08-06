@@ -139,15 +139,14 @@ namespace pulsared
         submenu->FindCheckEntry(window_name)->is_check = check_state;
     }
 
-
-    void EditorWindowManager::Reset()
+    void EditorWindowManager::Initialize()
     {
         _DockspaceWindow = mksptr(new DockspaceWindow);
         _MainMenuBarWindow = mksptr(new MainMenuBarWindow);
-        //_StatusBarWindow = mksptr(new StatusBarWindow);
+        _StatusBarWindow = mksptr(new StatusBarWindow);
         _DockspaceWindow->Open();
         _MainMenuBarWindow->Open();
-        //_StatusBarWindow->Open();
+        _StatusBarWindow->Open();
 
         _registered_menu.emplace(WorkspaceWindow::StaticWindowName(), cltypeof<WorkspaceWindow>());
         _registered_menu.emplace(PropertiesWindow::StaticWindowName(), cltypeof<PropertiesWindow>());
@@ -169,7 +168,16 @@ namespace pulsared
             //force show all
             sptr_cast<EditorWindow>(type->CreateSharedInstance({}))->Open();
         }
+    }
 
+    void EditorWindowManager::Terminate()
+    {
+        _registered_windows.Refresh();
+        for (auto& win : _registered_windows.items)
+        {
+            win->Close();
+        }
+        _registered_windows.items.clear();
     }
 
 

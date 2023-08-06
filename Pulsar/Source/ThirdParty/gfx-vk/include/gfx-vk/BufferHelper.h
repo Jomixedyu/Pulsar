@@ -1,5 +1,6 @@
 #pragma once
 #include "GFXVulkanApplication.h"
+#include <vector>
 
 namespace gfx
 {
@@ -43,11 +44,13 @@ namespace gfx
             VkFilter filter = VkFilter::VK_FILTER_LINEAR, 
             VkSamplerAddressMode addressMode = VkSamplerAddressMode::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
 
-        static VkFormat FindDepthFormat(GFXVulkanApplication* app);
+        static std::vector<VkFormat> FindDepthFormats(GFXVulkanApplication* app, bool assertEmpty = false);
 
 
         static VkFilter GetVkFilter(GFXSamplerFilter filter);
         static VkSamplerAddressMode GetVkAddressMode(GFXSamplerAddressMode mode);
+
         static VkFormat GetVkFormat(GFXTextureFormat format);
+        static GFXTextureFormat GetTextureFormat(VkFormat format);
     };
 }

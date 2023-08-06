@@ -1,8 +1,8 @@
 #pragma once
 
 #include "Component.h"
-#include "Assets/Material.h"
-#include "Rendering/RenderObject.h"
+#include <Pulsar/Assets/Material.h>
+#include <Pulsar/Rendering/RenderObject.h>
 
 namespace pulsar
 {

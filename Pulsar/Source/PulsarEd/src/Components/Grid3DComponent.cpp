@@ -78,23 +78,23 @@ void main()
 
         program = new ShaderPass("Editor/Grid3D", vertcode, fragcode);
     }
-    void Grid3DComponent::OnDraw()
-    {
-        ShaderPassScope sp(program);
+    //void Grid3DComponent::OnDraw()
+    //{
+    //    ShaderPassScope sp(program);
 
-        //glBindVertexArray(vao);
-        auto scenewin = EditorWindowManager::GetWindow<SceneWindow>();
-        sp->SetUniformMatrix4fv("MODEL", Matrix4f::StaticScalar());
-        //sp->SetUniformMatrix4fv("MODEL", scenewin->GetSceneCameraNode()->GetModelMatrix());
-        sp->SetUniformMatrix4fv("VIEW", scenewin->GetSceneCamera()->GetViewMat());
-        sp->SetUniformMatrix4fv("PROJECTION", scenewin->GetSceneCamera()->GetProjectionMat());
-        //
-        assert(scenewin && scenewin->get_is_opened());
+    //    //glBindVertexArray(vao);
+    //    auto scenewin = EditorWindowManager::GetWindow<SceneWindow>();
+    //    sp->SetUniformMatrix4fv("MODEL", Matrix4f::StaticScalar());
+    //    //sp->SetUniformMatrix4fv("MODEL", scenewin->GetSceneCameraNode()->GetModelMatrix());
+    //    sp->SetUniformMatrix4fv("VIEW", scenewin->GetSceneCamera()->GetViewMat());
+    //    sp->SetUniformMatrix4fv("PROJECTION", scenewin->GetSceneCamera()->GetProjectionMat());
+    //    //
+    //    assert(scenewin && scenewin->get_is_opened());
 
-        auto a = vert.size();
+    //    auto a = vert.size();
 
-        //glDrawArrays(GL_LINES, 0, a);
+    //    //glDrawArrays(GL_LINES, 0, a);
 
-        //glBindVertexArray(0);
-    }
+    //    //glBindVertexArray(0);
+    //}
 }

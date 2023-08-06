@@ -70,7 +70,11 @@ namespace pulsar
         Node& operator=(const Node& r) = delete;
     public:
         Node();
-
+        virtual ~Node() override
+        {
+            int a = 3;
+        }
+        void SendMessage(MessageId id);
 
         //ITickable 
         virtual void OnTick(Ticker ticker) override;

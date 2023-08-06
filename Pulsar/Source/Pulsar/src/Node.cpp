@@ -216,7 +216,7 @@ namespace pulsar
         Object_sp obj = type->CreateSharedInstance({});
         Component_sp component = sptr_cast<Component>(obj);
         //init
-        component->m_attachmentNode = self_weak();
+        component->m_attachedNode = self_weak();
         component->m_ownerNode = self_weak();
         this->components_->push_back(component);
         component->Construct();
@@ -280,7 +280,13 @@ namespace pulsar
         //    that->components_->push_back(sptr_cast<Component>(item->InstantiateAsset()));
         //}
     }
-
+    void Node::SendMessage(MessageId id)
+    {
+        for (auto& comp : *this->components_)
+        {
+            comp->OnReceiveMessage(id);
+        }
+    }
     void Node::RotateEulerLocal(Vector3f v)
     {
         this->rotation_ *= Quat4f::FromEuler(v);
@@ -335,7 +341,7 @@ namespace pulsar
     {
         Node_sp node = mksptr(new Node);
         node->Construct();
-        node->set_name(name);
+        node->SetName(name);
 
         return node;
     }

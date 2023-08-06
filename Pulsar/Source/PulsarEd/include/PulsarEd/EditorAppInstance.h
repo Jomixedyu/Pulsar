@@ -3,9 +3,50 @@
 #include <Pulsar/AppInstance.h>
 #include <Pulsar/BuiltinRP.h>
 #include <Pulsar/ImGuiImpl.h>
+#include <Pulsar/EngineAppInstance.h>
 
 namespace pulsared
 {
+
+    class EditorRenderPipeline : public gfx::GFXRenderPipeline
+    {
+        EngineRenderPipeline* m_engineRenderPipeline;
+    public:
+        EditorRenderPipeline(World* world)
+        {
+            m_engineRenderPipeline = new EngineRenderPipeline(world);
+        }
+        ~EditorRenderPipeline()
+        {
+            delete m_engineRenderPipeline;
+            m_engineRenderPipeline = nullptr;
+        }
+
+        std::shared_ptr<ImGuiObject> ImGuiObject;
+        std::vector<gfx::GFXFrameBufferObject*> m_frameBuffers;
+
+        virtual void OnRender(gfx::GFXRenderContext* context, const std::vector<gfx::GFXFrameBufferObject*>& renderTargets)
+        {
+            //m_engineRenderPipeline->OnRender(context, m_frameBuffers);
+
+            // view port
+            auto rt = static_cast<gfx::GFXFrameBufferObject*>(renderTargets[0]);
+            auto& buffer = context->AddCommandBuffer();
+            buffer.Begin();
+
+            buffer.SetFrameBuffer(rt);
+            buffer.CmdClearColor(0.0, 0.0, 0.0, 1);
+            buffer.CmdBeginFrameBuffer();
+            buffer.CmdSetViewport(0, 0, rt->GetWidth(), rt->GetHeight());
+            ImGuiObject->Render(&buffer);
+            buffer.CmdEndFrameBuffer();
+            buffer.SetFrameBuffer(nullptr);
+
+            buffer.End();
+        }
+    };
+
+
     class EditorAppInstance : public AppInstance
     {
 
@@ -28,10 +69,21 @@ namespace pulsared
         virtual Vector2f GetAppSize();
         virtual void SetAppSize(Vector2f size);
 
+        virtual bool IsInteractiveRendering() const;
+
+        void StartInteractiveRendering();
+        void StopInteractiveRendering();
+
     protected:
         std::shared_ptr<ImGuiObject> m_gui = nullptr;
 
         Vector2f output_size_;
-        builtinrp::BultinRP* render_pipeline_;
+
+        bool m_isPlaying = false;
     };
+
+    inline EditorAppInstance* GetEdApp()
+    {
+        return static_cast<EditorAppInstance*>(Application::inst());
+    }
 }

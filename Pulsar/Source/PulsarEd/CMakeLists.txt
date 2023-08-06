@@ -34,6 +34,5 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 	Pulsar
 	assimp-vc143-mt
 	glfw3_mt
-	imgui
 	PRIVATE
 )

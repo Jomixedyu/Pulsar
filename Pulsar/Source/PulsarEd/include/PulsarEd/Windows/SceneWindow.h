@@ -19,16 +19,19 @@ namespace pulsared
         virtual void OnDrawImGui() override;
 
 
-        Node_sp GetSceneCameraNode() { return this->m_camNode; }
-        Node_sp GetSceneCameraControllerNode() { return this->m_camCtrlNode; }
-        CameraComponent_sp GetSceneCamera() { return this->m_camNode->GetComponent<CameraComponent>(); }
+        Node_sp GetSceneCameraNode() { return this->m_camNode.lock(); }
+        Node_sp GetSceneCameraControllerNode() { return this->m_camCtrlNode.lock(); }
+        CameraComponent_sp GetSceneCamera() { return this->GetSceneCameraNode()->GetComponent<CameraComponent>(); }
     private:
         virtual void OnWindowResize();
     private:
         int32_t drawmode_select_index = 0;
         int32_t m_editModeIndex = 0;
-        Node_sp m_camNode;
-        Node_sp m_camCtrlNode;
+        Node_wp m_camNode;
+        Node_wp m_camCtrlNode;
         Vector2i m_viewportSize;
+
+        gfx::GFXDescriptorSetLayout_sp m_descriptorLayout;
+        gfx::GFXDescriptorSet_sp m_descriptorSet;
     };
 }

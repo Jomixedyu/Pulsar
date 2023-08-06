@@ -12,6 +12,8 @@
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_vulkan.h>
 #include <gfx-vk/GFXVulkanRenderTarget.h>
+#include "EditorAppInstance.h"
+
 namespace pulsared
 {
 
@@ -22,6 +24,7 @@ namespace pulsared
 
     void SceneWindow::OnOpen()
     {
+
         EditorNode_sp camCtrlNode = EditorNode::StaticCreate("EdCameraController");
         EditorNode_sp camNode = EditorNode::StaticCreate("EdCamera", camCtrlNode);
         this->m_camNode = camNode;
@@ -40,21 +43,27 @@ namespace pulsared
 
         camCtrlNode->AddComponent<StdEditCameraControllerComponent>();
 
-        auto rt = RenderTexture::StaticCreate(1280, 720, true, true);
-        cam->SetRenderTarget(rt);
+        cam->SetRenderTarget(RenderTexture::StaticCreate(1280, 720, true, true));
 
         ////node->set_self_euler_rotation({ 0,-90,0 });
-        World::Current()->GetScene()->AddNode(camCtrlNode);
+        World::Current()->GetPresistentScene()->AddNode(camCtrlNode);
 
-        //EditorNode_sp grid3d = EditorNode::StaticCreate("Grid3d");
-        //grid3d->AddComponent<Grid3DComponent>();
-        //World::Current()->scene->AddNode(grid3d);
+        EditorNode_sp grid3d = EditorNode::StaticCreate("Grid3d");
+        grid3d->AddComponent<Grid3DComponent>();
+        World::Current()->GetPresistentScene()->AddNode(grid3d);
 
+        m_descriptorLayout = Application::GetGfxApp()->CreateDescriptorSetLayout({
+            gfx::GFXDescriptorSetLayoutInfo(0, gfx::GFXDescriptorType::CombinedImageSampler, gfx::GFXShaderStageFlags::Fragment)
+            });
     }
 
     void SceneWindow::OnClose()
     {
-
+        World::Current()->GetPresistentScene()->RemoveNode(this->GetSceneCameraControllerNode());
+        m_camNode.reset();
+        m_camCtrlNode.reset();
+        m_descriptorLayout = nullptr;
+        m_descriptorSet = nullptr;
     }
 
     void SceneWindow::OnDrawImGui()
@@ -62,7 +71,6 @@ namespace pulsared
         static bool demowin = true;
         if (demowin)
             ImGui::ShowDemoWindow(&demowin);
-        //RenderContext::PushCamera(this->GetSceneCamera());
 
         if (ImGui::BeginMenuBar())
         {
@@ -113,7 +121,6 @@ namespace pulsared
         ImVec2 vMax = ImGui::GetWindowContentRegionMax();
 
 
-
         vMin.x += ImGui::GetWindowPos().x;
         vMin.y += ImGui::GetWindowPos().y;
         vMax.x += ImGui::GetWindowPos().x;
@@ -121,32 +128,17 @@ namespace pulsared
         int content_size_x = vMax.x - vMin.x;
         int content_size_y = vMax.y - vMin.y;
 
-
-        static VkDescriptorSet vkset;
-        auto cam = this->GetSceneCamera();
-        cam->size_ = m_viewportSize;
-
         if (this->m_viewportSize.x != content_size_x || this->m_viewportSize.y != content_size_y)
         {
             this->m_viewportSize = { content_size_x, content_size_y };
             this->OnWindowResize();
-            auto rt = cam->GetRenderTarget()->GetGfxRenderTarget0();
-            auto vkrt = static_cast<gfx::GFXVulkanRenderTarget*>(rt.get());
-            vkset = ImGui_ImplVulkan_AddTexture(
-                vkrt->GetVulkanTexture2d()->GetVkSampler(),
-                vkrt->GetVulkanTexture2d()->GetVkImageView(),
-                vkrt->GetVulkanTexture2d()->GetVkImageLayout());
         }
 
-        
-        cam->Render();
+        m_descriptorSet->AddDescriptor(0)->SetTextureSampler2D(this->GetSceneCamera()->GetRenderTarget()->GetGfxRenderTarget0().get());
+        m_descriptorSet->Submit();
 
-        //GetSceneCamera()->GetRenderTarget()->;
-        ImGui::Image(&vkset, ImVec2(content_size_x, content_size_y), ImVec2(0, 1), ImVec2(1, 0));
-        // 
-        //ImGui::Image((ImTextureID)cam->render_target->get_tex_id(), ImVec2(content_size_x, content_size_y), ImVec2(0, 1), ImVec2(1, 0));
-
-        //RenderContext::PopCamera();
+        auto imgId = m_descriptorSet->GetId();
+        ImGui::Image((void*)imgId, ImVec2(content_size_x, content_size_y), ImVec2(0, 1), ImVec2(1, 0));
     }
 
     void SceneWindow::OnWindowResize()
@@ -157,6 +149,11 @@ namespace pulsared
         assert(cam->GetRenderTarget());
 
         cam->SetRenderTarget(RenderTexture::StaticCreate(m_viewportSize.x, m_viewportSize.y, true, true));
+
+        m_descriptorSet = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_descriptorLayout.get());
+        auto pipeline = dynamic_cast<EditorRenderPipeline*>(Application::GetGfxApp()->GetRenderPipeline());
+        pipeline->m_frameBuffers.resize(1);
+        pipeline->m_frameBuffers[0] = cam->GetRenderTarget()->GetGfxFrameBufferObject().get();
     }
 
 }

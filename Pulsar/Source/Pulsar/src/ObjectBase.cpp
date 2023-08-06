@@ -7,7 +7,7 @@ namespace pulsar
 
     static auto _object_table()
     {
-        static auto table = new std::map<ObjectHandle, wptr<ObjectBase>>;
+        static auto table = new hash_map<ObjectHandle, sptr<ObjectBase>>;
         return table;
     }
 
@@ -16,16 +16,26 @@ namespace pulsar
         return ObjectHandle::create_new();
     }
 
-    bool RuntimeObjectWrapper::GetObject(ObjectHandle id, wptr<ObjectBase>* out)
+    ObjectBase* RuntimeObjectWrapper::GetObject(ObjectHandle id)
     {
-        if (id.is_empty()) return false;
+        if (id.is_empty()) return nullptr;
         auto it = _object_table()->find(id);
         if (it != _object_table()->end())
         {
-            *out = it->second;
-            return true;
+            return it->second.get();
         }
-        return false;
+        return nullptr;
+    }
+
+    sptr<ObjectBase> RuntimeObjectWrapper::GetSharedObject(ObjectHandle id)
+    {
+        if (id.is_empty()) return nullptr;
+        auto it = _object_table()->find(id);
+        if (it != _object_table()->end())
+        {
+            return it->second;
+        }
+        return nullptr;
     }
 
     bool RuntimeObjectWrapper::IsValid(ObjectHandle id)
@@ -33,11 +43,11 @@ namespace pulsar
         if (id.is_empty()) return false;
         return _object_table()->find(id) != _object_table()->end();
     }
-    void RuntimeObjectWrapper::NewInstance(sptr<ObjectBase> ptr)
+    void RuntimeObjectWrapper::NewInstance(sptr<ObjectBase>&& managedObj)
     {
         auto id = _NewId();
-        ptr->m_objectHandle = id;
-        _object_table()->insert(std::pair<ObjectHandle, wptr<ObjectBase>>{ id, wptr<ObjectBase>(ptr) });
+        managedObj->m_objectHandle = id;
+        _object_table()->emplace(id, std::move(managedObj));
     }
 
     void RuntimeObjectWrapper::DestroyObject(const sptr<ObjectBase>& obj)

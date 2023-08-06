@@ -19,6 +19,10 @@ namespace pulsar
         List_sp<Node_sp> GetRootNodes() { return this->scene_nodes_; }
 
         Scene();
+        virtual ~Scene() override
+        {
+            int a = 3;
+        }
     public:
         void AddNode(Node_rsp node);
         void RemoveNode(Node_rsp node);

@@ -276,7 +276,7 @@ namespace gfx
     }
 
     VkSampler BufferHelper::CreateTextureSampler(
-        GFXVulkanApplication* app, 
+        GFXVulkanApplication* app,
         VkFilter filter, VkSamplerAddressMode addressMode)
     {
         VkSamplerCreateInfo samplerInfo{};
@@ -312,10 +312,12 @@ namespace gfx
         return sampler;
     }
 
-    static VkFormat _FindSupportedFormat(
+    static std::vector<VkFormat> _FindSupportedFormats(
         GFXVulkanApplication* app,
         const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features)
     {
+        std::vector<VkFormat> formats;
+
         for (VkFormat format : candidates)
         {
             VkFormatProperties props;
@@ -323,24 +325,32 @@ namespace gfx
 
             if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features)
             {
-                return format;
+                formats.push_back(format);
             }
             else if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features)
             {
-                return format;
+                formats.push_back(format);
             }
         }
-        throw std::runtime_error("failed to find supported format!");
+
+        return formats;
     }
 
-    VkFormat BufferHelper::FindDepthFormat(GFXVulkanApplication* app)
+    std::vector<VkFormat> BufferHelper::FindDepthFormats(GFXVulkanApplication* app, bool assertEmpty)
     {
-        return _FindSupportedFormat(app,
-            { VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
+        auto result = _FindSupportedFormats(app,
+            { VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT },
             VK_IMAGE_TILING_OPTIMAL,
             VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
         );
+
+        if (assertEmpty)
+        {
+            assert(("depth format not found.", result.size() != 0));
+        }
+        return result;
     }
+
     VkFilter BufferHelper::GetVkFilter(GFXSamplerFilter filter)
     {
         switch (filter)
@@ -367,18 +377,62 @@ namespace gfx
         }
         return {};
     }
+
+
+    static auto _Tex2VkFormatMapping()
+    {
+        static auto ptr = new std::unordered_map<GFXTextureFormat, VkFormat>
+        {
+            {gfx::GFXTextureFormat::R8, VK_FORMAT_R8_UNORM},
+            {gfx::GFXTextureFormat::R8G8B8, VK_FORMAT_R8G8B8_UNORM},
+            {gfx::GFXTextureFormat::R8G8B8A8, VK_FORMAT_R8G8B8A8_UNORM},
+            {gfx::GFXTextureFormat::R8G8B8A8_SRGB, VK_FORMAT_R8G8B8A8_SRGB},
+            {gfx::GFXTextureFormat::D32_SFloat, VK_FORMAT_D32_SFLOAT},
+            {gfx::GFXTextureFormat::D32_SFloat_S8_UInt, VK_FORMAT_D32_SFLOAT_S8_UINT},
+            {gfx::GFXTextureFormat::D24_UNorm_S8_UInt, VK_FORMAT_D24_UNORM_S8_UINT},
+        };
+        return ptr;
+    }
+
+    static auto _Vk2TexFormatMapping()
+    {
+        static struct Init
+        {
+            std::unordered_map<VkFormat, GFXTextureFormat>* ptr;
+            Init()
+            {
+                ptr = new std::unordered_map<VkFormat, GFXTextureFormat>;
+                for (auto& [k, v] : *_Tex2VkFormatMapping())
+                {
+                    ptr->emplace(v, k);
+                }
+            }
+        } _Init;
+        return _Init.ptr;
+    }
+
+
     VkFormat BufferHelper::GetVkFormat(GFXTextureFormat format)
     {
-        switch (format)
+        auto dict = _Tex2VkFormatMapping();
+        auto it = dict->find(format);
+        if (it != dict->end())
         {
-        case gfx::GFXTextureFormat::R8: return VK_FORMAT_R8_UNORM;
-        case gfx::GFXTextureFormat::R8G8B8: return VK_FORMAT_R8G8B8_UNORM;
-        case gfx::GFXTextureFormat::R8G8B8A8: return VK_FORMAT_R8G8B8A8_UNORM;
-        case gfx::GFXTextureFormat::R8G8B8A8_SRGB: return VK_FORMAT_R8G8B8A8_SRGB;
-        default:
-            assert(false);
-            break;
+            return it->second;
         }
+        assert(("no texture format conversion function found.", false));
+        return {};
+    }
+
+    GFXTextureFormat BufferHelper::GetTextureFormat(VkFormat format)
+    {
+        auto dict = _Vk2TexFormatMapping();
+        auto it = dict->find(format);
+        if (it != dict->end())
+        {
+            return it->second;
+        }
+        assert(("no texture format conversion function found.", false));
         return {};
     }
 }

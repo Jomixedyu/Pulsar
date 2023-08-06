@@ -74,15 +74,28 @@ namespace gfx
         m_app(app), m_imageLayout(layout), m_imageFormat(format)
     {
 
+        VkImageUsageFlags usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+        VkImageAspectFlags aspect{};
+
+        if (layout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+        {
+            usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+            aspect |= VK_IMAGE_ASPECT_DEPTH_BIT;
+        }
+        else
+        {
+            usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+            aspect |= VK_IMAGE_ASPECT_COLOR_BIT;
+        }
+
         BufferHelper::CreateImage(app, width, height,
             m_imageFormat,
-            VK_IMAGE_TILING_OPTIMAL,
-            VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+            VK_IMAGE_TILING_OPTIMAL, usage,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_textureImage, m_textureImageMemory);
 
         BufferHelper::TransitionImageLayout(app, m_textureImage, m_imageFormat, VK_IMAGE_LAYOUT_UNDEFINED, layout);
 
-        m_textureImageView = BufferHelper::CreateImageView(m_app, m_textureImage, m_imageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
+        m_textureImageView = BufferHelper::CreateImageView(m_app, m_textureImage, m_imageFormat, aspect);
         m_textureSampler = BufferHelper::CreateTextureSampler(m_app);
 
         m_inited = true;

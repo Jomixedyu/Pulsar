@@ -35,7 +35,7 @@ namespace pulsared
         Node_sp selected = sptr_cast<Node>(EditorSelection::Selection.GetSelected());
 
         char name[255];
-        strcpy_s(name, 255, selected->get_name().c_str());
+        strcpy_s(name, 255, selected->GetName().c_str());
 
         bool is_active = selected->get_is_active_self();
         ImGui::Checkbox("##active", &is_active);
@@ -47,9 +47,9 @@ namespace pulsared
         ImGui::PushItemWidth(-1);
         if (ImGui::InputText("##Name", name, 255))
         {
-            if (selected->get_name() != name)
+            if (selected->GetName() != name)
             {
-                selected->set_name(name);
+                selected->SetName(name);
             }
         }
         ImGui::PopItemWidth();
@@ -95,7 +95,7 @@ namespace pulsared
             static bool opened = true;
             if (ImGui::CollapsingHeader(_GetComponentDisplayName(comp.get()).c_str(), &opened, ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_DefaultOpen))
             {
-                auto com_guid = comp->get_object_id().to_string();
+                auto com_guid = comp->GetObjectHandle().to_string();
                 Type* com_type = comp->GetType();
                 auto fields = com_type->GetFieldInfos(TypeBinding::NonPublic);
                 if (ImGui::BeginTable(com_guid.c_str(), 2))
@@ -137,7 +137,7 @@ namespace pulsared
                         ImGui::TableSetColumnIndex(0);
                         ImGui::Text("Guid");
                         ImGui::TableSetColumnIndex(1);
-                        ImGui::Text(comp->get_object_id().to_string().c_str());
+                        ImGui::Text(comp->GetObjectHandle().to_string().c_str());
 
                         ImGui::EndDisabled();
                     }

@@ -8,10 +8,12 @@ namespace pulsar
     {
         CORELIB_DEF_TYPE(AssemblyObject_Pulsar, pulsar::MeshContainerComponent, Component);
     public:
-        void set_mesh(StaticMesh_sp value) { this->mesh_ = value; }
-        StaticMesh_sp get_mesh() { return this->mesh_; }
+        static MessageId MSG_MeshUpdate();
+    public:
+        void SetMesh(StaticMesh_sp value);
+        StaticMesh_sp GetMesh() const;
     private:
-        StaticMesh_sp mesh_;
+        StaticMesh_sp m_mesh;
     };
     CORELIB_DECL_SHORTSPTR(MeshContainerComponent);
 }

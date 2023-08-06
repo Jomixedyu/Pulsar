@@ -57,7 +57,7 @@ namespace pulsar
     }
     Matrix4f CameraComponent::GetViewMat()
     {
-        auto node = this->GetAttachmentNode();
+        auto node = this->GetAttachedNode();
         auto wpos = node->get_world_position();
         Matrix4f mat = node->get_world_rotation().ToMatrix();
         jmath::Transpose(&mat);
@@ -94,6 +94,6 @@ namespace pulsar
 
     void CameraComponent::LookAt(const Vector3f& pos)
     {
-        transutil::LookAt(this->GetAttachmentNode()->get_world_position(), pos, transutil::Vector3Up());
+        transutil::LookAt(this->GetAttachedNode()->get_world_position(), pos, transutil::Vector3Up());
     }
 }

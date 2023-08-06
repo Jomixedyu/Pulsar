@@ -540,4 +540,18 @@ namespace gfx
     {
         return std::shared_ptr<GFXDescriptorSetLayout>(new GFXVulkanDescriptorSetLayout(this, layoutInfos));
     }
+
+
+
+    std::vector<GFXTextureFormat> GFXVulkanApplication::GetSupportedDepthFormats()
+    {
+        if (m_depthFormatCache.size() == 0)
+        {
+            for (auto& format : BufferHelper::FindDepthFormats(this))
+            {
+                m_depthFormatCache.push_back(BufferHelper::GetTextureFormat(format));
+            }
+        }
+        return m_depthFormatCache;
+    }
 }

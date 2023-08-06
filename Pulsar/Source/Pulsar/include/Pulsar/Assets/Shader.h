@@ -82,10 +82,15 @@ namespace pulsar
         virtual void BindGPU() override;
         virtual void UnBindGPU() override;
         virtual bool GetIsBindGPU() override;
+
+        const array_list<gfx::GFXShaderPass_sp>& GetGgxShaderPass() const
+        {
+            return m_shaderPass;
+        }
     private:
         array_list<ShaderPassSerializeData> m_shaderSource;
     private:
-        array_list<std::shared_ptr<gfx::GFXShaderPass>> m_shaderPass;
+        array_list<gfx::GFXShaderPass_sp> m_shaderPass;
     };
     CORELIB_DECL_SHORTSPTR(Shader);
 

@@ -32,10 +32,10 @@ namespace pulsared
                 is_editor_node = true;
                 ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Text, ImVec4(0.9, 0.7, 0.6, 1));
             }
-            string name = node->get_name();
+            string name = node->GetName();
             if (is_editor_node)
                 name.append(" (EditorOnly)");
-            ImGui::PushID(node->get_object_id().to_string().c_str());
+            ImGui::PushID(node->GetObjectHandle().to_string().c_str());
             if (ImGui::TreeNodeEx(name.c_str(), base_flags))
             {
                 if (ImGui::IsItemClicked())
@@ -62,10 +62,15 @@ namespace pulsared
         }
 
         ImGuiTreeNodeFlags base_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_DefaultOpen;
-        if (ImGui::TreeNodeEx("SceneRoot", base_flags))
+        for (size_t i = 0; i < World::Current()->GetSceneCount(); i++)
         {
-            _Show(World::Current()->GetScene()->get_root_nodes());
-            ImGui::TreePop();
+            auto currentScene = World::Current()->GetScene(i);
+            if (ImGui::TreeNodeEx(currentScene->GetName().c_str(), base_flags))
+            {
+                _Show(currentScene->GetRootNodes());
+                ImGui::TreePop();
+            }
         }
+
     }
 }

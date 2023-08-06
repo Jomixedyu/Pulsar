@@ -6,7 +6,7 @@
 #include <filesystem>
 #include <Pulsar/ImGuiImpl.h>
 #include <Pulsar/Private/InputInterface.h>
-
+#include "Rendering/RenderObject.h"
 #include "Assets/StaticMesh.h"
 #include "Components/StaticMeshRendererComponent.h"
 #include "Scene.h"
@@ -15,54 +15,8 @@ namespace pulsar
 {
 
 
-    class EngineRenderPipeline : public gfx::GFXRenderPipeline
-    {
-    public:
-        World* m_world;
-        EngineRenderPipeline(World* world)
-            : m_world(world)
-        {
-        }
 
-        virtual void OnRender(gfx::GFXRenderContext* context, const std::vector<gfx::GFXFrameBufferObject*>& framebuffers) override
-        {
-            array_list<rendering::RenderObject*> renderObjects = m_world->GetRenderObjects();
-            auto pipelineMgr = context->GetApplication()->GetGraphicsPipelineManager();
 
-            auto& cmd = context->AddCommandBuffer();
-            cmd.Begin();
-
-            for (auto& fb : framebuffers)
-            {
-                cmd.SetFrameBuffer(fb);
-
-                cmd.CmdClearColor(1, 0, 1, 1);
-                cmd.CmdBeginFrameBuffer();
-                cmd.CmdSetViewport(0, 0, fb->GetWidth(), fb->GetHeight());
-
-                //batch render
-                for (rendering::RenderObject* renderObject : renderObjects)
-                {
-                    
-                    auto pipeline = pipelineMgr->GetGraphicsPipeline(renderObject.);
-
-                    cmd.CmdBindGraphicsPipeline();
-                    cmd.CmdBindVertexBuffers();
-                    cmd.CmdBindIndexBuffer();
-                    cmd.CmdBindDescriptorSets();
-                    cmd.CmdDrawIndexed();
-                }
-
-                //post processing
-
-                cmd.CmdEndFrameBuffer();
-                cmd.SetFrameBuffer(nullptr);
-            }
-            cmd.End();
-            context->Submit();
-        }
-
-    };
     
     const char* EngineAppInstance::AppType()
     {
@@ -101,7 +55,7 @@ namespace pulsar
         //SystemInterface::SetQuitCallBack(_quitting);
         //RenderInterface::SetViewport(0, 0, (int)size.x, (int)size.y);
 
-        World::Reset(new World);
+        World::Reset<World>();
         Application::GetGfxApp()->SetRenderPipeline(new EngineRenderPipeline(World::Current()));
     }
 

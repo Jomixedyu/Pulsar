@@ -123,7 +123,7 @@ namespace gfx
         for (auto& rt : m_fbo->GetRenderTargets())
         {
             auto type = rt->GetRenderTargetType();
-            auto image = rt->GetVulkanTexture2d()->GetVkImage();
+            auto image = rt->GetVkImage();
             VkImageLayout clearLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
             switch (type)
             {
@@ -144,7 +144,7 @@ namespace gfx
                     barrier.newLayout = clearLayout;
                     barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
                     barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-                    barrier.image = rt->GetVulkanTexture2d()->GetVkImage();
+                    barrier.image = rt->GetVkImage();
                     barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
                     barrier.subresourceRange.baseMipLevel = 0;
                     barrier.subresourceRange.levelCount = 1;
@@ -178,6 +178,7 @@ namespace gfx
                 }
                 break;
             }
+            case gfx::GFXRenderTargetType::DepthStencil:
             case gfx::GFXRenderTargetType::Depth:
             {
                 {

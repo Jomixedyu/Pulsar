@@ -25,11 +25,16 @@ namespace pulsar
     }
 
 
-    StaticMesh_sp StaticMesh::StaticCreate(array_list<StaticMeshSection>&& vertData)
+    StaticMesh_sp StaticMesh::StaticCreate(
+        string_view name,
+        array_list<StaticMeshSection>&& vertData,
+        array_list<string>&& materialNames)
     {
         StaticMesh_sp self = mksptr(new StaticMesh);
         self->Construct();
+        self->name_ = name;
         self->m_sections = std::move(vertData);
+        self->m_materialNames = std::move(materialNames);
 
         return self;
     }

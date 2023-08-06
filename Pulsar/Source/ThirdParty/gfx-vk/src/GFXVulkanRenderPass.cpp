@@ -5,22 +5,6 @@
 
 namespace gfx
 {
-    static VkImageLayout _GetFinalLayout(GFXRenderTargetType type)
-    {
-        switch (type)
-        {
-        case gfx::GFXRenderTargetType::Color:
-            return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-            break;
-        case gfx::GFXRenderTargetType::Depth:
-            return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-            break;
-        default:
-            assert(("msg: not implemented exception", false));
-            break;
-        }
-        return {};
-    }
     static VkImageLayout _GetRefLayout(GFXRenderTargetType type)
     {
         switch (type)
@@ -28,6 +12,7 @@ namespace gfx
         case gfx::GFXRenderTargetType::Color:
             return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
             break;
+        case gfx::GFXRenderTargetType::DepthStencil:
         case gfx::GFXRenderTargetType::Depth:
             return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
             break;
@@ -48,7 +33,7 @@ namespace gfx
         for (size_t i = 0; i < createFromlayout.size(); i++)
         {
             auto& rt = createFromlayout[i];
-            auto imageFormat = rt->GetVulkanTexture2d()->GetVkImageFormat();
+            auto imageFormat = rt->GetVkFormat();
 
             VkAttachmentDescription attachment{};
             {
@@ -60,7 +45,7 @@ namespace gfx
                 attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
                 attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
                 attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-                attachment.finalLayout = _GetFinalLayout(rt->GetRenderTargetType());
+                attachment.finalLayout = rt->GetVkImageFinalLayout();
             }
 
             VkAttachmentReference ref{};
@@ -104,7 +89,7 @@ namespace gfx
         VkRenderPassCreateInfo renderPassInfo{};
         {
             renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-            renderPassInfo.attachmentCount = 2;
+            renderPassInfo.attachmentCount = (uint32_t)attachmentDesc.size();
             renderPassInfo.pAttachments = attachmentDesc.data();
             renderPassInfo.subpassCount = 1;
             renderPassInfo.pSubpasses = &subpass;

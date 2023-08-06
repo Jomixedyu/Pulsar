@@ -3,6 +3,8 @@
 #include <vector>
 #include "GFXBuffer.h"
 #include "GFXTexture2D.h"
+#include "GFXInclude.h"
+#include "GFXRenderTarget.h"
 
 namespace gfx
 {
@@ -15,19 +17,8 @@ namespace gfx
     {
         Vertex = 1,
         Fragment = 1 << 1,
+        VertexFragment = Vertex | Fragment,
     };
-    inline GFXShaderStageFlags operator &(GFXShaderStageFlags a, GFXShaderStageFlags b)
-    {
-        return GFXShaderStageFlags(std::underlying_type_t<GFXShaderStageFlags>(a) & std::underlying_type_t<GFXShaderStageFlags>(b));
-    }
-    inline GFXShaderStageFlags operator |(GFXShaderStageFlags a, GFXShaderStageFlags b)
-    {
-        return GFXShaderStageFlags(std::underlying_type_t<GFXShaderStageFlags>(a) | std::underlying_type_t<GFXShaderStageFlags>(b));
-    }
-    inline bool HasFlags(GFXShaderStageFlags a, GFXShaderStageFlags b)
-    {
-        return (bool)std::underlying_type_t<GFXShaderStageFlags>(a & b);
-    }
 
     struct GFXDescriptorSetLayoutInfo
     {
@@ -54,6 +45,7 @@ namespace gfx
     protected:
         std::vector<GFXDescriptorSetLayoutInfo> m_layout;
     };
+    GFX_DECL_SPTR(GFXDescriptorSetLayout);
 
     class GFXDescriptor
     {
@@ -63,9 +55,10 @@ namespace gfx
         GFXDescriptor(const GFXDescriptor&) = delete;
 
         virtual void SetConstantBuffer(size_t size, GFXBuffer* buffer) = 0;
-        virtual void SetTextureSampler2D(GFXTexture2D* texture) = 0;
+        virtual void SetTextureSampler2D(GFXTexture* texture) = 0;
 
     };
+    GFX_DECL_SPTR(GFXDescriptor);
 
     class GFXDescriptorSet
     {
@@ -75,5 +68,8 @@ namespace gfx
     public:
         virtual GFXDescriptor* AddDescriptor(uint32_t bindingPoint) = 0;
         virtual void Submit() = 0;
+        virtual intptr_t GetId() = 0;
     };
+    GFX_DECL_SPTR(GFXDescriptorSet);
+
 }

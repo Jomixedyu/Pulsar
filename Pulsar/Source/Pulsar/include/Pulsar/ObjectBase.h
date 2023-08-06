@@ -11,8 +11,14 @@
 #include <CoreLib/Events.hpp>
 #include <CoreLib/Guid.h>
 #include <Pulsar/EngineMath.h>
+#include <unordered_map>
 
 #define WITH_APATITE_EDITOR
+
+#define DECL_PTR(Class) \
+CORELIB_DECL_SHORTSPTR(Class); \
+
+
 
 namespace pulsar
 {
@@ -28,6 +34,9 @@ namespace pulsar
     };
 
     using ObjectHandle = guid_t;
+
+    template<typename K, typename V>
+    using hash_map = std::unordered_map<K, V>;
 
     class ObjectBase : public Object
     {
@@ -51,13 +60,22 @@ namespace pulsar
     };
     CORELIB_DECL_SHORTSPTR(ObjectBase);
 
+    struct ObjectPtrBase
+    {
+        ObjectHandle handle{};
+        ObjectHandle GetHandle() const
+        {
+            return handle;
+        }
+    };
 
     class RuntimeObjectWrapper final
     {
     public:
-        static bool GetObject(ObjectHandle id, wptr<ObjectBase>* out);
+        static ObjectBase* GetObject(ObjectHandle id);
+        static sptr<ObjectBase> GetSharedObject(ObjectHandle id);
         static bool IsValid(ObjectHandle id);
-        static void NewInstance(sptr<ObjectBase> obj);
+        static void NewInstance(sptr<ObjectBase>&& managedObj);
         static void DestroyObject(const sptr<ObjectBase>& obj);
         static void ForceDestroyObject(ObjectHandle id);
 
@@ -79,68 +97,24 @@ namespace pulsar
         return true;
     }
 
-    template<baseof_objectbase T>
-    inline void ResetIfInvalid(sptr<T>& object)
-    {
-        if (!IsValid(object)) object = nullptr;
-    }
-
-    struct ObjectPtrBase
-    {
-        ObjectHandle handle{};
-
-        ObjectHandle GetHandle() const
-        {
-            return handle;
-        }
-    };
-
     template<typename T>
     struct ObjectPtr : public ObjectPtrBase
     {
-    private:
-        sptr<T> m_ptr;
-    public:
         ObjectPtr() {}
         ObjectPtr(const sptr<T>& object)
         {
             if (object != nullptr)
             {
-                m_ptr = object;
                 handle = object->GetObjectHandle();
             }
         }
-
-        bool IsValid() const { return m_ptr != nullptr; }
-        sptr<T> Get() const { return m_ptr; }
-        T* GetPtr() const { return m_ptr.get(); }
-        sptr<T>& operator->() { return m_ptr; }
-
-        void Reset()
+        sptr<T> GetShared() const
         {
-            handle = {};
+            return sptr_cast<T>(RuntimeObjectWrapper::GetSharedObject(handle));
         }
-    };
-
-    template<typename T>
-    struct WeakPtr : public ObjectPtrBase
-    {
-        WeakPtr() {}
-        WeakPtr(const sptr<T>& object)
+        T* operator->() const
         {
-            if (object != nullptr)
-            {
-                handle = object->GetObjectHandle();
-            }
-        }
-        sptr<T> Get() const
-        {
-            ObjectBase_wp obj;
-            if (RuntimeObjectWrapper::GetObject(handle, &obj))
-            {
-                return sptr_cast<T>(obj.lock());
-            }
-            return nullptr;
+            return RuntimeObjectWrapper::GetObject(handle);
         }
         bool IsValid() const
         {
@@ -154,4 +128,16 @@ namespace pulsar
 
     ser::Stream& ReadWriteStream(ser::Stream& stream, bool isWrite, ObjectPtrBase& obj);
 
+}
+
+namespace std
+{
+    template<>
+    struct hash<pulsar::ObjectHandle>
+    {
+        size_t operator()(const pulsar::ObjectHandle& handle) const noexcept
+        {
+            return *reinterpret_cast<const uint64_t*>(&handle) ^ *(reinterpret_cast<const uint64_t*>(&handle) + 1);
+        }
+    };
 }

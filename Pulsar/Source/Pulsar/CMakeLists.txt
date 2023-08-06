@@ -21,8 +21,8 @@ add_subdirectory("../ThirdParty/gfx" gfx.out)
 add_subdirectory("../ThirdParty/gfx-vk" gfx-vk.out)
 add_subdirectory("../ThirdParty/imgui" imgui.out)
 
-#add_library(${PROJECT_NAME} STATIC ${Pulsar_SRC})
-add_executable(${PROJECT_NAME} ${Pulsar_SRC})
+add_library(${PROJECT_NAME} STATIC ${Pulsar_SRC})
+#add_executable(${PROJECT_NAME} ${Pulsar_SRC})
 
 target_include_directories(${PROJECT_NAME} PUBLIC "include")
 target_include_directories(${PROJECT_NAME} PRIVATE "include/Pulsar")

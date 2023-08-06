@@ -7,6 +7,8 @@
 
 namespace gfx
 {
+    static int32_t idNext = 0;
+
     GFXVulkanFrameBufferObject::GFXVulkanFrameBufferObject(
         GFXVulkanApplication* app,
         const std::vector<GFXVulkanRenderTarget*>& renderTargets,
@@ -17,6 +19,8 @@ namespace gfx
         auto& first = renderTargets[0];
         m_width = first->GetWidth();
         m_height = first->GetHeight();
+
+        m_id = ++idNext;
 
         this->InitRenderPass();
     }
@@ -29,7 +33,7 @@ namespace gfx
 
         for (auto& renderTarget : m_renderTargets)
         {
-            fbImageViews.push_back(renderTarget->GetVulkanTexture2d()->GetVkImageView());
+            fbImageViews.push_back(renderTarget->GetVkImageView());
         }
 
         VkFramebufferCreateInfo framebufferInfo{};

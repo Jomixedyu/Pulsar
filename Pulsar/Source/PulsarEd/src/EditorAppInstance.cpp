@@ -26,44 +26,6 @@
 
 namespace pulsared
 {
-    class ImGuiRenderPipeline : public gfx::GFXRenderPipeline
-    {
-    public:
-        std::shared_ptr<ImGuiObject> ImGuiObject;
-
-        virtual void OnRender(gfx::GFXRenderContext* context, const std::vector<gfx::GFXFrameBufferObject*>& renderTargets)
-        {
-            auto rt = static_cast<gfx::GFXFrameBufferObject*>(renderTargets[0]);
-
-            auto& buffer = context->AddCommandBuffer();
-            buffer.Begin();
-            buffer.SetFrameBuffer(rt);
-            buffer.CmdClearColor(0.0, 0.0, 0.0, 1);
-            buffer.CmdBeginFrameBuffer();
-            buffer.CmdSetViewport(0, 0, rt->GetWidth(), rt->GetHeight());
-
-            ImGuiObject->Render(&buffer);
-
-            buffer.CmdEndFrameBuffer();
-            buffer.SetFrameBuffer(nullptr);
-            buffer.End();
-
-            context->Submit();
-        }
-    };
-
-    class SceneRenderPipeline : public gfx::GFXRenderPipeline
-    {
-    public:
-        virtual void OnRender(gfx::GFXRenderContext* context, const std::vector<gfx::GFXFrameBufferObject*>& renderTargets)
-        {
-            auto world = World::Current();
-            assert(world);
-
-        }
-    };
-    
-
 
     static bool _RequestQuit()
     {
@@ -177,7 +139,7 @@ namespace pulsared
         config->EnableValid = true;
 
         strcpy(config->ProgramName, "Pulsar");
-        strcpy(config->Title, "Pulsar Editor v0.1 - Vulkan1.3");
+        strcpy(config->Title, "Pulsar Editor v0.1 - Vulkan1.2");
 
 
     }
@@ -196,8 +158,11 @@ namespace pulsared
         }
 
         Logger::Log("initialize gfx application");
-        
-        auto renderPipeline = new ImGuiRenderPipeline();
+
+        //world
+        World::Reset<EditorWorld>();
+
+        auto renderPipeline = new EditorRenderPipeline(World::Current());
         
         Application::GetGfxApp()->SetRenderPipeline(renderPipeline);
 
@@ -205,31 +170,14 @@ namespace pulsared
         m_gui = CreateImGui(Application::GetGfxApp());
         m_gui->Initialize();
         
-
         renderPipeline->ImGuiObject = m_gui;
 
-        //SystemInterface::InitializeWindow(title, (int)size.x, (int)size.y);
-
-        //SystemInterface::SetRequestQuitCallBack(_RequestQuit);
-        //SystemInterface::SetQuitCallBack(_quitting);
-
-        //RenderInterface::SetViewport(0, 0, (int)size.x, (int)size.y);
-
         AssetDatabase::Initialize();
-
-        this->render_pipeline_ = new builtinrp::BultinRP;
-
 
         InitBasicMenu();
 
         Logger::Log("initialize world");
-        //world
-        World::Reset(new EditorWorld);
-        World::Current()->ChangeScene(Scene::StaticCreate());
 
-        //init window uis
-        Logger::Log("initialize editor window manager");
-        pulsared::EditorWindowManager::Reset();
 
         Logger::Log("initialize subsystems");
         //collect subsystem
@@ -256,6 +204,10 @@ namespace pulsared
 
         //Workspace::OpenWorkspace(R"(D:\Codes\Pulsar\TestProject)");
 
+        //init window uis
+        Logger::Log("initialize editor window manager");
+        pulsared::EditorWindowManager::Initialize();
+
     }
 
     void EditorAppInstance::OnTerminate()
@@ -266,16 +218,15 @@ namespace pulsared
         delete Application::GetGfxApp()->GetRenderPipeline();
         Application::GetGfxApp()->SetRenderPipeline(nullptr);
 
-        World::Reset(nullptr);
+        pulsared::EditorWindowManager::Terminate();
 
+        World::Reset(nullptr);
 
         //terminate subsystem
         for (auto& subsystem : this->subsystems)
         {
             subsystem->OnTerminate();
         }
-
-        delete this->render_pipeline_;
 
         using namespace std::filesystem;
 
@@ -292,10 +243,6 @@ namespace pulsared
 
     void EditorAppInstance::OnBeginRender(float dt)
     {
-
-        //auto bgc = LinearColorf{ 0.2f, 0.2f ,0.2f, 0.2f };
-        //RenderInterface::Clear(bgc.r, bgc.g, bgc.b, bgc.a);
-        
         m_gui->NewFrame();
 
         World::Current()->Tick(dt);
@@ -304,11 +251,6 @@ namespace pulsared
         pulsared::EditorTickerManager::Ticker.Invoke(dt);
 
         m_gui->EndFrame();
-
-        //RenderInterface::Render();
-        //SystemInterface::PollEvents();
-        //InputInterface::PollEvents();
-
     }
     void EditorAppInstance::OnEndRender(float dt)
     {
@@ -322,7 +264,7 @@ namespace pulsared
 
     rendering::Pipeline* EditorAppInstance::GetPipeline()
     {
-        return this->render_pipeline_;
+        return nullptr;
     }
 
     Vector2f pulsared::EditorAppInstance::GetAppSize()
@@ -334,6 +276,21 @@ namespace pulsared
     void pulsared::EditorAppInstance::SetAppSize(Vector2f size)
     {
         Application::GetGfxApp()->GetViewport()->SetSize(size.x, size.y);
+    }
+
+    bool EditorAppInstance::IsInteractiveRendering() const
+    {
+        return m_isPlaying;
+    }
+
+    void EditorAppInstance::StartInteractiveRendering()
+    {
+        m_isPlaying = true;
+    }
+
+    void EditorAppInstance::StopInteractiveRendering()
+    {
+        m_isPlaying = false;
     }
 
 

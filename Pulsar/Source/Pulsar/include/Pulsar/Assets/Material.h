@@ -13,12 +13,12 @@ namespace pulsar
         friend struct MaterialScope;
     public:
 
-        void set_shader(Shader_sp shader) { this->shader_ = shader; }
-        Shader_sp get_shader() const { return this->shader_; }
+        Shader_sp GetShader() const { return this->shader_; }
 
         static sptr<Material> StaticCreate(string_view name, Shader_rsp shader);
     private:
         Shader_sp shader_;
+        int m_renderQueue;
     };
     CORELIB_DECL_SHORTSPTR(Material);
 

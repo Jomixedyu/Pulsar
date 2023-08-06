@@ -8,7 +8,7 @@ namespace pulsared
 {
     static string project_path;
     static string project_name;
-    static bool is_opened = false;
+    static bool m_isOpened = false;
 
     Action<> Workspace::OnWorkspaceOpened;
     Function<bool> Workspace::OnWorkspaceClosing;
@@ -40,7 +40,7 @@ namespace pulsared
             return false;
         }
 
-        if (is_opened)
+        if (m_isOpened)
         {
             if (!CloseWorkspace())
             {

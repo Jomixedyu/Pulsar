@@ -8,7 +8,8 @@ namespace pulsared
     class EditorWindowManager
     {
     public:
-        static void Reset();
+        static void Initialize();
+        static void Terminate();
 
         static void Draw();
 

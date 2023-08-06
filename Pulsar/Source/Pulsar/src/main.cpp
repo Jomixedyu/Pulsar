@@ -3,9 +3,9 @@
 
 
 
-int main()
-{
-    using namespace pulsar;
-    Application::Exec(new EngineAppInstance(), "Pulsar", { 1280,720 });
-    return 0;
-}
+//int main()
+//{
+//    using namespace pulsar;
+//    Application::Exec(new EngineAppInstance(), "Pulsar", { 1280,720 });
+//    return 0;
+//}

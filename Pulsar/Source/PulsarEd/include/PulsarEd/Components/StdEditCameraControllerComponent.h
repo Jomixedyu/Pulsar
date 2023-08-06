@@ -8,5 +8,9 @@ namespace pulsared
 		CORELIB_DEF_TYPE(AssemblyObject_PulsarEd, pulsared::StdEditCameraControllerComponent, EditorComponent);
 
 	public:
+		virtual ~StdEditCameraControllerComponent() override
+		{
+			int a = 3;
+		}
 	};
 }

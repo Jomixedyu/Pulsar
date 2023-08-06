@@ -1,4 +1,5 @@
 #pragma once
+#include "GFXInclude.h"
 
 namespace gfx
 {
@@ -32,5 +33,5 @@ namespace gfx
         GFXBufferUsage m_usage;
         size_t m_bufferSize;
     };
-
+    GFX_DECL_SPTR(GFXBuffer);
 }

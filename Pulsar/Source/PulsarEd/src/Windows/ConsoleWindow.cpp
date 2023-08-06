@@ -42,6 +42,7 @@ namespace pulsared
 
             ImGui::EndMenuBar();
         }
+
         auto& loglist = EditorLogRecorder::loglist;
 
 
@@ -51,10 +52,11 @@ namespace pulsared
             ImGui::Text(loglist[this->log_selected_index].stacktrace_info.c_str());
         }
         ImGui::EndChild();
+        ImGui::Separator();
 
         if (ImGui::BeginListBox("##console", ImVec2(-FLT_MIN, -FLT_MIN)))
         {
-            for (size_t i = 0; i < loglist.size(); i++)
+            for (int32_t i = loglist.size() - 1; i > 0; --i)
             {
                 constexpr int kAllLevel = 0;
                 if (this->log_level_filter != kAllLevel && this->log_level_filter != (int32_t)loglist[i].level)
@@ -100,7 +102,7 @@ namespace pulsared
 
             ImGui::EndListBox();
         }
- 
+
 
     }
     ImGuiWindowFlags ConsoleWindow::GetGuiWindowFlags() const

@@ -43,11 +43,11 @@ namespace gfx
     static VkShaderStageFlagBits _GetShaderStage(GFXShaderStageFlags flags)
     {
         std::underlying_type_t<VkShaderStageFlagBits> stage{};
-        if (HasFlags(flags, GFXShaderStageFlags::Vertex))
+        if (HasFlag(flags, GFXShaderStageFlags::Vertex))
         {
             stage |= VK_SHADER_STAGE_VERTEX_BIT;
         }
-        if (HasFlags(flags, GFXShaderStageFlags::Fragment))
+        if (HasFlag(flags, GFXShaderStageFlags::Fragment))
         {
             stage |= VK_SHADER_STAGE_FRAGMENT_BIT;
         }
@@ -114,13 +114,32 @@ namespace gfx
         WriteInfo.pBufferInfo = &BufferInfo;
 
     }
-    void GFXVulkanDescriptor::SetTextureSampler2D(GFXTexture2D* texture)
+    void GFXVulkanDescriptor::SetTextureSampler2D(GFXTexture* texture)
     {
-        auto vkTex2d = static_cast<GFXVulkanTexture2D*>(texture);
+        VkImageView imageView;
+        VkSampler sampler;
+
+        if (texture->GetTextureType() == GFXVulkanTexture2D::StaticTexutreType())
+        {
+            auto tex2d = static_cast<GFXVulkanTexture2D*>(texture);
+            imageView = tex2d->GetVkImageView();
+            sampler = tex2d->GetVkSampler();
+        }
+        else if (texture->GetTextureType() == GFXVulkanRenderTarget::StaticTexutreType())
+        {
+            auto rt = static_cast<GFXVulkanRenderTarget*>(texture);
+            imageView = rt->GetVkImageView();
+            sampler = rt->GetVkSampler();
+        }
+        else
+        {
+            assert(0);
+        }
+
 
         ImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        ImageInfo.imageView = vkTex2d->GetVkImageView();
-        ImageInfo.sampler = vkTex2d->GetVkSampler();
+        ImageInfo.imageView = imageView;
+        ImageInfo.sampler = sampler;
 
         WriteInfo.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         WriteInfo.dstSet = m_descriptorSet->GetVkDescriptorSet();
@@ -172,7 +191,10 @@ namespace gfx
         }
         vkUpdateDescriptorSets(m_pool->GetApplication()->GetVkDevice(), static_cast<uint32_t>(writeInfos.size()), writeInfos.data(), 0, nullptr);
     }
-
+    intptr_t GFXVulkanDescriptorSet::GetId()
+    {
+        return (intptr_t)m_descriptorSet;
+    }
     GFXVulkanApplication* GFXVulkanDescriptorSet::GetApplication() const
     {
         return m_pool->GetApplication();

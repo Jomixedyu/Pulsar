@@ -17,8 +17,8 @@ namespace pulsared
         }
 
     public:
-        bool get_is_opened() const { return is_opened; }
-        int32_t get_window_id() const { return this->window_id_; }
+        bool GetIsOpened() const { return m_isOpened; }
+        int32_t GetWindowId() const { return this->m_windowId; }
         EditorWindow();
     public:
         bool Open();
@@ -29,9 +29,9 @@ namespace pulsared
         virtual void OnClose() {}
 
     protected:
-        bool is_opened = false;
+        bool m_isOpened = false;
     private:
-        int32_t window_id_;
+        int32_t m_windowId;
     };
     CORELIB_DECL_SHORTSPTR(EditorWindow);
 }

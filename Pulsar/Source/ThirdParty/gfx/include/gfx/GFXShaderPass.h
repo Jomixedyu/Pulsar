@@ -1,5 +1,5 @@
 #pragma once
-#include <memory>
+#include "GFXInclude.h"
 #include "GFXGpuProgram.h"
 #include "GFXVertexLayoutDescription.h"
 #include "GFXDescriptorSet.h"
@@ -45,4 +45,5 @@ namespace gfx
         virtual std::shared_ptr<GFXVertexLayoutDescription> GetVertexLayout() const = 0;
         virtual GFXShaderPassConfig GetStateConfig() const = 0;
     };
+    GFX_DECL_SPTR(GFXShaderPass);
 }

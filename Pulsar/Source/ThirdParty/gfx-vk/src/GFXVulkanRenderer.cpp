@@ -13,6 +13,7 @@ namespace gfx
         : m_app(app)
     {
     }
+
     void GFXVulkanRenderer::Render(float deltaTime)
     {
         auto viewport = m_app->GetVulkanViewport();
@@ -40,6 +41,7 @@ namespace gfx
 
         auto renderTargets = std::vector{ viewport->GetFrameBufferObject() };
         m_app->GetRenderPipeline()->OnRender(&renderContext, renderTargets);
+        renderContext.Submit();
 
         VkPresentInfoKHR presentInfo{};
         presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;

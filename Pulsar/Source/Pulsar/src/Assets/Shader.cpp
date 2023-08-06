@@ -77,7 +77,7 @@ namespace pulsar
                 gfx::GFXDescriptorSetLayoutInfo commonInfo(
                     0,
                     gfx::GFXDescriptorType::ConstantBuffer,
-                    gfx::GFXShaderStageFlags::Vertex | gfx::GFXShaderStageFlags::Fragment);
+                    gfx::GFXShaderStageFlags::VertexFragment);
 
                 descriptorLayoutInfos.push_back(commonInfo);
                 descriptorSetLayout = Application::GetGfxApp()->CreateDescriptorSetLayout(descriptorLayoutInfos);

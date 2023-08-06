@@ -1,6 +1,6 @@
 #include "Windows/DockspaceWindow.h"
 #include "Windows/EditorWindowManager.h"
-
+#include "EditorAppInstance.h"
 
 namespace pulsared
 {
@@ -43,7 +43,7 @@ namespace pulsared
         // any change of dockspace/settings would lead to windows being stuck in limbo and never being visible.
         if (!opt_padding)
             ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-        ImGui::Begin("__DockSpace", &this->is_opened, window_flags);
+        ImGui::Begin("__DockSpace", &this->m_isOpened, window_flags);
         if (!opt_padding)
             ImGui::PopStyleVar();
 
@@ -57,13 +57,29 @@ namespace pulsared
             ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
         }
 
+
+
+        // tool bar
+
         if (ImGui::BeginMenuBar())
         {
             ImGui::Separator();
+            ImGui::Button(ICON_FK_FLOPPY_O); //save button
 
-            ImGui::Button(ICON_FK_FLOPPY_O);
-            ImGui::Button(ICON_FK_PLAY);
-            ImGui::Button(ICON_FK_STOP);
+            ImGui::BeginDisabled(GetEdApp()->IsInteractiveRendering());
+            if (ImGui::Button(ICON_FK_PLAY))
+            {
+                GetEdApp()->StartInteractiveRendering();
+            }
+            ImGui::EndDisabled();
+
+            ImGui::BeginDisabled(!GetEdApp()->IsInteractiveRendering());
+            if (ImGui::Button(ICON_FK_STOP))
+            {
+                GetEdApp()->StopInteractiveRendering();
+            }
+            ImGui::EndDisabled();
+
             ImGui::EndMenuBar();
         }
 

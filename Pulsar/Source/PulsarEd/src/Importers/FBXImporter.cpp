@@ -35,9 +35,9 @@ namespace pulsared
 //    }
 //    return textures;
 //}
-    static inline LinearColorf _Color4(const aiColor4D& v)
+    static inline Color8b4 _Color4(const aiColor4D& v)
     {
-        return { v.r, v.g, v.b, v.a };
+        return Color8b4(v.r * 255, v.g * 255, v.b * 255, v.a * 255);
     }
     static inline Vector3f _Vec3(const aiVector3D& v3)
     {
@@ -48,14 +48,12 @@ namespace pulsared
         return { v2.x, v2.y };
     }
 
-    static StaticMesh_sp ProcessMesh(aiMesh* mesh, const aiScene* scene, const string& dir, float scale_factor)
+    static void _ProcessMesh(StaticMeshSection* section, aiMesh* mesh, const aiScene* scene)
     {
-        StaticMeshVertexBuildDataArray* vert_arr = new StaticMeshVertexBuildDataArray;
-        vert_arr->reserve(mesh->mNumVertices);
-
+        section->Vertex.resize(mesh->mNumVertices);
         for (unsigned int vertnum = 0; vertnum < mesh->mNumVertices; ++vertnum)
         {
-            StaticMeshVertexBuildData vert;
+            StaticMeshVertex& vert = section->Vertex[vertnum];
             vert.Position = _Vec3(mesh->mVertices[vertnum]);
             vert.Normal = _Vec3(mesh->mNormals[vertnum]);
             if (mesh->mTangents)
@@ -64,80 +62,77 @@ namespace pulsared
             }
             if (mesh->mBitangents)
             {
-                vert.BitTangent = _Vec3(mesh->mBitangents[vertnum]);
+                vert.Bitangent = _Vec3(mesh->mBitangents[vertnum]);
             }
 
-            for (size_t i = 0; i < APATITE_STATICMESH_MAX_TEXTURE_COORDS; i++)
+            for (size_t i = 0; i < STATICMESH_MAX_TEXTURE_COORDS; i++)
             {
                 if (mesh->HasTextureCoords(i))
                 {
                     auto v = mesh->mTextureCoords[i][vertnum];
-                    vert.Coords[i] = { v.x, v.y };
+                    vert.TexCoords[i] = { v.x, v.y };
                 }
             }
 
             if (mesh->HasVertexColors(0))
             {
-                vert.VertColor = _Color4(mesh->mColors[0][vertnum]);
+                vert.Color = _Color4(mesh->mColors[0][vertnum]);
             }
 
-            vert_arr->push_back(std::move(vert));
         }
-        array_list<uint32_t> indices;
-        indices.reserve(mesh->mNumFaces);
 
+        section->Indices.reserve(mesh->mNumFaces);
         for (unsigned int i = 0; i < mesh->mNumFaces; i++)
         {
             aiFace face = mesh->mFaces[i];
             for (unsigned int j = 0; j < face.mNumIndices; j++)
             {
-                indices.push_back(face.mIndices[j]);
+                section->Indices.push_back(face.mIndices[j]);
             }
         }
 
-        //
-        //if (mesh->mMaterialIndex >= 0)
-        //{
-        //    aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
-        //    array_list<Texture2D*> diffuseMaps = loadMaterialTextures(material,
-        //        aiTextureType_DIFFUSE, "mat_diffuse_tex", dir);
-        //    textures->insert(textures->end(), diffuseMaps.begin(), diffuseMaps.end());
-
-        //    array_list<Texture2D*> specularMaps = loadMaterialTextures(material,
-        //        aiTextureType_SPECULAR, "mat_specular_tex", dir);
-        //    textures->insert(textures->end(), specularMaps.begin(), specularMaps.end());
-
-        //    array_list<Texture2D*> normalMaps = loadMaterialTextures(material,
-        //        aiTextureType_NORMALS, "mat_normal_tex", dir);
-        //    textures->insert(textures->end(), normalMaps.begin(), normalMaps.end());
-        //}
-
-
-        StaticMesh_sp static_mesh = StaticMesh::StaticCreate(std::move(mksptr(vert_arr)), std::move(indices));
-        static_mesh->set_name(mesh->mName.C_Str());
-        static_mesh->BindGPU();
-        return static_mesh;
     }
 
-    static void ProcessNode(aiNode* node, const aiScene* scene, Node_sp pnode, const string& dir, float scale_factor)
+    static void _ProcessNode(aiNode* node, const aiScene* scene, Node_sp pnode, const string& dir, float scale_factor)
     {
+        array_list<StaticMeshSection> sections;
+        sections.resize(node->mNumMeshes);
+
+        array_list<Material_sp> materials;
         for (unsigned int i = 0; i < node->mNumMeshes; i++)
         {
             aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
+            _ProcessMesh(&sections[i], mesh, scene);
+            auto sectionMat = scene->mMaterials[mesh->mMaterialIndex];
 
-            Node_sp n = Node::StaticCreate(mesh->mName.C_Str());
-            n->set_parent(pnode);
+            materials.push_back(Material::StaticCreate(sectionMat->GetName().C_Str(), nullptr));
 
-            n->AddComponent<MeshContainerComponent>()->set_mesh(ProcessMesh(mesh, scene, dir, scale_factor));
-
-            auto mesh_mat = scene->mMaterials[mesh->mMaterialIndex];
-            //auto default_mat = Application::inst()->GetPipeline()->GetDefaultMaterial();
-            auto mat = Material::StaticCreate(mesh_mat->GetName().C_Str(), nullptr);
-            n->AddComponent<StaticMeshRendererComponent>()->get_materials()->Add(mat);
+            sections[i].MaterialIndex = materials.size() - 1;
         }
+
+        Node_sp n = Node::StaticCreate(node->mName.C_Str());
+        n->set_parent(pnode);
+
+        array_list<string> materialNames;
+        for (auto& mat : materials)
+        {
+            materialNames.push_back(mat->GetName());
+        }
+
+        auto staticMesh = StaticMesh::StaticCreate(node->mName.C_Str(), std::move(sections), std::move(materialNames));
+
+        n->AddComponent<MeshContainerComponent>()->SetMesh(staticMesh);
+
+        auto renderer = n->AddComponent<StaticMeshRendererComponent>();
+        for (auto& mat : materials)
+        {
+            renderer->GetMaterials()->Add(mat);
+        }
+
+        // process children
         for (unsigned int i = 0; i < node->mNumChildren; i++)
         {
-            ProcessNode(node->mChildren[i], scene, pnode, dir, scale_factor);
+            _ProcessNode(node->mChildren[i], scene, pnode, dir, scale_factor);
         }
     }
 
@@ -157,7 +152,7 @@ namespace pulsared
         }
         string directory = string{ path.substr(0, path.find_last_of('/')) };
 
-        ProcessNode(scene->mRootNode, scene, node, directory, scale_factor);
+        _ProcessNode(scene->mRootNode, scene, node, directory, scale_factor);
 
         return node;
     }

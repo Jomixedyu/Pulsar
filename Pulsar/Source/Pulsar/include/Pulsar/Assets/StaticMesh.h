@@ -44,7 +44,10 @@ namespace pulsar
     public:
         virtual void OnSerialize(AssetSerializer* serializer) override;
 
-        static sptr<StaticMesh> StaticCreate(array_list<StaticMeshSection>&& vertData);
+        static sptr<StaticMesh> StaticCreate(
+            string_view name,
+            array_list<StaticMeshSection>&& vertData,
+            array_list<string>&& materialNames);
     protected:
         virtual void OnInstantiateAsset(sptr<AssetObject>& obj) override;
     public:
@@ -61,6 +64,8 @@ namespace pulsar
     protected:
         //array_list<StaticMeshSectionSerializeData> m_sections;
         array_list<StaticMeshSection> m_sections;
+
+        array_list<string> m_materialNames;
     };
     CORELIB_DECL_SHORTSPTR(StaticMesh);
 
