@@ -2,9 +2,10 @@
 namespace pulsar
 {
 
-    void TextAsset::OnInstantiateAsset(AssetObject_ref& obj)
+    void TextAsset::OnInstantiateAsset(AssetObject* obj)
     {
-        TextAsset_ref i = obj;
+        base::OnInstantiateAsset(obj);
+        TextAsset* i = static_cast<ThisClass*>(obj);
         i->text_ = this->text_;
     }
 

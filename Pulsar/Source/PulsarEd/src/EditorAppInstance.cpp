@@ -1,18 +1,15 @@
 ﻿#include "EditorAppInstance.h"
-#include "EditorAppInstance.h"
 #include <PulsarEd/EditorAppInstance.h>
 #include <Pulsar/Application.h>
 #include <Pulsar/World.h>
 #include <Pulsar/Logger.h>
 #include <filesystem>
 #include <Pulsar/ImGuiImpl.h>
-#include <Pulsar/Private/InputInterface.h>
 #include <PulsarEd/Windows/EditorWindowManager.h>
 #include <PulsarEd/EditorUIConfig.h>
 #include <CoreLib/File.h>
 #include <CoreLib.Serialization/JsonSerializer.h>
-#include <PulsarEd/Menus/Menu.h>
-#include <PulsarEd/Menus/MenuEntrySubMenu.h>
+#include <PulsarEd/Menus/Types.h>
 #include <PulsarEd/IEditorTickable.h>
 #include <PulsarEd/EditorLogRecorder.h>
 #include <PulsarEd/Subsystems/EditorSubsystem.h>
@@ -21,9 +18,19 @@
 #include <PulsarEd/AssetDatabase.h>
 #include <Pulsar/AssetRegistry.h>
 #include <gfx/GFXRenderPipeline.h>
-
-#include <gfx/GFXFrameBufferObject.h>
+#include "EditorRenderPipeline.h"
 #include "Importers/FBXImporter.h"
+#include "EditorAssetManager.h"
+#include <CoreLib.Serialization/DataSerializer.h>
+#include <Pulsar/Assets/StaticMesh.h>
+
+#include <PulsarEd/Windows/SceneWindow.h>
+#include <PulsarEd/Windows/WorkspaceWindow.h>
+#include <PulsarEd/Windows/ConsoleWindow.h>
+#include <PulsarEd/Windows/PropertiesWindow.h>
+#include <PulsarEd/Windows/OutlinerWindow.h>
+#include <PulsarEd/Windows/OutputWindow.h>
+#include <PulsarEd/Tools/MenuDebugTool.h>
 
 namespace pulsared
 {
@@ -33,6 +40,7 @@ namespace pulsared
         //请求关闭程序
         return Application::inst()->RequestQuitEvents.IsValidReturnInvoke();
     }
+
     static void _quitting()
     {
         Logger::Log("engine application is quitting");
@@ -45,22 +53,27 @@ namespace pulsared
     {
         return "editor";
     }
+
     void EditorAppInstance::RequestQuit()
     {
         //SystemInterface::RequestQuitEvents();
     }
+
     Vector2f EditorAppInstance::GetOutputScreenSize()
     {
         return this->output_size_;
     }
+
     void EditorAppInstance::SetOutputScreenSize(Vector2f size)
     {
         this->output_size_ = size;
     }
+
     string EditorAppInstance::GetTitle()
     {
-        return string();
+        return {};
     }
+
     void EditorAppInstance::SetTitle(string_view title)
     {
     }
@@ -73,51 +86,73 @@ namespace pulsared
 
     static void InitBasicMenu()
     {
-        auto main_menu = MenuManager::GetMainMenu();
+        auto mainMenu = MenuManager::GetMainMenu();
         {
             MenuEntrySubMenu_sp file = mksptr(new MenuEntrySubMenu("File"));
-            main_menu->AddEntry(file);
+            mainMenu->AddEntry(file);
 
             auto openWorkSpace = mksptr(new MenuEntryButton("Open Workspace"));
-            openWorkSpace->action = MenuAction::FromRaw([](sptr<MenuContexts> ctx) {
+            openWorkSpace->Action = MenuAction::FromRaw([](sptr<MenuContexts> ctx) {
                 Workspace::OpenDialogUserWorkspace();
-                });
+            });
             file->AddEntry(openWorkSpace);
         }
         {
-            MenuEntrySubMenu_sp file = mksptr(new MenuEntrySubMenu("Edit"));
-            main_menu->AddEntry(file);
+            MenuEntrySubMenu_sp menu = mksptr(new MenuEntrySubMenu("Edit"));
+            mainMenu->AddEntry(menu);
         }
         {
-            MenuEntrySubMenu_sp file = mksptr(new MenuEntrySubMenu("Assets"));
-            main_menu->AddEntry(file);
+            MenuEntrySubMenu_sp menu = mksptr(new MenuEntrySubMenu("Assets"));
+            mainMenu->AddEntry(menu);
         }
         {
-            MenuEntrySubMenu_sp file = mksptr(new MenuEntrySubMenu("Build"));
-            main_menu->AddEntry(file);
+            MenuEntrySubMenu_sp menu = mksptr(new MenuEntrySubMenu("Build"));
+            mainMenu->AddEntry(menu);
         }
         {
-            MenuEntrySubMenu_sp file = mksptr(new MenuEntrySubMenu("Tool"));
-            main_menu->AddEntry(file);
+            MenuEntrySubMenu_sp menu = mksptr(new MenuEntrySubMenu("Tool"));
+            mainMenu->AddEntry(menu);
+            auto menuDebug = mksptr(new MenuEntryButton("MenuDebug"));
+            menuDebug->Action = MenuAction::FromRaw([](sptr<MenuContexts> ctx) {
+                ToolWindow::OpenToolWindow<MenuDebugTool>();
+            });
+            menu->AddEntry(menuDebug);
         }
         {
-            MenuEntrySubMenu_sp file = mksptr(new MenuEntrySubMenu("Window"));
-            main_menu->AddEntry(file);
+            MenuEntrySubMenu_sp menu = mksptr(new MenuEntrySubMenu("Window"));
+            mainMenu->AddEntry(menu);
         }
         {
-            MenuEntrySubMenu_sp file = mksptr(new MenuEntrySubMenu("Help"));
-            main_menu->AddEntry(file);
+            MenuEntrySubMenu_sp menu = mksptr(new MenuEntrySubMenu("Help"));
+            mainMenu->AddEntry(menu);
         }
 
         {
-            MenuEntryButton_sp about = mksptr(new MenuEntryButton("About"));
-            about->action = MenuAction::FromRaw([](auto ctx) {
+            MenuEntryButton_sp menu = mksptr(new MenuEntryButton("About"));
+            menu->Action = MenuAction::FromRaw([](auto ctx) {
                 Logger::Log("pulsar engine");
-                });
-            main_menu->FindMenuEntry<MenuEntrySubMenu>("Help")->AddEntry(about);
+            });
+            mainMenu->FindMenuEntry<MenuEntrySubMenu>("Help")->AddEntry(menu);
         }
+
     }
 
+    static void _InitWindowMenu()
+    {
+        EditorWindowManager::RegisterPanelWindowType(cltypeof<SceneWindow>());
+        EditorWindowManager::GetPanelWindow(cltypeof<SceneWindow>())->Open();
+        //EditorWindowManager::RegisterPanelWindowType(cltypeof<OutputWindow>());
+        //EditorWindowManager::GetPanelWindow(cltypeof<OutputWindow>())->Open();
+        EditorWindowManager::RegisterPanelWindowType(cltypeof<OutlinerWindow>());
+        EditorWindowManager::GetPanelWindow(cltypeof<OutlinerWindow>())->Open();
+        EditorWindowManager::RegisterPanelWindowType(cltypeof<PropertiesWindow>());
+        EditorWindowManager::GetPanelWindow(cltypeof<PropertiesWindow>())->Open();
+        EditorWindowManager::RegisterPanelWindowType(cltypeof<WorkspaceWindow>());
+        EditorWindowManager::GetPanelWindow(cltypeof<WorkspaceWindow>())->Open();
+        EditorWindowManager::RegisterPanelWindowType(cltypeof<ConsoleWindow>());
+        EditorWindowManager::GetPanelWindow(cltypeof<ConsoleWindow>())->Open();
+
+    }
 
     void EditorAppInstance::OnPreInitialize(gfx::GFXGlobalConfig* config)
     {
@@ -127,7 +162,7 @@ namespace pulsared
         auto uicfg = PathUtil::Combine(AppRootDir(), "uiconfig.json");
 
         // load config
-        if (exists(path{ uicfg }))
+        if (exists(path{uicfg}))
         {
             auto json = FileUtil::ReadAllText(uicfg);
             auto cfg = ser::JsonSerializer::Deserialize<EditorUIConfig>(json);
@@ -142,33 +177,88 @@ namespace pulsared
             config->WindowHeight = 720;
             config->WindowWidth = 1280;
         }
-        
+
         config->EnableValid = true;
 
         strcpy(config->ProgramName, "Pulsar");
         strcpy(config->Title, "Pulsar Editor v0.1 - Vulkan1.2");
 
+        Logger::Log("pre intialized");
+    }
 
+    static void _Test()
+    {
+        string error;
+        FBXImporterSettings settings{};
+        settings.ConvertAxisSystem = true;
+
+        Shader_ref defaultLitShader;
+        {
+            auto stream = ser::FileStream(R"(D:\Codes\Pulsar\Pulsar\Shader\Lit.shader)", ser::FileOpenMode::Read);
+            //ShaderPassSerializeData data;
+            //ReadWriteStream(stream, false, data);
+            //defaultLitShader = Shader::StaticCreate("DefaultLit", { data });
+            World::Current()->GetDeferredDestroyedQueue().push_back(defaultLitShader);
+        }
+
+        auto mat = Material::StaticCreate("DefaultLit", defaultLitShader);
+        World::Current()->SetDefaultMaterial(mat);
+        World::Current()->GetDeferredDestroyedQueue().push_back(mat);
+
+    }
+
+    static void _RegisterIcon(Type* type, string_view path)
+    {
+        auto icon = FileUtil::ReadAllBytes(AssetDatabase::GetAbsoluteAssetPath(path));
+        AssetDatabase::IconPool->Register(index_string(type->GetName()), icon.data(), icon.size());
+    }
+
+    static void _RegisterIcon(string_view name, string_view path)
+    {
+        auto icon = FileUtil::ReadAllBytes(AssetDatabase::GetAbsoluteAssetPath(path));
+        AssetDatabase::IconPool->Register(index_string(name), icon.data(), icon.size());
     }
 
     void EditorAppInstance::OnInitialized()
     {
-        Logger::Log("initialize world");
+        m_assetManager = new EditorAssetManager;
+
+        // search package path
+        namespace fs = std::filesystem;
+
+        fs::path curPath = fs::current_path();
+        while (!fs::exists(curPath / "Packages"))
+        {
+            curPath = curPath.parent_path();
+        }
+
+        AssetDatabase::Initialize();
+        AssetDatabase::AddProgramPackageSearchPath(curPath / "Packages");
+
+        // add package
+        AssetDatabase::AddPackage("Engine");
+        AssetDatabase::AddPackage("Editor");
 
         //world
-        World::Reset<EditorWorld>();
+        Logger::Log("initialize world");
+        m_world = World::Reset<EditorWorld>();
 
-        auto renderPipeline = new EditorRenderPipeline(World::Current());
-        
+        auto renderPipeline = new EditorRenderPipeline(m_world);
+
         Application::GetGfxApp()->SetRenderPipeline(renderPipeline);
 
         Logger::Log("initialize imgui");
         m_gui = CreateImGui(Application::GetGfxApp());
         m_gui->Initialize();
-        
+
         renderPipeline->ImGuiObject = m_gui;
 
-        AssetDatabase::Initialize();
+        _RegisterIcon(cltypeof<FolderAsset>(), "Editor/Icons/folder.png");
+        _RegisterIcon(cltypeof<Shader>(), "Editor/Icons/shader.png");
+        _RegisterIcon(cltypeof<Material>(), "Editor/Icons/material.png");
+        _RegisterIcon(cltypeof<StaticMesh>(), "Editor/Icons/staticmesh.png");
+        _RegisterIcon(cltypeof<AssetObject>(), "Editor/Icons/PreviewFrame.png");
+        _RegisterIcon("WorkspaceWindow.Dirty", "Editor/Icons/Star.png");
 
         InitBasicMenu();
 
@@ -195,26 +285,19 @@ namespace pulsared
             subsystem->OnInitialized();
         }
 
-        //Workspace::OpenWorkspace(R"(D:\Codes\Pulsar\TestProject)");
-
-        //init window uis
+        //init window ui
         Logger::Log("initialize editor window manager");
-        pulsared::EditorWindowManager::Initialize();
+        EditorWindowManager::Initialize();
+        _InitWindowMenu();
 
-        string error;
-        World::Current()->GetPresistentScene()->AddNode(FBXImporter::Import(R"(C:\Users\JomiXedYu\Desktop\sphere.fbx)", error));
-
+        //Workspace::OpenWorkspace(R"(../../../../../../Project/Project.peproj)");
+        //_Test();
     }
 
     void EditorAppInstance::OnTerminate()
     {
-        m_gui->Terminate();
-        m_gui.reset();
-
         delete Application::GetGfxApp()->GetRenderPipeline();
         Application::GetGfxApp()->SetRenderPipeline(nullptr);
-
-        pulsared::EditorWindowManager::Terminate();
 
         World::Reset(nullptr);
 
@@ -223,6 +306,10 @@ namespace pulsared
         {
             subsystem->OnTerminate();
         }
+
+        m_gui->Terminate();
+        m_gui.reset();
+        EditorWindowManager::Terminate();
 
         using namespace std::filesystem;
 
@@ -233,7 +320,10 @@ namespace pulsared
         auto json = ser::JsonSerializer::Serialize(cfg.get(), {});
         FileUtil::WriteAllText(uicfg_path, json);
 
+        delete m_assetManager;
+        m_assetManager = nullptr;
         AssetDatabase::Terminate();
+        RuntimeObjectWrapper::Terminate();
         EditorLogRecorder::Terminate();
     }
 
@@ -248,6 +338,7 @@ namespace pulsared
 
         m_gui->EndFrame();
     }
+
     void EditorAppInstance::OnEndRender(float dt)
     {
 
@@ -264,13 +355,14 @@ namespace pulsared
         return nullptr;
     }
 
-    Vector2f pulsared::EditorAppInstance::GetAppSize()
+    Vector2f EditorAppInstance::GetAppSize()
     {
         int32_t w, h;
         Application::GetGfxApp()->GetViewport()->GetSize(&w, &h);
-        return Vector2f(w, h);
+        return Vector2f((float)w, (float)h);
     }
-    void pulsared::EditorAppInstance::SetAppSize(Vector2f size)
+
+    void EditorAppInstance::SetAppSize(Vector2f size)
     {
         Application::GetGfxApp()->GetViewport()->SetSize((int)size.x, (int)size.y);
     }

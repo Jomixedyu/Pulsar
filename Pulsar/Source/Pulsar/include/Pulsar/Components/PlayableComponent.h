@@ -7,7 +7,7 @@ namespace pulsar
 {
     class PlayableComponent : public Component
     {
-        CORELIB_DEF_TYPE(AssemblyObject_Pulsar, pulsar::PlayableComponent, Component);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::PlayableComponent, Component);
 
     public:
         bool get_interactive_playing() const { return enabled_; }

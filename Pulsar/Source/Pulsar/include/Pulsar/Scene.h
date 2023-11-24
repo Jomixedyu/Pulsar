@@ -5,37 +5,44 @@
 #include <Pulsar/Node.h>
 #include <Pulsar/AssetObject.h>
 #include <Pulsar/Assets/CubeMap.h>
+#include <Pulsar/Assets/NodeCollection.h>
 
 namespace pulsar
 {
 
     class Node;
+    class World;
 
-    class Scene : public AssetObject
+    class Scene : public NodeCollection
     {
-        CORELIB_DEF_TYPE(AssemblyObject_Pulsar, pulsar::Scene, AssetObject)
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::Scene, NodeCollection);
+        inline ObjectPtr<Scene> self_ref() const { return this->GetObjectHandle(); }
     public:
-        List_sp<Node_ref> GetRootNodes() { return m_sceneNodes; }
 
         Scene();
         virtual ~Scene() override
         {
         }
     public:
-        void AddNode(Node_ref node);
-        void RemoveNode(Node_ref node);
+        void BeginScene(World* world);
+        void EndScene();
+
+        virtual void OnAddNode(Node_ref node) override;
+        virtual void OnRemoveNode(Node_ref node)override;
 
         static ObjectPtr<Scene> StaticCreate(string_view name);
+
+        World* GetWorld() const { return m_runtimeWorld; }
     protected:
         virtual void OnDestroy() override;
     private:
-
-        List_sp<Node_ref> m_sceneNodes;
 
         CORELIB_REFL_DECL_FIELD(cubemap_);
         CubeMapAsset_ref cubemap_;
 
 
+        bool m_isRuntimeScene;
+        World* m_runtimeWorld;
     };
     DECL_PTR(Scene);
 }

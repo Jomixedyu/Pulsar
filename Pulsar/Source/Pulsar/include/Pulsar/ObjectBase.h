@@ -12,19 +12,26 @@
 #include <CoreLib/Guid.h>
 #include <Pulsar/EngineMath.h>
 #include <unordered_map>
+#include <unordered_set>
+#include <CoreLib/IndexString.h>
+#include <CoreLib/sser.hpp>
 
-#define WITH_APATITE_EDITOR
+#define WITH_EDITOR
 
 #define DECL_PTR(Class) \
 CORELIB_DECL_SHORTSPTR(Class); \
 using Class##_ref = ::pulsar::ObjectPtr<Class>;
 
+#define THIS_REF ObjectPtr<ThisClass>(GetObjectHandle())
+
+#define assert_err(expr, msg)
+#define assert_warn(expr, msg)
 
 namespace pulsar
 {
     using namespace jxcorlib;
 
-    CORELIB_DECL_ASSEMBLY(Pulsar);
+    CORELIB_DECL_ASSEMBLY(pulsar);
 
     class EngineException : public ExceptionBase
     {
@@ -38,47 +45,90 @@ namespace pulsar
     template<typename K, typename V>
     using hash_map = std::unordered_map<K, V>;
 
+    template<typename T>
+    using hash_set = std::unordered_set<T>;
+
+    using ObjectFlags = uint16_t;
+    enum ObjectFlags_ : uint16_t
+    {
+        OF_NoFlag = 0,
+        OF_Persistent = 1 << 0,
+        OF_Instantiable = 1 << 1,
+        OF_Instance = 1 << 2,
+        OF_NoPack = 1 << 3,
+    };
+
     class ObjectBase : public Object
     {
         friend class RuntimeObjectWrapper;
-        CORELIB_DEF_TYPE(AssemblyObject_Pulsar, pulsar::ObjectBase, Object);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::ObjectBase, Object);
     public:
         ObjectBase();
         virtual ~ObjectBase() override;
     public:
-
         ObjectHandle GetObjectHandle() const { return this->m_objectHandle; }
     public:
-        void Destroy();
-        void Construct();
-        bool IsAlive() const;
+        void Construct(ObjectHandle handle = {});
+        virtual void PostEditChange(FieldInfo* info) {}
+    public:
+        index_string GetIndexName() const { return m_name; }
+        string       GetName() const { return m_name.to_string(); }
+        void         SetName(string_view name) { m_name = name; }
+        uint16_t     GetObjectFlags() const { return m_flags; }
+        bool         HasObjectFlags(ObjectFlags flags) const { return m_flags & flags;}
+        void         SetObjectFlags(uint16_t flags) { m_flags = flags; }
+        bool         IsPersistentObject() const { return m_flags & OF_Persistent; }
     protected:
         virtual void OnConstruct();
         virtual void OnDestroy();
+    private:
+        void Destroy();
     protected:
-        ObjectHandle m_objectHandle;
+        // base 24
+        index_string m_name;         // 8
+        ObjectHandle m_objectHandle; // 16
+        ObjectFlags  m_flags{};      // 16
+    public:
     };
 
+    inline constexpr int kSizeObjectBase = sizeof(ObjectBase);
 
     struct ObjectPtrBase
     {
         ObjectHandle handle{};
+
+        bool operator==(const ObjectPtrBase& b) const
+        {
+            return handle == b.handle;
+        }
         ObjectHandle GetHandle() const
         {
             return handle;
         }
+
     };
 
-    class BoxingObjectPtrBase : public Object
+    class BoxingObjectPtrBase : public BoxingObject, public IStringify
     {
-        CORELIB_DEF_TYPE(AssemblyObject_Pulsar, pulsar::BoxingObjectPtrBase, Object);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::BoxingObjectPtrBase, Object);
+        CORELIB_IMPL_INTERFACES(IStringify)
     public:
         using unboxing_type = ObjectPtrBase;
         ObjectPtrBase get_unboxing_value() { return { handle }; }
-        BoxingObjectPtrBase() {}
-        BoxingObjectPtrBase(ObjectPtrBase invalue) : handle(invalue.handle) {}
+        BoxingObjectPtrBase() : CORELIB_INIT_INTERFACE(IStringify) {}
+        BoxingObjectPtrBase(ObjectPtrBase invalue) : handle(invalue.handle),
+            CORELIB_INIT_INTERFACE(IStringify) {}
 
-        CORELIB_REFL_DECL_FIELD(handle);
+        virtual void IStringify_Parse(const string& value) override
+        {
+            handle = ObjectHandle::parse(value);
+        }
+
+        virtual string IStringify_Stringify() override
+        {
+            return handle.to_string();
+        }
+
         ObjectHandle handle;
     };
 }
@@ -92,9 +142,9 @@ namespace pulsar
         static ObjectBase* GetObject(ObjectHandle id);
         static sptr<ObjectBase> GetSharedObject(ObjectHandle id);
         static bool IsValid(ObjectHandle id);
-        static void NewInstance(sptr<ObjectBase>&& managedObj);
-        static void DestroyObject(const sptr<ObjectBase>& obj);
-        static void ForceDestroyObject(ObjectHandle id);
+        static void NewInstance(sptr<ObjectBase>&& managedObj, ObjectHandle handle);
+        static void DestroyObject(ObjectHandle id, bool isForce = false);
+        static void Terminate();
 
         //<id, type, is_create>
         static Action<ObjectHandle, Type*, bool> ObjectHook;
@@ -103,23 +153,19 @@ namespace pulsar
 
     template<typename T>
     concept baseof_objectbase = std::is_base_of<ObjectBase, T>::value;
+    
+
 
     inline bool IsValid(const ObjectPtrBase& object)
     {
         return RuntimeObjectWrapper::IsValid(object.handle);
     }
 
-    inline void DestroyObject(const ObjectPtrBase& object)
+    inline void DestroyObject(const ObjectPtrBase& object, bool isForce = false)
     {
-        if (!object.handle.is_empty())
-        {
-            if (auto obj = RuntimeObjectWrapper::GetObject(object.handle))
-            {
-                obj->Destroy();
-            }
-        }
+        RuntimeObjectWrapper::DestroyObject(object.handle, isForce);
     }
-
+    
     template<typename T>
     struct ObjectPtr : public ObjectPtrBase
     {
@@ -136,13 +182,22 @@ namespace pulsar
             handle = ptr.handle;
             Ptr = GetPtr();
         }
+        ObjectPtr(T* ptr)
+        {
+            if (Ptr = ptr)
+            {
+                handle = ptr->GetObjectHandle();
+            }
+        }
+
+
         template<typename U>
         ObjectPtr(const ObjectPtr<U>& other)
         {
             handle = other.handle;
             Ptr = GetPtr();
         }
-        ObjectPtr() {}
+        ObjectPtr() : Ptr(nullptr) {}
         ObjectPtr(std::nullptr_t) {}
         ObjectPtr(const sptr<T>& object)
         {
@@ -166,7 +221,11 @@ namespace pulsar
             return GetPtr();
         }
         bool operator==(const ObjectPtrBase& r) const { return handle == r.handle; }
+        bool operator==(std::nullptr_t) const { return !IsValid(); }
+
         bool operator!=(const ObjectPtrBase& r) const { return handle != r.handle; }
+        template<typename T>
+        bool operator==(const ObjectPtr<T>& r) const { return handle == r.handle; }
 
         bool IsValid() const
         {
@@ -182,8 +241,31 @@ namespace pulsar
         }
     };
 
-    ser::Stream& ReadWriteStream(ser::Stream& stream, bool isWrite, ObjectPtrBase& obj);
+    template<typename T, typename U>
+    ObjectPtr<T> ref_cast(ObjectPtr<U> o)
+    {
+        if (!o) return {};
+        return ptr_cast<T>(o.GetPtr());
+    }
 
+    std::iostream& ReadWriteStream(std::iostream& stream, bool isWrite, ObjectPtrBase& obj);
+
+    class NotifyFieldValueChangedAttribute : public Attribute
+    {
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::NotifyFieldValueChangedAttribute, Attribute);
+    public:
+        NotifyFieldValueChangedAttribute(const char* name)
+            : m_name(name)
+        {
+        }
+    public:
+        const char* GetPostMethodName() const
+        {
+            return m_name;
+        }
+    private:
+        const char* m_name;
+    };
 }
 namespace jxcorlib
 {
@@ -191,6 +273,12 @@ namespace jxcorlib
     struct type_redirect<pulsar::ObjectPtr<T>>
     {
         using type = pulsar::ObjectPtrBase;
+    };
+
+    template<typename T>
+    struct type_wrapper<pulsar::ObjectPtr<T>>
+    {
+        using type = T;
     };
 }
 
@@ -205,7 +293,25 @@ namespace std
     {
         size_t operator()(const pulsar::ObjectHandle& handle) const noexcept
         {
-            return *reinterpret_cast<const uint64_t*>(&handle) ^ *(reinterpret_cast<const uint64_t*>(&handle) + 1);
+            return *reinterpret_cast<const uint64_t*>(&handle) ^ *((reinterpret_cast<const uint64_t*>(&handle) + 1));
+        }
+    };
+
+    template<>
+    struct hash<pulsar::ObjectPtrBase>
+    {
+        size_t operator()(const pulsar::ObjectPtrBase& ptr) const noexcept
+        {
+            return std::hash<pulsar::ObjectHandle>()(ptr.GetHandle());
+        }
+    };
+
+    template<typename T>
+    struct hash<pulsar::ObjectPtr<T>>
+    {
+        size_t operator()(const pulsar::ObjectPtr<T>& ptr) const noexcept
+        {
+            return std::hash<pulsar::ObjectHandle>()(ptr.GetHandle());
         }
     };
 }

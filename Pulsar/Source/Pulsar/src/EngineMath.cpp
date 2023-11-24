@@ -4,49 +4,49 @@ namespace jmath
 {
     using namespace jxcorlib;
 
-    ser::Stream& ReadWriteStream(ser::Stream& stream, bool is_write, Vector2f& vec)
+    std::iostream& ReadWriteStream(std::iostream& stream, bool is_write, Vector2f& vec)
     {
-        ser::ReadWriteStream(stream, is_write, vec.x);
-        ser::ReadWriteStream(stream, is_write, vec.y);
+        sser::ReadWriteStream(stream, is_write, vec.x);
+        sser::ReadWriteStream(stream, is_write, vec.y);
         return stream;
     }
-    ser::Stream& ReadWriteStream(ser::Stream& stream, bool is_write, Vector3f& vec)
+    std::iostream& ReadWriteStream(std::iostream& stream, bool is_write, Vector3f& vec)
     {
-        ser::ReadWriteStream(stream, is_write, vec.x);
-        ser::ReadWriteStream(stream, is_write, vec.y);
-        ser::ReadWriteStream(stream, is_write, vec.z);
+        sser::ReadWriteStream(stream, is_write, vec.x);
+        sser::ReadWriteStream(stream, is_write, vec.y);
+        sser::ReadWriteStream(stream, is_write, vec.z);
         return stream;
     }
-    ser::Stream& ReadWriteStream(ser::Stream& stream, bool is_write, Vector4f& vec)
+    std::iostream& ReadWriteStream(std::iostream& stream, bool is_write, Vector4f& vec)
     {
-        ser::ReadWriteStream(stream, is_write, vec.x);
-        ser::ReadWriteStream(stream, is_write, vec.y);
-        ser::ReadWriteStream(stream, is_write, vec.z);
-        ser::ReadWriteStream(stream, is_write, vec.w);
+        sser::ReadWriteStream(stream, is_write, vec.x);
+        sser::ReadWriteStream(stream, is_write, vec.y);
+        sser::ReadWriteStream(stream, is_write, vec.z);
+        sser::ReadWriteStream(stream, is_write, vec.w);
         return stream;
     }
-    ser::Stream& ReadWriteStream(ser::Stream& stream, bool is_write, Quat4f& q)
+    std::iostream& ReadWriteStream(std::iostream& stream, bool is_write, Quat4f& q)
     {
-        ser::ReadWriteStream(stream, is_write, q.w);
-        ser::ReadWriteStream(stream, is_write, q.x);
-        ser::ReadWriteStream(stream, is_write, q.y);
-        ser::ReadWriteStream(stream, is_write, q.z);
+        sser::ReadWriteStream(stream, is_write, q.w);
+        sser::ReadWriteStream(stream, is_write, q.x);
+        sser::ReadWriteStream(stream, is_write, q.y);
+        sser::ReadWriteStream(stream, is_write, q.z);
         return stream;
     }
-    ser::Stream& ReadWriteStream(ser::Stream& stream, bool is_write, Color8b4& c)
+    std::iostream& ReadWriteStream(std::iostream& stream, bool is_write, Color4b& c)
     {
-        ser::ReadWriteStream(stream, is_write, c.r);
-        ser::ReadWriteStream(stream, is_write, c.g);
-        ser::ReadWriteStream(stream, is_write, c.b);
-        ser::ReadWriteStream(stream, is_write, c.a);
+        sser::ReadWriteStream(stream, is_write, c.r);
+        sser::ReadWriteStream(stream, is_write, c.g);
+        sser::ReadWriteStream(stream, is_write, c.b);
+        sser::ReadWriteStream(stream, is_write, c.a);
         return stream;
     }
-    ser::Stream& ReadWriteStream(ser::Stream& stream, bool is_write, LinearColorf& c)
+    std::iostream& ReadWriteStream(std::iostream& stream, bool is_write, Color4f& c)
     {
-        ser::ReadWriteStream(stream, is_write, c.r);
-        ser::ReadWriteStream(stream, is_write, c.g);
-        ser::ReadWriteStream(stream, is_write, c.b);
-        ser::ReadWriteStream(stream, is_write, c.a);
+        sser::ReadWriteStream(stream, is_write, c.r);
+        sser::ReadWriteStream(stream, is_write, c.g);
+        sser::ReadWriteStream(stream, is_write, c.b);
+        sser::ReadWriteStream(stream, is_write, c.a);
         return stream;
     }
 }

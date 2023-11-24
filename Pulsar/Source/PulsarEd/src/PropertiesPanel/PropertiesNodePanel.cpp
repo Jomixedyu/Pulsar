@@ -5,7 +5,6 @@
 namespace pulsared
 {
 
-
     static string _GetComponentDisplayName(Component* com)
     {
         string name = com->GetType()->GetShortName();
@@ -17,23 +16,39 @@ namespace pulsared
         }
         return StringUtil::FriendlyName(name);
     }
-    
-    static void _PropertyLine(const string& name, sptr<Object>& obj)
-    {
-        ImGui::TableNextRow();
-        ImGui::TableSetColumnIndex(0);
-        ImGui::Text(StringUtil::FriendlyName(name).c_str());
-        ImGui::TableSetColumnIndex(1);
 
-        PropertyControlManager::ShowProperty(name, obj);
+    static void _Property2Name()
+    {
+        ImGui::Columns(2);
+        ImGui::SetColumnWidth(0, 120);
+        ImGui::AlignTextToFramePadding();
     }
+    static void _Property2Value()
+    {
+        ImGui::NextColumn();
+    }
+    static void _Property2End()
+    {
+        ImGui::Columns(1);
+    }
+
+    static bool _PropertyLine(const string& name, Type* type, Object* obj)
+    {
+        _Property2Name();
+        ImGui::Text(StringUtil::FriendlyName(name).c_str());
+        _Property2Value();
+        bool changed = PropertyControlManager::ShowProperty(name, type, obj);
+        _Property2End();
+        return changed;
+    }
+
 
     static constexpr int kTableRowHeight = 30;
 
     void PropertiesNodePanel::OnDrawImGui()
     {
         auto selectedObj = EditorSelection::Selection.GetSelected();
-        
+
         Node_ref selected;
         if (cltypeof<Node>()->IsInstanceOfType(selectedObj.GetPtr()))
         {
@@ -45,14 +60,16 @@ namespace pulsared
         }
 
 
-        char name[255];
+        static char name[255];
         strcpy_s(name, 255, selected->GetName().c_str());
 
-        bool is_active = selected->get_is_active_self();
+        ImGui::Spacing();
+
+        bool is_active = selected->GetIsActiveSelf();
         ImGui::Checkbox("##active", &is_active);
-        if (is_active != selected->get_is_active_self())
+        if (is_active != selected->GetIsActiveSelf())
         {
-            selected->set_is_active_self(is_active);
+            selected->SetIsActiveSelf(is_active);
         }
         ImGui::SameLine();
         ImGui::PushItemWidth(-1);
@@ -66,96 +83,92 @@ namespace pulsared
         ImGui::PopItemWidth();
 
         ImGui::Spacing();
-        ImGui::Separator();
-        ImGui::Spacing();
-
-        //transform info
-        if (ImGui::BeginTable("##transform", 2))
-        {
-
-            auto boxpos = BoxUtil::Box(selected->get_self_position());
-            _PropertyLine("Position", boxpos);
-            selected->set_self_position(UnboxUtil::Unbox<Vector3f>(boxpos));
-
-            auto boxrot = BoxUtil::Box(selected->get_self_rotation());
-            _PropertyLine("Rotation", boxrot);
-            //selected->set_self_rotation(UnboxUtil::Unbox<Quat4f>(boxrot));
-
-            auto boxeuler = BoxUtil::Box(selected->get_self_euler_rotation());
-            _PropertyLine("Euler", boxeuler);
-            selected->set_self_euler_rotation(UnboxUtil::Unbox<Vector3f>(boxeuler));
-
-            auto boxscale = BoxUtil::Box(selected->get_self_scale());
-            _PropertyLine("Scale", boxscale);
-            selected->set_self_scale(UnboxUtil::Unbox<Vector3f>(boxscale));
-
-            ImGui::EndTable();
-        }
-
-        ImGui::Spacing();
-        ImGui::Separator();
-        ImGui::Spacing();
 
         ImGui::AlignTextToFramePadding();
         ImGui::Text("Components");
-        ImGui::SameLine(ImGui::GetWindowWidth() - 180);
-        ImGui::Button("Add Component", { 170,30 });
+        ImGui::SameLine();
+        ImGui::Button("Add Component", { -FLT_MIN,20 });
 
         for (auto& comp : selected->GetAllComponentArray())
         {
             static bool opened = true;
-            if (ImGui::CollapsingHeader(_GetComponentDisplayName(comp.GetPtr()).c_str(), &opened, ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_DefaultOpen))
+
+            string componentFriendlyName = _GetComponentDisplayName(comp.GetPtr());
+
+            ImGui::PushID(comp.GetPtr());
+            if (ImGui::CollapsingHeader(componentFriendlyName.c_str(), &opened, ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_DefaultOpen))
             {
-                auto com_guid = comp->GetObjectHandle().to_string();
-                Type* com_type = comp->GetType();
-                auto fields = com_type->GetFieldInfos(TypeBinding::NonPublic);
-                if (ImGui::BeginTable(com_guid.c_str(), 2))
+                auto componentGuid = comp->GetObjectHandle().to_string();
+                Type* componentType = comp->GetType();
+                auto fields = componentType->GetFieldInfos(TypeBinding::NonPublic);
+
+                for (auto& fieldInfo : fields)
                 {
-                    for (auto& field : fields)
+                    if (fieldInfo->IsDefinedAttribute(cltypeof<HideInComponentPropertyAttribute>()))
                     {
-                        //ImGui::TableNextRow(0, kTableRowHeight);
-                        //ImGui::TableSetColumnIndex(0);
-                        //ImGui::Text(StringUtil::FriendlyName(field->get_name()).c_str());
-                        //ImGui::TableSetColumnIndex(1);
-
-                        auto field_inst = field->GetValue(comp.GetPtr());
-                        _PropertyLine(field->GetName(), field_inst);
-
-                        //auto prop_control = PropertyControlManager::FindControl(field->get_field_type());
-                        //if (prop_control)
-                        //{
-                        //    auto field_inst = field->GetValue(comp.get());
-                        //    prop_control->OnDrawImGui(field->get_name(), field_inst);
-                        //    field->SetValue(comp.get(), field_inst);
-                        //}
-                        //else
-                        //{
-                        //    ImGui::Text("not supported property");
-                        //}
+                        continue;
                     }
 
-                    //debug info
+                    auto fieldInstShared = fieldInfo->GetValue(comp.GetPtr());
+
+                    const bool isObjectPtr = fieldInstShared->GetType() == BoxingObjectPtrBase::StaticType();
+
+                    if (isObjectPtr)
                     {
-                        ImGui::BeginDisabled(true);
+                        auto handle = UnboxUtil::Unbox<ObjectPtrBase>(fieldInstShared).GetHandle();
+                        auto fieldInst = RuntimeObjectWrapper::GetObject(handle);
+                        _PropertyLine(fieldInfo->GetName(), fieldInfo->GetWrapType(), fieldInst);
+                    }
+                    else
+                    {
+                        if (_PropertyLine(fieldInfo->GetName(), fieldInstShared->GetType(), fieldInstShared.get()))
+                        {
+                            fieldInfo->SetValue(comp.GetPtr(), fieldInstShared);
+                            comp->PostEditChange(fieldInfo);
+                        }
 
-                        ImGui::TableNextRow(0, kTableRowHeight);
-                        ImGui::TableSetColumnIndex(0);
-                        ImGui::Text("Fullname");
-                        ImGui::TableSetColumnIndex(1);
-                        ImGui::Text(comp->GetType()->GetName().c_str());
-
-                        ImGui::TableNextRow(0, kTableRowHeight);
-                        ImGui::TableSetColumnIndex(0);
-                        ImGui::Text("Guid");
-                        ImGui::TableSetColumnIndex(1);
-                        ImGui::Text(comp->GetObjectHandle().to_string().c_str());
-
-                        ImGui::EndDisabled();
                     }
 
-                    ImGui::EndTable();
                 }
+
+                ImGui::BeginDisabled();
+
+                _Property2Name();
+                ImGui::Text("Type");
+                _Property2Value();
+                ImGui::Text(comp->GetType()->GetName().c_str());
+                _Property2End();
+
+                _Property2Name();
+                ImGui::Text("Handle");
+                _Property2Value();
+                ImGui::Text(comp->GetObjectHandle().to_string().c_str());
+                _Property2End();
+
+                ImGui::EndDisabled();
             }
+            ImGui::PopID();
+
+        }
+
+        static bool nodeOpened = true;
+        if (ImGui::CollapsingHeader("__Node Infomation", &nodeOpened, ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_DefaultOpen))
+        {
+            ImGui::BeginDisabled();
+
+            _Property2Name();
+            ImGui::Text("Type");
+            _Property2Value();
+            ImGui::Text(selected->GetType()->GetName().c_str());
+            _Property2End();
+
+            _Property2Name();
+            ImGui::Text("Handle");
+            _Property2Value();
+            ImGui::Text(selected->GetObjectHandle().to_string().c_str());
+            _Property2End();
+
+            ImGui::EndDisabled();
         }
 
         ImGui::Spacing();

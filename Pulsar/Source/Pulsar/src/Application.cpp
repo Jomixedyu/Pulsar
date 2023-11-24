@@ -1,9 +1,10 @@
 ﻿#include <Pulsar/Application.h>
 #include <gfx-vk/GFXVulkanApplication.h>
+#include "AppInstance.h"
+
 
 namespace pulsar
 {
-
     static AppInstance* g_currentInst;
 
     AppInstance* Application::inst()
@@ -17,6 +18,8 @@ namespace pulsar
     }
     int Application::Exec(AppInstance* instance, string_view title, Vector2f size)
     {
+        Watch.Start();
+
         g_currentInst = instance;
 
         gfx::GFXGlobalConfig gfxConfig;
@@ -27,9 +30,17 @@ namespace pulsar
             assert(false);
         }
 
+        Watch.Record("preinitiialize");
+
         g_gfxApp = new gfx::GFXVulkanApplication(gfxConfig);
         g_gfxApp->Initialize();
+
+        Watch.Record("gfx initialize");
+
         instance->OnInitialized();
+
+        Watch.Record("user initialize");
+
 
         g_gfxApp->OnPreRender = [](float dt)
         {

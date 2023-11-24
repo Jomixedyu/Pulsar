@@ -13,21 +13,63 @@ namespace pulsar
 {
     using namespace std;
 
-    void Shader::OnSerialize(AssetSerializer* serializer)
-    {
-
-    }
-
-    sptr<Shader> Shader::StaticCreate(string_view name, array_list<ShaderPassSerializeData>&& pass)
+    sptr<Shader> Shader::StaticCreate(string_view name, ShaderSourceData&& pass)
     {
         Shader_sp self = mksptr(new Shader);
-        self->name_ = name;
         self->Construct();
+        self->m_name = name;
         self->m_shaderSource = std::move(pass);
 
-        self->BindGPU();
+        self->CreateGPUResource();
 
         return self;
+    }
+
+    static size_t BeginBinaryField(std::iostream& stream, bool write, string& name)
+    {
+        auto pos = stream.tellp();
+        sser::ReadWriteStream(stream, write, name);
+        return pos;
+    }
+    static void EndBinaryField(std::iostream& stream, bool write, std::streampos start)
+    {
+        auto pos = stream.tellp();
+        stream.seekp(start);
+        size_t size = pos - start;
+        sser::ReadWriteStream(stream, write, size);
+    }
+    Shader::Shader()
+    {
+        m_passNames = mksptr(new List<String_sp>);
+        m_preDefines = mksptr(new List<String_sp>);
+    }
+    void Shader::Serialize(AssetSerializer* s)
+    {
+        base::Serialize(s);
+        if (!s->IsWrite) // read
+        {
+            m_passNames->clear();
+            m_preDefines->clear();
+
+            auto passes = s->Object->At("Passes");
+            for (size_t i = 0; i < passes->GetCount(); i++)
+            {
+                m_passNames->push_back(mkbox(passes->At(i)->AsString()));
+            }
+        }
+        else
+        {
+            auto passNameArray = s->Object->New(ser::VarientType::Array);
+            for (auto& passName : *m_passNames)
+            {
+                passNameArray->Push(*passName);
+            }
+            s->Object->Add("Passes", passNameArray);
+        }
+        if (s->ExistStream)
+        {
+            ReadWriteStream(s->Stream, s->IsWrite, m_shaderSource);
+        }
     }
 
     static auto _GetVertexLayout(gfx::GFXApplication* app)
@@ -36,37 +78,39 @@ namespace pulsar
         vertDescLayout->BindingPoint = 0;
         vertDescLayout->Stride = sizeof(StaticMeshVertex);
 
-        vertDescLayout->Attributes.push_back({ gfx::GFXVertexInputDataFormat::R32G32B32_SFloat, offsetof(StaticMeshVertex, Position) });
-        vertDescLayout->Attributes.push_back({ gfx::GFXVertexInputDataFormat::R32G32B32_SFloat, offsetof(StaticMeshVertex, Normal) });
-        vertDescLayout->Attributes.push_back({ gfx::GFXVertexInputDataFormat::R32G32B32_SFloat, offsetof(StaticMeshVertex, Tangent) });
-        vertDescLayout->Attributes.push_back({ gfx::GFXVertexInputDataFormat::R32G32B32_SFloat, offsetof(StaticMeshVertex, Bitangent) });
-        vertDescLayout->Attributes.push_back({ gfx::GFXVertexInputDataFormat::R32G32B32_SFloat, offsetof(StaticMeshVertex, Color) });
+        vertDescLayout->Attributes.push_back({ (int)EngineInputSemantic::POSITION, gfx::GFXVertexInputDataFormat::R32G32B32_SFloat, offsetof(StaticMeshVertex, Position) });
+        vertDescLayout->Attributes.push_back({ (int)EngineInputSemantic::NORMAL, gfx::GFXVertexInputDataFormat::R32G32B32_SFloat, offsetof(StaticMeshVertex, Normal) });
+        vertDescLayout->Attributes.push_back({ (int)EngineInputSemantic::TANGENT, gfx::GFXVertexInputDataFormat::R32G32B32_SFloat, offsetof(StaticMeshVertex, Tangent) });
+        vertDescLayout->Attributes.push_back({ (int)EngineInputSemantic::BITANGENT, gfx::GFXVertexInputDataFormat::R32G32B32_SFloat, offsetof(StaticMeshVertex, Bitangent) });
+        vertDescLayout->Attributes.push_back({ (int)EngineInputSemantic::COLOR, gfx::GFXVertexInputDataFormat::R32G32B32_SFloat, offsetof(StaticMeshVertex, Color) });
 
         for (size_t i = 0; i < STATICMESH_MAX_TEXTURE_COORDS; i++)
         {
-            vertDescLayout->Attributes.push_back({ gfx::GFXVertexInputDataFormat::R32G32_SFloat, offsetof(StaticMeshVertex, TexCoords[i]) });
+            vertDescLayout->Attributes.push_back({ (int)EngineInputSemantic::TEXCOORD0 + i, gfx::GFXVertexInputDataFormat::R32G32_SFloat, offsetof(StaticMeshVertex, TexCoords[i]) });
         }
 
         return vertDescLayout;
     }
 
-    void Shader::BindGPU()
+    void Shader::CreateGPUResource()
     {
+        auto& passes = m_shaderSource.ApiMaps[Application::GetGfxApp()->GetApiType()].Passes;
 
-        for (size_t i = 0; i < m_shaderSource.size(); i++)
+        for (size_t i = 0; i < passes.size(); i++)
         {
             // create shader module from source
-            auto gpuProgram = Application::GetGfxApp()->CreateGpuProgram(m_shaderSource[i].VertBytes, m_shaderSource[i].PixelBytes);
+            gfx::GFXGpuProgram_sp gpuProgram = Application::GetGfxApp()->CreateGpuProgram(passes[i].Sources);
 
             // create shader pass state config
             gfx::GFXShaderPassConfig config{};
             {
-                auto& sourceConfig = m_shaderSource[i].Config;
+                auto sourceConfig = ser::JsonSerializer::Deserialize<ShaderPassConfig>(passes[i].Config);
                 config.CullMode = sourceConfig->CullMode;
                 config.DepthCompareOp = sourceConfig->DepthCompareOp;
                 config.DepthTestEnable = sourceConfig->DepthTestEnable;
                 config.DepthWriteEnable = sourceConfig->DepthWriteEnable;
                 config.StencilTestEnable = sourceConfig->StencilTestEnable;
+                config.Topology = (gfx::GFXPrimitiveTopology)sourceConfig->Topology;
             }
 
             // create descriptor layout
@@ -88,38 +132,75 @@ namespace pulsar
                 config,
                 gpuProgram,
                 descriptorSetLayout,
-                _GetVertexLayout(Application::GetGfxApp()));
+                { _GetVertexLayout(Application::GetGfxApp()) });
 
-            m_shaderPass.push_back(shaderPass);
+            m_gfxShaderPass.push_back(shaderPass);
         }
     }
 
-    void Shader::UnBindGPU()
+    void Shader::DestroyGPUResource()
     {
+        m_gfxShaderPass.clear();
     }
 
-    bool Shader::GetIsBindGPU()
+    bool Shader::IsCreatedGPUResource() const
     {
         return false;
     }
-
-    ser::Stream& ReadWriteStream(ser::Stream& stream, bool isWrite, ShaderPassSerializeData& data)
+    void Shader::OnDestroy()
     {
-        using namespace ser;
-        if (isWrite)
+        base::OnDestroy();
+        if (IsCreatedGPUResource())
         {
-            auto json = ser::JsonSerializer::Serialize(data.Config.get(), {});
-            ReadWriteStream(stream, isWrite, json);
+            DestroyGPUResource();
         }
-        else
-        {
-            string json;
-            ReadWriteStream(stream, isWrite, json);
-            data.Config = ser::JsonSerializer::Deserialize<ShaderPassConfig>(json);
-        }
+    }
 
-        ReadWriteStream(stream, isWrite, data.VertBytes);
-        ReadWriteStream(stream, isWrite, data.PixelBytes);
+    void Shader::ResetShaderSource(const ShaderSourceData& serData)
+    {
+        m_shaderSource = serData;
+        auto created = IsCreatedGPUResource();
+        if (created)
+        {
+            DestroyGPUResource();
+        }
+        if (created)
+        {
+            CreateGPUResource();
+        }
+    }
+    array_list<gfx::GFXApi> Shader::GetSupportedApi() const
+    {
+        array_list<gfx::GFXApi> ret;
+        for (auto& [k, v] : m_shaderSource.ApiMaps)
+        {
+            ret.push_back(k);
+        }
+        return ret;
+
+    }
+
+    static std::iostream& ReadWriteStream(std::iostream& stream, bool write, ShaderSourceData::Pass& data)
+    {
+        sser::ReadWriteStream(stream, write, data.Config);
+        sser::ReadWriteStream(stream, write, data.Sources);
+        return stream;
+    }
+    static std::iostream& ReadWriteStream(std::iostream& stream, bool write, ShaderSourceData::ApiPlatform& data)
+    {
+        sser::ReadWriteStream(stream, write, data.Passes);
+        return stream;
+    }
+    std::iostream& ReadWriteStream(std::iostream& stream, bool write, ShaderSourceData& data)
+    {
+        using namespace sser;
+        using namespace ser;
+
+        sser::ReadWriteStream(stream, write, data.ApiMaps);
+
+        //sser::ReadWriteStream(stream, write, data.Config);
+        //sser::ReadWriteStream(stream, write, data.Sources);
+
         return stream;
     }
 

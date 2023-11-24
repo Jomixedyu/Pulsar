@@ -7,6 +7,7 @@
 #include <Pulsar/Rendering/ShaderPass.h>
 #include <gfx/GFXShaderPass.h>
 #include <Pulsar/Rendering/Types.h>
+#include <gfx/GFXApi.h>
 
 namespace pulsar
 {
@@ -14,15 +15,12 @@ namespace pulsar
 
     class ShaderPassConfig : public Object
     {
-        CORELIB_DEF_TYPE(AssemblyObject_Pulsar, pulsar::ShaderPassConfig, Object);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::ShaderPassConfig, Object);
 
     public:
-        CORELIB_REFL_DECL_FIELD(VertShaderName);
-        string VertShaderName;
+        CORELIB_REFL_DECL_FIELD(PassName);
+        string PassName;
 
-        CORELIB_REFL_DECL_FIELD(PixelShaderName);
-        string PixelShaderName;
-        
         CORELIB_REFL_DECL_FIELD(CullMode);
         CullMode CullMode;
 
@@ -37,8 +35,23 @@ namespace pulsar
 
         CORELIB_REFL_DECL_FIELD(StencilTestEnable);
         bool StencilTestEnable;
+
+        CORELIB_REFL_DECL_FIELD(Topology);
+        int Topology;
     };
-    DECL_PTR(ShaderPassConfig);
+    CORELIB_DECL_SHORTSPTR(ShaderPassConfig);
+
+
+    class ShaderConfig : public Object
+    {
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::ShaderConfig, Object);
+    public:
+        //CORELIB_REFL_DECL_FIELD(Passes);
+        //array_list<ShaderPassConfig_sp> Passes;
+    };
+    CORELIB_DECL_SHORTSPTR(ShaderConfig);
+
+
 
     enum class ShaderParameterType
     {
@@ -52,45 +65,79 @@ namespace pulsar
 
     };
 
-    class ShaderConfig
+    struct ShaderSourceData
     {
-
-        array_list<ShaderPassConfig_sp> configs;
-    };
-
-    struct ShaderPassSerializeData
-    {
-        ShaderPassConfig_sp Config;
-        array_list<uint8_t> VertBytes;
-        array_list<uint8_t> PixelBytes;
-    };
-    ser::Stream& ReadWriteStream(ser::Stream& stream, bool isWrite, ShaderPassSerializeData& data);
-
-
-
-    class Shader final: public AssetObject, public IBindGPU
-    {
-        CORELIB_DEF_TYPE(AssemblyObject_Pulsar, pulsar::Shader, AssetObject);
-    public:
-        virtual void OnSerialize(AssetSerializer* serializer) override;
-
-        static sptr<Shader> StaticCreate(
-            string_view name, 
-            array_list<ShaderPassSerializeData>&& pass);
-
-    public:
-        virtual void BindGPU() override;
-        virtual void UnBindGPU() override;
-        virtual bool GetIsBindGPU() override;
-
-        const array_list<gfx::GFXShaderPass_sp>& GetGgxShaderPass() const
+        struct Pass
         {
-            return m_shaderPass;
+            string Config;
+            hash_map<gfx::GFXShaderStageFlags, array_list<char>> Sources;
+        };
+        struct ApiPlatform
+        {
+            array_list<Pass> Passes;
+        };
+        hash_map<gfx::GFXApi, ApiPlatform> ApiMaps;
+    };
+
+    std::iostream& ReadWriteStream(std::iostream& stream, bool write, ShaderSourceData& data);
+
+
+    enum class EngineInputSemantic : int
+    {
+        POSITION = 0,
+        NORMAL = 1,
+        TANGENT = 2,
+        BITANGENT = 3,
+        COLOR = 4,
+        TEXCOORD0 = 5,
+        TEXCOORD1 = 6,
+        TEXCOORD2 = 7,
+        TEXCOORD3 = 8,
+    };
+
+    class Shader final : public AssetObject, public IGPUResource
+    {
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::Shader, AssetObject);
+    public:
+        virtual void Serialize(AssetSerializer* s) override;
+
+        static sptr<Shader> StaticCreate(string_view name, ShaderSourceData&& pass);
+
+    public:
+        Shader();
+        virtual void CreateGPUResource() override;
+        virtual void DestroyGPUResource() override;
+        virtual bool IsCreatedGPUResource() const override;
+
+        virtual void OnDestroy() override;
+
+        size_t GetShaderPassCount() const { return m_gfxShaderPass.size(); }
+
+        gfx::GFXShaderPass_sp GetGfxShaderPass(int index) const
+        {
+            return m_gfxShaderPass[index];
         }
+
+        const array_list<gfx::GFXShaderPass_sp>& GetGfxShaderAllPass() const
+        {
+            return m_gfxShaderPass;
+        }
+
+        void ResetShaderSource(const ShaderSourceData& serData);
+        List_sp<String_sp> GetPassNames() const { return m_passNames; }
+
+        array_list<gfx::GFXApi> GetSupportedApi() const;
     private:
-        array_list<ShaderPassSerializeData> m_shaderSource;
+        // serialized
+        ShaderSourceData m_shaderSource;
     private:
-        array_list<gfx::GFXShaderPass_sp> m_shaderPass;
+        CORELIB_REFL_DECL_FIELD(m_passNames);
+        List_sp<String_sp> m_passNames;
+
+        CORELIB_REFL_DECL_FIELD(m_preDefines);
+        List_sp<String_sp> m_preDefines;
+
+        array_list<gfx::GFXShaderPass_sp> m_gfxShaderPass;
     };
     DECL_PTR(Shader);
 
@@ -98,7 +145,7 @@ namespace pulsar
 
     class ShaderCompileException : public EngineException
     {
-        
+
     public:
         virtual const char* name() const override { return "ShaderCompileException"; }
 

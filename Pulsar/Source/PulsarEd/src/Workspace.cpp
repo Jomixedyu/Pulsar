@@ -20,14 +20,15 @@ namespace pulsared
 
     };
 
+
     bool Workspace::OpenDialogUserWorkspace()
     {
         using namespace jxcorlib::platform;
 
         string selected_path;
-        if (window::OpenFileDialog(window::GetMainWindowHandle(), "seproj(*.seproj)|*.seproj", "", &selected_path))
+
+        if (window::OpenFileDialog(window::GetMainWindowHandle(), "peproj(*.peproj)|*.peproj", "", &selected_path))
         {
-            OpenWorkspace(selected_path);
             return OpenWorkspace(selected_path);
         }
         return false;
@@ -35,8 +36,10 @@ namespace pulsared
 
     bool Workspace::OpenWorkspace(string_view path)
     {
-        if (!std::filesystem::exists(path))
+        auto absolutePath = std::filesystem::absolute(path);
+        if (!std::filesystem::exists(absolutePath))
         {
+            Logger::Log("not exists workspace: " + project_path, LogLevel::Warning);
             return false;
         }
 
@@ -49,11 +52,14 @@ namespace pulsared
         }
 
         //open
-        project_path = path;
+        project_path = absolutePath.string();
         PathUtil::GenericSelf(&project_path);
         project_name = PathUtil::GetFilenameWithoutExt(project_path);
 
+        project_path = PathUtil::GetDirectory(project_path);
+
         Logger::Log("open workspace: " + project_path);
+
         OnWorkspaceOpened.Invoke();
         return true;
     }

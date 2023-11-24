@@ -5,14 +5,16 @@
 #include "Texture.h"
 #include <gfx/GFXRenderTarget.h>
 #include <gfx/GFXFrameBufferObject.h>
-#include <Pulsar/Application.h>
+
 namespace pulsar
 {
+    class Application;
+
     using RenderTargetType = gfx::GFXRenderTargetType;
 
     class RenderTexture : public Texture
     {
-        CORELIB_DEF_TYPE(AssemblyObject_Pulsar, pulsar::RenderTexture, Texture);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::RenderTexture, Texture);
 
     public:
         RenderTexture();
@@ -27,12 +29,12 @@ namespace pulsar
 
         void Initialize(int32_t width, int32_t height, TextureFormat format, bool enableDepthStencil);
 
-        static sptr<RenderTexture> StaticCreate(int width, int height, bool hasColor, bool hasDepth);
+        static ObjectPtr<RenderTexture> StaticCreate(int width, int height, bool hasColor, bool hasDepth);
     public:
-        //IBindGPU
-        virtual void BindGPU() override;
-        virtual void UnBindGPU() override;
-        virtual bool GetIsBindGPU() override;
+        //IGPUResource
+        virtual void CreateGPUResource() override;
+        virtual void DestroyGPUResource() override;
+        virtual bool IsCreatedGPUResource() const override;
         void EnableRenderTarget();
         void DisableRenderTarget();
 

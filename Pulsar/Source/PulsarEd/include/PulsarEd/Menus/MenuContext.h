@@ -5,23 +5,24 @@ namespace pulsared
 {
     class MenuContextBase : public Object
     {
-        CORELIB_DEF_TYPE(AssemblyObject_PulsarEd, pulsared::MenuContextBase, Object);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::MenuContextBase, Object);
     public:
     };
+    CORELIB_DECL_SHORTSPTR(MenuContextBase);
 
     class MenuContexts : public Object
     {
-        CORELIB_DEF_TYPE(AssemblyObject_PulsarEd, pulsared::MenuContexts, Object);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::MenuContexts, Object);
     public:
-        array_list<sptr<MenuContextBase>> contexts;
+        array_list<MenuContextBase_sp> Contexts;
 
-        string entry_name;
+        string EntryName;
 
         template<typename T>
         sptr<T> FindContext()
         {
             Type* type = cltypeof<T>();
-            for (auto& context : this->contexts)
+            for (auto& context : this->Contexts)
             {
                 if (type->IsInstanceOfType(context.get()))
                 {
@@ -32,12 +33,12 @@ namespace pulsared
         }
 
 
-        static sptr<MenuContexts> StaticMakeContext(string_view entry_name, const sptr<MenuContextBase>& ctx)
+        static sptr<MenuContexts> StaticMakeContext(string_view entryName, const sptr<MenuContextBase>& ctx)
         {
             auto ret = mksptr(new MenuContexts);
-            ret->entry_name = entry_name;
+            ret->EntryName = entryName;
             if (ctx)
-                ret->contexts.push_back(ctx);
+                ret->Contexts.push_back(ctx);
             return ret;
         }
     };

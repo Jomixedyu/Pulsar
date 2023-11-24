@@ -7,11 +7,23 @@
 
 namespace pulsar
 {
-
+    class BinaryData
+    {
+        array_list<uint8_t> m_buffer;
+    public:
+        void Fill(uint8_t* data, size_t size)
+        {
+            m_buffer.resize(size);
+            memcpy(m_buffer.data(), data, size);
+        }
+        uint8_t* GetData() { return m_buffer.data(); }
+        const uint8_t* GetData() const { return m_buffer.data(); }
+        size_t Size() const { return m_buffer.size(); }
+    };
 
     class Texture2D : public Texture
     {
-        CORELIB_DEF_TYPE(AssemblyObject_Pulsar, pulsar::Texture2D, Texture);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::Texture2D, Texture);
     public:
         Texture2D();
         ~Texture2D() override;
@@ -23,7 +35,7 @@ namespace pulsar
     public:
         const uint8_t* GetNativeData() const;
     protected:
-        virtual void OnInstantiateAsset(AssetObject_ref& obj) override;
+        virtual void OnInstantiateAsset(AssetObject* obj) override;
 
     public:
         void InitializeFromPictureMemory(const uint8_t* data, int32_t length, const SamplerConfig& samplerConfig, bool enableReadWrite, TextureFormat format);
@@ -37,11 +49,16 @@ namespace pulsar
 
         std::shared_ptr<gfx::GFXTexture2D> m_tex;
         bool m_init = false;
+
+#ifdef WITH_EDITOR
+        BinaryData m_originalImageData;
+#endif // WITH_EDITOR
+
     public:
-        //IBindGPU
-        virtual void BindGPU() override;
-        virtual void UnBindGPU() override;
-        virtual bool GetIsBindGPU() override;
+        //IGPUResource
+        virtual void CreateGPUResource() override;
+        virtual void DestroyGPUResource() override;
+        virtual bool IsCreatedGPUResource() const override;
     };
     DECL_PTR(Texture2D);
 }

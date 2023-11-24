@@ -2,6 +2,7 @@
 #include <gfx/GFXApplication.h>
 #include <gfx/GFXCommandBuffer.h>
 #include <memory>
+#include <imgui/imgui.h>
 
 namespace pulsar
 {
@@ -13,6 +14,7 @@ namespace pulsar
         virtual void Render(gfx::GFXCommandBuffer* cmd) = 0;
         virtual void EndFrame() = 0;
         virtual void Terminate() = 0;
+        virtual ~ImGuiObject() = default;
     };
     extern void ImGui_Style_Initialize();
     extern std::shared_ptr<ImGuiObject> CreateImGui(gfx::GFXApplication* app);

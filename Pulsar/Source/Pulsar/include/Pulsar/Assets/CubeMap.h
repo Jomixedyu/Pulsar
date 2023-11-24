@@ -8,7 +8,7 @@ namespace pulsar
     
     class CubeMapAssetSourceImporterSetting : public Object
     {
-        CORELIB_DEF_TYPE(AssemblyObject_Pulsar, pulsar::CubeMapAssetSourceImporterSetting, Object);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::CubeMapAssetSourceImporterSetting, Object);
     public:
         CORELIB_REFL_DECL_FIELD(Top);
         guid_t Top;
@@ -26,7 +26,7 @@ namespace pulsar
 
     class CubeMapAsset : public AssetObject
     {
-        CORELIB_DEF_TYPE(AssemblyObject_Pulsar, pulsar::CubeMapAsset, AssetObject);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::CubeMapAsset, AssetObject);
     public:
         //uint32_t id;
     };

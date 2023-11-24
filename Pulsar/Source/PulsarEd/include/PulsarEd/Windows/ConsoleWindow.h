@@ -1,11 +1,11 @@
 #pragma once
-#include "EditorWindow.h"
+#include "PanelWindow.h"
 
 namespace pulsared
 {
-    class ConsoleWindow : public EditorWindow
+    class ConsoleWindow : public PanelWindow
     {
-        CORELIB_DEF_TYPE(AssemblyObject_PulsarEd, pulsared::ConsoleWindow, EditorWindow);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::ConsoleWindow, PanelWindow);
         virtual void OnDrawImGui() override;
         virtual ImGuiWindowFlags GetGuiWindowFlags() const override;
 
@@ -16,7 +16,8 @@ namespace pulsared
         void UnSelectLog() { this->log_selected_index = -1; }
     public:
         static string_view StaticWindowName() { return ICON_FK_WINDOW_MAXIMIZE " Console###" "Console"; }
-        virtual string_view GetWindowName() const override { return StaticWindowName(); }
+        virtual string_view GetWindowDisplayName() const override { return StaticWindowName(); }
+
         ConsoleWindow();
     };
 }

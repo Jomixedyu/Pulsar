@@ -1,0 +1,9 @@
+{
+  "PassName": "Engine/Shaders/Line.sh.json",
+  "CullMode": "None",
+  "DepthTestEnable": true,
+  "DepthWriteEnable": true,
+  "DepthCompareOp": "Less",
+  "StencilTestEnable": false,
+  "Topology": 1
+}

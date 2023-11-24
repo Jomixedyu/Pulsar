@@ -1,6 +1,7 @@
 #include "Windows/StatusBarWindow.h"
-#include <ThirdParty/imgui/imgui.h>
-#include <ThirdParty/imgui/imgui_internal.h>
+#include <imgui/imgui.h>
+#include <imgui/imgui_internal.h>
+#include "EditorLogRecorder.h"
 
 namespace pulsared
 {
@@ -50,7 +51,10 @@ namespace pulsared
         ImGui::PushStyleColor(ImGuiCol_MenuBarBg, { 0.08, 0.08, 0.08, 1 });
         if (BeginMainStatusBar())
         {
-            ImGui::Text("ASDASDSADSDA");
+            if (EditorLogRecorder::loglist.size() != 0)
+            {
+                ImGui::Text(EditorLogRecorder::loglist[EditorLogRecorder::loglist.size() - 1].record_info.c_str());
+            }
             ImGui::EndMainMenuBar();
         }
         ImGui::PopStyleColor();

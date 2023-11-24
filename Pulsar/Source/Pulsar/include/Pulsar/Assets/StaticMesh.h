@@ -17,39 +17,49 @@ namespace pulsar
         Vector3f Normal;
         Vector3f Tangent;
         Vector3f Bitangent;
-        Color8b4 Color;
+        Color4b Color;
         Vector2f TexCoords[STATICMESH_MAX_TEXTURE_COORDS];
     };
 
-
     struct StaticMeshSection
     {
-        array_list<StaticMeshVertex> Vertex;
-        array_list<uint32_t>         Indices;
-        int32_t                      MaterialIndex;
+        array_list<StaticMeshVertex>  Vertex;
+        array_list<uint32_t>          Indices;
+        int32_t                       MaterialIndex;
+
+        size_t GetVertexAllocSize() const
+        {
+            return Vertex.size() * sizeof(StaticMeshVertex);
+        }
+        size_t GetIndicesAllocSize() const
+        {
+            return Indices.size() * sizeof(uint32_t);
+        }
     };
 
-    ser::Stream& ReadWriteStream(ser::Stream& stream, bool isWrite, StaticMeshVertex& data);
-    ser::Stream& ReadWriteStream(ser::Stream& stream, bool isWrite, StaticMeshSection& data);
+
+
+    std::iostream& ReadWriteStream(std::iostream& stream, bool isWrite, StaticMeshVertex& data);
+    std::iostream& ReadWriteStream(std::iostream& stream, bool isWrite, StaticMeshSection& data);
 
 
     class StaticMesh : public Mesh
     {
         friend class StaticMeshAssetSerializer;
-        CORELIB_DEF_TYPE(AssemblyObject_Pulsar, pulsar::StaticMesh, Mesh)
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::StaticMesh, Mesh)
     public:
         constexpr static int32_t SerializeVersion = 1;
         StaticMesh() {}
         ~StaticMesh();
     public:
-        virtual void OnSerialize(AssetSerializer* serializer) override;
+        virtual void Serialize(AssetSerializer* s) override;
 
-        static sptr<StaticMesh> StaticCreate(
+        static ObjectPtr<StaticMesh> StaticCreate(
             string_view name,
             array_list<StaticMeshSection>&& vertData,
             array_list<string>&& materialNames);
     protected:
-        virtual void OnInstantiateAsset(AssetObject_ref& obj) override;
+        virtual void OnInstantiateAsset(AssetObject* obj) override;
     public:
 
     public:
@@ -60,11 +70,14 @@ namespace pulsar
         // Override
         virtual size_t GetVertexCount() override { return 0; }
 
+        StaticMeshSection& GetMeshSection(int i) { return m_sections[i]; }
+        size_t GetMeshSectionCount() const { return m_sections.size(); }
+        const array_list<string>& GetMaterialNames() const { return m_materialNames; }
 
     protected:
         //array_list<StaticMeshSectionSerializeData> m_sections;
-        array_list<StaticMeshSection> m_sections;
 
+        array_list<StaticMeshSection> m_sections;
         array_list<string> m_materialNames;
     };
     DECL_PTR(StaticMesh);

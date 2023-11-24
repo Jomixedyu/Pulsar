@@ -14,9 +14,90 @@
 namespace pulsar
 {
 
+    void EngineRenderPipeline::OnRender(gfx::GFXRenderContext* context, const std::vector<gfx::GFXFrameBufferObject*>& framebuffers)
+    {
+        array_list<gfx::GFXFrameBufferObject*> targetFBOs;
+        targetFBOs.insert(targetFBOs.end(), framebuffers.begin(), framebuffers.end());
 
+        // fill cameras rendertarget
+        for (auto& cam : m_world->GetCameraManager().GetCameras())
+        {
+            targetFBOs.push_back(cam->GetRenderTarget()->GetGfxFrameBufferObject().get());
+        }
 
+        if (targetFBOs.size() == 0)
+        {
+            return;
+        }
+        auto& renderObjects = m_world->GetRenderObjects();
+        auto pipelineMgr = context->GetApplication()->GetGraphicsPipelineManager();
 
+        auto& cmdBuffer = context->AddCommandBuffer();
+        cmdBuffer.Begin();
+
+        for (auto& targetFBO : targetFBOs)
+        {
+            cmdBuffer.SetFrameBuffer(targetFBO);
+
+            for (auto& rt : targetFBO->GetRenderTargets())
+            {
+                cmdBuffer.CmdClearColor(rt);
+            }
+
+            cmdBuffer.CmdBeginFrameBuffer();
+            cmdBuffer.CmdSetViewport(0, 0, (float)targetFBO->GetWidth(), (float)targetFBO->GetHeight());
+
+            //combine batch
+            std::unordered_map<Material_ref, rendering::MeshBatch> batchs;
+            for (rendering::RenderObject_sp renderObject : renderObjects)
+            {
+                for (auto& batch : renderObject->GetMeshBatchs())
+                {
+
+                    batchs[batch.Material].Append(std::move(batch));
+                }
+            }
+
+            // batch render
+            for (auto& [mat, batch] : batchs)
+            {
+                auto shader = mat->GetShader();
+                auto passCount = shader->GetShaderPassCount();
+                for (size_t i = 0; i < passCount; i++)
+                {
+                    auto shaderPass = shader->GetGfxShaderPass(i);
+
+                    auto gfxPipeline = pipelineMgr->GetGraphicsPipeline(shaderPass, targetFBO->GetRenderPassLayout());
+                    cmdBuffer.CmdBindGraphicsPipeline(gfxPipeline.get());
+
+                    for (auto& element : batch.Elements)
+                    {
+                        cmdBuffer.CmdBindVertexBuffers({ element.Vertex.get() });
+                        if (batch.IsUsedIndices)
+                        {
+                            cmdBuffer.CmdBindIndexBuffer(element.Indices.get());
+                        }
+                        cmdBuffer.CmdBindDescriptorSets(mat->GetDescriptorSet().get(), gfxPipeline.get());
+                        if (batch.IsUsedIndices)
+                        {
+                            cmdBuffer.CmdDrawIndexed(element.Indices->GetSize());
+                        }
+                        else
+                        {
+                            cmdBuffer.CmdDraw(element.Vertex->GetSize());
+                        }
+                    }
+
+                }
+            }
+
+            //post processing
+
+            cmdBuffer.CmdEndFrameBuffer();
+            cmdBuffer.SetFrameBuffer(nullptr);
+        }
+        cmdBuffer.End();
+    }
     
     const char* EngineAppInstance::AppType()
     {
@@ -67,7 +148,7 @@ namespace pulsar
 
     void EngineAppInstance::OnBeginRender(float dt)
     {
-        auto bgc = LinearColorf{ 0.2f, 0.2f ,0.2f, 0.2 };
+        auto bgc = Color4f{ 0.2f, 0.2f ,0.2f, 0.2 };
         //RenderInterface::Clear(bgc.r, bgc.g, bgc.b, bgc.a);
 
         World::Current()->Tick(dt);
@@ -118,6 +199,11 @@ namespace pulsar
     string EngineAppInstance::AppRootDir()
     {
         return StringUtil::StringCast(std::filesystem::current_path().generic_u8string());
+    }
+
+    AssetManager* EngineAppInstance::GetAssetManager()
+    {
+        return nullptr;
     }
 
     rendering::Pipeline* EngineAppInstance::GetPipeline()

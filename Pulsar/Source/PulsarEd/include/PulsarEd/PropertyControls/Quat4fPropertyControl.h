@@ -6,13 +6,10 @@ namespace pulsared
 {
     class Quat4fPropertyControl : public PropertyControl
     {
-        APATITEED_PROPERTY_CONTROL(cltypeof<pulsar::math::BoxingQuat4f>(), new Quat4fPropertyControl);
+        EDITOR_IMPL_PROPERTY_CONTROL(cltypeof<pulsar::math::BoxingQuat4f>(), new Quat4fPropertyControl);
     public:
 
-        virtual void OnDrawImGui(const string& name, sptr<Object> prop) override;
-        virtual Type* GetPropertyType() override
-        {
-            return cltypeof<pulsar::math::BoxingQuat4f>();
-        }
+        virtual bool OnDrawImGui(const string& name, Object* prop) override;
+
     };
 }

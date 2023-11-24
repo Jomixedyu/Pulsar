@@ -1,0 +1,9 @@
+{
+	"PassName": "Engine/Shaders/Missing.sh.json",
+	"CullMode": "None",
+	"DepthTestEnable": true,
+	"DepthWriteEnable": true,
+	"DepthCompareOp": "Less",
+	"StencilTestEnable": false,
+	"Topology": 0
+}

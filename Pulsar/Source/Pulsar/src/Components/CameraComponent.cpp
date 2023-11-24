@@ -3,6 +3,8 @@
 #include <Pulsar/AppInstance.h>
 #include <Pulsar/TransformUtil.h>
 #include <Pulsar/Node.h>
+#include "Scene.h"
+#include "Logger.h"
 
 namespace pulsar
 {
@@ -46,12 +48,13 @@ namespace pulsar
     }
     Matrix4f CameraComponent::GetViewMat()
     {
-        auto node = this->GetAttachedNode();
-        auto wpos = node->get_world_position();
-        Matrix4f mat = node->get_world_rotation().ToMatrix();
-        jmath::Transpose(&mat);
-        transutil::Translate(&mat, -wpos);
-        return mat;
+        //auto node = this->GetAttachedNode();
+        //auto wpos = node->get_world_position();
+        //Matrix4f mat = node->get_world_rotation().ToMatrix();
+        //jmath::Transpose(&mat);
+        //transutil::Translate(&mat, -wpos);
+        //return mat;
+        return {};
     }
 
     Matrix4f CameraComponent::GetProjectionMat()
@@ -81,8 +84,57 @@ namespace pulsar
         return ret;
     }
 
+    void CameraComponent::PostEditChange(FieldInfo* info)
+    {
+        base::PostEditChange(info);
+        if (info->GetName() == "m_backgroundColor")
+        {
+            UpdateRTBackgroundColor();
+        }
+    }
+    void CameraComponent::SetBackgroundColor(const Color4f& value)
+    {
+        m_backgroundColor = value;
+        UpdateRTBackgroundColor();
+    }
+
+    void CameraComponent::UpdateRTBackgroundColor()
+    {
+        if (!m_renderTarget)
+        {
+            return;
+        }
+        auto rt0 = m_renderTarget->GetGfxRenderTarget0().get();
+        rt0->ClearColor[0] = m_backgroundColor.r;
+        rt0->ClearColor[1] = m_backgroundColor.g;
+        rt0->ClearColor[2] = m_backgroundColor.b;
+        rt0->ClearColor[3] = m_backgroundColor.a;
+    }
+    void CameraComponent::UpdateRT()
+    {
+        UpdateRTBackgroundColor();
+    }
+
+    void CameraComponent::SetRenderTarget(const RenderTexture_ref& value)
+    {
+        m_renderTarget = value;
+        UpdateRT();
+    }
+
     void CameraComponent::LookAt(const Vector3f& pos)
     {
-        transutil::LookAt(this->GetAttachedNode()->get_world_position(), pos, transutil::Vector3Up());
+        //transutil::LookAt(this->GetAttachedNode()->get_world_position(), pos, transutil::Vector3Up());
+    }
+
+    void CameraComponent::BeginComponent()
+    {
+        base::BeginComponent();
+        GetAttachedNode()->GetRuntimeOwnerScene()->GetWorld()->GetCameraManager().AddCamera(THIS_REF);
+    }
+
+    void CameraComponent::EndComponent()
+    {
+        base::EndComponent();
+        GetAttachedNode()->GetRuntimeOwnerScene()->GetWorld()->GetCameraManager().RemoveCamera(THIS_REF);
     }
 }

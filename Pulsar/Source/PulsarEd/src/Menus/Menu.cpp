@@ -59,12 +59,21 @@ namespace pulsared
     {
         for (auto& item : this->entries)
         {
-            if (item->name == name)
+            if (item->Name == name)
             {
                 return item;
             }
         }
         return nullptr;
     }
-
+    void Menu::RemoveEntry(string_view name)
+    {
+        auto it = std::find_if(entries.begin(), entries.end(), [name](auto& entry) {
+            return entry->Name == name;
+            });
+        if (it != this->entries.end())
+        {
+            this->entries.erase(it);
+        }
+    }
 }

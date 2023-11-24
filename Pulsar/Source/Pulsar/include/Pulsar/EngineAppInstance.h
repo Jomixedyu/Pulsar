@@ -1,9 +1,11 @@
 #pragma once
 #include "AppInstance.h"
-
+#include "Rendering/RenderObject.h"
 
 namespace pulsar
 {
+    class World;
+
     class EngineRenderPipeline : public gfx::GFXRenderPipeline
     {
     public:
@@ -13,61 +15,10 @@ namespace pulsar
         {
         }
 
-        virtual void OnRender(gfx::GFXRenderContext* context, const std::vector<gfx::GFXFrameBufferObject*>& framebuffers) override
-        {
-            if (framebuffers.size() == 0)
-            {
-                return;
-            }
-            auto& renderObjects = m_world->GetRenderObjects();
-            auto pipelineMgr = context->GetApplication()->GetGraphicsPipelineManager();
-
-            auto& cmd = context->AddCommandBuffer();
-            cmd.Begin();
-
-            for (auto& fb : framebuffers)
-            {
-                cmd.SetFrameBuffer(fb);
-
-                cmd.CmdClearColor(1, 0, 1, 1);
-                cmd.CmdBeginFrameBuffer();
-                cmd.CmdSetViewport(0, 0, fb->GetWidth(), fb->GetHeight());
-
-                //batch render
-                std::unordered_map<Material_sp, rendering::MeshBatch> batchs;
-                //for (rendering::RenderObject* renderObject : renderObjects)
-                //{
-                //    for (auto& batch : renderObject->GetMeshBatchs())
-                //    {
-                //        batchs[batch.Material].Append(batch);
-                //    }
-                //}
-
-                //for (auto& [handle, batch] : batchs)
-                //{
-
-                    //auto pipeline = pipelineMgr->GetGraphicsPipeline();
-                    //cmd.CmdBindGraphicsPipeline(pipeline.get());
-
-                    //for (size_t i = 0; i < batch.Vertex.size(); i++)
-                    //{
-                        //cmd.CmdBindVertexBuffers();
-                        //cmd.CmdBindIndexBuffer();
-                        //cmd.CmdBindDescriptorSets();
-                        //cmd.CmdDrawIndexed(batch.Indices[i]->GetSize());
-                //    }
-
-                //}
-
-                //post processing
-
-                cmd.CmdEndFrameBuffer();
-                cmd.SetFrameBuffer(nullptr);
-            }
-            cmd.End();
-        }
+        virtual void OnRender(gfx::GFXRenderContext* context, const std::vector<gfx::GFXFrameBufferObject*>& framebuffers) override;
 
     };
+
 
     class EngineAppInstance : public AppInstance
     {
@@ -83,7 +34,7 @@ namespace pulsar
         virtual string GetTitle() override;
         virtual void SetTitle(string_view title) override;
         virtual string AppRootDir() override;
-
+        virtual AssetManager* GetAssetManager() override;
         virtual rendering::Pipeline* GetPipeline() override;
 
         virtual void OnPreInitialize(gfx::GFXGlobalConfig* cfg) override;

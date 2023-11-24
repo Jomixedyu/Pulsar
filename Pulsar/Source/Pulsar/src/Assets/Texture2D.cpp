@@ -10,7 +10,7 @@ namespace pulsar
     }
     Texture2D::~Texture2D()
     {
-        this->UnBindGPU();
+        this->DestroyGPUResource();
     }
 
     const uint8_t* Texture2D::GetNativeData() const
@@ -18,9 +18,9 @@ namespace pulsar
         return this->m_data;
     }
 
-    void Texture2D::OnInstantiateAsset(AssetObject_ref& obj)
+    void Texture2D::OnInstantiateAsset(AssetObject* obj)
     {
-        Texture2D* tex = static_cast<Texture2D*>(obj.GetPtr());
+        Texture2D* tex = static_cast<Texture2D*>(obj);
 
     }
 
@@ -33,23 +33,23 @@ namespace pulsar
     }
 
 
-    void Texture2D::BindGPU()
+    void Texture2D::CreateGPUResource()
     {
 
-        assert(this->GetIsBindGPU());
+        assert(this->IsCreatedGPUResource());
         //detail::RenderInterface::LoadTexture2D(this->channel_, this->width_, this->height_, this->data_, &this->tex_id_);
     }
 
-    void Texture2D::UnBindGPU()
+    void Texture2D::DestroyGPUResource()
     {
-        if (this->GetIsBindGPU())
+        if (this->IsCreatedGPUResource())
         {
             //detail::RenderInterface::UnloadTexture2D(this->tex_id_);
             this->tex_id_ = 0;
         }
     }
 
-    bool Texture2D::GetIsBindGPU()
+    bool Texture2D::IsCreatedGPUResource() const
     {
         return this->tex_id_ != 0;
     }

@@ -15,18 +15,25 @@ namespace pulsar
 
     class StaticMeshRendererComponent : public Component, public IRendererComponent
     {
-        CORELIB_DEF_TYPE(AssemblyObject_Pulsar, pulsar::StaticMeshRendererComponent, Component);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::StaticMeshRendererComponent, Component);
         CORELIB_IMPL_INTERFACES(IRendererComponent);
     public:
         virtual sptr<rendering::RenderObject> CreateRenderObject() override;
     public:
-        virtual void OnInitialize() override;
+
         List_sp<Material_ref> GetMaterials() const { return this->m_materials; }
 
         StaticMeshRendererComponent() : CORELIB_INIT_INTERFACE(IRendererComponent)
         {
             m_materials = mksptr(new List<Material_ref>);
         }
+
+        StaticMesh_ref GetStaticMesh() const { return m_staticMesh; }
+        void SetStaticMesh(StaticMesh_ref staticMesh) { m_staticMesh = staticMesh; }
+
+        Material_ref GetMaterial(int index) const;
+        void SetMaterial(int index, Material_ref material);
+
     protected:
         CORELIB_REFL_DECL_FIELD(m_materials);
         List_sp<Material_ref> m_materials;
@@ -34,6 +41,7 @@ namespace pulsar
         CORELIB_REFL_DECL_FIELD(m_staticMesh);
         StaticMesh_ref m_staticMesh;
 
+        CORELIB_REFL_DECL_FIELD(m_isCastShadow);
         bool m_isCastShadow;
     };
     DECL_PTR(StaticMeshRendererComponent);

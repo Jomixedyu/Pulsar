@@ -1,5 +1,5 @@
 #include "Assets/RenderTexture.h"
-
+#include <Pulsar/Application.h>
 
 namespace pulsar
 {
@@ -18,9 +18,9 @@ namespace pulsar
 
     RenderTexture::~RenderTexture()
     {
-        this->UnBindGPU();
+        this->DestroyGPUResource();
     }
-    void RenderTexture::BindGPU()
+    void RenderTexture::CreateGPUResource()
     {
         //assert(!this->GetIsBindGPU());
         //glGenFramebuffers(1, &this->buffer_);
@@ -36,16 +36,16 @@ namespace pulsar
 
         //glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
-    void RenderTexture::UnBindGPU()
+    void RenderTexture::DestroyGPUResource()
     {
-        if (this->GetIsBindGPU())
+        if (this->IsCreatedGPUResource())
         {
 
 
             this->tex_id_ = 0;
         }
     }
-    bool RenderTexture::GetIsBindGPU()
+    bool RenderTexture::IsCreatedGPUResource() const
     {
         return this->tex_id_ != 0;
     }
@@ -60,7 +60,7 @@ namespace pulsar
 
     }
 
-    sptr<RenderTexture> RenderTexture::StaticCreate(int width, int height, bool hasColor, bool hasDepth)
+    RenderTexture_ref RenderTexture::StaticCreate(int width, int height, bool hasColor, bool hasDepth)
     {
         auto self = mksptr(new RenderTexture);
         self->Construct();
@@ -73,7 +73,6 @@ namespace pulsar
         
         self->m_color0 = gfx->CreateRenderTarget(width, height, gfx::GFXRenderTargetType::Color, gfx::GFXTextureFormat::R8G8B8A8_SRGB, {});
         self->m_depth = gfx->CreateRenderTarget(width, height, gfx::GFXRenderTargetType::DepthStencil, depthFormats[0], {});
-
 
 
         std::vector rts = { self->m_color0.get(), self->m_depth.get() };

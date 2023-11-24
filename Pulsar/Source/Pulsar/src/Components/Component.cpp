@@ -1,17 +1,20 @@
 #include "Components/Component.h"
 #include <Pulsar/Components/Component.h>
+#include <Pulsar/Rendering/RenderObject.h>
+#include <Pulsar/Components/RendererComponent.h>
+#include <Pulsar/World.h>
 #include <Pulsar/Node.h>
 
 namespace pulsar
 {
 
-    sptr<Node> Component::GetAttachedNode()
+    ObjectPtr<Node> Component::GetAttachedNode()
     {
-        return m_attachedNode.lock();
+        return m_attachedNode;
     }
-    sptr<Node> Component::GetOnwerNode()
+    ObjectPtr<Node> Component::GetOnwerNode()
     {
-        return m_ownerNode.lock();
+        return m_ownerNode;
     }
     bool Component::EqualsComponentType(Type* type)
     {
@@ -22,5 +25,8 @@ namespace pulsar
     {
     }
 
+    void Component::BeginComponent()
+    {
 
+    }
 }

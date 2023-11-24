@@ -33,13 +33,13 @@ namespace pulsar
     {
 
     }
-    void ShaderPass::SetUniformColor(string_view name, const LinearColorf& value)
+    void ShaderPass::SetUniformColor(string_view name, const Color4f& value)
     {
 
     }
     void ShaderPass::SetUniformColor(string_view name, const Vector3f& value)
     {
-        SetUniformColor(name, LinearColorf(value.x, value.y, value.z));
+        SetUniformColor(name, Color4f(value.x, value.y, value.z));
     }
 
     ShaderPass::~ShaderPass()

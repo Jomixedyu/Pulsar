@@ -10,9 +10,9 @@ namespace pulsar
     using SamplerAddressMode = gfx::GFXSamplerAddressMode;
     using SamplerConfig = gfx::GFXSamplerConfig;
 
-    class Texture : public AssetObject, public IBindGPU
+    class Texture : public AssetObject, public IGPUResource
     {
-        CORELIB_DEF_TYPE(AssemblyObject_Pulsar, pulsar::Texture, AssetObject);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::Texture, AssetObject);
 
     public:
         virtual int32_t GetWidth() const = 0;

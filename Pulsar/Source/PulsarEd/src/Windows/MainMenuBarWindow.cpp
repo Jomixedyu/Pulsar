@@ -17,7 +17,7 @@ namespace pulsared
         {
             if (auto submenu = interface_cast<ISubMenu>(menu_item.get()))
             {
-                if (ImGui::BeginMenu(menu_item->name.data(), true))
+                if (ImGui::BeginMenu(menu_item->Name.data(), true))
                 {
                     _ImGuiMenu(submenu);
                     ImGui::EndMenu();
@@ -25,27 +25,29 @@ namespace pulsared
             }
             else if(sptr<MenuEntryButton> btn = sptr_cast<MenuEntryButton>(menu_item))
             {
-                
-                if (ImGui::MenuItem(btn->name.c_str(), nullptr))
+                ImGui::PushID(btn->Name.c_str());
+                if (ImGui::MenuItem(btn->DisplayName.c_str(), nullptr))
                 {
-                    if (btn->action)
+                    if (btn->Action)
                     {
-                        btn->action->Invoke(nullptr);
+                        btn->Action->Invoke(nullptr);
                     }
                 }
-
+                ImGui::PopID();
             }
             else if (sptr<MenuEntryCheck> check = sptr_cast<MenuEntryCheck>(menu_item))
             {
-                if (ImGui::MenuItem(check->name.c_str(), nullptr, check->is_check))
+                ImGui::PushID(check->Name.c_str());
+                if (ImGui::MenuItem(check->DisplayName.c_str(), nullptr, check->IsChecked))
                 {
-                    if (check->check_action)
+                    if (check->CheckedAction)
                     {
-                        check->is_check = !check->is_check;
-                        auto ctx = MenuContexts::StaticMakeContext(check->name, nullptr);
-                        check->check_action->Invoke(ctx, check->is_check);
+                        check->IsChecked = !check->IsChecked;
+                        auto ctx = MenuContexts::StaticMakeContext(check->Name, nullptr);
+                        check->CheckedAction->Invoke(ctx, check->IsChecked);
                     }
                 }
+                ImGui::PopID();
             }
            
         }

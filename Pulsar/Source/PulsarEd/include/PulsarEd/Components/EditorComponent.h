@@ -7,7 +7,7 @@ namespace pulsared
 {
     class EditorComponent : public Component
     {
-        CORELIB_DEF_TYPE(AssemblyObject_PulsarEd, pulsared::EditorComponent, Component);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::EditorComponent, Component);
     public:
         
     };

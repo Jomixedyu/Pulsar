@@ -1,10 +1,9 @@
 #pragma once
 
+#include <Pulsar/AppInstance.h>
 #include <CoreLib/Events.hpp>
-#include <Pulsar/ObjectBase.h>
-#include "AppInstance.h"
-#include "Math.h"
 #include <gfx/GFXApplication.h>
+#include <CoreLib/StopWatch.h>
 
 namespace pulsar
 {
@@ -17,6 +16,8 @@ namespace pulsar
         static gfx::GFXApplication* GetGfxApp();
         //start
         static int Exec(AppInstance* instance, string_view title, Vector2f size);
+        
+        static inline jxcorlib::StopWatch Watch {"syswatch"};
 
     };
 

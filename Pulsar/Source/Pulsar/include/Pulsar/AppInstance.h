@@ -6,12 +6,17 @@
 #include <Pulsar/Rendering/Pipelines/Pipeline.h>
 #include <gfx/GFXApplication.h>
 
+
 namespace pulsar
 {
+    class Material;
+    class AssetManager;
+
     class AppInstance
     {
         friend class Application;
     public:
+        virtual ~AppInstance() = default;
         virtual const char* AppType() = 0;
         virtual void RequestQuit() = 0;
         virtual Vector2f GetOutputScreenSize() = 0;
@@ -33,8 +38,10 @@ namespace pulsar
             return sptr_cast<T>(GetSubsystemByType(cltypeof<T>()));
         }
 
-        virtual void OnPreInitialize(gfx::GFXGlobalConfig* cfg) =0;
-        virtual void OnInitialized() =0;
+        virtual AssetManager* GetAssetManager() = 0;
+
+        virtual void OnPreInitialize(gfx::GFXGlobalConfig* cfg) = 0;
+        virtual void OnInitialized() = 0;
         virtual void OnTerminate() = 0;
         virtual void OnBeginRender(float dt) = 0;
         virtual void OnEndRender(float d4) = 0;

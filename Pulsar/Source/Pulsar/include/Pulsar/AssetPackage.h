@@ -8,9 +8,8 @@ namespace pulsar
     {
         AssetPackage()
         {
-
         }
-        AssetObject_sp LoadAsset(const ObjectHandle& handle)
+        AssetObject_ref LoadAsset(const ObjectHandle& handle)
         {
 
         }
@@ -23,7 +22,6 @@ namespace pulsar
         };
 
         string m_packageName;
-        hash_map<ObjectHandle, AssetObject_sp> m_caches;
         hash_map<ObjectHandle, AssetInfo> m_assetInfos;
     };
 

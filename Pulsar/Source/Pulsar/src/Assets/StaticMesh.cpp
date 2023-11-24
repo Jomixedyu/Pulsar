@@ -5,10 +5,10 @@
 
 namespace pulsar
 {
-    void StaticMesh::OnInstantiateAsset(AssetObject_ref& obj)
+    void StaticMesh::OnInstantiateAsset(AssetObject* obj)
     {
         base::OnInstantiateAsset(obj);
-        StaticMesh_ref mesh = obj;
+        auto mesh = static_cast<ThisClass*>(obj);
         mesh->m_sections = m_sections;
     }
 
@@ -17,22 +17,23 @@ namespace pulsar
 
     }
 
-    void StaticMesh::OnSerialize(AssetSerializer* serializer)
+    void StaticMesh::Serialize(AssetSerializer* s)
     {
-        base::OnSerialize(serializer);
-
-        ReadWriteStream(serializer->Stream, serializer->IsWrite, m_sections);
+        base::Serialize(s);
+        
+        sser::ReadWriteStream(s->Stream, s->IsWrite, m_sections);
+        sser::ReadWriteStream(s->Stream, s->IsWrite, m_materialNames);
     }
 
 
-    StaticMesh_sp StaticMesh::StaticCreate(
+    ObjectPtr<StaticMesh> StaticMesh::StaticCreate(
         string_view name,
         array_list<StaticMeshSection>&& vertData,
         array_list<string>&& materialNames)
     {
         StaticMesh_sp self = mksptr(new StaticMesh);
         self->Construct();
-        self->name_ = name;
+        self->m_name = name;
         self->m_sections = std::move(vertData);
         self->m_materialNames = std::move(materialNames);
 
@@ -41,22 +42,22 @@ namespace pulsar
 
 
 
-    ser::Stream& ReadWriteStream(ser::Stream& stream, bool isWrite, StaticMeshVertex& data)
+    std::iostream& ReadWriteStream(std::iostream& stream, bool isWrite, StaticMeshVertex& data)
     {
         ReadWriteStream(stream, isWrite, data.Position);
         ReadWriteStream(stream, isWrite, data.Normal);
         ReadWriteStream(stream, isWrite, data.Tangent);
         ReadWriteStream(stream, isWrite, data.Bitangent);
         ReadWriteStream(stream, isWrite, data.Color);
-        ReadWriteStream(stream, isWrite, data.TexCoords);
+        sser::ReadWriteStream(stream, isWrite, data.TexCoords);
         return stream;
     }
 
-    ser::Stream& ReadWriteStream(ser::Stream& stream, bool isWrite, StaticMeshSection& data)
+    std::iostream& ReadWriteStream(std::iostream& stream, bool isWrite, StaticMeshSection& data)
     {
-        ReadWriteStream(stream, isWrite, data.Vertex);
-        ReadWriteStream(stream, isWrite, data.Indices);
-        ReadWriteStream(stream, isWrite, data.MaterialIndex);
+        sser::ReadWriteStream(stream, isWrite, data.Vertex);
+        sser::ReadWriteStream(stream, isWrite, data.Indices);
+        sser::ReadWriteStream(stream, isWrite, data.MaterialIndex);
         return stream;
     }
 

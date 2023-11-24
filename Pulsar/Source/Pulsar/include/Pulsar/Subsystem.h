@@ -7,7 +7,7 @@ namespace pulsar
 {
     class Subsystem : public Object
     {
-        CORELIB_DEF_TYPE(AssemblyObject_Pulsar, pulsar::Subsystem, Object);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::Subsystem, Object);
     public:
         virtual void OnInitializing() {}
         virtual void OnInitialized() {}

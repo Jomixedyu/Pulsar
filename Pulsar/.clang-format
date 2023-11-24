@@ -1,0 +1,13 @@
+---
+BasedOnStyle: Microsoft
+---
+Language: Cpp
+IndentWidth: 4
+NamespaceIndentation: All
+PointerAlignment: Left
+ColumnLimit: 0
+AllowShortBlocksOnASingleLine: Always
+IndentPPDirectives: BeforeHash
+PPIndentWidth: 4
+
+#ContinuationIndentWidth: 9999

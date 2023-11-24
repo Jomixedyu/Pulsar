@@ -13,9 +13,11 @@ namespace pulsar
     class IRendererComponent : public IInterface
     {
     public:
-        CORELIB_DEF_INTERFACE(AssemblyObject_Pulsar, pulsar::IRendererComponent, IInterface);
+        CORELIB_DEF_INTERFACE(AssemblyObject_pulsar, pulsar::IRendererComponent, IInterface);
 
         virtual sptr<rendering::RenderObject> CreateRenderObject() = 0;
+
+
     };
 
 }

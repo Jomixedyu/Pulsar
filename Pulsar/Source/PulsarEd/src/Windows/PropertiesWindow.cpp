@@ -43,10 +43,11 @@ namespace pulsared
     }
     void PropertiesWindow::OnOpen()
     {
-
+        base::OnOpen();
     }
     void PropertiesWindow::OnClose()
     {
+        base::OnClose();
     }
 
     void PropertiesWindow::StaticRegisterPropertiesPanel(Type* target_type, Type* panel_type)

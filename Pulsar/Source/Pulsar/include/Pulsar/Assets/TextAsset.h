@@ -6,10 +6,10 @@ namespace pulsar
 {
     class TextAsset : public AssetObject
     {
-        CORELIB_DEF_TYPE(AssemblyObject_Pulsar, pulsar::TextAsset, AssetObject);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::TextAsset, AssetObject);
         friend class TextAssetImporter;
     public:
-        virtual void OnInstantiateAsset(AssetObject_ref& obj) override;
+        virtual void OnInstantiateAsset(AssetObject* obj) override;
     public:
         static ObjectPtr<TextAsset> StaticCreate(const string& str);
         static ObjectPtr<TextAsset> StaticCreate(string&& str);

@@ -5,32 +5,45 @@
 
 namespace pulsared
 {
+    using MenuCanVisibility = FunctionDelegate<bool, sptr<MenuContexts>>;
     using MenuCanOperate = FunctionDelegate<bool, sptr<MenuContexts>>;
     using MenuAction = FunctionDelegate<void, sptr<MenuContexts>>;
     using MenuCheckAction = FunctionDelegate<void, sptr<MenuContexts>, bool>;
 
     class MenuEntry : public Object
     {
-        CORELIB_DEF_TYPE(AssemblyObject_PulsarEd, pulsared::MenuEntry, Object);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::MenuEntry, Object);
     public:
-        int priority;
-        string name;
+        int Priority;
+        string Name;
+        string DisplayName;
 
-        MenuEntry(const string& name) : name(name), priority(9999) {}
+        MenuEntry(const string& name) : Name(name), DisplayName(name), Priority(9999) {}
+        MenuEntry(const string& name, const string& displayName) :
+            Name(name), DisplayName(displayName), Priority(9999) {}
 
         virtual ~MenuEntry() override {}
     };
     CORELIB_DECL_SHORTSPTR(MenuEntry);
 
+    class MenuEntrySeparate : public MenuEntry
+    {
+        CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::MenuEntrySeparate, MenuEntry);
+    public:
+        using base::base;
+    };
+    CORELIB_DECL_SHORTSPTR(MenuEntrySeparate);
 
 
     class MenuEntryButton : public MenuEntry
     {
-        CORELIB_DEF_TYPE(AssemblyObject_PulsarEd, pulsared::MenuEntryButton, MenuEntry);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::MenuEntryButton, MenuEntry);
     public:
         using base::base;
 
-        sptr<MenuAction> action;
+        sptr<MenuCanVisibility> Visibility;
+        sptr<MenuCanOperate> CanOperate;
+        sptr<MenuAction> Action;
     };
     CORELIB_DECL_SHORTSPTR(MenuEntryButton);
 
@@ -38,14 +51,15 @@ namespace pulsared
 
     class MenuEntryCheck : public MenuEntry
     {
-        CORELIB_DEF_TYPE(AssemblyObject_PulsarEd, pulsared::MenuEntryCheck, MenuEntry);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::MenuEntryCheck, MenuEntry);
     public:
-        MenuEntryCheck(const string& name, bool is_check, const sptr<MenuCheckAction>& check_action)
-            : base(name), is_check(is_check), check_action(check_action)
+        MenuEntryCheck(const string& name, const string& displayName,
+            const sptr<MenuCheckAction>& checkedAction, bool isChecked = false)
+            : base(name, displayName), IsChecked(isChecked), CheckedAction(checkedAction)
         { }
 
-        bool is_check;
-        sptr<MenuCheckAction> check_action;
+        bool IsChecked;
+        sptr<MenuCheckAction> CheckedAction;
     };
     CORELIB_DECL_SHORTSPTR(MenuEntryCheck);
 

@@ -46,7 +46,7 @@ namespace pulsared
         auto& loglist = EditorLogRecorder::loglist;
 
 
-        ImGui::BeginChild("##console detail", ImVec2{ -FLT_MIN, ImGui::GetContentRegionAvail().y * 0.8f }, false, ImGuiWindowFlags_::ImGuiWindowFlags_HorizontalScrollbar);
+        ImGui::BeginChild("##console detail", ImVec2{ -FLT_MIN, ImGui::GetContentRegionAvail().y * 0.5f }, false, ImGuiWindowFlags_::ImGuiWindowFlags_HorizontalScrollbar);
         if (this->log_selected_index >= 0)
         {
             ImGui::Text(loglist[this->log_selected_index].stacktrace_info.c_str());
@@ -56,7 +56,7 @@ namespace pulsared
 
         if (ImGui::BeginListBox("##console", ImVec2(-FLT_MIN, -FLT_MIN)))
         {
-            for (int32_t i = loglist.size() - 1; i > 0; --i)
+            for (int32_t i = loglist.size() - 1; i >= 0; --i)
             {
                 constexpr int kAllLevel = 0;
                 if (this->log_level_filter != kAllLevel && this->log_level_filter != (int32_t)loglist[i].level)
@@ -112,12 +112,12 @@ namespace pulsared
 
     void ConsoleWindow::OnOpen()
     {
-
+        base::OnOpen();
     }
 
     void ConsoleWindow::OnClose()
     {
-
+        base::OnClose();
     }
 
     ConsoleWindow::ConsoleWindow()

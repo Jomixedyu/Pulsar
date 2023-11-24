@@ -6,13 +6,10 @@ namespace pulsared
 {
     class ColorPropertyControl : public PropertyControl
     {
-        APATITEED_PROPERTY_CONTROL(cltypeof<jxcorlib::math::BoxingLinearColorf>(), new ColorPropertyControl);
+        EDITOR_IMPL_PROPERTY_CONTROL(cltypeof<jxcorlib::math::BoxingColor4f>(), new ColorPropertyControl);
     public:
-        virtual void OnDrawImGui(const string& name, sptr<Object> prop) override;
-        virtual Type* GetPropertyType() override
-        {
-            return cltypeof<jxcorlib::math::BoxingLinearColorf>();
-        }
+        virtual bool OnDrawImGui(const string& name, Object* prop) override;
+
     };
 
 }

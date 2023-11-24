@@ -1,164 +1,355 @@
 #include "Importers/FBXImporter.h"
+#include <fbxsdk.h>
 #include <Pulsar/Assets/StaticMesh.h>
-#include <Pulsar/Assets/Material.h>
 #include <Pulsar/Components/MeshContainerComponent.h>
-#include <ThirdParty/assimp/Importer.hpp>
-#include <ThirdParty/assimp/scene.h>
-#include <ThirdParty/assimp/postprocess.h>
 #include <Pulsar/Components/StaticMeshRendererComponent.h>
-#include <Pulsar/Application.h>
+#include <PulsarEd/AssetDatabase.h>
+
+#ifdef IOS_REF
+#undef  IOS_REF
+#define IOS_REF (*(pManager->GetIOSettings()))
+#endif
 
 namespace pulsared
 {
-
-    //static array_list<Texture2D*> loadMaterialTextures(aiMaterial* mat, aiTextureType type, string typeName, const string& dir)
-//{
-//    array_list<Texture2D*> textures;
-//    auto d = mat->GetTextureCount(aiTextureType::aiTextureType_HEIGHT);
-//    for (unsigned int i = 0; i < mat->GetTextureCount(type); i++)
-//    {
-//        aiString str;
-//        mat->GetTexture(type, i, &str);
-//        Texture2D* texture = new Texture2D;
-
-//        auto name = StringUtil::Concat(dir, "/", PathUtil::GetFilename(str.C_Str()));
-
-//        //TODO:
-//        //texture->SetData(str.C_Str(), typeName, Resource::Load<Bitmap>(name, true));
-//        //Texture2D* texture = Resource::Load<Texture2D>(name);
-
-
-//        //texture.id = TextureFromFile(str.C_Str(), directory);
-//        //texture.type = typeName;
-//        //texture.path = str;
-//        textures.push_back(texture);
-//    }
-//    return textures;
-//}
-    static inline Color8b4 _Color4(const aiColor4D& v)
+    static void InitializeSdkObjects(FbxManager*& pManager, FbxScene*& pScene)
     {
-        return Color8b4(v.r * 255, v.g * 255, v.b * 255, v.a * 255);
-    }
-    static inline Vector3f _Vec3(const aiVector3D& v3)
-    {
-        return { v3.x, v3.y, v3.z };
-    }
-    static inline Vector2f _Vec2(aiVector2D v2)
-    {
-        return { v2.x, v2.y };
-    }
-
-    static void _ProcessMesh(StaticMeshSection* section, aiMesh* mesh, const aiScene* scene)
-    {
-        section->Vertex.resize(mesh->mNumVertices);
-        for (unsigned int vertnum = 0; vertnum < mesh->mNumVertices; ++vertnum)
+        //The first thing to do is to create the FBX Manager which is the object allocator for almost all the classes in the SDK
+        pManager = FbxManager::Create();
+        if (!pManager)
         {
-            StaticMeshVertex& vert = section->Vertex[vertnum];
-            vert.Position = _Vec3(mesh->mVertices[vertnum]);
-            vert.Normal = _Vec3(mesh->mNormals[vertnum]);
-            if (mesh->mTangents)
+            FBXSDK_printf("Error: Unable to create FBX Manager!\n");
+            exit(1);
+        }
+        else FBXSDK_printf("Autodesk FBX SDK version %s\n", pManager->GetVersion());
+
+        //Create an IOSettings object. This object holds all import/export settings.
+        FbxIOSettings* ios = FbxIOSettings::Create(pManager, IOSROOT);
+        pManager->SetIOSettings(ios);
+
+        //Load plugins from the executable directory (optional)
+        FbxString lPath = FbxGetApplicationDirectory();
+        pManager->LoadPluginsDirectory(lPath.Buffer());
+
+        //Create an FBX scene. This object holds most objects imported/exported from/to files.
+        pScene = FbxScene::Create(pManager, "My Scene");
+        if (!pScene)
+        {
+            FBXSDK_printf("Error: Unable to create FBX scene!\n");
+            exit(1);
+        }
+    }
+    static bool LoadScene(FbxManager* pManager, FbxDocument* pScene, const char* pFilename)
+    {
+        int lFileMajor, lFileMinor, lFileRevision;
+        int lSDKMajor, lSDKMinor, lSDKRevision;
+        //int lFileFormat = -1;
+        int lAnimStackCount;
+        bool lStatus;
+        char lPassword[1024];
+
+        // Get the file version number generate by the FBX SDK.
+        FbxManager::GetFileFormatVersion(lSDKMajor, lSDKMinor, lSDKRevision);
+
+        // Create an importer.
+        FbxImporter* lImporter = FbxImporter::Create(pManager, "");
+
+        // Initialize the importer by providing a filename.
+        const bool lImportStatus = lImporter->Initialize(pFilename, -1, pManager->GetIOSettings());
+        lImporter->GetFileVersion(lFileMajor, lFileMinor, lFileRevision);
+
+        if (!lImportStatus)
+        {
+            FbxString error = lImporter->GetStatus().GetErrorString();
+            FBXSDK_printf("Call to FbxImporter::Initialize() failed.\n");
+            FBXSDK_printf("Error returned: %s\n\n", error.Buffer());
+
+            if (lImporter->GetStatus().GetCode() == FbxStatus::eInvalidFileVersion)
             {
-                vert.Tangent = _Vec3(mesh->mTangents[vertnum]);
-            }
-            if (mesh->mBitangents)
-            {
-                vert.Bitangent = _Vec3(mesh->mBitangents[vertnum]);
+                FBXSDK_printf("FBX file format version for this FBX SDK is %d.%d.%d\n", lSDKMajor, lSDKMinor, lSDKRevision);
+                FBXSDK_printf("FBX file format version for file '%s' is %d.%d.%d\n\n", pFilename, lFileMajor, lFileMinor, lFileRevision);
             }
 
-            for (size_t i = 0; i < STATICMESH_MAX_TEXTURE_COORDS; i++)
+            return false;
+        }
+
+        FBXSDK_printf("FBX file format version for this FBX SDK is %d.%d.%d\n", lSDKMajor, lSDKMinor, lSDKRevision);
+
+        if (lImporter->IsFBX())
+        {
+            FBXSDK_printf("FBX file format version for file '%s' is %d.%d.%d\n\n", pFilename, lFileMajor, lFileMinor, lFileRevision);
+
+            // From this point, it is possible to access animation stack information without
+            // the expense of loading the entire file.
+
+            FBXSDK_printf("Animation Stack Information\n");
+
+            lAnimStackCount = lImporter->GetAnimStackCount();
+
+            FBXSDK_printf("    Number of Animation Stacks: %d\n", lAnimStackCount);
+            FBXSDK_printf("    Current Animation Stack: \"%s\"\n", lImporter->GetActiveAnimStackName().Buffer());
+            FBXSDK_printf("\n");
+
+            for (int i = 0; i < lAnimStackCount; i++)
             {
-                if (mesh->HasTextureCoords(i))
+                FbxTakeInfo* lTakeInfo = lImporter->GetTakeInfo(i);
+
+                FBXSDK_printf("    Animation Stack %d\n", i);
+                FBXSDK_printf("         Name: \"%s\"\n", lTakeInfo->mName.Buffer());
+                FBXSDK_printf("         Description: \"%s\"\n", lTakeInfo->mDescription.Buffer());
+
+                // Change the value of the import name if the animation stack should be imported 
+                // under a different name.
+                FBXSDK_printf("         Import Name: \"%s\"\n", lTakeInfo->mImportName.Buffer());
+
+                // Set the value of the import state to false if the animation stack should be not
+                // be imported. 
+                FBXSDK_printf("         Import State: %s\n", lTakeInfo->mSelect ? "true" : "false");
+                FBXSDK_printf("\n");
+            }
+
+            // Set the import states. By default, the import states are always set to 
+            // true. The code below shows how to change these states.
+            IOS_REF.SetBoolProp(IMP_FBX_MATERIAL, true);
+            IOS_REF.SetBoolProp(IMP_FBX_TEXTURE, true);
+            IOS_REF.SetBoolProp(IMP_FBX_LINK, true);
+            IOS_REF.SetBoolProp(IMP_FBX_SHAPE, true);
+            IOS_REF.SetBoolProp(IMP_FBX_GOBO, true);
+            IOS_REF.SetBoolProp(IMP_FBX_ANIMATION, true);
+            IOS_REF.SetBoolProp(IMP_FBX_GLOBAL_SETTINGS, true);
+        }
+
+        // Import the scene.
+        lStatus = lImporter->Import(pScene);
+        if (lStatus == true)
+        {
+            // Check the scene integrity!
+            FbxStatus status;
+            FbxArray< FbxString*> details;
+            FbxSceneCheckUtility sceneCheck(FbxCast<FbxScene>(pScene), &status, &details);
+            lStatus = sceneCheck.Validate(FbxSceneCheckUtility::eCkeckData);
+            bool lNotify = (!lStatus && details.GetCount() > 0) || (lImporter->GetStatus().GetCode() != FbxStatus::eSuccess);
+            if (lNotify)
+            {
+                FBXSDK_printf("\n");
+                FBXSDK_printf("********************************************************************************\n");
+                if (details.GetCount())
                 {
-                    auto v = mesh->mTextureCoords[i][vertnum];
-                    vert.TexCoords[i] = { v.x, v.y };
+                    FBXSDK_printf("Scene integrity verification failed with the following errors:\n");
+                    for (int i = 0; i < details.GetCount(); i++)
+                        FBXSDK_printf("   %s\n", details[i]->Buffer());
+
+                    FbxArrayDelete<FbxString*>(details);
                 }
-            }
 
-            if (mesh->HasVertexColors(0))
-            {
-                vert.Color = _Color4(mesh->mColors[0][vertnum]);
+                if (lImporter->GetStatus().GetCode() != FbxStatus::eSuccess)
+                {
+                    FBXSDK_printf("\n");
+                    FBXSDK_printf("WARNING:\n");
+                    FBXSDK_printf("   The importer was able to read the file but with errors.\n");
+                    FBXSDK_printf("   Loaded scene may be incomplete.\n\n");
+                    FBXSDK_printf("   Last error message:'%s'\n", lImporter->GetStatus().GetErrorString());
+                }
+                FBXSDK_printf("********************************************************************************\n");
+                FBXSDK_printf("\n");
             }
-
         }
 
-        section->Indices.reserve(mesh->mNumFaces);
-        for (unsigned int i = 0; i < mesh->mNumFaces; i++)
+        if (lStatus == false && lImporter->GetStatus().GetCode() == FbxStatus::ePasswordError)
         {
-            aiFace face = mesh->mFaces[i];
-            for (unsigned int j = 0; j < face.mNumIndices; j++)
+            FBXSDK_printf("Please enter password: ");
+
+            lPassword[0] = '\0';
+
+            FBXSDK_CRT_SECURE_NO_WARNING_BEGIN
+                scanf("%s", lPassword);
+            FBXSDK_CRT_SECURE_NO_WARNING_END
+
+                FbxString lString(lPassword);
+
+            IOS_REF.SetStringProp(IMP_FBX_PASSWORD, lString);
+            IOS_REF.SetBoolProp(IMP_FBX_PASSWORD_ENABLE, true);
+
+            lStatus = lImporter->Import(pScene);
+
+            if (lStatus == false && lImporter->GetStatus().GetCode() == FbxStatus::ePasswordError)
             {
-                section->Indices.push_back(face.mIndices[j]);
+                FBXSDK_printf("\nPassword is wrong, import aborted.\n");
             }
         }
 
+        // Destroy the importer.
+        lImporter->Destroy();
+
+        return lStatus;
+    }
+    static void DestroySdkObjects(FbxManager* pManager, bool pExitStatus)
+    {
+        //Delete the FBX Manager. All the objects that have been allocated using the FBX Manager and that haven't been explicitly destroyed are also automatically destroyed.
+        if (pManager) pManager->Destroy();
+        if (pExitStatus) FBXSDK_printf("Program Success!\n");
     }
 
-    static void _ProcessNode(aiNode* node, const aiScene* scene, Node_ref pnode, const string& dir, float scale_factor)
+    static inline Vector3f _Vec3(const FbxVector4& vec)
     {
+        return Vector3f(float(vec[0]), float(vec[1]), float(vec[2]));
+    }
+    static inline Color4b _Color4b(const FbxColor& color)
+    {
+        return Color4b(uint8_t(color.mRed * 255), uint8_t(color.mGreen * 255), uint8_t(color.mBlue * 255), uint8_t(color.mAlpha * 255));
+    }
+
+    static StaticMesh_ref ProcessMesh(FbxNode* fbxNode)
+    {
+        auto name = fbxNode->GetName();
+
         array_list<StaticMeshSection> sections;
-        sections.resize(node->mNumMeshes);
-
-        array_list<Material_sp> materials;
-        for (unsigned int i = 0; i < node->mNumMeshes; i++)
-        {
-            aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-            _ProcessMesh(&sections[i], mesh, scene);
-            auto sectionMat = scene->mMaterials[mesh->mMaterialIndex];
-
-            materials.push_back(Material::StaticCreate(sectionMat->GetName().C_Str(), nullptr));
-
-            sections[i].MaterialIndex = materials.size() - 1;
-        }
-        
-        auto newNode = pnode->NewChildNode(node->mName.C_Str());
-
         array_list<string> materialNames;
-        for (auto& mat : materials)
+
+        materialNames.reserve(fbxNode->GetMaterialCount());
+        for (size_t i = 0; i < fbxNode->GetMaterialCount(); i++)
         {
-            materialNames.push_back(mat->GetName());
+            materialNames.push_back(fbxNode->GetMaterial(i)->GetName());
         }
 
-        if (node->mNumMeshes > 0)
+        auto attrCount = fbxNode->GetNodeAttributeCount();
+
+        for (int attrIndex = 0; attrIndex < attrCount; attrIndex++)
         {
-            auto staticMesh = StaticMesh::StaticCreate(node->mName.C_Str(), std::move(sections), std::move(materialNames));
-
-            newNode->AddComponent<MeshContainerComponent>()->SetMesh(staticMesh);
-
-            auto renderer = newNode->AddComponent<StaticMeshRendererComponent>();
-            for (auto& mat : materials)
+            auto attr = fbxNode->GetNodeAttributeByIndex(attrIndex);
+            if (attr->GetAttributeType() == FbxNodeAttribute::eMesh)
             {
-                renderer->GetMaterials()->Add(mat);
+                StaticMeshSection section;
+                // make section
+
+                auto fbxMesh = static_cast<FbxMesh*>(attr);
+                auto pointCount = fbxMesh->GetControlPointsCount();
+
+                //section.Position.resize(pointCount);
+
+                //auto controlPoints = fbxMesh->GetControlPoints();
+                //for (size_t i = 0; i < pointCount; i++)
+                //{
+                //    section.Position[i] = _Vec3(controlPoints[i]);
+                //}
+                //StaticMeshVertex vert;
+                //section.Vertex.resize();
+                //fbxMesh.get
+                constexpr int kPolygonCount = 3;
+
+                auto vertexCount = fbxMesh->GetPolygonVertexCount();
+                auto polygonCount = fbxMesh->GetPolygonCount();
+                assert(vertexCount == polygonCount * kPolygonCount);
+                section.Indices.resize(vertexCount);
+                section.Vertex.resize(vertexCount);
+
+#pragma omp parallel for
+                for (size_t polyIndex = 0; polyIndex < polygonCount; polyIndex++)
+                {
+                    for (size_t vertIndex = 0; vertIndex < kPolygonCount; vertIndex++)
+                    {
+                        auto index = fbxMesh->GetPolygonVertex(polyIndex, vertIndex);;
+                        StaticMeshVertex vertex;
+                        //position
+                        vertex.Position = _Vec3(fbxMesh->GetControlPointAt(index));
+                        //normal
+                        FbxVector4 normal;
+                        fbxMesh->GetPolygonVertexNormal(polyIndex, vertIndex, normal);
+                        vertex.Normal = _Vec3(normal);
+                        //color
+                        if (auto fbxColors = fbxMesh->GetLayer(0)->GetVertexColors())
+                        {
+                            auto map = fbxColors->GetMappingMode();
+                            uint32_t colorIndex;
+                            switch (fbxColors->GetReferenceMode())
+                            {
+                            case fbxsdk::FbxLayerElement::eDirect:
+                                colorIndex = index;
+                                break;
+                            case fbxsdk::FbxLayerElement::eIndexToDirect:
+                                colorIndex = fbxColors->GetIndexArray().GetAt(index);
+                                break;
+                            default:
+                                assert(0);
+                                break;
+                            }
+                            auto fbxColor = fbxColors->GetDirectArray().GetAt(colorIndex);
+                            vertex.Color = _Color4b(fbxColor);
+                        }
+
+                        section.Vertex[polyIndex * kPolygonCount + vertIndex] = vertex;
+                        section.Indices[polyIndex * kPolygonCount + vertIndex] = index;
+                    }
+                }
+
+                section.MaterialIndex = attrIndex;
+
+                sections.push_back(std::move(section));
             }
+
         }
-
-        // process children
-        for (unsigned int i = 0; i < node->mNumChildren; i++)
+        if (sections.size() == 0)
         {
-            _ProcessNode(node->mChildren[i], scene, newNode, dir, scale_factor);
-        }
-    }
-
-    Node_ref FBXImporter::Import(string_view path, string& error)
-    {
-        float scale_factor = 1;
-
-        auto node = Node::StaticCreate(PathUtil::GetFilenameWithoutExt(path));
-
-        Assimp::Importer importer;
-        const aiScene* scene = importer.ReadFile(path.data(), aiProcess_Triangulate | aiProcess_FlipUVs);
-
-        if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
-        {
-            error = importer.GetErrorString();
             return nullptr;
         }
-        string directory = string{ path.substr(0, path.find_last_of('/')) };
+        return StaticMesh::StaticCreate(name, std::move(sections), std::move(materialNames));
+    }
 
-        for (unsigned int i = 0; i < scene->mRootNode->mNumChildren; i++)
+    static void ProcessNode(FbxNode* fbxNode, Node_ref pnode, FBXImporterSettings* settings)
+    {
+        auto childCount = fbxNode->GetChildCount();
+        for (size_t childIndex = 0; childIndex < childCount; childIndex++)
         {
-            _ProcessNode(scene->mRootNode->mChildren[i], scene, node, directory, scale_factor);
+            auto childFbxNode = fbxNode->GetChild(childIndex);
+            auto npNode = Node::StaticCreate(childFbxNode->GetName(), pnode->GetTransform());
+
+            if (auto staticMesh = ProcessMesh(childFbxNode))
+            {
+                //todo : save mesh asset
+                npNode->AddComponent<StaticMeshRendererComponent>()->SetStaticMesh(staticMesh);
+            }
+
+            ProcessNode(childFbxNode, npNode, settings);
+        }
+    }
+
+    Node_ref FBXImporter::Import(string_view path, FBXImporterSettings* settings)
+    {
+        using namespace fbxsdk;
+        FbxManager* fbxManager;
+        FbxScene* fbxScene;
+
+        InitializeSdkObjects(fbxManager, fbxScene);
+        LoadScene(fbxManager, fbxScene, path.data());
+
+        if (settings->ConvertAxisSystem)
+        {
+            auto axisSystem = fbxScene->GetGlobalSettings().GetAxisSystem();
+            auto ourAxisSystem = FbxAxisSystem(FbxAxisSystem::eYAxis, FbxAxisSystem::eParityOdd, FbxAxisSystem::eLeftHanded);
+            if (axisSystem != ourAxisSystem)
+            {
+                ourAxisSystem.ConvertScene(fbxScene);
+            }
         }
 
-        return node;
+        auto unit = fbxScene->GetGlobalSettings().GetSystemUnit();
+        if (unit.GetScaleFactor() != 1.0)
+        {
+            FbxSystemUnit::m.ConvertScene(fbxScene);
+        }
+
+        FbxGeometryConverter geomConverter(fbxManager);
+        geomConverter.Triangulate(fbxScene, true);
+        geomConverter.SplitMeshesPerMaterial(fbxScene, true);
+
+        auto rootNode = fbxScene->GetRootNode();
+
+        auto rootpNode = Node::StaticCreate(PathUtil::GetFilenameWithoutExt(path));
+
+        ProcessNode(rootNode, rootpNode, settings);
+
+        DestroySdkObjects(fbxManager, 0);
+
+        return rootpNode;
     }
 }

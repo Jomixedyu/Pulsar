@@ -6,13 +6,10 @@ namespace pulsared
 {
     class Vector2fPropertyControl : public PropertyControl
     {
-        APATITEED_PROPERTY_CONTROL(cltypeof<pulsar::math::BoxingVector2f>(), new Vector2fPropertyControl);
+        EDITOR_IMPL_PROPERTY_CONTROL(cltypeof<pulsar::math::BoxingVector2f>(), new Vector2fPropertyControl);
     public:
 
-        virtual void OnDrawImGui(const string& name, sptr<Object> prop) override;
-        virtual Type* GetPropertyType() override
-        {
-            return cltypeof<pulsar::math::BoxingVector2f>();
-        }
+        virtual bool OnDrawImGui(const string& name, Object* prop) override;
+
     };
 }

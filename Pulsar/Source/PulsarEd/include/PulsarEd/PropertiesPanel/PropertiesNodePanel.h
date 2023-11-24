@@ -7,7 +7,7 @@ namespace pulsared
 
     class PropertiesNodePanel : public PropertiesPanel
     {
-        CORELIB_DEF_TYPE(AssemblyObject_PulsarEd, pulsared::PropertiesNodePanel, PropertiesPanel);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::PropertiesNodePanel, PropertiesPanel);
         APATITEED_PROPERTIES_PANEL(cltypeof<Node>());
 
     public:

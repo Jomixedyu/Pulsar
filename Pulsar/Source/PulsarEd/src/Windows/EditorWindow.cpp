@@ -5,21 +5,24 @@
 
 namespace pulsared
 {
-    string_view EditorWindow::GetWindowName() const
-    {
-        return "editor window";
-    }
 
     void EditorWindow::DrawImGui()
     {
         bool isOpened;
-        bool isDrawable = ImGui::Begin(GetWindowName().data(), &isOpened, GetGuiWindowFlags());
+        ImGui::SetNextWindowSize(ImVec2{m_winSize.x, m_winSize.y});
+        bool isDrawable = ImGui::Begin(StringUtil::Concat(GetWindowDisplayName(), "###", GetWindowName()).data(), &isOpened, GetGuiWindowFlags());
         if (isOpened)
         {
             m_isOpened = isOpened;
             if (isDrawable)
             {
                 this->OnDrawImGui();
+            }
+            if (m_allowResize)
+            {
+                auto size = ImGui::GetWindowSize();
+                m_winSize.x = size.x;
+                m_winSize.y = size.y;
             }
         }
         else
@@ -29,7 +32,6 @@ namespace pulsared
         }
 
         ImGui::End();
-
     }
 
     void EditorWindow::OnDrawImGui()
@@ -39,9 +41,10 @@ namespace pulsared
 
     bool EditorWindow::Open()
     {
-        if (this->m_isOpened) return true;
-        
-        if (!EditorWindowManager::RegisterWindow(self()))
+        if (this->m_isOpened)
+            return true;
+
+        if (!EditorWindowManager::RegisterOpeningWindow(self()))
         {
             return false;
         }
@@ -49,12 +52,14 @@ namespace pulsared
         this->OnOpen();
         return true;
     }
+
     void EditorWindow::Close()
     {
-        if (!this->m_isOpened) return;
+        if (!this->m_isOpened)
+            return;
         this->m_isOpened = false;
         this->OnClose();
-        EditorWindowManager::UnRegisterWindow(self());
+        EditorWindowManager::UnregisterOpeningWindow(self());
     }
 
     static int _NewId()
@@ -63,7 +68,8 @@ namespace pulsared
         return ++id;
     }
 
-    EditorWindow::EditorWindow() : m_windowId(_NewId())
+    EditorWindow::EditorWindow()
+        : m_windowId(_NewId()), m_allowResize(true), m_winSize(50, 50)
     {
 
     }

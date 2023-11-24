@@ -1,13 +1,32 @@
 #pragma once
 #include "Assembly.h"
 #include <CoreLib/Events.hpp>
-
+#include <filesystem>
 
 namespace pulsared
 {
+    //ext .peproj
+    class ProjectFile : public Object
+    {
+        CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::ProjectFile, Object);
+
+    public:
+        virtual string GetEditorType() = 0;
+
+        string EditorType;
+    };
+
+    class ProgramPackage
+    {
+    public:
+        string Name;
+        std::filesystem::path Path;
+    };
+
     class Workspace final
     {
     public:
+
         static bool OpenDialogUserWorkspace();
         static bool OpenWorkspace(string_view path);
         static bool CloseWorkspace();
@@ -22,5 +41,5 @@ namespace pulsared
         static Action<> OnWorkspaceClosed;
     };
 
-    
+
 }

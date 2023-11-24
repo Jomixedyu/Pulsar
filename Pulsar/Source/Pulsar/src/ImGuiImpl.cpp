@@ -1,7 +1,7 @@
 #include "ImGuiImpl.h"
 #include <Pulsar/ImGuiImpl.h>
-#include <ThirdParty/imgui/imgui.h>
-#include <ThirdParty/imgui/imgui_impl_glfw.h>
+#include <imgui/imgui.h>
+#include <imgui/imgui_impl_glfw.h>
 
 #include "DroidSans.ttf.h"
 #include "forkawesome-webfont.ttf.h"
@@ -11,12 +11,12 @@
 #include <gfx/GFXApplication.h>
 
 #if PULSAR_GFX_BUILD_VULKAN
-#include <ThirdParty/imgui/imgui_impl_vulkan.h>
+#include <imgui/imgui_impl_vulkan.h>
 #include <gfx-vk/GFXVulkanApplication.h>
 #include <gfx-vk/GFXVulkanDescriptorManager.h>
 #include <gfx-vk/GFXVulkanCommandBuffer.h>
 #endif
-#include <ThirdParty/imgui/imgui_impl_win32.h>
+#include <imgui/imgui_impl_win32.h>
 
 namespace pulsar
 {
@@ -89,7 +89,7 @@ namespace pulsar
         style.WindowTitleAlign = { 0.5,0.5 };
         style.SeparatorTextBorderSize = 3;
         style.SeparatorTextAlign = { 0.5,0.5 };
-        style.SeparatorTextPadding = { 20,15 };
+        style.SeparatorTextPadding = { 20,4 };
         style.DockingSeparatorSize = 3;
 
 
@@ -127,7 +127,7 @@ namespace pulsar
 
 
 #if PULSAR_GFX_BUILD_VULKAN
-    class ImGuiImpl_Vulkan : public ImGuiObject
+    class ImGuiImpl_Vulkan final : public ImGuiObject
     {
     public:
         ImGuiImpl_Vulkan(gfx::GFXVulkanApplication* app)
@@ -222,7 +222,7 @@ namespace pulsar
         switch (app->GetApiType())
         {
 #if PULSAR_GFX_BUILD_VULKAN
-        case gfx::GFXVulkanApplication::StaticGetApiType():
+        case gfx::GFXApi::Vulkan:
             return std::shared_ptr<ImGuiObject>(new ImGuiImpl_Vulkan(static_cast<gfx::GFXVulkanApplication*>(app)));
             break;
 #endif

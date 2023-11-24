@@ -1,5 +1,5 @@
 #include <Pulsar/Private/InputInterface.h>
-#include <ThirdParty/glfw/include/GLFW/glfw3.h>
+
 //#include <Windows.h>
 
 namespace pulsar::detail
@@ -30,7 +30,7 @@ namespace pulsar::detail
 
     void InputInterface::PollEvents()
     {
-        glfwPollEvents();
+        //glfwPollEvents();
     }
 
 

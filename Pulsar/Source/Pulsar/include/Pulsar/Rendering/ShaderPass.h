@@ -52,7 +52,7 @@ namespace pulsar
         virtual void SetUniformMatrix4fv(string_view name, const float* value) override;
         virtual void SetUniformMatrix4fv(string_view name, const Matrix4f& mat) override;
         virtual void SetUniformVector3(string_view name, const Vector3f& value) override;
-        virtual void SetUniformColor(string_view name, const LinearColorf& value) override;
+        virtual void SetUniformColor(string_view name, const Color4f& value) override;
         virtual void SetUniformColor(string_view name, const Vector3f& value) override;
     protected:
         uint32_t vert_id;

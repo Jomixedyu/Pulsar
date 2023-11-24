@@ -8,7 +8,7 @@ namespace pulsared
 
     class EditorUIConfig : public Object
     {
-        CORELIB_DEF_TYPE(AssemblyObject_PulsarEd, pulsared::EditorUIConfig, Object);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::EditorUIConfig, Object);
 
     public:
         CORELIB_REFL_DECL_FIELD(WindowSize);

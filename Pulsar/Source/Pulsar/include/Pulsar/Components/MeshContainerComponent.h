@@ -6,14 +6,15 @@ namespace pulsar
 {
     class MeshContainerComponent : public Component
     {
-        CORELIB_DEF_TYPE(AssemblyObject_Pulsar, pulsar::MeshContainerComponent, Component);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::MeshContainerComponent, Component);
     public:
         static MessageId MSG_MeshUpdate();
     public:
-        void SetMesh(StaticMesh_sp value);
-        StaticMesh_sp GetMesh() const;
+        void SetMesh(StaticMesh_ref value);
+        StaticMesh_ref GetMesh() const;
     private:
-        StaticMesh_sp m_mesh;
+        CORELIB_REFL_DECL_FIELD(m_mesh);
+        StaticMesh_ref m_mesh;
     };
     DECL_PTR(MeshContainerComponent);
 }

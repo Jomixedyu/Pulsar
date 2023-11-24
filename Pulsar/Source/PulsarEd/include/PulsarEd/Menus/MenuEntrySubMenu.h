@@ -7,13 +7,19 @@ namespace pulsared
 {
     class MenuEntrySubMenu : public MenuEntry, public ISubMenu
     {
-        CORELIB_DEF_TYPE(AssemblyObject_PulsarEd, pulsared::MenuEntrySubMenu, MenuEntry);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::MenuEntrySubMenu, MenuEntry);
         CORELIB_IMPL_INTERFACES(ISubMenu);
     public:
         MenuEntrySubMenu(const string& name) : base(name), CORELIB_INIT_INTERFACE(ISubMenu)
         { }
-
-        void AddEntry(MenuEntry_rsp entry)
+        MenuEntrySubMenu(const string& name, const string& displayName)
+            : base(name, displayName), CORELIB_INIT_INTERFACE(ISubMenu)
+        { }
+        virtual string GetMenuName() const override
+        {
+            return Name;
+        }
+        virtual void AddEntry(MenuEntry_rsp entry) override
         {
             this->entries.push_back(entry);
         }
@@ -25,13 +31,25 @@ namespace pulsared
         {
             for (auto& item : this->entries)
             {
-                if (item->name == name)
+                if (item->Name == name)
                 {
                     return item;
                 }
             }
             return nullptr;
         }
+        virtual void RemoveEntry(string_view name) override
+        {
+            auto it = std::find_if(entries.begin(), entries.end(), [name](auto& entry) {
+                return entry->Name == name;
+                });
+            if (it != this->entries.end())
+            {
+                this->entries.erase(it);
+            }
+        }
+
+        sptr<MenuCanVisibility> Visibility;
     protected:
         array_list<MenuEntry_sp> entries;
     };

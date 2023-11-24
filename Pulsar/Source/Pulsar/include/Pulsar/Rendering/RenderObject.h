@@ -1,27 +1,44 @@
 #pragma once
 #include <gfx/GFXApplication.h>
 #include <gfx/GFXBuffer.h>
-#include "EngineMath.h"
-#include "Assets/Material.h"
+#include <Pulsar/EngineMath.h>
+#include <Pulsar/Assets/Material.h>
 
 namespace pulsar::rendering
 {
 
+    struct MeshBatchElement
+    {
+        gfx::GFXBuffer_sp Vertex;
+        gfx::GFXBuffer_sp Indices;
+    };
+
     struct MeshBatch
     {
-        array_list<gfx::GFXBuffer_sp> Vertex;
-        array_list<gfx::GFXBuffer_sp> Indices;
-        Material_sp Material;
+        array_list<MeshBatchElement> Elements;
+
+        Material_ref Material;
+
+        bool IsUsedIndices;
+        bool IsWireframe;
+        bool IsCastShadow;
+        bool IsReverseCulling;
+        gfx::GFXPrimitiveTopology Topology;
+
+        //bool IsSameRenderingState(const MeshBatch& batch) const
+        //{
+        //    return
+        //        Material == batch.Material &&
+        //        IsReverseCulling == batch.IsReverseCulling;
+        //}
 
         void Append(const MeshBatch& batch)
         {
-            if (Material != batch.Material)
+            for (auto element : batch.Elements)
             {
-                return;
+                Elements.push_back(element);
             }
-            Vertex.insert(Vertex.end(), batch.Vertex.begin(), batch.Vertex.end());
-            Indices.insert(Indices.end(), batch.Indices.begin(), batch.Indices.end());
-
+            //batch.Elements.clear();
         };
     };
 
@@ -37,8 +54,8 @@ namespace pulsar::rendering
         void SetTransform(const Matrix4f& localToWorld)
         {
             m_localToWorld = localToWorld;
-            //m_isLocalToWorldDeterminantNegative = localToWorld.Determinant() < 0;
-            m_isLocalToWorldDeterminantNegative = false;
+            m_isLocalToWorldDeterminantNegative = localToWorld.Determinant() < 0;
+
             UpdateConstantBuffer();
         }
         void UpdateConstantBuffer()
@@ -46,10 +63,16 @@ namespace pulsar::rendering
 
         }
 
-        array_list<MeshBatch> GetMeshBatchs();
+        virtual void OnCreateResource() {}
+        virtual void OnDestroyResource() {}
+
+        virtual array_list<MeshBatch> GetMeshBatchs() = 0;
+
+        bool IsDetermiantNegative() const { return m_isLocalToWorldDeterminantNegative; }
     protected:
         Matrix4f  m_localToWorld;
         bool      m_isLocalToWorldDeterminantNegative;
 
     };
+    CORELIB_DECL_SHORTSPTR(RenderObject);
 }

@@ -3,44 +3,69 @@
 #include <Pulsar/Logger.h>
 #include <Pulsar/Rendering/RenderContext.h>
 #include <gfx/GFXBuffer.h>
+#include <Pulsar/Application.h>
 
 namespace pulsar
 {
-
-
-
     class StaticMeshRenderObject : public rendering::RenderObject
     {
     public:
+        StaticMeshRendererComponent_ref m_meshRednerer;
+        array_list<rendering::MeshBatch> m_batchs;
+
+        StaticMeshRenderObject(StaticMeshRendererComponent_ref meshRenderer)
+        {
+            m_meshRednerer = meshRenderer;
+        }
         void OnCreateResource()
         {
-            m_meshBuffer = Application::GetGfxApp()->CreateBuffer(gfx::GFXBufferUsage::Vertex, 0);
+            auto staticMesh = m_meshRednerer->GetStaticMesh();
+            auto sectionCount = staticMesh->GetMeshSectionCount();
+            for (size_t i = 0; i < sectionCount; i++)
+            {
+                auto& section = staticMesh->GetMeshSection(i);
+                
+                rendering::MeshBatch batch;
+                auto vertex = Application::GetGfxApp()->CreateBuffer(gfx::GFXBufferUsage::Vertex, section.GetVertexAllocSize());
+                auto indices = Application::GetGfxApp()->CreateBuffer(gfx::GFXBufferUsage::Index, section.GetIndicesAllocSize());
+                
+                rendering::MeshBatchElement mbElement;
+                mbElement.Vertex = vertex;
+                mbElement.Indices = indices;
+
+                batch.Elements.push_back(mbElement);
+                batch.Material = m_meshRednerer->GetMaterial(section.MaterialIndex);
+                batch.IsUsedIndices = true;
+                batch.Topology = gfx::GFXPrimitiveTopology::TriangleList;
+                batch.IsReverseCulling = IsDetermiantNegative();
+
+                m_batchs.push_back(std::move(batch));
+            };
         }
         void OnDestroyResource()
         {
-            delete m_meshBuffer;
+            //delete m_meshBuffer;
         }
-        StaticMeshSection GetSection()
-        {
 
+        virtual array_list<rendering::MeshBatch> GetMeshBatchs() override
+        {
+            return m_batchs;
         }
-        gfx::GFXBuffer* m_meshBuffer;
-        gfx::GFXShaderPass* m_shaderPass;
     };
 
     sptr<rendering::RenderObject> StaticMeshRendererComponent::CreateRenderObject()
     {
-        auto obj = new StaticMeshRenderObject;
-
-        auto allocSize = 0;
-        obj->m_meshBuffer = Application::GetGfxApp()->CreateBuffer(gfx::GFXBufferUsage::Vertex, sizeof(allocSize));
-
+        auto obj = new StaticMeshRenderObject(THIS_REF);
         return mksptr(obj);
     }
 
-    void StaticMeshRendererComponent::OnInitialize()
+    Material_ref StaticMeshRendererComponent::GetMaterial(int index) const
     {
-
+        return m_materials->at(index);
+    }
+    void StaticMeshRendererComponent::SetMaterial(int index, Material_ref material)
+    {
+        m_materials->at(index) = material;
     }
 
     //void StaticMeshRendererComponent::OnDraw()

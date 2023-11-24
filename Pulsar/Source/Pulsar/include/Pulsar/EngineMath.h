@@ -1,15 +1,15 @@
 #pragma once
 #include <CoreLib.Math/Math.h>
-#include <CoreLib.Serialization/DataSerializer.h>
+#include <CoreLib/sser.hpp>
 
 namespace jmath
 {
-    jxcorlib::ser::Stream& ReadWriteStream(jxcorlib::ser::Stream& stream, bool is_write, Vector2f& vec);
-    jxcorlib::ser::Stream& ReadWriteStream(jxcorlib::ser::Stream& stream, bool is_write, Vector3f& vec);
-    jxcorlib::ser::Stream& ReadWriteStream(jxcorlib::ser::Stream& stream, bool is_write, Vector4f& vec);
-    jxcorlib::ser::Stream& ReadWriteStream(jxcorlib::ser::Stream& stream, bool is_write, Quat4f& q);
-    jxcorlib::ser::Stream& ReadWriteStream(jxcorlib::ser::Stream& stream, bool is_write, Color8b4& c);
-    jxcorlib::ser::Stream& ReadWriteStream(jxcorlib::ser::Stream& stream, bool is_write, LinearColorf& c);
+    std::iostream& ReadWriteStream(std::iostream& stream, bool is_write, Vector2f& vec);
+    std::iostream& ReadWriteStream(std::iostream& stream, bool is_write, Vector3f& vec);
+    std::iostream& ReadWriteStream(std::iostream& stream, bool is_write, Vector4f& vec);
+    std::iostream& ReadWriteStream(std::iostream& stream, bool is_write, Quat4f& q);
+    std::iostream& ReadWriteStream(std::iostream& stream, bool is_write, Color4b& c);
+    std::iostream& ReadWriteStream(std::iostream& stream, bool is_write, Color4f& c);
 }
 
 namespace pulsar::math
@@ -79,7 +79,7 @@ namespace pulsar
     using math::Matrix2f;
     using math::Matrix3f;
     using math::Matrix4f;
-    using math::Color8b4;
-    using math::LinearColorf;
+    using math::Color4b;
+    using math::Color4f;
     using math::Transform3Df;
 }

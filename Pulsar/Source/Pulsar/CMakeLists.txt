@@ -7,39 +7,40 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 	add_compile_options("/utf-8")
 endif()
 
-option(${PROJECT_NAME}_BUILD_EXECUTABLE "enable executable mode")
+option(${PROJECT_NAME}_BUILD_EXECUTABLE "enable executable mode" OFF)
+#set(${PROJECT_NAME}_BUILD_EXECUTABLE ON)
 
 file(GLOB_RECURSE Pulsar_SRC "src/*.h" "src/*.hpp" "src/*.cpp" "include/*.h" "include/*.hpp")
 
-include_directories("../ThirdParty/jxcorlib")
+add_subdirectory("./third/jxcorlib")
+add_subdirectory("./third/gfx")
+add_subdirectory("./third/gfx-vk")
+add_subdirectory("./third/imgui")
 
-add_subdirectory("../ThirdParty/jxcorlib/CoreLib" jxcorlib.out)
-add_subdirectory("../ThirdParty/jxcorlib/CoreLib.Serialization" jxcorlib.ser.out)
-add_subdirectory("../ThirdParty/jxcorlib/CoreLib.Math" jxcorlib.math)
-add_subdirectory("../ThirdParty/jxcorlib/CoreLib.Platform" jxcorlib.platform.out)
-add_subdirectory("../ThirdParty/gfx" gfx.out)
-add_subdirectory("../ThirdParty/gfx-vk" gfx-vk.out)
-add_subdirectory("../ThirdParty/imgui" imgui.out)
+set(GLFW_BUILD_DOCS OFF)
+set(GLFW_INSTALL OFF)
+set(GLFW_BUILD_EXAMPLES OFF)
+set(GLFW_BUILD_TESTS OFF)
+add_subdirectory("./third/glfw")
 
-add_library(${PROJECT_NAME} STATIC ${Pulsar_SRC})
-#add_executable(${PROJECT_NAME} ${Pulsar_SRC})
 
-target_include_directories(${PROJECT_NAME} PUBLIC "include")
-target_include_directories(${PROJECT_NAME} PRIVATE "include/Pulsar")
+if(${PROJECT_NAME}_BUILD_EXECUTABLE)
+	add_executable(${PROJECT_NAME} ${Pulsar_SRC} "main.cpp")
+else()
+	add_library(${PROJECT_NAME} STATIC ${Pulsar_SRC})
+endif()
+
+target_include_directories(${PROJECT_NAME} PUBLIC "./include")
+
+target_include_directories(${PROJECT_NAME} PRIVATE "./include/Pulsar")
 target_include_directories(${PROJECT_NAME} PUBLIC "..")
-
-target_include_directories(${PROJECT_NAME} PUBLIC "../ThirdParty/gfx/include")
-target_include_directories(${PROJECT_NAME} PUBLIC "../ThirdParty/gfx-vk/include")
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC PULSAR_GFX_BUILD_VULKAN)
 
-
-target_link_libraries(${PROJECT_NAME} PUBLIC
+target_link_libraries(${PROJECT_NAME} 
+PUBLIC
 	jxcorlib
-	jxcorlib.ser
-	jxcorlib.math
-	jxcorlib.platform
-	glfw3_mt
+	glfw
 	gfx
 	gfx-vk
 	imgui

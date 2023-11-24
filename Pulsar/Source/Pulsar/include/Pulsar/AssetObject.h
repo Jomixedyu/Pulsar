@@ -2,59 +2,74 @@
 
 #include <Pulsar/ObjectBase.h>
 #include <CoreLib/Guid.h>
+#include <CoreLib/sser.hpp>
 #include <CoreLib.Serialization/DataSerializer.h>
-#include <CoreLib/index_string.hpp>
+#include <CoreLib.Serialization/ObjectSerializer.h>
+#include <iostream>
+#include <utility>
 
 namespace pulsar
 {
+
     struct AssetSerializer
     {
-        AssetSerializer(ser::Stream& stream, bool isWrite, bool analysis)
-            : Stream(stream), IsWrite(IsWrite), HasAnalysisData(analysis)
+        AssetSerializer(ser::VarientRef obj, std::iostream& stream, bool isWrite, bool editorData)
+            : Object(std::move(obj)),
+              Stream(stream),
+              IsWrite(isWrite),
+              HasEditorData(editorData),
+              ExistStream(false)
         {
         }
-        ser::Stream& Stream;
+
+        AssetSerializer(const AssetSerializer&) = delete;
+        AssetSerializer(AssetSerializer&&) = delete;
+
+    public:
+        ser::VarientRef Object;
+        std::iostream& Stream;
+        bool ExistStream;
         const bool IsWrite;
-        const bool HasAnalysisData;
+        const bool HasEditorData;
     };
 
     class AssetObject : public ObjectBase
     {
-        CORELIB_DEF_TYPE(AssemblyObject_Pulsar, pulsar::AssetObject, ObjectBase);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::AssetObject, ObjectBase);
+
     public:
-        virtual void OnSerialize(AssetSerializer* serializer) {}
-        sptr<AssetObject> InstantiateAsset();
+        virtual void Serialize(AssetSerializer* s);
+        virtual bool CanInstantiateAsset() const { return true; }
+        ObjectPtr<AssetObject> InstantiateAsset();
+
     public:
-        guid_t get_source_package() const { return this->package_guid_; }
-        guid_t get_guid() const { return this->guid_; }
-        string get_virtual_path() const { return this->virtual_path_; };
-        const string& GetName() const { return this->name_; }
-        void SetName(string_view name) { this->name_ = name; }
     public:
-        AssetObject() = default;
+        AssetObject();
         AssetObject(const AssetObject&) = delete;
         AssetObject(AssetObject&&) = delete;
         AssetObject& operator=(const AssetObject&) = delete;
-    protected:
-        virtual void OnInstantiateAsset(ObjectPtr<AssetObject>& obj);
 
     protected:
-        CORELIB_REFL_DECL_FIELD(guid_);
-        guid_t guid_;
+        virtual void OnInstantiateAsset(AssetObject* obj);
 
-        CORELIB_REFL_DECL_FIELD(package_guid_);
-        guid_t package_guid_;
+    protected:
+        #ifdef WITH_EDITOR
 
-        CORELIB_REFL_DECL_FIELD(virtual_path_);
-        string virtual_path_;
+        CORELIB_REFL_DECL_FIELD(m_importFiles);
+        List_sp<String_sp> m_importFiles;
 
-        CORELIB_REFL_DECL_FIELD(name_);
-        string name_;
+        array_list<string> m_extraEditorMetadata;
+
+        #endif
+
+        CORELIB_REFL_DECL_FIELD(m_tags);
+        List_sp<String_sp> m_tags;
     };
+
     DECL_PTR(AssetObject);
 
 
-    template<typename T>
-    concept baseof_assetobject = std::is_base_of<AssetObject, T>::value;
+    template <typename T>
+    concept baseof_assetobject = std::is_base_of_v<AssetObject, T>;
 
 }

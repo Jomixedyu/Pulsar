@@ -9,14 +9,14 @@ namespace pulsared
 {
     class Menu : public Object, public ISubMenu
     {
-        CORELIB_DEF_TYPE(AssemblyObject_PulsarEd, pulsared::Menu, Object);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::Menu, Object);
         CORELIB_IMPL_INTERFACES(ISubMenu);
     public:
         Menu() : CORELIB_INIT_INTERFACE(ISubMenu)
         {
 
         }
-        void AddEntry(MenuEntry_rsp entry)
+        virtual void AddEntry(MenuEntry_rsp entry) override
         {
             this->entries.push_back(entry);
         }
@@ -24,12 +24,15 @@ namespace pulsared
         {
             return this->entries;
         }
-        string GetMenuName()
+
+        virtual string GetMenuName() const override
         {
             return this->menu_name;
         }
 
         virtual MenuEntry_sp FindEntry(string_view name) override;
+
+        virtual void RemoveEntry(string_view name) override;
 
         template<typename T>
         sptr<T> FindMenuEntry(string_view name)

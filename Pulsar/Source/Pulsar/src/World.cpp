@@ -1,6 +1,7 @@
 #include "World.h"
 #include <Pulsar/World.h>
 #include <Pulsar/Scene.h>
+#include <Pulsar/Logger.h>
 
 namespace pulsar
 {
@@ -26,7 +27,7 @@ namespace pulsar
     }
     World::World()
     {
-        InitializePresistentScene();
+        
     }
 
     World::~World()
@@ -45,7 +46,7 @@ namespace pulsar
             {
                 for (auto& node : *scene->GetRootNodes())
                 {
-                    if (node->IsAlive())
+                    if (IsValid(node))
                     {
                         node->OnTick(ticker);
                     }
@@ -58,33 +59,102 @@ namespace pulsar
     {
         if (clearPresistentScene)
         {
-            m_scenes.clear();
+            UnloadAllScene(true);
             InitializePresistentScene();
         }
         else
         {
-            auto presistent = m_scenes[0];
-            m_scenes.clear();
-            m_scenes.push_back(presistent);
+            UnloadAllScene(false);
         }
+        LoadScene(scene);
+    }
+
+    void World::LoadScene(ObjectPtr<Scene> scene)
+    {
         m_scenes.push_back(scene);
+        this->OnSceneLoading(scene);
+        scene->BeginScene(this);
+    }
+    void World::UnloadScene(ObjectPtr<Scene> scene)
+    {
+        auto it = std::find(m_scenes.begin(), m_scenes.end(), scene);
+        if (it != m_scenes.end())
+        {
+            if (it == m_scenes.begin())
+            {
+                OnUnloadingPresistentScene(scene);
+            }
+            OnSceneUnloading(scene);
+            scene->EndScene();
+            m_scenes.erase(it);
+            DestroyObject(scene, true);
+        }
     }
 
     void World::InitializePresistentScene()
     {
-        m_scenes.push_back(Scene::StaticCreate("PresistentScene"));
+        auto scene = Scene::StaticCreate("PresistentScene");
+        scene->SetObjectFlags(scene->GetObjectFlags() | OF_Instance);
+
+        LoadScene(scene);
+        OnLoadingPresistentScene(scene);
     }
+    void World::UnloadAllScene(bool unloadPresistentScene)
+    {
+        auto scenes = m_scenes;
+        auto startIndex = unloadPresistentScene ? 0 : 1;
+        for (int i = (int)scenes.size() - 1; i >= 0; i--)
+        {
+            UnloadScene(scenes[i]);
+        }
+    }
+
+    void World::OnLoadingPresistentScene(ObjectPtr<Scene> scene)
+    {
+
+    }
+    void World::OnUnloadingPresistentScene(ObjectPtr<Scene> scene)
+    {
+
+    }
+
+    void World::AddRenderObject(const rendering::RenderObject_sp renderObject)
+    {
+        renderObject->OnCreateResource();
+        m_renderObjects.insert(renderObject);
+    }
+    void World::RemoveRenderObject(rendering::RenderObject_rsp renderObject)
+    {
+        auto it = m_renderObjects.find(renderObject);
+        if (it != m_renderObjects.end())
+        {
+            (*it)->OnDestroyResource();
+            m_renderObjects.erase(it);
+        }
+    }
+
 
     void World::OnWorldBegin()
     {
+        InitializePresistentScene();
     }
 
     void World::OnWorldEnd()
     {
-        for (auto& scene : m_scenes)
+        UnloadAllScene();
+        for (size_t i = 0; i < m_deferredDestroyedQueue.size(); i++)
         {
-            DestroyObject(scene);
+            DestroyObject(m_deferredDestroyedQueue[i]);
         }
+        m_deferredDestroyedQueue.clear();
+    }
+
+    void World::OnSceneLoading(ObjectPtr<Scene> scene)
+    {
+    }
+
+    void World::OnSceneUnloading(ObjectPtr<Scene> scene)
+    {
     }
 
 

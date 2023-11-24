@@ -1,5 +1,4 @@
 #include <PulsarEd/Windows/SceneWindow.h>
-#include <ThirdParty/glfw/include/GLFW/glfw3.h>
 #include <Pulsar/Assets/Shader.h>
 #include <Pulsar/Scene.h>
 #include <PulsarEd/Assembly.h>
@@ -13,6 +12,8 @@
 #include <imgui/imgui_impl_vulkan.h>
 #include <gfx-vk/GFXVulkanRenderTarget.h>
 #include "EditorAppInstance.h"
+#include <PulsarEd/ExclusiveTask.h>
+#include <PulsarEd/Workspace.h>
 
 namespace pulsared
 {
@@ -22,57 +23,53 @@ namespace pulsared
 
     }
 
+
+    void SceneWindow::OnOpenWorkspace()
+    {
+        m_sceneEditor = new SceneEditorViewportFrame;
+        m_sceneEditor->Initialize();
+        m_sceneEditor->SetWorld(GetEdApp()->GetEditorWorld());
+    }
+    void SceneWindow::OnCloseWorkspace()
+    {
+        m_sceneEditor->Terminate();
+        delete m_sceneEditor;
+        m_sceneEditor = nullptr;
+    }
+
     void SceneWindow::OnOpen()
     {
+        base::OnOpen();
 
-        auto camCtrlNode = EditorNode::StaticCreate("EdCameraController");
-        auto camNode = EditorNode::StaticCreate("EdCamera", camCtrlNode);
-        this->m_camNode = camNode;
-        this->m_camCtrlNode = camCtrlNode;
+        Workspace::OnWorkspaceOpened.AddListener(this, &ThisClass::OnOpenWorkspace);
+        Workspace::OnWorkspaceClosed.AddListener(this, &ThisClass::OnCloseWorkspace);
 
-        auto cam = camNode->AddComponent<CameraComponent>();
+        if (Workspace::IsOpened())
+        {
+            this->OnOpenWorkspace();
+        }
 
-        cam->cameraMode = CameraMode::Perspective;
-        cam->backgroundColor = LinearColorf{ 0.33f, 0.33f, 0.33f, 1.0f };
-        cam->fov = 45.f;
-        cam->near = 0.01f;
-        cam->far = 10000.f;
-        cam->size_ = { 1280.f, 720.f };
-        camNode->set_self_position({ 0.f, 7.f, 30.f });
-        ////camera_node->set_self_euler_rotation({ -25.f, -45, 0 });
 
-        camCtrlNode->AddComponent<StdEditCameraControllerComponent>();
-
-        cam->SetRenderTarget(RenderTexture::StaticCreate(1280, 720, true, true));
-
-        ////node->set_self_euler_rotation({ 0,-90,0 });
-        World::Current()->GetPresistentScene()->AddNode(camCtrlNode);
-
-        auto grid3d = EditorNode::StaticCreate("Grid3d");
-        grid3d->AddComponent<Grid3DComponent>();
-        World::Current()->GetPresistentScene()->AddNode(grid3d);
-
-        m_descriptorLayout = Application::GetGfxApp()->CreateDescriptorSetLayout({
-            gfx::GFXDescriptorSetLayoutInfo(0, gfx::GFXDescriptorType::CombinedImageSampler, gfx::GFXShaderStageFlags::Fragment)
-            });
     }
 
     void SceneWindow::OnClose()
     {
-        auto cam = this->GetSceneCamera();
-        DestroyObject(cam->GetRenderTarget());
+        base::OnClose();
 
-        World::Current()->GetPresistentScene()->RemoveNode(this->GetSceneCameraControllerNode());
+        Workspace::OnWorkspaceOpened.RemoveListener(this, &ThisClass::OnOpenWorkspace);
+        Workspace::OnWorkspaceClosed.RemoveListener(this, &ThisClass::OnCloseWorkspace);
 
-        m_descriptorLayout = nullptr;
-        m_descriptorSet = nullptr;
+        if (Workspace::IsOpened())
+        {
+            this->OnCloseWorkspace();
+        }
+
+
     }
 
     void SceneWindow::OnDrawImGui()
     {
-        static bool demowin = true;
-        if (demowin)
-            ImGui::ShowDemoWindow(&demowin);
+        //ImGui::ShowDemoWindow();
 
         if (ImGui::BeginMenuBar())
         {
@@ -119,45 +116,19 @@ namespace pulsared
             ImGui::EndMenuBar();
         }
 
-        ImVec2 vMin = ImGui::GetWindowContentRegionMin();
-        ImVec2 vMax = ImGui::GetWindowContentRegionMax();
-
-
-        vMin.x += ImGui::GetWindowPos().x;
-        vMin.y += ImGui::GetWindowPos().y;
-        vMax.x += ImGui::GetWindowPos().x;
-        vMax.y += ImGui::GetWindowPos().y;
-        int content_size_x = vMax.x - vMin.x;
-        int content_size_y = vMax.y - vMin.y;
-
-        if (this->m_viewportSize.x != content_size_x || this->m_viewportSize.y != content_size_y)
+        if (m_sceneEditor)
         {
-            this->m_viewportSize = { content_size_x, content_size_y };
-            this->OnWindowResize();
+            m_sceneEditor->Render(0);
         }
-
-        m_descriptorSet->AddDescriptor(0)->SetTextureSampler2D(this->GetSceneCamera()->GetRenderTarget()->GetGfxRenderTarget0().get());
-        m_descriptorSet->Submit();
-
-        auto imgId = m_descriptorSet->GetId();
-        ImGui::Image((void*)imgId, ImVec2(content_size_x, content_size_y), ImVec2(0, 1), ImVec2(1, 0));
     }
 
     void SceneWindow::OnWindowResize()
     {
-        auto cam = this->GetSceneCamera();
+        if (!Workspace::IsOpened())
+        {
+            return;
+        }
 
-        assert(cam);
-        assert(cam->GetRenderTarget());
-
-        DestroyObject(cam->GetRenderTarget());
-
-        cam->SetRenderTarget(RenderTexture::StaticCreate(m_viewportSize.x, m_viewportSize.y, true, true));
-
-        m_descriptorSet = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_descriptorLayout.get());
-        auto pipeline = dynamic_cast<EditorRenderPipeline*>(Application::GetGfxApp()->GetRenderPipeline());
-        pipeline->m_frameBuffers.resize(1);
-        pipeline->m_frameBuffers[0] = cam->GetRenderTarget()->GetGfxFrameBufferObject().get();
     }
 
 }

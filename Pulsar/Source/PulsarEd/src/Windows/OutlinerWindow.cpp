@@ -10,8 +10,8 @@ namespace pulsared
     {
         for (auto& node : *nodes)
         {
-            List_sp<Node_ref> children = mksptr(new List<Node_ref>);
-            node->GetChildren(children);
+            auto children = node->GetTransform()->GetChildren();
+
             ImGuiTreeNodeFlags base_flags =
                 ImGuiTreeNodeFlags_OpenOnArrow |
                 ImGuiTreeNodeFlags_OpenOnDoubleClick |
@@ -27,10 +27,10 @@ namespace pulsared
                 base_flags |= ImGuiTreeNodeFlags_Selected;
             }
             bool is_editor_node = false;
-            if (cltypeof<EditorNode>()->IsInstanceOfType(node.GetPtr()))
+            if (node->HasObjectFlags(OF_NoPack))
             {
                 is_editor_node = true;
-                ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Text, ImVec4(0.9, 0.7, 0.6, 1));
+                ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Text, ImVec4(0.2, 0.8, 0.8, 1));
             }
             string name = node->GetName();
             if (is_editor_node)
@@ -47,7 +47,13 @@ namespace pulsared
 
             if (isOpened)
             {
-                _Show(children);
+                auto childNodes = mksptr(new List<Node_ref>);
+                childNodes->reserve(children->size());
+                for (auto& child : *children)
+                {
+                    childNodes->push_back(child->GetAttachedNode());
+                }
+                _Show(childNodes);
                 ImGui::TreePop();
             }
             ImGui::PopID();
@@ -72,6 +78,7 @@ namespace pulsared
             if (ImGui::TreeNodeEx(currentScene->GetName().c_str(), base_flags))
             {
                 _Show(currentScene->GetRootNodes());
+
                 ImGui::TreePop();
             }
         }

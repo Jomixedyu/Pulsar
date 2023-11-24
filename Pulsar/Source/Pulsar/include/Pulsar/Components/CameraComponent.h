@@ -2,6 +2,8 @@
 #include "Component.h"
 #include <Pulsar/Assets/RenderTexture.h>
 
+
+
 namespace pulsar
 {
     enum class CameraMode
@@ -12,7 +14,7 @@ namespace pulsar
 
     class CameraComponent : public Component
     {
-        CORELIB_DEF_TYPE(AssemblyObject_Pulsar, pulsar::CameraComponent, Component);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::CameraComponent, Component);
     public:
         virtual ~CameraComponent() override
         {
@@ -28,7 +30,20 @@ namespace pulsar
             Vector3f const& up);
 
         void LookAt(const Vector3f& pos);
+
+        virtual void BeginComponent() override;
+        virtual void EndComponent() override;
+
+
+        virtual void PostEditChange(FieldInfo* info) override;
+
+        void SetBackgroundColor(const Color4f& value);
+    private:
+        void UpdateRTBackgroundColor();
+        void UpdateRT();
     public:
+
+
         CORELIB_REFL_DECL_FIELD(fov);
         float fov;
 
@@ -42,16 +57,18 @@ namespace pulsar
         Vector2f size_;
         CameraMode cameraMode;
 
-        CORELIB_REFL_DECL_FIELD(backgroundColor);
-        LinearColorf backgroundColor;
+    private:
+        CORELIB_REFL_DECL_FIELD(m_backgroundColor);
+        Color4f m_backgroundColor;
 
-#ifdef WITH_APATITE_EDITOR
+
+#ifdef WITH_EDITOR
         CORELIB_REFL_DECL_FIELD(debug_view_mat);
         Matrix4f debug_view_mat;
 #endif
     public:
         const RenderTexture_ref& GetRenderTarget() const { return m_renderTarget; }
-        void SetRenderTarget(const RenderTexture_ref& value) { m_renderTarget = value; }
+        void SetRenderTarget(const RenderTexture_ref& value);
     protected:
         RenderTexture_ref m_renderTarget;
     };

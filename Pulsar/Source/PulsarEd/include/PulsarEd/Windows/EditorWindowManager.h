@@ -15,19 +15,27 @@ namespace pulsared
 
         static inline Action<EditorWindow*, bool> OnWindowStateChanged;
 
-        static EditorWindow_sp GetWindow(string_view name);
-        static EditorWindow_sp GetWindow(Type* type);
-        template<typename T>
-        static sptr<T> GetWindow()
+        static EditorWindow_sp GetOpeningWindow(string_view name);
+        static EditorWindow_sp GetOpeningWindow(Type* type);
+        static array_list<EditorWindow_sp> GetOpeningWindows(Type* type);
+
+        template <typename T>
+        static sptr<T> GetOpeningWindow()
         {
-            return sptr_cast<T>(GetWindow(cltypeof<T>()));
+            return sptr_cast<T>(GetOpeningWindow(cltypeof<T>()));
         }
+
         //editor window add this
-        static bool RegisterWindow(EditorWindow_rsp window);
-        static void UnRegisterWindow(EditorWindow_rsp window);
+        static bool RegisterOpeningWindow(EditorWindow_rsp window);
+        static void UnregisterOpeningWindow(EditorWindow_rsp window);
+
+        static void RegisterPanelWindowType(Type* type);
+        static void UnregisterPanelWindowType(Type* type);
+        static EditorWindow_sp GetPanelWindow(Type* type);
+        static EditorWindow_sp GetPanelWindow(string_view name);
 
     private:
-        
+
 
     };
 }

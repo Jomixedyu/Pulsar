@@ -4,48 +4,69 @@
 
 namespace pulsar
 {
-    static void _InitializeNode(Node_ref node)
+    static void _BeginNode(Scene_ref scene, Node_ref node)
     {
-        for (auto& com : node->GetAllComponentArray())
+        if (!IsValid(node->GetRuntimeOwnerScene()))
         {
-            com->OnInitialize();
-        } 
-
-        for (auto& child : node->GetChildrenArray())
+            node->BeginNode(scene);
+        }
+        for (auto& child : *node->GetTransform()->GetChildren())
         {
-            _InitializeNode(child);
-        } 
+            _BeginNode(scene, child->GetAttachedNode());
+        }
     }
-    void Scene::AddNode(Node_ref node)
+    void Scene::OnAddNode(Node_ref node)
     {
-        assert(IsValid(node));
+        if (m_runtimeWorld)
+        {
+            _BeginNode(self_ref(), node);
+        }
 
-        this->m_sceneNodes->push_back(node);
-        _InitializeNode(node);
     }
-    void Scene::RemoveNode(Node_ref node)
+
+    void Scene::OnRemoveNode(Node_ref node)
     {
-        auto it = std::find(this->m_sceneNodes->begin(), this->m_sceneNodes->end(), node);
-        this->m_sceneNodes->erase(it);
+
+    }
+
+    void Scene::BeginScene(World* world)
+    {
+        m_runtimeWorld = world;
+        for (auto& node : *m_nodes)
+        {
+            node->BeginNode(self_ref());
+        }
+
+    }
+    void Scene::EndScene()
+    {
+        for (auto& node : *m_nodes)
+        {
+            node->EndNode();
+        }
+
+        m_runtimeWorld = nullptr;
     }
 
     Scene::Scene()
     {
-        this->m_sceneNodes = mksptr(new List<Node_ref>);
+
     }
-    
+
     ObjectPtr<Scene> Scene::StaticCreate(string_view name)
     {
         auto self = mksptr(new Scene);
         self->Construct();
-        self->name_ = name;
+        self->m_name = name;
+        self->SetObjectFlags(self->GetObjectFlags() | OF_Persistent | OF_Instantiable);
 
         return self;
     }
     void Scene::OnDestroy()
     {
         base::OnDestroy();
-        for (auto& node : *m_sceneNodes)
+
+        for (auto& node : *m_nodes)
         {
             DestroyObject(node);
         }
