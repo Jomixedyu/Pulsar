@@ -28,6 +28,7 @@ add_executable(${PROJECT_NAME} ${Pulsared_SRC})
 target_include_directories(${PROJECT_NAME} PUBLIC "./include")
 target_include_directories(${PROJECT_NAME} PRIVATE "./include/PulsarEd")
 
+message(${CMAKE_DEBUG_POSTFIX})
 
 #fbx
 set(FBXSDK_DIR "C:/Program Files/Autodesk/FBX/FBX SDK/2020.0.1")
@@ -38,8 +39,9 @@ file(GENERATE OUTPUT "./gentext.txt" CONTENT "${FBXSDK_DIR}/lib/vs2017/x64/$<IF:
 
 #pulsar
 target_link_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}/Pulsar.out")
+message("${CMAKE_CURRENT_BINARY_DIR}/Pulsar.out")
 target_link_libraries(${PROJECT_NAME} PUBLIC Pulsar)
-target_link_options(${PROJECT_NAME} PUBLIC "/WHOLEARCHIVE:Pulsar")
+target_link_options(${PROJECT_NAME} PUBLIC "/WHOLEARCHIVE:Pulsar${CMAKE_DEBUG_POSTFIX}")
 
 target_link_libraries(${PROJECT_NAME} PUBLIC psc)
 

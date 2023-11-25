@@ -16,10 +16,10 @@ namespace pulsared
 
         virtual CameraComponent_ref GetPreviewCamera() override;
     protected:
-        virtual void OnWorldBegin() override;
+        virtual void OnWorldBegin() override; // NOLINT(*-use-override)
         virtual void OnWorldEnd() override;
-        virtual void OnLoadingPresistentScene(ObjectPtr<Scene> scene);
-        virtual void OnUnloadingPresistentScene(ObjectPtr<Scene> scene);
+        virtual void OnLoadingPresistentScene(ObjectPtr<Scene> scene) override;
+        virtual void OnUnloadingPresistentScene(ObjectPtr<Scene> scene) override;
         virtual void OnSceneLoading(ObjectPtr<Scene> scene) override;
         virtual void OnSceneUnloading(ObjectPtr<Scene> scene) override;
     private:

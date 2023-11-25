@@ -12,7 +12,7 @@ namespace pulsared
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::WorkspaceWindowMenuContext, MenuContextBase);
     public:
-        WorkspaceWindowMenuContext(const string& currentPath)
+        explicit WorkspaceWindowMenuContext(const string& currentPath)
             : CurrentPath(currentPath)
         {
         }
@@ -20,6 +20,7 @@ namespace pulsared
         array_list< std::weak_ptr<AssetFileNode> > SelectedFiles;
     };
     CORELIB_DECL_SHORTSPTR(WorkspaceWindowMenuContext);
+
 
     class WorkspaceWindow : public PanelWindow
     {
@@ -36,7 +37,6 @@ namespace pulsared
         virtual void OnDrawImGui() override;
 
         WorkspaceWindow();
-        
 
     public:
         void ClearSelectedFile();
@@ -62,3 +62,4 @@ namespace pulsared
         std::shared_ptr<struct AssetTypeTreeNode> m_rootAddAssetContextTreeNode;
     };
 }
+

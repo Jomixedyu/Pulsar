@@ -313,26 +313,30 @@ namespace pulsared
         }
     }
 
-    Node_ref FBXImporter::Import(string_view path, FBXImporterSettings* settings)
+
+    array_list<AssetObject_ref> FBXImporter::Import(AssetImporterSettings* settings)
     {
+        FBXImporterSettings* fbxsetting = static_cast<FBXImporterSettings*>(settings);
+
         using namespace fbxsdk;
         FbxManager* fbxManager;
         FbxScene* fbxScene;
 
         InitializeSdkObjects(fbxManager, fbxScene);
-        LoadScene(fbxManager, fbxScene, path.data());
 
-        if (settings->ConvertAxisSystem)
+        LoadScene(fbxManager, fbxScene, fbxsetting->TargetPath.c_str());
+
+        if (fbxsetting->ConvertAxisSystem)
         {
-            auto axisSystem = fbxScene->GetGlobalSettings().GetAxisSystem();
-            auto ourAxisSystem = FbxAxisSystem(FbxAxisSystem::eYAxis, FbxAxisSystem::eParityOdd, FbxAxisSystem::eLeftHanded);
+            const auto axisSystem = fbxScene->GetGlobalSettings().GetAxisSystem();
+            const auto ourAxisSystem = FbxAxisSystem(FbxAxisSystem::eYAxis, FbxAxisSystem::eParityOdd, FbxAxisSystem::eLeftHanded);
             if (axisSystem != ourAxisSystem)
             {
                 ourAxisSystem.ConvertScene(fbxScene);
             }
         }
 
-        auto unit = fbxScene->GetGlobalSettings().GetSystemUnit();
+        const auto unit = fbxScene->GetGlobalSettings().GetSystemUnit();
         if (unit.GetScaleFactor() != 1.0)
         {
             FbxSystemUnit::m.ConvertScene(fbxScene);
@@ -342,14 +346,15 @@ namespace pulsared
         geomConverter.Triangulate(fbxScene, true);
         geomConverter.SplitMeshesPerMaterial(fbxScene, true);
 
-        auto rootNode = fbxScene->GetRootNode();
+        const auto rootNode = fbxScene->GetRootNode();
 
-        auto rootpNode = Node::StaticCreate(PathUtil::GetFilenameWithoutExt(path));
+        const auto rootpNode = Node::StaticCreate(PathUtil::GetFilenameWithoutExt(fbxsetting->TargetPath));
 
-        ProcessNode(rootNode, rootpNode, settings);
+        ProcessNode(rootNode, rootpNode, fbxsetting);
 
         DestroySdkObjects(fbxManager, 0);
 
-        return rootpNode;
+        return {};
     }
+
 }

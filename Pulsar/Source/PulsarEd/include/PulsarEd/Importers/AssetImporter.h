@@ -1,16 +1,25 @@
 #pragma once
+#include <ranges>
 #include <PulsarEd/Assembly.h>
+
+#define PULSARED_ASSET_IMPORTER_FACTORY(NAME) static inline struct __assetfactory_##NAME{ \
+    __assetfactory_##NAME() { ::pulsared::AssetImporterFactoryManager::RegisterFactory(#NAME, std::make_unique<NAME>()); } } \
+__assetfactory_##NAME##_;
 
 namespace pulsared
 {
-    class AssetImporterSettings
+    class PULSARED_API AssetImporterSettings : public Object
     {
+        CORELIB_DEF_TYPE(AssemblyObject_pulsared, AssetImporterSettings, Object);
     public:
-        array_list<std::filesystem::path> ImportFiles;
+        CORELIB_REFL_DECL_FIELD(ImportFiles);
+        List_sp<string> ImportFiles;
+
+        CORELIB_REFL_DECL_FIELD(TargetPath);
         string TargetPath;
     };
 
-    class AssetImporter
+    class PULSARED_API AssetImporter
     {
     public:
         virtual ~AssetImporter() = default;
@@ -18,21 +27,35 @@ namespace pulsared
         virtual string GetImporterType() const = 0;
     };
 
-    class AssetImporterFactory
+    class PULSARED_API AssetImporterFactory
     {
     public:
         virtual ~AssetImporterFactory() = default;
-        virtual bool IsSupportFormat(string_view format) = 0;
-        array_list<string> GetSupportFormats();
-        virtual string GetDescription() = 0;
+        virtual bool IsSupportFormat(string_view format) const;
+        const array_list<string>& GetSupportedFormats() const { return m_supportedFormats; }
+        virtual string GetFilter() const;
+
+        virtual string_view GetDescription() const = 0;
         virtual std::shared_ptr<AssetImporter> CreateImporter() = 0;
+    protected:
+        array_list<string> m_supportedFormats;
     };
 
-    class AssetImporterManager
+    class PULSARED_API AssetImporterFactoryManager
     {
     public:
-        void RegisterFactory(string_view name, AssetImporterFactory* factory);
-        void UnregisterFactory(string_view name);
+        static void RegisterFactory(string_view name, std::unique_ptr<AssetImporterFactory>&& factory)
+        {
+            factories[name] = std::move(factory);
+        }
+        static void UnregisterFactory(string_view name)
+        {
+            factories.erase(name);
+        }
+        static AssetImporterFactory* GetFactory(string_view name);
+        static array_list<AssetImporterFactory*> GetFactories();
 
+    protected:
+        static inline hash_map<string_view, std::unique_ptr<AssetImporterFactory>> factories;
     };
 }

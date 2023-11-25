@@ -123,7 +123,7 @@ namespace jxcorlib::platform::window
         for (size_t i = 0; i < filter.length(); i++)
         {
             char c = filter[i];
-            if (c == '|' || c == ';')
+            if (c == ';')
             {
                 filter_str[i] = '\0';
             }
@@ -134,8 +134,6 @@ namespace jxcorlib::platform::window
         }
         filter_str[filter.length()] = 0;
         filter_str[filter.length() + 1] = 0;
-
-        
 
         TCHAR szBuffer[MAX_PATH] = { 0 };
         ofn.lpstrFilter = filter_str;

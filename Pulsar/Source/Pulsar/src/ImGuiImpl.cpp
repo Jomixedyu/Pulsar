@@ -21,10 +21,14 @@
 namespace pulsar
 {
 
+
+
     void ImGui_Style_Initialize()
     {
         //ImGui::StyleColorsDark();
         ImGuiIO& io = ImGui::GetIO(); (void)io;
+        io.IniFilename = nullptr;
+
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
         io.ConfigFlags |= ImGuiWindowFlags_MenuBar;
@@ -125,7 +129,6 @@ namespace pulsar
 
 
 
-
 #if PULSAR_GFX_BUILD_VULKAN
     class ImGuiImpl_Vulkan final : public ImGuiObject
     {
@@ -209,9 +212,14 @@ namespace pulsar
             const bool is_minimized = (draw_data->DisplaySize.x <= 0.0f || draw_data->DisplaySize.y <= 0.0f);
             if (!is_minimized)
             {
-                auto vkCmd = static_cast<gfx::GFXVulkanCommandBuffer*>(cmd);
+                auto vkCmd = dynamic_cast<gfx::GFXVulkanCommandBuffer*>(cmd);
                 ImGui_ImplVulkan_RenderDrawData(draw_data, vkCmd->GetVkCommandBuffer());
             }
+        }
+
+        void SetLayoutInfo(jxcorlib::string_view content) override
+        {
+            ImGui::LoadIniSettingsFromMemory(content.data());
         }
     };
 #endif

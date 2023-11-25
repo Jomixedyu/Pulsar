@@ -1,4 +1,8 @@
-﻿#include <PulsarEd/Windows/WorkspaceWindow.h>
+﻿#include "CoreLib.Platform/FolderWatch.h"
+#include "CoreLib.Platform/Window.h"
+#include "Importers/AssetImporter.h"
+
+#include <PulsarEd/Windows/WorkspaceWindow.h>
 #include <PulsarEd/AssetDatabase.h>
 #include <PulsarEd/Workspace.h>
 #include <Pulsar/IconsForkAwesome.h>
@@ -333,7 +337,19 @@ namespace pulsared
 
             if (ImGui::Button(ICON_FK_DOWNLOAD "  Import"))
             {
+                const auto mainWindow = jxcorlib::platform::window::GetMainWindowHandle();
+                string selectedFileName;
 
+                string filterStr;
+                for (const auto factory : AssetImporterFactoryManager::GetFactories())
+                {
+                    filterStr += StringUtil::Concat(factory->GetDescription(), "(", factory->GetFilter() , ")", ";", factory->GetFilter(), ";");
+                }
+
+                if(jxcorlib::platform::window::OpenFileDialog(mainWindow, filterStr, "", &selectedFileName))
+                {
+
+                }
             }
 
             if (ImGui::Button(ICON_FK_FOLDER_OPEN "  Explorer"))

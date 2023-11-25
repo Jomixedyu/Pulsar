@@ -250,8 +250,13 @@ namespace pulsared
         Logger::Log("initialize imgui");
         m_gui = CreateImGui(Application::GetGfxApp());
         m_gui->Initialize();
-
         renderPipeline->ImGuiObject = m_gui;
+
+        // TODO: setup layout
+        {
+            const auto defaultLayoutPath = AssetDatabase::GetAbsoluteAssetPath("Editor/Layout/Default.ini");
+            m_gui->SetLayoutInfo(FileUtil::ReadAllText(defaultLayoutPath));
+        }
 
         _RegisterIcon(cltypeof<FolderAsset>(), "Editor/Icons/folder.png");
         _RegisterIcon(cltypeof<Shader>(), "Editor/Icons/shader.png");

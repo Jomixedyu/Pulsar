@@ -133,6 +133,8 @@ namespace jxcorlib
         bool ContainsChar(string_view name, u8char c);
 
         inline size_t Size(const char* str) { return ::strlen(str); }
+        template<int N>
+        inline size_t Size(const char (&str)[N]) { return N; }
         inline size_t Size(const string& str) { return str.length(); }
         inline size_t Size(string_view str) { return str.length(); }
 
@@ -142,23 +144,24 @@ namespace jxcorlib
 
         inline void AppendStr(string& str, const char* nstr) { str.append(nstr); }
         inline void AppendStr(string& str, const string& nstr) { str.append(nstr); }
+        inline void AppendStr(string& str, string&& nstr) { str.append(std::move(nstr)); }
         inline void AppendStr(string& str, string_view nstr) { str.append(nstr); }
 
         inline void Append(string& str) {}
 
         template<typename T, typename... TArgs>
-        inline void Append(string& str, const T& nstr, TArgs&&... args)
+        inline void Append(string& str, T&& nstr, TArgs&&... args)
         {
-            AppendStr(str, nstr);
-            Append(str, args...);
+            AppendStr(str, std::forward<T>(nstr));
+            Append(str, std::forward<TArgs>(args)...);
         }
 
         template<typename... T>
-        string Concat(const T&... args) {
-            size_t size = Sum(Size(args)...);
+        string Concat(T&&... args) {
+            const size_t size = Sum(Size(args)...);
             string str;
             str.reserve(size + 1);
-            Append(str, args...);
+            Append(str, std::forward<T>(args)...);
             return str;
         }
     };

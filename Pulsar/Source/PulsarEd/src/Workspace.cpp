@@ -27,7 +27,7 @@ namespace pulsared
 
         string selected_path;
 
-        if (window::OpenFileDialog(window::GetMainWindowHandle(), "peproj(*.peproj)|*.peproj", "", &selected_path))
+        if (window::OpenFileDialog(window::GetMainWindowHandle(), "peproj(*.peproj);*.peproj", "", &selected_path))
         {
             return OpenWorkspace(selected_path);
         }
