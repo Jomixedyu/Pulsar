@@ -2,6 +2,8 @@
 
 ![](doc/ui.png)
 
+需要安装FBXSDK和VulkanSDK编译
+
 ## thirdparty
 Engine:
 - vulkan
