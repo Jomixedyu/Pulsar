@@ -42,7 +42,7 @@ namespace pulsar
         StaticMesh_ref m_staticMesh;
 
         CORELIB_REFL_DECL_FIELD(m_isCastShadow);
-        bool m_isCastShadow;
+        bool m_isCastShadow = true;
     };
     DECL_PTR(StaticMeshRendererComponent);
 }

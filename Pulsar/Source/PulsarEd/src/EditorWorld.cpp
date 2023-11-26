@@ -28,9 +28,9 @@ namespace pulsared
         base::OnWorldEnd();
     }
 
-    void EditorWorld::OnLoadingPresistentScene(ObjectPtr<Scene> scene)
+    void EditorWorld::OnLoadingPersistentScene(ObjectPtr<Scene> scene)
     {
-        base::OnLoadingPresistentScene(scene);
+        base::OnLoadingPersistentScene(scene);
 
         auto camCtrlNode = Node::StaticCreate("EdCameraController", nullptr, OF_NoPack);
         auto camNode = Node::StaticCreate("EdCamera", camCtrlNode->GetTransform(), OF_NoPack);
@@ -61,9 +61,9 @@ namespace pulsared
         grid3d->AddComponent<Grid3DComponent>();
         scene->AddNode(grid3d);
     }
-    void EditorWorld::OnUnloadingPresistentScene(ObjectPtr<Scene> scene)
+    void EditorWorld::OnUnloadingPersistentScene(ObjectPtr<Scene> scene)
     {
-        base::OnUnloadingPresistentScene(scene);
+        base::OnUnloadingPersistentScene(scene);
         DestroyObject(m_cam->GetRenderTarget());
         m_cam->SetRenderTarget(nullptr);
     }

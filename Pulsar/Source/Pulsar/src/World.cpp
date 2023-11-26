@@ -60,7 +60,7 @@ namespace pulsar
         if (clearPresistentScene)
         {
             UnloadAllScene(true);
-            InitializePresistentScene();
+            InitializePersistentScene();
         }
         else
         {
@@ -82,7 +82,7 @@ namespace pulsar
         {
             if (it == m_scenes.begin())
             {
-                OnUnloadingPresistentScene(scene);
+                OnUnloadingPersistentScene(scene);
             }
             OnSceneUnloading(scene);
             scene->EndScene();
@@ -91,13 +91,13 @@ namespace pulsar
         }
     }
 
-    void World::InitializePresistentScene()
+    void World::InitializePersistentScene()
     {
         auto scene = Scene::StaticCreate("PresistentScene");
         scene->SetObjectFlags(scene->GetObjectFlags() | OF_Instance);
 
         LoadScene(scene);
-        OnLoadingPresistentScene(scene);
+        OnLoadingPersistentScene(scene);
     }
     void World::UnloadAllScene(bool unloadPresistentScene)
     {
@@ -109,11 +109,11 @@ namespace pulsar
         }
     }
 
-    void World::OnLoadingPresistentScene(ObjectPtr<Scene> scene)
+    void World::OnLoadingPersistentScene(ObjectPtr<Scene> scene)
     {
 
     }
-    void World::OnUnloadingPresistentScene(ObjectPtr<Scene> scene)
+    void World::OnUnloadingPersistentScene(ObjectPtr<Scene> scene)
     {
 
     }
@@ -136,7 +136,7 @@ namespace pulsar
 
     void World::OnWorldBegin()
     {
-        InitializePresistentScene();
+        InitializePersistentScene();
     }
 
     void World::OnWorldEnd()

@@ -18,8 +18,8 @@ namespace pulsared
     protected:
         virtual void OnWorldBegin() override; // NOLINT(*-use-override)
         virtual void OnWorldEnd() override;
-        virtual void OnLoadingPresistentScene(ObjectPtr<Scene> scene) override;
-        virtual void OnUnloadingPresistentScene(ObjectPtr<Scene> scene) override;
+        virtual void OnLoadingPersistentScene(ObjectPtr<Scene> scene) override;
+        virtual void OnUnloadingPersistentScene(ObjectPtr<Scene> scene) override;
         virtual void OnSceneLoading(ObjectPtr<Scene> scene) override;
         virtual void OnSceneUnloading(ObjectPtr<Scene> scene) override;
     private:

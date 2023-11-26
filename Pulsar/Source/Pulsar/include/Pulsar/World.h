@@ -41,7 +41,7 @@ namespace pulsar
     public:
         const ObjectPtr<Scene>& GetScene(int index) const { return m_scenes[index]; }
         size_t GetSceneCount() const { return m_scenes.size(); }
-        ObjectPtr<Scene> GetPresistentScene() const { return m_scenes[0]; }
+        ObjectPtr<Scene> GetPersistentScene() const { return m_scenes[0]; }
 
         void ChangeScene(ObjectPtr<Scene> scene, bool clearPresistentScene = true);
         void LoadScene(ObjectPtr<Scene> scene);
@@ -55,11 +55,11 @@ namespace pulsar
 
         CameraManager& GetCameraManager() { return m_cameraManager; }
     private:
-        void InitializePresistentScene();
+        void InitializePersistentScene();
         void UnloadAllScene(bool unloadPresistentScene = true);
     protected:
-        virtual void OnLoadingPresistentScene(ObjectPtr<Scene> scene);
-        virtual void OnUnloadingPresistentScene(ObjectPtr<Scene> scene);
+        virtual void OnLoadingPersistentScene(ObjectPtr<Scene> scene);
+        virtual void OnUnloadingPersistentScene(ObjectPtr<Scene> scene);
     public:
         void SetDefaultMaterial(Material_ref value) { m_defaultMaterial = value; }
         Material_ref GetDefaultMaterial() const { return m_defaultMaterial; }

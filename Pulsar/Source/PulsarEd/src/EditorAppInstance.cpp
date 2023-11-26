@@ -1,26 +1,28 @@
 ﻿#include "EditorAppInstance.h"
-#include <PulsarEd/EditorAppInstance.h>
-#include <Pulsar/Application.h>
-#include <Pulsar/World.h>
-#include <Pulsar/Logger.h>
-#include <filesystem>
-#include <Pulsar/ImGuiImpl.h>
-#include <PulsarEd/Windows/EditorWindowManager.h>
-#include <PulsarEd/EditorUIConfig.h>
-#include <CoreLib/File.h>
-#include <CoreLib.Serialization/JsonSerializer.h>
-#include <PulsarEd/Menus/Types.h>
-#include <PulsarEd/IEditorTickable.h>
-#include <PulsarEd/EditorLogRecorder.h>
-#include <PulsarEd/Subsystems/EditorSubsystem.h>
-#include <Pulsar/Scene.h>
-#include <PulsarEd/EditorWorld.h>
-#include <PulsarEd/AssetDatabase.h>
-#include <Pulsar/AssetRegistry.h>
-#include <gfx/GFXRenderPipeline.h>
+#include "EditorAssetManager.h"
 #include "EditorRenderPipeline.h"
 #include "Importers/FBXImporter.h"
-#include "EditorAssetManager.h"
+#include "Pulsar/Components/StaticMeshRendererComponent.h"
+#include <CoreLib.Serialization/JsonSerializer.h>
+#include <CoreLib/File.h>
+#include <Pulsar/Application.h>
+#include <Pulsar/AssetRegistry.h>
+#include <Pulsar/ImGuiImpl.h>
+#include <Pulsar/Logger.h>
+#include <Pulsar/Scene.h>
+#include <Pulsar/World.h>
+#include <PulsarEd/AssetDatabase.h>
+#include <PulsarEd/EditorAppInstance.h>
+#include <PulsarEd/EditorLogRecorder.h>
+#include <PulsarEd/EditorUIConfig.h>
+#include <PulsarEd/EditorWorld.h>
+#include <PulsarEd/IEditorTickable.h>
+#include <PulsarEd/Menus/Types.h>
+#include <PulsarEd/Subsystems/EditorSubsystem.h>
+#include <PulsarEd/Windows/EditorWindowManager.h>
+#include <filesystem>
+#include <gfx/GFXRenderPipeline.h>
+
 #include <CoreLib.Serialization/DataSerializer.h>
 #include <Pulsar/Assets/StaticMesh.h>
 
@@ -188,22 +190,11 @@ namespace pulsared
 
     static void _Test()
     {
-        string error;
-        FBXImporterSettings settings{};
-        settings.ConvertAxisSystem = true;
-
-        Shader_ref defaultLitShader;
-        {
-            auto stream = ser::FileStream(R"(D:\Codes\Pulsar\Pulsar\Shader\Lit.shader)", ser::FileOpenMode::Read);
-            //ShaderPassSerializeData data;
-            //ReadWriteStream(stream, false, data);
-            //defaultLitShader = Shader::StaticCreate("DefaultLit", { data });
-            World::Current()->GetDeferredDestroyedQueue().push_back(defaultLitShader);
-        }
-
-        auto mat = Material::StaticCreate("DefaultLit", defaultLitShader);
-        World::Current()->SetDefaultMaterial(mat);
-        World::Current()->GetDeferredDestroyedQueue().push_back(mat);
+        auto meshNode = Node::StaticCreate("mesh test");
+        auto meshComponent = meshNode->AddComponent<StaticMeshRendererComponent>();
+        auto sm = GetAssetManager()->LoadAsset<StaticMesh>("Engine/Shapes/pSphere1");
+        meshComponent->SetStaticMesh(sm);
+        World::Current()->GetPersistentScene()->AddNode(meshNode);
 
     }
 
@@ -300,7 +291,7 @@ namespace pulsared
         _InitWindowMenu();
 
         Workspace::OpenWorkspace(_SearchUpFolder("Project") / "Project.peproj");
-        //_Test();
+        _Test();
     }
 
     void EditorAppInstance::OnTerminate()

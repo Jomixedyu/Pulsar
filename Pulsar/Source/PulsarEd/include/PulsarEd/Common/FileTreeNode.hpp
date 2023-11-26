@@ -137,7 +137,7 @@ namespace pulsared
             {
                 if((a->IsFolder && b->IsFolder) || (!a->IsFolder && !b->IsFolder))
                 {
-                    return a->AssetName > b->AssetName;
+                    return a->AssetName < b->AssetName;
                 }
                 else if(a->IsFolder && !b->IsFolder)
                 {

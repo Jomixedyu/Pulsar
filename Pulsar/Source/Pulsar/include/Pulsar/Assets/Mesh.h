@@ -3,7 +3,7 @@
 
 namespace pulsar
 {
-    class Mesh : public AssetObject
+    class Mesh : public AssetObject, public IGPUResource
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::Mesh, AssetObject);
     public:

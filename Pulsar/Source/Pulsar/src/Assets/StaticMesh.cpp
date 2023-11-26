@@ -1,7 +1,10 @@
 ﻿#include "Assets/StaticMesh.h"
+
+#include "Application.h"
+
+#include "EngineMath.h"
 #include <Pulsar/Assets/Shader.h>
 #include <Pulsar/Assets/Texture2D.h>
-#include "EngineMath.h"
 
 namespace pulsar
 {
@@ -10,6 +13,19 @@ namespace pulsar
         base::OnInstantiateAsset(obj);
         auto mesh = static_cast<ThisClass*>(obj);
         mesh->m_sections = m_sections;
+    }
+    void StaticMesh::CreateGPUResource()
+    {
+        m_isCreatedResource = true;
+        // m_vertexBuffer = Application::GetGfxApp()->CreateBuffer()
+    }
+    void StaticMesh::DestroyGPUResource()
+    {
+        m_isCreatedResource = false;
+    }
+    bool StaticMesh::IsCreatedGPUResource() const
+    {
+        return m_isCreatedResource;
     }
 
     StaticMesh::~StaticMesh()
@@ -20,7 +36,6 @@ namespace pulsar
     void StaticMesh::Serialize(AssetSerializer* s)
     {
         base::Serialize(s);
-        
         sser::ReadWriteStream(s->Stream, s->IsWrite, m_sections);
         sser::ReadWriteStream(s->Stream, s->IsWrite, m_materialNames);
     }
@@ -39,7 +54,6 @@ namespace pulsar
 
         return self;
     }
-
 
 
     std::iostream& ReadWriteStream(std::iostream& stream, bool isWrite, StaticMeshVertex& data)
