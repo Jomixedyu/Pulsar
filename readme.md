@@ -2,14 +2,19 @@
 
 ![](doc/ui.png)
 
-需要安装FBXSDK和VulkanSDK，最新版VS与MSVC编译
+## 编译环境
+- FBXSDK
+- VulkanSDK
+- 最新版VS与MSVC（C++23）
+- CMAKE
 
 ## thirdparty
 Engine:
 - vulkan
 - glfw
 - openAL
-- dear-imgui
+- dear-imgui (docking)
+- NVIDIA physX
 
 Editor:
 - glslang
