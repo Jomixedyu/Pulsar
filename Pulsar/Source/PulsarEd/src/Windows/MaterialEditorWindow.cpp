@@ -117,7 +117,7 @@ namespace pulsared
 
         if (ImGui::BeginChild("#Preview"))
         {
-            auto descSet = AssetDatabase::IconPool->GetDescriptorSet(cltypeof<AssetObject>());
+            auto descSet = AssetDatabase::IconPool->GetDescriptorSet({cltypeof<AssetObject>()->GetName()});
             auto size = PImGui::GetContentSize();
             ImGui::Image((void*)descSet.lock()->GetId(), ImVec2(size.x, size.y));
 

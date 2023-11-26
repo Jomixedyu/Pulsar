@@ -10,10 +10,10 @@ namespace pulsared
         CORELIB_DEF_TYPE(AssemblyObject_pulsared, FBXImporterSettings, AssetImporterSettings);
     public:
         CORELIB_REFL_DECL_FIELD(FindMaterial);
-        bool FindMaterial;
+        bool FindMaterial = true;
 
         CORELIB_REFL_DECL_FIELD(ConvertAxisSystem);
-        bool ConvertAxisSystem;
+        bool ConvertAxisSystem = true;
     };
 
     class PULSARED_API FBXImporter : public AssetImporter
@@ -24,7 +24,7 @@ namespace pulsared
         array_list<AssetObject_ref> Import(AssetImporterSettings* settings) override;
     };
 
-    class PULSARED_API FBXImporterFactory : public AssetImporterFactory
+    class PULSARED_API FBXImporterFactory final : public AssetImporterFactory
     {
         PULSARED_ASSET_IMPORTER_FACTORY(FBXImporterFactory);
     public:
@@ -32,10 +32,14 @@ namespace pulsared
         {
             m_supportedFormats.push_back(".fbx");
         }
-        string_view GetDescription() const override { return "FBXSDK-FBXImporter"; }
+        string_view GetDescription() const override { return "FBXImporter"; }
         std::shared_ptr<AssetImporter> CreateImporter() override
         {
             return std::make_shared<FBXImporter>();
+        }
+        sptr<AssetImporterSettings> CreateImporterSettings() override
+        {
+            return mksptr(new FBXImporterSettings);
         }
     };
 

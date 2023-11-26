@@ -28,7 +28,7 @@ namespace pulsared
     public:
 
         static bool OpenDialogUserWorkspace();
-        static bool OpenWorkspace(string_view path);
+        static bool OpenWorkspace(std::filesystem::path path);
         static bool CloseWorkspace();
 
         static bool IsOpened();

@@ -51,6 +51,8 @@ namespace pulsared
         void RenderFileContent();
         WorkspaceWindowMenuContext_sp MakeMenuContext();
     private:
+        void OnClick_Import();
+    private:
         string m_currentFolder;
 
         array_list< std::weak_ptr<AssetFileNode> > m_selectedFiles;

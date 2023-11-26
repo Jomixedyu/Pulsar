@@ -13,7 +13,7 @@ namespace pulsared
         CORELIB_DEF_TYPE(AssemblyObject_pulsared, AssetImporterSettings, Object);
     public:
         CORELIB_REFL_DECL_FIELD(ImportFiles);
-        List_sp<string> ImportFiles;
+        List_sp<string> ImportFiles = mksptr(new List<string>);
 
         CORELIB_REFL_DECL_FIELD(TargetPath);
         string TargetPath;
@@ -37,6 +37,7 @@ namespace pulsared
 
         virtual string_view GetDescription() const = 0;
         virtual std::shared_ptr<AssetImporter> CreateImporter() = 0;
+        virtual sptr<AssetImporterSettings> CreateImporterSettings() = 0;
     protected:
         array_list<string> m_supportedFormats;
     };
@@ -52,6 +53,7 @@ namespace pulsared
         {
             factories.erase(name);
         }
+        static AssetImporterFactory* FindFactoryByExt(string_view ext);
         static AssetImporterFactory* GetFactory(string_view name);
         static array_list<AssetImporterFactory*> GetFactories();
 

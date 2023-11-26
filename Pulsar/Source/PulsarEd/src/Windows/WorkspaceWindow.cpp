@@ -316,8 +316,14 @@ namespace pulsared
             InitMenu();
             a = true;
         }
+
         if (ImGui::BeginMenuBar())
         {
+
+            if(m_currentFolder.empty())
+            {
+                ImGui::BeginDisabled();
+            }
 
             if (ImGui::Button(ICON_FK_PLUS "  Add Asset"))
             {
@@ -337,26 +343,17 @@ namespace pulsared
 
             if (ImGui::Button(ICON_FK_DOWNLOAD "  Import"))
             {
-                const auto mainWindow = jxcorlib::platform::window::GetMainWindowHandle();
-                string selectedFileName;
-
-                string filterStr;
-                for (const auto factory : AssetImporterFactoryManager::GetFactories())
-                {
-                    filterStr += StringUtil::Concat(factory->GetDescription(), "(", factory->GetFilter() , ")", ";", factory->GetFilter(), ";");
-                }
-
-                if(jxcorlib::platform::window::OpenFileDialog(mainWindow, filterStr, "", &selectedFileName))
-                {
-
-                }
+                this->OnClick_Import();
             }
 
             if (ImGui::Button(ICON_FK_FOLDER_OPEN "  Explorer"))
             {
 
             }
-
+            if(m_currentFolder.empty())
+            {
+                ImGui::EndDisabled();
+            }
 
             ImGui::Text("Path:  ");
             auto paths = StringUtil::Split(m_currentFolder, u8char("/"));
@@ -438,8 +435,8 @@ namespace pulsared
         std::shared_ptr<AssetFileNode> p = AssetDatabase::FileTree->Find(m_currentFolder);
 
         static float padding = 16.f;
-        float cellSize = m_iconSize + padding;
-        float panelWidth = ImGui::GetContentRegionAvail().x;
+        const float cellSize = m_iconSize + padding;
+        const float panelWidth = ImGui::GetContentRegionAvail().x;
         int columnCount = (int)(panelWidth / cellSize);
         if (columnCount < 1)
             columnCount = 1;
@@ -451,7 +448,7 @@ namespace pulsared
             ImGui::PushStyleColor(ImGuiCol_Button, {});
 
             Type* assetType = child->GetAssetType();
-            gfx::GFXDescriptorSet_wp descSet = AssetDatabase::IconPool->GetDescriptorSet(assetType);
+            gfx::GFXDescriptorSet_wp descSet = AssetDatabase::IconPool->GetDescriptorSet({assetType->GetName()});
             gfx::GFXDescriptorSet_wp dirtySet = AssetDatabase::IconPool->GetDescriptorSet("WorkspaceWindow.Dirty"_idxstr);
 
             auto isSelected = weaks_find(m_selectedFiles.begin(), m_selectedFiles.end(), std::weak_ptr{ child }) != m_selectedFiles.end();
@@ -526,10 +523,36 @@ namespace pulsared
     }
     WorkspaceWindowMenuContext_sp WorkspaceWindow::MakeMenuContext()
     {
-        auto ctx = mksptr(new WorkspaceWindowMenuContext{ m_currentFolder });
+        auto ctx = mksptr(new WorkspaceWindowMenuContext{m_currentFolder});
         ctx->CurrentPath = m_currentFolder;
         ctx->SelectedFiles = m_selectedFiles;
         return ctx;
+    }
+    void WorkspaceWindow::OnClick_Import()
+    {
+        const auto mainWindow = jxcorlib::platform::window::GetMainWindowHandle();
+        string selectedFileName;
+
+        string filterStr;
+        for (const auto factory : AssetImporterFactoryManager::GetFactories())
+        {
+            filterStr += StringUtil::Concat(factory->GetDescription(), "(", factory->GetFilter() , ")", ";", factory->GetFilter(), ";");
+        }
+
+        if(jxcorlib::platform::window::OpenFileDialog(mainWindow, filterStr, "", &selectedFileName))
+        {
+            const auto factory = AssetImporterFactoryManager::FindFactoryByExt(std::filesystem::path(selectedFileName).extension().string());
+            if(!factory)
+            {
+                Logger::Log("no import factory.", LogLevel::Error);
+                return;
+            }
+            const auto settings = factory->CreateImporterSettings();
+            settings->TargetPath = m_currentFolder;// current target
+            settings->ImportFiles->push_back(selectedFileName);
+
+            factory->CreateImporter()->Import(settings.get());
+        }
     }
 
     WorkspaceWindow::WorkspaceWindow()

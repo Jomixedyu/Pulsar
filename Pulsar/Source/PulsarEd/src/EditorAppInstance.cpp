@@ -219,21 +219,25 @@ namespace pulsared
         AssetDatabase::IconPool->Register(index_string(name), icon.data(), icon.size());
     }
 
+    static std::filesystem::path _SearchUpFolder(std::filesystem::path p)
+    {
+        namespace fs = std::filesystem;
+
+        fs::path curPath = fs::current_path();
+        while (!fs::exists(curPath / p))
+        {
+            curPath = curPath.parent_path();
+        }
+        return curPath / p;
+    }
+
     void EditorAppInstance::OnInitialized()
     {
         m_assetManager = new EditorAssetManager;
 
         // search package path
-        namespace fs = std::filesystem;
-
-        fs::path curPath = fs::current_path();
-        while (!fs::exists(curPath / "Packages"))
-        {
-            curPath = curPath.parent_path();
-        }
-
         AssetDatabase::Initialize();
-        AssetDatabase::AddProgramPackageSearchPath(curPath / "Packages");
+        AssetDatabase::AddProgramPackageSearchPath(_SearchUpFolder("Packages"));
 
         // add package
         AssetDatabase::AddPackage("Engine");
@@ -295,7 +299,7 @@ namespace pulsared
         EditorWindowManager::Initialize();
         _InitWindowMenu();
 
-        //Workspace::OpenWorkspace(R"(../../../../../../Project/Project.peproj)");
+        Workspace::OpenWorkspace(_SearchUpFolder("Project") / "Project.peproj");
         //_Test();
     }
 

@@ -1,148 +1,17 @@
 #include "AssetDatabase.h"
-#include "Workspace.h"
 #include "AssetProviders/AssetProvider.h"
-#include <filesystem>
-#include <unordered_set>
-#include <PulsarEd/AssetProviders/AssetProvider.h>
-#include <CoreLib/File.h>
+#include "Workspace.h"
 #include <CoreLib.Serialization/JsonSerializer.h>
-#include <gfx/GFXImage.h>
+#include <CoreLib/File.h>
+#include <PulsarEd/AssetProviders/AssetProvider.h>
+#include <filesystem>
 #include <fstream>
+#include <gfx/GFXImage.h>
+#include <ranges>
+#include <unordered_set>
 
 namespace pulsared
 {
-    string AssetFileNode::GetPhysicsPath() const
-    {
-        return StringUtil::StringCast(std::filesystem::absolute(this->PhysicsPath).generic_u8string());
-    }
-
-    string AssetFileNode::GetPhysicsName() const
-    {
-        return StringUtil::StringCast(this->PhysicsPath.filename().generic_u8string());
-    }
-
-    string AssetFileNode::GetPhysicsNameWithoutExt() const
-    {
-        return StringUtil::StringCast(this->PhysicsPath.filename().replace_extension().generic_u8string());
-    }
-
-    string AssetFileNode::GetPhysicsNameExt() const
-    {
-        if (this->IsFolder)
-        {
-            return {};
-        }
-        return this->PhysicsPath.extension().string();
-    }
-
-    string AssetFileNode::GetPackageName() const
-    {
-        return AssetPath.substr(0, AssetPath.find('/'));
-    }
-
-    Type* AssetFileNode::GetAssetType() const
-    {
-        if (IsFolder)
-        {
-            return cltypeof<FolderAsset>();
-        }
-        return AssemblyManager::GlobalFindType(AssetMeta->Type);
-    }
-
-    std::shared_ptr<AssetFileNode> AssetFileNode::GetChild(string_view name)
-    {
-        for (auto& child : Children)
-        {
-            if (child->AssetName == name)
-            {
-                return child;
-            }
-        }
-        return nullptr;
-    }
-
-    std::shared_ptr<AssetFileNode> AssetFileNode::Find(string_view path)
-    {
-        if (path == "")
-        {
-            return shared_from_this();
-        }
-        auto child = shared_from_this();
-        for (auto item : StringUtil::Split(path, '/'))
-        {
-            if (!(child = child->GetChild(item)))
-            {
-                return nullptr;
-            }
-        }
-        return child;
-    }
-
-
-    void AssetIconPool::Register(const index_string& id, const uint8_t* iconBuf, size_t length)
-    {
-        gfx::GFXSamplerConfig config;
-
-        int32_t width, height, channel;
-        auto iconData = gfx::LoadImageFromMemory(iconBuf, length, &width, &height, &channel, 4, true);
-
-        auto tex2d = Application::GetGfxApp()->CreateFromImageData(iconData.data(), width, height, channel, false, gfx::GFXTextureFormat::R8G8B8A8, config);
-        m_textures.emplace(id, tex2d);
-    }
-
-    gfx::GFXDescriptorSet_wp AssetIconPool::GetDescriptorSet(const index_string& id)
-    {
-        //read cache
-        auto it = m_cacheDescSets.find(id);
-        if (it != m_cacheDescSets.end())
-        {
-            return it->second;
-        }
-
-        //generate cache
-        auto texIt = m_textures.find(id);
-        if (texIt == m_textures.end())
-        {
-            return {};
-        }
-        auto tex = texIt->second;
-        auto descSet = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_descriptorLayout.get());
-
-        auto desc = descSet->FindByBinding(0);
-        if (!desc)
-            desc = descSet->AddDescriptor("p", 0);
-
-        desc->SetTextureSampler2D(tex.get());
-
-        descSet->Submit();
-
-        m_cacheDescSets.emplace(id, descSet);
-
-        return descSet;
-    }
-
-    gfx::GFXDescriptorSet_wp AssetIconPool::GetDescriptorSet(Type* id)
-    {
-        return GetDescriptorSet(index_string{id->GetName()});
-    }
-
-    void AssetIconPool::ClearCache()
-    {
-        m_cacheDescSets.clear();
-    }
-
-    AssetIconPool::AssetIconPool()
-    {
-        m_descriptorLayout = Application::GetGfxApp()->CreateDescriptorSetLayout({
-            gfx::GFXDescriptorSetLayoutInfo(0, gfx::GFXDescriptorType::CombinedImageSampler, gfx::GFXShaderStageFlags::Fragment)
-        });
-    }
-
-    AssetIconPool::~AssetIconPool()
-    {
-
-    }
-
 
     static std::unordered_set<ObjectHandle> _DirtyObjects;
 
@@ -182,6 +51,7 @@ namespace pulsared
             }
             node->Children.push_back(newNode);
         }
+        node->Sort();
     }
 
     static void _OnWorkspaceOpened()
@@ -200,20 +70,26 @@ namespace pulsared
             return nullptr;
         }
 
+        sptr<AssetObject> assetObj;
+
         auto json = FileUtil::ReadAllText(node->GetPhysicsPath());
         auto meta = ser::JsonSerializer::Deserialize<AssetMetaData>(json);
 
         if (auto existObj = RuntimeObjectWrapper::GetObject(meta->Handle))
         {
-            return (AssetObject*)existObj;
+            return static_cast<AssetObject*>(existObj);
         }
 
         auto type = AssemblyManager::GlobalFindType(meta->Type);
-        auto obj = sptr_cast<AssetObject>(type->CreateSharedInstance({}));
-        assert(obj);
+        if(!type)
+        {
+            Logger::Log("not found type.", LogLevel::Error);
+            return nullptr;
+        }
+        assetObj = sptr_cast<AssetObject>(type->CreateSharedInstance({}));
 
-        obj->SetName(node->AssetName);
-        obj->Construct(meta->Handle);
+        assetObj->SetName(node->AssetName);
+        assetObj->Construct(meta->Handle);
 
         {
             auto assetPath = node->PhysicsPath;
@@ -230,10 +106,10 @@ namespace pulsared
 
             auto serializer = AssetSerializer{objser, fs, false, true};
             serializer.ExistStream = fs.is_open();
-            obj->Serialize(&serializer);
+            assetObj->Serialize(&serializer);
         }
 
-        return obj;
+        return assetObj;
     }
 
     AssetObject_ref AssetDatabase::LoadAssetById(ObjectHandle id)
@@ -354,6 +230,18 @@ namespace pulsared
     {
 
     }
+    static void _WriteAssetToDisk(std::shared_ptr<AssetFileNode> root, string_view path, AssetObject_ref asset)
+    {
+        const auto newAsset = root->PrepareChildFile(path, ".pmeta");
+        newAsset->AssetMeta = mksptr(new AssetMetaData);
+        newAsset->AssetMeta->Type = asset->GetType()->GetName();
+        newAsset->AssetMeta->Handle = asset.handle;
+
+        ser::JsonSerializerSettings settings;
+        settings.IndentSpace = 2;
+        const auto json = ser::JsonSerializer::Serialize(newAsset->AssetMeta.get(), settings);
+        FileUtil::WriteAllText(newAsset->PhysicsPath, json);
+    }
 
     bool AssetDatabase::CreateAsset(AssetObject_ref asset, string_view path)
     {
@@ -365,8 +253,12 @@ namespace pulsared
         {
             return false;
         }
-        // add new asset package
-        // save & serialize
+
+        _WriteAssetToDisk(FileTree, path, asset);
+        _AssetRegistry[GetPackageName(path)].AssetPathMapping[asset.handle] = path;
+
+        MarkDirty(asset);
+        Save(asset);
 
         OnCreatedAsset.Invoke(asset);
         return true;
@@ -398,9 +290,21 @@ namespace pulsared
         return _DirtyObjects.contains(asset.GetHandle());
     }
 
+    Type* AssetFileNode::GetAssetType() const
+    {
+        if(IsFolder)
+        {
+            return cltypeof<FolderAsset>();
+        }
+        if(AssetMeta)
+        {
+            return AssemblyManager::GlobalFindType(AssetMeta->Type);
+        }
+        return nullptr;
+    }
     void AssetDatabase::Initialize()
     {
-        IconPool = std::make_unique<AssetIconPool>();
+        IconPool = std::make_unique<PersistentImagePool>(Application::GetGfxApp());
 
         FileTree = mksptr(new AssetFileNode);
         FileTree->IsFolder = true;
@@ -465,12 +369,17 @@ namespace pulsared
         }
         return {};
     }
+    string AssetDatabase::GetPackageName(string_view assetPath)
+    {
+        const auto index = assetPath.find('/');
+        return string{assetPath.substr(0, index)};
+    }
 
     std::filesystem::path AssetDatabase::GetAbsoluteAssetPath(string_view assetPath)
     {
-        auto index = assetPath.find('/');
-        auto packageName = assetPath.substr(0, index);
-        auto path = assetPath.substr(index + 1);
+        const auto index = assetPath.find('/');
+        const auto packageName = assetPath.substr(0, index);
+        const auto path = assetPath.substr(index + 1);
         return (GetPackagePath(packageName) / path).generic_string();
     }
 

@@ -1,37 +1,38 @@
 #include "Importers/FBXImporter.h"
-#include <fbxsdk.h>
 #include <Pulsar/Assets/StaticMesh.h>
 #include <Pulsar/Components/MeshContainerComponent.h>
 #include <Pulsar/Components/StaticMeshRendererComponent.h>
 #include <PulsarEd/AssetDatabase.h>
+#include <fbxsdk.h>
 
 #ifdef IOS_REF
-#undef  IOS_REF
-#define IOS_REF (*(pManager->GetIOSettings()))
+    #undef IOS_REF
+    #define IOS_REF (*(pManager->GetIOSettings()))
 #endif
 
 namespace pulsared
 {
     static void InitializeSdkObjects(FbxManager*& pManager, FbxScene*& pScene)
     {
-        //The first thing to do is to create the FBX Manager which is the object allocator for almost all the classes in the SDK
+        // The first thing to do is to create the FBX Manager which is the object allocator for almost all the classes in the SDK
         pManager = FbxManager::Create();
         if (!pManager)
         {
             FBXSDK_printf("Error: Unable to create FBX Manager!\n");
             exit(1);
         }
-        else FBXSDK_printf("Autodesk FBX SDK version %s\n", pManager->GetVersion());
+        else
+            FBXSDK_printf("Autodesk FBX SDK version %s\n", pManager->GetVersion());
 
-        //Create an IOSettings object. This object holds all import/export settings.
+        // Create an IOSettings object. This object holds all import/export settings.
         FbxIOSettings* ios = FbxIOSettings::Create(pManager, IOSROOT);
         pManager->SetIOSettings(ios);
 
-        //Load plugins from the executable directory (optional)
+        // Load plugins from the executable directory (optional)
         FbxString lPath = FbxGetApplicationDirectory();
         pManager->LoadPluginsDirectory(lPath.Buffer());
 
-        //Create an FBX scene. This object holds most objects imported/exported from/to files.
+        // Create an FBX scene. This object holds most objects imported/exported from/to files.
         pScene = FbxScene::Create(pManager, "My Scene");
         if (!pScene)
         {
@@ -43,7 +44,7 @@ namespace pulsared
     {
         int lFileMajor, lFileMinor, lFileRevision;
         int lSDKMajor, lSDKMinor, lSDKRevision;
-        //int lFileFormat = -1;
+        // int lFileFormat = -1;
         int lAnimStackCount;
         bool lStatus;
         char lPassword[1024];
@@ -98,17 +99,17 @@ namespace pulsared
                 FBXSDK_printf("         Name: \"%s\"\n", lTakeInfo->mName.Buffer());
                 FBXSDK_printf("         Description: \"%s\"\n", lTakeInfo->mDescription.Buffer());
 
-                // Change the value of the import name if the animation stack should be imported 
+                // Change the value of the import name if the animation stack should be imported
                 // under a different name.
                 FBXSDK_printf("         Import Name: \"%s\"\n", lTakeInfo->mImportName.Buffer());
 
                 // Set the value of the import state to false if the animation stack should be not
-                // be imported. 
+                // be imported.
                 FBXSDK_printf("         Import State: %s\n", lTakeInfo->mSelect ? "true" : "false");
                 FBXSDK_printf("\n");
             }
 
-            // Set the import states. By default, the import states are always set to 
+            // Set the import states. By default, the import states are always set to
             // true. The code below shows how to change these states.
             IOS_REF.SetBoolProp(IMP_FBX_MATERIAL, true);
             IOS_REF.SetBoolProp(IMP_FBX_TEXTURE, true);
@@ -125,7 +126,7 @@ namespace pulsared
         {
             // Check the scene integrity!
             FbxStatus status;
-            FbxArray< FbxString*> details;
+            FbxArray<FbxString*> details;
             FbxSceneCheckUtility sceneCheck(FbxCast<FbxScene>(pScene), &status, &details);
             lStatus = sceneCheck.Validate(FbxSceneCheckUtility::eCkeckData);
             bool lNotify = (!lStatus && details.GetCount() > 0) || (lImporter->GetStatus().GetCode() != FbxStatus::eSuccess);
@@ -162,10 +163,10 @@ namespace pulsared
             lPassword[0] = '\0';
 
             FBXSDK_CRT_SECURE_NO_WARNING_BEGIN
-                scanf("%s", lPassword);
+            scanf("%s", lPassword);
             FBXSDK_CRT_SECURE_NO_WARNING_END
 
-                FbxString lString(lPassword);
+            FbxString lString(lPassword);
 
             IOS_REF.SetStringProp(IMP_FBX_PASSWORD, lString);
             IOS_REF.SetBoolProp(IMP_FBX_PASSWORD_ENABLE, true);
@@ -185,9 +186,11 @@ namespace pulsared
     }
     static void DestroySdkObjects(FbxManager* pManager, bool pExitStatus)
     {
-        //Delete the FBX Manager. All the objects that have been allocated using the FBX Manager and that haven't been explicitly destroyed are also automatically destroyed.
-        if (pManager) pManager->Destroy();
-        if (pExitStatus) FBXSDK_printf("Program Success!\n");
+        // Delete the FBX Manager. All the objects that have been allocated using the FBX Manager and that haven't been explicitly destroyed are also automatically destroyed.
+        if (pManager)
+            pManager->Destroy();
+        if (pExitStatus)
+            FBXSDK_printf("Program Success!\n");
     }
 
     static inline Vector3f _Vec3(const FbxVector4& vec)
@@ -201,7 +204,7 @@ namespace pulsared
 
     static StaticMesh_ref ProcessMesh(FbxNode* fbxNode)
     {
-        auto name = fbxNode->GetName();
+        const auto name = fbxNode->GetName();
 
         array_list<StaticMeshSection> sections;
         array_list<string> materialNames;
@@ -212,11 +215,11 @@ namespace pulsared
             materialNames.push_back(fbxNode->GetMaterial(i)->GetName());
         }
 
-        auto attrCount = fbxNode->GetNodeAttributeCount();
+        const auto attrCount = fbxNode->GetNodeAttributeCount();
 
         for (int attrIndex = 0; attrIndex < attrCount; attrIndex++)
         {
-            auto attr = fbxNode->GetNodeAttributeByIndex(attrIndex);
+            const auto attr = fbxNode->GetNodeAttributeByIndex(attrIndex);
             if (attr->GetAttributeType() == FbxNodeAttribute::eMesh)
             {
                 StaticMeshSection section;
@@ -225,16 +228,16 @@ namespace pulsared
                 auto fbxMesh = static_cast<FbxMesh*>(attr);
                 auto pointCount = fbxMesh->GetControlPointsCount();
 
-                //section.Position.resize(pointCount);
+                // section.Position.resize(pointCount);
 
-                //auto controlPoints = fbxMesh->GetControlPoints();
-                //for (size_t i = 0; i < pointCount; i++)
+                // auto controlPoints = fbxMesh->GetControlPoints();
+                // for (size_t i = 0; i < pointCount; i++)
                 //{
-                //    section.Position[i] = _Vec3(controlPoints[i]);
-                //}
-                //StaticMeshVertex vert;
-                //section.Vertex.resize();
-                //fbxMesh.get
+                //     section.Position[i] = _Vec3(controlPoints[i]);
+                // }
+                // StaticMeshVertex vert;
+                // section.Vertex.resize();
+                // fbxMesh.get
                 constexpr int kPolygonCount = 3;
 
                 auto vertexCount = fbxMesh->GetPolygonVertexCount();
@@ -248,15 +251,16 @@ namespace pulsared
                 {
                     for (size_t vertIndex = 0; vertIndex < kPolygonCount; vertIndex++)
                     {
-                        auto index = fbxMesh->GetPolygonVertex(polyIndex, vertIndex);;
+                        auto index = fbxMesh->GetPolygonVertex(polyIndex, vertIndex);
+
                         StaticMeshVertex vertex;
-                        //position
+                        // position
                         vertex.Position = _Vec3(fbxMesh->GetControlPointAt(index));
-                        //normal
+                        // normal
                         FbxVector4 normal;
                         fbxMesh->GetPolygonVertexNormal(polyIndex, vertIndex, normal);
                         vertex.Normal = _Vec3(normal);
-                        //color
+                        // color
                         if (auto fbxColors = fbxMesh->GetLayer(0)->GetVertexColors())
                         {
                             auto map = fbxColors->GetMappingMode();
@@ -286,7 +290,6 @@ namespace pulsared
 
                 sections.push_back(std::move(section));
             }
-
         }
         if (sections.size() == 0)
         {
@@ -297,22 +300,21 @@ namespace pulsared
 
     static void ProcessNode(FbxNode* fbxNode, Node_ref pnode, FBXImporterSettings* settings)
     {
-        auto childCount = fbxNode->GetChildCount();
+        const auto childCount = fbxNode->GetChildCount();
         for (size_t childIndex = 0; childIndex < childCount; childIndex++)
         {
-            auto childFbxNode = fbxNode->GetChild(childIndex);
-            auto npNode = Node::StaticCreate(childFbxNode->GetName(), pnode->GetTransform());
+            const auto childFbxNode = fbxNode->GetChild(childIndex);
+            const auto npNode = Node::StaticCreate(childFbxNode->GetName(), pnode->GetTransform());
 
             if (auto staticMesh = ProcessMesh(childFbxNode))
             {
-                //todo : save mesh asset
+                AssetDatabase::CreateAsset(staticMesh,  settings->TargetPath + "/" + staticMesh->GetName());
                 npNode->AddComponent<StaticMeshRendererComponent>()->SetStaticMesh(staticMesh);
             }
 
             ProcessNode(childFbxNode, npNode, settings);
         }
     }
-
 
     array_list<AssetObject_ref> FBXImporter::Import(AssetImporterSettings* settings)
     {
@@ -324,37 +326,39 @@ namespace pulsared
 
         InitializeSdkObjects(fbxManager, fbxScene);
 
-        LoadScene(fbxManager, fbxScene, fbxsetting->TargetPath.c_str());
-
-        if (fbxsetting->ConvertAxisSystem)
+        for (auto& importFile : *settings->ImportFiles)
         {
-            const auto axisSystem = fbxScene->GetGlobalSettings().GetAxisSystem();
-            const auto ourAxisSystem = FbxAxisSystem(FbxAxisSystem::eYAxis, FbxAxisSystem::eParityOdd, FbxAxisSystem::eLeftHanded);
-            if (axisSystem != ourAxisSystem)
+            LoadScene(fbxManager, fbxScene, importFile.c_str());
+
+            if (fbxsetting->ConvertAxisSystem)
             {
-                ourAxisSystem.ConvertScene(fbxScene);
+                const auto axisSystem = fbxScene->GetGlobalSettings().GetAxisSystem();
+                const auto ourAxisSystem = FbxAxisSystem(FbxAxisSystem::eYAxis, FbxAxisSystem::eParityOdd, FbxAxisSystem::eLeftHanded);
+                if (axisSystem != ourAxisSystem)
+                {
+                    ourAxisSystem.ConvertScene(fbxScene);
+                }
             }
+
+            const auto unit = fbxScene->GetGlobalSettings().GetSystemUnit();
+            if (unit.GetScaleFactor() != 1.0)
+            {
+                FbxSystemUnit::m.ConvertScene(fbxScene);
+            }
+
+            FbxGeometryConverter geomConverter(fbxManager);
+            geomConverter.Triangulate(fbxScene, true);
+            geomConverter.SplitMeshesPerMaterial(fbxScene, true);
+
+            const auto rootNode = fbxScene->GetRootNode();
+
+            const auto rootpNode = Node::StaticCreate(PathUtil::GetFilenameWithoutExt(importFile));
+
+            ProcessNode(rootNode, rootpNode, fbxsetting);
+
+            DestroySdkObjects(fbxManager, 0);
         }
-
-        const auto unit = fbxScene->GetGlobalSettings().GetSystemUnit();
-        if (unit.GetScaleFactor() != 1.0)
-        {
-            FbxSystemUnit::m.ConvertScene(fbxScene);
-        }
-
-        FbxGeometryConverter geomConverter(fbxManager);
-        geomConverter.Triangulate(fbxScene, true);
-        geomConverter.SplitMeshesPerMaterial(fbxScene, true);
-
-        const auto rootNode = fbxScene->GetRootNode();
-
-        const auto rootpNode = Node::StaticCreate(PathUtil::GetFilenameWithoutExt(fbxsetting->TargetPath));
-
-        ProcessNode(rootNode, rootpNode, fbxsetting);
-
-        DestroySdkObjects(fbxManager, 0);
-
         return {};
     }
 
-}
+} // namespace pulsared

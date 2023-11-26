@@ -34,7 +34,7 @@ namespace pulsared
         return false;
     }
 
-    bool Workspace::OpenWorkspace(string_view path)
+    bool Workspace::OpenWorkspace(std::filesystem::path path)
     {
         auto absolutePath = std::filesystem::absolute(path);
         if (!std::filesystem::exists(absolutePath))
