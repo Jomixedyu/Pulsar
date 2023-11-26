@@ -2,7 +2,7 @@
 
 ![](doc/ui.png)
 
-需要安装FBXSDK和VulkanSDK编译
+需要安装FBXSDK和VulkanSDK，最新版VS与MSVC编译
 
 ## thirdparty
 Engine:
