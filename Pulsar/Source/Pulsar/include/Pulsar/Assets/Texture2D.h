@@ -1,8 +1,8 @@
 #pragma once
 
-#include <Pulsar/AssetObject.h>
-#include <Pulsar/IBindGPU.h>
 #include "Texture.h"
+#include <Pulsar/IGPUResource.h>
+#include <Pulsar/AssetObject.h>
 #include <gfx/GFXTexture2D.h>
 
 namespace pulsar

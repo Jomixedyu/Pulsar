@@ -1,5 +1,6 @@
 #pragma once
 #include <Pulsar/AssetObject.h>
+#include <Pulsar/IGPUResource.h>
 
 namespace pulsar
 {

@@ -1,10 +1,10 @@
 #pragma once
 
-#include <Pulsar/Assets/Texture.h>
-#include <Pulsar/IBindGPU.h>
 #include "Texture.h"
-#include <gfx/GFXRenderTarget.h>
+#include <Pulsar/IGPUResource.h>
+#include <Pulsar/Assets/Texture.h>
 #include <gfx/GFXFrameBufferObject.h>
+#include <gfx/GFXRenderTarget.h>
 
 namespace pulsar
 {

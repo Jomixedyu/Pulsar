@@ -1,9 +1,9 @@
 #pragma once
 
+#include "Mesh.h"
+#include <Pulsar/IGPUResource.h>
 #include <Pulsar/AssetObject.h>
 #include <Pulsar/Assets/Material.h>
-#include <Pulsar/IBindGPU.h>
-#include "Mesh.h"
 
 namespace pulsar
 {

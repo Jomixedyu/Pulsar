@@ -19,23 +19,18 @@ set(ASSIMP_INSTALL_PDB OFF)
 set(ASSIMP_BUILD_ASSIMP_VIEW OFF)
 add_subdirectory("./third/assimp")
 
+add_subdirectory("./third/fbxsdk")
 
 #add_library(${PROJECT_NAME} STATIC ${Pulsared_SRC})
 file(GLOB_RECURSE Pulsared_SRC "src/*.h" "src/*.hpp" "src/*.cpp" "include/*.h" "include/*.hpp")
 add_executable(${PROJECT_NAME} ${Pulsared_SRC})
 
+target_link_libraries(${PROJECT_NAME} PUBLIC fbxsdk)
 
 target_include_directories(${PROJECT_NAME} PUBLIC "./include")
 target_include_directories(${PROJECT_NAME} PRIVATE "./include/PulsarEd")
 
 message(${CMAKE_DEBUG_POSTFIX})
-
-#fbx
-set(FBXSDK_DIR "C:/Program Files/Autodesk/FBX/FBX SDK/2020.0.1")
-target_include_directories(${PROJECT_NAME} PUBLIC "${FBXSDK_DIR}/include")
-target_link_directories(${PROJECT_NAME} PUBLIC "${FBXSDK_DIR}/lib/vs2017/x64/$<IF:$<CONFIG:Debug>,debug,release>")
-target_link_libraries(${PROJECT_NAME} PUBLIC "libfbxsdk-md" "wininet" "libxml2-md" "zlib-md")
-file(GENERATE OUTPUT "./gentext.txt" CONTENT "${FBXSDK_DIR}/lib/vs2017/x64/$<IF:$<CONFIG:Debug>,debug,release>")
 
 #pulsar
 target_link_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}/Pulsar.out")

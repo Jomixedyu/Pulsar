@@ -1,13 +1,13 @@
 #pragma once
 
-#include <Pulsar/ObjectBase.h>
+#include <Pulsar/IGPUResource.h>
 #include <Pulsar/AssetObject.h>
 #include <Pulsar/Assets/Texture.h>
-#include <Pulsar/IBindGPU.h>
+#include <Pulsar/ObjectBase.h>
 #include <Pulsar/Rendering/ShaderPass.h>
-#include <gfx/GFXShaderPass.h>
 #include <Pulsar/Rendering/Types.h>
 #include <gfx/GFXApi.h>
+#include <gfx/GFXShaderPass.h>
 
 namespace pulsar
 {
