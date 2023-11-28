@@ -51,6 +51,7 @@ namespace pulsar::rendering
     class RenderObject
     {
     public:
+        virtual ~RenderObject() = default;
         void SetTransform(const Matrix4f& localToWorld)
         {
             m_localToWorld = localToWorld;
@@ -67,11 +68,16 @@ namespace pulsar::rendering
         virtual void OnDestroyResource() {}
 
         virtual array_list<MeshBatch> GetMeshBatchs() = 0;
+        virtual bool IsActive() const { return m_active; };
 
         bool IsDetermiantNegative() const { return m_isLocalToWorldDeterminantNegative; }
+
+    public:
+
     protected:
+        bool      m_active = false;
         Matrix4f  m_localToWorld;
-        bool      m_isLocalToWorldDeterminantNegative;
+        bool      m_isLocalToWorldDeterminantNegative{};
 
     };
     CORELIB_DECL_SHORTSPTR(RenderObject);

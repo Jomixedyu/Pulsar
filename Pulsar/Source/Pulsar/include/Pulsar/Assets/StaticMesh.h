@@ -80,6 +80,8 @@ namespace pulsar
         void CreateGPUResource() override;
         void DestroyGPUResource() override;
         bool IsCreatedGPUResource() const override;
+        gfx::GFXBuffer_sp GetGPUResourceVertexBuffer() const { return m_vertexBuffer; }
+        gfx::GFXBuffer_sp GetGPUResourceIndicesBuffer() const { return m_indicesBuffer; }
     protected: // serialization data
         array_list<StaticMeshSection> m_sections;
         array_list<string> m_materialNames;
