@@ -15,6 +15,7 @@ namespace pulsared
 
     bool ObjectPropertyControl::OnDrawImGui(const string& name, Type* type, Object* prop)
     {
+        bool isChanged = false;
         auto objectPtr = dynamic_cast<BoxingObjectPtrBase*>(prop);
 
         if(!objectPtr)
@@ -64,6 +65,7 @@ namespace pulsared
                     if(payload = ImGui::AcceptDragDropPayload("PULSARED_DRAG"))
                     {
                         objectPtr->handle = ObjectHandle::parse(id);
+                        isChanged = true;
                     }
                 }
             }
@@ -71,6 +73,6 @@ namespace pulsared
             ImGui::EndDragDropTarget();
         }
 
-        return false;
+        return isChanged;
     }
 } // namespace pulsared

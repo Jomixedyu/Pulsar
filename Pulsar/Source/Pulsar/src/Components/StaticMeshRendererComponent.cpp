@@ -86,6 +86,10 @@ namespace pulsar
         {
             OnMeshChanged();
         }
+        else if(info->GetName() == "m_materials")
+        {
+
+        }
     }
 
     void StaticMeshRendererComponent::SetStaticMesh(StaticMesh_ref staticMesh)
