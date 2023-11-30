@@ -16,10 +16,7 @@ namespace pulsar
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::CameraComponent, Component);
     public:
-        virtual ~CameraComponent() override
-        {
-            int a = 3;
-        }
+        ~CameraComponent() override = default;
         void Render();
     public:
         Matrix4f GetViewMat();
@@ -45,17 +42,17 @@ namespace pulsar
 
 
         CORELIB_REFL_DECL_FIELD(fov);
-        float fov;
+        float fov{};
 
         CORELIB_REFL_DECL_FIELD(near);
-        float near;
+        float near{};
 
         CORELIB_REFL_DECL_FIELD(far);
-        float far;
+        float far{};
 
         CORELIB_REFL_DECL_FIELD(size_);
         Vector2f size_;
-        CameraMode cameraMode;
+        CameraMode cameraMode{};
 
     private:
         CORELIB_REFL_DECL_FIELD(m_backgroundColor);

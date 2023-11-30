@@ -43,6 +43,8 @@ namespace pulsared
         void OnCurrentFolderChanged();
         string GetCurrentFolder() const { return m_currentFolder; }
         void SetCurrentFolder(string_view path);
+        void OpenExplorer() const;
+        std::filesystem::path GetCurrentPhysicsFolder() const;
     private:
         void OnDrawBar();
         void OnDrawFolderTree();

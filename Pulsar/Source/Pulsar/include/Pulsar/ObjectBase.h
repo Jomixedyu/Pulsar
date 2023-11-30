@@ -51,11 +51,12 @@ namespace pulsar
     using ObjectFlags = uint16_t;
     enum ObjectFlags_ : uint16_t
     {
-        OF_NoFlag = 0,
-        OF_Persistent = 1 << 0,
+        OF_NoFlag       = 0,
+        OF_Persistent   = 1 << 0,
         OF_Instantiable = 1 << 1,
-        OF_Instance = 1 << 2,
-        OF_NoPack = 1 << 3,
+        OF_Instance     = 1 << 2,
+        OF_NoPack       = 1 << 3,
+        OF_DontDestroy  = 1 << 4,
     };
 
     class ObjectBase : public Object
@@ -64,12 +65,12 @@ namespace pulsar
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::ObjectBase, Object);
     public:
         ObjectBase();
-        virtual ~ObjectBase() override;
+        ~ObjectBase() override;
     public:
         ObjectHandle GetObjectHandle() const { return this->m_objectHandle; }
     public:
         void Construct(ObjectHandle handle = {});
-        virtual void PostEditChange(FieldInfo* info) {}
+        virtual void PostEditChange(FieldInfo* info);
     public:
         index_string GetIndexName() const { return m_name; }
         string       GetName() const { return m_name.to_string(); }
@@ -93,6 +94,23 @@ namespace pulsar
 
     inline constexpr int kSizeObjectBase = sizeof(ObjectBase);
 
+    class RuntimeObjectWrapper final
+    {
+    public:
+        static ObjectBase* GetObject(ObjectHandle id);
+        static sptr<ObjectBase> GetSharedObject(ObjectHandle id);
+        static bool IsValid(ObjectHandle id);
+        static void NewInstance(sptr<ObjectBase>&& managedObj, ObjectHandle handle);
+        static void DestroyObject(ObjectHandle id, bool isForce = false);
+        static void Terminate();
+
+        static void ForEachObject(const std::function<void(ObjectHandle, ObjectBase*)>& func);
+
+        //<id, type, is_create>
+        static Action<ObjectHandle, Type*, bool> ObjectHook;
+        static Action<ObjectBase*> OnPostEditChanged;
+    };
+
     struct ObjectPtrBase
     {
         ObjectHandle handle{};
@@ -105,26 +123,30 @@ namespace pulsar
         {
             return handle;
         }
-
+        template<typename T>
+        T* GetTPtr() const
+        {
+            return static_cast<T*>(RuntimeObjectWrapper::GetObject(handle));
+        }
     };
 
     class BoxingObjectPtrBase : public BoxingObject, public IStringify
     {
-        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::BoxingObjectPtrBase, Object);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::BoxingObjectPtrBase, BoxingObject);
         CORELIB_IMPL_INTERFACES(IStringify)
     public:
         using unboxing_type = ObjectPtrBase;
         ObjectPtrBase get_unboxing_value() { return { handle }; }
         BoxingObjectPtrBase() : CORELIB_INIT_INTERFACE(IStringify) {}
-        BoxingObjectPtrBase(ObjectPtrBase invalue) : handle(invalue.handle),
+        explicit BoxingObjectPtrBase(ObjectPtrBase invalue) : handle(invalue.handle),
             CORELIB_INIT_INTERFACE(IStringify) {}
 
-        virtual void IStringify_Parse(const string& value) override
+        void IStringify_Parse(const string& value) override
         {
             handle = ObjectHandle::parse(value);
         }
 
-        virtual string IStringify_Stringify() override
+        string IStringify_Stringify() override
         {
             return handle.to_string();
         }
@@ -136,24 +158,9 @@ CORELIB_DECL_BOXING(pulsar::ObjectPtrBase, pulsar::BoxingObjectPtrBase);
 
 namespace pulsar
 {
-    class RuntimeObjectWrapper final
-    {
-    public:
-        static ObjectBase* GetObject(ObjectHandle id);
-        static sptr<ObjectBase> GetSharedObject(ObjectHandle id);
-        static bool IsValid(ObjectHandle id);
-        static void NewInstance(sptr<ObjectBase>&& managedObj, ObjectHandle handle);
-        static void DestroyObject(ObjectHandle id, bool isForce = false);
-        static void Terminate();
-
-        //<id, type, is_create>
-        static Action<ObjectHandle, Type*, bool> ObjectHook;
-    };
-
 
     template<typename T>
     concept baseof_objectbase = std::is_base_of<ObjectBase, T>::value;
-    
 
 
     inline bool IsValid(const ObjectPtrBase& object)
@@ -214,7 +221,7 @@ namespace pulsar
         }
         T* GetPtr() const
         {
-            return static_cast<T*>(RuntimeObjectWrapper::GetObject(handle));
+            return GetTPtr<T>();
         }
         T* operator->() const
         {
@@ -224,8 +231,8 @@ namespace pulsar
         bool operator==(std::nullptr_t) const { return !IsValid(); }
 
         bool operator!=(const ObjectPtrBase& r) const { return handle != r.handle; }
-        template<typename T>
-        bool operator==(const ObjectPtr<T>& r) const { return handle == r.handle; }
+        template<typename U>
+        bool operator==(const ObjectPtr<U>& r) const { return handle == r.handle; }
 
         bool IsValid() const
         {

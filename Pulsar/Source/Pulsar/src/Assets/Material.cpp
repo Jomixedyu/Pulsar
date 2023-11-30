@@ -24,6 +24,10 @@ namespace pulsar
 
     void Material::CreateGPUResource()
     {
+        if(m_createdGpuResource)
+        {
+            return;
+        }
         m_createdGpuResource = true;
         if (!m_shader->IsCreatedGPUResource())
         {

@@ -4,11 +4,6 @@
 
 namespace pulsar
 {
-    class HideInComponentPropertyAttribute : public Attribute
-    {
-        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::HideInComponentPropertyAttribute, Attribute);
-    };
-
     class TransformComponent : public Component
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::TransformComponent, Component);
@@ -39,10 +34,10 @@ namespace pulsar
 
         Quat4f m_rotation;
 
-        CORELIB_REFL_DECL_FIELD(m_children, new HideInComponentPropertyAttribute);
+        CORELIB_REFL_DECL_FIELD(m_children, new HidePropertyAttribute);
         List_sp<ObjectPtr<TransformComponent>> m_children;
 
-        CORELIB_REFL_DECL_FIELD(m_parent, new HideInComponentPropertyAttribute);
+        CORELIB_REFL_DECL_FIELD(m_parent, new HidePropertyAttribute);
         ObjectPtr<TransformComponent> m_parent;
     };
     DECL_PTR(TransformComponent);

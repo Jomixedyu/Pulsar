@@ -51,6 +51,7 @@ namespace pulsar
     }
     TransformComponent::TransformComponent()
     {
+        m_flags |= OF_DontDestroy;
         m_children = mksptr(new List<ObjectPtr<TransformComponent>>);
     }
 

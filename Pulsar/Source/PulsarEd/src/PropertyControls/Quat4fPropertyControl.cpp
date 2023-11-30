@@ -3,10 +3,10 @@
 
 namespace pulsared
 {
-    bool Quat4fPropertyControl::OnDrawImGui(const string& name, Object* prop)
+    bool Quat4fPropertyControl::OnDrawImGui(const string& name, Type* type, Object* prop)
     {
         assert(prop && prop->GetType() == GetPropertyType());
-        Type* type = prop->GetType();
+
         auto q = static_cast<pulsar::math::BoxingQuat4f*>(prop);
         ImGui::PushItemWidth(-1);
 

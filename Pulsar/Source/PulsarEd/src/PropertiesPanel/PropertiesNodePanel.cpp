@@ -32,16 +32,6 @@ namespace pulsared
         ImGui::Columns(1);
     }
 
-    static bool _PropertyLine(const string& name, Type* type, Object* obj)
-    {
-        _Property2Name();
-        ImGui::Text(StringUtil::FriendlyName(name).c_str());
-        _Property2Value();
-        bool changed = PropertyControlManager::ShowProperty(name, type, obj);
-        _Property2End();
-        return changed;
-    }
-
 
     static constexpr int kTableRowHeight = 30;
 
@@ -58,7 +48,6 @@ namespace pulsared
         {
             return;
         }
-
 
         static char name[255];
         strcpy_s(name, 255, selected->GetName().c_str());
@@ -87,72 +76,42 @@ namespace pulsared
         ImGui::AlignTextToFramePadding();
         ImGui::Text("Components");
         ImGui::SameLine();
-        ImGui::Button("Add Component", { -FLT_MIN,20 });
+        ImGui::Button("Add Component", {-FLT_MIN, 20});
 
-        for (auto& comp : selected->GetAllComponentArray())
+        auto componentArr = selected->GetAllComponentArray();
+        for (auto& comp : componentArr)
         {
-            static bool opened = true;
+            if(!IsValid(comp)) continue;
 
+            bool opened = true;
+            const bool dontDestroy = comp->HasObjectFlags(OF_DontDestroy);
             string componentFriendlyName = _GetComponentDisplayName(comp.GetPtr());
 
             ImGui::PushID(comp.GetPtr());
-            if (ImGui::CollapsingHeader(componentFriendlyName.c_str(), &opened, ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_DefaultOpen))
+            if (ImGui::CollapsingHeader(
+                componentFriendlyName.c_str(),
+                dontDestroy ? nullptr : &opened,
+                ImGuiTreeNodeFlags_DefaultOpen))
             {
                 auto componentGuid = comp->GetObjectHandle().to_string();
                 Type* componentType = comp->GetType();
                 auto fields = componentType->GetFieldInfos(TypeBinding::NonPublic);
 
-                for (auto& fieldInfo : fields)
-                {
-                    if (fieldInfo->IsDefinedAttribute(cltypeof<HideInComponentPropertyAttribute>()))
-                    {
-                        continue;
-                    }
-
-                    auto fieldInstShared = fieldInfo->GetValue(comp.GetPtr());
-
-                    const bool isObjectPtr = fieldInstShared->GetType() == BoxingObjectPtrBase::StaticType();
-
-                    if (isObjectPtr)
-                    {
-                        auto handle = UnboxUtil::Unbox<ObjectPtrBase>(fieldInstShared).GetHandle();
-                        auto fieldInst = RuntimeObjectWrapper::GetObject(handle);
-                        _PropertyLine(fieldInfo->GetName(), fieldInfo->GetWrapType(), fieldInst);
-                    }
-                    else
-                    {
-                        if (_PropertyLine(fieldInfo->GetName(), fieldInstShared->GetType(), fieldInstShared.get()))
-                        {
-                            fieldInfo->SetValue(comp.GetPtr(), fieldInstShared);
-                            comp->PostEditChange(fieldInfo);
-                        }
-
-                    }
-
-                }
-
-                ImGui::BeginDisabled();
-
-                _Property2Name();
-                ImGui::Text("Type");
-                _Property2Value();
-                ImGui::Text(comp->GetType()->GetName().c_str());
-                _Property2End();
-
-                _Property2Name();
-                ImGui::Text("Handle");
-                _Property2Value();
-                ImGui::Text(comp->GetObjectHandle().to_string().c_str());
-                _Property2End();
-
-                ImGui::EndDisabled();
+                PImGui::ObjectFieldProperties(
+                    comp->GetType(),
+                    comp->GetType(),
+                    comp.GetPtr(),
+                    comp.GetPtr());
             }
             ImGui::PopID();
 
+            if(!opened)
+            {
+                DestroyObject(comp);
+            }
         }
 
-        static bool nodeOpened = true;
-        if (ImGui::CollapsingHeader("__Node Infomation", &nodeOpened, ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_DefaultOpen))
+        if (ImGui::CollapsingHeader("__Node Infomation", nullptr, ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_DefaultOpen))
         {
             ImGui::BeginDisabled();
 
@@ -172,6 +131,5 @@ namespace pulsared
         }
 
         ImGui::Spacing();
-
     }
-}
+} // namespace pulsared

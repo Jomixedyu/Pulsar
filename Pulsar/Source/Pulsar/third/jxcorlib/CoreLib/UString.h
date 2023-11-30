@@ -164,6 +164,19 @@ namespace jxcorlib
             Append(str, std::forward<T>(args)...);
             return str;
         }
+
+        void strcpy(char* dest, size_t size, string_view source);
+
+        template<int N>
+        void strcpy(char (&dest)[N], string_view source)
+        {
+            strcpy(dest, N, source);
+        }
+
+        void strcat(char* dest, size_t size, string_view source);
+
+        template<int N>
+        void strcat(char (&dest)[N], string_view source) { strcat(dest, N, source); }
     };
 
 }

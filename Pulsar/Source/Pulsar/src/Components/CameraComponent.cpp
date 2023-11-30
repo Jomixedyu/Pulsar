@@ -67,8 +67,7 @@ namespace pulsar
                 math::Radians(this->fov),
                 size.x / size.y,
                 this->near,
-                this->far
-            );
+                this->far);
         }
         else
         {
@@ -78,10 +77,13 @@ namespace pulsar
                 0.0f,
                 size.y,
                 this->near,
-                this->far
-            );
+                this->far);
         }
         return ret;
+    }
+    Matrix4f CameraComponent::LookAtRH(Vector3f const& eye, Vector3f const& center, Vector3f const& up)
+    {
+        return {};
     }
 
     void CameraComponent::PostEditChange(FieldInfo* info)

@@ -14,6 +14,7 @@ namespace pulsared
         virtual ImGuiWindowFlags GetGuiWindowFlags() const {
             return ImGuiWindowFlags_MenuBar | (IsDirtyAsset() ? ImGuiWindowFlags_UnsavedDocument : ImGuiWindowFlags_None);
         }
+        AssetEditorWindow();
         virtual bool IsDirtyAsset() const;
         virtual string GetWindowName() const override;
     public:

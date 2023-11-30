@@ -113,7 +113,7 @@ namespace pulsared
                 for (auto& passName : *shader->GetPassNames())
                 {
                     auto& passSerData = apiSerData.Passes.emplace_back();
-                    auto shaderPath = AssetDatabase::GetAbsoluteAssetPath(*passName);
+                    auto shaderPath = AssetDatabase::PackagePathToPhysicsPath(*passName);
 
                     auto passModules = CompilePulsarShader(shaderPath, apiItem, includes, defines);
 

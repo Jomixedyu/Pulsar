@@ -1,19 +1,21 @@
-#include <PulsarEd/Windows/MaterialEditorWindow.h>
-#include <PulsarEd/UIControls/ViewportFrame.h>
 #include <PulsarEd/Menus/Menu.h>
 #include <PulsarEd/Menus/MenuEntry.h>
 #include <PulsarEd/Menus/MenuEntrySubMenu.h>
 #include <PulsarEd/Menus/MenuRenderer.h>
 #include <PulsarEd/PropertyControls/PropertyControl.h>
 #include <PulsarEd/Shaders/EditorShader.h>
+#include <PulsarEd/UIControls/ViewportFrame.h>
+#include <PulsarEd/Windows/MaterialEditorWindow.h>
 
 namespace pulsared
 {
     class AssetEditorMenuContext : public MenuContextBase
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::AssetEditorMenuContext, MenuContextBase);
+
     public:
-        AssetEditorMenuContext(AssetObject_ref asset) : Asset(asset)
+        AssetEditorMenuContext(AssetObject_ref asset)
+            : Asset(asset)
         {
         }
         AssetObject_ref Asset;
@@ -22,11 +24,12 @@ namespace pulsared
     class ShaderEditorMenuContext : public AssetEditorMenuContext
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::ShaderEditorMenuContext, AssetEditorMenuContext);
+
     public:
-        ShaderEditorMenuContext(AssetObject_ref asset) : base(asset)
+        ShaderEditorMenuContext(AssetObject_ref asset)
+            : base(asset)
         {
         }
-
     };
     namespace
     {
@@ -47,9 +50,8 @@ namespace pulsared
                             auto ctx = ctxs->FindContext<AssetEditorMenuContext>();
                             if (!ctx) return;
                             AssetDatabase::Save(ctx->Asset);
-                        }});
+                        } });
                     menu->AddEntry(entry);
-
                 }
             }
             static void _InitBuild(MenuEntrySubMenu_sp menu)
@@ -70,7 +72,7 @@ namespace pulsared
                             {
                                 ShaderCompiler::CompileShader(shader, { gfx::GFXApi::Vulkan }, {}, {});
                             }
-                        }});
+                        } });
                     menu->AddEntry(entry);
                 }
             }
@@ -85,14 +87,12 @@ namespace pulsared
                     auto build = ae->FindOrNewMenuEntry("Build");
                     _InitBuild(build);
                 }
-
             }
         };
-    }
+    } // namespace
 
     void ShaderEditorWindow::OnOpen()
     {
-        m_winSize = { 600,400 };
     }
 
     void ShaderEditorWindow::OnDrawImGui()
@@ -102,7 +102,7 @@ namespace pulsared
         if (ImGui::BeginMenuBar())
         {
             auto ctxs = mksptr(new MenuContexts);
-            ctxs->Contexts.push_back(mksptr(new ShaderEditorMenuContext{ this->GetAssetObject() }));
+            ctxs->Contexts.push_back(mksptr(new ShaderEditorMenuContext{this->GetAssetObject()}));
             MenuRenderer::RenderMenu(MenuManager::GetMenu("AssetEditor").get(), ctxs);
             ImGui::EndMenuBar();
         }
@@ -144,10 +144,11 @@ namespace pulsared
             Shader_ref shader = m_assetObject;
             if (PImGui::PropertyGroup("Shader"))
             {
-
-                PImGui::ObjectProperties("a", m_assetObject->GetType(), m_assetObject.GetPtr());
-
-                //PImGui::PropertyLine("Asset Path", m_assetObject->GetType(), m_assetObject.GetPtr());
+                PImGui::ObjectFieldProperties(
+                    BoxingObjectPtrBase::StaticType(),
+                    m_assetObject->GetType(),
+                    mkbox((ObjectPtrBase)m_assetObject).get(),
+                    m_assetObject.GetPtr());
             }
 
             if (PImGui::PropertyGroup("Compiled"))
@@ -160,13 +161,12 @@ namespace pulsared
                     }
                     PImGui::EndPropertyItem();
                 }
-                //PImGui::PropertyLine("Asset Path", m_assetObject->GetType(), m_assetObject.GetPtr());
+                // PImGui::PropertyLine("Asset Path", m_assetObject->GetType(), m_assetObject.GetPtr());
             }
 
             ImGui::EndChild();
         }
 
         ImGui::Columns(1);
-
     }
-}
+} // namespace pulsared

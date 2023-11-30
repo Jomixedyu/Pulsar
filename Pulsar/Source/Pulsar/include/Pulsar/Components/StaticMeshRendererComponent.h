@@ -18,9 +18,11 @@ namespace pulsar
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::StaticMeshRendererComponent, Component);
         CORELIB_IMPL_INTERFACES(IRendererComponent);
     public:
-        virtual sptr<rendering::RenderObject> CreateRenderObject() override;
+        sptr<rendering::RenderObject> CreateRenderObject() override;
     public:
         List_sp<Material_ref> GetMaterials() const { return this->m_materials; }
+
+        void PostEditChange(FieldInfo* info) override;
 
         StaticMeshRendererComponent() : CORELIB_INIT_INTERFACE(IRendererComponent)
         {
@@ -33,10 +35,12 @@ namespace pulsar
         Material_ref GetMaterial(int index) const;
         void SetMaterial(int index, Material_ref material);
 
+        void BeginComponent() override;
+        void EndComponent() override;
     protected:
         void OnMeshChanged();
     protected:
-        CORELIB_REFL_DECL_FIELD(m_materials);
+        CORELIB_REFL_DECL_FIELD(m_materials, new ListItemAttribute(cltypeof<Material>()));
         List_sp<Material_ref> m_materials;
 
         CORELIB_REFL_DECL_FIELD(m_staticMesh);

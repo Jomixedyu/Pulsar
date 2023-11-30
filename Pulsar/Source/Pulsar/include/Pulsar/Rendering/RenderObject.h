@@ -34,7 +34,7 @@ namespace pulsar::rendering
 
         void Append(const MeshBatch& batch)
         {
-            for (auto element : batch.Elements)
+            for (const auto& element : batch.Elements)
             {
                 Elements.push_back(element);
             }

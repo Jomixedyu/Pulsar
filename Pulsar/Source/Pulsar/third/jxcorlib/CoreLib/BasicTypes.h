@@ -173,7 +173,7 @@ namespace jxcorlib
     {
         static std::vector<Type*>* GetTemplateTypes()
         {
-            std::vector<Type*>* vec = new std::vector<Type*>;
+            auto* vec = new std::vector<Type*>;
             (vec->push_back(cltypeof<typename get_boxing_type<T>::type>()), ...);
             return vec;
         }
@@ -186,6 +186,7 @@ namespace jxcorlib
 
         virtual void Add(Object_rsp value) = 0;
         virtual Object_sp At(int32_t index) const = 0;
+        virtual void SetAt(int32_t index, Object_rsp value) = 0;
         virtual void Clear() = 0;
         virtual void RemoveAt(int32_t index) = 0;
         virtual int32_t IndexOf(Object_rsp value) const = 0;
@@ -206,7 +207,7 @@ namespace jxcorlib
             }
             else
             {
-                return mksptr((Object*)new get_boxing_type<T>::type(value));
+                return mksptr((Object*)new get_boxing_type_t<T>(value));
             }
         }
     };
@@ -217,7 +218,7 @@ namespace jxcorlib
         template<typename T>
         static inline T Unbox(const sptr<Object>& value)
         {
-            return static_cast<get_boxing_type<T>::type*>(value.get())->get_unboxing_value();
+            return static_cast<get_boxing_type_t<T>*>(value.get())->get_unboxing_value();
         }
 		
         template<typename T>
@@ -225,7 +226,7 @@ namespace jxcorlib
         {
             if constexpr (std::is_base_of_v<BoxingObject, T>)
             {
-                return static_cast<get_boxing_type<T>::type*>(value.get())->get_unboxing_value();
+                return static_cast<get_boxing_type_t<T>*>(value.get())->get_unboxing_value();
             }
             else
             {
@@ -237,7 +238,7 @@ namespace jxcorlib
     template<typename T>
     sptr<typename get_boxing_type<T>::type> mkbox(T value)
     {
-        return mksptr(new get_boxing_type<T>::type(value));
+        return mksptr(new get_boxing_type_t<T>(value));
     }
 
 

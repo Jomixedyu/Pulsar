@@ -1,14 +1,15 @@
 ﻿#include "CoreLib.Platform/FolderWatch.h"
+#include "CoreLib.Platform/System.h"
 #include "CoreLib.Platform/Window.h"
 #include "Importers/AssetImporter.h"
+#include "Windows/EditorWindowManager.h"
 
-#include <PulsarEd/Windows/WorkspaceWindow.h>
-#include <PulsarEd/AssetDatabase.h>
-#include <PulsarEd/Workspace.h>
 #include <Pulsar/IconsForkAwesome.h>
 #include <PulsarEd/AssetDatabase.h>
 #include <PulsarEd/AssetProviders/AssetProvider.h>
 #include <PulsarEd/Menus/Types.h>
+#include <PulsarEd/Windows/WorkspaceWindow.h>
+#include <PulsarEd/Workspace.h>
 
 #include <PulsarEd/Utils/AssetUtil.h>
 
@@ -97,6 +98,26 @@ namespace pulsared
             }
 
             return pressed;
+        }
+
+        static bool DragFileButton(const char* str,
+            ImTextureID texture_id, ImVec2 size, float label_height, bool selected, bool is_dirty, ImTextureID dirty_texid,
+            void* user_data, const std::function<void(void*)>& tootip, const char* drag_type, string_view drag_data,
+            ImVec2 uv0 = ImVec2(0, 0), ImVec2 uv1 = ImVec2(1, 1)
+        )
+        {
+            bool b = FileButton(str,texture_id,size,label_height,selected,is_dirty,dirty_texid,user_data,tootip,uv0,uv1);
+            if(drag_type)
+            {
+                if(ImGui::BeginDragDropSource())
+                {
+                    ImGui::Image(texture_id, size, uv0, uv1);
+                    ImGui::SetDragDropPayload(drag_type, drag_data.data(), drag_data.size());
+                    ImGui::EndDragDropSource();
+                }
+            }
+
+            return b;
         }
     }
 
@@ -288,9 +309,19 @@ namespace pulsared
             assetCtx->AddEntry(entry);
         }
 
-
         assetCtx->AddEntry(mksptr(new MenuEntrySeparate("Explorer")));
-        assetCtx->AddEntry(mksptr(new MenuEntryButton("ShowExplorer", "Show In Explorer")));
+        {
+            auto entry = mksptr(new MenuEntryButton("ShowExplorer", "Show In Explorer"));
+            entry->Action = MenuAction::FromLambda([](sptr<MenuContexts>) {
+                if(auto win = EditorWindowManager::GetPanelWindow(cltypeof<WorkspaceWindow>()))
+                {
+                    static_cast<WorkspaceWindow*>(win.get())->OpenExplorer();
+                }
+            });
+            assetCtx->AddEntry(entry);
+        }
+
+
 
     }
 
@@ -306,6 +337,14 @@ namespace pulsared
     {
         m_currentFolder = path;
         OnCurrentFolderChanged();
+    }
+    void WorkspaceWindow::OpenExplorer() const
+    {
+        jxcorlib::platform::system::OpenFileBrowser(GetCurrentPhysicsFolder());
+    }
+    std::filesystem::path WorkspaceWindow::GetCurrentPhysicsFolder() const
+    {
+        return AssetDatabase::AssetPathToPhysicsPath(m_currentFolder);
     }
 
     void WorkspaceWindow::OnDrawBar()
@@ -348,7 +387,7 @@ namespace pulsared
 
             if (ImGui::Button(ICON_FK_FOLDER_OPEN "  Explorer"))
             {
-
+                this->OpenExplorer();
             }
             if(m_currentFolder.empty())
             {
@@ -362,7 +401,7 @@ namespace pulsared
             for (size_t i = 0; i < paths.size(); i++)
             {
                 trackPath.push_back(paths[i]);
-                ImGui::PushID(i);
+                ImGui::PushID((int)i);
                 if (ImGui::Button(paths[i].c_str()))
                 {
                     SetCurrentFolder(StringUtil::Join(trackPath, "/"));
@@ -375,6 +414,7 @@ namespace pulsared
 
             ImGui::EndMenuBar();
         }
+
     }
 
     void WorkspaceWindow::OnDrawFolderTree()
@@ -451,12 +491,23 @@ namespace pulsared
             gfx::GFXDescriptorSet_wp descSet = AssetDatabase::IconPool->GetDescriptorSet({assetType->GetName()});
             gfx::GFXDescriptorSet_wp dirtySet = AssetDatabase::IconPool->GetDescriptorSet("WorkspaceWindow.Dirty"_idxstr);
 
-            auto isSelected = weaks_find(m_selectedFiles.begin(), m_selectedFiles.end(), std::weak_ptr{ child }) != m_selectedFiles.end();
-            bool isDirty = child->IsFolder ? false : AssetDatabase::IsDirty(child->AssetMeta->Handle);
+            const bool isFolder = child->IsFolder;
+            const auto isSelected = weaks_find(m_selectedFiles.begin(), m_selectedFiles.end(), std::weak_ptr{ child }) != m_selectedFiles.end();
+            const bool isDirty = isFolder ? false : AssetDatabase::IsDirty(child->AssetMeta->Handle);
 
+            const auto iconSize = ImVec2(m_iconSize, m_iconSize);
+            ImTextureID iconDesc = reinterpret_cast<void*>(descSet.lock()->GetId());
+            ImTextureID dirtyDesc = reinterpret_cast<void*>(dirtySet.lock()->GetId());
+            const auto dragType = "PULSARED_DRAG";
+            const string dragData = StringUtil::Concat(
+                child->GetAssetType()->GetName(),
+                ";",
+                isFolder ? child->AssetPath : child->AssetMeta->Handle.to_string());
 
-            if (PImGui::FileButton(child->AssetName.c_str(), (void*)descSet.lock()->GetId(), ImVec2(m_iconSize, m_iconSize),
-                /*label */30, isSelected, isDirty, (void*)dirtySet.lock()->GetId(), child.get(), &_RenderFileToolTips))
+            if (PImGui::DragFileButton(
+                child->AssetName.c_str(), iconDesc, iconSize,
+                /*label */30, isSelected, isDirty, dirtyDesc, child.get(), &_RenderFileToolTips,
+                dragType, dragData))
             {
                 if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
                 {

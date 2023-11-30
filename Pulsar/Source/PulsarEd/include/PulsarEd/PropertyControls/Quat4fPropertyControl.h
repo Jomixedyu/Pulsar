@@ -9,7 +9,7 @@ namespace pulsared
         EDITOR_IMPL_PROPERTY_CONTROL(cltypeof<pulsar::math::BoxingQuat4f>(), new Quat4fPropertyControl);
     public:
 
-        virtual bool OnDrawImGui(const string& name, Object* prop) override;
+        virtual bool OnDrawImGui(const string& name, Type* type, Object* prop) override;
 
     };
 }

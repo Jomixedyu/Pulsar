@@ -3,10 +3,10 @@
 
 namespace pulsared
 {
-    bool StringPropertyControl::OnDrawImGui(const string& name, Object* prop)
+    bool StringPropertyControl::OnDrawImGui(const string& name, Type* type, Object* prop)
     {
         assert(prop && prop->GetType() == GetPropertyType());
-        Type* type = prop->GetType();
+
         auto value = static_cast<String*>(prop);
         ImGui::PushItemWidth(-1);
         char buf[1024]{};

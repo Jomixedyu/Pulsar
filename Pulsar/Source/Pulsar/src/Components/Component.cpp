@@ -8,13 +8,17 @@
 namespace pulsar
 {
 
-    ObjectPtr<Node> Component::GetAttachedNode()
+    ObjectPtr<Node> Component::GetAttachedNode() const
     {
         return m_attachedNode;
     }
-    ObjectPtr<Node> Component::GetOnwerNode()
+    ObjectPtr<Node> Component::GetOwnerNode() const
     {
         return m_ownerNode;
+    }
+    World* Component::GetWorld() const
+    {
+        return GetAttachedNode()->GetRuntimeWorld();
     }
     bool Component::EqualsComponentType(Type* type)
     {

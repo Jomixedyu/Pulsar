@@ -3,10 +3,10 @@
 
 namespace pulsared
 {
-    bool Vector2fPropertyControl::OnDrawImGui(const string& name, Object* prop)
+    bool Vector2fPropertyControl::OnDrawImGui(const string& name, Type* type, Object* prop)
     {
         assert(prop && prop->GetType() == GetPropertyType());
-        Type* type = prop->GetType();
+
         auto f = static_cast<pulsar::math::BoxingVector2f*>(prop);
         ImGui::PushItemWidth(-1);
         float f3[] = { f->x, f->y };

@@ -1,9 +1,9 @@
 #include "Guid.h"
-#include <random>
 #include <memory>
+#include <random>
 
 #if WIN32
-#include <objbase.h>
+    #include <objbase.h>
 #endif
 
 namespace jxcorlib
@@ -12,25 +12,48 @@ namespace jxcorlib
     guid_t guid_t::create_new()
     {
         guid_t nguid;
-#if WIN32
-        static_assert(sizeof(GUID) == sizeof(guid_t));
+        bool created = false;
+#if _WIN32
         GUID guid;
-        if (CoCreateGuid(&guid) == S_OK)
+        CoCreateGuid(&guid);
+        constexpr int a = sizeof(long);
+        if constexpr (sizeof(GUID) == sizeof(guid_t))
         {
             memcpy(&nguid, &guid, sizeof(guid_t));
+            created = true;
         }
-#else
-        static std::random_device seed;
-        static std::ranlux48 engine{ seed() };
-        static std::uniform_int_distribution<> distrib{ 0, 15 };
-
-        char* v = (char*)&nguid;
-
-        for (size_t i = 0; i < 16; i++)
+        else if constexpr (sizeof(GUID::Data1) + sizeof(GUID::Data2) + sizeof(GUID::Data3) + sizeof(GUID::Data4) == 16)
         {
-            v[i] = distrib(engine);
+            size_t offset = 0;
+            memcpy(&nguid, &guid.Data1, sizeof(guid.Data1));
+            offset += sizeof(guid.Data1);
+            memcpy(reinterpret_cast<char*>(&nguid) + offset, &guid.Data2, sizeof(guid.Data2));
+            offset += sizeof(guid.Data2);
+            memcpy(reinterpret_cast<char*>(&nguid) + offset, &guid.Data3, sizeof(guid.Data3));
+            offset += sizeof(guid.Data3);
+            memcpy(reinterpret_cast<char*>(&nguid) + offset, &guid.Data4, sizeof(guid.Data4));
+            created = true;
+        }
+        else
+        {
+            created = false;
         }
 #endif
+
+        if (!created)
+        {
+            static std::random_device seed;
+            static std::ranlux48 engine{seed()};
+            static std::uniform_int_distribution<> distrib{0, 15};
+
+            char* v = (char*)&nguid;
+
+            for (size_t i = 0; i < 16; i++)
+            {
+                v[i] = distrib(engine);
+            }
+        }
+
         return nguid;
     }
 
@@ -41,7 +64,6 @@ namespace jxcorlib
         out_str[1] = hexlist[value % 16];
         out_str[2] = 0;
     }
-
 
     static uint8_t char_to_num(char c)
     {
@@ -68,7 +90,8 @@ namespace jxcorlib
     guid_t guid_t::parse(std::string_view str)
     {
         guid_t guid;
-        char buffer[33]; buffer[32] = 0;
+        char buffer[33];
+        buffer[32] = 0;
 
         if (str.length() == 32)
         {
@@ -121,4 +144,4 @@ namespace jxcorlib
         }
         return str;
     }
-}
+} // namespace jxcorlib

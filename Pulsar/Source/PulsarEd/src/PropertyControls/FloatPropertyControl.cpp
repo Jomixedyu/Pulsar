@@ -3,10 +3,10 @@
 
 namespace pulsared
 {
-    bool FloatPropertyControl::OnDrawImGui(const string& name, Object* prop)
+    bool FloatPropertyControl::OnDrawImGui(const string& name, Type* type, Object* prop)
     {
         assert(prop && prop->GetType() == GetPropertyType());
-        Type* type = prop->GetType();
+
         auto f = static_cast<Single32*>(prop);
         ImGui::PushItemWidth(-1);
         bool changed = ImGui::DragFloat(("##" + name).c_str(), &f->value, 0.2f);

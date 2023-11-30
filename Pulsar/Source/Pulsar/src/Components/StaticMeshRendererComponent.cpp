@@ -9,59 +9,50 @@ namespace pulsar
 {
     class StaticMeshRenderObject final : public rendering::RenderObject
     {
-      public:
+    public:
         array_list<rendering::MeshBatch> m_batchs;
-        bool m_isCreatedResource = false;
-        StaticMeshRendererComponent_ref m_staticMeshRenderer;
+        StaticMesh_ref m_staticMesh;
+        array_list<Material_ref> m_materials;
 
-        StaticMeshRenderObject(StaticMeshRendererComponent_ref staticMeshRenderer)
-            : m_staticMeshRenderer(staticMeshRenderer)
+        explicit StaticMeshRenderObject(StaticMesh_ref staticMesh, const array_list<Material_ref>& materials)
+            : m_staticMesh(staticMesh), m_materials(materials)
+        {}
+        StaticMeshRenderObject() = default;
+        void SetStaticMesh(StaticMesh_ref mesh, const array_list<Material_ref>& materials)
         {
-        }
-
-        void SetStaticMeshRenderer(StaticMeshRendererComponent_ref staticMeshRenderer)
-        {
-            if(!m_staticMesh)
+            m_staticMesh = mesh;
+            if (!mesh)
             {
                 m_active = false;
                 return;
             }
+            m_active = true;
             m_batchs.clear();
 
-            rendering::MeshBatch batch;
-            batch.IsUsedIndices = true;
-            batch.IsCastShadow = true;
+            for (auto& mat : materials)
+            {
+                auto& batch = m_batchs.emplace_back();
+                batch.Topology = gfx::GFXPrimitiveTopology::TriangleList;
+                batch.IsUsedIndices = true;
+                batch.IsCastShadow = true;
+                batch.IsUsedIndices = true;
+                batch.IsReverseCulling = IsDetermiantNegative();
+                batch.Material = mat;
 
-            batch.Material = staticMeshRenderer->GetMaterials();
+                auto vertBuffers = mesh->GetGPUResourceVertexBuffers();
+                auto indicesBuffers = mesh->GetGPUResourceIndicesBuffers();
 
-            m_batchs.push_back()
-            m_staticMesh->GetGPUResourceVertexBuffer();
-
+                for (size_t i = 0; i < vertBuffers.size(); ++i)
+                {
+                    auto& element = batch.Elements.emplace_back();
+                    element.Vertex = vertBuffers[i];
+                    element.Indices = indicesBuffers[i];
+                }
+            }
         }
         void OnCreateResource() override
         {
-            auto staticMesh = m_meshRednerer->GetStaticMesh();
-            auto sectionCount = staticMesh->GetMeshSectionCount();
-            for (size_t i = 0; i < sectionCount; i++)
-            {
-                auto& section = staticMesh->GetMeshSection(i);
-
-                rendering::MeshBatch batch;
-                auto vertex = Application::GetGfxApp()->CreateBuffer(gfx::GFXBufferUsage::Vertex, section.GetVertexAllocSize());
-                auto indices = Application::GetGfxApp()->CreateBuffer(gfx::GFXBufferUsage::Index, section.GetIndicesAllocSize());
-
-                rendering::MeshBatchElement mbElement;
-                mbElement.Vertex = vertex;
-                mbElement.Indices = indices;
-
-                batch.Elements.push_back(mbElement);
-                batch.Material = m_meshRednerer->GetMaterial(section.MaterialIndex);
-                batch.IsUsedIndices = true;
-                batch.Topology = gfx::GFXPrimitiveTopology::TriangleList;
-                batch.IsReverseCulling = IsDetermiantNegative();
-
-                m_batchs.push_back(std::move(batch));
-            };
+            SetStaticMesh(m_staticMesh, m_materials);
         }
         void OnDestroyResource() override
         {
@@ -74,10 +65,27 @@ namespace pulsar
         }
     };
 
+
     sptr<rendering::RenderObject> StaticMeshRendererComponent::CreateRenderObject()
     {
-        m_renderObject = mksptr(new StaticMeshRenderObject(THIS_REF));
-        return m_renderObject;
+        auto ro = mksptr(new StaticMeshRenderObject());
+        //m_staticMesh->CreateGPUResource();
+        m_staticMesh->CreateGPUResource();
+        for(auto mat : *m_materials)
+        {
+            mat->CreateGPUResource();
+        }
+        ro->SetStaticMesh(m_staticMesh, *m_materials);
+        return ro;
+    }
+    void StaticMeshRendererComponent::PostEditChange(FieldInfo* info)
+    {
+        base::PostEditChange(info);
+
+        if(info->GetName() == "m_staticMesh")
+        {
+            OnMeshChanged();
+        }
     }
 
     void StaticMeshRendererComponent::SetStaticMesh(StaticMesh_ref staticMesh)
@@ -94,11 +102,23 @@ namespace pulsar
     {
         m_materials->at(index) = material;
     }
+    void StaticMeshRendererComponent::BeginComponent()
+    {
+        base::BeginComponent();
+        m_renderObject = CreateRenderObject();
+        GetWorld()->AddRenderObject(m_renderObject);
+    }
+    void StaticMeshRendererComponent::EndComponent()
+    {
+        base::EndComponent();
+        GetWorld()->RemoveRenderObject(m_renderObject);
+        m_renderObject.reset();
+    }
     void StaticMeshRendererComponent::OnMeshChanged()
     {
-        if (!m_staticMesh)
+        if (m_renderObject)
         {
-            m_renderObject.reset();
+            static_cast<StaticMeshRenderObject*>(m_renderObject.get())->SetStaticMesh(m_staticMesh, *m_materials);
         }
     }
 

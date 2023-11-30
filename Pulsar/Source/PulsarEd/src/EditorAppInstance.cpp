@@ -3,6 +3,8 @@
 #include "EditorRenderPipeline.h"
 #include "Importers/FBXImporter.h"
 #include "Pulsar/Components/StaticMeshRendererComponent.h"
+#include "Tools/ObjectDebugTool.h"
+
 #include <CoreLib.Serialization/JsonSerializer.h>
 #include <CoreLib/File.h>
 #include <Pulsar/Application.h>
@@ -114,11 +116,20 @@ namespace pulsared
         {
             MenuEntrySubMenu_sp menu = mksptr(new MenuEntrySubMenu("Tool"));
             mainMenu->AddEntry(menu);
-            auto menuDebug = mksptr(new MenuEntryButton("MenuDebug"));
-            menuDebug->Action = MenuAction::FromRaw([](sptr<MenuContexts> ctx) {
-                ToolWindow::OpenToolWindow<MenuDebugTool>();
-            });
-            menu->AddEntry(menuDebug);
+            {
+                auto entry = mksptr(new MenuEntryButton("MenuDebug"));
+                entry->Action = MenuAction::FromRaw([](sptr<MenuContexts> ctx) {
+                    ToolWindow::OpenToolWindow<MenuDebugTool>();
+                });
+                menu->AddEntry(entry);
+            }
+            {
+                auto entry = mksptr(new MenuEntryButton("ObjectDebug"));
+                entry->Action = MenuAction::FromRaw([](sptr<MenuContexts> ctx) {
+                    ToolWindow::OpenToolWindow<ObjectDebugTool>();
+                });
+                menu->AddEntry(entry);
+            }
         }
         {
             MenuEntrySubMenu_sp menu = mksptr(new MenuEntrySubMenu("Window"));
@@ -200,13 +211,13 @@ namespace pulsared
 
     static void _RegisterIcon(Type* type, string_view path)
     {
-        auto icon = FileUtil::ReadAllBytes(AssetDatabase::GetAbsoluteAssetPath(path));
+        auto icon = FileUtil::ReadAllBytes(AssetDatabase::PackagePathToPhysicsPath(path));
         AssetDatabase::IconPool->Register(index_string(type->GetName()), icon.data(), icon.size());
     }
 
     static void _RegisterIcon(string_view name, string_view path)
     {
-        auto icon = FileUtil::ReadAllBytes(AssetDatabase::GetAbsoluteAssetPath(path));
+        auto icon = FileUtil::ReadAllBytes(AssetDatabase::PackagePathToPhysicsPath(path));
         AssetDatabase::IconPool->Register(index_string(name), icon.data(), icon.size());
     }
 
@@ -249,7 +260,7 @@ namespace pulsared
 
         // TODO: setup layout
         {
-            const auto defaultLayoutPath = AssetDatabase::GetAbsoluteAssetPath("Editor/Layout/Default.ini");
+            const auto defaultLayoutPath = AssetDatabase::PackagePathToPhysicsPath("Editor/Layout/Default.ini");
             m_gui->SetLayoutInfo(FileUtil::ReadAllText(defaultLayoutPath));
         }
 

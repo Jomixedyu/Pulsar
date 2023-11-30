@@ -16,11 +16,29 @@ namespace pulsar
     }
     void StaticMesh::CreateGPUResource()
     {
+        if(m_isCreatedResource)
+        {
+            return;
+        }
         m_isCreatedResource = true;
-        // m_vertexBuffer = Application::GetGfxApp()->CreateBuffer()
+        for(auto& section : m_sections)
+        {
+            auto vertSize = section.Vertex.size() * kSizeofStaticMeshVertex;
+            auto vert = Application::GetGfxApp()->CreateBuffer(gfx::GFXBufferUsage::Vertex, vertSize);
+            m_vertexBuffers.push_back(vert);
+
+            auto indicesSize = section.Indices.size() * sizeof(decltype(section.Indices)::value_type);
+            auto indices = Application::GetGfxApp()->CreateBuffer(gfx::GFXBufferUsage::Index, vertSize);
+            m_indicesBuffers.push_back(indices);
+        }
     }
     void StaticMesh::DestroyGPUResource()
     {
+        if(!m_isCreatedResource)
+            return;
+
+        m_vertexBuffers.clear();
+        m_indicesBuffers.clear();
         m_isCreatedResource = false;
     }
     bool StaticMesh::IsCreatedGPUResource() const
@@ -29,9 +47,7 @@ namespace pulsar
     }
 
     StaticMesh::~StaticMesh()
-    {
-
-    }
+    = default;
 
     void StaticMesh::Serialize(AssetSerializer* s)
     {

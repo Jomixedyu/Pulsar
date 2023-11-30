@@ -24,6 +24,10 @@ namespace jxcorlib
         {
             return this->at(index);
         }
+        virtual void SetAt(int32_t index, Object_rsp value) override
+        {
+            this->at(index) = value;
+        }
         virtual void Clear() override { this->clear(); }
         virtual void RemoveAt(int32_t index) override
         {
@@ -44,27 +48,14 @@ namespace jxcorlib
 
     };
     CORELIB_DECL_SHORTSPTR(ArrayList);
-    
-    template<typename T>
-    class ArrayListView
-    {
-        ArrayList* m_arrayList;
-    public:
-        T* GetRaw(int index) { return m_arrayList->At(index).get(); }
-        sptr<T> Get(int index) { return sptr_cast<T>(m_arrayList->At(index)); }
-        void Add(const sptr<T>& obj)
-        {
-            m_arrayList->Add(obj);
-        }
-        
-    };
+
 
     template<typename T>
     class List : public Object, public array_list<T>, public IList
     {
         CORELIB_DEF_TEMPLATE_TYPE(AssemblyObject_jxcorlib, jxcorlib::List, Object, T);
         CORELIB_IMPL_INTERFACES(IList);
-        using RealT = type_redirect<T>::type;
+        using RealT = typename type_redirect<T>::type;
         static_assert((cltype_concept<RealT>&& is_shared_ptr<RealT>::value) || !cltype_concept<RealT>, "");
         constexpr static bool is_shared_cltype = cltype_concept<RealT> && is_shared_ptr<RealT>::value;
     public:
@@ -93,6 +84,17 @@ namespace jxcorlib
             else
             {
                 return BoxUtil::Box<RealT>(this->at(index));
+            }
+        }
+        virtual void SetAt(int32_t index, Object_rsp value) override
+        {
+            if constexpr (is_shared_cltype)
+            {
+                this->at(index) = std::static_pointer_cast<typename remove_shared_ptr<RealT>::type>(value);
+            }
+            else
+            {
+                this->at(index) = UnboxUtil::Unbox<RealT>(value);
             }
         }
         virtual void Clear() override { this->clear(); }

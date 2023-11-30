@@ -3,6 +3,10 @@
 
 namespace pulsared
 {
+    AssetEditorWindow::AssetEditorWindow()
+    {
+        m_winSize = {800, 550};
+    }
     bool AssetEditorWindow::IsDirtyAsset() const
     {
         if (m_assetObject)

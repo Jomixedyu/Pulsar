@@ -35,16 +35,15 @@ namespace jxcorlib
 
     FieldInfo::FieldInfo(
         const string& name, bool is_public,
-        FieldTypeInfo info, Type* field_type,
+        FieldTypeInfo info, Type* parentType, Type* fieldType,
         Type* typeWrapper,
         GetterFunction&& getter,
         SetterFunction&& setter
         )
-        : base(name, is_public),
-          m_info(info), m_fieldType(field_type), m_typeWrapper(typeWrapper),
+        : base(name, is_public, parentType),
+          m_info(info), m_fieldType(fieldType), m_typeWrapper(typeWrapper),
           m_getter(std::move(getter)), m_setter(std::move(setter))
     {
-
     }
 
 
@@ -55,11 +54,15 @@ namespace jxcorlib
 
     sptr<Object> FieldInfo::GetValue(Object* instance) const
     {
+        if(!GetParentType()->IsInstanceOfType(instance))
+        {
+            throw ArgumentNullException();
+        }
         return this->m_getter(instance);
     }
 
-    MemberInfo::MemberInfo(const string& name, bool is_public)
-        : m_name(name), m_isPublic(is_public)
+    MemberInfo::MemberInfo(const string& name, bool is_public, Type* parentType)
+        : m_name(name), m_isPublic(is_public), m_parentType(parentType)
     {
     }
 
@@ -67,12 +70,13 @@ namespace jxcorlib
         const string& name,
         bool isPublic,
         bool isStatic,
+        Type* parentType,
         ParameterInfo* retType,
         array_list<ParameterInfo*>&& paramsInfos,
         bool isAbstract,
         std::unique_ptr<MethodDescription>&& delegate
         )
-        : base(name, isPublic),
+        : base(name, isPublic, parentType),
           m_isStatic(isStatic),
           m_retType(retType), m_paramTypes(paramsInfos), m_isAbstract(isAbstract), m_delegate(std::move(delegate))
     {

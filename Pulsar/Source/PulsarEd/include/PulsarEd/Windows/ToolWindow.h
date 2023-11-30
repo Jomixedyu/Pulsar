@@ -7,6 +7,7 @@ namespace pulsared
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::ToolWindow, EditorWindow);
     public:
+        ToolWindow();
         template<typename T>
         static void OpenToolWindow()
         {
@@ -17,8 +18,8 @@ namespace pulsared
         virtual ImGuiWindowFlags GetGuiWindowFlags() const {
             return ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoCollapse;
         }
+        virtual string GetWindowName() const override;
         virtual void DrawImGui() override;
-    private:
-        bool m_inited = false;
+
     };
 }
