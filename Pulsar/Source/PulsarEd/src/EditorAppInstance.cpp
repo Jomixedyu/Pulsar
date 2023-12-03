@@ -203,10 +203,14 @@ namespace pulsared
     {
         auto meshNode = Node::StaticCreate("mesh test");
         auto meshComponent = meshNode->AddComponent<StaticMeshRendererComponent>();
-        auto sm = GetAssetManager()->LoadAsset<StaticMesh>("Engine/Shapes/pSphere1");
-        meshComponent->SetStaticMesh(sm);
-        World::Current()->GetPersistentScene()->AddNode(meshNode);
 
+        auto staticMesh = GetAssetManager()->LoadAsset<StaticMesh>("Engine/Shapes/pSphere1");
+        meshComponent->SetStaticMesh(staticMesh);
+
+        auto missingMat = GetAssetManager()->LoadAsset<Material>("Engine/Materials/Missing");
+        meshComponent->SetMaterial(0, missingMat);
+
+        World::Current()->GetPersistentScene()->AddNode(meshNode);
     }
 
     static void _RegisterIcon(Type* type, string_view path)

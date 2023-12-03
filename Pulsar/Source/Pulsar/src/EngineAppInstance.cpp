@@ -49,11 +49,10 @@ namespace pulsar
 
             //combine batch
             std::unordered_map<Material_ref, rendering::MeshBatch> batchs;
-            for (rendering::RenderObject_sp renderObject : renderObjects)
+            for (const rendering::RenderObject_sp& renderObject : renderObjects)
             {
                 for (auto& batch : renderObject->GetMeshBatchs())
                 {
-
                     batchs[batch.Material].Append(std::move(batch));
                 }
             }
@@ -61,11 +60,11 @@ namespace pulsar
             // batch render
             for (auto& [mat, batch] : batchs)
             {
-                auto shader = mat->GetShader();
-                auto passCount = shader->GetShaderPassCount();
+                const auto passCount = mat->GetShaderPassCount();
+
                 for (size_t i = 0; i < passCount; i++)
                 {
-                    auto shaderPass = shader->GetGfxShaderPass(i);
+                    auto shaderPass = mat->GetGfxShaderPass(i);
 
                     auto gfxPipeline = pipelineMgr->GetGraphicsPipeline(shaderPass, targetFBO->GetRenderPassLayout());
                     cmdBuffer.CmdBindGraphicsPipeline(gfxPipeline.get());

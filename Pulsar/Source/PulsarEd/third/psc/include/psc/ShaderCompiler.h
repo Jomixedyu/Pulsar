@@ -26,6 +26,7 @@ namespace psc
     {
         bool Debug = false;
         IncludePaths IncludePaths;
+        std::string EntryName;
         std::vector<std::string> PreDefines;
     };
 

@@ -17,22 +17,19 @@ namespace pulsar::math
     using namespace jxcorlib;
     using namespace jxcorlib::math;
 
-    inline Matrix4f Perspective(const float& fovy, const float& aspect, const float& zNear, const float& zFar)
+    inline void Perspective(Matrix4f& result, const float& fovy, const float& aspect, const float& zNear, const float& zFar)
     {
         float const tanHalfFovy = tan(fovy / 2);
-        Matrix4f result;
         result[0][0] = 1 / (aspect * tanHalfFovy);
         result[1][1] = 1 / (tanHalfFovy);
         result[2][3] = -1;
 
         result[2][2] = -(zFar + zNear) / (zFar - zNear);
         result[3][2] = -(2 * zFar * zNear) / (zFar - zNear);
-        return result;
     }
 
-    inline Matrix4f Ortho(float left, float right, float bottom, float top, float zNear, float zFar)
+    inline void Ortho(Matrix4f& Result, float left, float right, float bottom, float top, float zNear, float zFar)
     {
-        Matrix4f Result = Matrix4f::StaticScalar();
         Result[0][0] = 2 / (right - left);
         Result[1][1] = 2 / (top - bottom);
         Result[3][0] = -(right + left) / (right - left);
@@ -40,8 +37,6 @@ namespace pulsar::math
 
         Result[2][2] = -2 / (zFar - zNear);
         Result[3][2] = -(zFar + zNear) / (zFar - zNear);
-
-        return Result;
     }
     inline Matrix4f LookAt(const Vector3f& eye, const Vector3f& center, const Vector3f& up)
     {
@@ -50,7 +45,7 @@ namespace pulsar::math
         Vector3f s(Vector3f::Normalize(Vector3f::Cross(f, up)));
         Vector3f u(Vector3f::Cross(s, f));
 
-        Matrix4f Result = Matrix4f::StaticScalar();
+        Matrix4f Result{1};
         Result[0][0] = s.x;
         Result[1][0] = s.y;
         Result[2][0] = s.z;

@@ -12,6 +12,7 @@ namespace pulsar
     class Mesh;
     class Material;
     class ShaderPass;
+    class StaticMeshRenderObject;
 
     class StaticMeshRendererComponent : public Component, public IRendererComponent
     {
@@ -39,6 +40,7 @@ namespace pulsar
         void EndComponent() override;
     protected:
         void OnMeshChanged();
+        void OnMaterialChanged();
     protected:
         CORELIB_REFL_DECL_FIELD(m_materials, new ListItemAttribute(cltypeof<Material>()));
         List_sp<Material_ref> m_materials;
@@ -49,7 +51,7 @@ namespace pulsar
         CORELIB_REFL_DECL_FIELD(m_isCastShadow);
         bool m_isCastShadow = true;
 
-        sptr<rendering::RenderObject> m_renderObject;
+        sptr<StaticMeshRenderObject> m_renderObject;
     };
     DECL_PTR(StaticMeshRendererComponent);
 }

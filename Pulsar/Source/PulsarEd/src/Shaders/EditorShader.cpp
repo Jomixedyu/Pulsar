@@ -94,6 +94,7 @@ namespace pulsared
         psc::CompileInfo info{};
         info.IncludePaths = includes;
         info.PreDefines = defines;
+        info.EntryName = "main";
 
         return pscCompiler->CompilePSH(pshPath, info, { pscApi });
     }
@@ -135,7 +136,6 @@ namespace pulsared
 
             shader->ResetShaderSource(serDatas);
             AssetDatabase::MarkDirty(shader);
-            shader->CreateGPUResource();
         }
         catch (const std::exception& e)
         {

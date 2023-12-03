@@ -225,7 +225,12 @@ namespace pulsar
         }
         T* operator->() const
         {
-            return GetPtr();
+            auto ptr = GetPtr();
+            if(ptr == nullptr)
+            {
+                throw NullPointerException();
+            }
+            return ptr;
         }
         bool operator==(const ObjectPtrBase& r) const { return handle == r.handle; }
         bool operator==(std::nullptr_t) const { return !IsValid(); }

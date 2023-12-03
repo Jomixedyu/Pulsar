@@ -38,7 +38,13 @@ namespace pulsar::rendering
             {
                 Elements.push_back(element);
             }
-            //batch.Elements.clear();
+        }
+        void Append(MeshBatch&& batch)
+        {
+            for (auto& element : batch.Elements)
+            {
+                Elements.push_back(std::move(element));
+            }
         };
     };
 

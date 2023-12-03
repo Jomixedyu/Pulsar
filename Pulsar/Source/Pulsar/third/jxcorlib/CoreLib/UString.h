@@ -18,6 +18,8 @@
 
 //Encoding: UTF-8
 
+#define NAMEOF(N) (sizeof(N), #N)
+
 namespace jxcorlib
 {
 

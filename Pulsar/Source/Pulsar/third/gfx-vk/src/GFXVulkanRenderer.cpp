@@ -16,7 +16,7 @@ namespace gfx
 
     void GFXVulkanRenderer::Render(float deltaTime)
     {
-        auto viewport = m_app->GetVulkanViewport();
+        const auto viewport = m_app->GetVulkanViewport();
 
         vkWaitForFences(m_app->GetVkDevice(), 1, &viewport->GetQueue()->GetVkFence(), VK_TRUE, UINT64_MAX);
 
@@ -39,7 +39,7 @@ namespace gfx
         renderContext.SetQueue(viewport->GetQueue());
         renderContext.DeltaTime = deltaTime;
 
-        auto renderTargets = std::vector{ viewport->GetFrameBufferObject() };
+        const auto renderTargets = std::vector{ viewport->GetFrameBufferObject() };
         m_app->GetRenderPipeline()->OnRender(&renderContext, renderTargets);
         renderContext.Submit();
 

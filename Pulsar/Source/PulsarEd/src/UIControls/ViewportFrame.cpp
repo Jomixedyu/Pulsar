@@ -7,7 +7,7 @@ namespace pulsared
 {
     namespace PImGui
     {
-        Vector2i GetContentSize()
+        Vector2f GetContentSize()
         {
             ImVec2 vMin = ImGui::GetWindowContentRegionMin();
             ImVec2 vMax = ImGui::GetWindowContentRegionMax();
@@ -15,12 +15,12 @@ namespace pulsared
             vMin.y += ImGui::GetWindowPos().y;
             vMax.x += ImGui::GetWindowPos().x;
             vMax.y += ImGui::GetWindowPos().y;
-            return Vector2i(vMax.x - vMin.x, vMax.y - vMin.y);
+            return {vMax.x - vMin.x, vMax.y - vMin.y};
         }
     }
 
     // ret: viewport Size Changed
-    static bool PreviewFrame(World* world, bool isPreviewCam, Vector2i* viewportSize, gfx::GFXDescriptorSet* descriptorSet)
+    static bool PreviewFrame(World* world, bool isPreviewCam, Vector2f* viewportSize, gfx::GFXDescriptorSet* descriptorSet)
     {
         if (!world)
         {
@@ -42,17 +42,17 @@ namespace pulsared
 
         bool isResize = false;
 
-        auto contentSize = PImGui::GetContentSize();
+        const auto contentSize = PImGui::GetContentSize();
         if (*viewportSize != contentSize)
         {
             isResize = true;
             *viewportSize = contentSize;
 
             // change new rt
-            auto newRt = RenderTexture::StaticCreate(viewportSize->x, viewportSize->y, true, true);
-            if (auto oldRt = cam->GetRenderTarget())
+            const auto newRt = RenderTexture::StaticCreate((int)viewportSize->x, (int)viewportSize->y, true, true);
+            if (const auto oldRt = cam->GetRenderTarget())
             {
-                auto oldClearColor = cam->GetRenderTarget()->GetGfxRenderTarget0()->ClearColor;
+                const auto oldClearColor = cam->GetRenderTarget()->GetGfxRenderTarget0()->ClearColor;
                 DestroyObject(oldRt);
 
                 newRt->GetGfxRenderTarget0()->ClearColor = oldClearColor;
@@ -61,7 +61,7 @@ namespace pulsared
             cam->SetRenderTarget(newRt);
         }
 
-        auto descSet = descriptorSet;
+        const auto descSet = descriptorSet;
         {
             auto desc = descSet->FindByBinding(0);
             if (!desc)
@@ -73,7 +73,7 @@ namespace pulsared
 
         descSet->Submit();
 
-        auto imgId = descSet->GetId();
+        const auto imgId = descSet->GetId();
         ImGui::Image((void*)imgId, ImVec2(contentSize.x, contentSize.y), ImVec2(0, 1), ImVec2(1, 0));
 
         return isResize;

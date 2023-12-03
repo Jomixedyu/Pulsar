@@ -24,4 +24,5 @@ namespace pulsar
     };
 
     AssetManager* GetAssetManager();
+
 }

@@ -1,6 +1,6 @@
-#include <PulsarEd/Windows/PanelWindow.h>
 #include <PulsarEd/Menus/Menu.h>
 #include <PulsarEd/Menus/MenuEntrySubMenu.h>
+#include <PulsarEd/Windows/PanelWindow.h>
 
 namespace pulsared
 {
@@ -9,13 +9,17 @@ namespace pulsared
     {
         base::OnOpen();
         Logger::Log("open panel: " + GetType()->GetName());
-        GetCheckedEntry()->IsChecked = true;
+
+        if (const auto entry = GetCheckedEntry())
+            entry->IsChecked = true;
     }
     void PanelWindow::OnClose()
     {
         base::OnClose();
         Logger::Log("close panel: " + GetType()->GetName());
-        GetCheckedEntry()->IsChecked = false;
+
+        if (const auto entry = GetCheckedEntry())
+            entry->IsChecked = false;
     }
 
     MenuEntryCheck_sp PanelWindow::GetCheckedEntry() const
@@ -23,4 +27,4 @@ namespace pulsared
         auto menu = MenuManager::GetMainMenu()->FindSubMenuEntry("Window");
         return menu->FindCheckEntry(GetWindowName());
     }
-}
+} // namespace pulsared

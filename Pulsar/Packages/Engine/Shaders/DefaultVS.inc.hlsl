@@ -4,7 +4,7 @@
 #include "Common.inc.hlsl"
 
 #define IMPL_DEFAULT_VERT(ENTRY) \
-InPixelAssembly main(InVertexAssembly a2v) \
+InPixelAssembly ENTRY(InVertexAssembly a2v) \
 { \
     InPixelAssembly v2f = (InPixelAssembly) 0; \
     v2f.WorldNormal = a2v.Normal; \

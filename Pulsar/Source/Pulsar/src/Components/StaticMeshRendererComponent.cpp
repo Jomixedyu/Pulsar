@@ -1,4 +1,6 @@
 #include "Components/StaticMeshRendererComponent.h"
+
+#include "AssetManager.h"
 #include "Components/MeshContainerComponent.h"
 #include <Pulsar/Application.h>
 #include <Pulsar/Logger.h>
@@ -16,20 +18,24 @@ namespace pulsar
 
         explicit StaticMeshRenderObject(StaticMesh_ref staticMesh, const array_list<Material_ref>& materials)
             : m_staticMesh(staticMesh), m_materials(materials)
-        {}
+        {
+        }
         StaticMeshRenderObject() = default;
-        void SetStaticMesh(StaticMesh_ref mesh, const array_list<Material_ref>& materials)
+        StaticMeshRenderObject* SetStaticMesh(StaticMesh_ref mesh)
         {
             m_staticMesh = mesh;
-            if (!mesh)
-            {
-                m_active = false;
-                return;
-            }
-            m_active = true;
+            return this;
+        }
+        StaticMeshRenderObject* SetMaterials(const array_list<Material_ref>& materials)
+        {
+            m_materials = materials;
+            return this;
+        }
+        void SubmitChange()
+        {
             m_batchs.clear();
 
-            for (auto& mat : materials)
+            for (auto& mat : m_materials)
             {
                 auto& batch = m_batchs.emplace_back();
                 batch.Topology = gfx::GFXPrimitiveTopology::TriangleList;
@@ -39,8 +45,8 @@ namespace pulsar
                 batch.IsReverseCulling = IsDetermiantNegative();
                 batch.Material = mat;
 
-                auto vertBuffers = mesh->GetGPUResourceVertexBuffers();
-                auto indicesBuffers = mesh->GetGPUResourceIndicesBuffers();
+                auto vertBuffers = m_staticMesh->GetGPUResourceVertexBuffers();
+                auto indicesBuffers = m_staticMesh->GetGPUResourceIndicesBuffers();
 
                 for (size_t i = 0; i < vertBuffers.size(); ++i)
                 {
@@ -52,7 +58,7 @@ namespace pulsar
         }
         void OnCreateResource() override
         {
-            SetStaticMesh(m_staticMesh, m_materials);
+            SubmitChange();
         }
         void OnDestroyResource() override
         {
@@ -65,30 +71,31 @@ namespace pulsar
         }
     };
 
-
     sptr<rendering::RenderObject> StaticMeshRendererComponent::CreateRenderObject()
     {
         auto ro = mksptr(new StaticMeshRenderObject());
-        //m_staticMesh->CreateGPUResource();
+        // m_staticMesh->CreateGPUResource();
         m_staticMesh->CreateGPUResource();
-        for(auto mat : *m_materials)
+        for (auto mat : *m_materials)
         {
             mat->CreateGPUResource();
         }
-        ro->SetStaticMesh(m_staticMesh, *m_materials);
+        ro->SetStaticMesh(m_staticMesh)
+            ->SetMaterials(*m_materials)
+            ->SubmitChange();
         return ro;
     }
+
     void StaticMeshRendererComponent::PostEditChange(FieldInfo* info)
     {
         base::PostEditChange(info);
-
-        if(info->GetName() == "m_staticMesh")
+        if (info->GetName() == NAMEOF(m_staticMesh))
         {
             OnMeshChanged();
         }
-        else if(info->GetName() == "m_materials")
+        else if (info->GetName() == NAMEOF(m_materials))
         {
-
+            OnMaterialChanged();
         }
     }
 
@@ -109,7 +116,7 @@ namespace pulsar
     void StaticMeshRendererComponent::BeginComponent()
     {
         base::BeginComponent();
-        m_renderObject = CreateRenderObject();
+        m_renderObject = sptr_static_cast<StaticMeshRenderObject>(CreateRenderObject());
         GetWorld()->AddRenderObject(m_renderObject);
     }
     void StaticMeshRendererComponent::EndComponent()
@@ -122,7 +129,27 @@ namespace pulsar
     {
         if (m_renderObject)
         {
-            static_cast<StaticMeshRenderObject*>(m_renderObject.get())->SetStaticMesh(m_staticMesh, *m_materials);
+            m_renderObject->SetStaticMesh(m_staticMesh)->SubmitChange();
+        }
+
+        const auto matCount = m_staticMesh ? m_staticMesh->GetMaterialCount() : 0;
+        m_materials->resize(matCount);
+
+    }
+    void StaticMeshRendererComponent::OnMaterialChanged()
+    {
+        if (m_renderObject)
+        {
+            for (auto& mat : *m_materials)
+            {
+                if (!mat.GetPtr())
+                {
+                    // load
+                    GetAssetManager()->LoadAssetById(mat.handle);
+                }
+                mat->CreateGPUResource();
+            }
+            m_renderObject->SetMaterials(*m_materials)->SubmitChange();
         }
     }
 

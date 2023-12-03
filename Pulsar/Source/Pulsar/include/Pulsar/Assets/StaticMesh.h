@@ -62,21 +62,13 @@ namespace pulsar
     protected:
         virtual void OnInstantiateAsset(AssetObject* obj) override;
     public:
-
-    public:
-
-    public:
-
-    public:
         // Override
         virtual size_t GetVertexCount() override { return 0; }
 
         StaticMeshSection& GetMeshSection(int i) { return m_sections[i]; }
         size_t GetMeshSectionCount() const { return m_sections.size(); }
-        const array_list<string>& GetMaterialNames() const
-        {
-            return m_materialNames;
-        }
+        const array_list<string>& GetMaterialNames() const { return m_materialNames; }
+        size_t GetMaterialCount() const { return m_materialNames.size(); }
     public:
         void CreateGPUResource() override;
         void DestroyGPUResource() override;

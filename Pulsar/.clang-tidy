@@ -5,4 +5,4 @@ CheckOptions:
   bugprone-misplaced-widening-cast.CheckImplicitCasts: false
 
 
-Checks: '*-explicit-constructor'
+Checks: '*-explicit-constructor,-use-nodiscard'

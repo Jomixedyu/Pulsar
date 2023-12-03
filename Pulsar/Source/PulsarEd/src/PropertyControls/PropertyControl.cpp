@@ -137,12 +137,12 @@ namespace pulsared
                     if (itemType->IsBoxingType())
                     {
                         auto boxing = list->At(i);
-                        _ObjectFieldPropertyLine(std::to_string(i), itemType, innerType, boxing.get(), receiver, receiverField);
+                        isChanged |= _ObjectFieldPropertyLine(std::to_string(i), itemType, innerType, boxing.get(), receiver, receiverField);
                         list->SetAt(i, boxing);
                     }
                     else
                     {
-                        _ObjectFieldPropertyLine(std::to_string(i), itemType, innerType, list->At(i).get(), receiver, receiverField);
+                        isChanged |= _ObjectFieldPropertyLine(std::to_string(i), itemType, innerType, list->At(i).get(), receiver, receiverField);
                     }
                     ImGui::PopID();
                 }
