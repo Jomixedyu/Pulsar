@@ -47,6 +47,13 @@ namespace pulsar
             cmdBuffer.CmdBeginFrameBuffer();
             cmdBuffer.CmdSetViewport(0, 0, (float)targetFBO->GetWidth(), (float)targetFBO->GetHeight());
 
+            // for each render object
+            for (auto ro : renderObjects)
+            {
+                //setup descriptor
+
+            }
+
             //combine batch
             std::unordered_map<Material_ref, rendering::MeshBatch> batchs;
             for (const rendering::RenderObject_sp& renderObject : renderObjects)
@@ -58,37 +65,39 @@ namespace pulsar
             }
 
             // batch render
-            for (auto& [mat, batch] : batchs)
-            {
-                const auto passCount = mat->GetShaderPassCount();
-
-                for (size_t i = 0; i < passCount; i++)
-                {
-                    auto shaderPass = mat->GetGfxShaderPass(i);
-
-                    auto gfxPipeline = pipelineMgr->GetGraphicsPipeline(shaderPass, targetFBO->GetRenderPassLayout());
-                    cmdBuffer.CmdBindGraphicsPipeline(gfxPipeline.get());
-
-                    for (auto& element : batch.Elements)
-                    {
-                        cmdBuffer.CmdBindVertexBuffers({ element.Vertex.get() });
-                        if (batch.IsUsedIndices)
-                        {
-                            cmdBuffer.CmdBindIndexBuffer(element.Indices.get());
-                        }
-                        cmdBuffer.CmdBindDescriptorSets(mat->GetDescriptorSet().get(), gfxPipeline.get());
-                        if (batch.IsUsedIndices)
-                        {
-                            cmdBuffer.CmdDrawIndexed(element.Indices->GetSize());
-                        }
-                        else
-                        {
-                            cmdBuffer.CmdDraw(element.Vertex->GetSize());
-                        }
-                    }
-
-                }
-            }
+            // for (auto& [mat, batch] : batchs)
+            // {
+            //
+            //     mat->GetGfxDescriptorSet()->Submit();
+            //
+            //     const auto passCount = mat->GetShaderPassCount();
+            //     for (size_t i = 0; i < passCount; i++)
+            //     {
+            //         auto shaderPass = mat->GetGfxShaderPass(i);
+            //
+            //         auto gfxPipeline = pipelineMgr->GetGraphicsPipeline(shaderPass, targetFBO->GetRenderPassLayout());
+            //         cmdBuffer.CmdBindGraphicsPipeline(gfxPipeline.get());
+            //
+            //         for (auto& element : batch.Elements)
+            //         {
+            //             cmdBuffer.CmdBindVertexBuffers({ element.Vertex.get() });
+            //             if (batch.IsUsedIndices)
+            //             {
+            //                 cmdBuffer.CmdBindIndexBuffer(element.Indices.get());
+            //             }
+            //             cmdBuffer.CmdBindDescriptorSets(mat->GetDescriptorSet().get(), gfxPipeline.get());
+            //             if (batch.IsUsedIndices)
+            //             {
+            //                 cmdBuffer.CmdDrawIndexed(element.Indices->GetSize());
+            //             }
+            //             else
+            //             {
+            //                 cmdBuffer.CmdDraw(element.Vertex->GetSize());
+            //             }
+            //         }
+            //
+            //     }
+            // }
 
             //post processing
 

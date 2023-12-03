@@ -110,7 +110,14 @@ namespace gfx
     {
         auto vkDescSet = static_cast<GFXVulkanDescriptorSet*>(descriptorSet);
         auto vkGpipeline = static_cast<GFXVulkanGraphicsPipeline*>(pipeline);
-        vkCmdBindDescriptorSets(m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vkGpipeline->GetVkPipelineLayout(), 0, 1, &vkDescSet->GetVkDescriptorSet(), 0, nullptr);
+        vkCmdBindDescriptorSets(m_cmdBuffer,
+            VK_PIPELINE_BIND_POINT_GRAPHICS,
+            vkGpipeline->GetVkPipelineLayout(),
+            0,
+            1,
+            &vkDescSet->GetVkDescriptorSet(),
+            0,
+            nullptr);
     }
 
     void GFXVulkanCommandBuffer::CmdDrawIndexed(size_t indicesCount)

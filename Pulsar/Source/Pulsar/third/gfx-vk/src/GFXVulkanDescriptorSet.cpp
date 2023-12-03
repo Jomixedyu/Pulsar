@@ -218,7 +218,7 @@ namespace gfx
     void GFXVulkanDescriptorSet::Submit()
     {
         std::vector<VkWriteDescriptorSet> writeInfos;
-        for (auto& descriptor : m_descriptors)
+        for (const auto& descriptor : m_descriptors)
         {
             if (descriptor->IsDirty)
             {
@@ -226,7 +226,15 @@ namespace gfx
                 descriptor->IsDirty = false;
             }
         }
-        vkUpdateDescriptorSets(m_pool->GetApplication()->GetVkDevice(), static_cast<uint32_t>(writeInfos.size()), writeInfos.data(), 0, nullptr);
+        if(!writeInfos.empty())
+        {
+            vkUpdateDescriptorSets(
+                m_pool->GetApplication()->GetVkDevice(),
+                static_cast<uint32_t>(writeInfos.size()),
+                writeInfos.data(),
+                0,
+                nullptr);
+        }
     }
     intptr_t GFXVulkanDescriptorSet::GetId()
     {

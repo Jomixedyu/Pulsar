@@ -102,7 +102,7 @@ namespace pulsar
 
         void CommitParameters();
 
-        gfx::GFXDescriptorSet_sp GetDescriptorSet() const { return m_descriptorSet; }
+        gfx::GFXDescriptorSet_sp GetGfxDescriptorSet() const { return m_descriptorSet; }
 
     public:
         Shader_ref GetShader() const;

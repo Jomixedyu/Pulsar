@@ -11,6 +11,7 @@ namespace pulsar::rendering
     {
         gfx::GFXBuffer_sp Vertex;
         gfx::GFXBuffer_sp Indices;
+        Matrix4f LocalToWorldMatrix;
     };
 
     struct MeshBatch
@@ -25,12 +26,12 @@ namespace pulsar::rendering
         bool IsReverseCulling;
         gfx::GFXPrimitiveTopology Topology;
 
-        //bool IsSameRenderingState(const MeshBatch& batch) const
-        //{
-        //    return
-        //        Material == batch.Material &&
-        //        IsReverseCulling == batch.IsReverseCulling;
-        //}
+        bool IsSameRenderingState(const MeshBatch& batch) const
+        {
+            return
+                Material == batch.Material &&
+                IsReverseCulling == batch.IsReverseCulling;
+        }
 
         void Append(const MeshBatch& batch)
         {
@@ -82,7 +83,7 @@ namespace pulsar::rendering
 
     protected:
         bool      m_active = false;
-        Matrix4f  m_localToWorld;
+        Matrix4f  m_localToWorld{1};
         bool      m_isLocalToWorldDeterminantNegative{};
 
     };
