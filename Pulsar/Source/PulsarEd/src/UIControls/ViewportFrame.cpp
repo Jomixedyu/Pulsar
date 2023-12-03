@@ -49,7 +49,7 @@ namespace pulsared
             *viewportSize = contentSize;
 
             // change new rt
-            const auto newRt = RenderTexture::StaticCreate((int)viewportSize->x, (int)viewportSize->y, true, true);
+            const auto newRt = RenderTexture::StaticCreate("BackBufferRT"_idxstr, (int)viewportSize->x, (int)viewportSize->y, true, true);
             if (const auto oldRt = cam->GetRenderTarget())
             {
                 const auto oldClearColor = cam->GetRenderTarget()->GetGfxRenderTarget0()->ClearColor;

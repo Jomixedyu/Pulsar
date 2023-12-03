@@ -89,7 +89,7 @@ public:
         auto it = map->find(hash);
         if (it == map->end())
         {
-            index_string_block block;
+            index_string_block block{};
 
             const size_t view_len = view.length();
             const size_t block_len = view_len + 1;

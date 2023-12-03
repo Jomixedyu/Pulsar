@@ -37,16 +37,16 @@ namespace pulsar
 
     void World::Tick(float dt)
     {
-        Ticker ticker;
+        Ticker ticker{};
         ticker.deltatime = dt;
 
         for (auto& scene : m_scenes)
         {
             if (IsValid(scene))
             {
-                for (auto& node : *scene->GetRootNodes())
+                for (auto& node : *scene->GetNodes())
                 {
-                    if (IsValid(node))
+                    if (IsValid(node) && node->GetIsActive())
                     {
                         node->OnTick(ticker);
                     }

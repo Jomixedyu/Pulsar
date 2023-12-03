@@ -207,6 +207,12 @@ namespace pulsared
 
                 receiverField = ignore ? field : receiverField;
 
+                const bool isReadOnly = field->IsDefinedAttribute(cltypeof<ReadOnlyPropertyAttribute>());
+                if(isReadOnly)
+                {
+                    ImGui::BeginDisabled();
+                }
+
                 if(isChanged |= _ObjectFieldPropertyLine(
                     field->GetName(), field->GetFieldType(), fieldInnerType, fieldInstSptr.get(), receiver, receiverField))
                 {
@@ -217,6 +223,10 @@ namespace pulsared
                     receiver->PostEditChange(receiverField);
                 }
 
+                if(isReadOnly)
+                {
+                    ImGui::EndDisabled();
+                }
 
                 ImGui::PopID();
             }

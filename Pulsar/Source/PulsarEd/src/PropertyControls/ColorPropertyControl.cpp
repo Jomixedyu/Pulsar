@@ -10,7 +10,8 @@ namespace pulsared
         auto f = static_cast<jxcorlib::math::BoxingColor4f*>(prop);
         ImGui::PushItemWidth(-1);
         float color[4] = { f->r, f->g, f->b, f->a };
-        bool changed = ImGui::ColorPicker4(("##" + name).c_str(), color);
+        bool changed = ImGui::ColorEdit4(("##" + name).c_str(), color);
+        //bool changed = ImGui::ColorButton(("##" + name).c_str(), ImVec4{f->r, f->g, f->b, f->a});
         if (changed)
         {
             f->r = color[0];

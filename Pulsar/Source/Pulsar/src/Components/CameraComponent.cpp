@@ -13,22 +13,22 @@ namespace pulsar
 
     }
 
-    Matrix4f CameraComponent::GetViewMat()
+    Matrix4f CameraComponent::GetViewMat() const
     {
-        return jmath::Inverse(GetAttachedNode()->GetTransform()->GetLocalToWorldMatrix());
+        return jmath::Inverse(GetAttachedNode()->GetTransform()->GetChildLocalToWorldMatrix());
     }
 
-    Matrix4f CameraComponent::GetProjectionMat()
+    Matrix4f CameraComponent::GetProjectionMat() const
     {
-        const Vector2f& size = this->m_renderTarget ? this->m_renderTarget->GetSize2df() : this->size_;
+        const Vector2f& size = this->m_renderTarget->GetSize2df();
         Matrix4f ret{1};
-        if (this->cameraMode == CameraMode::Perspective)
+        if (this->m_projectionMode == CameraProjectionMode::Perspective)
         {
             math::Perspective(ret,
-                math::Radians(this->fov),
+                math::Radians(this->m_fov),
                 size.x / size.y,
-                this->near,
-                this->far);
+                this->m_near,
+                this->m_far);
         }
         else
         {
@@ -37,14 +37,10 @@ namespace pulsar
                 size.x,
                 0.0f,
                 size.y,
-                this->near,
-                this->far);
+                this->m_near,
+                this->m_far);
         }
         return ret;
-    }
-    Matrix4f CameraComponent::LookAtRH(Vector3f const& eye, Vector3f const& center, Vector3f const& up)
-    {
-        return {};
     }
 
     void CameraComponent::PostEditChange(FieldInfo* info)
@@ -55,10 +51,19 @@ namespace pulsar
             UpdateRTBackgroundColor();
         }
     }
+    void CameraComponent::OnTick(Ticker ticker)
+    {
+        base::OnTick(ticker);
+        debug_view_mat = GetViewMat();
+    }
     void CameraComponent::SetBackgroundColor(const Color4f& value)
     {
         m_backgroundColor = value;
         UpdateRTBackgroundColor();
+    }
+    void CameraComponent::SetProjectionMode(CameraProjectionMode mode)
+    {
+        m_projectionMode = mode;
     }
 
     void CameraComponent::UpdateRTBackgroundColor()
@@ -82,11 +87,6 @@ namespace pulsar
     {
         m_renderTarget = value;
         UpdateRT();
-    }
-
-    void CameraComponent::LookAt(const Vector3f& pos)
-    {
-        //transutil::LookAt(this->GetAttachedNode()->get_world_position(), pos, transutil::Vector3Up());
     }
 
     void CameraComponent::BeginComponent()

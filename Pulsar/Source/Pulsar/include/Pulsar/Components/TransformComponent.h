@@ -33,13 +33,16 @@ namespace pulsar
         void SetEuler(Vector3f value);
 
         TransformComponent();
+        void OnTick(Ticker ticker) override;
 
         const Matrix4f& GetLocalToWorldMatrix() const { return m_localToWorldMatrix; }
         Matrix4f GetChildLocalToWorldMatrix() const;
         const Matrix4f& GetWorldToLocalMatrix() const { return m_worldToLocalMatrix; }
     protected:
         void RebuildLocalToWorldMatrix();
+        void PostEditChange(FieldInfo* info) override;
     protected:
+        CORELIB_REFL_DECL_FIELD(m_localToWorldMatrix, new ReadOnlyPropertyAttribute);
         Matrix4f m_localToWorldMatrix;
         Matrix4f m_worldToLocalMatrix;
         bool m_isDirtyMatrix = false;
@@ -49,8 +52,7 @@ namespace pulsar
         CORELIB_REFL_DECL_FIELD(m_euler);
         Vector3f m_euler{};
         CORELIB_REFL_DECL_FIELD(m_scale);
-        Vector3f m_scale{};
-
+        Vector3f m_scale;
         CORELIB_REFL_DECL_FIELD(m_rotation);
         Quat4f m_rotation{};
 

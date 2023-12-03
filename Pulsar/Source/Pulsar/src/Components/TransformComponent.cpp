@@ -77,22 +77,40 @@ namespace pulsar
         m_rotation = Quat4f::FromEuler(value);
     }
 
-    TransformComponent::TransformComponent() : m_localToWorldMatrix{1.f}, m_worldToLocalMatrix{1.f}
+    TransformComponent::TransformComponent()
+        : m_localToWorldMatrix{1.f}, m_worldToLocalMatrix{1.f},
+        m_scale(1.f,1.f,1.f)
     {
         m_flags |= OF_DontDestroy;
         m_children = mksptr(new List<ObjectPtr<TransformComponent>>);
     }
+    void TransformComponent::OnTick(Ticker ticker)
+    {
+        base::OnTick(ticker);
+        RebuildLocalToWorldMatrix();
+    }
 
     Matrix4f TransformComponent::GetChildLocalToWorldMatrix() const
     {
-        Matrix4f selfMat;
+        Matrix4f selfMat{1};
         transutil::NewTRS(selfMat, m_position, m_rotation, m_scale);
         return m_localToWorldMatrix * selfMat;
     }
 
     void TransformComponent::RebuildLocalToWorldMatrix()
     {
-        m_localToWorldMatrix = m_parent->GetChildLocalToWorldMatrix();
+        if (m_parent)
+        {
+            m_localToWorldMatrix = m_parent->GetChildLocalToWorldMatrix();
+        }
+    }
+    void TransformComponent::PostEditChange(FieldInfo* info)
+    {
+        base::PostEditChange(info);
+        if(info->GetName() == NAMEOF(m_euler))
+        {
+            m_rotation = Quat4f::FromEuler(m_euler);
+        }
     }
 
     void TransformComponent::SetParent(ObjectPtr<TransformComponent> parent)

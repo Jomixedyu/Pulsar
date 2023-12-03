@@ -60,10 +60,11 @@ namespace pulsar
 
     }
 
-    RenderTexture_ref RenderTexture::StaticCreate(int width, int height, bool hasColor, bool hasDepth)
+    RenderTexture_ref RenderTexture::StaticCreate(index_string name, int width, int height, bool hasColor, bool hasDepth)
     {
         auto self = mksptr(new RenderTexture);
         self->Construct();
+        self->m_name = name;
 
         auto gfx = Application::GetGfxApp();
 
