@@ -20,6 +20,7 @@ namespace pulsar
         Color4b Color;
         Vector2f TexCoords[STATICMESH_MAX_TEXTURE_COORDS];
     };
+    constexpr inline int kSizeofStaticMeshVertex = sizeof(StaticMeshVertex);
 
     struct StaticMeshSection
     {
@@ -49,7 +50,7 @@ namespace pulsar
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::StaticMesh, Mesh)
     public:
         constexpr static int32_t SerializeVersion = 1;
-        StaticMesh() {}
+        StaticMesh() = default;
         ~StaticMesh() override;
     public:
         virtual void Serialize(AssetSerializer* s) override;
@@ -61,32 +62,26 @@ namespace pulsar
     protected:
         virtual void OnInstantiateAsset(AssetObject* obj) override;
     public:
-
-    public:
-
-    public:
-
-    public:
         // Override
         virtual size_t GetVertexCount() override { return 0; }
 
         StaticMeshSection& GetMeshSection(int i) { return m_sections[i]; }
         size_t GetMeshSectionCount() const { return m_sections.size(); }
-        const array_list<string>& GetMaterialNames() const
-        {
-            return m_materialNames;
-        }
+        const array_list<string>& GetMaterialNames() const { return m_materialNames; }
+        size_t GetMaterialCount() const { return m_materialNames.size(); }
     public:
         void CreateGPUResource() override;
         void DestroyGPUResource() override;
         bool IsCreatedGPUResource() const override;
+        const array_list<gfx::GFXBuffer_sp>& GetGPUResourceVertexBuffers() const { return m_vertexBuffers; }
+        const array_list<gfx::GFXBuffer_sp>& GetGPUResourceIndicesBuffers() const { return m_indicesBuffers; }
     protected: // serialization data
         array_list<StaticMeshSection> m_sections;
         array_list<string> m_materialNames;
     protected: // runtime data
         bool m_isCreatedResource = false;
-        gfx::GFXBuffer_sp m_vertexBuffer;
-        gfx::GFXBuffer_sp m_indicesBuffer;
+        array_list<gfx::GFXBuffer_sp> m_vertexBuffers;
+        array_list<gfx::GFXBuffer_sp> m_indicesBuffers;
     };
     DECL_PTR(StaticMesh);
 

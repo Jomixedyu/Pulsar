@@ -41,7 +41,7 @@ namespace gfx
         virtual GFXShaderPass_sp CreateShaderPass(
             const GFXShaderPassConfig& config,
             const GFXGpuProgram_sp& gpuProgram,
-            const GFXDescriptorSetLayout_sp& descSetLayout,
+            //const array_list<GFXDescriptorSetLayout_sp>& descSetLayout,
             const array_list<GFXVertexLayoutDescription_sp>& vertexLayout) override;
 
         virtual GFXGraphicsPipelineManager* GetGraphicsPipelineManager() const override
@@ -72,7 +72,8 @@ namespace gfx
         virtual GFXDescriptorManager* GetDescriptorManager() override;
 
         virtual GFXDescriptorSetLayout_sp CreateDescriptorSetLayout(
-            const array_list<GFXDescriptorSetLayoutInfo>& layoutInfos) override;
+            const GFXDescriptorSetLayoutInfo* layouts,
+            size_t layoutCount) override;
 
         virtual array_list<GFXTextureFormat> GetSupportedDepthFormats() override;
 

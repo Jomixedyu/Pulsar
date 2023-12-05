@@ -48,6 +48,10 @@ namespace pulsared
     public:
     };
 
+    // PackagePath : Engine/Layout/xxx  (Engine/Layout/xxx)
+    // AssetPath   : Engine/Material/xxx (Engine/AssetsMaterial/xxx)
+    // PhysicsPath
+
     class AssetDatabase
     {
     public:
@@ -57,13 +61,18 @@ namespace pulsared
 
         static void AddProgramPackageSearchPath(std::filesystem::path path);
         static void AddPackage(string_view packageName);
-        static std::filesystem::path GetPackagePath(string_view packageName);
+        static std::filesystem::path GetPackagePhysicsPath(string_view packageName);
         static string GetPackageName(string_view assetPath);
-        static std::filesystem::path GetAbsoluteAssetPath(string_view assetPath);
+
+        static std::filesystem::path PackagePathToPhysicsPath(string_view packagePath);
+        static string AssetPathToPackagePath(string_view assetPath);
+        static std::filesystem::path AssetPathToPhysicsPath(string_view assetPath);
+
         static array_list<ProgramPackage> GetPackageInfos();
 
         static AssetObject_ref LoadAssetAtPath(string_view path);
         static AssetObject_ref LoadAssetById(ObjectHandle id);
+        static string GetPathById(ObjectHandle id);
         static string GetPathByAsset(AssetObject_ref asset);
         static ObjectHandle GetIdByPath(string_view path);
 
@@ -99,14 +108,5 @@ namespace pulsared
         static void OnAddPackage(ProgramPackage* package);
     };
 
-    inline std::filesystem::path operator"" _adpath(const char* str, size_t len)
-    {
-        return AssetDatabase::GetAbsoluteAssetPath(str);
-    }
-
-    inline string operator"" _adspath(const char* str, size_t len)
-    {
-        return AssetDatabase::GetAbsoluteAssetPath(str).string();
-    }
 
 }

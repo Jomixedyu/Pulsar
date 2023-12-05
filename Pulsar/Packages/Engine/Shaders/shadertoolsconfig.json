@@ -1,0 +1,11 @@
+{
+    "hlsl.preprocessorDefinitions": {
+      "MY_PREPROCESSOR_DEFINE_1": "Foo",
+      "MY_PREPROCESSOR_DEFINE_2": 1
+    },
+    "hlsl.additionalIncludeDirectories": [
+      "./"
+    ],
+    "hlsl.virtualDirectoryMappings": {
+    }
+  }

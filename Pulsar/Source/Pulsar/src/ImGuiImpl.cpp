@@ -221,6 +221,14 @@ namespace pulsar
         {
             ImGui::LoadIniSettingsFromMemory(content.data());
         }
+
+        std::string GetLayoutInfo() override
+        {
+            size_t size;
+            const char* str = ImGui::SaveIniSettingsToMemory(&size);
+            return std::string{ std::string_view{str, size} };
+        }
+
     };
 #endif
 

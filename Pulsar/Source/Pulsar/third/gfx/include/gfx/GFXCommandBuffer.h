@@ -24,7 +24,7 @@ namespace gfx
         virtual void CmdBindGraphicsPipeline(GFXGraphicsPipeline* pipeline) = 0;
         virtual void CmdBindVertexBuffers(const std::vector<GFXBuffer*>& buffers) = 0;
         virtual void CmdBindIndexBuffer(GFXBuffer* buffer) = 0;
-        virtual void CmdBindDescriptorSets(GFXDescriptorSet* descriptorSet, GFXGraphicsPipeline* pipeline) = 0;
+        virtual void CmdBindDescriptorSets(const array_list<GFXDescriptorSet*>& descriptorSet, GFXGraphicsPipeline* pipeline) = 0;
 
         virtual void CmdDraw(size_t vertexCount) = 0;
         virtual void CmdDrawIndexed(size_t indicesCount) = 0;

@@ -1,20 +1,20 @@
 #pragma once
-#include "GFXGlobalConfig.h"
-#include "GFXExtensions.h"
+#include "GFXApi.h"
 #include "GFXBuffer.h"
 #include "GFXCommandBuffer.h"
-#include "GFXTexture2D.h"
-#include "GFXVertexLayoutDescription.h"
 #include "GFXDescriptorManager.h"
+#include "GFXExtensions.h"
+#include "GFXGlobalConfig.h"
 #include "GFXGpuProgram.h"
-#include "GFXShaderPass.h"
-#include "GFXRenderTarget.h"
-#include "GFXViewport.h"
-#include "GFXRenderPipeline.h"
-#include "GFXRenderPass.h"
 #include "GFXGraphicsPipelineManager.h"
 #include "GFXInclude.h"
-#include "GFXApi.h"
+#include "GFXRenderPass.h"
+#include "GFXRenderPipeline.h"
+#include "GFXRenderTarget.h"
+#include "GFXShaderPass.h"
+#include "GFXTexture2D.h"
+#include "GFXVertexLayoutDescription.h"
+#include "GFXViewport.h"
 #include <functional>
 
 namespace gfx
@@ -25,19 +25,30 @@ namespace gfx
     public:
         using LoopEvent = std::function<void(float)>;
 
-        //using LoopEvent = void(*)(GFXApplication*, float);
-        using ExitWindowEvent = bool(*)();
+        // using LoopEvent = void(*)(GFXApplication*, float);
+        using ExitWindowEvent = bool (*)();
+
     public:
         GFXApplication(const GFXApplication&) = delete;
         GFXApplication(GFXApplication&&) = delete;
 
+        virtual void Initialize()
+        {
+        }
+        virtual void ExecLoop()
+        {
+        }
+        virtual void RequestStop()
+        {
+        }
+        virtual void Terminate()
+        {
+        }
 
-        virtual void Initialize() {}
-        virtual void ExecLoop() {}
-        virtual void RequestStop() {}
-        virtual void Terminate() {}
-
-        const GFXGlobalConfig& GetConfig() const { return m_config; }
+        const GFXGlobalConfig& GetConfig() const
+        {
+            return m_config;
+        }
         virtual GFXExtensions GetExtensionNames() = 0;
         virtual GFXApi GetApiType() const = 0;
         virtual const char* GetApiLevelName() const = 0;
@@ -48,6 +59,7 @@ namespace gfx
         LoopEvent OnPreRender = nullptr;
         LoopEvent OnPostRender = nullptr;
         ExitWindowEvent OnExitWindow = nullptr;
+
     public:
         virtual GFXBuffer_sp CreateBuffer(GFXBufferUsage usage, size_t bufferSize) = 0;
         virtual GFXCommandBuffer_sp CreateCommandBuffer() = 0;
@@ -56,13 +68,16 @@ namespace gfx
         virtual GFXShaderPass_sp CreateShaderPass(
             const GFXShaderPassConfig& config,
             const GFXGpuProgram_sp& gpuProgram,
-            const GFXDescriptorSetLayout_sp& descSetLayout,
+            //const array_list<GFXDescriptorSetLayout_sp>& descSetLayout,
             const array_list<GFXVertexLayoutDescription_sp>& vertexLayout) = 0;
 
         virtual GFXDescriptorManager* GetDescriptorManager() = 0;
-        
+
         virtual GFXDescriptorSetLayout_sp CreateDescriptorSetLayout(
-            const array_list<GFXDescriptorSetLayoutInfo>& layoutInfos) = 0;
+            const GFXDescriptorSetLayoutInfo* layouts,
+            size_t layoutCount = 1) = 0;
+        virtual GFXDescriptorSetLayout_sp CreateDescriptorSetLayout(
+            std::initializer_list<GFXDescriptorSetLayoutInfo> layouts);
 
         virtual GFXGraphicsPipelineManager* GetGraphicsPipelineManager() const = 0;
 
@@ -73,7 +88,7 @@ namespace gfx
         virtual GFXTexture2D_sp CreateTexture2DFromMemory(
             const uint8_t* data, int32_t length,
             const GFXSamplerConfig& samplerConfig,
-            bool enableReadWrite = false, 
+            bool enableReadWrite = false,
             GFXTextureFormat format = GFXTextureFormat::R8G8B8A8_SRGB) = 0;
 
         virtual GFXRenderTarget_sp CreateRenderTarget(
@@ -91,10 +106,14 @@ namespace gfx
         virtual intptr_t GetWindowHandle() = 0;
 
         virtual GFXViewport* GetViewport() = 0;
+
     protected:
-        GFXApplication() {}
+        GFXApplication()
+        {
+        }
+
     protected:
         GFXGlobalConfig m_config{};
     };
 
-}
+} // namespace gfx

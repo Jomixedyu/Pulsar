@@ -15,7 +15,8 @@ namespace pulsared
     class PropertyControl
     {
     public:
-        virtual bool OnDrawImGui(const string& name, Object* prop) = 0;
+        virtual ~PropertyControl() = default;
+        virtual bool OnDrawImGui(const string& name, Type* type, Object* prop) = 0;
         virtual Type* GetPropertyType() = 0;
     };
 
@@ -42,7 +43,7 @@ namespace pulsared
         bool PropertyLine(const string& name, Type* type, Object* obj);
 
         // object field properties
-        void ObjectProperties(const string& name,Type* type, Object* obj);
+        void ObjectFieldProperties(Type* type, Type* inner, Object* obj, ObjectBase* receiver);
     }
 
 }

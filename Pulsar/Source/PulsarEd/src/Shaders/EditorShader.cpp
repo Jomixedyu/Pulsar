@@ -94,6 +94,7 @@ namespace pulsared
         psc::CompileInfo info{};
         info.IncludePaths = includes;
         info.PreDefines = defines;
+        info.EntryName = "main";
 
         return pscCompiler->CompilePSH(pshPath, info, { pscApi });
     }
@@ -113,7 +114,7 @@ namespace pulsared
                 for (auto& passName : *shader->GetPassNames())
                 {
                     auto& passSerData = apiSerData.Passes.emplace_back();
-                    auto shaderPath = AssetDatabase::GetAbsoluteAssetPath(*passName);
+                    auto shaderPath = AssetDatabase::PackagePathToPhysicsPath(*passName);
 
                     auto passModules = CompilePulsarShader(shaderPath, apiItem, includes, defines);
 
@@ -135,7 +136,6 @@ namespace pulsared
 
             shader->ResetShaderSource(serDatas);
             AssetDatabase::MarkDirty(shader);
-            shader->CreateGPUResource();
         }
         catch (const std::exception& e)
         {

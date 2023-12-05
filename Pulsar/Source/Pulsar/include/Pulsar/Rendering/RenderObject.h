@@ -11,12 +11,20 @@ namespace pulsar::rendering
     {
         gfx::GFXBuffer_sp Vertex;
         gfx::GFXBuffer_sp Indices;
+        gfx::GFXDescriptorSet_sp ModelDescriptor;
+    };
+
+    struct BatchRenderState
+    {
+        Material_ref Material;
+        bool IsReverseCulling;
+        gfx::GFXPrimitiveTopology Topology;
     };
 
     struct MeshBatch
     {
         array_list<MeshBatchElement> Elements;
-
+        gfx::GFXDescriptorSetLayout_sp DescriptorSetLayout;
         Material_ref Material;
 
         bool IsUsedIndices;
@@ -25,39 +33,37 @@ namespace pulsar::rendering
         bool IsReverseCulling;
         gfx::GFXPrimitiveTopology Topology;
 
-        //bool IsSameRenderingState(const MeshBatch& batch) const
-        //{
-        //    return
-        //        Material == batch.Material &&
-        //        IsReverseCulling == batch.IsReverseCulling;
-        //}
+        size_t GetRenderState() const
+        {
+            constexpr size_t prime = 16777619;
+            return (((2166136261 * prime
+                ^ std::hash<ObjectPtrBase>()(Material)) * prime
+                ^ std::hash<bool>{}(IsReverseCulling)) * prime
+                ^ std::hash<gfx::GFXPrimitiveTopology>{}(Topology)) * prime;
+        }
 
         void Append(const MeshBatch& batch)
         {
-            for (auto element : batch.Elements)
+            for (const auto& element : batch.Elements)
             {
                 Elements.push_back(element);
             }
-            //batch.Elements.clear();
-        };
+        }
     };
 
-    class IDrawInterface
-    {
-    public:
-
-    };
 
     class RenderObject
     {
     public:
+        virtual ~RenderObject() = default;
         void SetTransform(const Matrix4f& localToWorld)
         {
             m_localToWorld = localToWorld;
             m_isLocalToWorldDeterminantNegative = localToWorld.Determinant() < 0;
 
-            UpdateConstantBuffer();
+            OnChangedTransform();
         }
+        virtual void OnChangedTransform() {}
         void UpdateConstantBuffer()
         {
 
@@ -67,11 +73,16 @@ namespace pulsar::rendering
         virtual void OnDestroyResource() {}
 
         virtual array_list<MeshBatch> GetMeshBatchs() = 0;
+        virtual bool IsActive() const { return m_active; };
 
         bool IsDetermiantNegative() const { return m_isLocalToWorldDeterminantNegative; }
+
+    public:
+
     protected:
-        Matrix4f  m_localToWorld;
-        bool      m_isLocalToWorldDeterminantNegative;
+        bool      m_active = false;
+        Matrix4f  m_localToWorld{1};
+        bool      m_isLocalToWorldDeterminantNegative{};
 
     };
     CORELIB_DECL_SHORTSPTR(RenderObject);

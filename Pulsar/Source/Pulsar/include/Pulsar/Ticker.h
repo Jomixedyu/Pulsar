@@ -7,6 +7,13 @@ namespace pulsar
     {
         float deltatime;
         uint32_t count;
+
+        Ticker& operator+=(float dt)
+        {
+            deltatime = dt;
+            ++count;
+            return *this;;
+        }
     };
 
     class ITickable

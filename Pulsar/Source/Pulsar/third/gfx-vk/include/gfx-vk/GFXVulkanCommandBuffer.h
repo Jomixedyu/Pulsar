@@ -27,7 +27,7 @@ namespace gfx
         virtual void CmdBindGraphicsPipeline(GFXGraphicsPipeline* pipeline) override;
         virtual void CmdBindVertexBuffers(const std::vector<GFXBuffer*>& buffers) override;
         virtual void CmdBindIndexBuffer(GFXBuffer* buffer) override;
-        virtual void CmdBindDescriptorSets(GFXDescriptorSet* descriptorSet, GFXGraphicsPipeline* pipeline) override;
+        virtual void CmdBindDescriptorSets(const array_list<GFXDescriptorSet*>& descriptorSet, GFXGraphicsPipeline* pipeline) override;
         virtual void CmdDraw(size_t vertexCount) override;
         virtual void CmdDrawIndexed(size_t indicesCount) override;
         virtual void CmdClearColor(GFXRenderTarget* rt, float r, float g, float b, float a) override;

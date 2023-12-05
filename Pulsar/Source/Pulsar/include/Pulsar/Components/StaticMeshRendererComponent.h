@@ -12,16 +12,19 @@ namespace pulsar
     class Mesh;
     class Material;
     class ShaderPass;
+    class StaticMeshRenderObject;
 
+    constexpr uint32_t kRenderingDescriptorSpace_ModelInfo = 2;
     class StaticMeshRendererComponent : public Component, public IRendererComponent
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::StaticMeshRendererComponent, Component);
         CORELIB_IMPL_INTERFACES(IRendererComponent);
     public:
-        virtual sptr<rendering::RenderObject> CreateRenderObject() override;
+        sptr<rendering::RenderObject> CreateRenderObject() override;
     public:
-
         List_sp<Material_ref> GetMaterials() const { return this->m_materials; }
+
+        void PostEditChange(FieldInfo* info) override;
 
         StaticMeshRendererComponent() : CORELIB_INIT_INTERFACE(IRendererComponent)
         {
@@ -29,13 +32,22 @@ namespace pulsar
         }
 
         StaticMesh_ref GetStaticMesh() const { return m_staticMesh; }
-        void SetStaticMesh(StaticMesh_ref staticMesh) { m_staticMesh = staticMesh; }
+        void SetStaticMesh(StaticMesh_ref staticMesh);
 
         Material_ref GetMaterial(int index) const;
         void SetMaterial(int index, Material_ref material);
 
+        void BeginComponent() override;
+        void EndComponent() override;
+
+        void OnReceiveMessage(MessageId id) override;
+
     protected:
-        CORELIB_REFL_DECL_FIELD(m_materials);
+        void OnMsg_TransformChanged() override;
+        void OnMeshChanged();
+        void OnMaterialChanged();
+    protected:
+        CORELIB_REFL_DECL_FIELD(m_materials, new ListItemAttribute(cltypeof<Material>()));
         List_sp<Material_ref> m_materials;
 
         CORELIB_REFL_DECL_FIELD(m_staticMesh);
@@ -43,6 +55,11 @@ namespace pulsar
 
         CORELIB_REFL_DECL_FIELD(m_isCastShadow);
         bool m_isCastShadow = true;
+
+        sptr<StaticMeshRenderObject> m_renderObject;
+
+    private:
+
     };
     DECL_PTR(StaticMeshRendererComponent);
 }

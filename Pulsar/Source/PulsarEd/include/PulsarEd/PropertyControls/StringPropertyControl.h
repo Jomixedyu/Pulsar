@@ -8,7 +8,7 @@ namespace pulsared
         EDITOR_IMPL_PROPERTY_CONTROL(cltypeof<String>(), new StringPropertyControl);
     public:
 
-        virtual bool OnDrawImGui(const string& name, Object* prop) override;
+        virtual bool OnDrawImGui(const string& name, Type* type, Object* prop) override;
 
     };
 }

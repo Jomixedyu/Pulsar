@@ -143,14 +143,15 @@ namespace jxcorlib
 
     protected:
         string m_name;
-        bool m_isPublic;
-
+        bool   m_isPublic;
+        Type*  m_parentType;
     public:
+        Type* GetParentType() const { return this->m_parentType; }
         const string& GetName() const { return this->m_name; }
         bool IsPublic() const { return this->m_isPublic; }
 
     public:
-        MemberInfo(const string& name, bool is_public);
+        MemberInfo(const string& name, bool is_public, Type* parentType);
         MemberInfo(const MemberInfo& right) = delete;
         MemberInfo(MemberInfo&& right) = delete;
     };
@@ -189,7 +190,7 @@ namespace jxcorlib
     public:
         FieldInfo(
             const string& name, bool is_public,
-            FieldTypeInfo info, Type* field_type,
+            FieldTypeInfo info, Type* parentType, Type* fieldType,
             Type* typeWrapper,
             GetterFunction&& getter, SetterFunction&& setter);
 
@@ -213,7 +214,6 @@ namespace jxcorlib
         bool m_isConst;
         bool m_isRef;
         bool m_isRref;
-
     public:
         Type* GetParamType() const { return this->m_paramType; }
         bool IsPointer() const { return this->m_isPointer; }
@@ -263,6 +263,7 @@ namespace jxcorlib
             const string& name,
             bool isPublic,
             bool isStatic,
+            Type* parentType,
             ParameterInfo* retType,
             array_list<ParameterInfo*>&& paramsInfos,
             bool isAbstract,
@@ -305,7 +306,7 @@ namespace jxcorlib
             using ClType = typename get_boxing_type<typename fulldecay<TField>::type>::type;
             Type* fieldType = cltypeof<ClType>();
 
-            auto* fieldInfo = new FieldInfo{name, is_public, info, fieldType, typeWrapper, std::move(getter), std::move(setter) };
+            auto* fieldInfo = new FieldInfo{name, is_public, info, cltypeof<T>(), fieldType, typeWrapper, std::move(getter), std::move(setter) };
 
             for (auto& attr : attributeList)
             {
@@ -357,7 +358,7 @@ namespace jxcorlib
             std::unique_ptr<MethodDescription>&& delegate)
         {
             //todo: return value
-            auto methodInfo = new MethodInfo(name, isPublic, isStatic, nullptr, std::move(info), false, std::move(delegate));
+            auto methodInfo = new MethodInfo(name, isPublic, isStatic, type, nullptr, std::move(info), false, std::move(delegate));
             type->_AddMemberInfo(methodInfo);
 
         }

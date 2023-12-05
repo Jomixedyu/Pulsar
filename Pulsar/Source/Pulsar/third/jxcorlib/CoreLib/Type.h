@@ -237,7 +237,9 @@ namespace jxcorlib
             __corelib_type() { IInterface::StaticType(); }
         } __corelib_type_init_;
         Type* owner_type_;
+
     public:
+        virtual ~IInterface() = default;
         IInterface(Type* owner) : owner_type_(owner) {}
         Type* GetType() const { return this->owner_type_; }
         static Type* StaticType();
@@ -532,6 +534,9 @@ namespace jxcorlib
     {
         static_assert(true, "no boxing type!");
     };
+
+    template<typename T>
+    using get_boxing_type_t = typename get_boxing_type<T>::type;
 
     template<typename T>
     sptr<T> interface_sptr_cast(Object_rsp obj)

@@ -1,4 +1,6 @@
 CheckOptions:
   bugprone-reserved-identifier.*: false
   modernize-use-override.AllowOverrideAndFinal: true
+  modernize-use-emplace.IgnoreImplicitConstructors: true
 
+Checks: '*-explicit-constructor,-use-nodiscard'

@@ -106,11 +106,25 @@ namespace gfx
         vkCmdBindIndexBuffer(m_cmdBuffer, static_cast<GFXVulkanBuffer*>(buffer)->GetVkBuffer(), 0, VK_INDEX_TYPE_UINT16);
     }
 
-    void GFXVulkanCommandBuffer::CmdBindDescriptorSets(GFXDescriptorSet* descriptorSet, GFXGraphicsPipeline* pipeline)
+    void GFXVulkanCommandBuffer::CmdBindDescriptorSets(const array_list<GFXDescriptorSet*>& descriptorSet, GFXGraphicsPipeline* pipeline)
     {
-        auto vkDescSet = static_cast<GFXVulkanDescriptorSet*>(descriptorSet);
-        auto vkGpipeline = static_cast<GFXVulkanGraphicsPipeline*>(pipeline);
-        vkCmdBindDescriptorSets(m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vkGpipeline->GetVkPipelineLayout(), 0, 1, &vkDescSet->GetVkDescriptorSet(), 0, nullptr);
+        VkDescriptorSet sets[8]{};
+        for (int i = 0; const auto set : descriptorSet)
+        {
+            const auto vkDescSet = static_cast<GFXVulkanDescriptorSet*>(set);
+            sets[i] = vkDescSet->GetVkDescriptorSet();
+            ++i;
+        }
+
+        const auto vkGpipeline = static_cast<GFXVulkanGraphicsPipeline*>(pipeline);
+        vkCmdBindDescriptorSets(m_cmdBuffer,
+            VK_PIPELINE_BIND_POINT_GRAPHICS,
+            vkGpipeline->GetVkPipelineLayout(),
+            0,
+            descriptorSet.size(),
+            sets,
+            0,
+            nullptr);
     }
 
     void GFXVulkanCommandBuffer::CmdDrawIndexed(size_t indicesCount)

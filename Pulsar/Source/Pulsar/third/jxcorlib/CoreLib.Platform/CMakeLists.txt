@@ -1,17 +1,24 @@
 
-cmake_minimum_required (VERSION 3.8)
+cmake_minimum_required(VERSION 3.8)
 
-project (jxcorlib.platform)
+project(jxcorlib.platform)
 
 
-list(APPEND LIST_SRC "Window.h")
-list(APPEND LIST_SRC "FolderWatch.h")
-
+list(APPEND LIST_SRC
+        "Window.h"
+        "FolderWatch.h"
+        "System.h"
+)
 
 if (CMAKE_SYSTEM_NAME MATCHES "Windows")
-    list(APPEND LIST_SRC "Impl/Windows/Window.cpp")
-    list(APPEND LIST_SRC "Impl/Windows/FolderWatch.cpp")
+    list(APPEND LIST_SRC
+            "Impl/Windows/Window.cpp"
+            "Impl/Windows/FolderWatch.cpp"
+            "Impl/Windows/System.cpp"
+    )
 endif ()
 
 
-add_library(${PROJECT_NAME} STATIC OBJECT ${LIST_SRC})
+add_library(${PROJECT_NAME} OBJECT ${LIST_SRC})
+
+target_include_directories(${PROJECT_NAME} PRIVATE "./")

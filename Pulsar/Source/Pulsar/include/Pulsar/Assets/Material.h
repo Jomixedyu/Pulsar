@@ -10,19 +10,19 @@ namespace pulsar
     class IMaterialParameter
     {
     public:
-        virtual void SetInt(const string& name, int value) = 0;
-        virtual void SetFloat(const string& name, float value) = 0;
-        virtual void SetColor(const string& name, const Color4f& color) = 0;
-        virtual void SetVector4(const string& name, const Vector4f& vec) = 0;
-        virtual void SetTexture(const string& name, Texture_ref) = 0;
-        virtual void SetMatrix4f(const string& name, const Matrix4f& value) = 0;
+        virtual void SetInt(const index_string& name, int value) = 0;
+        virtual void SetFloat(const index_string& name, float value) = 0;
+        virtual void SetColor(const index_string& name, const Color4f& color) = 0;
+        virtual void SetVector4(const index_string& name, const Vector4f& vec) = 0;
+        virtual void SetTexture(const index_string& name, Texture_ref) = 0;
+        virtual void SetMatrix4f(const index_string& name, const Matrix4f& value) = 0;
 
-        virtual int         GetInt(const string& name) = 0;
-        virtual float       GetFloat(const string& name) = 0;
-        virtual Color4f     GetColor(const string& name) = 0;
-        virtual Vector4f    GetVector4(const string& name) = 0;
-        virtual Texture_ref GetTexture(const string& name) = 0;
-        virtual Matrix4f    GetMatrix4f(const string& name) = 0;
+        virtual int         GetInt(const index_string& name) = 0;
+        virtual float       GetFloat(const index_string& name) = 0;
+        virtual Color4f     GetColor(const index_string& name) = 0;
+        virtual Vector4f    GetVector4(const index_string& name) = 0;
+        virtual Texture_ref GetTexture(const index_string& name) = 0;
+        virtual Matrix4f    GetMatrix4f(const index_string& name) = 0;
     };
 
     struct MaterialParameterValue
@@ -50,15 +50,12 @@ namespace pulsar
         {
             switch (Type)
             {
-            case pulsar::MaterialParameterValue::INT: return sizeof(int);
-                break;
-            case pulsar::MaterialParameterValue::FLOAT: return sizeof(float);
-                break;
-            case pulsar::MaterialParameterValue::COLOR: return sizeof(Color4f);
-                break;
-            case pulsar::MaterialParameterValue::VECTOR: return sizeof(Vector4f);
-                break;
-            case pulsar::MaterialParameterValue::MATRIX: return sizeof(Matrix4f);
+            case INT: return sizeof(int);
+            case FLOAT: return sizeof(float);
+            case COLOR: return sizeof(Color4f);
+            case VECTOR: return sizeof(Vector4f);
+            case MATRIX: return sizeof(Matrix4f);
+            default:
                 break;
             }
             return 0;
@@ -66,8 +63,7 @@ namespace pulsar
 
     };
 
-
-    class Material : public AssetObject, public IMaterialParameter, public IGPUResource
+    class Material final : public AssetObject, public IMaterialParameter, public IGPUResource
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::Material, AssetObject);
     public:
@@ -81,46 +77,49 @@ namespace pulsar
     public:
 
         virtual void OnConstruct() override;
-        void BeginGpu();
-        void EndGpu();
 
         // IMaterialParameter
-        virtual void SetInt(const string& name, int value) override;
-        virtual void SetFloat(const string& name, float value) override;
-        virtual void SetColor(const string& name, const Color4f& color) override;
-        virtual void SetTexture(const string& name, Texture_ref value) override;
-        virtual void SetMatrix4f(const string& name, const Matrix4f& value) override;
-        virtual void SetVector4(const string& name, const Vector4f& value) override;
-        virtual int         GetInt(const string& name) override;
-        virtual float       GetFloat(const string& name) override;
-        virtual Color4f     GetColor(const string& name) override;
-        virtual Vector4f    GetVector4(const string& name) override;
-        virtual Texture_ref GetTexture(const string& name) override;
-        virtual Matrix4f    GetMatrix4f(const string& name) override;
+        virtual void SetInt(const index_string& name, int value) override;
+        virtual void SetFloat(const index_string& name, float value) override;
+        virtual void SetColor(const index_string& name, const Color4f& color) override;
+        virtual void SetTexture(const index_string& name, Texture_ref value) override;
+        virtual void SetMatrix4f(const index_string& name, const Matrix4f& value) override;
+        virtual void SetVector4(const index_string& name, const Vector4f& value) override;
+        virtual int         GetInt(const index_string& name) override;
+        virtual float       GetFloat(const index_string& name) override;
+        virtual Color4f     GetColor(const index_string& name) override;
+        virtual Vector4f    GetVector4(const index_string& name) override;
+        virtual Texture_ref GetTexture(const index_string& name) override;
+        virtual Matrix4f    GetMatrix4f(const index_string& name) override;
 
 
         void CommitParameters();
 
-        gfx::GFXDescriptorSet_sp GetDescriptorSet() const { return m_descriptorSet; }
+        gfx::GFXDescriptorSet_sp GetGfxDescriptorSet() const { return m_descriptorSet; }
 
     public:
         Shader_ref GetShader() const;
         void SetShader(Shader_ref value) { m_shader = value; }
+
+        size_t GetShaderPassCount() const { return m_shader->GetPassCount(); }
+        gfx::GFXShaderPass_sp GetGfxShaderPass(size_t index) { return m_gfxShaderPasses[index]; }
     private:
 
         CORELIB_REFL_DECL_FIELD(m_shader);
         Shader_ref m_shader;
 
-        hash_map<string, MaterialParameterValue> m_parameterValues;
+        array_list<gfx::GFXShaderPass_sp> m_gfxShaderPasses;
+
+        hash_map<index_string, MaterialParameterValue> m_parameterValues;
         std::vector<uint8_t> m_bufferData;
 
         gfx::GFXDescriptorSet_sp m_descriptorSet;
         gfx::GFXDescriptorSetLayout_sp m_descriptorSetLayout;
-        gfx::GFXBuffer_sp m_buffer;
+        gfx::GFXBuffer_sp m_materialBuffer;
 
         bool m_createdGpuResource = false;
-        bool m_isDirtyParameter;
-        int m_renderQueue;
+        bool m_isDirtyParameter{};
+        int m_renderQueue{};
     };
     DECL_PTR(Material);
 

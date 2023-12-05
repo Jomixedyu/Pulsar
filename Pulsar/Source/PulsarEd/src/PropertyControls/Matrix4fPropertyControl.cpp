@@ -3,10 +3,10 @@
 
 namespace pulsared
 {
-    bool Matrix4fPropertyControl::OnDrawImGui(const string& name, Object* prop)
+    bool Matrix4fPropertyControl::OnDrawImGui(const string& name, Type* type, Object* prop)
     {
         assert(prop && prop->GetType() == GetPropertyType());
-        Type* type = prop->GetType();
+
         auto mat = static_cast<pulsar::math::BoxingMatrix4f*>(prop);
         ImGui::PushItemWidth(-1);
 

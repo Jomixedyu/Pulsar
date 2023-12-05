@@ -19,7 +19,7 @@ namespace gfx
         m_externPool.reset();
     }
 
-    std::shared_ptr<GFXDescriptorSet> GFXVulkanDescriptorManager::GetDescriptorSet(GFXDescriptorSetLayout* layout)
+    std::shared_ptr<GFXDescriptorSet> GFXVulkanDescriptorManager::GetDescriptorSet(GFXDescriptorSetLayout_sp layout)
     {
         for (auto& pool : m_pools)
         {

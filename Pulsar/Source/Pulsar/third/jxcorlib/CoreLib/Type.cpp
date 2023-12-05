@@ -90,6 +90,7 @@ namespace jxcorlib
 
     bool Type::IsInstanceOfType(const Object* object) const
     {
+        if(object == nullptr) return false;
         return object->GetType()->IsSubclassOf(this);
     }
     bool Type::IsSharedInstanceOfType(const sptr<Object>& ptr) const

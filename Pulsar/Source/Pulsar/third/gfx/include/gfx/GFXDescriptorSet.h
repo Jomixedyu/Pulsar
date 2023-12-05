@@ -19,15 +19,20 @@ namespace gfx
         VertexFragment = Vertex | Fragment,
     };
 
-    struct GFXDescriptorSetLayoutInfo
+    struct GFXDescriptorSetLayoutInfo final
     {
     public:
         uint32_t BindingPoint;
+        uint32_t SpacePoint;
         GFXDescriptorType Type;
         GFXShaderStageFlags Stage;
 
-        GFXDescriptorSetLayoutInfo(uint32_t bindingPoint, GFXDescriptorType type, GFXShaderStageFlags stage)
-            : BindingPoint(bindingPoint), Type(type), Stage(stage)
+        GFXDescriptorSetLayoutInfo(
+            GFXDescriptorType type,
+            GFXShaderStageFlags stage,
+            uint32_t bindingPoint = 0,
+            uint32_t spacePoint = 0)
+            : Type(type), Stage(stage), BindingPoint(bindingPoint), SpacePoint(spacePoint)
         {
         }
     };
@@ -35,14 +40,10 @@ namespace gfx
     class GFXDescriptorSetLayout
     {
     protected:
-        GFXDescriptorSetLayout(const std::vector<GFXDescriptorSetLayoutInfo>& layout)
-            : m_layout(layout)
+        GFXDescriptorSetLayout()
         {
         }
         virtual ~GFXDescriptorSetLayout() {}
-
-    protected:
-        std::vector<GFXDescriptorSetLayoutInfo> m_layout;
     };
     GFX_DECL_SPTR(GFXDescriptorSetLayout);
 
@@ -74,6 +75,7 @@ namespace gfx
         virtual GFXDescriptor* FindByBinding(uint32_t bindingPoint) = 0;
         virtual void Submit() = 0;
         virtual intptr_t GetId() = 0;
+        virtual GFXDescriptorSetLayout_sp GetDescriptorSetLayout() const = 0;
     };
     GFX_DECL_SPTR(GFXDescriptorSet);
 

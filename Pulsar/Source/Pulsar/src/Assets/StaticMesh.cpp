@@ -14,24 +14,43 @@ namespace pulsar
         auto mesh = static_cast<ThisClass*>(obj);
         mesh->m_sections = m_sections;
     }
+
     void StaticMesh::CreateGPUResource()
     {
+        if(m_isCreatedResource)
+        {
+            return;
+        }
         m_isCreatedResource = true;
-        // m_vertexBuffer = Application::GetGfxApp()->CreateBuffer()
+        for(auto& section : m_sections)
+        {
+            auto vertSize = section.Vertex.size() * kSizeofStaticMeshVertex;
+            auto vertBuffer = Application::GetGfxApp()->CreateBuffer(gfx::GFXBufferUsage::Vertex, vertSize);
+            vertBuffer->Fill(section.Vertex.data());
+            m_vertexBuffers.push_back(vertBuffer);
+
+
+            auto indicesSize = section.Indices.size() * sizeof(decltype(section.Indices)::value_type);
+            auto indicesBuffer = Application::GetGfxApp()->CreateBuffer(gfx::GFXBufferUsage::Index, indicesSize);
+            indicesBuffer->Fill(section.Indices.data());
+            m_indicesBuffers.push_back(indicesBuffer);
+        }
     }
     void StaticMesh::DestroyGPUResource()
     {
+        if(!m_isCreatedResource)
+            return;
         m_isCreatedResource = false;
+
+        m_vertexBuffers.clear();
+        m_indicesBuffers.clear();
     }
     bool StaticMesh::IsCreatedGPUResource() const
     {
         return m_isCreatedResource;
     }
 
-    StaticMesh::~StaticMesh()
-    {
-
-    }
+    StaticMesh::~StaticMesh() = default;
 
     void StaticMesh::Serialize(AssetSerializer* s)
     {

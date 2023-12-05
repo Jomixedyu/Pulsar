@@ -125,11 +125,11 @@ namespace pulsared
         return nullptr;
     }
 
-    string AssetDatabase::GetPathByAsset(AssetObject_ref asset)
+    string AssetDatabase::GetPathById(ObjectHandle id)
     {
         for (auto& [package, registry] : _AssetRegistry)
         {
-            auto it = registry.AssetPathMapping.find(asset.GetHandle());
+            auto it = registry.AssetPathMapping.find(id);
             if (it != registry.AssetPathMapping.end())
             {
                 return it->second;
@@ -137,6 +137,10 @@ namespace pulsared
         }
 
         return {};
+    }
+    string AssetDatabase::GetPathByAsset(AssetObject_ref asset)
+    {
+        return GetPathById(asset.handle);
     }
 
     ObjectHandle AssetDatabase::GetIdByPath(string_view path)
@@ -302,6 +306,13 @@ namespace pulsared
         }
         return nullptr;
     }
+    static void _OnPostEditChanged(ObjectBase* object)
+    {
+        if(cltypeof<AssetObject>()->IsInstanceOfType(object))
+        {
+            AssetDatabase::MarkDirty(object->GetObjectHandle());
+        }
+    }
     void AssetDatabase::Initialize()
     {
         IconPool = std::make_unique<PersistentImagePool>(Application::GetGfxApp());
@@ -314,21 +325,22 @@ namespace pulsared
         FileTree->IsCollapsed = true;
 
         Workspace::OnWorkspaceOpened += _OnWorkspaceOpened;
+        RuntimeObjectWrapper::OnPostEditChanged += _OnPostEditChanged;
+    }
+
+    void AssetDatabase::Terminate()
+    {
+        Workspace::OnWorkspaceOpened -= _OnWorkspaceOpened;
+        RuntimeObjectWrapper::OnPostEditChanged -= _OnPostEditChanged;
+        IconPool.reset();
+        decltype(_DirtyObjects){}.swap(_DirtyObjects);
+        decltype(_AssetRegistry){}.swap(_AssetRegistry);
     }
 
     void AssetDatabase::Refresh()
     {
 
     }
-
-    void AssetDatabase::Terminate()
-    {
-        Workspace::OnWorkspaceOpened -= _OnWorkspaceOpened;
-        IconPool.reset();
-        decltype(_DirtyObjects){}.swap(_DirtyObjects);
-        decltype(_AssetRegistry){}.swap(_AssetRegistry);
-    }
-
 
     static array_list<std::filesystem::path> _PackageSearchPaths;
 
@@ -358,7 +370,7 @@ namespace pulsared
         }
     }
 
-    std::filesystem::path AssetDatabase::GetPackagePath(string_view packageName)
+    std::filesystem::path AssetDatabase::GetPackagePhysicsPath(string_view packageName)
     {
         for (const auto& package : _ProgramPackages)
         {
@@ -375,12 +387,32 @@ namespace pulsared
         return string{assetPath.substr(0, index)};
     }
 
-    std::filesystem::path AssetDatabase::GetAbsoluteAssetPath(string_view assetPath)
+    std::filesystem::path AssetDatabase::PackagePathToPhysicsPath(string_view packagePath)
+    {
+        const auto index = packagePath.find('/');
+        if (index == string_view::npos) // root
+        {
+            return GetPackagePhysicsPath(packagePath);
+        }
+        const auto packageName = packagePath.substr(0, index);
+        const auto path = packagePath.substr(index + 1);
+        return (GetPackagePhysicsPath(packageName) / path).generic_string();
+    }
+    string AssetDatabase::AssetPathToPackagePath(string_view assetPath)
     {
         const auto index = assetPath.find('/');
-        const auto packageName = assetPath.substr(0, index);
-        const auto path = assetPath.substr(index + 1);
-        return (GetPackagePath(packageName) / path).generic_string();
+        auto packageName = assetPath.substr(0, index);
+        string path;
+        if(index != string_view::npos)
+        {
+            path += string{"/"};
+            path += assetPath.substr(index + 1);
+        }
+        return string{packageName} + "/Assets" + path;
+    }
+    std::filesystem::path AssetDatabase::AssetPathToPhysicsPath(string_view assetPath)
+    {
+        return PackagePathToPhysicsPath(AssetPathToPackagePath(assetPath));
     }
 
     array_list<ProgramPackage> AssetDatabase::GetPackageInfos()

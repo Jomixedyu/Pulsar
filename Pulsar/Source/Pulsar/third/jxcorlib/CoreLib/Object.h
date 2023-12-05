@@ -28,10 +28,18 @@
     using NAME##_wp = ::jxcorlib::wptr<NAME<T>>;
 
 #ifdef WIN32
-#define API_jxcorlib __declspec(dllexport)
+    #if defined(JXCORELIB_BUILD_SHARED) && defined(JXCORELIB_EXPORT_API)
+        #define JXCORELIB_API __declspec(dllexport)
+    #elif defined(JXCORELIB_BUILD_SHARED) && !defined(JXCORELIB_EXPORT_API)
+        #define JXCORELIB_API __declspec(dllimport)
+    #else
+        #define JXCORELIB_API
+    #endif
 #else
-#define API_jxcorlib
+    #define JXCORELIB_API
 #endif
+
+
 
 namespace jxcorlib
 {
@@ -105,7 +113,7 @@ namespace jxcorlib
     template<typename T>
     struct remove_shared_ptr<T, std::void_t<typename T::element_type>>
     {
-        using type = T::element_type;
+        using type = typename T::element_type;
     };
 
     class Object : public std::enable_shared_from_this<Object>

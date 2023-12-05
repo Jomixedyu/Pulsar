@@ -48,28 +48,52 @@ struct OutPixelAssembly
     float4 Color : SV_TARGET;
 };
 
-cbuffer CB_Camera : register(b0)
-{
-    float4x4 _MatrixV;
-    float4x4 _MatrixP;
-    float4x4 _MatrixVP;
+
+struct TargetCBufferStruct //512
+{ 
+    //256
+    float4x4 MatrixV;
+    float4x4 InvMatrixV;
+    float4x4 MatrixP;
+    float4x4 InvMatrixP;
+    //128
+    float4x4 MatrixVP;
+    float4x4 InvMatrixVP; 
+    //128
+    float4   CamPosition;
+    float    CamNear;
+    float    CamFar;
+    float2   Resolution;
+    float4     _Padding1;
+    float4     _Padding2;
+    float4x4   _Padding3;
 };
-cbuffer CB_Lighting : register(b1)
+struct WorldCBufferStruct
 {
-    float4 _WorldSpaceLightPos;
-    float3 _WorldSpaceLightColor;
+    //64
+    float4 WorldSpaceLightPos;
+    float4 WorldSpaceLightColor;
+    float  TotalTime;
+    float  DeltaTime;
+    float2 _Padding0;
+    float4 _Padding1;
+};
+struct PerCBufferStruct
+{
+    float4x4 LocalToWorldMatrix;
+    float4   NodePosition;
+    uint     ShaderFlags;
 };
 
-cbuffer ShaderCBuffer : register(b2)
-{
-    uint _ShaderFlags;
-    float4x4 _MatrixLocalToWorld;
-    float3 _NodePosition;
-}
+ConstantBuffer<TargetCBufferStruct> TargetBuffer : register(b0, space0);
+ConstantBuffer<WorldCBufferStruct>  WorldBuffer  : register(b0, space1);
+ConstantBuffer<PerCBufferStruct>    PerBuffer    : register(b0, space2);
+
+
 
 inline float4 ObjectToWorld(in float3 position)
 {
-    return mul(_MatrixVP, mul(_MatrixLocalToWorld, float4(position, 1.0)));
+    return mul(TargetBuffer.MatrixVP, mul(PerBuffer.LocalToWorldMatrix, float4(position, 1.0)));
 }
 
 #define PRIMITIVE_FLAGS_CAST_SHADOWS 0x1

@@ -8,13 +8,24 @@
 namespace pulsar
 {
 
-    ObjectPtr<Node> Component::GetAttachedNode()
+    ObjectPtr<Node> Component::GetAttachedNode() const
     {
         return m_attachedNode;
     }
-    ObjectPtr<Node> Component::GetOnwerNode()
+    ObjectPtr<Node> Component::GetOwnerNode() const
     {
         return m_ownerNode;
+    }
+    World* Component::GetWorld() const
+    {
+        return GetAttachedNode()->GetRuntimeWorld();
+    }
+    void Component::OnReceiveMessage(MessageId id)
+    {
+        if(id == MessageId_OnChangedTransform)
+        {
+            OnMsg_TransformChanged();
+        }
     }
     bool Component::EqualsComponentType(Type* type)
     {
@@ -27,6 +38,10 @@ namespace pulsar
 
     void Component::BeginComponent()
     {
-
+        m_beginning = true;
     }
-}
+    void Component::EndComponent()
+    {
+        m_beginning = false;
+    }
+} // namespace pulsar

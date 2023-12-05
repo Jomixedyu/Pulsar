@@ -175,6 +175,7 @@ namespace psc
             shader.setEnvInput(glslang::EShSourceHlsl, langStage, client, ClientInputSemanticsVersion);
             shader.setEnvClient(client, ClientVersion);
             shader.setEnvTarget(glslang::EShTargetSpv, TargetVersion);
+            shader.setEntryPoint(compileInfo.EntryName.c_str());
 
             TBuiltInResource resources{};
             resources = GetDefaultTBuiltInResource();

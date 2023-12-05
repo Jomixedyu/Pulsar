@@ -39,17 +39,16 @@ namespace pulsared
 
         m_cam = camNode->AddComponent<CameraComponent>();
 
-        auto camRt = RenderTexture::StaticCreate(2, 2, true, true);
+        auto camRt = RenderTexture::StaticCreate("BackBufferRT"_idxstr, 2, 2, true, true);
         //GetDeferredDestroyedQueue().push_back(camRt);
 
         m_cam->SetRenderTarget(camRt);
-        
-        m_cam->cameraMode = CameraMode::Perspective;
+        m_cam->SetProjectionMode(CameraProjectionMode::Perspective);
         m_cam->SetBackgroundColor(Color4f{ 0.3f, 0.3f, 0.3f, 1.0f });
-        m_cam->fov = 45.f;
-        m_cam->near = 0.01f;
-        m_cam->far = 10000.f;
-        m_cam->size_ = { 1280.f, 720.f };
+        m_cam->SetFOV(45.f);
+        m_cam->SetNear(0.01f);
+        m_cam->SetFar(10000.f);
+
         camNode->GetTransform()->SetPosition({ 0.f, 7.f, 30.f });
 
         camCtrlNode->AddComponent<StdEditCameraControllerComponent>();

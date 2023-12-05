@@ -38,62 +38,90 @@ namespace jmath
         return *reinterpret_cast<float*>(&a);
     }
 
+
     template<typename T>
-    struct Vector4
+    struct Vector2
     {
         using value_type = T;
 
-        T x, y, z, w;
+        T x, y;
 
-        Vector4() : x(0), y(0), z(0), w(0) {}
-        Vector4(T _x, T _y, T _z, T _w) : x(_x), y(_y), z(_z), w(_w) {}
+        constexpr Vector2() = default;
+        constexpr Vector2(T _x, T _y) : x(_x), y(_y) {}
+
+        template<typename U>
+        constexpr Vector2(const U& r) : x((T)r.x), y((T)r.y) {}
 
         const T* get_value_ptr() const { return &this->x; }
         T* get_value_ptr() { return &this->x; }
 
         static constexpr int column_count = 1;
-        static constexpr int row_count = 4;
-
-        static inline Vector4 Mul(const Vector4<T>& l, const Vector4<T>& r)
-        {
-            return { l.x * r.x, l.y * r.y, l.z * r.z, l.w * r.w };
-        }
+        static constexpr int row_count = 2;
 
         T& operator[](int index) { return *(&x + index); }
         const T& operator[](int index) const { return *(&x + index); }
+
+        static Vector2 StaticZero() { return Vector2{ T(0), T(0) }; }
+        static Vector2 StaticOne() { return Vector2{ T(1), T(1) }; }
+        static Vector2 StaticUp() { return Vector2{ T(0), T(1) }; }
+        static Vector2 StaticRight() { return Vector2{ T(1), T(0) }; }
+
+        Vector2 operator-() { return Vector2(-x, -y); }
+        Vector2 operator+=(Vector2 r) { x += r.x; y += r.y; return *this; }
+        Vector2 operator+=(T r) { x += r; y += r; return *this; }
+        Vector2 operator-=(Vector2 r) { x -= r.x; y -= r.y; return *this; }
+        Vector2 operator-=(T r) { x -= r; y -= r; return *this; }
+        Vector2 operator*=(T r) { x *= r; y *= r; return *this; }
+        Vector2 operator/=(T r) { x /= r; y /= r; return *this; }
+
+        static inline T Dot(const Vector2<T>& a, const Vector2<T>& b)
+        {
+            return a.x * b.x + a.y * b.y;
+        }
+        static Vector2<T> Normalize(const Vector2<T>& input);
+        static void Normalized() { *this = Normalize(*this); }
+        inline Vector2 Reflect(const Vector2& input, const Vector2& normal)
+        {
+            return -input + 2.0f * Dot(Normalize(input), normal) * normal;
+        }
     };
 
-    template<typename T> std::string to_string(const Vector4<T>& v)
+
+    template<typename T> inline Vector2<T> operator*(Vector2<T> a, T b) { return Vector2<T>(a.x * b, a.y * b); }
+    template<typename T> inline Vector2<T> operator*(T a, Vector2<T> b) { return Vector2<T>(a * b.x, a * b.y); }
+    template<typename T> inline Vector2<T> operator*(Vector2<T> a, Vector2<T> b) { return Vector2<T>(a.x * b.x, a.y * b.y); }
+    template<typename T> inline Vector2<T> operator/(Vector2<T> a, T b) { return Vector2<T>(a.x / b, a.y / b); }
+    template<typename T> inline Vector2<T> operator/(T a, Vector2<T> b) { return Vector2<T>(a / b.x, a / b.y); }
+    template<typename T> inline Vector2<T> operator+(Vector2<T> a, T b) { return Vector2<T>(a.x + b, a.y + b); }
+    template<typename T> inline Vector2<T> operator+(T a, Vector2<T> b) { return Vector2<T>(a + b.x, a + b.y); }
+    template<typename T> inline Vector2<T> operator+(Vector2<T> a, Vector2<T> b) { return Vector2<T>(a.x + b.x, a.y + b.y); }
+    template<typename T> inline Vector2<T> operator-(Vector2<T> a, T b) { return Vector2<T>(a.x - b, a.y - b); }
+    template<typename T> inline Vector2<T> operator-(T a, Vector2<T> b) { return Vector2<T>(a - b.x, a - b.y); }
+    template<typename T> inline Vector2<T> operator-(Vector2<T> a, Vector2<T> b) { return Vector2<T>(a.x - b.x, a.y - b.y); }
+    template<typename T> inline bool operator==(Vector2<T> a, Vector2<T> b) { return a.x == b.x && a.y == b.y; }
+
+    template<typename T>
+    inline Vector2<T> Vector2<T>::Normalize(const Vector2<T>& input)
+    {
+        return input / sqrt(Dot(input, input));
+    }
+
+    template<typename T> std::string to_string(Vector2<T> v)
     {
         std::string s;
         s.reserve(64);
         s.append("{x: "); s.append(std::to_string(v.x)); s.append(", ");
-        s.append("y: "); s.append(std::to_string(v.y)); s.append(", ");
-        s.append("z: "); s.append(std::to_string(v.z)); s.append(", ");
-        s.append("w: "); s.append(std::to_string(v.w)); s.append("}");
+        s.append("y: "); s.append(std::to_string(v.y)); s.append("}");
         return s;
     }
 
-    template<typename T> Vector4<T> operator+(const Vector4<T>& a, const Vector4<T>& b) { return { a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w }; }
-    template<typename T> Vector4<T> operator-(const Vector4<T>& a, const Vector4<T>& b) { return { a.x - b.x, a.y - b.y, a.z - b.z, a.w - b.w }; }
-    template<typename T> Vector4<T> operator*(const Vector4<T>& a, const Vector4<T>& b) { return { a.x * b.x, a.y * b.y, a.z * b.z, a.w * b.w }; }
-    template<typename T> Vector4<T> operator/(const Vector4<T>& a, const Vector4<T>& b) { return { a.x / b.x, a.y / b.y, a.z / b.z, a.w / b.w }; }
-    template<typename T> Vector4<T> operator+(const Vector4<T>& a, T b) { return { a.x + b, a.y + b, a.z + b, a.w + b }; }
-    template<typename T> Vector4<T> operator-(const Vector4<T>& a, T b) { return { a.x - b, a.y - b, a.z - b, a.w - b }; }
-    template<typename T> Vector4<T> operator*(const Vector4<T>& a, T b) { return { a.x * b, a.y * b, a.z * b, a.w * b }; }
-    template<typename T> Vector4<T> operator/(const Vector4<T>& a, T b) { return { a.x / b, a.y / b, a.z / b, a.w / b }; }
-    template<typename T> Vector4<T> operator+(T a, const Vector4<T>& b) { return { a + b.x, a + b.y, a + b.z, a + b.w }; }
-    template<typename T> Vector4<T> operator-(T a, const Vector4<T>& b) { return { a - b.x, a - b.y, a - b.z, a - b.w }; }
-    template<typename T> Vector4<T> operator*(T a, const Vector4<T>& b) { return { a * b.x, a * b.y, a * b.z, a * b.w }; }
-    template<typename T> Vector4<T> operator/(T a, const Vector4<T>& b) { return { a / b.x, a / b.y, a / b.z, a / b.w }; }
-    template<typename T> bool operator==(const Vector4<T>& a, const Vector4<T>& b) { return a.x == b.x && a.y == b.y && a.z == b.z && a.w == b.w; }
-
-    using Vector4f = Vector4<float>;
-    using Vector4d = Vector4<double>;
-    using Vector4i = Vector4<int>;
+    using Vector2f = Vector2<float>;
+    using Vector2d = Vector2<double>;
+    using Vector2i = Vector2<int>;
 
     template<typename T>
-    T Sum(const Vector4<T>& v) { return v.x + v.y + v.z + v.w; }
+    T SumComponents(const Vector2<T>& v) { return v.x + v.y; }
+
 
     template<typename T>
     struct Vector3
@@ -102,8 +130,8 @@ namespace jmath
 
         T x, y, z;
 
-        Vector3() : x(0), y(0), z(0) {}
-        Vector3(T _x, T _y, T _z) : x(_x), y(_y), z(_z) {}
+        constexpr Vector3() = default;
+        constexpr Vector3(T _x, T _y, T _z) : x(_x), y(_y), z(_z) {}
 
         const T* get_value_ptr() const { return &this->x; }
         T* get_value_ptr() { return &this->x; }
@@ -128,8 +156,6 @@ namespace jmath
         Vector3& operator *=(T v) { x *= v; y *= v; z *= v; return *this; }
         Vector3& operator /=(T v) { x /= v; y /= v; z /= v; return *this; }
         Vector3 operator-() { return Vector3(-x, -y, -z); }
-
-        operator Vector4<T>() const { return Vector4<T>{ T(x), T(y), T(z), T(0) }; }
 
         static inline T Distance(const Vector3& l, const Vector3& r)
         {
@@ -200,7 +226,7 @@ namespace jmath
     constexpr int kSizeVector3i = sizeof(Vector3i);
 
     template<typename T>
-    T Sum(const Vector3<T>& v) { return v.x + v.y + v.z; }
+    T SumComponents(const Vector3<T>& v) { return v.x + v.y + v.z; }
 
     template<typename T>
     Vector3<T> Chgsign(const Vector3<T>& a, const Vector3<T>& b)
@@ -208,90 +234,70 @@ namespace jmath
         return Vector3<T>{ Chgsign(a.x, b.x), Chgsign(a.y, b.y), Chgsign(a.z, b.z) };
     }
 
+
+
     template<typename T>
-    struct Vector2
+    struct Vector4
     {
         using value_type = T;
 
-        T x, y;
+        T x, y, z, w;
 
-        Vector2() : x(0), y(0) {}
-        Vector2(T _x, T _y) : x(_x), y(_y) {}
-
-        template<typename U>
-        Vector2(const U& r) : x((T)r.x), y((T)r.y) {}
+        constexpr Vector4() = default;
+        constexpr Vector4(const Vector3<T>& v3, T h) : x(v3.x), y(v3.y), z(v3.z), w(h) {}
+        constexpr Vector4(const Vector3<T>& v3) : x(v3.x), y(v3.y), z(v3.z), w(1) {}
+        constexpr Vector4(T _x, T _y, T _z, T _w) : x(_x), y(_y), z(_z), w(_w) {}
 
         const T* get_value_ptr() const { return &this->x; }
         T* get_value_ptr() { return &this->x; }
 
         static constexpr int column_count = 1;
-        static constexpr int row_count = 2;
+        static constexpr int row_count = 4;
+
+        static constexpr Vector4 Mul(const Vector4<T>& l, const Vector4<T>& r)
+        {
+            return { l.x * r.x, l.y * r.y, l.z * r.z, l.w * r.w };
+        }
+
+        constexpr Vector3<T> xyz() const { return {x,y,z}; }
 
         T& operator[](int index) { return *(&x + index); }
         const T& operator[](int index) const { return *(&x + index); }
-
-        static Vector2 StaticZero() { return Vector2{ T(0), T(0) }; }
-        static Vector2 StaticOne() { return Vector2{ T(1), T(1) }; }
-        static Vector2 StaticUp() { return Vector2{ T(0), T(1) }; }
-        static Vector2 StaticRight() { return Vector2{ T(1), T(0) }; }
-
-        Vector2 operator-() { return Vector2(-x, -y); }
-        Vector2 operator+=(Vector2 r) { x += r.x; y += r.y; return *this; }
-        Vector2 operator+=(T r) { x += r; y += r; return *this; }
-        Vector2 operator-=(Vector2 r) { x -= r.x; y -= r.y; return *this; }
-        Vector2 operator-=(T r) { x -= r; y -= r; return *this; }
-        Vector2 operator*=(T r) { x *= r; y *= r; return *this; }
-        Vector2 operator/=(T r) { x /= r; y /= r; return *this; }
-
-        operator Vector3<T>() const { return Vector3<T>{ x, y, T(0) }; }
-
-        static inline T Dot(const Vector2<T>& a, const Vector2<T>& b)
-        {
-            return a.x * b.x + a.y * b.y;
-        }
-        static Vector2<T> Normalize(const Vector2<T>& input);
-        static void Normalized() { *this = Normalize(*this); }
-        inline Vector2 Reflect(const Vector2& input, const Vector2& normal)
-        {
-            return -input + 2.0f * Dot(Normalize(input), normal) * normal;
-        }
     };
 
-
-    template<typename T> inline Vector2<T> operator*(Vector2<T> a, T b) { return Vector2<T>(a.x * b, a.y * b); }
-    template<typename T> inline Vector2<T> operator*(T a, Vector2<T> b) { return Vector2<T>(a * b.x, a * b.y); }
-    template<typename T> inline Vector2<T> operator*(Vector2<T> a, Vector2<T> b) { return Vector2<T>(a.x * b.x, a.y * b.y); }
-    template<typename T> inline Vector2<T> operator/(Vector2<T> a, T b) { return Vector2<T>(a.x / b, a.y / b); }
-    template<typename T> inline Vector2<T> operator/(T a, Vector2<T> b) { return Vector2<T>(a / b.x, a / b.y); }
-    template<typename T> inline Vector2<T> operator+(Vector2<T> a, T b) { return Vector2<T>(a.x + b, a.y + b); }
-    template<typename T> inline Vector2<T> operator+(T a, Vector2<T> b) { return Vector2<T>(a + b.x, a + b.y); }
-    template<typename T> inline Vector2<T> operator+(Vector2<T> a, Vector2<T> b) { return Vector2<T>(a.x + b.x, a.y + b.y); }
-    template<typename T> inline Vector2<T> operator-(Vector2<T> a, T b) { return Vector2<T>(a.x - b, a.y - b); }
-    template<typename T> inline Vector2<T> operator-(T a, Vector2<T> b) { return Vector2<T>(a - b.x, a - b.y); }
-    template<typename T> inline Vector2<T> operator-(Vector2<T> a, Vector2<T> b) { return Vector2<T>(a.x - b.x, a.y - b.y); }
-    template<typename T> inline bool operator==(Vector2<T> a, Vector2<T> b) { return a.x == b.x && a.y == b.y; }
-
-    template<typename T>
-    inline Vector2<T> Vector2<T>::Normalize(const Vector2<T>& input)
-    {
-        return input / sqrt(Dot(input, input));
-    }
-
-    template<typename T> std::string to_string(Vector2<T> v)
+    template<typename T> std::string to_string(const Vector4<T>& v)
     {
         std::string s;
         s.reserve(64);
         s.append("{x: "); s.append(std::to_string(v.x)); s.append(", ");
-        s.append("y: "); s.append(std::to_string(v.y)); s.append("}");
+        s.append("y: "); s.append(std::to_string(v.y)); s.append(", ");
+        s.append("z: "); s.append(std::to_string(v.z)); s.append(", ");
+        s.append("w: "); s.append(std::to_string(v.w)); s.append("}");
         return s;
     }
 
-    using Vector2f = Vector2<float>;
-    using Vector2d = Vector2<double>;
-    using Vector2i = Vector2<int>;
+    template<typename T> Vector4<T> operator+(const Vector4<T>& a, const Vector4<T>& b) { return { a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w }; }
+    template<typename T> Vector4<T> operator-(const Vector4<T>& a, const Vector4<T>& b) { return { a.x - b.x, a.y - b.y, a.z - b.z, a.w - b.w }; }
+    template<typename T> Vector4<T> operator*(const Vector4<T>& a, const Vector4<T>& b) { return { a.x * b.x, a.y * b.y, a.z * b.z, a.w * b.w }; }
+    template<typename T> Vector4<T> operator/(const Vector4<T>& a, const Vector4<T>& b) { return { a.x / b.x, a.y / b.y, a.z / b.z, a.w / b.w }; }
+    template<typename T> Vector4<T> operator+(const Vector4<T>& a, T b) { return { a.x + b, a.y + b, a.z + b, a.w + b }; }
+    template<typename T> Vector4<T> operator-(const Vector4<T>& a, T b) { return { a.x - b, a.y - b, a.z - b, a.w - b }; }
+    template<typename T> Vector4<T> operator*(const Vector4<T>& a, T b) { return { a.x * b, a.y * b, a.z * b, a.w * b }; }
+    template<typename T> Vector4<T> operator/(const Vector4<T>& a, T b) { return { a.x / b, a.y / b, a.z / b, a.w / b }; }
+    template<typename T> Vector4<T> operator+(T a, const Vector4<T>& b) { return { a + b.x, a + b.y, a + b.z, a + b.w }; }
+    template<typename T> Vector4<T> operator-(T a, const Vector4<T>& b) { return { a - b.x, a - b.y, a - b.z, a - b.w }; }
+    template<typename T> Vector4<T> operator*(T a, const Vector4<T>& b) { return { a * b.x, a * b.y, a * b.z, a * b.w }; }
+    template<typename T> Vector4<T> operator/(T a, const Vector4<T>& b) { return { a / b.x, a / b.y, a / b.z, a / b.w }; }
+    template<typename T> bool operator==(const Vector4<T>& a, const Vector4<T>& b) { return a.x == b.x && a.y == b.y && a.z == b.z && a.w == b.w; }
+
+    using Vector4f = Vector4<float>;
+    using Vector4d = Vector4<double>;
+    using Vector4i = Vector4<int>;
 
     template<typename T>
-    T Sum(const Vector2<T>& v) { return v.x + v.y; }
+    T SumComponents(const Vector4<T>& v) { return v.x + v.y + v.z + v.w; }
+
+
 
     template<typename T>
     struct Matrix2
@@ -378,9 +384,17 @@ namespace jmath
         const T* get_value_ptr() const { return &M[0].x; }
         T* get_value_ptr() { return &M[0].x; }
 
-        Matrix4() {}
+        Matrix4() = default;
 
-        Matrix4(
+        constexpr explicit Matrix4(T k)
+        {
+            M[0] = {T(k),T(0),T(0),T(0)};
+            M[1] = {T(0),T(k),T(0),T(0)};
+            M[2] = {T(0),T(0),T(k),T(0)};
+            M[3] = {T(0),T(0),T(0),T(k)};
+        }
+
+        constexpr Matrix4(
             T ax, T bx, T cx, T dx,
             T ay, T by, T cy, T dy,
             T az, T bz, T cz, T dz,
@@ -391,7 +405,7 @@ namespace jmath
             M[2] = Vector4<T>(cx, cy, cz, cw);
             M[3] = Vector4<T>(dx, dy, dz, dw);
         }
-        Matrix4(const Vector4<T>& x, const Vector4<T>& y, const Vector4<T>& z, const Vector4<T>& w) { M[0] = x; M[1] = y; M[2] = z; M[3] = w; }
+        constexpr Matrix4(const Vector4<T>& x, const Vector4<T>& y, const Vector4<T>& z, const Vector4<T>& w) { M[0] = x; M[1] = y; M[2] = z; M[3] = w; }
 
         static constexpr int column_count = 4;
         static constexpr int row_count = 4;
@@ -425,18 +439,63 @@ namespace jmath
                     M[2][1] * (M[0][2] * M[1][3] - M[0][3] * M[1][2])
                     );
         }
-
-        static Matrix4 StaticScalar(T k = T(1))
-        {
-            return Matrix4(
-                T(k), T(0), T(0), T(0),
-                T(0), T(k), T(0), T(0),
-                T(0), T(0), T(k), T(0),
-                T(0), T(0), T(0), T(k)
-            );
-        }
-
     };
+
+    template<typename T>
+    Matrix4<T> Inverse(const Matrix4<T>& m)
+    {
+        T Coef00 = m[2][2] * m[3][3] - m[3][2] * m[2][3];
+		T Coef02 = m[1][2] * m[3][3] - m[3][2] * m[1][3];
+		T Coef03 = m[1][2] * m[2][3] - m[2][2] * m[1][3];
+
+		T Coef04 = m[2][1] * m[3][3] - m[3][1] * m[2][3];
+		T Coef06 = m[1][1] * m[3][3] - m[3][1] * m[1][3];
+		T Coef07 = m[1][1] * m[2][3] - m[2][1] * m[1][3];
+
+		T Coef08 = m[2][1] * m[3][2] - m[3][1] * m[2][2];
+		T Coef10 = m[1][1] * m[3][2] - m[3][1] * m[1][2];
+		T Coef11 = m[1][1] * m[2][2] - m[2][1] * m[1][2];
+
+		T Coef12 = m[2][0] * m[3][3] - m[3][0] * m[2][3];
+		T Coef14 = m[1][0] * m[3][3] - m[3][0] * m[1][3];
+		T Coef15 = m[1][0] * m[2][3] - m[2][0] * m[1][3];
+
+		T Coef16 = m[2][0] * m[3][2] - m[3][0] * m[2][2];
+		T Coef18 = m[1][0] * m[3][2] - m[3][0] * m[1][2];
+		T Coef19 = m[1][0] * m[2][2] - m[2][0] * m[1][2];
+
+		T Coef20 = m[2][0] * m[3][1] - m[3][0] * m[2][1];
+		T Coef22 = m[1][0] * m[3][1] - m[3][0] * m[1][1];
+		T Coef23 = m[1][0] * m[2][1] - m[2][0] * m[1][1];
+
+		Vector4<T> Fac0(Coef00, Coef00, Coef02, Coef03);
+		Vector4<T> Fac1(Coef04, Coef04, Coef06, Coef07);
+		Vector4<T> Fac2(Coef08, Coef08, Coef10, Coef11);
+		Vector4<T> Fac3(Coef12, Coef12, Coef14, Coef15);
+		Vector4<T> Fac4(Coef16, Coef16, Coef18, Coef19);
+		Vector4<T> Fac5(Coef20, Coef20, Coef22, Coef23);
+		Vector4<T> Vec0(m[1][0], m[0][0], m[0][0], m[0][0]);
+		Vector4<T> Vec1(m[1][1], m[0][1], m[0][1], m[0][1]);
+		Vector4<T> Vec2(m[1][2], m[0][2], m[0][2], m[0][2]);
+		Vector4<T> Vec3(m[1][3], m[0][3], m[0][3], m[0][3]);
+		Vector4<T> Inv0(Vec1 * Fac0 - Vec2 * Fac1 + Vec3 * Fac2);
+		Vector4<T> Inv1(Vec0 * Fac0 - Vec2 * Fac3 + Vec3 * Fac4);
+		Vector4<T> Inv2(Vec0 * Fac1 - Vec1 * Fac3 + Vec3 * Fac5);
+		Vector4<T> Inv3(Vec0 * Fac2 - Vec1 * Fac4 + Vec2 * Fac5);
+
+		Vector4<T> SignA(+1, -1, +1, -1);
+		Vector4<T> SignB(-1, +1, -1, +1);
+		Matrix4<T> Inverse(Inv0 * SignA, Inv1 * SignB, Inv2 * SignA, Inv3 * SignB);
+
+		Vector4<T> Row0(Inverse[0][0], Inverse[1][0], Inverse[2][0], Inverse[3][0]);
+
+		Vector4<T> Dot0(m[0] * Row0);
+		T Dot1 = (Dot0.x + Dot0.y) + (Dot0.z + Dot0.w);
+
+		T OneOverDeterminant = static_cast<T>(1) / Dot1;
+
+		return Inverse * OneOverDeterminant;
+    }
 
     template<typename MAT>
     inline void Transpose(MAT* mat)
@@ -481,7 +540,7 @@ namespace jmath
         {
             for (int r = 0; r < 4; r++)
             {
-                m[l][r] = Sum(a.GetRow(r) * b.GetColumn(l));
+                m[l][r] = SumComponents(a.GetRow(r) * b.GetColumn(l));
             }
         }
         return m;
@@ -493,15 +552,37 @@ namespace jmath
         Vector4<T> v;
         for (int r = 0; r < 4; r++)
         {
-            v[r] = Sum(Vector4<T>::Mul(a.GetRow(r), b));
+            v[r] = SumComponents(Vector4<T>::Mul(a.GetRow(r), b));
         }
         return v;
     }
+    template<typename T>
+    Vector3<T> operator*(const Matrix4<T>& a, const Vector3<T>& b)
+    {
+        Vector4<T> v;
+        for (int r = 0; r < 4; r++)
+        {
+            v[r] = SumComponents(Vector4<T>::Mul(a.GetRow(r), Vector4<T>(b)));
+        }
+        return v.xyz();
+    }
 
+    template<typename T>
+    Matrix4<T> operator*(const Matrix4<T>& m, T scalar)
+    {
+        Matrix4<T> mat;
+        for (int i = 0; i < 4; ++i)
+        {
+            mat.M[i] = m.M[i] * scalar;
+        }
+        return mat;
+    }
 
     using Matrix4f = Matrix4<float>;
     using Matrix4d = Matrix4<double>;
     using Matrix4i = Matrix4<int>;
+
+
 
     enum class EulerRotationOrder : uint8_t
     {
@@ -756,7 +837,7 @@ namespace jmath
     template<typename T>
     Matrix4<T> Translate(const Vector3<T>& v)
     {
-        Matrix4<T> m = Matrix4<T>::StaticScalar();
+        Matrix4<T> m{1};
         m[3][0] = v.x;
         m[3][1] = v.y;
         m[3][2] = v.z;
@@ -766,7 +847,7 @@ namespace jmath
     template<typename T>
     Matrix4<T> Rotate(const Quaternion<T>& q)
     {
-        Matrix4<T> Result = Matrix4<T>::StaticScalar();
+        Matrix4<T> Result{1};
         T qxx(q.x * q.x);
         T qyy(q.y * q.y);
         T qzz(q.z * q.z);

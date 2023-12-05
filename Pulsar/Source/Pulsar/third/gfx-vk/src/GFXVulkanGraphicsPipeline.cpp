@@ -39,18 +39,25 @@ namespace gfx
     GFXVulkanGraphicsPipeline::GFXVulkanGraphicsPipeline(
         GFXVulkanApplication* app,
         const std::shared_ptr<GFXShaderPass>& shaderPass,
+        const array_list<GFXDescriptorSetLayout_sp>& descriptorSetLayouts,
         const GFXRenderPassLayout& renderLayout
     )
         : m_app(app)
     {
         // create pipeline layout
         auto vkShaderPass = std::static_pointer_cast<GFXVulkanShaderPass>(shaderPass);
-        auto vkDescSetLayout = std::static_pointer_cast<GFXVulkanDescriptorSetLayout>(shaderPass->GetDescriptorSetLayout());
+
+        array_list<VkDescriptorSetLayout> vkdescriptorSetLayouts;
+        for (auto layout : descriptorSetLayouts)
+        {
+            vkdescriptorSetLayouts.push_back(static_cast<GFXVulkanDescriptorSetLayout*>(layout.get())->GetVkDescriptorSetLayout());
+        }
 
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType            = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        pipelineLayoutInfo.setLayoutCount   = 1;
-        pipelineLayoutInfo.pSetLayouts      = &vkDescSetLayout->GetVkDescriptorSetLayout();
+        //pipelineLayoutInfo.setLayoutCount   = 1;
+        pipelineLayoutInfo.setLayoutCount   = descriptorSetLayouts.size();
+        pipelineLayoutInfo.pSetLayouts      = vkdescriptorSetLayouts.data();
         pipelineLayoutInfo.pushConstantRangeCount = 0;
 
         if (vkCreatePipelineLayout(app->GetVkDevice(), &pipelineLayoutInfo, nullptr, &m_pipelineLayout) != VK_SUCCESS)

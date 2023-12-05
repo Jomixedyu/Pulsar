@@ -29,7 +29,7 @@ namespace pulsar
 
         void Initialize(int32_t width, int32_t height, TextureFormat format, bool enableDepthStencil);
 
-        static ObjectPtr<RenderTexture> StaticCreate(int width, int height, bool hasColor, bool hasDepth);
+        static ObjectPtr<RenderTexture> StaticCreate(index_string name, int width, int height, bool hasColor, bool hasDepth);
     public:
         //IGPUResource
         virtual void CreateGPUResource() override;

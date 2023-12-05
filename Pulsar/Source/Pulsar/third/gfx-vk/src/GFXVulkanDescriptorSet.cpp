@@ -1,28 +1,26 @@
-#include <gfx-vk/GFXVulkanDescriptorSet.h>
+#include <cassert>
 #include <gfx-vk/GFXVulkanApplication.h>
 #include <gfx-vk/GFXVulkanBuffer.h>
-#include <gfx-vk/GFXVulkanTexture2D.h>
 #include <gfx-vk/GFXVulkanDescriptorPool.h>
-#include <cassert>
+#include <gfx-vk/GFXVulkanDescriptorSet.h>
+#include <gfx-vk/GFXVulkanTexture2D.h>
 #include <stdexcept>
 
 namespace gfx
 {
-    static std::unordered_map<VkDescriptorType, float> DefaultPoolSizes
-    {
-        { VkDescriptorType::VK_DESCRIPTOR_TYPE_SAMPLER, 2 },
-        { VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2 },
-        { VkDescriptorType::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 2 },
-        { VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1 / 8.0f },
-        { VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1 / 2.0f },
-        { VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1 / 8.0f },
-        { VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 / 4.0f },
-        { VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1 / 8.0f },
-        { VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 4 },
-        { VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1 / 8.0f },
-        { VkDescriptorType::VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1 / 8.0f },
+    static std::unordered_map<VkDescriptorType, float> DefaultPoolSizes{
+        {VkDescriptorType::VK_DESCRIPTOR_TYPE_SAMPLER, 2},
+        {VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2},
+        {VkDescriptorType::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 2},
+        {VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1 / 8.0f},
+        {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1 / 2.0f},
+        {VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1 / 8.0f},
+        {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 / 4.0f},
+        {VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1 / 8.0f},
+        {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 4},
+        {VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1 / 8.0f},
+        {VkDescriptorType::VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1 / 8.0f},
     };
-
 
     static VkDescriptorType _GetDescriptorType(GFXDescriptorType type)
     {
@@ -57,31 +55,28 @@ namespace gfx
 
     GFXVulkanDescriptorSetLayout::GFXVulkanDescriptorSetLayout(
         GFXVulkanApplication* app,
-        const std::vector<GFXDescriptorSetLayoutInfo>& layout
-    )
-        : base(layout), m_app(app)
+        const GFXDescriptorSetLayoutInfo* layouts,
+        size_t layoutCount)
+        : m_app(app)
     {
-        std::vector<VkDescriptorSetLayoutBinding> bindings;
-        for (size_t i = 0; i < m_layout.size(); i++)
+        array_list<VkDescriptorSetLayoutBinding> bindings;
+        for (size_t i = 0; i < layoutCount; ++i)
         {
-            auto& layout = m_layout[i];
-            VkDescriptorSetLayoutBinding binding{};
-            binding.binding = layout.BindingPoint;
-            binding.descriptorType = _GetDescriptorType(layout.Type);
+            const auto layoutInfo = layouts[i];
+
+            VkDescriptorSetLayoutBinding& binding = bindings.emplace_back();
+            binding.binding = layoutInfo.BindingPoint;
+            binding.descriptorType = _GetDescriptorType(layoutInfo.Type);
             binding.descriptorCount = 1;
-            binding.stageFlags = _GetShaderStage(layout.Stage);
-
+            binding.stageFlags = _GetShaderStage(layoutInfo.Stage);
             binding.pImmutableSamplers = nullptr;
-
-            bindings.push_back(binding);
         }
+        VkDescriptorSetLayoutCreateInfo layoutCreateInfo{};
+        layoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        layoutCreateInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+        layoutCreateInfo.pBindings = bindings.data();
 
-        VkDescriptorSetLayoutCreateInfo layoutInfo{};
-        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-        layoutInfo.pBindings = bindings.data();
-
-        if (vkCreateDescriptorSetLayout(app->GetVkDevice(), &layoutInfo, nullptr, &m_descriptorSetLayout) != VK_SUCCESS)
+        if (vkCreateDescriptorSetLayout(app->GetVkDevice(), &layoutCreateInfo, nullptr, &m_descriptorSetLayout) != VK_SUCCESS)
         {
             throw std::runtime_error("failed to create descriptor set layout!");
         }
@@ -92,14 +87,13 @@ namespace gfx
         if (m_descriptorSetLayout != VK_NULL_HANDLE)
         {
             vkDestroyDescriptorSetLayout(m_app->GetVkDevice(), m_descriptorSetLayout, nullptr);
-            m_descriptorSetLayout = VK_NULL_HANDLE;
         }
-    }
 
+    }
 
     void GFXVulkanDescriptor::SetConstantBuffer(GFXBuffer* buffer)
     {
-        auto vkBuffer = static_cast<GFXVulkanBuffer*>(buffer);
+        const auto vkBuffer = static_cast<GFXVulkanBuffer*>(buffer);
 
         BufferInfo.buffer = vkBuffer->GetVkBuffer();
         BufferInfo.offset = 0;
@@ -137,7 +131,6 @@ namespace gfx
             assert(0);
         }
 
-
         ImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         ImageInfo.imageView = imageView;
         ImageInfo.sampler = sampler;
@@ -153,11 +146,10 @@ namespace gfx
         IsDirty = true;
     }
 
-
-    GFXVulkanDescriptorSet::GFXVulkanDescriptorSet(GFXVulkanDescriptorPool* pool, GFXDescriptorSetLayout* layout)
+    GFXVulkanDescriptorSet::GFXVulkanDescriptorSet(GFXVulkanDescriptorPool* pool, const GFXDescriptorSetLayout_sp& layout)
         : m_pool(pool)
     {
-        m_setlayout = static_cast<GFXVulkanDescriptorSetLayout*>(layout);
+        m_setlayout = std::static_pointer_cast<GFXVulkanDescriptorSetLayout>(layout);
 
         VkDescriptorSetAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -165,7 +157,7 @@ namespace gfx
         allocInfo.descriptorSetCount = 1;
         allocInfo.pSetLayouts = &m_setlayout->GetVkDescriptorSetLayout();
 
-        auto result = vkAllocateDescriptorSets(pool->GetApplication()->GetVkDevice(), &allocInfo, &m_descriptorSet);
+        const auto result = vkAllocateDescriptorSets(pool->GetApplication()->GetVkDevice(), &allocInfo, &m_descriptorSet);
         assert(result == VK_SUCCESS);
     }
 
@@ -180,13 +172,15 @@ namespace gfx
 
     GFXDescriptor* GFXVulkanDescriptorSet::AddDescriptor(std::string_view name, uint32_t bindingPoint)
     {
-        auto descriptor = new GFXVulkanDescriptor{ this, bindingPoint };
+        auto descriptor = new GFXVulkanDescriptor{this, bindingPoint};
         descriptor->name = name;
-        m_descriptors.push_back(std::unique_ptr<GFXVulkanDescriptor>{ descriptor });
+        m_descriptors.push_back(std::unique_ptr<GFXVulkanDescriptor>{descriptor});
         return descriptor;
     }
     GFXDescriptor* GFXVulkanDescriptorSet::GetDescriptorAt(int index)
     {
+        if (index >= m_descriptors.size())
+            return nullptr;
         return m_descriptors[index].get();
     }
     int32_t GFXVulkanDescriptorSet::GetDescriptorCount() const
@@ -218,7 +212,7 @@ namespace gfx
     void GFXVulkanDescriptorSet::Submit()
     {
         std::vector<VkWriteDescriptorSet> writeInfos;
-        for (auto& descriptor : m_descriptors)
+        for (const auto& descriptor : m_descriptors)
         {
             if (descriptor->IsDirty)
             {
@@ -226,7 +220,15 @@ namespace gfx
                 descriptor->IsDirty = false;
             }
         }
-        vkUpdateDescriptorSets(m_pool->GetApplication()->GetVkDevice(), static_cast<uint32_t>(writeInfos.size()), writeInfos.data(), 0, nullptr);
+        if (!writeInfos.empty())
+        {
+            vkUpdateDescriptorSets(
+                m_pool->GetApplication()->GetVkDevice(),
+                static_cast<uint32_t>(writeInfos.size()),
+                writeInfos.data(),
+                0,
+                nullptr);
+        }
     }
     intptr_t GFXVulkanDescriptorSet::GetId()
     {
@@ -236,7 +238,9 @@ namespace gfx
     {
         return m_pool->GetApplication();
     }
+    GFXDescriptorSetLayout_sp GFXVulkanDescriptorSet::GetDescriptorSetLayout() const
+    {
+        return m_setlayout;
+    }
 
-
-
-}
+} // namespace gfx

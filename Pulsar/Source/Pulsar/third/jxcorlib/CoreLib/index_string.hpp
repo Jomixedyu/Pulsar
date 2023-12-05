@@ -53,12 +53,12 @@ protected:
     using index_t = size_t;
     constexpr static index_t none = 0;
 protected:
-    static size_t ELFHash(const char_t* str, size_t size)
+    static constexpr size_t ELFHash(const char_t* str, size_t size)
     {
-        static const size_t TotalBits = sizeof(size_t) * 8;
-        static const size_t ThreeQuarters = (TotalBits * 3) / 4;
-        static const size_t OneEighth = TotalBits / 8;
-        static const size_t HighBits = ((size_t)-1) << (TotalBits - OneEighth);
+        constexpr size_t TotalBits = sizeof(size_t) * 8;
+        constexpr size_t ThreeQuarters = (TotalBits * 3) / 4;
+        constexpr size_t OneEighth = TotalBits / 8;
+        constexpr size_t HighBits = ((size_t)-1) << (TotalBits - OneEighth);
         size_t hash = 0;
         size_t magic = 0;
         for (size_t i = 0; i < size; ++i)
@@ -74,10 +74,10 @@ protected:
         return hash;
     }
 public:
-    basic_index_string() : index(none) {}
-    basic_index_string(std::basic_string_view<char_t> view)
+    constexpr basic_index_string() : index(none) {}
+    constexpr basic_index_string(std::basic_string_view<char_t> view)
     {
-        if (view.length() == 0)
+        if (view.empty())
         {
             return;
         }
@@ -89,7 +89,7 @@ public:
         auto it = map->find(hash);
         if (it == map->end())
         {
-            index_string_block block;
+            index_string_block block{};
 
             const size_t view_len = view.length();
             const size_t block_len = view_len + 1;
@@ -111,7 +111,7 @@ public:
             do
             {
                 collision = false;
-                if (str_len == view.length() && ::memcmp(it->second.bytes, view.data(), str_len * sizeof(char_t)))
+                if (str_len == view.length() && ::memcmp(it->second.bytes, view.data(), str_len * sizeof(char_t)) != 0)
                 {
                     collision = true;
                     ++hash;
@@ -122,7 +122,7 @@ public:
         index = hash;
     }
 
-    static const std::basic_string_view<char_t> get_string(index_t index)
+    static std::basic_string_view<char_t> get_string(index_t index)
     {
         auto map = __index_string_manager::GetIndexStringMap();
         auto it = map->find(index);

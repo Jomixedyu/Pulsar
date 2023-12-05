@@ -1,45 +1,53 @@
 #pragma once
 
 #include <CoreLib/CoreLib.h>
-#include <Pulsar/ObjectBase.h>
 #include <Pulsar/EngineMath.h>
+#include <Pulsar/ObjectBase.h>
 #include <Pulsar/Ticker.h>
 
 namespace pulsar
 {
     class Node;
-    
+    class World;
+
     using MessageId = size_t;
+    constexpr size_t MessageId_OnChangedTransform = 1;
 
     class Component : public ObjectBase, public ITickable
     {
         friend class Node;
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::Component, ObjectBase);
     public:
-        ObjectPtr<Node> GetAttachedNode();
-        ObjectPtr<Node> GetOnwerNode();
+        ObjectPtr<Node> GetAttachedNode() const;
+        ObjectPtr<Node> GetOwnerNode() const;
+        World* GetWorld() const;
         virtual bool get_is_tickable() const { return true; }
-        virtual void OnReceiveMessage(MessageId id) {}
+        virtual void OnReceiveMessage(MessageId id);
     public:
 		virtual bool EqualsComponentType(Type* type);
     public:
         // Engine object lifecycle
-        virtual void OnDestroy() override {}
+        void OnDestroy() override {}
 
         virtual void BeginComponent();
-        virtual void EndComponent() {}
+        virtual void EndComponent();
 
         virtual void BeginPlay() {}
         virtual void EndPlay() {}
+
+        virtual void OnMsg_TransformChanged() {}
     public:        
         // ITickable interface
-        virtual void OnTick(Ticker ticker) override;
+        void OnTick(Ticker ticker) override;
     public:
-        Component() {}
+        Component() = default;
     private:
         ObjectPtr<Node> m_ownerNode;
         ObjectPtr<Node> m_attachedNode;
-
+    protected:
+        bool m_beginning = false;
+    public:
+        bool IsCollapsing = false;
     };
     DECL_PTR(Component);
 }

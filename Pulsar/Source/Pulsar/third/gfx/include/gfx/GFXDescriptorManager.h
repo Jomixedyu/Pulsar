@@ -9,7 +9,7 @@ namespace gfx
     class GFXDescriptorManager
     {
     public:
-        virtual std::shared_ptr<GFXDescriptorSet> GetDescriptorSet(GFXDescriptorSetLayout* layout) = 0;
+        virtual std::shared_ptr<GFXDescriptorSet> GetDescriptorSet(GFXDescriptorSetLayout_sp layout) = 0;
 
         virtual ~GFXDescriptorManager() {}
     protected:

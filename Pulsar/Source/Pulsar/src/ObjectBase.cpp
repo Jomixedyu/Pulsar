@@ -11,6 +11,9 @@ namespace pulsar
         return table;
     }
 
+
+    Action<ObjectBase*> RuntimeObjectWrapper::OnPostEditChanged{};
+
     static inline ObjectHandle _NewId()
     {
         return ObjectHandle::create_new();
@@ -71,8 +74,15 @@ namespace pulsar
         {
             DestroyObject(id, true);
         }
-        //release memory
+        // release memory
         std::remove_reference_t<decltype(*_object_table())>{}.swap(*_object_table());
+    }
+    void RuntimeObjectWrapper::ForEachObject(const std::function<void(ObjectHandle, ObjectBase*)>& func)
+    {
+        for(auto& item : *_object_table())
+        {
+            func(item.first, item.second.get());
+        }
     }
 
     ObjectBase::ObjectBase()
@@ -85,6 +95,11 @@ namespace pulsar
         assert(!this->m_objectHandle);
         RuntimeObjectWrapper::NewInstance(self(), handle);
         this->OnConstruct();
+    }
+
+    void ObjectBase::PostEditChange(FieldInfo* info)
+    {
+        RuntimeObjectWrapper::OnPostEditChanged.Invoke(this);
     }
 
     void ObjectBase::OnConstruct()

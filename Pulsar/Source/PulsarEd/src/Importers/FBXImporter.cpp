@@ -253,7 +253,7 @@ namespace pulsared
                     {
                         auto index = fbxMesh->GetPolygonVertex(polyIndex, vertIndex);
 
-                        StaticMeshVertex vertex;
+                        StaticMeshVertex vertex{};
                         // position
                         vertex.Position = _Vec3(fbxMesh->GetControlPointAt(index));
                         // normal

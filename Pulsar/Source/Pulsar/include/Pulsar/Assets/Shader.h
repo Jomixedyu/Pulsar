@@ -95,7 +95,7 @@ namespace pulsar
         TEXCOORD3 = 8,
     };
 
-    class Shader final : public AssetObject, public IGPUResource
+    class Shader final : public AssetObject
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::Shader, AssetObject);
     public:
@@ -105,26 +105,13 @@ namespace pulsar
 
     public:
         Shader();
-        virtual void CreateGPUResource() override;
-        virtual void DestroyGPUResource() override;
-        virtual bool IsCreatedGPUResource() const override;
 
         virtual void OnDestroy() override;
 
-        size_t GetShaderPassCount() const { return m_gfxShaderPass.size(); }
-
-        gfx::GFXShaderPass_sp GetGfxShaderPass(int index) const
-        {
-            return m_gfxShaderPass[index];
-        }
-
-        const array_list<gfx::GFXShaderPass_sp>& GetGfxShaderAllPass() const
-        {
-            return m_gfxShaderPass;
-        }
-
         void ResetShaderSource(const ShaderSourceData& serData);
+        const ShaderSourceData& GetSourceData() const { return m_shaderSource; }
         List_sp<String_sp> GetPassNames() const { return m_passNames; }
+        size_t GetPassCount() const { return m_passNames->size(); }
 
         array_list<gfx::GFXApi> GetSupportedApi() const;
     private:
@@ -136,8 +123,6 @@ namespace pulsar
 
         CORELIB_REFL_DECL_FIELD(m_preDefines);
         List_sp<String_sp> m_preDefines;
-
-        array_list<gfx::GFXShaderPass_sp> m_gfxShaderPass;
     };
     DECL_PTR(Shader);
 

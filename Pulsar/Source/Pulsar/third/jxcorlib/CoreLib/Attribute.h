@@ -17,8 +17,8 @@ namespace jxcorlib
     {
         CORELIB_DEF_TYPE(AssemblyObject_jxcorlib, jxcorlib::Attribute, Object);
     public:
-        Attribute() {};
-        virtual ~Attribute() override {}
+        Attribute() = default;
+        ~Attribute() override = default;
     };
     CORELIB_DECL_SHORTSPTR(Attribute);
 
@@ -26,8 +26,31 @@ namespace jxcorlib
     class SerializableAttribtue : public Attribute
     {
         CORELIB_DEF_TYPE(AssemblyObject_jxcorlib, jxcorlib::SerializableAttribtue, Attribute);
-        CORELIB_CLASS_ATTR(new Attribute());
+    public:
 
+    };
+
+    class ListItemAttribute final : public Attribute
+    {
+        CORELIB_DEF_TYPE(AssemblyObject_jxcorlib, jxcorlib::SerializableAttribtue, Attribute);
+    public:
+        explicit ListItemAttribute(Type* itemType) : m_itemType(itemType) {}
+
+        Type* GetItemType() const { return m_itemType; }
+    private:
+        Type* m_itemType;
+    };
+
+    class HidePropertyAttribute final : public Attribute
+    {
+        CORELIB_DEF_TYPE(AssemblyObject_jxcorlib, jxcorlib::HidePropertyAttribute, Attribute);
+    public:
+
+    };
+
+    class ReadOnlyPropertyAttribute final : public Attribute
+    {
+        CORELIB_DEF_TYPE(AssemblyObject_jxcorlib, jxcorlib::HidePropertyAttribute, Attribute);
     public:
 
     };
