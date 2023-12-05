@@ -2,7 +2,5 @@ CheckOptions:
   bugprone-reserved-identifier.*: false
   modernize-use-override.AllowOverrideAndFinal: true
   modernize-use-emplace.IgnoreImplicitConstructors: true
-  bugprone-misplaced-widening-cast.CheckImplicitCasts: false
-
 
 Checks: '*-explicit-constructor,-use-nodiscard'

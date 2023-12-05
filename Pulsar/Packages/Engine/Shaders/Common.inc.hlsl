@@ -85,9 +85,10 @@ struct PerCBufferStruct
     uint     ShaderFlags;
 };
 
-ConstantBuffer<TargetCBufferStruct> TargetBuffer : register(b0);
-ConstantBuffer<WorldCBufferStruct>  WorldBuffer  : register(b1);
-ConstantBuffer<PerCBufferStruct>    PerBuffer    : register(b2);
+ConstantBuffer<TargetCBufferStruct> TargetBuffer : register(b0, space0);
+ConstantBuffer<WorldCBufferStruct>  WorldBuffer  : register(b0, space1);
+ConstantBuffer<PerCBufferStruct>    PerBuffer    : register(b0, space2);
+
 
 
 inline float4 ObjectToWorld(in float3 position)

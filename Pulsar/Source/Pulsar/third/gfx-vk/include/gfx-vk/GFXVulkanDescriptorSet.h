@@ -14,7 +14,8 @@ namespace gfx
     public:
         GFXVulkanDescriptorSetLayout(
             GFXVulkanApplication* app,
-            const std::vector<GFXDescriptorSetLayoutInfo>& layout);
+            const GFXDescriptorSetLayoutInfo* layouts,
+            size_t layoutCount = 1);
 
         virtual ~GFXVulkanDescriptorSetLayout() override;
 
@@ -22,9 +23,10 @@ namespace gfx
         const VkDescriptorSetLayout& GetVkDescriptorSetLayout() const { return m_descriptorSetLayout; }
 
     protected:
-        VkDescriptorSetLayout m_descriptorSetLayout = VK_NULL_HANDLE;
+        VkDescriptorSetLayout m_descriptorSetLayout;
         GFXVulkanApplication* m_app;
     };
+    GFX_DECL_SPTR(GFXVulkanDescriptorSetLayout);
 
     class GFXVulkanDescriptor : public GFXDescriptor
     {
@@ -46,14 +48,14 @@ namespace gfx
         GFXVulkanDescriptorSet* m_descriptorSet;
         uint32_t m_bindingPoint;
     };
-
+    GFX_DECL_SPTR(GFXVulkanDescriptor);
 
     class GFXVulkanDescriptorSet : public GFXDescriptorSet
     {
         using base = GFXDescriptorSet;
         friend class GFXVulkanDescriptorPool;
     private:
-        GFXVulkanDescriptorSet(GFXVulkanDescriptorPool* pool, GFXDescriptorSetLayout* layout);
+        GFXVulkanDescriptorSet(GFXVulkanDescriptorPool* pool, const GFXDescriptorSetLayout_sp& layout);
     public:
         virtual ~GFXVulkanDescriptorSet() override;
         GFXVulkanDescriptorSet(const GFXVulkanDescriptorSet&) = delete;
@@ -68,11 +70,14 @@ namespace gfx
     public:
         GFXVulkanApplication* GetApplication() const;
         const VkDescriptorSet& GetVkDescriptorSet() const { return m_descriptorSet; }
+        GFXVulkanDescriptorSetLayout_sp GetVkDescriptorSetLayout() const { return m_setlayout; }
+        virtual GFXDescriptorSetLayout_sp GetDescriptorSetLayout() const override;
     protected:
         GFXVulkanDescriptorPool* m_pool;
         std::vector<std::unique_ptr<GFXVulkanDescriptor>> m_descriptors;
         VkDescriptorSet m_descriptorSet = VK_NULL_HANDLE;
-        GFXVulkanDescriptorSetLayout* m_setlayout;
+        GFXVulkanDescriptorSetLayout_sp m_setlayout;
     };
+    GFX_DECL_SPTR(GFXVulkanDescriptorSet);
 
 }

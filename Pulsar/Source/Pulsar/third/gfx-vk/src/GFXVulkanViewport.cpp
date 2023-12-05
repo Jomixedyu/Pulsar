@@ -1,8 +1,10 @@
 #include "GFXVulkanViewport.h"
-#include "GFXVulkanViewport.h"
-#include "GFXVulkanApplication.h"
-#include "PhysicalDeviceHelper.h"
 #include "BufferHelper.h"
+#include "GFXVulkanApplication.h"
+#include "GFXVulkanViewport.h"
+#include "PhysicalDeviceHelper.h"
+
+#include <algorithm>
 #include <array>
 
 

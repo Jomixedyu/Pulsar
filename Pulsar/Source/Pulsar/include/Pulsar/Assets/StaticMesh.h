@@ -50,7 +50,7 @@ namespace pulsar
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::StaticMesh, Mesh)
     public:
         constexpr static int32_t SerializeVersion = 1;
-        StaticMesh() {}
+        StaticMesh() = default;
         ~StaticMesh() override;
     public:
         virtual void Serialize(AssetSerializer* s) override;

@@ -87,9 +87,12 @@ namespace pulsared
     void ViewportFrame::Initialize()
     {
         m_descriptorLayout = Application::GetGfxApp()->CreateDescriptorSetLayout({
-            gfx::GFXDescriptorSetLayoutInfo(0, gfx::GFXDescriptorType::CombinedImageSampler, gfx::GFXShaderStageFlags::Fragment)
+            gfx::GFXDescriptorSetLayoutInfo(
+                gfx::GFXDescriptorType::CombinedImageSampler,
+                gfx::GFXShaderStageFlags::Fragment,
+                0)
             });
-        m_descriptorSet = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_descriptorLayout.get());
+        m_descriptorSet = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_descriptorLayout);
     }
 
     void ViewportFrame::Terminate()

@@ -14,6 +14,7 @@ namespace pulsar
     class ShaderPass;
     class StaticMeshRenderObject;
 
+    constexpr uint32_t kRenderingDescriptorSpace_ModelInfo = 2;
     class StaticMeshRendererComponent : public Component, public IRendererComponent
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::StaticMeshRendererComponent, Component);
@@ -38,7 +39,11 @@ namespace pulsar
 
         void BeginComponent() override;
         void EndComponent() override;
+
+        void OnReceiveMessage(MessageId id) override;
+
     protected:
+        void OnMsg_TransformChanged() override;
         void OnMeshChanged();
         void OnMaterialChanged();
     protected:
@@ -52,6 +57,9 @@ namespace pulsar
         bool m_isCastShadow = true;
 
         sptr<StaticMeshRenderObject> m_renderObject;
+
+    private:
+
     };
     DECL_PTR(StaticMeshRendererComponent);
 }

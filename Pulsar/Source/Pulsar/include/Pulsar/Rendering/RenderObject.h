@@ -11,13 +11,20 @@ namespace pulsar::rendering
     {
         gfx::GFXBuffer_sp Vertex;
         gfx::GFXBuffer_sp Indices;
-        Matrix4f LocalToWorldMatrix;
+        gfx::GFXDescriptorSet_sp ModelDescriptor;
+    };
+
+    struct BatchRenderState
+    {
+        Material_ref Material;
+        bool IsReverseCulling;
+        gfx::GFXPrimitiveTopology Topology;
     };
 
     struct MeshBatch
     {
         array_list<MeshBatchElement> Elements;
-
+        gfx::GFXDescriptorSetLayout_sp DescriptorSetLayout;
         Material_ref Material;
 
         bool IsUsedIndices;
@@ -26,11 +33,13 @@ namespace pulsar::rendering
         bool IsReverseCulling;
         gfx::GFXPrimitiveTopology Topology;
 
-        bool IsSameRenderingState(const MeshBatch& batch) const
+        size_t GetRenderState() const
         {
-            return
-                Material == batch.Material &&
-                IsReverseCulling == batch.IsReverseCulling;
+            constexpr size_t prime = 16777619;
+            return (((2166136261 * prime
+                ^ std::hash<ObjectPtrBase>()(Material)) * prime
+                ^ std::hash<bool>{}(IsReverseCulling)) * prime
+                ^ std::hash<gfx::GFXPrimitiveTopology>{}(Topology)) * prime;
         }
 
         void Append(const MeshBatch& batch)
@@ -40,20 +49,8 @@ namespace pulsar::rendering
                 Elements.push_back(element);
             }
         }
-        void Append(MeshBatch&& batch)
-        {
-            for (auto& element : batch.Elements)
-            {
-                Elements.push_back(std::move(element));
-            }
-        };
     };
 
-    class IDrawInterface
-    {
-    public:
-
-    };
 
     class RenderObject
     {
@@ -64,8 +61,9 @@ namespace pulsar::rendering
             m_localToWorld = localToWorld;
             m_isLocalToWorldDeterminantNegative = localToWorld.Determinant() < 0;
 
-            UpdateConstantBuffer();
+            OnChangedTransform();
         }
+        virtual void OnChangedTransform() {}
         void UpdateConstantBuffer()
         {
 

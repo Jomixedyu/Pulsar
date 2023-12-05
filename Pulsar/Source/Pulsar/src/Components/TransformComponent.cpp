@@ -60,6 +60,7 @@ namespace pulsar
     void TransformComponent::SetWorldPosition(Vector3f value)
     {
         m_position = GetWorldToLocalMatrix() * value;
+        GetAttachedNode()->SendMessage(MessageId_OnChangedTransform);
     }
 
     Vector3f TransformComponent::GetWorldScale() const
@@ -75,6 +76,7 @@ namespace pulsar
     void TransformComponent::SetEuler(Vector3f value)
     {
         m_rotation = Quat4f::FromEuler(value);
+        BroadcastChange();
     }
 
     TransformComponent::TransformComponent()
@@ -107,10 +109,15 @@ namespace pulsar
     void TransformComponent::PostEditChange(FieldInfo* info)
     {
         base::PostEditChange(info);
-        if(info->GetName() == NAMEOF(m_euler))
+        if (info->GetName() == NAMEOF(m_euler))
         {
             m_rotation = Quat4f::FromEuler(m_euler);
+            BroadcastChange();
         }
+    }
+    void TransformComponent::BroadcastChange()
+    {
+        GetAttachedNode()->SendMessage(MessageId_OnChangedTransform);
     }
 
     void TransformComponent::SetParent(ObjectPtr<TransformComponent> parent)

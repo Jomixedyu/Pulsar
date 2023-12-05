@@ -31,7 +31,7 @@ namespace pulsared
             return {};
         }
         auto tex = texIt->second;
-        auto descSet = m_app->GetDescriptorManager()->GetDescriptorSet(m_descriptorLayout.get());
+        auto descSet = m_app->GetDescriptorManager()->GetDescriptorSet(m_descriptorLayout);
 
         auto desc = descSet->FindByBinding(0);
         if (!desc)
@@ -53,7 +53,9 @@ namespace pulsared
     PersistentImagePool::PersistentImagePool(gfx::GFXApplication* app)
         : m_app(app)
     {
-        m_descriptorLayout = m_app->CreateDescriptorSetLayout({gfx::GFXDescriptorSetLayoutInfo(0, gfx::GFXDescriptorType::CombinedImageSampler, gfx::GFXShaderStageFlags::Fragment)});
+        gfx::GFXDescriptorSetLayoutInfo info{
+            gfx::GFXDescriptorSetLayoutInfo(gfx::GFXDescriptorType::CombinedImageSampler, gfx::GFXShaderStageFlags::Fragment, 0)};
+        m_descriptorLayout = m_app->CreateDescriptorSetLayout(&info, 1);
     }
 
     PersistentImagePool::~PersistentImagePool()

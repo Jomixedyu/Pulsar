@@ -14,13 +14,13 @@ namespace gfx
         GFXVulkanApplication* app,
         const GFXShaderPassConfig& config,
         const std::shared_ptr<GFXVulkanGpuProgram>& gpuProgram,
-        const std::shared_ptr<GFXDescriptorSetLayout>& descriptorSetLayout,
+        //const array_list<GFXDescriptorSetLayout_sp>& descriptorSetLayout,
         const array_list<GFXVertexLayoutDescription_sp>& vertexLayout
     ) :
         m_app(app),
         m_passConfig(config),
         m_gpuProgram(gpuProgram),
-        m_descriptorSetLayout(descriptorSetLayout),
+        //m_descriptorSetLayout(descriptorSetLayout),
         m_vertexLayoutDescription(vertexLayout)
     {
 
@@ -45,7 +45,16 @@ namespace gfx
 
     GFXVulkanShaderPass::~GFXVulkanShaderPass()
     {
-
     }
+    // array_list<VkDescriptorSetLayout> GFXVulkanShaderPass::GetVkDescriptorSetLayout() const
+    // {
+    //     array_list<VkDescriptorSetLayout> list;
+    //     for (auto& layout : m_descriptorSetLayout)
+    //     {
+    //         auto l = static_cast<GFXVulkanDescriptorSetLayout*>(layout.get())->GetVkDescriptorSetLayout();
+    //         list.push_back(l);
+    //     }
+    //     return list;
+    // }
 
-}
+} // namespace gfx

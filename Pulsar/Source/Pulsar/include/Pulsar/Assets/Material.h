@@ -63,13 +63,6 @@ namespace pulsar
 
     };
 
-    struct CBufferCamera
-    {
-        Matrix4f MatrixV;
-        Matrix4f MatrixP;
-        Matrix4f MatrixVP;
-    };
-
     class Material final : public AssetObject, public IMaterialParameter, public IGPUResource
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::Material, AssetObject);
@@ -122,7 +115,7 @@ namespace pulsar
 
         gfx::GFXDescriptorSet_sp m_descriptorSet;
         gfx::GFXDescriptorSetLayout_sp m_descriptorSetLayout;
-        gfx::GFXBuffer_sp m_buffer;
+        gfx::GFXBuffer_sp m_materialBuffer;
 
         bool m_createdGpuResource = false;
         bool m_isDirtyParameter{};

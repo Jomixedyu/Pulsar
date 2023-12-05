@@ -12,7 +12,7 @@ namespace gfx
         GFXVulkanDescriptorPool(GFXVulkanApplication* app, size_t maxSetCount = 128);
         ~GFXVulkanDescriptorPool();
     public:
-        std::shared_ptr<GFXVulkanDescriptorSet> GetDescriptorSet(GFXDescriptorSetLayout* layout);
+        std::shared_ptr<GFXVulkanDescriptorSet> GetDescriptorSet(const GFXDescriptorSetLayout_sp& layout);
         void ReleaseDescriptorSet();
     public:
         const VkDescriptorPool& GetVkDescriptorPool() const { return m_descriptorPool; }

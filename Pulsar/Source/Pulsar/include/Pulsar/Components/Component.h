@@ -11,6 +11,7 @@ namespace pulsar
     class World;
 
     using MessageId = size_t;
+    constexpr size_t MessageId_OnChangedTransform = 1;
 
     class Component : public ObjectBase, public ITickable
     {
@@ -21,7 +22,7 @@ namespace pulsar
         ObjectPtr<Node> GetOwnerNode() const;
         World* GetWorld() const;
         virtual bool get_is_tickable() const { return true; }
-        virtual void OnReceiveMessage(MessageId id) {}
+        virtual void OnReceiveMessage(MessageId id);
     public:
 		virtual bool EqualsComponentType(Type* type);
     public:
@@ -29,10 +30,12 @@ namespace pulsar
         void OnDestroy() override {}
 
         virtual void BeginComponent();
-        virtual void EndComponent() {}
+        virtual void EndComponent();
 
         virtual void BeginPlay() {}
         virtual void EndPlay() {}
+
+        virtual void OnMsg_TransformChanged() {}
     public:        
         // ITickable interface
         void OnTick(Ticker ticker) override;
@@ -41,6 +44,8 @@ namespace pulsar
     private:
         ObjectPtr<Node> m_ownerNode;
         ObjectPtr<Node> m_attachedNode;
+    protected:
+        bool m_beginning = false;
     public:
         bool IsCollapsing = false;
     };

@@ -14,20 +14,19 @@ namespace pulsar
         vertDescLayout->BindingPoint = 0;
         vertDescLayout->Stride = sizeof(StaticMeshVertex);
 
-        vertDescLayout->Attributes.push_back({ (int)EngineInputSemantic::POSITION, gfx::GFXVertexInputDataFormat::R32G32B32_SFloat, offsetof(StaticMeshVertex, Position) });
-        vertDescLayout->Attributes.push_back({ (int)EngineInputSemantic::NORMAL, gfx::GFXVertexInputDataFormat::R32G32B32_SFloat, offsetof(StaticMeshVertex, Normal) });
-        vertDescLayout->Attributes.push_back({ (int)EngineInputSemantic::TANGENT, gfx::GFXVertexInputDataFormat::R32G32B32_SFloat, offsetof(StaticMeshVertex, Tangent) });
-        vertDescLayout->Attributes.push_back({ (int)EngineInputSemantic::BITANGENT, gfx::GFXVertexInputDataFormat::R32G32B32_SFloat, offsetof(StaticMeshVertex, Bitangent) });
-        vertDescLayout->Attributes.push_back({ (int)EngineInputSemantic::COLOR, gfx::GFXVertexInputDataFormat::R32G32B32_SFloat, offsetof(StaticMeshVertex, Color) });
+        vertDescLayout->Attributes.push_back({(int)EngineInputSemantic::POSITION, gfx::GFXVertexInputDataFormat::R32G32B32_SFloat, offsetof(StaticMeshVertex, Position)});
+        vertDescLayout->Attributes.push_back({(int)EngineInputSemantic::NORMAL, gfx::GFXVertexInputDataFormat::R32G32B32_SFloat, offsetof(StaticMeshVertex, Normal)});
+        vertDescLayout->Attributes.push_back({(int)EngineInputSemantic::TANGENT, gfx::GFXVertexInputDataFormat::R32G32B32_SFloat, offsetof(StaticMeshVertex, Tangent)});
+        vertDescLayout->Attributes.push_back({(int)EngineInputSemantic::BITANGENT, gfx::GFXVertexInputDataFormat::R32G32B32_SFloat, offsetof(StaticMeshVertex, Bitangent)});
+        vertDescLayout->Attributes.push_back({(int)EngineInputSemantic::COLOR, gfx::GFXVertexInputDataFormat::R32G32B32_SFloat, offsetof(StaticMeshVertex, Color)});
 
         for (size_t i = 0; i < STATICMESH_MAX_TEXTURE_COORDS; i++)
         {
-            vertDescLayout->Attributes.push_back({ (int)EngineInputSemantic::TEXCOORD0 + i, gfx::GFXVertexInputDataFormat::R32G32_SFloat, offsetof(StaticMeshVertex, TexCoords[i]) });
+            vertDescLayout->Attributes.push_back({(int)EngineInputSemantic::TEXCOORD0 + i, gfx::GFXVertexInputDataFormat::R32G32_SFloat, offsetof(StaticMeshVertex, TexCoords[i])});
         }
 
         return vertDescLayout;
     }
-
 
     ObjectPtr<Material> Material::StaticCreate(string_view name, Shader_ref shader)
     {
@@ -74,44 +73,33 @@ namespace pulsar
                 config.Topology = (gfx::GFXPrimitiveTopology)sourceConfig->Topology;
             }
 
-
             // create descriptor layout
             {
-                array_list<gfx::GFXDescriptorSetLayoutInfo> descriptorLayoutInfos;
-
-                gfx::GFXDescriptorSetLayoutInfo commonInfo(
-                    0,
+                gfx::GFXDescriptorSetLayoutInfo descriptorLayoutInfo {
                     gfx::GFXDescriptorType::ConstantBuffer,
-                    gfx::GFXShaderStageFlags::VertexFragment);
-                gfx::GFXDescriptorSetLayoutInfo commonInfo2(
-                    1,
-                    gfx::GFXDescriptorType::ConstantBuffer,
-                    gfx::GFXShaderStageFlags::VertexFragment);
-                gfx::GFXDescriptorSetLayoutInfo commonInfo3(
-                    2,
-                    gfx::GFXDescriptorType::ConstantBuffer,
-                    gfx::GFXShaderStageFlags::VertexFragment);
-
-                descriptorLayoutInfos.push_back(commonInfo);
-                descriptorLayoutInfos.push_back(commonInfo2);
-                descriptorLayoutInfos.push_back(commonInfo3);
-                m_descriptorSetLayout = Application::GetGfxApp()->CreateDescriptorSetLayout(descriptorLayoutInfos);
+                    gfx::GFXShaderStageFlags::VertexFragment,
+                    0, 2
+                };
+                m_descriptorSetLayout = Application::GetGfxApp()->CreateDescriptorSetLayout(&descriptorLayoutInfo, 1);
             }
 
-            // create shader pass
-            auto shaderPass = Application::GetGfxApp()->CreateShaderPass(
-                config,
-                gpuProgram,
-                m_descriptorSetLayout,
-                {GetVertexLayout(Application::GetGfxApp())});
+            {
 
-            m_gfxShaderPasses.push_back(shaderPass);
+
+                // create shader pass
+                auto shaderPass = Application::GetGfxApp()->CreateShaderPass(
+                    config,
+                    gpuProgram,
+                    {GetVertexLayout(Application::GetGfxApp())});
+
+                m_gfxShaderPasses.push_back(shaderPass);
+            }
+
         }
 
-        m_descriptorSet = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_descriptorSetLayout.get());
-        m_descriptorSet->AddDescriptor("Camera", 0);
-        m_descriptorSet->AddDescriptor("Lighting", 1);
-        m_descriptorSet->AddDescriptor("ShaderParameter", 2);
+        // m_descriptorSet = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_descriptorSetLayout.get());
+        // m_descriptorSet->AddDescriptor("ShaderParameter", 2)->SetConstantBuffer(m_materialBuffer.get());
+        // m_descriptorSet->Submit();
     }
     void Material::DestroyGPUResource()
     {
@@ -121,6 +109,7 @@ namespace pulsar
         }
         m_createdGpuResource = false;
         m_gfxShaderPasses.clear();
+        m_descriptorSet.reset();
     }
     bool Material::IsCreatedGPUResource() const
     {
@@ -170,7 +159,6 @@ namespace pulsar
             InitObjectPtr(m_shader);
         }
     }
-
 
     void Material::SetFloat(const index_string& name, float value)
     {
@@ -263,7 +251,7 @@ namespace pulsar
         }
         // copy parameter
 
-        m_descriptorSet->Find("ShaderParameter")->SetConstantBuffer(m_buffer.get());
+        m_descriptorSet->Find("ShaderParameter")->SetConstantBuffer(m_materialBuffer.get());
 
         m_isDirtyParameter = false;
         m_descriptorSet->Submit();

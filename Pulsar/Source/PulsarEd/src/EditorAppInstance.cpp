@@ -204,7 +204,7 @@ namespace pulsared
         auto meshNode = Node::StaticCreate("mesh test");
         auto meshComponent = meshNode->AddComponent<StaticMeshRendererComponent>();
 
-        auto staticMesh = GetAssetManager()->LoadAsset<StaticMesh>("Engine/Shapes/pSphere1");
+        auto staticMesh = GetAssetManager()->LoadAsset<StaticMesh>("Engine/Shapes/pCube");
         meshComponent->SetStaticMesh(staticMesh);
 
         auto missingMat = GetAssetManager()->LoadAsset<Material>("Engine/Materials/Missing");

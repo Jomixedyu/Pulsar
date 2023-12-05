@@ -20,6 +20,13 @@ namespace pulsar
     {
         return GetAttachedNode()->GetRuntimeWorld();
     }
+    void Component::OnReceiveMessage(MessageId id)
+    {
+        if(id == MessageId_OnChangedTransform)
+        {
+            OnMsg_TransformChanged();
+        }
+    }
     bool Component::EqualsComponentType(Type* type)
     {
         return this->GetType() == type;
@@ -31,6 +38,10 @@ namespace pulsar
 
     void Component::BeginComponent()
     {
-
+        m_beginning = true;
     }
-}
+    void Component::EndComponent()
+    {
+        m_beginning = false;
+    }
+} // namespace pulsar

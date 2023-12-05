@@ -1,5 +1,8 @@
 #pragma once
 #include "Component.h"
+#include "gfx/GFXBuffer.h"
+#include "gfx/GFXDescriptorSet.h"
+
 #include <Pulsar/Assets/RenderTexture.h>
 
 namespace pulsar
@@ -14,6 +17,8 @@ CORELIB_DECL_BOXING(pulsar::CameraProjectionMode, pulsar::BoxingCameraProjection
 
 namespace pulsar
 {
+    constexpr uint32_t kRenderingDescriptorSpace_Camera = 0;
+
     class CameraComponent : public Component
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::CameraComponent, Component);
@@ -44,10 +49,16 @@ namespace pulsar
         const RenderTexture_ref&  GetRenderTarget() const { return m_renderTarget; }
         void                      SetRenderTarget(const RenderTexture_ref& value);
 
+    protected:
+        void BeginRT();
     private:
         void UpdateRTBackgroundColor();
         void UpdateRT();
+        void UpdateCBuffer();
     protected:
+        gfx::GFXDescriptorSetLayout_sp m_camDescriptorLayout;
+        gfx::GFXDescriptorSet_sp m_cameraDescriptorSet;
+        gfx::GFXBuffer_sp m_cameraDataBuffer;
 
         CORELIB_REFL_DECL_FIELD(m_fov);
         float m_fov{};

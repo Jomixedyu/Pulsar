@@ -1,12 +1,21 @@
 #include "World.h"
-#include <Pulsar/World.h>
-#include <Pulsar/Scene.h>
+#include "Application.h"
 #include <Pulsar/Logger.h>
+#include <Pulsar/Scene.h>
 
 namespace pulsar
 {
-    static std::unique_ptr<World> _world_inst = nullptr;
+    struct CBuffer_World
+    {
+        Vector4f WorldSpaceLightPos;
+        Vector4f WorldSpaceLightColor;
+        float TotalTime;
+        float DeltaTime;
+        Vector2f _Padding0;
+        Vector4f _Padding1;
+    };
 
+    static std::unique_ptr<World> _world_inst = nullptr;
     World* World::Current()
     {
         return _world_inst.get();
@@ -27,18 +36,18 @@ namespace pulsar
     }
     World::World()
     {
-        
     }
 
     World::~World()
     {
-
     }
 
     void World::Tick(float dt)
     {
-        Ticker ticker{};
-        ticker.deltatime = dt;
+        m_ticker += dt;
+        m_totalTime += dt;
+
+        UpdateWorldCBuffer();
 
         for (auto& scene : m_scenes)
         {
@@ -48,13 +57,21 @@ namespace pulsar
                 {
                     if (IsValid(node) && node->GetIsActive())
                     {
-                        node->OnTick(ticker);
+                        node->OnTick(m_ticker);
                     }
                 }
             }
         }
-
     }
+    CameraComponent_ref World::GetPreviewCamera()
+    {
+        return GetCameraManager().GetMainCamera();
+    }
+    void World::SetFocusScene(ObjectPtr<Scene> scene)
+    {
+        m_focusScene = scene;
+    }
+
     void World::ChangeScene(ObjectPtr<Scene> scene, bool clearPresistentScene)
     {
         if (clearPresistentScene)
@@ -77,18 +94,26 @@ namespace pulsar
     }
     void World::UnloadScene(ObjectPtr<Scene> scene)
     {
-        auto it = std::find(m_scenes.begin(), m_scenes.end(), scene);
-        if (it != m_scenes.end())
+        const auto it = std::ranges::find(m_scenes, scene);
+        if (it == m_scenes.end())
         {
-            if (it == m_scenes.begin())
-            {
-                OnUnloadingPersistentScene(scene);
-            }
-            OnSceneUnloading(scene);
-            scene->EndScene();
-            m_scenes.erase(it);
-            DestroyObject(scene, true);
+            return;
         }
+        if (it == m_scenes.begin())
+        {
+            OnUnloadingPersistentScene(scene);
+        }
+        else
+        {
+            if (m_focusScene == scene)
+            {
+                m_focusScene = GetPersistentScene();
+            }
+        }
+        OnSceneUnloading(scene);
+        scene->EndScene();
+        m_scenes.erase(it);
+        DestroyObject(scene, true);
     }
 
     void World::InitializePersistentScene()
@@ -111,11 +136,17 @@ namespace pulsar
 
     void World::OnLoadingPersistentScene(ObjectPtr<Scene> scene)
     {
-
     }
     void World::OnUnloadingPersistentScene(ObjectPtr<Scene> scene)
     {
+    }
+    void World::UpdateWorldCBuffer()
+    {
+        CBuffer_World data;
+        data.DeltaTime = m_ticker.deltatime;
+        data.TotalTime = m_totalTime;
 
+        m_worldDescriptorBuffer->Fill(&data);
     }
 
     void World::AddRenderObject(const rendering::RenderObject_sp renderObject)
@@ -125,7 +156,7 @@ namespace pulsar
     }
     void World::RemoveRenderObject(rendering::RenderObject_rsp renderObject)
     {
-        auto it = m_renderObjects.find(renderObject);
+        const auto it = m_renderObjects.find(renderObject);
         if (it != m_renderObjects.end())
         {
             (*it)->OnDestroyResource();
@@ -133,10 +164,24 @@ namespace pulsar
         }
     }
 
-
     void World::OnWorldBegin()
     {
         InitializePersistentScene();
+        m_focusScene = GetPersistentScene();
+
+        gfx::GFXDescriptorSetLayoutInfo info{
+            gfx::GFXDescriptorType::ConstantBuffer,
+            gfx::GFXShaderStageFlags::VertexFragment,
+            0, kRenderingDescriptorSpace_World};
+
+        m_worldDescriptorLayout = Application::GetGfxApp()->CreateDescriptorSetLayout(&info, 1);
+        m_worldDescriptorBuffer = Application::GetGfxApp()->CreateBuffer(
+            gfx::GFXBufferUsage::ConstantBuffer,
+            sizeof(CBuffer_World));
+
+        m_worldDescriptors = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_worldDescriptorLayout);
+        m_worldDescriptors->AddDescriptor("World", 0)->SetConstantBuffer(m_worldDescriptorBuffer.get());
+        m_worldDescriptors->Submit();
     }
 
     void World::OnWorldEnd()
@@ -147,6 +192,10 @@ namespace pulsar
             DestroyObject(m_deferredDestroyedQueue[i]);
         }
         m_deferredDestroyedQueue.clear();
+
+        m_worldDescriptorLayout.reset();
+        m_worldDescriptorBuffer.reset();
+        m_worldDescriptors.reset();
     }
 
     void World::OnSceneLoading(ObjectPtr<Scene> scene)
@@ -157,6 +206,4 @@ namespace pulsar
     {
     }
 
-
-}
-
+} // namespace pulsar

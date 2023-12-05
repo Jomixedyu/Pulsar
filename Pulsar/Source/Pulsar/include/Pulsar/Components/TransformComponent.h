@@ -18,16 +18,16 @@ namespace pulsar
         size_t GetChildCount() const { return m_children->size(); }
         ObjectPtr<TransformComponent> GetChild(int32_t index) const { return m_children->at(index); }
 
-        void SetPosition(Vector3f value) { m_position = value; m_isDirtyMatrix = true; }
+        void SetPosition(Vector3f value) { m_position = value; m_isDirtyMatrix = true; BroadcastChange(); }
         Vector3f GetPosition() const { return m_position; }
         Vector3f GetWorldPosition() const;
         void SetWorldPosition(Vector3f value);
 
-        void SetScale(Vector3f value) { m_scale = value; m_isDirtyMatrix = true; }
+        void SetScale(Vector3f value) { m_scale = value; m_isDirtyMatrix = true; BroadcastChange(); }
         Vector3f GetScale() const { return m_scale; }
         Vector3f GetWorldScale() const;
 
-        void SetRotation(Quat4f rotation) { m_rotation = rotation; m_isDirtyMatrix = true; }
+        void SetRotation(Quat4f rotation) { m_rotation = rotation; m_isDirtyMatrix = true; BroadcastChange(); }
         Quat4f GetRotation() const { return m_rotation; }
         Vector3f GetEuler() const;
         void SetEuler(Vector3f value);
@@ -41,6 +41,7 @@ namespace pulsar
     protected:
         void RebuildLocalToWorldMatrix();
         void PostEditChange(FieldInfo* info) override;
+        void BroadcastChange();
     protected:
         CORELIB_REFL_DECL_FIELD(m_localToWorldMatrix, new ReadOnlyPropertyAttribute);
         Matrix4f m_localToWorldMatrix;

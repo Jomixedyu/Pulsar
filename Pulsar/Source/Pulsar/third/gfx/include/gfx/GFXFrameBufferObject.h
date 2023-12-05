@@ -2,6 +2,7 @@
 #include "GFXInclude.h"
 #include "GFXRenderTarget.h"
 #include "GFXRenderPass.h"
+#include "GFXDescriptorSet.h"
 
 namespace gfx
 {
@@ -14,6 +15,7 @@ namespace gfx
         virtual GFXRenderPassLayout_sp GetRenderPassLayout() const = 0;
         virtual const array_list<GFXRenderTarget*>& GetRenderTargets() const = 0;
 
+        array_list<GFXDescriptorSet_wp> RefData;
     };
     GFX_DECL_SPTR(GFXFrameBufferObject);
 }

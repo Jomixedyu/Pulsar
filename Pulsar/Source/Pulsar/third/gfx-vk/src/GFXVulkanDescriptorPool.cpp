@@ -53,7 +53,7 @@ namespace gfx
         vkDestroyDescriptorPool(m_app->GetVkDevice(), m_descriptorPool, nullptr);
     }
 
-    std::shared_ptr<GFXVulkanDescriptorSet> GFXVulkanDescriptorPool::GetDescriptorSet(GFXDescriptorSetLayout* layout)
+    std::shared_ptr<GFXVulkanDescriptorSet> GFXVulkanDescriptorPool::GetDescriptorSet(const GFXDescriptorSetLayout_sp& layout)
     {
         if (m_count == m_maxSetCount)
         {
