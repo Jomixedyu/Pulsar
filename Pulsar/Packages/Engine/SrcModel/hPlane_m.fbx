@@ -10,9 +10,9 @@ FBXHeaderExtension:  {
 		Month: 12
 		Day: 7
 		Hour: 1
-		Minute: 13
-		Second: 2
-		Millisecond: 739
+		Minute: 23
+		Second: 16
+		Millisecond: 215
 	}
 	Creator: "FBX SDK/FBX Plugins version 2020.0.1"
 	OtherFlags:  {
@@ -37,13 +37,13 @@ FBXHeaderExtension:  {
 			P: "Original|ApplicationVendor", "KString", "", "", "SideFX Software"
 			P: "Original|ApplicationName", "KString", "", "", "Houdini"
 			P: "Original|ApplicationVersion", "KString", "", "", "19.0.589"
-			P: "Original|DateTime_GMT", "DateTime", "", "", "06/12/2023 17:13:02.738"
+			P: "Original|DateTime_GMT", "DateTime", "", "", "06/12/2023 17:23:16.215"
 			P: "Original|FileName", "KString", "", "", "D:\Codes\Pulsar\Pulsar\Packages\Engine\SrcModel\hPlane_m"
 			P: "LastSaved", "Compound", "", ""
 			P: "LastSaved|ApplicationVendor", "KString", "", "", "SideFX Software"
 			P: "LastSaved|ApplicationName", "KString", "", "", "Houdini"
 			P: "LastSaved|ApplicationVersion", "KString", "", "", "19.0.589"
-			P: "LastSaved|DateTime_GMT", "DateTime", "", "", "06/12/2023 17:13:02.738"
+			P: "LastSaved|DateTime_GMT", "DateTime", "", "", "06/12/2023 17:23:16.215"
 			P: "Original|ApplicationActiveProject", "KString", "", "", "C:\Users\JomiXedYu"
 			P: "Original|ApplicationNativeFile", "KString", "", "", "C:\Users\JomiXedYu\untitled.hip"
 		}
@@ -61,7 +61,7 @@ GlobalSettings:  {
 		P: "OriginalUpAxis", "int", "Integer", "",-1
 		P: "OriginalUpAxisSign", "int", "Integer", "",1
 		P: "UnitScaleFactor", "double", "Number", "",1
-		P: "OriginalUnitScaleFactor", "double", "Number", "",1
+		P: "OriginalUnitScaleFactor", "double", "Number", "",100
 		P: "AmbientColor", "ColorRGB", "Color", "",0,0,0
 		P: "DefaultCamera", "KString", "", "", "Producer Perspective"
 		P: "TimeMode", "enum", "", "",0
@@ -201,7 +201,7 @@ Definitions:  {
 ;------------------------------------------------------------------
 
 Objects:  {
-	Geometry: 2197230656, "Geometry::grid1", "Mesh" {
+	Geometry: 5363246528, "Geometry::grid1", "Mesh" {
 		Vertices: *12 {
 			a: -0.5,0,-0.5,0.5,0,-0.5,-0.5,0,0.5,0.5,0,0.5
 		} 
@@ -210,11 +210,12 @@ Objects:  {
 		} 
 		GeometryVersion: 124
 	}
-	Model: 2197247488, "Model::grid1", "Mesh" {
+	Model: 2187630080, "Model::grid1", "Mesh" {
 		Version: 232
 		Properties70:  {
 			P: "ScalingMax", "Vector3D", "Vector", "",0,0,0
 			P: "DefaultAttributeIndex", "int", "Integer", "",0
+			P: "Lcl Scaling", "Lcl Scaling", "", "A",100,100,100
 			P: "Visibility Inheritance", "Visibility Inheritance", "", "",0
 		}
 		Shading: Y
@@ -228,10 +229,10 @@ Objects:  {
 Connections:  {
 	
 	;Model::grid1, Model::RootNode
-	C: "OO",2197247488,0
+	C: "OO",2187630080,0
 	
 	;Geometry::grid1, Model::grid1
-	C: "OO",2197230656,2197247488
+	C: "OO",5363246528,2187630080
 }
 ;Takes section
 ;----------------------------------------------------
