@@ -195,11 +195,11 @@ namespace pulsared
 
     static inline Vector3f _Vec3(const FbxVector4& vec)
     {
-        return Vector3f(float(vec[0]), float(vec[1]), float(vec[2]));
+        return {float(vec[0]), float(vec[1]), float(vec[2])};
     }
     static inline Color4b _Color4b(const FbxColor& color)
     {
-        return Color4b(uint8_t(color.mRed * 255), uint8_t(color.mGreen * 255), uint8_t(color.mBlue * 255), uint8_t(color.mAlpha * 255));
+        return {uint8_t(color.mRed * 255), uint8_t(color.mGreen * 255), uint8_t(color.mBlue * 255), uint8_t(color.mAlpha * 255)};
     }
 
     static StaticMesh_ref ProcessMesh(FbxNode* fbxNode)
@@ -339,12 +339,17 @@ namespace pulsared
                     ourAxisSystem.ConvertScene(fbxScene);
                 }
             }
+            auto mm = FbxSystemUnit::m;
+            auto cmm = FbxSystemUnit::cm;
 
-            const auto unit = fbxScene->GetGlobalSettings().GetSystemUnit();
-            if (unit.GetScaleFactor() != 1.0)
+            auto originUnit = fbxScene->GetGlobalSettings().GetOriginalSystemUnit();
+            auto unit = fbxScene->GetGlobalSettings().GetSystemUnit();;
+
+            if(unit != FbxSystemUnit::m)
             {
-                FbxSystemUnit::cm.ConvertScene(fbxScene);
+                FbxSystemUnit::m.ConvertScene(fbxScene);
             }
+
 
             FbxGeometryConverter geomConverter(fbxManager);
             geomConverter.Triangulate(fbxScene, true);
