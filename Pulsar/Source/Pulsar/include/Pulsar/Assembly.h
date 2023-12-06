@@ -4,9 +4,9 @@
 #include <CoreLib/Reflection.h>
 
 #ifdef _WIN32
-    #ifdef PULSAR_BUILD_SHARED && PULSAR_EXPORT_API
+    #if defined(PULSAR_BUILD_SHARED) && defined(PULSAR_EXPORT_API)
         #define PULSAR_API __declspec(dllexport)
-    #elif PULSARED_BUILD_SHARED && !PULSARED_EXPORT_API
+    #elif defined(PULSARED_BUILD_SHARED) && !defined(PULSARED_EXPORT_API)
         #define PULSAR_API __declspec(dllimport)
     #else
         #define PULSAR_API
