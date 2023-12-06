@@ -27,12 +27,14 @@ namespace pulsar
             auto vertSize = section.Vertex.size() * kSizeofStaticMeshVertex;
             auto vertBuffer = Application::GetGfxApp()->CreateBuffer(gfx::GFXBufferUsage::Vertex, vertSize);
             vertBuffer->Fill(section.Vertex.data());
+            vertBuffer->SetElementCount(section.Vertex.size());
             m_vertexBuffers.push_back(vertBuffer);
 
 
             auto indicesSize = section.Indices.size() * sizeof(decltype(section.Indices)::value_type);
             auto indicesBuffer = Application::GetGfxApp()->CreateBuffer(gfx::GFXBufferUsage::Index, indicesSize);
             indicesBuffer->Fill(section.Indices.data());
+            indicesBuffer->SetElementCount(section.Indices.size());
             m_indicesBuffers.push_back(indicesBuffer);
         }
     }

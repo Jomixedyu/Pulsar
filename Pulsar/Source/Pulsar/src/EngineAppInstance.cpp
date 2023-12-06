@@ -47,6 +47,15 @@ namespace pulsar
             cmdBuffer.CmdBeginFrameBuffer();
             cmdBuffer.CmdSetViewport(0, 0, (float)targetFBO->GetWidth(), (float)targetFBO->GetHeight());
 
+            //targetFBO->RefData.at(0);
+
+            // for each render object
+            for (auto ro : renderObjects)
+            {
+                //setup descriptor
+
+            }
+
             //combine batch
             std::unordered_map<size_t, rendering::MeshBatch> batchs;
             for (const rendering::RenderObject_sp& renderObject : renderObjects)
@@ -74,6 +83,7 @@ namespace pulsar
                     }
                     descriptorSetLayouts.push_back(m_world->GetWorldDescriptorSet()->GetDescriptorSetLayout());
                     descriptorSetLayouts.push_back(batch.DescriptorSetLayout);
+
 
                     auto gfxPipeline = pipelineMgr->GetGraphicsPipeline(shaderPass, descriptorSetLayouts, targetFBO->GetRenderPassLayout());
                     cmdBuffer.CmdBindGraphicsPipeline(gfxPipeline.get());

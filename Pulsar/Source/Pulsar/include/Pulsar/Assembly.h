@@ -1,5 +1,8 @@
 #pragma once
 
+#include <CoreLib/Core.h>
+#include <CoreLib/Reflection.h>
+
 #ifdef _WIN32
     #ifdef PULSAR_BUILD_SHARED && PULSAR_EXPORT_API
         #define PULSAR_API __declspec(dllexport)
@@ -12,3 +15,8 @@
     #define PULSAR_API
 #endif
 
+namespace pulsar
+{
+    using namespace jxcorlib;
+    CORELIB_DECL_ASSEMBLY(pulsar);
+}

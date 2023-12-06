@@ -101,9 +101,26 @@ namespace gfx
         vkCmdBindVertexBuffers(m_cmdBuffer, 0, static_cast<uint32_t>(buffers.size()), vkbuffers.data(), offsets);
     }
 
+    static VkIndexType _GetVkIndexType(size_t size)
+    {
+        switch (size)
+        {
+        case 2:
+            return VK_INDEX_TYPE_UINT16;
+        case 4:
+            return VK_INDEX_TYPE_UINT32;
+        default:
+            break;
+        }
+        return {};
+    }
+
     void GFXVulkanCommandBuffer::CmdBindIndexBuffer(GFXBuffer* buffer)
     {
-        vkCmdBindIndexBuffer(m_cmdBuffer, static_cast<GFXVulkanBuffer*>(buffer)->GetVkBuffer(), 0, VK_INDEX_TYPE_UINT16);
+        vkCmdBindIndexBuffer(m_cmdBuffer,
+            static_cast<GFXVulkanBuffer*>(buffer)->GetVkBuffer(),
+            0,
+            _GetVkIndexType(buffer->GetElementSize()));
     }
 
     void GFXVulkanCommandBuffer::CmdBindDescriptorSets(const array_list<GFXDescriptorSet*>& descriptorSet, GFXGraphicsPipeline* pipeline)

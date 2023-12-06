@@ -247,9 +247,9 @@ namespace pulsared
                 section.Vertex.resize(vertexCount);
 
 #pragma omp parallel for
-                for (size_t polyIndex = 0; polyIndex < polygonCount; polyIndex++)
+                for (int polyIndex = 0; polyIndex < polygonCount; polyIndex++)
                 {
-                    for (size_t vertIndex = 0; vertIndex < kPolygonCount; vertIndex++)
+                    for (int vertIndex = 0; vertIndex < kPolygonCount; vertIndex++)
                     {
                         auto index = fbxMesh->GetPolygonVertex(polyIndex, vertIndex);
 
@@ -343,7 +343,7 @@ namespace pulsared
             const auto unit = fbxScene->GetGlobalSettings().GetSystemUnit();
             if (unit.GetScaleFactor() != 1.0)
             {
-                FbxSystemUnit::m.ConvertScene(fbxScene);
+                FbxSystemUnit::cm.ConvertScene(fbxScene);
             }
 
             FbxGeometryConverter geomConverter(fbxManager);

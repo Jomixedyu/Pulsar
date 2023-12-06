@@ -22,6 +22,7 @@ namespace pulsar
         Vector3f GetPosition() const { return m_position; }
         Vector3f GetWorldPosition() const;
         void SetWorldPosition(Vector3f value);
+        void Translate(Vector3f value);
 
         void SetScale(Vector3f value) { m_scale = value; m_isDirtyMatrix = true; BroadcastChange(); }
         Vector3f GetScale() const { return m_scale; }

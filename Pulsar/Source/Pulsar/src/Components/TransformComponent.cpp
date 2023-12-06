@@ -62,6 +62,10 @@ namespace pulsar
         m_position = GetWorldToLocalMatrix() * value;
         GetAttachedNode()->SendMessage(MessageId_OnChangedTransform);
     }
+    void TransformComponent::Translate(Vector3f value)
+    {
+        SetPosition(GetPosition() + value);
+    }
 
     Vector3f TransformComponent::GetWorldScale() const
     {
