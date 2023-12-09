@@ -82,6 +82,62 @@ namespace pulsared
     void ViewportFrame::Render(float dt)
     {
         PreviewFrame(m_world, true, &m_viewportSize, m_descriptorSet.get());
+
+        if(ImGui::IsKeyDown(ImGuiKey_LeftAlt))
+        {
+            m_altPressed = true;
+        }
+        if(ImGui::IsKeyReleased(ImGuiKey_LeftAlt))
+        {
+            m_altPressed = false;
+        }
+        if(ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+        {
+            m_leftMousePressed = true;
+            m_latestMousePos = ImGui::GetMousePos();
+        }
+        if(ImGui::IsMouseReleased(ImGuiMouseButton_Left))
+        {
+            m_leftMousePressed = false;
+        }
+        if(ImGui::IsMouseClicked(ImGuiMouseButton_Middle))
+        {
+            m_middleMousePressed = true;
+            m_latestMousePos = ImGui::GetMousePos();
+        }
+        if(ImGui::IsMouseReleased(ImGuiMouseButton_Middle))
+        {
+            m_middleMousePressed = false;
+        }
+        if(ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+        {
+            m_rightMousePressed = true;
+            m_latestMousePos = ImGui::GetMousePos();
+        }
+        if(ImGui::IsMouseReleased(ImGuiMouseButton_Right))
+        {
+            m_rightMousePressed = false;
+        }
+
+        if(m_altPressed)
+        {
+            const auto trans = m_world->GetPreviewCamera()->GetAttachedNode()->GetTransform()->GetParent();
+            auto newpos = ImGui::GetMousePos();
+            if(m_leftMousePressed)
+            {
+                auto euler = trans->GetEuler();
+                euler.y -= newpos.x - m_latestMousePos.x;
+                euler.x += newpos.y - m_latestMousePos.y;
+                trans->SetEuler(euler);
+                m_latestMousePos = newpos;
+            }
+            else if(m_rightMousePressed)
+            {
+                auto tr = m_world->GetPreviewCamera()->GetAttachedNode()->GetTransform();
+                tr->Translate({0.f,0, -(newpos.x - m_latestMousePos.x) });
+                m_latestMousePos = newpos;
+            }
+        }
     }
 
     void ViewportFrame::Initialize()

@@ -22,6 +22,12 @@ namespace pulsared
         Vector2f m_viewportSize;
         gfx::GFXDescriptorSetLayout_sp m_descriptorLayout;
         gfx::GFXDescriptorSet_sp m_descriptorSet;
+
+        bool m_altPressed = false;
+        bool m_leftMousePressed = false;
+        bool m_middleMousePressed = false;
+        bool m_rightMousePressed = false;
+        Vector2f m_latestMousePos{};
     };
 
     class SceneEditorViewportFrame : public ViewportFrame

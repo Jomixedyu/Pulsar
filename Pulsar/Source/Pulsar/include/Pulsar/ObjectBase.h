@@ -1,8 +1,6 @@
 #pragma once
 
-#include <CoreLib/Core.h>
 #include <CoreLib/List.h>
-#include <CoreLib/Reflection.h>
 #include <cstdint>
 #include <string>
 #include <memory>
@@ -15,6 +13,7 @@
 #include <unordered_set>
 #include <CoreLib/IndexString.h>
 #include <CoreLib/sser.hpp>
+#include "Assembly.h"
 
 #define WITH_EDITOR
 
@@ -29,10 +28,6 @@ using Class##_ref = ::pulsar::ObjectPtr<Class>;
 
 namespace pulsar
 {
-    using namespace jxcorlib;
-
-    CORELIB_DECL_ASSEMBLY(pulsar);
-
     class EngineException : public ExceptionBase
     {
     public:
