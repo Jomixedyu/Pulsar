@@ -39,13 +39,12 @@ namespace gfx
         bool DepthWriteEnable;
         GFXCompareMode DepthCompareOp;
         bool StencilTestEnable;
-        GFXPrimitiveTopology Topology;
     };
 
     class GFXShaderPass
     {
     public:
-        virtual ~GFXShaderPass() {}
+        virtual ~GFXShaderPass() = default;
 
         //virtual array_list<GFXDescriptorSetLayout_sp> GetDescriptorSetLayout() const = 0;
         virtual array_list<GFXVertexLayoutDescription_sp> GetVertexLayout() const = 0;

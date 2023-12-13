@@ -582,11 +582,46 @@ namespace jmath
     using Matrix4d = Matrix4<double>;
     using Matrix4i = Matrix4<int>;
 
-
-
-    enum class EulerRotationOrder : uint8_t
+    template<typename Q, typename T>
+    void EulerYXZToQuat(Q& quat, T pitch, T yaw, T roll)
     {
-        ZYX, YZX, XZY, ZXY, YXZ, XYZ
+        const T halfpitch = pitch * 0.5f;
+        T cp = cosf(halfpitch);
+        T sp = sinf(halfpitch);
+
+        const T halfyaw = yaw * 0.5f;
+        T cy = cosf(halfyaw);
+        T sy = sinf(halfyaw);
+
+        const T halfroll = roll * 0.5f;
+        T cr = cosf(halfroll);
+        T sr = sinf(halfroll);
+
+        quat.w = cr * cp * cy + sr * sp * sy;
+        quat.x = cr * sp * cy + sr * cp * sy;
+        quat.y = cr * cp * sy - sr * sp * cy;
+        quat.z = sr * cp * cy - cr * sp * sy;
+    }
+    template <typename T>
+    void ExtractEulerAngleYXZ(const Matrix4<T>& M,
+                                                 T & t1,
+                                                 T & t2,
+                                                 T & t3)
+    {
+        T T1 = std::atan2(M[2][0], M[2][2]);
+        T C2 = std::sqrt(M[0][1]*M[0][1] + M[1][1]*M[1][1]);
+        T T2 = std::atan2(-M[2][1], C2);
+        T S1 = std::sin(T1);
+        T C1 = std::cos(T1);
+        T T3 = std::atan2(S1*M[1][2] - C1*M[1][0], C1*M[0][0] - S1*M[0][2]);
+        t1 = T1;
+        t2 = T2;
+        t3 = T3;
+    }
+
+    enum class EulerOrder : uint8_t
+    {
+        YXZ
     };
     template<typename T>
     struct Quaternion
@@ -599,17 +634,6 @@ namespace jmath
         Quaternion(T _x, T _y, T _z, T _w) : x(_x), y(_y), z(_z), w(_w) {}
         Quaternion(const Quaternion&) = default;
         Quaternion& operator=(const Quaternion& q) = default;
-
-        //void SetEulerZYX(Vector3<T> euler) {
-        //    Vector3<T> in = Radians(euler) * T(0.5);
-        //    Vector3<T> c = Vector3<T>{ std::cos(in.x), std::cos(in.y), std::cos(in.z) };
-        //    Vector3<T> s = Vector3<T>{ std::sin(in.x), std::sin(in.y), std::sin(in.z) };
-
-        //    this->w = c.x * c.y * c.z + s.x * s.y * s.z;
-        //    this->x = s.x * c.y * c.z - c.x * s.y * s.z;
-        //    this->y = c.x * s.y * c.z + s.x * c.y * s.z;
-        //    this->z = c.x * c.y * s.z - s.x * s.y * c.z;
-        //}
 
     public:
         static Quaternion Identity()
@@ -667,55 +691,17 @@ namespace jmath
             else
                 return q / mag;
         }
-        Vector3<T> GetEulerRad(EulerRotationOrder order = EulerRotationOrder::ZXY) const
+        Vector3<T> GetEulerRad(EulerOrder order = EulerOrder::YXZ) const
         {
-            auto q = NormalizeSafe(*this);
-            T v[7] = { T(0) };
-            T d[10] = { q.x * q.x, q.x * q.y, q.x * q.z, q.x * q.w, q.y * q.y, q.y * q.z, q.y * q.w, q.z * q.z, q.z * q.w, q.w * q.w };
-
-            bool n2 = false;
-            switch (order)
-            {
-            case jmath::EulerRotationOrder::ZXY:
-                v[6] = d[5] - d[3];
-                v[4] = 2.0f * (d[1] + d[8]);
-                v[5] = d[4] - d[7] - d[0] + d[9];
-                v[0] = -1.0f;
-                v[1] = 2.0f * v[6];
-
-                if (std::abs(v[6]) < 0.499999f)
-                {
-                    v[2] = 2.0f * (d[2] + d[6]);
-                    v[3] = d[7] - d[0] - d[4] + d[9];
-                }
-                else
-                {
-                    float a, b, c, e;
-                    a = d[1] + d[8];
-                    b = -d[5] + d[3];
-                    c = d[1] - d[8];
-                    e = d[5] + d[3];
-
-                    v[2] = a * e + b * c;
-                    v[3] = b * e - a * c;
-                    n2 = true;
-                }
-                return Vector3<T>(
-                    v[0] * std::asin(std::clamp(T(v[1]), T(-1), T(1))),
-                    std::atan2(v[2], v[3]),
-                    n2 ? 0 : std::atan2(v[4], v[5]));
-                break;
-            default:
-                assert(order != EulerRotationOrder::ZXY);
-                break;
-            }
-            throw 0;
+            Vector3<T> angles;
+            ExtractEulerAngleYXZ(ToMatrix(), angles.y, angles.x, angles.z);
+            return angles;
         }
-        Vector3<T> GetEuler(EulerRotationOrder order = EulerRotationOrder::ZXY) const
+        Vector3<T> GetEuler(EulerOrder order = EulerOrder::YXZ) const
         {
             return Degrees(GetEulerRad(order));
         }
-        static Quaternion FromEuler(const Vector3<T>& euler, EulerRotationOrder order = EulerRotationOrder::ZXY)
+        static Quaternion FromEuler(const Vector3<T>& euler, EulerOrder order = EulerOrder::YXZ)
         {
             Quaternion q;
             q.SetEulerRad(euler * (jmath::pi<T>() / T(180)), order);
@@ -724,69 +710,45 @@ namespace jmath
 
         Matrix4<T> ToMatrix() const
         {
-            T x = this->x * T(2);
-            T y = this->y * T(2);
-            T z = this->z * T(2);
-            T xx = this->x * x;
-            T yy = this->y * y;
-            T zz = this->z * z;
-            T xy = this->x * y;
-            T xz = this->x * z;
-            T yz = this->y * z;
-            T wx = this->w * x;
-            T wy = this->w * y;
-            T wz = this->w * z;
+            Matrix4 Result(T(1));
+            T qxx(x * x);
+            T qyy(y * y);
+            T qzz(z * z);
+            T qxz(x * z);
+            T qxy(x * y);
+            T qyz(y * z);
+            T qwx(w * x);
+            T qwy(w * y);
+            T qwz(w * z);
 
-            Matrix4<T> mat;
-            auto m = mat.get_value_ptr();
-            m[0] = 1.0f - (yy + zz);
-            m[1] = xy + wz;
-            m[2] = xz - wy;
-            m[3] = 0.0F;
+            Result[0][0] = T(1) - T(2) * (qyy +  qzz);
+            Result[0][1] = T(2) * (qxy + qwz);
+            Result[0][2] = T(2) * (qxz - qwy);
 
-            m[4] = xy - wz;
-            m[5] = 1.0f - (xx + zz);
-            m[6] = yz + wx;
-            m[7] = 0.0F;
+            Result[1][0] = T(2) * (qxy - qwz);
+            Result[1][1] = T(1) - T(2) * (qxx +  qzz);
+            Result[1][2] = T(2) * (qyz + qwx);
 
-            m[8] = xz + wy;
-            m[9] = yz - wx;
-            m[10] = 1.0f - (xx + yy);
-            m[11] = 0.0F;
+            Result[2][0] = T(2) * (qxz + qwy);
+            Result[2][1] = T(2) * (qyz - qwx);
+            Result[2][2] = T(1) - T(2) * (qxx +  qyy);
 
-            m[12] = 0.0F;
-            m[13] = 0.0F;
-            m[14] = 0.0F;
-            m[15] = 1.0F;
+            Result[3][0] = T(0);
+            Result[3][1] = T(0);
+            Result[3][2] = T(0);
+            Result[3][3] = T(1);
 
-            return mat;
+            return Result;
         }
     private:
-        void SetEulerRad(const Vector3<T>& euler, EulerRotationOrder order)
+        void SetEulerRad(const Vector3<T>& euler, EulerOrder order)
         {
-            float cx(std::cos(euler.x / 2.0f));
-            float sx(std::sin(euler.x / 2.0f));
-
-            float cy(std::cos(euler.y / 2.0f));
-            float sy(std::sin(euler.y / 2.0f));
-
-            float cz(std::cos(euler.z / 2.0f));
-            float sz(std::sin(euler.z / 2.0f));
-
-            Quaternion qx(sx, 0.0f, 0.0f, cx);
-            Quaternion qy(0.0f, sy, 0.0f, cy);
-            Quaternion qz(0.0f, 0.0f, sz, cz);
-
-            switch (order)
+            if(order == EulerOrder::YXZ)
             {
-            case EulerRotationOrder::ZYX: *this = FromAxisQuaternions(qx, qy, qz); break;
-            case EulerRotationOrder::YZX: *this = FromAxisQuaternions(qx, qz, qy); break;
-            case EulerRotationOrder::XZY: *this = FromAxisQuaternions(qy, qz, qx); break;
-            case EulerRotationOrder::ZXY: *this = FromAxisQuaternions(qy, qx, qz); break;
-            case EulerRotationOrder::YXZ: *this = FromAxisQuaternions(qz, qx, qy); break;
-            case EulerRotationOrder::XYZ: *this = FromAxisQuaternions(qz, qy, qx); break;
+                EulerYXZToQuat(*this, euler.x, euler.y, euler.z);
             }
-
+            else
+                assert(false);
         }
         inline static Vector3<T> Internal_MakePositive(Vector3<T> euler)
         {
@@ -800,26 +762,6 @@ namespace jmath
             else if (euler.z > num2) { euler.z -= 360.f; }
             return euler;
         }
-        inline static T roll(const Quaternion& q)
-        {
-            return static_cast<T>(std::atan2(static_cast<T>(2) * (q.x * q.y + q.w * q.z), q.w * q.w + q.x * q.x - q.y * q.y - q.z * q.z));
-        }
-        inline static T pitch(const Quaternion& q)
-        {
-            T const y = static_cast<T>(2) * (q.y * q.z + q.w * q.x);
-            T const x = q.w * q.w - q.x * q.x - q.y * q.y + q.z * q.z;
-            if (FloatEqual(x, T(0)) && FloatEqual(y, T(0))) //avoid atan2(0,0) - handle singularity - Matiis
-                return static_cast<T>(static_cast<T>(2) * std::atan2(q.x, q.w));
-
-            return static_cast<T>(std::atan2(y, x));
-
-            //return (T)std::atan2(T(2) * (q.y * q.z + q.w * q.x), q.w * q.w - q.x * q.x - q.y * q.y + q.z * q.z);
-        }
-        inline static T yaw(const Quaternion& q)
-        {
-            return std::asin(Clamp(static_cast<T>(-2) * (q.x * q.z - q.w * q.y), static_cast<T>(-1), static_cast<T>(1)));
-        }
-    public:
 
     public:
         friend Quaternion operator-(const Quaternion& a, const Quaternion& b)

@@ -53,39 +53,76 @@ namespace pulsar
         return nullptr;
     }
 
-    Vector3f TransformComponent::GetWorldPosition() const
+    Vector3f TransformComponent::GetWorldPosition()
     {
-        return GetLocalToWorldMatrix() * m_position;
+        return GetParentLocalToWorldMatrix() * m_position;
     }
     void TransformComponent::SetWorldPosition(Vector3f value)
     {
-        m_position = GetWorldToLocalMatrix() * value;
-        GetAttachedNode()->SendMessage(MessageId_OnChangedTransform);
+        SetPosition(GetParentWorldToLocalMatrix() * value);
     }
     void TransformComponent::Translate(Vector3f value)
     {
         SetPosition(GetPosition() + value);
     }
 
-    Vector3f TransformComponent::GetWorldScale() const
+    Vector3f TransformComponent::GetWorldScale()
     {
-        return GetLocalToWorldMatrix() * m_scale;
+        return GetParentLocalToWorldMatrix() * m_scale;
+    }
+    void TransformComponent::SetRotation(Quat4f rotation)
+    {
+        m_rotation = rotation;
+        m_isDirtyMatrix = true;
+        m_euler = rotation.GetEuler(jmath::EulerOrder::YXZ);
+        MakeTransformChanged();
     }
 
     Vector3f TransformComponent::GetEuler() const
     {
-        return m_rotation.GetEuler();
+        auto euler = m_rotation.GetEuler(jmath::EulerOrder::YXZ);
+        return {euler.x, euler.y, euler.z};
     }
 
     void TransformComponent::SetEuler(Vector3f value)
     {
-        m_rotation = Quat4f::FromEuler(value);
-        BroadcastChange();
+        m_euler = value;
+        m_rotation = Quat4f::FromEuler(value, jmath::EulerOrder::YXZ);
+        MakeTransformChanged();
+    }
+    void TransformComponent::RotateEuler(Vector3f value)
+    {
+        RotateQuat(Quat4f::FromEuler(value));
+    }
+    void TransformComponent::RotateQuat(Quat4f quat)
+    {
+        m_rotation *= quat;
+        MakeTransformChanged();
+    }
+    Vector3f TransformComponent::GetForward()
+    {
+        return GetLocalToWorldMatrix() * Vector3f{0, 0, 1};
+    }
+    Vector3f TransformComponent::GetUp()
+    {
+        Matrix4f mat = GetLocalToWorldMatrix();
+        mat[3] = Vector4f{0,0,0,1};
+        auto up = mat * Vector3f{0, 1, 0};
+        up.Normalized();
+        return up;
+    }
+    Vector3f TransformComponent::GetRight()
+    {
+        Matrix4f mat = GetLocalToWorldMatrix();
+        mat[3] = Vector4f{0,0,0,1};
+        auto right = mat * Vector3f{1, 0, 0};
+        right.Normalized();
+        return right;
     }
 
     TransformComponent::TransformComponent()
         : m_localToWorldMatrix{1.f}, m_worldToLocalMatrix{1.f},
-        m_scale(1.f,1.f,1.f)
+          m_scale(1.f, 1.f, 1.f)
     {
         m_flags |= OF_DontDestroy;
         m_children = mksptr(new List<ObjectPtr<TransformComponent>>);
@@ -96,31 +133,70 @@ namespace pulsar
         RebuildLocalToWorldMatrix();
     }
 
-    Matrix4f TransformComponent::GetChildLocalToWorldMatrix() const
+    static Matrix4f RootIdentMat{1};
+    const Matrix4f& TransformComponent::GetParentLocalToWorldMatrix()
     {
-        Matrix4f selfMat{1};
-        transutil::NewTRS(selfMat, m_position, m_rotation, m_scale);
-        return m_localToWorldMatrix * selfMat;
+        if (m_parent)
+        {
+            return m_parent->GetLocalToWorldMatrix();
+        }
+        else
+        {
+            return RootIdentMat;
+        }
+    }
+    const Matrix4f& TransformComponent::GetParentWorldToLocalMatrix()
+    {
+        if (m_parent)
+        {
+            return m_parent->GetWorldToLocalMatrix();
+        }
+        else
+        {
+            return RootIdentMat;
+        }
+    }
+    const Matrix4f& TransformComponent::GetLocalToWorldMatrix()
+    {
+        if (m_isDirtyMatrix)
+            RebuildLocalToWorldMatrix();
+        return m_localToWorldMatrix;
+    }
+    const Matrix4f& TransformComponent::GetWorldToLocalMatrix()
+    {
+        if (m_isDirtyMatrix)
+            RebuildLocalToWorldMatrix();
+        return m_worldToLocalMatrix;
     }
 
     void TransformComponent::RebuildLocalToWorldMatrix()
     {
+        transutil::NewTRS(m_localToWorldMatrix, m_position, m_rotation, m_scale);
         if (m_parent)
         {
-            m_localToWorldMatrix = m_parent->GetChildLocalToWorldMatrix();
+            m_localToWorldMatrix = m_parent->GetLocalToWorldMatrix() * m_localToWorldMatrix;
         }
+        m_worldToLocalMatrix = Inverse(m_localToWorldMatrix);
+        m_isDirtyMatrix = false;
     }
     void TransformComponent::PostEditChange(FieldInfo* info)
     {
         base::PostEditChange(info);
         if (info->GetName() == NAMEOF(m_euler))
         {
-            m_rotation = Quat4f::FromEuler(m_euler);
-            BroadcastChange();
+            SetEuler(m_euler);
+        }
+        else if(info->GetName() == NAMEOF(m_rotation))
+        {
+            SetRotation(m_rotation);
+            //refresh data on editor inspector
+            m_euler = m_rotation.GetEuler();
         }
     }
-    void TransformComponent::BroadcastChange()
+
+    void TransformComponent::MakeTransformChanged()
     {
+        m_isDirtyMatrix = true;
         GetAttachedNode()->SendMessage(MessageId_OnChangedTransform);
     }
 
@@ -134,7 +210,7 @@ namespace pulsar
         if (parent == nullptr)
         {
             // set empty
-            auto it = std::find(m_parent->m_children->begin(), m_parent->m_children->end(), THIS_REF);
+            const auto it = std::ranges::find(*m_parent->m_children, THIS_REF);
             m_parent->m_children->erase(it);
             m_parent = nullptr;
         }
@@ -144,4 +220,4 @@ namespace pulsar
             m_parent->m_children->push_back(THIS_REF);
         }
     }
-}
+} // namespace pulsar

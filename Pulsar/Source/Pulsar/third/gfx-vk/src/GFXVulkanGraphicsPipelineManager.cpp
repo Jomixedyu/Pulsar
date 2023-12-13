@@ -24,16 +24,17 @@ namespace gfx
     std::shared_ptr<GFXGraphicsPipeline> GFXVulkanGraphicsPipelineManager::GetGraphicsPipeline(
         const std::shared_ptr<GFXShaderPass>& shaderPass,
         const array_list<GFXDescriptorSetLayout_sp>& descriptorSetLayouts,
-        const std::shared_ptr<GFXRenderPassLayout>& renderPass)
+        const std::shared_ptr<GFXRenderPassLayout>& renderPass,
+        const GFXGraphicsPipelineState& gpInfo)
     {
-        auto hash = HashPointer2(shaderPass.get(), renderPass.get());
+        auto hash = (HashPointer2(shaderPass.get(), renderPass.get()) ^ gpInfo.GetHashCode()) * 16777619;
 
         auto v = m_caches.find(hash);
         if (v != m_caches.end())
         {
             return v->second;
         }
-        auto pipeline = new GFXVulkanGraphicsPipeline(m_app, shaderPass, descriptorSetLayouts, *renderPass.get());
+        auto pipeline = new GFXVulkanGraphicsPipeline(m_app, shaderPass, descriptorSetLayouts, *renderPass.get(), gpInfo);
         auto gpipeline = gfxmksptr(pipeline);
 
         m_caches.insert({ hash, gpipeline });

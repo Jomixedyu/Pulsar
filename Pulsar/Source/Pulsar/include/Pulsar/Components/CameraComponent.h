@@ -78,7 +78,7 @@ namespace pulsar
         CORELIB_REFL_DECL_FIELD(m_renderTarget);
         RenderTexture_ref m_renderTarget;
 #ifdef WITH_EDITOR
-        CORELIB_REFL_DECL_FIELD(debug_view_mat, new ReadOnlyPropertyAttribute);
+        CORELIB_REFL_DECL_FIELD(debug_view_mat, new DebugPropertyAttribute, new ReadOnlyPropertyAttribute);
         Matrix4f debug_view_mat;
 #endif
 

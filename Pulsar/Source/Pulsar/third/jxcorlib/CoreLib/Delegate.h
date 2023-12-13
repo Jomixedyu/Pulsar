@@ -14,6 +14,7 @@ namespace jxcorlib
 
     public:
         virtual Object_sp DynamicInvoke(const array_list<Object_sp>& params) = 0;
+        virtual bool IsValid() const = 0;
     };
 
 #define _CORELIB_DELEGATE_GETVALUE(TPi, index) UnboxUtil::TryUnbox<typename get_boxing_type<TPi>::type>(params[index])
@@ -192,6 +193,7 @@ namespace jxcorlib
         class FunctionInfo
         {
         public:
+            virtual ~FunctionInfo() = default;
             FunctionInfoType type;
         public:
             FunctionInfo(const FunctionInfoType& type) : type(type)
@@ -199,6 +201,7 @@ namespace jxcorlib
             }
         public:
             virtual bool Equals(FunctionInfo* Func) const = 0;
+            virtual bool IsValid() const = 0;
             virtual TReturn Invoke(TArgs... args) = 0;
         };
 
@@ -206,13 +209,17 @@ namespace jxcorlib
         {
         public:
             FunctionPointer ptr_;
-            StaticFunctionInfo(FunctionPointer ptr) : FunctionInfo(FunctionInfoType::Static), ptr_(ptr)
+            explicit StaticFunctionInfo(FunctionPointer ptr) : FunctionInfo(FunctionInfoType::Static), ptr_(ptr)
             {
             }
             virtual bool Equals(FunctionInfo* func) const override
             {
                 if (func == nullptr || this->type != func->type) return false;
                 return this->ptr_ == static_cast<StaticFunctionInfo*>(func)->ptr_;
+            }
+            virtual bool IsValid() const override
+            {
+                return ptr_ != nullptr;
             }
             virtual TReturn Invoke(TArgs... args) override
             {
@@ -234,6 +241,10 @@ namespace jxcorlib
                 return false;
                 //return this->func_.target() == static_cast<LambdaFunctionInfo*>(func)->func_.target();
             }
+            virtual bool IsValid() const override
+            {
+                return true;
+            }
             virtual TReturn Invoke(TArgs... args) override
             {
                 return this->func_(args...);
@@ -244,11 +255,17 @@ namespace jxcorlib
         class MemberFunctionInfo : public FunctionInfo
         {
         public:
-            sptr<TObj> instance_;
+            enum { kStrong, kWeak } m_mode;
+            sptr<TObj> m_instance;
+            wptr<TObj> m_weakInst;
             TReturn(TObj::* ptr_)(TArgs...);
 
             MemberFunctionInfo(const sptr<TObj>& instance, TReturn(TObj::* ptr)(TArgs...))
-                : FunctionInfo(FunctionInfoType::Member), instance_(instance), ptr_(ptr)
+                : FunctionInfo(FunctionInfoType::Member), m_instance(instance), ptr_(ptr), m_mode(kStrong)
+            {
+            }
+            MemberFunctionInfo(const wptr<TObj>& instance, TReturn(TObj::* ptr)(TArgs...))
+                : FunctionInfo(FunctionInfoType::Member), m_weakInst(instance), ptr_(ptr), m_mode(kWeak)
             {
             }
             virtual bool Equals(FunctionInfo* func) const override
@@ -256,11 +273,23 @@ namespace jxcorlib
                 if (func == nullptr || this->type != func->type) return false;
                 return this->ptr_ == static_cast<MemberFunctionInfo*>(func)->ptr_;
             }
+            virtual bool IsValid() const override
+            {
+                return (kStrong && m_instance) || (kWeak && !m_weakInst.expired());
+            }
             virtual TReturn Invoke(TArgs... args) override
             {
-                return (this->instance_.get()->*ptr_)(args...);
+                if(kStrong)
+                {
+                    return (m_instance.get()->*ptr_)(args...);
+                }
+                else //weak
+                {
+                    return (m_weakInst.lock().get()->*ptr_)(args...);
+                }
             }
         };
+
 
     public:
         FunctionInfo* func_ptr_;
@@ -272,8 +301,11 @@ namespace jxcorlib
         FunctionDelegate(const sptr<TObject>& obj, TReturn(TObject::* ptr)(TArgs...))
             : func_ptr_(new MemberFunctionInfo<TObject>(obj, ptr))
         {}
+        template<typename TObject>
+        FunctionDelegate(const wptr<TObject>& obj, TReturn(TObject::* ptr)(TArgs...))
+            : func_ptr_(new MemberFunctionInfo<TObject>(obj, ptr))
+        {}
     public:
-
         static sptr<FunctionDelegate> FromRaw(FunctionPointer funcptr)
         {
             return mksptr(new FunctionDelegate(funcptr));
@@ -289,11 +321,17 @@ namespace jxcorlib
             return mksptr(new FunctionDelegate(obj, ptr));
         }
 
+        template<typename TObject>
+        static sptr<FunctionDelegate> FromWeakMember(const wptr<TObject>& obj, TReturn(TObject::* ptr)(TArgs...))
+        {
+            return mksptr(new FunctionDelegate(obj, ptr));
+        }
+
         FunctionDelegate() = delete;
         FunctionDelegate(const FunctionDelegate&) = delete;
         FunctionDelegate(FunctionDelegate&&) = delete;
 
-        ~FunctionDelegate()
+        ~FunctionDelegate() override
         {
             delete this->func_ptr_;
         }
@@ -306,6 +344,10 @@ namespace jxcorlib
         TReturn Invoke(TArgs... args)
         {
             return this->func_ptr_->Invoke(args...);
+        }
+        virtual bool IsValid() const override
+        {
+            return this->func_ptr_->IsValid();
         }
         virtual Object_sp DynamicInvoke(const array_list<Object_sp>& params) override
         {

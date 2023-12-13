@@ -14,32 +14,23 @@ namespace pulsar::rendering
         gfx::GFXDescriptorSet_sp ModelDescriptor;
     };
 
-    struct BatchRenderState
-    {
-        Material_ref Material;
-        bool IsReverseCulling;
-        gfx::GFXPrimitiveTopology Topology;
-    };
-
     struct MeshBatch
     {
         array_list<MeshBatchElement> Elements;
         gfx::GFXDescriptorSetLayout_sp DescriptorSetLayout;
         Material_ref Material;
 
+        gfx::GFXGraphicsPipelineState State{};
         bool IsUsedIndices;
         bool IsWireframe;
         bool IsCastShadow;
-        bool IsReverseCulling;
-        gfx::GFXPrimitiveTopology Topology;
 
         size_t GetRenderState() const
         {
             constexpr size_t prime = 16777619;
-            return (((2166136261 * prime
+            return (2166136261 * prime
                 ^ std::hash<ObjectPtrBase>()(Material)) * prime
-                ^ std::hash<bool>{}(IsReverseCulling)) * prime
-                ^ std::hash<gfx::GFXPrimitiveTopology>{}(Topology)) * prime;
+                ^ State.GetHashCode() * prime;
         }
 
         void Append(const MeshBatch& batch)
@@ -83,7 +74,7 @@ namespace pulsar::rendering
         bool      m_active = false;
         Matrix4f  m_localToWorld{1};
         bool      m_isLocalToWorldDeterminantNegative{};
-
+        int       m_lineWidth{1};
     };
     CORELIB_DECL_SHORTSPTR(RenderObject);
 }

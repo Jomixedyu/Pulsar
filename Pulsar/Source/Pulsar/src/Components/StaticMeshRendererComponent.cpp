@@ -11,11 +11,6 @@ namespace pulsar
 {
     static gfx::GFXDescriptorSetLayout_wp MeshDescriptorSetLayout;
 
-    struct CBuffer_ModelObject
-    {
-        Matrix4f LocalToWorldMatrix;
-    };
-
     class StaticMeshRenderObject final : public rendering::RenderObject
     {
     public:
@@ -42,58 +37,8 @@ namespace pulsar
             m_materials = materials;
             return this;
         }
-        void SubmitChange()
-        {
-            m_batchs.clear();
-
-            for (auto& mat : m_materials)
-            {
-                auto& batch = m_batchs.emplace_back();
-                batch.Topology = gfx::GFXPrimitiveTopology::TriangleList;
-                batch.IsUsedIndices = true;
-                batch.IsCastShadow = true;
-                batch.IsUsedIndices = true;
-                batch.IsReverseCulling = IsDetermiantNegative();
-                batch.Material = mat;
-                batch.DescriptorSetLayout = m_meshDescriptorSetLayout;
-
-                auto vertBuffers = m_staticMesh->GetGPUResourceVertexBuffers();
-                auto indicesBuffers = m_staticMesh->GetGPUResourceIndicesBuffers();
-
-                for (size_t i = 0; i < vertBuffers.size(); ++i)
-                {
-                    auto& element = batch.Elements.emplace_back();
-                    element.Vertex = vertBuffers[i];
-                    element.Indices = indicesBuffers[i];
-                    element.ModelDescriptor = m_meshObjDescriptorSet;
-                }
-            }
-        }
-        void OnCreateResource() override
-        {
-            if(MeshDescriptorSetLayout.expired())
-            {
-                gfx::GFXDescriptorSetLayoutInfo info{
-                    gfx::GFXDescriptorType::ConstantBuffer,
-                    gfx::GFXShaderStageFlags::VertexFragment,
-                    0, kRenderingDescriptorSpace_ModelInfo
-                };
-                m_meshDescriptorSetLayout = Application::GetGfxApp()->CreateDescriptorSetLayout(&info, 1);
-                MeshDescriptorSetLayout = m_meshDescriptorSetLayout;
-            }
-            else
-            {
-                m_meshDescriptorSetLayout = MeshDescriptorSetLayout.lock();
-            }
-
-            m_meshConstantBuffer = Application::GetGfxApp()->CreateBuffer(gfx::GFXBufferUsage::ConstantBuffer, sizeof(CBuffer_ModelObject));
-            m_meshObjDescriptorSet = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_meshDescriptorSetLayout);
-            m_meshObjDescriptorSet->AddDescriptor("ModelObject", 0)->SetConstantBuffer(m_meshConstantBuffer.get());
-            m_meshObjDescriptorSet->Submit();
-
-
-            SubmitChange();
-        }
+        void SubmitChange();
+        void OnCreateResource() override;
         void OnDestroyResource() override
         {
             m_meshObjDescriptorSet.reset();
@@ -106,11 +51,68 @@ namespace pulsar
             m_meshConstantBuffer->Fill(&m_localToWorld);
         }
 
-        virtual array_list<rendering::MeshBatch> GetMeshBatchs() override
+        array_list<rendering::MeshBatch> GetMeshBatchs() override
         {
             return m_batchs;
         }
     };
+    void StaticMeshRenderObject::SubmitChange()
+    {
+        m_batchs.clear();
+
+        if (!m_staticMesh)
+            return;
+
+        for (auto& mat : m_materials)
+        {
+            auto& batch = m_batchs.emplace_back();
+            batch.State.Topology = gfx::GFXPrimitiveTopology::TriangleList;
+            batch.State.IsReverseCulling = IsDetermiantNegative();
+            batch.IsUsedIndices = true;
+            batch.IsCastShadow = true;
+            batch.IsUsedIndices = true;
+            batch.Material = mat;
+            batch.DescriptorSetLayout = m_meshDescriptorSetLayout;
+
+            auto vertBuffers = m_staticMesh->GetGPUResourceVertexBuffers();
+            auto indicesBuffers = m_staticMesh->GetGPUResourceIndicesBuffers();
+
+            for (size_t i = 0; i < vertBuffers.size(); ++i)
+            {
+                auto& element = batch.Elements.emplace_back();
+                element.Vertex = vertBuffers[i];
+                element.Indices = indicesBuffers[i];
+                element.ModelDescriptor = m_meshObjDescriptorSet;
+            }
+        }
+    }
+    void StaticMeshRenderObject::OnCreateResource()
+    {
+        if(MeshDescriptorSetLayout.expired())
+        {
+            gfx::GFXDescriptorSetLayoutInfo info{
+                gfx::GFXDescriptorType::ConstantBuffer,
+                gfx::GFXShaderStageFlags::VertexFragment,
+                0, kRenderingDescriptorSpace_ModelInfo
+            };
+            m_meshDescriptorSetLayout = Application::GetGfxApp()->CreateDescriptorSetLayout(&info, 1);
+            MeshDescriptorSetLayout = m_meshDescriptorSetLayout;
+        }
+        else
+        {
+            m_meshDescriptorSetLayout = MeshDescriptorSetLayout.lock();
+        }
+
+        m_meshConstantBuffer = Application::GetGfxApp()->CreateBuffer(gfx::GFXBufferUsage::ConstantBuffer, sizeof(CBuffer_ModelObject));
+        m_meshObjDescriptorSet = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_meshDescriptorSetLayout);
+        m_meshObjDescriptorSet->AddDescriptor("ModelObject", 0)->SetConstantBuffer(m_meshConstantBuffer.get());
+        m_meshObjDescriptorSet->Submit();
+
+
+        SubmitChange();
+    }
+
+
 
     sptr<rendering::RenderObject> StaticMeshRendererComponent::CreateRenderObject()
     {
@@ -121,7 +123,10 @@ namespace pulsar
             m_staticMesh->CreateGPUResource();
             for (auto mat : *m_materials)
             {
-                mat->CreateGPUResource();
+                if(mat)
+                {
+                    mat->CreateGPUResource();
+                }
             }
             ro->SetStaticMesh(m_staticMesh)
                 ->SetMaterials(*m_materials)
@@ -158,7 +163,7 @@ namespace pulsar
         if(index >= m_materials->size())
         {
             Logger::Log("valid index", LogLevel::Error);
-            return;;
+            return;
         }
 
         m_materials->at(index) = material;
@@ -191,13 +196,23 @@ namespace pulsar
     }
     void StaticMeshRendererComponent::OnMeshChanged()
     {
-        if (m_renderObject)
+        if (m_staticMesh)
         {
-            m_renderObject->SetStaticMesh(m_staticMesh)->SubmitChange();
+            TryFindOrLoadObject(m_staticMesh);
+            if(m_staticMesh->GetMaterialCount() > m_materials->size())
+            {
+                m_materials->resize(m_staticMesh->GetMaterialCount());
+            }
         }
 
-        const auto matCount = m_staticMesh ? m_staticMesh->GetMaterialCount() : 0;
-        m_materials->resize(matCount);
+        if (m_renderObject)
+        {
+            if (m_staticMesh)
+            {
+                m_staticMesh->CreateGPUResource();
+            }
+            m_renderObject->SetStaticMesh(m_staticMesh)->SubmitChange();
+        }
 
     }
     void StaticMeshRendererComponent::OnMaterialChanged()
@@ -208,10 +223,13 @@ namespace pulsar
             {
                 if (!mat.GetPtr())
                 {
-                    // load
-                    GetAssetManager()->LoadAssetById(mat.handle);
+                    TryFindOrLoadObject(mat);
                 }
-                mat->CreateGPUResource();
+                if (mat)
+                {
+                    mat->CreateGPUResource();
+                }
+
             }
             m_renderObject->SetMaterials(*m_materials)->SubmitChange();
         }

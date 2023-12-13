@@ -1,6 +1,7 @@
 #include "Windows/DockspaceWindow.h"
-#include "Windows/EditorWindowManager.h"
 #include "EditorAppInstance.h"
+#include "Menus/MenuRenderer.h"
+#include "Windows/EditorWindowManager.h"
 
 namespace pulsared
 {

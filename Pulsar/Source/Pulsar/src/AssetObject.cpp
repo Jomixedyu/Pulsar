@@ -3,14 +3,23 @@
 namespace pulsar
 {
 
+    template <typename T>
+    void new_init_sptr(sptr<T>& ptr)
+    {
+        if (!ptr)
+        {
+           ptr = mksptr(new T);
+        }
+    }
+
     void AssetObject::Serialize(AssetSerializer* s)
     {
         // read or write
     }
     AssetObject::AssetObject()
     {
-        m_importFiles = mksptr(new List<String_sp>);
-        m_tags = mksptr(new List<String_sp>);
+        new_init_sptr(m_importFiles);
+        new_init_sptr(m_tags);
     }
     AssetObject_ref AssetObject::InstantiateAsset()
     {

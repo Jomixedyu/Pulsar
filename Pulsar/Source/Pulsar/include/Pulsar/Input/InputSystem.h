@@ -1,8 +1,10 @@
 #pragma once
-namespace pulsar {
 
-class InputSystem {
+namespace pulsar
+{
+    class InputSystem
+    {
 
-};
+    };
 
-} // pulsar
+} // namespace pulsar

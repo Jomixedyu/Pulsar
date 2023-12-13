@@ -73,7 +73,7 @@ namespace gfx
             subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
             subpass.colorAttachmentCount = static_cast<uint32_t>(colorAttachmentRef.size());
             subpass.pColorAttachments = colorAttachmentRef.data();
-            if (depthAttachmentRef.size())
+            if (!depthAttachmentRef.empty())
             {
                 subpass.pDepthStencilAttachment = depthAttachmentRef.data();
             }

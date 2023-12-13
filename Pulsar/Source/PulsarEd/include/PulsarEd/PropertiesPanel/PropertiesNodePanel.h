@@ -13,5 +13,8 @@ namespace pulsared
     public:
 
         virtual void OnDrawImGui() override;
+
+    private:
+        bool m_debugMode{false};
     };
 }

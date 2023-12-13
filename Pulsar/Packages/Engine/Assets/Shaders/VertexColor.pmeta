@@ -1,0 +1,6 @@
+{
+    "Type": "pulsar::Shader",
+	"Handle": "A2B74BF7-55EA-46F6-723E-3AB4216B3FDA",
+	"ExtraFiles": [ "ccc" ],
+	"ImportFiles": []
+}

@@ -66,6 +66,7 @@ namespace pulsar
     class Material final : public AssetObject, public IMaterialParameter, public IGPUResource
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::Material, AssetObject);
+        CORELIB_CLASS_ATTR(new MenuItemCreateAssetAttribute);
     public:
         static ObjectPtr<Material> StaticCreate(string_view name, Shader_ref shader);
 

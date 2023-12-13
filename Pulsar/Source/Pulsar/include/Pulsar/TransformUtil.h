@@ -30,6 +30,7 @@ namespace transutil
     template<typename T>
     void NewTRS(Matrix4<T>& mat, const Vector3<T>& translate, const Quaternion<T>& rotate, const Vector3<T>& scale)
     {
+        new(&mat)Matrix4<T>(1);
         NewScale(mat, scale);
         mat = jmath::Rotate(rotate) * mat;
         NewTranslate(mat, translate);

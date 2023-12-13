@@ -1,13 +1,20 @@
+#include "Menus/MenuEntrySubMenu.h"
 #include <PulsarEd/Menus/Menu.h>
+
 #include <CoreLib/File.h>
+#include <ranges>
 
 namespace pulsared
 {
 
-    static array_list<Menu_sp> menus;
+    static auto& menus()
+    {
+        static array_list<MenuEntrySubMenu_sp> value;
+        return value;
+    }
 
 
-    Menu_sp MenuManager::GetOrAddMenu(string_view menu_name)
+    ISubMenu* MenuManager::GetOrAddMenu(string_view menu_name)
     {
         if (auto menu = GetMenu(menu_name))
         {
@@ -16,64 +23,78 @@ namespace pulsared
         return AddMenu(menu_name);
     }
 
-    Menu_sp MenuManager::AddMenu(string_view menu_name)
+    ISubMenu* MenuManager::AddMenu(string_view menu_name)
     {
-        auto menu = mksptr(new Menu);
-        menu->menu_name = menu_name;
-        menus.push_back(menu);
-        return menu;
+        auto menu = mksptr(new MenuEntrySubMenu(string{menu_name}));
+        menus().push_back(menu);
+        return menu.get();
     }
 
     void MenuManager::RemoveMenu(string_view menu_name)
     {
-        auto it = std::find_if(menus.begin(), menus.end(), [&](Menu_sp menu) { return menu->menu_name == menu_name; });
-        if (it != menus.end())
+        auto it = std::ranges::find_if(menus(), [&](const MenuEntrySubMenu_sp& menu) { return menu->GetMenuName() == menu_name; });
+        if (it != menus().end())
         {
-            menus.erase(it);
+            menus().erase(it);
         }
     }
 
-    Menu_sp MenuManager::GetMenu(string_view menu_name)
+    ISubMenu* MenuManager::GetMenu(string_view menu_name)
     {
-        for (auto& item : menus)
+        for (auto& item : menus())
         {
-            if (item->menu_name == menu_name)
+            if (item->Name == menu_name)
             {
-                return item;
+                return item.get();
             }
         }
         return nullptr;
     }
 
-    Menu_sp MenuManager::GetMainMenu()
+    ISubMenu* MenuManager::GetMainMenu()
     {
         return GetOrAddMenu("Main");
     }
 
-    const array_list<Menu_sp>& MenuManager::GetMenus()
+    array_list<ISubMenu*> MenuManager::GetMenus()
     {
-        return menus;
+        array_list<ISubMenu*> menu;
+        for (const auto& element : menus())
+        {
+            menu.push_back(element.get());
+        }
+        return menu;
     }
 
-    MenuEntry_sp Menu::FindEntry(string_view name)
+    static auto& contexts()
     {
-        for (auto& item : this->entries)
+        static hash_map<string, array_list<sptr<OnGetContext>>> values;
+        return values;
+    }
+    void MenuManager::RegisterContextProvider(string_view name, const sptr<OnGetContext>& callback)
+    {
+        contexts()[string(name)].push_back(callback);
+    }
+    void MenuManager::UnregisterContextProvider(string_view name, const sptr<OnGetContext>& callback)
+    {
+        auto& values = contexts()[string(name)];
+        const auto it = std::ranges::find(values, callback);
+        if(it != values.end())
         {
-            if (item->Name == name)
+            values.erase(it);
+        }
+    }
+    MenuContexts_sp MenuManager::RequestContexts(string_view name)
+    {
+        auto context = mksptr(new MenuContexts);
+        for (const auto& func : contexts()[string(name)])
+        {
+            if (func->IsValid())
             {
-                return item;
+                context->Contexts.push_back(func->Invoke());
             }
         }
-        return nullptr;
+        return context;
     }
-    void Menu::RemoveEntry(string_view name)
-    {
-        auto it = std::find_if(entries.begin(), entries.end(), [name](auto& entry) {
-            return entry->Name == name;
-            });
-        if (it != this->entries.end())
-        {
-            this->entries.erase(it);
-        }
-    }
+
 }

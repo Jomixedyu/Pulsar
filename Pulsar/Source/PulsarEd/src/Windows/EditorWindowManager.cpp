@@ -209,7 +209,13 @@ namespace pulsared
         string displayName = string{panel->GetWindowDisplayName()};
 
         auto checkEntry = new MenuEntryCheck(type->GetName(), displayName, MenuCheckAction::FromRaw(_CheckableLabelAction));
+
         auto window = MenuManager::GetMainMenu()->FindSubMenuEntry("Window");
+        if(!window)
+        {
+            window = mksptr(new MenuEntrySubMenu("Window"));
+            MenuManager::GetMainMenu()->AddEntry(window);
+        }
         window->AddEntry(mksptr(checkEntry));
     }
 

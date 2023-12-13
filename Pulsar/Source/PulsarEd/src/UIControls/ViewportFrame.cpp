@@ -74,7 +74,7 @@ namespace pulsared
         descSet->Submit();
 
         const auto imgId = descSet->GetId();
-        ImGui::Image((void*)imgId, ImVec2(contentSize.x, contentSize.y), ImVec2(0, 1), ImVec2(1, 0));
+        ImGui::Image((void*)imgId, ImVec2(contentSize.x, contentSize.y));
 
         return isResize;
     }
@@ -121,22 +121,44 @@ namespace pulsared
 
         if(m_altPressed)
         {
-            const auto trans = m_world->GetPreviewCamera()->GetAttachedNode()->GetTransform()->GetParent();
             auto newpos = ImGui::GetMousePos();
             if(m_leftMousePressed)
             {
+                auto trans = m_world->GetPreviewCamera()->GetAttachedNode()->GetTransform()->GetParent();
+                // trans->RotateEuler({0, newpos.x - m_latestMousePos.x, 0});
+                // trans->RotateEuler({newpos.y - m_latestMousePos.y, 0, 0});
                 auto euler = trans->GetEuler();
-                euler.y -= newpos.x - m_latestMousePos.x;
-                euler.x += newpos.y - m_latestMousePos.y;
-                trans->SetEuler(euler);
-                m_latestMousePos = newpos;
+                Vector3f mouseDt{newpos.y - m_latestMousePos.y, newpos.x - m_latestMousePos.x, 0};
+                if(euler.x - mouseDt.x < -89.f ||
+                    euler.x - mouseDt.x > 89.f)
+                {
+                    mouseDt.x = 0;
+                }
+                trans->SetEuler(euler - mouseDt);
             }
             else if(m_rightMousePressed)
             {
                 auto tr = m_world->GetPreviewCamera()->GetAttachedNode()->GetTransform();
-                tr->Translate({0.f,0, -(newpos.x - m_latestMousePos.x) });
-                m_latestMousePos = newpos;
+                auto dtDistance = -(newpos.x - m_latestMousePos.x) * m_scaleSpeed;
+                if(tr->GetPosition().z + dtDistance < -0.1f)
+                {
+                    // nothing
+                }
+                else
+                {
+                    tr->Translate({0.f,0, dtDistance });
+                }
             }
+            else if(m_middleMousePressed)
+            {
+                auto tr = m_world->GetPreviewCamera()->GetAttachedNode()->GetTransform()->GetParent();
+                auto dtX = newpos.x - m_latestMousePos.x;
+                auto dtY = newpos.y - m_latestMousePos.y;
+
+                tr->Translate(tr->GetRight() * -dtX * 0.1f);
+                tr->Translate(tr->GetUp() * dtY * 0.1f);
+            }
+            m_latestMousePos = newpos;
         }
     }
 

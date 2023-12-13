@@ -70,7 +70,6 @@ namespace pulsar
                 config.DepthTestEnable = sourceConfig->DepthTestEnable;
                 config.DepthWriteEnable = sourceConfig->DepthWriteEnable;
                 config.StencilTestEnable = sourceConfig->StencilTestEnable;
-                config.Topology = (gfx::GFXPrimitiveTopology)sourceConfig->Topology;
             }
 
             // create descriptor layout
@@ -126,21 +125,6 @@ namespace pulsar
     };
     CORELIB_DECL_SHORTSPTR(MaterialSerializationData);
 
-    template <typename T>
-    static void InitObjectPtr(ObjectPtr<T>& obj)
-    {
-        auto ptr = RuntimeObjectWrapper::GetObject(obj.handle);
-        if (ptr)
-        {
-            obj.Ptr = (T*)ptr;
-        }
-        else
-        {
-            auto asset = GetAssetManager()->LoadAssetById(obj.handle);
-            obj.Ptr = (T*)asset.Ptr;
-        }
-    }
-
     void Material::Serialize(AssetSerializer* s)
     {
         // MaterialSerializationData_sp data;
@@ -156,7 +140,7 @@ namespace pulsar
             // InitObjectPtr(m_shader);
             auto id = ObjectHandle::parse(s->Object->At("Shader")->AsString());
             m_shader = id;
-            InitObjectPtr(m_shader);
+            TryFindOrLoadObject(m_shader);
         }
     }
 

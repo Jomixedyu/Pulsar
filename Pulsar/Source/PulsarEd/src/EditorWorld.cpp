@@ -49,8 +49,6 @@ namespace pulsared
         m_cam->SetNear(0.01f);
         m_cam->SetFar(10000.f);
 
-        camNode->GetTransform()->SetPosition({ 0.f, 7.f, 30.f });
-
         camCtrlNode->AddComponent<StdEditCameraControllerComponent>();
 
         scene->AddNode(camCtrlNode);

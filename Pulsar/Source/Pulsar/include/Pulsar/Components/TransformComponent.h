@@ -7,6 +7,7 @@ namespace pulsar
     class TransformComponent : public Component
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::TransformComponent, Component);
+        CORELIB_CLASS_ATTR(new AbstractComponentAttribute);
     public:
         
         ObjectPtr<TransformComponent> FindByName(string_view name) const;
@@ -18,33 +19,41 @@ namespace pulsar
         size_t GetChildCount() const { return m_children->size(); }
         ObjectPtr<TransformComponent> GetChild(int32_t index) const { return m_children->at(index); }
 
-        void SetPosition(Vector3f value) { m_position = value; m_isDirtyMatrix = true; BroadcastChange(); }
+        void SetPosition(Vector3f value) { m_position = value; MakeTransformChanged(); }
         Vector3f GetPosition() const { return m_position; }
-        Vector3f GetWorldPosition() const;
+        Vector3f GetWorldPosition();
         void SetWorldPosition(Vector3f value);
         void Translate(Vector3f value);
 
-        void SetScale(Vector3f value) { m_scale = value; m_isDirtyMatrix = true; BroadcastChange(); }
+        void SetScale(Vector3f value) { m_scale = value; MakeTransformChanged(); }
         Vector3f GetScale() const { return m_scale; }
-        Vector3f GetWorldScale() const;
+        Vector3f GetWorldScale();
 
-        void SetRotation(Quat4f rotation) { m_rotation = rotation; m_isDirtyMatrix = true; BroadcastChange(); }
+        void SetRotation(Quat4f rotation);
         Quat4f GetRotation() const { return m_rotation; }
         Vector3f GetEuler() const;
         void SetEuler(Vector3f value);
+        void RotateEuler(Vector3f value);
+        void RotateQuat(Quat4f quat);
+
+
+        Vector3f GetForward();
+        Vector3f GetUp();
+        Vector3f GetRight();
 
         TransformComponent();
         void OnTick(Ticker ticker) override;
 
-        const Matrix4f& GetLocalToWorldMatrix() const { return m_localToWorldMatrix; }
-        Matrix4f GetChildLocalToWorldMatrix() const;
-        const Matrix4f& GetWorldToLocalMatrix() const { return m_worldToLocalMatrix; }
+        const Matrix4f& GetParentLocalToWorldMatrix();
+        const Matrix4f& GetParentWorldToLocalMatrix();
+        const Matrix4f& GetLocalToWorldMatrix();
+        const Matrix4f& GetWorldToLocalMatrix();
     protected:
         void RebuildLocalToWorldMatrix();
         void PostEditChange(FieldInfo* info) override;
-        void BroadcastChange();
+        void MakeTransformChanged();
     protected:
-        CORELIB_REFL_DECL_FIELD(m_localToWorldMatrix, new ReadOnlyPropertyAttribute);
+        CORELIB_REFL_DECL_FIELD(m_localToWorldMatrix, new DebugPropertyAttribute, new ReadOnlyPropertyAttribute);
         Matrix4f m_localToWorldMatrix;
         Matrix4f m_worldToLocalMatrix;
         bool m_isDirtyMatrix = false;

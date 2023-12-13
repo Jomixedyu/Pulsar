@@ -29,7 +29,7 @@ namespace pulsared
     {
         for (auto& menu : MenuManager::GetMenus())
         {
-            _ShowMenu(menu.get());
+            _ShowMenu(menu);
         }
     }
 }

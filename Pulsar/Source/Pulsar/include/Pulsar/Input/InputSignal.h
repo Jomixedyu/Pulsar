@@ -1,5 +1,5 @@
 #pragma once
-#include "InputAction.h"
+#include "InputSlot.h"
 #include "Pulsar/ObjectBase.h"
 
 namespace pulsar
@@ -12,7 +12,7 @@ namespace pulsar
 
 
     protected:
-        array_list<InputAction> m_actions;
+        array_list<InputSlot> m_actions;
     };
 
 } // namespace pulsar

@@ -9,7 +9,7 @@ namespace pulsar
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::InputActionMap, AssetObject);
     public:
-        void AddInputAction(InputAction)
+        void AddInputAction(InputSlot);
     protected:
 
     };

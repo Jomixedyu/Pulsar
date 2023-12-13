@@ -8,18 +8,18 @@
 
 namespace pulsared
 {
-    class WorkspaceWindowMenuContext : public MenuContextBase
+    class AssetsMenuContext : public MenuContextBase
     {
-        CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::WorkspaceWindowMenuContext, MenuContextBase);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::AssetsMenuContext, MenuContextBase);
     public:
-        explicit WorkspaceWindowMenuContext(const string& currentPath)
+        explicit AssetsMenuContext(const string& currentPath)
             : CurrentPath(currentPath)
         {
         }
         string CurrentPath;
         array_list< std::weak_ptr<AssetFileNode> > SelectedFiles;
     };
-    CORELIB_DECL_SHORTSPTR(WorkspaceWindowMenuContext);
+    CORELIB_DECL_SHORTSPTR(AssetsMenuContext);
 
 
     class WorkspaceWindow : public PanelWindow
@@ -51,10 +51,11 @@ namespace pulsared
         void OnDrawContent();
         void RenderFolderTree(sptr<AssetFileNode> node);
         void RenderFileContent();
-        WorkspaceWindowMenuContext_sp MakeMenuContext();
+        MenuContextBase_sp MakeMenuContext();
     private:
         void OnClick_Import();
     private:
+        sptr<OnGetContext> m_onGetContextCallback;
         string m_currentFolder;
 
         array_list< std::weak_ptr<AssetFileNode> > m_selectedFiles;

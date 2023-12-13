@@ -16,12 +16,12 @@ namespace pulsared
         virtual void BeginComponent() override;
 
         virtual sptr<rendering::RenderObject> CreateRenderObject() override;
-
+        void OnTick(Ticker ticker) override;
         virtual void EndComponent() override;
 
     private:
         array_list<Vector3f> m_vert;
-        array_list<Color4b> m_colors;
+        array_list<Color4f> m_colors;
 
         sptr<rendering::RenderObject> m_renderObject;
     };
