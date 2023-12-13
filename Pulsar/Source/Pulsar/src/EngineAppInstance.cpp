@@ -62,7 +62,10 @@ namespace pulsar
             {
                 for (auto& batch : renderObject->GetMeshBatchs())
                 {
-                    batchs[batch.GetRenderState()] = batch;
+                    if(batch.Material)
+                    {
+                        batchs[batch.GetRenderState()] = batch;
+                    }
                 }
             }
 
@@ -85,7 +88,7 @@ namespace pulsar
                     descriptorSetLayouts.push_back(batch.DescriptorSetLayout);
 
 
-                    auto gfxPipeline = pipelineMgr->GetGraphicsPipeline(shaderPass, descriptorSetLayouts, targetFBO->GetRenderPassLayout());
+                    auto gfxPipeline = pipelineMgr->GetGraphicsPipeline(shaderPass, descriptorSetLayouts, targetFBO->GetRenderPassLayout(), batch.State);
                     cmdBuffer.CmdBindGraphicsPipeline(gfxPipeline.get());
 
                     for (auto& element : batch.Elements)

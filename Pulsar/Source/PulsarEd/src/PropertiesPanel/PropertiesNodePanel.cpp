@@ -5,18 +5,6 @@
 namespace pulsared
 {
 
-    static string _GetComponentDisplayName(Component* com)
-    {
-        string name = com->GetType()->GetShortName();
-
-        static char com_str[] = "Component";
-        if (name.ends_with("Component"))
-        {
-            name = name.substr(0, name.size() - sizeof(com_str) + 1);
-        }
-        return StringUtil::FriendlyName(name);
-    }
-
     static void _Property2Name()
     {
         ImGui::Columns(2);
@@ -53,23 +41,30 @@ namespace pulsared
         strcpy_s(name, 255, selected->GetName().c_str());
 
         ImGui::Spacing();
-
-        bool is_active = selected->GetIsActiveSelf();
-        ImGui::Checkbox("##active", &is_active);
-        if (is_active != selected->GetIsActiveSelf())
         {
-            selected->SetIsActiveSelf(is_active);
-        }
-        ImGui::SameLine();
-        ImGui::PushItemWidth(-1);
-        if (ImGui::InputText("##Name", name, 255))
-        {
-            if (selected->GetName() != name)
+            bool is_active = selected->GetIsActiveSelf();
+            ImGui::Checkbox("##active", &is_active);
+            if (is_active != selected->GetIsActiveSelf())
             {
-                selected->SetName(name);
+                selected->SetIsActiveSelf(is_active);
             }
+            ImGui::SameLine();
+            //ImGui::PushItemWidth(-1);
+            if (ImGui::InputText("##Name", name, 255))
+            {
+                if (selected->GetName() != name)
+                {
+                    selected->SetName(name);
+                }
+            }
+
+            ImGui::SameLine();
+            ImGui::Checkbox("##debug", &m_debugMode);
+            ImGui::SameLine();
+            ImGui::Text("DebugMode");
+
+            //ImGui::PopItemWidth();
         }
-        ImGui::PopItemWidth();
 
         ImGui::Spacing();
 
@@ -85,7 +80,7 @@ namespace pulsared
 
             bool opened = true;
             const bool dontDestroy = comp->HasObjectFlags(OF_DontDestroy);
-            string componentFriendlyName = _GetComponentDisplayName(comp.GetPtr());
+            string componentFriendlyName = ComponentInfoManager::GetFriendlyComponentName(comp->GetType());
 
             ImGui::PushID(comp.GetPtr());
             if (ImGui::CollapsingHeader(
@@ -101,7 +96,7 @@ namespace pulsared
                     comp->GetType(),
                     comp->GetType(),
                     comp.GetPtr(),
-                    comp.GetPtr());
+                    comp.GetPtr(), m_debugMode);
             }
             ImGui::PopID();
 

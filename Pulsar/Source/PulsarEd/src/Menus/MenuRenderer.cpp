@@ -13,7 +13,10 @@ namespace pulsared
         bool lastSep = false;
         string lastSepStr;
 
-        for (auto& entry : menu->GetEntries())
+        auto entries = menu->GetEntries();
+        std::ranges::sort(entries, [](const MenuEntry_sp& a, const MenuEntry_sp& b){ return a->Priority < b->Priority; });
+
+        for (auto& entry : entries)
         {
             if (auto separate = sptr_cast<MenuEntrySeparate>(entry))
             {
@@ -32,6 +35,19 @@ namespace pulsared
                 {
                     RenderMenu(subMenu.get(), ctxs);
                     ImGui::EndMenu();
+                }
+            }
+            else if (auto check = sptr_cast<MenuEntryCheck>(entry))
+            {
+                ctxs->EntryName = check->Name;
+                bool checked = check->IsChecked;
+                ImGui::MenuItem(check->DisplayName.c_str(), 0,  &check->IsChecked);
+                if(checked != check->IsChecked)
+                {
+                    if(check->CheckedAction && check->CheckedAction->IsValid())
+                    {
+                        check->CheckedAction->Invoke(ctxs, check->IsChecked);
+                    }
                 }
             }
             else if (auto btn = sptr_cast<MenuEntryButton>(entry))

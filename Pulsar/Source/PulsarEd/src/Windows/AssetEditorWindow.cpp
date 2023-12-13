@@ -71,7 +71,7 @@ namespace pulsared
         if (ImGui::BeginMenuBar())
         {
             OnRefreshMenuContexts();
-            MenuRenderer::RenderMenu(MenuManager::GetMenu("AssetEditor").get(), m_menuBarCtxs);
+            MenuRenderer::RenderMenu(MenuManager::GetMenu("AssetEditor"), m_menuBarCtxs);
             ImGui::EndMenuBar();
         }
     }

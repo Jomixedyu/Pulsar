@@ -13,18 +13,17 @@
 
 #include <PulsarEd/Utils/AssetUtil.h>
 
-#include <imgui/imgui_internal.h>
 #include <PulsarEd/Menus/MenuRenderer.h>
+#include <imgui/imgui_internal.h>
 
 namespace pulsared
 {
     namespace PImGui
     {
         static bool FileButton(const char* str,
-            ImTextureID texture_id, ImVec2 size, float label_height, bool selected, bool is_dirty, ImTextureID dirty_texid,
-            void* user_data, const std::function<void(void*)>& tootip,
-            ImVec2 uv0 = ImVec2(0, 0), ImVec2 uv1 = ImVec2(1, 1)
-        )
+                               ImTextureID texture_id, ImVec2 size, float label_height, bool selected, bool is_dirty, ImTextureID dirty_texid,
+                               void* user_data, const std::function<void(void*)>& tootip,
+                               ImVec2 uv0 = ImVec2(0, 0), ImVec2 uv1 = ImVec2(1, 1))
         {
             using namespace ImGui;
 
@@ -41,7 +40,7 @@ namespace pulsared
             offset.y += label_height;
 
             ImRect pic_bb(window->DC.CursorPos, window->DC.CursorPos + size + padding * 2.0f);
-            ImRect dirty_bb(window->DC.CursorPos, window->DC.CursorPos + ImVec2{ 16,16 });
+            ImRect dirty_bb(window->DC.CursorPos, window->DC.CursorPos + ImVec2{16, 16});
 
             const ImRect bb(window->DC.CursorPos, window->DC.CursorPos + offset + padding * 2.0f);
             ItemSize(bb);
@@ -53,9 +52,8 @@ namespace pulsared
 
             pressed = ButtonBehavior(bb, id, &hovered, &held, ImGuiButtonFlags_PressedOnClick | ImGuiButtonFlags_PressedOnDoubleClick);
 
-            ImVec4 bg_col = { 0,0,0,0 };
-            ImVec4 tint_col = { 1,1,1,1 };
-
+            ImVec4 bg_col = {0, 0, 0, 0};
+            ImVec4 tint_col = {1, 1, 1, 1};
 
             // Render
             ImU32 col{};
@@ -65,7 +63,8 @@ namespace pulsared
             }
             else
             {
-                col = GetColorU32((held && hovered) ? ImGuiCol_ButtonActive : hovered ? ImGuiCol_ButtonHovered : ImGuiCol_Button);
+                col = GetColorU32((held && hovered) ? ImGuiCol_ButtonActive : hovered ? ImGuiCol_ButtonHovered
+                                                                                      : ImGuiCol_Button);
             }
             RenderNavHighlight(bb, id);
             RenderFrame(bb.Min, bb.Max, col, true, ImClamp((float)ImMin(padding.x, padding.y), 0.0f, g.Style.FrameRounding));
@@ -77,7 +76,7 @@ namespace pulsared
             if (is_dirty)
             {
                 window->DrawList->AddImage(dirty_texid, dirty_bb.Min + padding, dirty_bb.Max,
-                    uv0, uv1, GetColorU32(tint_col));
+                                           uv0, uv1, GetColorU32(tint_col));
             }
 
             auto label_pos = bb.Min + padding;
@@ -88,7 +87,7 @@ namespace pulsared
             {
                 if (tootip)
                 {
-                    //SetNextWindowSize({ 300, -FLT_MIN });
+                    // SetNextWindowSize({ 300, -FLT_MIN });
                     if (BeginTooltip())
                     {
                         tootip(user_data);
@@ -101,15 +100,14 @@ namespace pulsared
         }
 
         static bool DragFileButton(const char* str,
-            ImTextureID texture_id, ImVec2 size, float label_height, bool selected, bool is_dirty, ImTextureID dirty_texid,
-            void* user_data, const std::function<void(void*)>& tootip, const char* drag_type, string_view drag_data,
-            ImVec2 uv0 = ImVec2(0, 0), ImVec2 uv1 = ImVec2(1, 1)
-        )
+                                   ImTextureID texture_id, ImVec2 size, float label_height, bool selected, bool is_dirty, ImTextureID dirty_texid,
+                                   void* user_data, const std::function<void(void*)>& tootip, const char* drag_type, string_view drag_data,
+                                   ImVec2 uv0 = ImVec2(0, 0), ImVec2 uv1 = ImVec2(1, 1))
         {
-            bool b = FileButton(str,texture_id,size,label_height,selected,is_dirty,dirty_texid,user_data,tootip,uv0,uv1);
-            if(drag_type)
+            bool b = FileButton(str, texture_id, size, label_height, selected, is_dirty, dirty_texid, user_data, tootip, uv0, uv1);
+            if (drag_type)
             {
-                if(ImGui::BeginDragDropSource())
+                if (ImGui::BeginDragDropSource())
                 {
                     ImGui::Image(texture_id, size, uv0, uv1);
                     ImGui::SetDragDropPayload(drag_type, drag_data.data(), drag_data.size());
@@ -119,8 +117,7 @@ namespace pulsared
 
             return b;
         }
-    }
-
+    } // namespace PImGui
 
     void WorkspaceWindow::RenderFolderTree(sptr<AssetFileNode> node)
     {
@@ -144,7 +141,6 @@ namespace pulsared
             base_flags |= ImGuiTreeNodeFlags_Selected;
         }
 
-
         bool isOpened = ImGui::TreeNodeEx(node->AssetName.c_str(), base_flags);
 
         if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen())
@@ -161,22 +157,24 @@ namespace pulsared
                     RenderFolderTree(i);
                 }
             }
-
         }
 
         if (isOpened)
         {
             ImGui::TreePop();
-
         }
     }
+
     void WorkspaceWindow::OnOpen()
     {
         base::OnOpen();
+        m_onGetContextCallback = OnGetContext::FromWeakMember(self_weak(), &ThisClass::MakeMenuContext);
+        MenuManager::RegisterContextProvider("Assets", m_onGetContextCallback);
     }
     void WorkspaceWindow::OnClose()
     {
         base::OnClose();
+        MenuManager::UnregisterContextProvider("Assets", m_onGetContextCallback);
     }
 
     void WorkspaceWindow::OnDrawImGui()
@@ -209,120 +207,156 @@ namespace pulsared
         OnDrawContent();
 
         ImGui::Columns(1);
-
     }
-
-    static void InitMenu()
+    static void InitMainMenuAsset()
     {
-        auto menu = MenuManager::GetOrAddMenu("Assets");
+        auto menu = mksptr(new MenuEntrySubMenu("Assets"));
+        menu->Priority = 30;
+        MenuManager::GetMainMenu()->AddEntry(menu);
 
-        auto createAssetMenu = mksptr(new MenuEntrySubMenu("CreateAsset", "Create Asset"));
-
-        auto onCanCreate = MenuCanOperate::FromLambda([](MenuContexts_sp ctxs) -> bool {
+        auto hasPathLambda = MenuCanOperate::FromLambda([](const MenuContexts_sp& ctxs) -> bool {
+            if (AssetsMenuContext_sp ctx; ctxs && ((ctx = ctxs->FindContext<AssetsMenuContext>())))
             {
-                if (WorkspaceWindowMenuContext_sp ctx; ctxs && (ctx = ctxs->FindContext<WorkspaceWindowMenuContext>()))
-                {
-                    if (!ctx->CurrentPath.empty())
-                        return true;
-                }
-                return false;
-            }}
-        );
+                if (!ctx->CurrentPath.empty())
+                    return true;
+            }
+            return false;
+        });
 
-        auto onAssetCreated = MenuAction::FromLambda([](MenuContexts_sp ctxs) {
-            if (WorkspaceWindowMenuContext_sp ctx; ctxs && (ctx = ctxs->FindContext<WorkspaceWindowMenuContext>()))
-            {
-                Type* type = AssemblyManager::GlobalFindType(ctxs->EntryName);
-                AssetDatabase::NewAsset(ctx->CurrentPath, type);
-                Logger::Log("create asset : " + ctx->CurrentPath + " ; " + type->GetName());
-            }}
-        );
-
-        for (auto& type : AssemblyManager::GlobalSearchType(cltypeof<AssetObject>()))
+        // --------------- File ---------------
         {
-            auto typePaths = StringUtil::Split(type->GetName(), "::");
-            MenuEntrySubMenu_sp submenu = createAssetMenu;
-            for (size_t i = 0; i < typePaths.size(); i++)
-            {
+            menu->AddEntry(mksptr(new MenuEntrySeparate("File")));
+        }
+        {
+            auto entry = mksptr(new MenuEntrySubMenu("CreateAsset", "Create Asset"));
+            entry->CanOperate = hasPathLambda;
+            menu->AddEntry(entry);
 
-                auto friendlyName = StringUtil::FriendlyName(typePaths[i]);
-                if (i == typePaths.size() - 1)
+            auto onAssetCreated = MenuAction::FromLambda([](MenuContexts_sp ctxs) {
+                if (AssetsMenuContext_sp ctx; ctxs && (ctx = ctxs->FindContext<AssetsMenuContext>()))
                 {
-                    auto btn = mksptr(new MenuEntryButton(type->GetName(), friendlyName));
-                    btn->Action = onAssetCreated;
-                    btn->CanOperate = onCanCreate;
-                    submenu->AddEntry(btn);
+                    Type* type = AssemblyManager::GlobalFindType(ctxs->EntryName);
+                    AssetDatabase::NewAsset(ctx->CurrentPath, type);
+                    Logger::Log("create asset : " + ctx->CurrentPath + " ; " + type->GetName());
                 }
-                else
+            });
+
+            for (Type* type : AssemblyManager::GlobalSearchType(cltypeof<AssetObject>()))
+            {
+                if (!type->IsDefinedAttribute(cltypeof<MenuItemCreateAssetAttribute>()))
                 {
-                    auto name = typePaths[i];
-                    MenuEntrySubMenu_sp newPathComponent = submenu->FindSubMenuEntry(name);
-                    if (!newPathComponent)
+                    continue;;
+                }
+                auto typePaths = StringUtil::Split(type->GetName(), "::");
+                MenuEntrySubMenu_sp submenu = entry;
+                for (size_t i = 0; i < typePaths.size(); i++)
+                {
+                    auto friendlyName = StringUtil::FriendlyName(typePaths[i]);
+                    if (i == typePaths.size() - 1)
                     {
-                        newPathComponent = mksptr(new MenuEntrySubMenu(name, friendlyName));
-                        submenu->AddEntry(newPathComponent);
+                        auto btn = mksptr(new MenuEntryButton(type->GetName(), friendlyName));
+                        btn->Action = onAssetCreated;
+                        btn->CanOperate = hasPathLambda;
+                        submenu->AddEntry(btn);
                     }
-                    submenu = newPathComponent;
+                    else
+                    {
+                        auto name = typePaths[i];
+                        MenuEntrySubMenu_sp newPathComponent = submenu->FindSubMenuEntry(name);
+                        if (!newPathComponent)
+                        {
+                            newPathComponent = mksptr(new MenuEntrySubMenu(name, friendlyName));
+                            submenu->AddEntry(newPathComponent);
+                        }
+                        submenu = newPathComponent;
+                    }
                 }
             }
+
         }
 
-        menu->AddEntry(createAssetMenu);
+        {
+            auto entry = mksptr(new MenuEntryButton("Create Folder"));
+            entry->CanOperate = hasPathLambda;
+            menu->AddEntry(entry);
+        }
 
-        auto createFolderBtn = mksptr(new MenuEntryButton("Create Folder"));
-        createFolderBtn->CanOperate = onCanCreate;
-        //createFolderBtn->Action = MenuAction::FromLambda();
-        menu->AddEntry(createFolderBtn);
+        {
+            auto entry = mksptr(new MenuEntryButton("Import"));
+            entry->CanOperate = hasPathLambda;
+            menu->AddEntry(entry);
+        }
+        {
+            auto entry = mksptr(new MenuEntryButton("Reimport"));
+            entry->CanOperate = hasPathLambda;
+            menu->AddEntry(entry);
+        }
+        // ------------- Common -------------
+        {
+            menu->AddEntry(mksptr(new MenuEntrySeparate("Common")));
+        }
+        {
+            auto entry = mksptr(new MenuEntryButton("Rename"));
+            entry->CanOperate = hasPathLambda;
+            menu->AddEntry(entry);
+        }
+        {
+            auto entry = mksptr(new MenuEntryButton("Duplicate"));
+            entry->CanOperate = hasPathLambda;
+            menu->AddEntry(entry);
+        }
+        {
+            auto entry = mksptr(new MenuEntryButton("Save"));
+            entry->CanOperate = hasPathLambda;
+            menu->AddEntry(entry);
+        }
+        {
+            auto entry = mksptr(new MenuEntryButton("Delete"));
+            entry->CanOperate = hasPathLambda;
+            menu->AddEntry(entry);
+        }
 
-
-        auto assetCtx = MenuManager::GetOrAddMenu("WorkspaceWindow.AssetsContext");
-        assetCtx->AddEntry(mksptr(new MenuEntrySeparate("Create")));
-        assetCtx->AddEntry(createAssetMenu);
-        assetCtx->AddEntry(createFolderBtn);
-
-        assetCtx->AddEntry(mksptr(new MenuEntrySeparate("Common")));
-        assetCtx->AddEntry(mksptr(new MenuEntryButton("Rename")));
-        assetCtx->AddEntry(mksptr(new MenuEntryButton("Duplicate")));
-        assetCtx->AddEntry(mksptr(new MenuEntryButton("Save")));
-        assetCtx->AddEntry(mksptr(new MenuEntryButton("Delete")));
-
-        assetCtx->AddEntry(mksptr(new MenuEntrySeparate("Assets")));
+        {
+            auto entry = mksptr(new MenuEntryButton("Delete"));
+            entry->CanOperate = hasPathLambda;
+            menu->AddEntry(entry);
+        }
         {
             auto entry = mksptr(new MenuEntryButton("Reload"));
-            entry->Action = MenuAction::FromLambda([](MenuContexts_sp ctxs) {
+            entry->CanOperate = hasPathLambda;
+            entry->Action = MenuAction::FromLambda([](const MenuContexts_sp& ctxs) {
+                if (AssetsMenuContext_sp ctx; ctxs && ((ctx = ctxs->FindContext<AssetsMenuContext>())))
                 {
-                    if (WorkspaceWindowMenuContext_sp ctx; ctxs && (ctx = ctxs->FindContext<WorkspaceWindowMenuContext>()))
+                    for (auto& item : ctx->SelectedFiles)
                     {
-                        for (auto& item : ctx->SelectedFiles)
+                        if (auto file = item.lock())
                         {
-                            if (auto file = item.lock())
+                            if (!file->IsFolder)
                             {
-                                if (!file->IsFolder)
-                                {
-                                    AssetDatabase::ReloadAsset(file->AssetMeta->Handle);
-                                }
+                                AssetDatabase::ReloadAsset(file->AssetMeta->Handle);
                             }
-                            
                         }
                     }
-                }});
-            assetCtx->AddEntry(entry);
+                }
+            });
+            menu->AddEntry(entry);
         }
-
-        assetCtx->AddEntry(mksptr(new MenuEntrySeparate("Explorer")));
+        // ------------- explorer --------------
+        {
+            auto entry = mksptr(new MenuEntrySeparate("Explorer"));
+            menu->AddEntry(entry);
+        }
         {
             auto entry = mksptr(new MenuEntryButton("ShowExplorer", "Show In Explorer"));
+            entry->CanOperate = hasPathLambda;
             entry->Action = MenuAction::FromLambda([](sptr<MenuContexts>) {
-                if(auto win = EditorWindowManager::GetPanelWindow(cltypeof<WorkspaceWindow>()))
+                if (auto win = EditorWindowManager::GetPanelWindow(cltypeof<WorkspaceWindow>()))
                 {
                     static_cast<WorkspaceWindow*>(win.get())->OpenExplorer();
                 }
             });
-            assetCtx->AddEntry(entry);
+            menu->AddEntry(entry);
         }
-
-
-
     }
 
     void WorkspaceWindow::ClearSelectedFile()
@@ -352,14 +386,14 @@ namespace pulsared
         static bool a = false;
         if (a == false)
         {
-            InitMenu();
+            InitMainMenuAsset();
             a = true;
         }
 
         if (ImGui::BeginMenuBar())
         {
 
-            if(m_currentFolder.empty())
+            if (m_currentFolder.empty())
             {
                 ImGui::BeginDisabled();
             }
@@ -372,7 +406,7 @@ namespace pulsared
             {
                 ImGui::SeparatorText("Add Asset");
 
-                auto menu = MenuManager::GetMenu("Assets");
+                auto menu = MenuManager::GetMainMenu()->FindSubMenuEntry("Assets");
                 auto ctxs = mksptr(new MenuContexts());
                 ctxs->Contexts.push_back(MakeMenuContext());
                 MenuRenderer::RenderMenu(menu->FindSubMenuEntry("CreateAsset").get(), ctxs);
@@ -389,7 +423,7 @@ namespace pulsared
             {
                 this->OpenExplorer();
             }
-            if(m_currentFolder.empty())
+            if (m_currentFolder.empty())
             {
                 ImGui::EndDisabled();
             }
@@ -414,7 +448,6 @@ namespace pulsared
 
             ImGui::EndMenuBar();
         }
-
     }
 
     void WorkspaceWindow::OnDrawFolderTree()
@@ -446,7 +479,6 @@ namespace pulsared
 
         Type* assetType = node->GetAssetType();
 
-
         auto title = StringUtil::Concat(StringUtil::FriendlyName(node->AssetName), " ( ", StringUtil::FriendlyName(assetType->GetShortName()), " ) ");
         ImGui::SeparatorText(title.c_str());
 
@@ -454,10 +486,9 @@ namespace pulsared
 
         ImGui::Text(("Path: " + node->AssetPath).c_str());
         ImGui::Text(("DiskPath: " + node->PhysicsPath.string()).c_str());
-
     }
 
-    template<typename IT, typename V>
+    template <typename IT, typename V>
     static IT weaks_find(IT begin, IT end, V value)
     {
         for (auto it = begin; it != end; ++it)
@@ -492,7 +523,7 @@ namespace pulsared
             gfx::GFXDescriptorSet_wp dirtySet = AssetDatabase::IconPool->GetDescriptorSet("WorkspaceWindow.Dirty"_idxstr);
 
             const bool isFolder = child->IsFolder;
-            const auto isSelected = weaks_find(m_selectedFiles.begin(), m_selectedFiles.end(), std::weak_ptr{ child }) != m_selectedFiles.end();
+            const auto isSelected = weaks_find(m_selectedFiles.begin(), m_selectedFiles.end(), std::weak_ptr{child}) != m_selectedFiles.end();
             const bool isDirty = isFolder ? false : AssetDatabase::IsDirty(child->AssetMeta->Handle);
 
             const auto iconSize = ImVec2(m_iconSize, m_iconSize);
@@ -505,9 +536,9 @@ namespace pulsared
                 isFolder ? child->AssetPath : child->AssetMeta->Handle.to_string());
 
             if (PImGui::DragFileButton(
-                child->AssetName.c_str(), iconDesc, iconSize,
-                /*label */30, isSelected, isDirty, dirtyDesc, child.get(), &_RenderFileToolTips,
-                dragType, dragData))
+                    child->AssetName.c_str(), iconDesc, iconSize,
+                    /*label */ 30, isSelected, isDirty, dirtyDesc, child.get(), &_RenderFileToolTips,
+                    dragType, dragData))
             {
                 if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
                 {
@@ -525,7 +556,7 @@ namespace pulsared
                 {
                     if (ImGui::GetIO().KeyShift)
                     {
-                        auto it = weaks_find(m_selectedFiles.begin(), m_selectedFiles.end(), std::weak_ptr{ child });
+                        auto it = weaks_find(m_selectedFiles.begin(), m_selectedFiles.end(), std::weak_ptr{child});
                         if (it != m_selectedFiles.end())
                         {
                             m_selectedFiles.erase(it);
@@ -541,19 +572,14 @@ namespace pulsared
                         m_selectedFiles.push_back(child);
                     }
                 }
-
-
             }
-
 
             ImGui::PopStyleColor();
 
-            //if (isDrawing)
+            // if (isDrawing)
             ImGui::NextColumn();
-
         }
         ImGui::Columns(1);
-
 
         if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
         {
@@ -561,7 +587,8 @@ namespace pulsared
         }
         if (ImGui::BeginPopup("WorkspaceWindow.AssetContext"))
         {
-            auto menu = MenuManager::GetMenu("WorkspaceWindow.AssetsContext");
+            // auto menu = MenuManager::GetMenu("WorkspaceWindow.AssetsContext");
+            auto menu = MenuManager::GetMainMenu()->FindSubMenuEntry("Assets");
 
             auto ctxs = mksptr(new MenuContexts());
             ctxs->Contexts.push_back(MakeMenuContext());
@@ -569,12 +596,10 @@ namespace pulsared
 
             ImGui::EndPopup();
         }
-
-
     }
-    WorkspaceWindowMenuContext_sp WorkspaceWindow::MakeMenuContext()
+    MenuContextBase_sp WorkspaceWindow::MakeMenuContext()
     {
-        auto ctx = mksptr(new WorkspaceWindowMenuContext{m_currentFolder});
+        auto ctx = mksptr(new AssetsMenuContext{m_currentFolder});
         ctx->CurrentPath = m_currentFolder;
         ctx->SelectedFiles = m_selectedFiles;
         return ctx;
@@ -587,19 +612,19 @@ namespace pulsared
         string filterStr;
         for (const auto factory : AssetImporterFactoryManager::GetFactories())
         {
-            filterStr += StringUtil::Concat(factory->GetDescription(), "(", factory->GetFilter() , ")", ";", factory->GetFilter(), ";");
+            filterStr += StringUtil::Concat(factory->GetDescription(), "(", factory->GetFilter(), ")", ";", factory->GetFilter(), ";");
         }
 
-        if(jxcorlib::platform::window::OpenFileDialog(mainWindow, filterStr, "", &selectedFileName))
+        if (jxcorlib::platform::window::OpenFileDialog(mainWindow, filterStr, "", &selectedFileName))
         {
             const auto factory = AssetImporterFactoryManager::FindFactoryByExt(std::filesystem::path(selectedFileName).extension().string());
-            if(!factory)
+            if (!factory)
             {
                 Logger::Log("no import factory.", LogLevel::Error);
                 return;
             }
             const auto settings = factory->CreateImporterSettings();
-            settings->TargetPath = m_currentFolder;// current target
+            settings->TargetPath = m_currentFolder; // current target
             settings->ImportFiles->push_back(selectedFileName);
 
             factory->CreateImporter()->Import(settings.get());
@@ -610,4 +635,4 @@ namespace pulsared
     {
         ::memset(this->search_buf, 0, sizeof(this->search_buf));
     }
-}
+} // namespace pulsared

@@ -35,9 +35,9 @@ namespace pulsared
 //    }
 //    return textures;
 //}
-    static inline Color4b _Color4(const aiColor4D& v)
+    static inline Color4f _Color4f(const aiColor4D& v)
     {
-        return Color4b(v.r * 255, v.g * 255, v.b * 255, v.a * 255);
+        return Color4f(v.r, v.g, v.b, v.a);
     }
     static inline Vector3f _Vec3(const aiVector3D& v3)
     {
@@ -76,7 +76,7 @@ namespace pulsared
 
             if (mesh->HasVertexColors(0))
             {
-                vert.Color = _Color4(mesh->mColors[0][vertnum]);
+                vert.Color = _Color4f(mesh->mColors[0][vertnum]);
             }
 
         }

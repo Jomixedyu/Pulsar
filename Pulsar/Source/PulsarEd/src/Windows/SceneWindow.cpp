@@ -29,6 +29,7 @@ namespace pulsared
         m_sceneEditor = new SceneEditorViewportFrame;
         m_sceneEditor->Initialize();
         m_sceneEditor->SetWorld(GetEdApp()->GetEditorWorld());
+        m_sceneEditor->m_scaleSpeed = 0.1f;
     }
     void SceneWindow::OnCloseWorkspace()
     {

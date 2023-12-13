@@ -322,6 +322,10 @@ namespace jxcorlib
             {
                 target = target->GetBase();
             }
+            else
+            {
+                break;
+            }
         } while (target);
 
         return nullptr;

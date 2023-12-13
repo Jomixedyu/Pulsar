@@ -195,11 +195,11 @@ namespace pulsared
 
     static inline Vector3f _Vec3(const FbxVector4& vec)
     {
-        return {float(vec[0]), float(vec[1]), float(vec[2])};
+        return {static_cast<float>(vec[0]), static_cast<float>(vec[1]), static_cast<float>(vec[2])};
     }
-    static inline Color4b _Color4b(const FbxColor& color)
+    static inline Color4f _Color4f(const FbxColor& color)
     {
-        return {uint8_t(color.mRed * 255), uint8_t(color.mGreen * 255), uint8_t(color.mBlue * 255), uint8_t(color.mAlpha * 255)};
+        return Color4f(color.mRed, color.mGreen, color.mBlue, color.mAlpha);
     }
 
     static StaticMesh_ref ProcessMesh(FbxNode* fbxNode)
@@ -246,7 +246,7 @@ namespace pulsared
                 section.Indices.resize(vertexCount);
                 section.Vertex.resize(vertexCount);
 
-#pragma omp parallel for
+//#pragma omp parallel for
                 for (int polyIndex = 0; polyIndex < polygonCount; polyIndex++)
                 {
                     for (int vertIndex = 0; vertIndex < kPolygonCount; vertIndex++)
@@ -255,6 +255,8 @@ namespace pulsared
 
                         StaticMeshVertex vertex{};
                         // position
+                        auto pp = fbxMesh->GetControlPointAt(index);
+                        auto ppp = fbxMesh->GetControlPoints()[index];
                         vertex.Position = _Vec3(fbxMesh->GetControlPointAt(index));
                         // normal
                         FbxVector4 normal;
@@ -263,6 +265,7 @@ namespace pulsared
                         // color
                         if (auto fbxColors = fbxMesh->GetLayer(0)->GetVertexColors())
                         {
+                            //fbxMesh->GetElementVertexColor()
                             auto map = fbxColors->GetMappingMode();
                             uint32_t colorIndex;
                             switch (fbxColors->GetReferenceMode())
@@ -277,12 +280,13 @@ namespace pulsared
                                 assert(0);
                                 break;
                             }
-                            auto fbxColor = fbxColors->GetDirectArray().GetAt(colorIndex);
-                            vertex.Color = _Color4b(fbxColor);
+                            auto x = fbxColors->GetDirectArray().GetCount();
+                            auto fbxColor = fbxColors->GetDirectArray().GetAt(index);
+                            vertex.Color = _Color4f(fbxColor);
                         }
 
                         section.Vertex[polyIndex * kPolygonCount + vertIndex] = vertex;
-                        section.Indices[polyIndex * kPolygonCount + vertIndex] = index;
+                        section.Indices[polyIndex * kPolygonCount + vertIndex] = polyIndex * kPolygonCount + vertIndex;
                     }
                 }
 
@@ -329,7 +333,7 @@ namespace pulsared
         for (auto& importFile : *settings->ImportFiles)
         {
             LoadScene(fbxManager, fbxScene, importFile.c_str());
-
+            auto trsx1 = fbxScene->GetRootNode()->GetChild(0)->EvaluateGlobalTransform();
             if (fbxsetting->ConvertAxisSystem)
             {
                 const auto axisSystem = fbxScene->GetGlobalSettings().GetAxisSystem();
@@ -344,12 +348,12 @@ namespace pulsared
 
             auto originUnit = fbxScene->GetGlobalSettings().GetOriginalSystemUnit();
             auto unit = fbxScene->GetGlobalSettings().GetSystemUnit();;
-
+            auto trsx2 = fbxScene->GetRootNode()->GetChild(0)->EvaluateGlobalTransform();
             if(unit != FbxSystemUnit::m)
             {
                 FbxSystemUnit::m.ConvertScene(fbxScene);
             }
-
+            auto trsx3 = fbxScene->GetRootNode()->GetChild(0)->EvaluateGlobalTransform();
 
             FbxGeometryConverter geomConverter(fbxManager);
             geomConverter.Triangulate(fbxScene, true);

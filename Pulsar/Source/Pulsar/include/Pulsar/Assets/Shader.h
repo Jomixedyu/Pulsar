@@ -36,8 +36,6 @@ namespace pulsar
         CORELIB_REFL_DECL_FIELD(StencilTestEnable);
         bool StencilTestEnable;
 
-        CORELIB_REFL_DECL_FIELD(Topology);
-        int Topology;
     };
     CORELIB_DECL_SHORTSPTR(ShaderPassConfig);
 
@@ -98,6 +96,7 @@ namespace pulsar
     class Shader final : public AssetObject
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::Shader, AssetObject);
+        CORELIB_CLASS_ATTR(new MenuItemCreateAssetAttribute);
     public:
         virtual void Serialize(AssetSerializer* s) override;
 

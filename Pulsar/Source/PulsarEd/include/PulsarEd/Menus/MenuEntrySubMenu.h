@@ -10,7 +10,7 @@ namespace pulsared
         CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::MenuEntrySubMenu, MenuEntry);
         CORELIB_IMPL_INTERFACES(ISubMenu);
     public:
-        MenuEntrySubMenu(const string& name) : base(name), CORELIB_INIT_INTERFACE(ISubMenu)
+        explicit MenuEntrySubMenu(const string& name) : base(name), CORELIB_INIT_INTERFACE(ISubMenu)
         { }
         MenuEntrySubMenu(const string& name, const string& displayName)
             : base(name, displayName), CORELIB_INIT_INTERFACE(ISubMenu)

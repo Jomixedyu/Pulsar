@@ -1,11 +1,13 @@
 #pragma once
 
-#include <Pulsar/ObjectBase.h>
+#include "Pulsar/Application.h"
+
 #include "Component.h"
 #include "RendererComponent.h"
-#include <Pulsar/Node.h>
 #include <Pulsar/Assets/Material.h>
 #include <Pulsar/Assets/StaticMesh.h>
+#include <Pulsar/Node.h>
+#include <Pulsar/ObjectBase.h>
 
 namespace pulsar
 {
@@ -13,6 +15,11 @@ namespace pulsar
     class Material;
     class ShaderPass;
     class StaticMeshRenderObject;
+
+    struct CBuffer_ModelObject
+    {
+        Matrix4f LocalToWorldMatrix;
+    };
 
     constexpr uint32_t kRenderingDescriptorSpace_ModelInfo = 2;
     class StaticMeshRendererComponent : public Component, public IRendererComponent

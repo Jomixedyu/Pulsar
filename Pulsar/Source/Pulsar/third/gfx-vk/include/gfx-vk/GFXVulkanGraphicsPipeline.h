@@ -16,7 +16,8 @@ namespace gfx
             GFXVulkanApplication* app,
             const std::shared_ptr<GFXShaderPass>& shaderPass,
             const array_list<GFXDescriptorSetLayout_sp>& descriptorSetLayouts,
-            const GFXRenderPassLayout& renderLayout);
+            const GFXRenderPassLayout& renderLayout,
+            const GFXGraphicsPipelineState& gpInfo);
 
         virtual ~GFXVulkanGraphicsPipeline() override;
 

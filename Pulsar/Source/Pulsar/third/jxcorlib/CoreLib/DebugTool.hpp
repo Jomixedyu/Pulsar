@@ -16,6 +16,7 @@
 
 
 #define nulable$(ptr) if(ptr != nullptr) ptr
+#define $$(ptr) if(ptr != nullptr) ptr
 #define assert_nulptr(ptr) if(ptr == nullptr) throw jxcorlib::NullPointerException(DEBUG_INFO(#ptr))
 
 #define zero$(num) (num == (decltype(num))(0) ? throw jxcorlib::DivisionByZeroException(DEBUG_INFO(#num)) : num)

@@ -33,6 +33,7 @@ namespace pulsar
         static ObjectPtr<Scene> StaticCreate(string_view name);
 
         World* GetWorld() const { return m_runtimeWorld; }
+
     protected:
         virtual void OnDestroy() override;
     private:
@@ -43,6 +44,8 @@ namespace pulsar
 
         bool m_isRuntimeScene;
         World* m_runtimeWorld;
+
+
     };
     DECL_PTR(Scene);
 }

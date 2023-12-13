@@ -93,6 +93,7 @@ namespace pulsared
         auto mainMenu = MenuManager::GetMainMenu();
         {
             MenuEntrySubMenu_sp file = mksptr(new MenuEntrySubMenu("File"));
+            file->Priority = 10;
             mainMenu->AddEntry(file);
 
             auto openWorkSpace = mksptr(new MenuEntryButton("Open Workspace"));
@@ -103,18 +104,36 @@ namespace pulsared
         }
         {
             MenuEntrySubMenu_sp menu = mksptr(new MenuEntrySubMenu("Edit"));
+            menu->Priority = 20;
             mainMenu->AddEntry(menu);
         }
         {
-            MenuEntrySubMenu_sp menu = mksptr(new MenuEntrySubMenu("Assets"));
+            MenuEntrySubMenu_sp menu = mksptr(new MenuEntrySubMenu("Node"));
+            menu->Priority = 200;
             mainMenu->AddEntry(menu);
         }
+
         {
-            MenuEntrySubMenu_sp menu = mksptr(new MenuEntrySubMenu("Build"));
+            MenuEntrySubMenu_sp menu = mksptr(new MenuEntrySubMenu("Component"));
+            menu->Priority = 500;
             mainMenu->AddEntry(menu);
+            for (auto type : AssemblyManager::GlobalSearchType(cltypeof<Component>()))
+            {
+                if(type->IsDefinedAttribute(cltypeof<AbstractComponentAttribute>(), false))
+                {
+                    continue;
+                }
+                auto itemEntry = mksptr(new MenuEntryButton(type->GetName(),
+                    ComponentInfoManager::GetFriendlyComponentName(type)));
+                menu->AddEntry(itemEntry);
+                itemEntry->Action = MenuAction::FromLambda([](MenuContexts_rsp ctxs) {
+
+                });
+            }
         }
         {
             MenuEntrySubMenu_sp menu = mksptr(new MenuEntrySubMenu("Tool"));
+            menu->Priority = 800;
             mainMenu->AddEntry(menu);
             {
                 auto entry = mksptr(new MenuEntryButton("MenuDebug"));
@@ -132,20 +151,19 @@ namespace pulsared
             }
         }
         {
+            MenuEntrySubMenu_sp menu = mksptr(new MenuEntrySubMenu("Build"));
+            menu->Priority = 900;
+            mainMenu->AddEntry(menu);
+        }
+        {
             MenuEntrySubMenu_sp menu = mksptr(new MenuEntrySubMenu("Window"));
+            menu->Priority = 1000;
             mainMenu->AddEntry(menu);
         }
         {
             MenuEntrySubMenu_sp menu = mksptr(new MenuEntrySubMenu("Help"));
+            menu->Priority = 2000;
             mainMenu->AddEntry(menu);
-        }
-
-        {
-            MenuEntryButton_sp menu = mksptr(new MenuEntryButton("About"));
-            menu->Action = MenuAction::FromRaw([](auto ctx) {
-                Logger::Log("pulsar engine");
-            });
-            mainMenu->FindMenuEntry<MenuEntrySubMenu>("Help")->AddEntry(menu);
         }
 
     }
@@ -201,16 +219,35 @@ namespace pulsared
 
     static void _Test()
     {
-        auto meshNode = Node::StaticCreate("mesh test");
-        auto meshComponent = meshNode->AddComponent<StaticMeshRendererComponent>();
+        auto vertexColorMat = GetAssetManager()->LoadAsset<Material>("Engine/Materials/VertexColor", true);
+        {
+            // auto meshNode = Node::StaticCreate("mesh test");
+            // auto meshComponent = meshNode->AddComponent<StaticMeshRendererComponent>();
+            //
+            // auto staticMesh = GetAssetManager()->LoadAsset<StaticMesh>("Engine/Shapes/Body");
+            // meshComponent->SetStaticMesh(staticMesh);
+            //
+            // auto missingMat = GetAssetManager()->LoadAsset<Material>("Engine/Materials/Missing");
+            // meshComponent->SetMaterial(0, missingMat);
+            // meshComponent->SetMaterial(1, missingMat);
+            // meshComponent->SetMaterial(2, missingMat);
+            // meshComponent->SetMaterial(3, missingMat);
+            // World::Current()->GetPersistentScene()->AddNode(meshNode);
+        }
 
-        auto staticMesh = GetAssetManager()->LoadAsset<StaticMesh>("Engine/Shapes/pCube");
-        meshComponent->SetStaticMesh(staticMesh);
+        {
+            auto meshNode = Node::StaticCreate("mesh test 1");
+            auto meshComponent = meshNode->AddComponent<StaticMeshRendererComponent>();
 
-        auto missingMat = GetAssetManager()->LoadAsset<Material>("Engine/Materials/Missing");
-        meshComponent->SetMaterial(0, missingMat);
+            // auto staticMesh = GetAssetManager()->LoadAsset<StaticMesh>("Engine/Shapes/CoordArrow", true);
+            // auto staticMesh = GetAssetManager()->LoadAsset<StaticMesh>("Engine/Shapes/CoordArrow", true);
+            // meshComponent->SetStaticMesh(staticMesh);
 
-        World::Current()->GetPersistentScene()->AddNode(meshNode);
+
+            meshComponent->SetMaterial(0, vertexColorMat);
+            World::Current()->GetPersistentScene()->AddNode(meshNode);
+        }
+
     }
 
     static void _RegisterIcon(Type* type, string_view path)

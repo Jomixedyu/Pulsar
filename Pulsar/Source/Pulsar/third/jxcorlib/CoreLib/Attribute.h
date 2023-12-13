@@ -50,8 +50,16 @@ namespace jxcorlib
 
     class ReadOnlyPropertyAttribute final : public Attribute
     {
-        CORELIB_DEF_TYPE(AssemblyObject_jxcorlib, jxcorlib::HidePropertyAttribute, Attribute);
+        CORELIB_DEF_TYPE(AssemblyObject_jxcorlib, jxcorlib::ReadOnlyPropertyAttribute, Attribute);
     public:
 
     };
+
+    class DebugPropertyAttribute final : public Attribute
+    {
+        CORELIB_DEF_TYPE(AssemblyObject_jxcorlib, jxcorlib::DebugPropertyAttribute, Attribute);
+    public:
+
+    };
+
 }

@@ -1,6 +1,8 @@
 #pragma once
 #include <CoreLib/Core.h>
 #include <CoreLib/Delegate.h>
+
+#include <utility>
 #include "MenuContext.h"
 
 namespace pulsared
@@ -14,15 +16,17 @@ namespace pulsared
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::MenuEntry, Object);
     public:
-        int Priority;
         string Name;
         string DisplayName;
+        int Priority;
 
-        MenuEntry(const string& name) : Name(name), DisplayName(name), Priority(9999) {}
-        MenuEntry(const string& name, const string& displayName) :
-            Name(name), DisplayName(displayName), Priority(9999) {}
+        sptr<MenuCanOperate> CanOperate;
 
-        virtual ~MenuEntry() override {}
+        explicit MenuEntry(const string& name) : Name(name), DisplayName(name), Priority(9999) {}
+        MenuEntry(string name, string displayName) :
+            Name(std::move(name)), DisplayName(std::move(displayName)), Priority(9999) {}
+
+        ~MenuEntry() override = default;
     };
     CORELIB_DECL_SHORTSPTR(MenuEntry);
 
@@ -42,7 +46,6 @@ namespace pulsared
         using base::base;
 
         sptr<MenuCanVisibility> Visibility;
-        sptr<MenuCanOperate> CanOperate;
         sptr<MenuAction> Action;
     };
     CORELIB_DECL_SHORTSPTR(MenuEntryButton);

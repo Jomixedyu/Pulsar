@@ -13,10 +13,16 @@ namespace pulsar
     using MessageId = size_t;
     constexpr size_t MessageId_OnChangedTransform = 1;
 
+    class AbstractComponentAttribute : public Attribute
+    {
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::AbstractComponentAttribute, Attribute);
+    };
+
     class Component : public ObjectBase, public ITickable
     {
         friend class Node;
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::Component, ObjectBase);
+        CORELIB_CLASS_ATTR(new AbstractComponentAttribute);
     public:
         ObjectPtr<Node> GetAttachedNode() const;
         ObjectPtr<Node> GetOwnerNode() const;
@@ -50,4 +56,10 @@ namespace pulsar
         bool IsCollapsing = false;
     };
     DECL_PTR(Component);
+
+    class ComponentInfoManager final
+    {
+    public:
+        static string GetFriendlyComponentName(Type* type);
+    };
 }

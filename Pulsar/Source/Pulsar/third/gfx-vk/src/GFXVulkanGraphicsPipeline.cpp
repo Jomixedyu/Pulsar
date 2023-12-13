@@ -29,7 +29,7 @@ namespace gfx
             return VK_POLYGON_MODE_FILL;
             break;
         case gfx::GFXPrimitiveTopology::LineList:
-            return VK_POLYGON_MODE_LINE;
+            return VK_POLYGON_MODE_FILL;
             break;
         default:
             break;
@@ -40,7 +40,8 @@ namespace gfx
         GFXVulkanApplication* app,
         const std::shared_ptr<GFXShaderPass>& shaderPass,
         const array_list<GFXDescriptorSetLayout_sp>& descriptorSetLayouts,
-        const GFXRenderPassLayout& renderLayout
+        const GFXRenderPassLayout& renderLayout,
+        const GFXGraphicsPipelineState& gpInfo
     )
         : m_app(app)
     {
@@ -89,15 +90,16 @@ namespace gfx
 
         VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
         inputAssembly.sType      = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-        inputAssembly.topology   = _GetVkTopology(vkShaderPass->GetStateConfig().Topology);
+        inputAssembly.topology   = _GetVkTopology(gpInfo.Topology);
         inputAssembly.primitiveRestartEnable = VK_FALSE;
+
 
         // make pipeline shader state
         VkPipelineRasterizationStateCreateInfo rasterizer{};
         rasterizer.sType             = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
         rasterizer.depthClampEnable  = VK_FALSE;
-        rasterizer.polygonMode       = _GetVkPolyMode(vkShaderPass->GetStateConfig().Topology);
-        rasterizer.lineWidth         = 1.0f;
+        rasterizer.polygonMode       = _GetVkPolyMode(gpInfo.Topology);
+        rasterizer.lineWidth         = gpInfo.LineWidth;
         rasterizer.cullMode          = static_cast<VkCullModeFlagBits>(vkShaderPass->GetStateConfig().CullMode);
         rasterizer.frontFace         = VK_FRONT_FACE_COUNTER_CLOCKWISE;
         rasterizer.depthBiasEnable   = VK_FALSE;

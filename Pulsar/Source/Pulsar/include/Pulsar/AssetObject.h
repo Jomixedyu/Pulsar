@@ -11,6 +11,13 @@
 namespace pulsar
 {
 
+    class MenuItemCreateAssetAttribute : public Attribute
+    {
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::MenuItemCreateAssetAttribute, Attribute);
+    public:
+
+    };
+
     struct AssetSerializer
     {
         AssetSerializer(ser::VarientRef obj, std::iostream& stream, bool isWrite, bool editorData)
@@ -33,6 +40,19 @@ namespace pulsar
         const bool HasEditorData;
     };
 
+    class ImportedFileInfo : public Object
+    {
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::ImportedFileInfo, Object);
+    public:
+        CORELIB_REFL_DECL_FIELD(m_filename);
+        String_sp m_filename;
+        CORELIB_REFL_DECL_FIELD(m_latestModification);
+        String_sp m_latestModification;
+        CORELIB_REFL_DECL_FIELD(m_hash);
+        String_sp m_hash;
+    };
+    CORELIB_DECL_SHORTSPTR(ImportedFileInfo);
+
     class AssetObject : public ObjectBase
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::AssetObject, ObjectBase);
@@ -42,7 +62,6 @@ namespace pulsar
         virtual bool CanInstantiateAsset() const { return true; }
         ObjectPtr<AssetObject> InstantiateAsset();
 
-    public:
     public:
         AssetObject();
         AssetObject(const AssetObject&) = delete;
@@ -56,7 +75,7 @@ namespace pulsar
         #ifdef WITH_EDITOR
 
         CORELIB_REFL_DECL_FIELD(m_importFiles);
-        List_sp<String_sp> m_importFiles;
+        List_sp<ImportedFileInfo_sp> m_importFiles;
 
         array_list<string> m_extraEditorMetadata;
 

@@ -10,9 +10,9 @@ FBXHeaderExtension:  {
 		Month: 12
 		Day: 7
 		Hour: 1
-		Minute: 6
-		Second: 54
-		Millisecond: 629
+		Minute: 44
+		Second: 0
+		Millisecond: 455
 	}
 	Creator: "FBX SDK/FBX Plugins version 2020.1"
 	OtherFlags:  {
@@ -37,13 +37,13 @@ FBXHeaderExtension:  {
 			P: "Original|ApplicationVendor", "KString", "", "", "Autodesk"
 			P: "Original|ApplicationName", "KString", "", "", "Maya"
 			P: "Original|ApplicationVersion", "KString", "", "", "2022"
-			P: "Original|DateTime_GMT", "DateTime", "", "", "06/12/2023 17:06:54.628"
+			P: "Original|DateTime_GMT", "DateTime", "", "", "06/12/2023 17:44:00.454"
 			P: "Original|FileName", "KString", "", "", "D:\Codes\Pulsar\Pulsar\Packages\Engine\SrcModel\Plane1m_mb.fbx"
 			P: "LastSaved", "Compound", "", ""
 			P: "LastSaved|ApplicationVendor", "KString", "", "", "Autodesk"
 			P: "LastSaved|ApplicationName", "KString", "", "", "Maya"
 			P: "LastSaved|ApplicationVersion", "KString", "", "", "2022"
-			P: "LastSaved|DateTime_GMT", "DateTime", "", "", "06/12/2023 17:06:54.628"
+			P: "LastSaved|DateTime_GMT", "DateTime", "", "", "06/12/2023 17:44:00.454"
 			P: "Original|ApplicationActiveProject", "KString", "", "", "D:\Codes\Pulsar\Pulsar\Packages\Engine\SrcModel"
 		}
 	}
@@ -79,7 +79,7 @@ GlobalSettings:  {
 
 Documents:  {
 	Count: 1
-	Document: 3012841951840, "", "Scene" {
+	Document: 3012936772032, "", "Scene" {
 		Properties70:  {
 			P: "SourceObject", "object", "", ""
 			P: "ActiveAnimStackName", "KString", "", "", "Take 001"
@@ -252,7 +252,7 @@ Definitions:  {
 ;------------------------------------------------------------------
 
 Objects:  {
-	Geometry: 3012861812976, "Geometry::", "Mesh" {
+	Geometry: 3010979756176, "Geometry::", "Mesh" {
 		Vertices: *12 {
 			a: -50,0,50,50,0,50,-50,0,-50,50,0,-50
 		} 
@@ -325,20 +325,21 @@ Objects:  {
 			}
 		}
 	}
-	Model: 3012835610976, "Model::pPlane1", "Mesh" {
+	Model: 3012835610976, "Model::pPlane2", "Mesh" {
 		Version: 232
 		Properties70:  {
 			P: "RotationActive", "bool", "", "",1
 			P: "InheritType", "enum", "", "",1
 			P: "ScalingMax", "Vector3D", "Vector", "",0,0,0
 			P: "DefaultAttributeIndex", "int", "Integer", "",0
+			P: "Lcl Translation", "Lcl Translation", "", "A",0,0.457081470747379,0
 			P: "Lcl Scaling", "Lcl Scaling", "", "A",0.01,0.01,0.01
 			P: "currentUVSet", "KString", "", "U", "map1"
 		}
 		Shading: T
 		Culling: "CullingOff"
 	}
-	Material: 3012863091856, "Material::lambert1", "" {
+	Material: 3012863086656, "Material::lambert1", "" {
 		Version: 102
 		ShadingModel: "lambert"
 		MultiLayer: 0
@@ -353,7 +354,7 @@ Objects:  {
 			P: "Opacity", "double", "Number", "",1
 		}
 	}
-	AnimationStack: 3012837462976, "AnimStack::Take 001", "" {
+	AnimationStack: 3012836057776, "AnimStack::Take 001", "" {
 		Properties70:  {
 			P: "LocalStart", "KTime", "Time", "",1924423250
 			P: "LocalStop", "KTime", "Time", "",230930790000
@@ -361,7 +362,7 @@ Objects:  {
 			P: "ReferenceStop", "KTime", "Time", "",230930790000
 		}
 	}
-	AnimationLayer: 3011145089952, "AnimLayer::BaseLayer", "" {
+	AnimationLayer: 3011145092384, "AnimLayer::BaseLayer", "" {
 	}
 }
 
@@ -370,17 +371,17 @@ Objects:  {
 
 Connections:  {
 	
-	;Model::pPlane1, Model::RootNode
+	;Model::pPlane2, Model::RootNode
 	C: "OO",3012835610976,0
 	
 	;AnimLayer::BaseLayer, AnimStack::Take 001
-	C: "OO",3011145089952,3012837462976
+	C: "OO",3011145092384,3012836057776
 	
-	;Geometry::, Model::pPlane1
-	C: "OO",3012861812976,3012835610976
+	;Geometry::, Model::pPlane2
+	C: "OO",3010979756176,3012835610976
 	
-	;Material::lambert1, Model::pPlane1
-	C: "OO",3012863091856,3012835610976
+	;Material::lambert1, Model::pPlane2
+	C: "OO",3012863086656,3012835610976
 }
 ;Takes section
 ;----------------------------------------------------

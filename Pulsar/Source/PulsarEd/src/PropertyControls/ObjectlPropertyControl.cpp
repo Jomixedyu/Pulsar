@@ -3,6 +3,7 @@
 #include <Pulsar/IconsForkAwesome.h>
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
+#include <Pulsar/AssetManager.h>
 
 namespace PImGui
 {
@@ -65,6 +66,7 @@ namespace pulsared
                     if(payload = ImGui::AcceptDragDropPayload("PULSARED_DRAG"))
                     {
                         objectPtr->handle = ObjectHandle::parse(id);
+                        TryFindOrLoadObject(objectPtr->handle);
                         isChanged = true;
                     }
                 }

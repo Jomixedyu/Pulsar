@@ -34,7 +34,7 @@ namespace pulsar
 
     Matrix4f CameraComponent::GetViewMat() const
     {
-        return jmath::Inverse(GetAttachedNode()->GetTransform()->GetChildLocalToWorldMatrix());
+        return GetAttachedNode()->GetTransform()->GetWorldToLocalMatrix();
     }
 
     Matrix4f CameraComponent::GetProjectionMat() const

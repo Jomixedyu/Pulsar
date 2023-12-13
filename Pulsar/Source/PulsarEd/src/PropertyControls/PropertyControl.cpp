@@ -83,7 +83,10 @@ namespace pulsared
 
     // type 禁止BoxingObjectPtrBase
     static bool _ObjectFieldPropertyLine(
-        const string& name, Type* type, Type* innerType, Object* obj, ObjectBase* receiver, FieldInfo* receiverField = nullptr, bool ignore = false)
+        const string& name, Type* type, Type* innerType,
+        Object* obj,
+        ObjectBase* receiver, FieldInfo* receiverField = nullptr,
+        bool ignore = false, bool showDebug = false)
     {
         ImGui::TableNextRow();
         ImGui::TableSetColumnIndex(0);
@@ -137,12 +140,14 @@ namespace pulsared
                     if (itemType->IsBoxingType())
                     {
                         auto boxing = list->At(i);
-                        isChanged |= _ObjectFieldPropertyLine(std::to_string(i), itemType, innerType, boxing.get(), receiver, receiverField);
+                        isChanged |= _ObjectFieldPropertyLine(std::to_string(i), itemType, innerType,
+                            boxing.get(), receiver, receiverField, false, showDebug);
                         list->SetAt(i, boxing);
                     }
                     else
                     {
-                        isChanged |= _ObjectFieldPropertyLine(std::to_string(i), itemType, innerType, list->At(i).get(), receiver, receiverField);
+                        isChanged |= _ObjectFieldPropertyLine(std::to_string(i), itemType, innerType,
+                            list->At(i).get(), receiver, receiverField, false, showDebug);
                     }
                     ImGui::PopID();
                 }
@@ -170,6 +175,10 @@ namespace pulsared
                 const auto& field = fieldInfos[i];
                 Type* fieldType = field->GetFieldType();
                 if (field->IsDefinedAttribute(cltypeof<HidePropertyAttribute>()))
+                {
+                    continue;
+                }
+                if(!showDebug && field->IsDefinedAttribute(cltypeof<DebugPropertyAttribute>()))
                 {
                     continue;
                 }
@@ -208,13 +217,16 @@ namespace pulsared
                 receiverField = ignore ? field : receiverField;
 
                 const bool isReadOnly = field->IsDefinedAttribute(cltypeof<ReadOnlyPropertyAttribute>());
+
                 if(isReadOnly)
                 {
                     ImGui::BeginDisabled();
                 }
 
-                if(isChanged |= _ObjectFieldPropertyLine(
-                    field->GetName(), field->GetFieldType(), fieldInnerType, fieldInstSptr.get(), receiver, receiverField))
+                bool curFieldChanged = false;
+                if(curFieldChanged |= _ObjectFieldPropertyLine(
+                    field->GetName(), field->GetFieldType(), fieldInnerType,
+                    fieldInstSptr.get(), receiver, receiverField, false, showDebug))
                 {
                     if (fieldType->IsBoxingType())
                     {
@@ -222,6 +234,7 @@ namespace pulsared
                     }
                     receiver->PostEditChange(receiverField);
                 }
+                isChanged |= curFieldChanged;
 
                 if(isReadOnly)
                 {
@@ -233,14 +246,14 @@ namespace pulsared
         }
         return isChanged;
     }
-    void PImGui::ObjectFieldProperties(Type* type, Type* inner, Object* obj, ObjectBase* receiver)
+    void PImGui::ObjectFieldProperties(Type* type, Type* inner, Object* obj, ObjectBase* receiver, bool showDebug)
     {
         if (ImGui::BeginTable("ss", 2, ImGuiTableFlags_BordersV))
         {
             const float width = (float)ImGui::GetWindowWidth() * 0.38f;
             ImGui::TableSetupColumn("name", ImGuiTableColumnFlags_WidthFixed, width);
             ImGui::TableSetupColumn("value");
-            _ObjectFieldPropertyLine("", type, inner, obj, receiver, nullptr, true);
+            _ObjectFieldPropertyLine("", type, inner, obj, receiver, nullptr, true, showDebug);
             ImGui::EndTable();
         }
     }

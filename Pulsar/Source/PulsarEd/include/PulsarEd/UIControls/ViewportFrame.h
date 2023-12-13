@@ -19,7 +19,7 @@ namespace pulsared
         virtual void Terminate();
     protected:
         World* m_world = nullptr;
-        Vector2f m_viewportSize;
+        Vector2f m_viewportSize{};
         gfx::GFXDescriptorSetLayout_sp m_descriptorLayout;
         gfx::GFXDescriptorSet_sp m_descriptorSet;
 
@@ -28,6 +28,10 @@ namespace pulsared
         bool m_middleMousePressed = false;
         bool m_rightMousePressed = false;
         Vector2f m_latestMousePos{};
+    public:
+        float m_scaleSpeed = 1.f;
+        bool m_enabledMove{true};
+        bool m_enabledRotate{true};
     };
 
     class SceneEditorViewportFrame : public ViewportFrame

@@ -35,6 +35,17 @@ namespace pulsar
     void Component::OnTick(Ticker ticker)
     {
     }
+    string ComponentInfoManager::GetFriendlyComponentName(Type* type)
+    {
+        string name = type->GetShortName();
+
+        static char com_str[] = "Component";
+        if (name.ends_with("Component"))
+        {
+            name = name.substr(0, name.size() - sizeof(com_str) + 1);
+        }
+        return StringUtil::FriendlyName(name);
+    }
 
     void Component::BeginComponent()
     {
