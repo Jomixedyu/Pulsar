@@ -1,6 +1,7 @@
 # Pulsar Engine
 
 ![](doc/ui.png)
+![](doc/ui2.png)
 
 ## 编译环境
 - FBXSDK
