@@ -79,13 +79,13 @@ namespace pulsared
         static string GetUniquePath(string_view path);
         static array_list<string> GetFoldersByPath(string_view path);
 
-        static bool ExistAsset(AssetObject_ref asset);
+        static bool ExistsAsset(AssetObject_ref asset);
         static void ReloadAsset(ObjectHandle id);
         static void Save(AssetObject_ref asset);
         static void SaveAll();
         static void NewAsset(string_view folderPath, Type* assetType);
         static bool CreateAsset(AssetObject_ref asset, string_view path);
-        static bool DeleteAsset(AssetObject_ref asset);
+        static bool DeleteAsset(string_view assetPath);
 
         static void MarkDirty(AssetObject_ref asset);
         static bool IsDirty(AssetObject_ref asset);
@@ -93,8 +93,8 @@ namespace pulsared
 
         static inline const char* FileTreeRootPath = "Packages";
 
-        static inline Function<bool, AssetObject_ref> OnRequestDeleteAsset;
-        static inline Action<AssetObject_ref> OnDeletedAsset;
+        static inline Function<bool, string_view> OnRequestDeleteAsset;
+        static inline Action<string_view> OnDeletedAsset;
 
         static inline Function<bool, AssetObject_ref> OnRequestSaveAsset;
         static inline Action<AssetObject_ref> OnSavedAsset;

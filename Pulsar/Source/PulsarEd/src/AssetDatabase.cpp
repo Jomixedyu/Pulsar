@@ -49,7 +49,7 @@ namespace pulsared
             {
                 _Scan(newNode, proc);
             }
-            node->Children.push_back(newNode);
+            node->AddChild(newNode);
         }
         node->Sort();
     }
@@ -186,7 +186,7 @@ namespace pulsared
         }
     }
 
-    bool AssetDatabase::ExistAsset(AssetObject_ref asset)
+    bool AssetDatabase::ExistsAsset(AssetObject_ref asset)
     {
         return !GetPathByAsset(asset).empty();
     }
@@ -268,7 +268,7 @@ namespace pulsared
 
     bool AssetDatabase::CreateAsset(AssetObject_ref asset, string_view path)
     {
-        if (ExistAsset(asset))
+        if (ExistsAsset(asset))
         {
             return false;
         }
@@ -287,18 +287,34 @@ namespace pulsared
         return true;
     }
 
-    bool AssetDatabase::DeleteAsset(AssetObject_ref asset)
+    bool AssetDatabase::DeleteAsset(string_view assetPath)
     {
-        if (!ExistAsset(asset))
+        if (!ExistsAssetPath(assetPath))
         {
             return false;
         }
-        if (!OnRequestDeleteAsset.IsValidReturnInvoke(asset))
+        if (!OnRequestDeleteAsset.IsValidReturnInvoke(assetPath))
         {
             return false;
         }
+        OnDeletedAsset.Invoke(assetPath);
+
         //delete asset
-        OnDeletedAsset.Invoke(asset);
+        auto physicPath = AssetPathToPhysicsPath(assetPath);
+
+        {
+            auto node = FileTree->Find(assetPath);
+            auto parentNode = node->Parent.lock();
+            parentNode->RemoveChild(node);
+        }
+        auto handle = GetIdByPath(assetPath);
+        if (RuntimeObjectWrapper::IsValid(handle))
+        {
+            ObjectPtr<AssetObject> asset = RuntimeObjectWrapper::GetObject(handle)->GetObjectHandle();
+            DestroyObject(asset, true);
+        }
+        //todo: remove registry mapping
+        std::filesystem::remove(physicPath);
         return true;
     }
 
@@ -442,7 +458,7 @@ namespace pulsared
 
     void AssetDatabase::OnAddPackage(ProgramPackage* info)
     {
-        std::shared_ptr<AssetFileNode> packageNode = mksptr(new AssetFileNode);
+        std::shared_ptr<AssetFileNode> packageNode = FileTree->NewChild();
         packageNode->IsFolder = true;
         packageNode->IsPhysicsFile = true;
         packageNode->PhysicsPath = info->Path / "Assets";
@@ -462,8 +478,6 @@ namespace pulsared
                 _AssetRegistry[packageName].AssetPathMapping[node->AssetMeta->Handle] = node->AssetPath;
             }
         });
-
-        FileTree->Children.push_back(packageNode);
 
         // TODO: register meta file
         //auto json = FileUtil::ReadAllText(node->GetPhysicsPath());

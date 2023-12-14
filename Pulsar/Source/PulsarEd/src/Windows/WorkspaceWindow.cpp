@@ -152,7 +152,7 @@ namespace pulsared
         {
             if (node->IsFolder)
             {
-                for (auto& i : node->Children)
+                for (auto& i : node->GetChildren())
                 {
                     RenderFolderTree(i);
                 }
@@ -312,6 +312,15 @@ namespace pulsared
         {
             auto entry = mksptr(new MenuEntryButton("Delete"));
             entry->CanOperate = hasPathLambda;
+            entry->Action = MenuAction::FromLambda([](const MenuContexts_sp& ctxs) {
+                if (AssetsMenuContext_sp ctx; ctxs && ((ctx = ctxs->FindContext<AssetsMenuContext>())))
+                {
+                    for (const auto& selectedFile : ctx->SelectedFiles)
+                    {
+                        AssetDatabase::DeleteAsset(selectedFile.lock()->AssetPath);
+                    }
+                }
+            });
             menu->AddEntry(entry);
         }
 
@@ -513,7 +522,7 @@ namespace pulsared
 
         ImGui::Columns(columnCount, 0, false);
 
-        for (auto& child : p->Children)
+        for (auto& child : p->GetChildren())
         {
             ImGui::PushStyleColor(ImGuiCol_Button, {});
 
