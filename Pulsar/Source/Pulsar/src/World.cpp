@@ -34,12 +34,21 @@ namespace pulsar
         }
         return _world_inst.get();
     }
-    World::World()
+
+    static hash_set<World*> gWorlds;
+    const hash_set<World*>& World::GetAllWorlds()
     {
+        return gWorlds;
+    }
+    World::World(string_view name)
+        : m_name(name)
+    {
+        gWorlds.insert(this);
     }
 
     World::~World()
     {
+        gWorlds.erase(this);
     }
 
     void World::Tick(float dt)

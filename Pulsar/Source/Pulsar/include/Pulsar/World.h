@@ -18,15 +18,15 @@ namespace pulsar
         static World* Current();
         static World* Reset(std::unique_ptr<World>&& world);
         template<typename T>
-        static T* Reset()
+        static T* Reset(string_view name)
         {
-            return static_cast<T*>(Reset(std::unique_ptr<World>(new T)));
+            return static_cast<T*>(Reset(std::unique_ptr<World>(new T{name})));
         }
         static inline Action<> OnWorldChanged;
-
+        static const hash_set<World*>& GetAllWorlds();
 
     public:
-        World();
+        explicit World(string_view name);
         virtual ~World();
     public:
         virtual void Tick(float dt);
@@ -35,6 +35,7 @@ namespace pulsar
         virtual void OnSceneLoading(ObjectPtr<Scene> scene);
         virtual void OnSceneUnloading(ObjectPtr<Scene> scene);
 
+        const string& GetWorldName() const { return m_name; }
 
     public: // properties
         Ticker                      GetTicker() const { return m_ticker; }
@@ -86,5 +87,6 @@ namespace pulsar
 
         Ticker m_ticker{};
         float  m_totalTime = 0;
+        string m_name;
     };
 }

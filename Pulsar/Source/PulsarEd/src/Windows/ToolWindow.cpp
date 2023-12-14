@@ -11,9 +11,9 @@ namespace pulsared
         return std::to_string(GetWindowId());
     }
 
-    void ToolWindow::DrawImGui()
+    void ToolWindow::DrawImGui(float dt)
     {
 
-        base::DrawImGui();
+        base::DrawImGui(dt);
     }
 } // namespace pulsared

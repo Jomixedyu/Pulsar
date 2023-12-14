@@ -63,7 +63,7 @@ namespace pulsared
             }
         }
     }
-    void OutlinerWindow::OnDrawImGui()
+    void OutlinerWindow::OnDrawImGui(float dt)
     {
         auto world = World::Current();
         if (!world)

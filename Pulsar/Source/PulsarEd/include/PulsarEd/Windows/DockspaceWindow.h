@@ -10,7 +10,7 @@ namespace pulsared
     public:
         static string_view StaticWindowName() { return "Dockspace"; }
         virtual string_view GetWindowDisplayName() const override { return StaticWindowName(); }
-        virtual void OnDrawImGui() override;
-        virtual void DrawImGui() override { this->OnDrawImGui(); }
+        virtual void OnDrawImGui(float dt) override;
+        virtual void DrawImGui(float dt) override { this->OnDrawImGui(dt); }
     };
 }

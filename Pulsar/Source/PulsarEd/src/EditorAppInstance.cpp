@@ -4,6 +4,7 @@
 #include "Importers/FBXImporter.h"
 #include "Pulsar/Components/StaticMeshRendererComponent.h"
 #include "Tools/ObjectDebugTool.h"
+#include "Tools/WorldDebugTool.h"
 
 #include <CoreLib.Serialization/JsonSerializer.h>
 #include <CoreLib/File.h>
@@ -149,6 +150,13 @@ namespace pulsared
                 });
                 menu->AddEntry(entry);
             }
+            {
+                auto entry = mksptr(new MenuEntryButton("WorldDebug"));
+                entry->Action = MenuAction::FromRaw([](sptr<MenuContexts> ctx) {
+                    ToolWindow::OpenToolWindow<WorldDebugTool>();
+                });
+                menu->AddEntry(entry);
+            }
         }
         {
             MenuEntrySubMenu_sp menu = mksptr(new MenuEntrySubMenu("Build"));
@@ -288,9 +296,9 @@ namespace pulsared
 
         //world
         Logger::Log("initialize world");
-        m_world = World::Reset<EditorWorld>();
+        m_world = World::Reset<EditorWorld>("MainWorld");
 
-        auto renderPipeline = new EditorRenderPipeline(m_world);
+        auto renderPipeline = new EditorRenderPipeline{ m_world };
 
         Application::GetGfxApp()->SetRenderPipeline(renderPipeline);
 
@@ -348,9 +356,6 @@ namespace pulsared
 
     void EditorAppInstance::OnTerminate()
     {
-        delete Application::GetGfxApp()->GetRenderPipeline();
-        Application::GetGfxApp()->SetRenderPipeline(nullptr);
-
         World::Reset(nullptr);
 
         //terminate subsystem
@@ -372,6 +377,9 @@ namespace pulsared
         auto json = ser::JsonSerializer::Serialize(cfg.get(), {});
         FileUtil::WriteAllText(uicfg_path, json);
 
+        delete Application::GetGfxApp()->GetRenderPipeline();
+        Application::GetGfxApp()->SetRenderPipeline(nullptr);
+
         delete m_assetManager;
         m_assetManager = nullptr;
         AssetDatabase::Terminate();
@@ -385,7 +393,7 @@ namespace pulsared
 
         World::Current()->Tick(dt);
 
-        pulsared::EditorWindowManager::Draw();
+        pulsared::EditorWindowManager::Draw(dt);
         pulsared::EditorTickerManager::Ticker.Invoke(dt);
 
         m_gui->EndFrame();

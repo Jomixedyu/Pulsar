@@ -34,7 +34,7 @@ namespace pulsared
 
         virtual void OnOpen() override;
         virtual void OnClose() override;
-        virtual void OnDrawImGui() override;
+        virtual void OnDrawImGui(float dt) override;
 
         WorkspaceWindow();
 

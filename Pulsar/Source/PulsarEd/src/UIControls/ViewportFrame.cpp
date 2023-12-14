@@ -1,7 +1,7 @@
-#include <PulsarEd/UIControls/ViewportFrame.h>
-#include <Pulsar/World.h>
 #include <Pulsar/ImGuiImpl.h>
 #include <Pulsar/Node.h>
+#include <Pulsar/World.h>
+#include <PulsarEd/UIControls/ViewportFrame.h>
 
 namespace pulsared
 {
@@ -17,7 +17,7 @@ namespace pulsared
             vMax.y += ImGui::GetWindowPos().y;
             return {vMax.x - vMin.x, vMax.y - vMin.y};
         }
-    }
+    } // namespace PImGui
 
     // ret: viewport Size Changed
     static bool PreviewFrame(World* world, bool isPreviewCam, Vector2f* viewportSize, gfx::GFXDescriptorSet* descriptorSet)
@@ -83,80 +83,82 @@ namespace pulsared
     {
         PreviewFrame(m_world, true, &m_viewportSize, m_descriptorSet.get());
 
-        if(ImGui::IsKeyDown(ImGuiKey_LeftAlt))
-        {
-            m_altPressed = true;
-        }
-        if(ImGui::IsKeyReleased(ImGuiKey_LeftAlt))
-        {
-            m_altPressed = false;
-        }
-        if(ImGui::IsMouseClicked(ImGuiMouseButton_Left))
-        {
-            m_leftMousePressed = true;
-            m_latestMousePos = ImGui::GetMousePos();
-        }
-        if(ImGui::IsMouseReleased(ImGuiMouseButton_Left))
-        {
-            m_leftMousePressed = false;
-        }
-        if(ImGui::IsMouseClicked(ImGuiMouseButton_Middle))
-        {
-            m_middleMousePressed = true;
-            m_latestMousePos = ImGui::GetMousePos();
-        }
-        if(ImGui::IsMouseReleased(ImGuiMouseButton_Middle))
-        {
-            m_middleMousePressed = false;
-        }
-        if(ImGui::IsMouseClicked(ImGuiMouseButton_Right))
-        {
-            m_rightMousePressed = true;
-            m_latestMousePos = ImGui::GetMousePos();
-        }
-        if(ImGui::IsMouseReleased(ImGuiMouseButton_Right))
-        {
-            m_rightMousePressed = false;
-        }
-
-        if(m_altPressed)
+        if (ImGui::IsWindowHovered())
         {
             auto newpos = ImGui::GetMousePos();
-            if(m_leftMousePressed)
+            if (ImGui::IsKeyDown(ImGuiKey_LeftAlt))
             {
-                auto trans = m_world->GetPreviewCamera()->GetAttachedNode()->GetTransform()->GetParent();
-                // trans->RotateEuler({0, newpos.x - m_latestMousePos.x, 0});
-                // trans->RotateEuler({newpos.y - m_latestMousePos.y, 0, 0});
-                auto euler = trans->GetEuler();
-                Vector3f mouseDt{newpos.y - m_latestMousePos.y, newpos.x - m_latestMousePos.x, 0};
-                if(euler.x - mouseDt.x < -89.f ||
-                    euler.x - mouseDt.x > 89.f)
-                {
-                    mouseDt.x = 0;
-                }
-                trans->SetEuler(euler - mouseDt);
+                m_altPressed = true;
             }
-            else if(m_rightMousePressed)
+            if (ImGui::IsKeyReleased(ImGuiKey_LeftAlt))
             {
-                auto tr = m_world->GetPreviewCamera()->GetAttachedNode()->GetTransform();
-                auto dtDistance = -(newpos.x - m_latestMousePos.x) * m_scaleSpeed;
-                if(tr->GetPosition().z + dtDistance < -0.1f)
-                {
-                    // nothing
-                }
-                else
-                {
-                    tr->Translate({0.f,0, dtDistance });
-                }
+                m_altPressed = false;
             }
-            else if(m_middleMousePressed)
+            if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
             {
-                auto tr = m_world->GetPreviewCamera()->GetAttachedNode()->GetTransform()->GetParent();
-                auto dtX = newpos.x - m_latestMousePos.x;
-                auto dtY = newpos.y - m_latestMousePos.y;
+                m_leftMousePressed = true;
+                m_latestMousePos = ImGui::GetMousePos();
+            }
+            if (ImGui::IsMouseReleased(ImGuiMouseButton_Left))
+            {
+                m_leftMousePressed = false;
+            }
+            if (ImGui::IsMouseClicked(ImGuiMouseButton_Middle))
+            {
+                m_middleMousePressed = true;
+                m_latestMousePos = ImGui::GetMousePos();
+            }
+            if (ImGui::IsMouseReleased(ImGuiMouseButton_Middle))
+            {
+                m_middleMousePressed = false;
+            }
+            if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+            {
+                m_rightMousePressed = true;
+                m_latestMousePos = ImGui::GetMousePos();
+            }
+            if (ImGui::IsMouseReleased(ImGuiMouseButton_Right))
+            {
+                m_rightMousePressed = false;
+            }
 
-                tr->Translate(tr->GetRight() * -dtX * 0.1f);
-                tr->Translate(tr->GetUp() * dtY * 0.1f);
+            if (m_altPressed)
+            {
+
+                if (m_leftMousePressed)
+                {
+                    auto trans = m_world->GetPreviewCamera()->GetAttachedNode()->GetTransform()->GetParent();
+                    auto euler = trans->GetEuler();
+                    Vector3f mouseDt{newpos.y - m_latestMousePos.y, newpos.x - m_latestMousePos.x, 0};
+                    if (euler.x + mouseDt.x < -85.f ||
+                        euler.x + mouseDt.x > 85.f)
+                    {
+                        mouseDt.x = 0;
+                    }
+                    trans->SetEuler(euler + mouseDt);
+                }
+                else if (m_rightMousePressed)
+                {
+                    auto tr = m_world->GetPreviewCamera()->GetAttachedNode()->GetTransform();
+                    auto dtDistance = (newpos.x - m_latestMousePos.x) * m_scaleSpeed;
+                    if (tr->GetPosition().z + dtDistance > -0.2f)
+                    {
+                        // nothing
+                    }
+                    else
+                    {
+                        tr->Translate({0.f, 0, dtDistance});
+                    }
+                }
+                else if (m_middleMousePressed)
+                {
+                    auto tr = m_world->GetPreviewCamera()->GetAttachedNode()->GetTransform()->GetParent();
+                    auto dtX = newpos.x - m_latestMousePos.x;
+                    auto dtY = newpos.y - m_latestMousePos.y;
+
+                    tr->Translate(tr->GetRight() * -dtX * 0.1f);
+                    tr->Translate(tr->GetUp() * dtY * 0.1f);
+                }
             }
             m_latestMousePos = newpos;
         }
@@ -164,12 +166,10 @@ namespace pulsared
 
     void ViewportFrame::Initialize()
     {
-        m_descriptorLayout = Application::GetGfxApp()->CreateDescriptorSetLayout({
-            gfx::GFXDescriptorSetLayoutInfo(
-                gfx::GFXDescriptorType::CombinedImageSampler,
-                gfx::GFXShaderStageFlags::Fragment,
-                0)
-            });
+        m_descriptorLayout = Application::GetGfxApp()->CreateDescriptorSetLayout({gfx::GFXDescriptorSetLayoutInfo(
+            gfx::GFXDescriptorType::CombinedImageSampler,
+            gfx::GFXShaderStageFlags::Fragment,
+            0)});
         m_descriptorSet = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_descriptorLayout);
     }
 
@@ -179,4 +179,4 @@ namespace pulsared
         m_descriptorLayout.reset();
     }
 
-}
+} // namespace pulsared

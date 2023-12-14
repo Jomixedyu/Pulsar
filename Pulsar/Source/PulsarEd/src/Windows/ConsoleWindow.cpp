@@ -5,7 +5,7 @@
 namespace pulsared
 {
 
-    void ConsoleWindow::OnDrawImGui()
+    void ConsoleWindow::OnDrawImGui(float dt)
     {
         if (ImGui::BeginMenuBar())
         {

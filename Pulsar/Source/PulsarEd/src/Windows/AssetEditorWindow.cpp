@@ -65,9 +65,9 @@ namespace pulsared
     {
         return std::to_string(GetWindowId());
     }
-    void AssetEditorWindow::OnDrawImGui()
+    void AssetEditorWindow::OnDrawImGui(float dt)
     {
-        base::OnDrawImGui();
+        base::OnDrawImGui(dt);
         if (ImGui::BeginMenuBar())
         {
             OnRefreshMenuContexts();

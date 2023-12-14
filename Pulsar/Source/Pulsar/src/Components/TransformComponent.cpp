@@ -97,6 +97,7 @@ namespace pulsar
     void TransformComponent::RotateQuat(Quat4f quat)
     {
         m_rotation *= quat;
+        // m_rotation *= jmath::Inverse(quat) * quat * m_rotation;
         MakeTransformChanged();
     }
     Vector3f TransformComponent::GetForward()

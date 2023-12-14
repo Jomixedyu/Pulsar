@@ -22,7 +22,7 @@ namespace pulsared
         return nullptr;
     }
 
-    void PropertiesWindow::OnDrawImGui()
+    void PropertiesWindow::OnDrawImGui(float dt)
     {
         auto select_type = _GetSelectionType();
 

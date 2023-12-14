@@ -12,6 +12,10 @@ namespace pulsared
     {
         return std::views::all(m_supportedFormats) | std::views::transform([](auto& v) { return string{"*"} + v; }) | std::views::join_with(string{"|"}) | std::ranges::to<string>();
     }
+    sptr<AssetImporterSettings> AssetImporterFactory::CreateImporterSettings()
+    {
+        return mksptr(new AssetImporterSettings);
+    }
 
     AssetImporterFactory* AssetImporterFactoryManager::FindFactoryByExt(string_view ext)
     {

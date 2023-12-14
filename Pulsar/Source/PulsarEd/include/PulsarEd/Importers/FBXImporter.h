@@ -7,7 +7,7 @@ namespace pulsared
 {
     class PULSARED_API FBXImporterSettings : public AssetImporterSettings
     {
-        CORELIB_DEF_TYPE(AssemblyObject_pulsared, FBXImporterSettings, AssetImporterSettings);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::FBXImporterSettings, AssetImporterSettings);
     public:
         CORELIB_REFL_DECL_FIELD(FindMaterial);
         bool FindMaterial = true;

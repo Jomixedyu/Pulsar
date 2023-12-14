@@ -96,10 +96,10 @@ namespace pulsared
         }
     }
 
-    void ShaderEditorWindow::OnDrawImGui()
+    void ShaderEditorWindow::OnDrawImGui(float dt)
     {
         static MenuInit _MenuInit_;
-        base::OnDrawImGui();
+        base::OnDrawImGui(dt);
     }
 
 }

@@ -123,13 +123,13 @@ namespace pulsared
     }
 
 
-    void EditorWindowManager::Draw()
+    void EditorWindowManager::Draw(float dt)
     {
         for (size_t i = 0; i < _OpeningWindows.items.size(); i++)
         {
             if (_OpeningWindows.items[i]->GetIsOpened())
             {
-                _OpeningWindows.items[i]->DrawImGui();
+                _OpeningWindows.items[i]->DrawImGui(dt);
             }
         }
         _OpeningWindows.Refresh();

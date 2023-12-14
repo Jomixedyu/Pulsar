@@ -11,7 +11,7 @@ namespace pulsared
         static void Initialize();
         static void Terminate();
 
-        static void Draw();
+        static void Draw(float dt);
 
         static inline Action<EditorWindow*, bool> OnWindowStateChanged;
 

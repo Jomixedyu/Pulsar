@@ -62,7 +62,6 @@ namespace pulsared
     AssetObject_ref AssetDatabase::LoadAssetAtPath(string_view path)
     {
         string pathStr{path};
-        //path = pathStr.insert(pathStr.find('/'), "/Assets");
 
         auto node = FileTree->Find(path).get();
         if (!node)
@@ -124,6 +123,13 @@ namespace pulsared
         }
         return nullptr;
     }
+    bool AssetDatabase::ExistsAssetPath(string_view path)
+    {
+        string pathStr{path};
+
+        auto node = FileTree->Find(path).get();
+        return node != nullptr;
+    }
 
     string AssetDatabase::GetPathById(ObjectHandle id)
     {
@@ -154,6 +160,15 @@ namespace pulsared
             }
         }
         return {};
+    }
+    string AssetDatabase::GetUniquePath(string_view path)
+    {
+        string p {path};
+        while (ExistsAssetPath(p))
+        {
+            p += "1";
+        }
+        return p;
     }
 
     array_list<string> AssetDatabase::GetFoldersByPath(string_view path)
@@ -230,10 +245,14 @@ namespace pulsared
         }
     }
 
-    void AssetDatabase::NewAsset(string_view path, Type* assetType)
+    void AssetDatabase::NewAsset(string_view folderPath, Type* assetType)
     {
-
+        Logger::Log("new asset : " + string{folderPath} + " ; " + assetType->GetName());
+        const auto asset = sptr_cast<AssetObject>(assetType->CreateSharedInstance({}));
+        asset->Construct();
+        CreateAsset(asset, GetUniquePath(string{folderPath} + "/" + assetType->GetShortName()));
     }
+
     static void _WriteAssetToDisk(std::shared_ptr<AssetFileNode> root, string_view path, AssetObject_ref asset)
     {
         const auto newAsset = root->PrepareChildFile(path, ".pmeta");

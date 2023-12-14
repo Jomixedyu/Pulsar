@@ -11,6 +11,8 @@ namespace pulsared
     {
         using base = World;
     public:
+        using World::World;
+
         virtual void Tick(float dt) override;
 
 

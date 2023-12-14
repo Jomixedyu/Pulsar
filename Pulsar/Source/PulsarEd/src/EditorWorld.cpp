@@ -34,6 +34,7 @@ namespace pulsared
 
         auto camCtrlNode = Node::StaticCreate("EdCameraController", nullptr, OF_NoPack);
         auto camNode = Node::StaticCreate("EdCamera", camCtrlNode->GetTransform(), OF_NoPack);
+        camNode->GetTransform()->Translate({0,0,-3});
         this->m_camNode = camNode;
         this->m_camCtrlNode = camCtrlNode;
 
@@ -42,7 +43,7 @@ namespace pulsared
         auto camRt = RenderTexture::StaticCreate("BackBufferRT"_idxstr, 2, 2, true, true);
         //GetDeferredDestroyedQueue().push_back(camRt);
 
-        m_cam->SetRenderTarget(camRt);
+        m_cam->SetRenderTarget(camRt, true);
         m_cam->SetProjectionMode(CameraProjectionMode::Perspective);
         m_cam->SetBackgroundColor(Color4f{ 0.3f, 0.3f, 0.3f, 1.0f });
         m_cam->SetFOV(45.f);

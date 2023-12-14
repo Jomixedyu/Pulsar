@@ -13,7 +13,7 @@ namespace pulsared
         virtual string_view GetWindowDisplayName() const { return "Shader Editor"; }
 
     protected:
-        virtual void OnDrawImGui() override;
+        virtual void OnDrawImGui(float dt) override;
         virtual void OnOpen() override;
         virtual void OnClose() override;
         void OnRefreshMenuContexts() override;

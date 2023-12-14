@@ -68,7 +68,7 @@ namespace pulsared
 
     }
 
-    void SceneWindow::OnDrawImGui()
+    void SceneWindow::OnDrawImGui(float dt)
     {
         // ImGui::ShowDemoWindow();
 

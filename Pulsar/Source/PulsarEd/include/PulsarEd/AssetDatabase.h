@@ -72,17 +72,18 @@ namespace pulsared
 
         static AssetObject_ref LoadAssetAtPath(string_view path);
         static AssetObject_ref LoadAssetById(ObjectHandle id);
+        static bool ExistsAssetPath(string_view path);
         static string GetPathById(ObjectHandle id);
         static string GetPathByAsset(AssetObject_ref asset);
         static ObjectHandle GetIdByPath(string_view path);
-
+        static string GetUniquePath(string_view path);
         static array_list<string> GetFoldersByPath(string_view path);
 
         static bool ExistAsset(AssetObject_ref asset);
         static void ReloadAsset(ObjectHandle id);
         static void Save(AssetObject_ref asset);
         static void SaveAll();
-        static void NewAsset(string_view path, Type* assetType);
+        static void NewAsset(string_view folderPath, Type* assetType);
         static bool CreateAsset(AssetObject_ref asset, string_view path);
         static bool DeleteAsset(AssetObject_ref asset);
 

@@ -28,7 +28,7 @@ namespace pulsared
         }
         static string_view StaticWindowName() { return ICON_FK_TH_LIST " Properties###" "Properties"; }
         virtual string_view GetWindowDisplayName() const override { return StaticWindowName(); }
-        virtual void OnDrawImGui() override;
+        virtual void OnDrawImGui(float dt) override;
         virtual void OnOpen() override;
         virtual void OnClose() override;
 

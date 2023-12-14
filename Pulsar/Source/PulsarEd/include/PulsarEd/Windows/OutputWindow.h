@@ -9,6 +9,6 @@ namespace pulsared
     public:
         static string_view StaticWindowName() { return ICON_FK_TELEVISION " Output" "###Output"; }
         virtual string_view GetWindowDisplayName() const override { return StaticWindowName(); }
-        virtual void OnDrawImGui() override;
+        virtual void OnDrawImGui(float dt) override;
     };
 }

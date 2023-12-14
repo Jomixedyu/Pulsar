@@ -177,7 +177,7 @@ namespace pulsared
         MenuManager::UnregisterContextProvider("Assets", m_onGetContextCallback);
     }
 
-    void WorkspaceWindow::OnDrawImGui()
+    void WorkspaceWindow::OnDrawImGui(float dt)
     {
         if (!Workspace::IsOpened())
         {
@@ -237,7 +237,6 @@ namespace pulsared
                 {
                     Type* type = AssemblyManager::GlobalFindType(ctxs->EntryName);
                     AssetDatabase::NewAsset(ctx->CurrentPath, type);
-                    Logger::Log("create asset : " + ctx->CurrentPath + " ; " + type->GetName());
                 }
             });
 

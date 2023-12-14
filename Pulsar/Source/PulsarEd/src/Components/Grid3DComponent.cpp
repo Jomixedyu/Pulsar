@@ -15,6 +15,7 @@ namespace pulsared
     class LineRenderObject : public rendering::RenderObject
     {
         using base = rendering::RenderObject;
+
     public:
         array_list<Vector3f> m_vert;
         array_list<Color4f> m_colors;
@@ -26,6 +27,7 @@ namespace pulsared
         gfx::GFXDescriptorSetLayout_sp m_meshDescriptorSetLayout;
 
         array_list<rendering::MeshBatch> m_batchs;
+
     public:
         LineRenderObject() = default;
 
@@ -33,13 +35,12 @@ namespace pulsared
         void OnCreateResource() override
         {
             base::OnCreateResource();
-            if(MeshDescriptorSetLayout.expired())
+            if (MeshDescriptorSetLayout.expired())
             {
                 gfx::GFXDescriptorSetLayoutInfo info{
                     gfx::GFXDescriptorType::ConstantBuffer,
                     gfx::GFXShaderStageFlags::VertexFragment,
-                    0, kRenderingDescriptorSpace_ModelInfo
-                };
+                    0, kRenderingDescriptorSpace_ModelInfo};
                 m_meshDescriptorSetLayout = Application::GetGfxApp()->CreateDescriptorSetLayout(&info, 1);
                 MeshDescriptorSetLayout = m_meshDescriptorSetLayout;
             }
@@ -52,7 +53,6 @@ namespace pulsared
             m_meshObjDescriptorSet = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_meshDescriptorSetLayout);
             m_meshObjDescriptorSet->AddDescriptor("ModelObject", 0)->SetConstantBuffer(m_meshConstantBuffer.get());
             m_meshObjDescriptorSet->Submit();
-
 
             for (size_t i = 0; i < m_vert.size(); i++)
             {
@@ -99,7 +99,6 @@ namespace pulsared
         }
     };
 
-
     void Grid3DComponent::BeginComponent()
     {
         base::BeginComponent();
@@ -108,36 +107,63 @@ namespace pulsared
         float detail_distance = 1;
         float total_width = detail_distance * line_count;
 
-
-        Color4f detailLineColor = { 0.2f, 0.2f, 0.2f, 1 };
+        Color4f detailLineColor = {0.2f, 0.2f, 0.2f, 1};
 
         for (int x = -line_count / 2; x <= line_count / 2; x++)
         {
-            m_vert.emplace_back( total_width / 2, 0, detail_distance * x );
-            m_vert.emplace_back( -total_width / 2, 0 , detail_distance * x );
-
-            Color4f color = detailLineColor;
             if (x == 0)
             {
+                Color4f color = detailLineColor;
                 color.r = 0.9f;
+                m_vert.emplace_back(total_width / 2, 0, detail_distance * x);
+                m_vert.emplace_back(0, 0, detail_distance * x);
+                m_vert.emplace_back(0, 0, detail_distance * x);
+                m_vert.emplace_back(-total_width / 2, 0, detail_distance * x);
+                m_colors.push_back(color);
+                m_colors.push_back(color);
+                color.r = 0.4f;
+                m_colors.push_back(color);
+                m_colors.push_back(color);
             }
-            m_colors.push_back(color);
-            m_colors.push_back(color);
+            else
+            {
+                m_vert.emplace_back(total_width / 2, 0, detail_distance * x);
+                m_vert.emplace_back(-total_width / 2, 0, detail_distance * x);
+                m_colors.push_back(detailLineColor);
+                m_colors.push_back(detailLineColor);
+            }
         }
         for (int z = -line_count / 2; z <= line_count / 2; z++)
         {
-            m_vert.emplace_back( detail_distance * z, 0, total_width / 2 );
-            m_vert.emplace_back( detail_distance * z, 0, -total_width / 2 );
-            Color4f color = detailLineColor;
             if (z == 0)
             {
+                Color4f color = detailLineColor;
                 color.r = 0.2f;
                 color.g = 0.2f;
                 color.b = 1.f;
+                m_vert.emplace_back(detail_distance * z, 0, total_width / 2);
+                m_colors.push_back(color);
+                m_vert.emplace_back(detail_distance * z, 0, 0);
+                m_colors.push_back(color);
+                color.b = 0.4f;
+                m_vert.emplace_back(detail_distance * z, 0, 0);
+                m_colors.push_back(color);
+                m_vert.emplace_back(detail_distance * z, 0, -total_width / 2);
+                m_colors.push_back(color);
             }
-            m_colors.push_back(color);
-            m_colors.push_back(color);
+            else
+            {
+                m_vert.emplace_back(detail_distance * z, 0, total_width / 2);
+                m_vert.emplace_back(detail_distance * z, 0, -total_width / 2);
+                m_colors.push_back(detailLineColor);
+                m_colors.push_back(detailLineColor);
+            }
         }
+
+        m_vert.emplace_back(0,0,0);
+        m_vert.emplace_back(0,1,0);
+        m_colors.push_back({0,1,0,1});
+        m_colors.push_back({0,1,0,1});
 
         m_renderObject = CreateRenderObject();
         GetAttachedNode()->GetRuntimeWorld()->AddRenderObject(m_renderObject);

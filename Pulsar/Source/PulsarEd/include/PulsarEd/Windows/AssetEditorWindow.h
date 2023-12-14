@@ -31,7 +31,7 @@ namespace pulsared
         AssetObject_ref GetAssetObject() const { return m_assetObject; }
         void SetAssetObject(AssetObject_ref asset) { m_assetObject = asset; }
 
-        void OnDrawImGui() override;
+        void OnDrawImGui(float dt) override;
         virtual void OnRefreshMenuContexts();
     protected:
         AssetObject_ref m_assetObject;

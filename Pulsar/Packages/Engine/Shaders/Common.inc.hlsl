@@ -73,12 +73,12 @@ struct TargetCBufferStruct //512
 struct WorldCBufferStruct
 {
     //64
-    float4 WorldSpaceLightPos;
+    float4 WorldSpaceLightVector;
     float4 WorldSpaceLightColor;
     float  TotalTime;
     float  DeltaTime;
     float2 _Padding0;
-    float4 _Padding1;
+    float4 SkyLightColor;
 };
 struct PerCBufferStruct
 {
