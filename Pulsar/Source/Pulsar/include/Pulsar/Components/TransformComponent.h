@@ -64,7 +64,7 @@ namespace pulsar
         Vector3f m_euler{};
         CORELIB_REFL_DECL_FIELD(m_scale);
         Vector3f m_scale;
-        CORELIB_REFL_DECL_FIELD(m_rotation);
+        CORELIB_REFL_DECL_FIELD(m_rotation, new DebugPropertyAttribute, new ReadOnlyPropertyAttribute);
         Quat4f m_rotation{};
 
         CORELIB_REFL_DECL_FIELD(m_children, new HidePropertyAttribute);

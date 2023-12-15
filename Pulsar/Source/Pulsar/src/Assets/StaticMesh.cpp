@@ -15,11 +15,11 @@ namespace pulsar
         mesh->m_sections = m_sections;
     }
 
-    void StaticMesh::CreateGPUResource()
+    bool StaticMesh::CreateGPUResource()
     {
         if(m_isCreatedResource)
         {
-            return;
+            return true;
         }
         m_isCreatedResource = true;
         for(auto& section : m_sections)
@@ -37,6 +37,7 @@ namespace pulsar
             indicesBuffer->SetElementCount(section.Indices.size());
             m_indicesBuffers.push_back(indicesBuffer);
         }
+        return false;
     }
     void StaticMesh::DestroyGPUResource()
     {
@@ -69,7 +70,7 @@ namespace pulsar
     {
         StaticMesh_sp self = mksptr(new StaticMesh);
         self->Construct();
-        self->m_name = name;
+        self->SetIndexName(name);
         self->m_sections = std::move(vertData);
         self->m_materialNames = std::move(materialNames);
 

@@ -68,8 +68,9 @@ namespace pulsar
         virtual void PostEditChange(FieldInfo* info);
     public:
         index_string GetIndexName() const { return m_name; }
+        void         SetIndexName(index_string name);
         string       GetName() const { return m_name.to_string(); }
-        void         SetName(string_view name) { m_name = name; }
+        void         SetName(string_view name);
         uint16_t     GetObjectFlags() const { return m_flags; }
         bool         HasObjectFlags(ObjectFlags flags) const { return m_flags & flags;}
         void         SetObjectFlags(uint16_t flags) { m_flags = flags; }
@@ -79,11 +80,15 @@ namespace pulsar
         virtual void OnDestroy();
     private:
         void Destroy();
-    protected:
         // base 24
         index_string m_name;         // 8
         ObjectHandle m_objectHandle; // 16
+    protected:
         ObjectFlags  m_flags{};      // 16
+
+        #ifdef WITH_EDITOR
+        string m_objectName;
+        #endif
     public:
     };
 

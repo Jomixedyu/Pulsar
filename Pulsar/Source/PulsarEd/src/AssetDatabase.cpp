@@ -33,6 +33,7 @@ namespace pulsared
             newNode->PhysicsPath = i.path();
             newNode->AssetName = i.path().stem().string();
             newNode->AssetPath = node->AssetPath + '/' + newNode->AssetName;
+            newNode->IsCreated = true;
 
             if (newNode->GetPhysicsNameExt() == ".pmeta")
             {
@@ -61,12 +62,24 @@ namespace pulsared
 
     AssetObject_ref AssetDatabase::LoadAssetAtPath(string_view path)
     {
-        string pathStr{path};
+        // string pathStr{path};
+
+        if(auto id = GetIdByPath(path))
+        {
+            if(auto obj = RuntimeObjectWrapper::GetObject(id))
+            {
+                return id;
+            }
+        }
 
         auto node = FileTree->Find(path).get();
         if (!node)
         {
             return nullptr;
+        }
+        if (!node->IsCreated)
+        {
+            return GetIdByPath(path);
         }
 
         sptr<AssetObject> assetObj;
@@ -260,10 +273,10 @@ namespace pulsared
         newAsset->AssetMeta->Type = asset->GetType()->GetName();
         newAsset->AssetMeta->Handle = asset.handle;
 
-        ser::JsonSerializerSettings settings;
-        settings.IndentSpace = 2;
-        const auto json = ser::JsonSerializer::Serialize(newAsset->AssetMeta.get(), settings);
-        FileUtil::WriteAllText(newAsset->PhysicsPath, json);
+        // ser::JsonSerializerSettings settings;
+        // settings.IndentSpace = 2;
+        // const auto json = ser::JsonSerializer::Serialize(newAsset->AssetMeta.get(), settings);
+        // FileUtil::WriteAllText(newAsset->PhysicsPath, json);
     }
 
     bool AssetDatabase::CreateAsset(AssetObject_ref asset, string_view path)
@@ -281,7 +294,6 @@ namespace pulsared
         _AssetRegistry[GetPackageName(path)].AssetPathMapping[asset.handle] = path;
 
         MarkDirty(asset);
-        Save(asset);
 
         OnCreatedAsset.Invoke(asset);
         return true;
@@ -314,7 +326,10 @@ namespace pulsared
             DestroyObject(asset, true);
         }
         //todo: remove registry mapping
-        std::filesystem::remove(physicPath);
+        if (std::filesystem::exists(physicPath))
+        {
+            std::filesystem::remove(physicPath);
+        }
         return true;
     }
 

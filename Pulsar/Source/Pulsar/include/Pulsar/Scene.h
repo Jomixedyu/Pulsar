@@ -28,11 +28,12 @@ namespace pulsar
         void EndScene();
 
         virtual void OnAddNode(Node_ref node) override;
-        virtual void OnRemoveNode(Node_ref node)override;
+        virtual void OnRemoveNode(Node_ref node) override;
 
         static ObjectPtr<Scene> StaticCreate(string_view name);
 
         World* GetWorld() const { return m_runtimeWorld; }
+
 
     protected:
         virtual void OnDestroy() override;

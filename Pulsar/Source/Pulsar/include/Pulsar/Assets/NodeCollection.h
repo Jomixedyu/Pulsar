@@ -15,6 +15,7 @@ namespace pulsar
         Node_ref FindNodeByPath(string_view name) const;
 
         void AddNode(Node_ref node);
+        Node_ref NewNode(string_view name = "Node");
         void RemoveNode(Node_ref node);
 
         virtual void OnAddNode(Node_ref node) {}

@@ -20,6 +20,7 @@ namespace pulsared
         string AssetPath;
         bool IsFolder;
         bool IsPhysicsFile;
+        bool IsCreated;
 
         bool Valid;
         std::weak_ptr<T> Parent;

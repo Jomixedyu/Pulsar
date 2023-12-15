@@ -107,7 +107,7 @@ namespace pulsar
     Vector3f TransformComponent::GetUp()
     {
         Matrix4f mat = GetLocalToWorldMatrix();
-        mat[3] = Vector4f{0,0,0,1};
+        mat[3] = Vector4f{0, 0, 0, 1};
         auto up = mat * Vector3f{0, 1, 0};
         up.Normalized();
         return up;
@@ -115,7 +115,7 @@ namespace pulsar
     Vector3f TransformComponent::GetRight()
     {
         Matrix4f mat = GetLocalToWorldMatrix();
-        mat[3] = Vector4f{0,0,0,1};
+        mat[3] = Vector4f{0, 0, 0, 1};
         auto right = mat * Vector3f{1, 0, 0};
         right.Normalized();
         return right;
@@ -183,22 +183,31 @@ namespace pulsar
     void TransformComponent::PostEditChange(FieldInfo* info)
     {
         base::PostEditChange(info);
-        if (info->GetName() == NAMEOF(m_euler))
+        auto& name = info->GetName();
+        if (name == NAMEOF(m_position))
+        {
+            SetPosition(m_position);
+        }
+        else if (name == NAMEOF(m_euler))
         {
             SetEuler(m_euler);
         }
-        else if(info->GetName() == NAMEOF(m_rotation))
+        else if (name == NAMEOF(m_rotation))
         {
             SetRotation(m_rotation);
-            //refresh data on editor inspector
+            // refresh data on editor inspector
             m_euler = m_rotation.GetEuler();
+        }
+        else if (name == NAMEOF(m_scale))
+        {
+            SetScale(m_scale);
         }
     }
 
     void TransformComponent::MakeTransformChanged()
     {
         m_isDirtyMatrix = true;
-        GetAttachedNode()->SendMessage(MessageId_OnChangedTransform);
+        GetAttachedNode()->SendMessage(MessageId_OnChangedTransform());
     }
 
     void TransformComponent::SetParent(ObjectPtr<TransformComponent> parent)

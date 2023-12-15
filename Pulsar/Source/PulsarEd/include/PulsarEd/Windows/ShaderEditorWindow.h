@@ -18,5 +18,7 @@ namespace pulsared
         virtual void OnClose() override;
         void OnRefreshMenuContexts() override;
         void OnDrawAssetPropertiesUI() override;
+
+        Material_ref m_previewMaterial;
     };
 }

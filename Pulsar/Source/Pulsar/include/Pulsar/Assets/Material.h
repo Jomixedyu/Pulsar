@@ -72,7 +72,7 @@ namespace pulsar
 
         virtual void Serialize(AssetSerializer* s) override;
     public:
-        virtual void CreateGPUResource() override;
+        virtual bool CreateGPUResource() override;
         virtual void DestroyGPUResource() override;
         virtual bool IsCreatedGPUResource() const override;
     public:
@@ -103,7 +103,7 @@ namespace pulsar
         void SetShader(Shader_ref value) { m_shader = value; }
 
         size_t GetShaderPassCount() const { return m_shader->GetPassCount(); }
-        gfx::GFXShaderPass_sp GetGfxShaderPass(size_t index) { return m_gfxShaderPasses[index]; }
+        gfx::GFXShaderPass_sp GetGfxShaderPass(size_t index);
     private:
 
         CORELIB_REFL_DECL_FIELD(m_shader);

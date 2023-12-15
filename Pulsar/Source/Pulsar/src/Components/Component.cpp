@@ -22,7 +22,7 @@ namespace pulsar
     }
     void Component::OnReceiveMessage(MessageId id)
     {
-        if(id == MessageId_OnChangedTransform)
+        if(id == MessageId_OnChangedTransform())
         {
             OnMsg_TransformChanged();
         }

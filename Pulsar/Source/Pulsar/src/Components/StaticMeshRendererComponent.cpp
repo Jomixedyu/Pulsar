@@ -72,8 +72,18 @@ namespace pulsar
             batch.IsCastShadow = true;
             batch.IsUsedIndices = true;
             batch.Material = mat;
+            if (batch.Material == nullptr || !batch.Material->CreateGPUResource())
+            {
+                batch.Material = GetAssetManager()->LoadAsset<Material>("Engine/Materials/Missing");
+                batch.Material->CreateGPUResource();
+            }
+
             batch.DescriptorSetLayout = m_meshDescriptorSetLayout;
 
+            if (!m_staticMesh->IsCreatedGPUResource())
+            {
+                m_staticMesh->CreateGPUResource();
+            }
             auto vertBuffers = m_staticMesh->GetGPUResourceVertexBuffers();
             auto indicesBuffers = m_staticMesh->GetGPUResourceIndicesBuffers();
 
@@ -207,10 +217,6 @@ namespace pulsar
 
         if (m_renderObject)
         {
-            if (m_staticMesh)
-            {
-                m_staticMesh->CreateGPUResource();
-            }
             m_renderObject->SetStaticMesh(m_staticMesh)->SubmitChange();
         }
 
@@ -225,11 +231,6 @@ namespace pulsar
                 {
                     TryFindOrLoadObject(mat);
                 }
-                if (mat)
-                {
-                    mat->CreateGPUResource();
-                }
-
             }
             m_renderObject->SetMaterials(*m_materials)->SubmitChange();
         }

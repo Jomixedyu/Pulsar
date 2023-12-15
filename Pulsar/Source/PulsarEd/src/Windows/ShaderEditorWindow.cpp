@@ -1,4 +1,8 @@
 #include "Windows/ShaderEditorWindow.h"
+
+#include "Pulsar/Components/StaticMeshRendererComponent.h"
+#include "Pulsar/Scene.h"
+
 #include <PulsarEd/Menus/Menu.h>
 #include <PulsarEd/Menus/MenuEntry.h>
 #include <PulsarEd/Menus/MenuEntrySubMenu.h>
@@ -58,10 +62,22 @@ namespace pulsared
     void ShaderEditorWindow::OnOpen()
     {
         base::OnOpen();
+
+        m_previewMaterial = Material::StaticCreate("PreviewMaterial", m_assetObject);
+
+        auto previewMesh = Node::StaticCreate("PreviewMesh");
+        auto renderer = previewMesh->AddComponent<StaticMeshRendererComponent>();
+
+        renderer->SetStaticMesh(GetAssetManager()->LoadAsset<StaticMesh>("Engine/Shapes/Sphere"));
+        renderer->SetMaterial(0, m_previewMaterial);
+        m_world->GetPersistentScene()->AddNode(previewMesh);
+
     }
     void ShaderEditorWindow::OnClose()
     {
         base::OnClose();
+        DestroyObject(m_previewMaterial);
+        m_previewMaterial.Reset();
     }
 
     void ShaderEditorWindow::OnRefreshMenuContexts()
@@ -102,4 +118,4 @@ namespace pulsared
         base::OnDrawImGui(dt);
     }
 
-}
+} // namespace pulsared

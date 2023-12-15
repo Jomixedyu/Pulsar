@@ -57,11 +57,12 @@ namespace pulsar
     {
         auto self = mksptr(new Scene);
         self->Construct();
-        self->m_name = name;
+        self->SetIndexName(name);
         self->SetObjectFlags(self->GetObjectFlags() | OF_Persistent | OF_Instantiable);
 
         return self;
     }
+
     void Scene::OnDestroy()
     {
         base::OnDestroy();

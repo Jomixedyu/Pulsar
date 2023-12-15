@@ -3,6 +3,7 @@
 #include "Components/StdEditCameraControllerComponent.h"
 #include "EditorWorld.h"
 #include "PropertyControls/PropertyControl.h"
+#include "Pulsar/Components/DirectionalLightComponent.h"
 #include "Pulsar/Components/StaticMeshRendererComponent.h"
 #include "Pulsar/EngineAppInstance.h"
 #include "Pulsar/Scene.h"
@@ -59,18 +60,13 @@ namespace pulsared
         auto worldName = StringUtil::Concat(GetWindowDisplayName(), " - ", std::to_string(GetWindowId()));
         m_world = new EditorWorld(worldName);
         m_world->OnWorldBegin();
-        {
-            auto previewMesh = Node::StaticCreate("Mesh");
-            auto renderer = previewMesh->AddComponent<StaticMeshRendererComponent>();
 
-            renderer->SetStaticMesh(GetAssetManager()->LoadAsset<StaticMesh>("Engine/Shapes/Sphere"));
-            renderer->SetMaterial(0, GetAssetManager()->LoadAsset<Material>("Engine/Materials/Missing"));
-            m_world->GetPersistentScene()->AddNode(previewMesh);
+        m_world->GetPersistentScene()
+            ->NewNode("Light")
+            ->AddComponent<DirectionalLightComponent>()
+            ->GetAttachedNode()->GetTransform()
+            ->RotateEuler({-45,0,0});
 
-        }
-        //m_world->GetPreviewCamera()->SetBackgroundColor({0,0.5,0,1});
-        //m_world->GetPreviewCamera()->GetAttachedNode()->GetTransform()->GetParent()->Translate({0,1,-3});
-        // m_world->GetPreviewCamera()->GetAttachedNode()->GetTransform()->Translate({0,0,-5});
         m_world->GetPreviewCamera()->GetAttachedNode()->GetTransform()->GetParent()->RotateEuler({20,0,0});
         auto gfxpipe = Application::GetGfxApp()->GetRenderPipeline();
         auto pipe = dynamic_cast<EngineRenderPipeline*>(gfxpipe);

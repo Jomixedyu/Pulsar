@@ -10,6 +10,7 @@ namespace pulsared
 
     void MenuRenderer::RenderMenu(ISubMenu* menu, MenuContexts_sp ctxs)
     {
+        if (!menu) return;
         bool lastSep = false;
         string lastSepStr;
 

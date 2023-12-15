@@ -46,11 +46,15 @@ namespace pulsar
     {
     }
 
-    void Material::CreateGPUResource()
+    bool Material::CreateGPUResource()
     {
         if (m_createdGpuResource)
         {
-            return;
+            return true;
+        }
+        if (!m_shader)
+        {
+            return false;
         }
         m_createdGpuResource = true;
 
@@ -95,7 +99,7 @@ namespace pulsar
             }
 
         }
-
+        return true;
         // m_descriptorSet = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_descriptorSetLayout.get());
         // m_descriptorSet->AddDescriptor("ShaderParameter", 2)->SetConstantBuffer(m_materialBuffer.get());
         // m_descriptorSet->Submit();
@@ -248,5 +252,15 @@ namespace pulsar
             return m_shader;
         }
         return Application::inst()->GetAssetManager()->LoadAsset<Shader>("Engine/Shaders/Missing");
+    }
+    gfx::GFXShaderPass_sp Material::GetGfxShaderPass(size_t index)
+    {
+        if (index >= m_gfxShaderPasses.size())
+        {
+            auto missing = GetAssetManager()->LoadAsset<Material>("Engine/Materials/Missing");
+            missing->CreateGPUResource();
+            return missing->GetGfxShaderPass(0);
+        }
+        return m_gfxShaderPasses[index];
     }
 } // namespace pulsar

@@ -16,12 +16,6 @@ namespace pulsar
     class ShaderPass;
     class StaticMeshRenderObject;
 
-    struct CBuffer_ModelObject
-    {
-        Matrix4f LocalToWorldMatrix;
-    };
-
-    constexpr uint32_t kRenderingDescriptorSpace_ModelInfo = 2;
     class StaticMeshRendererComponent : public Component, public IRendererComponent
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::StaticMeshRendererComponent, Component);

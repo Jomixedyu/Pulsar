@@ -53,7 +53,7 @@ namespace gfx
             bool enableReadWrite, GFXTextureFormat format, const GFXSamplerConfig& samplerCfg) override;
 
         virtual GFXTexture2D_sp CreateTexture2DFromMemory(
-            const uint8_t* data, int32_t length,
+            const uint8_t* data, size_t length,
             const GFXSamplerConfig& samplerConfig,
             bool enableReadWrite = false,
             GFXTextureFormat format = GFXTextureFormat::R8G8B8A8_SRGB) override;

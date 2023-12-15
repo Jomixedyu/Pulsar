@@ -19,7 +19,7 @@ namespace gfx
             bool enableReadWrite, GFXTextureFormat format, const GFXSamplerConfig& samplerCfg);
 
         static std::shared_ptr<GFXVulkanTexture2D> CreateFromMemory(
-            GFXVulkanApplication* app, const uint8_t* fileData, int32_t length, bool enableReadWrite,
+            GFXVulkanApplication* app, const uint8_t* fileData, size_t length, bool enableReadWrite,
             GFXTextureFormat format, const GFXSamplerConfig& samplerCfg);
 
     public:

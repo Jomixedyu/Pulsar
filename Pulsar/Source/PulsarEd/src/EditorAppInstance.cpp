@@ -1,7 +1,9 @@
 ﻿#include "EditorAppInstance.h"
 #include "EditorAssetManager.h"
 #include "EditorRenderPipeline.h"
+#include "EditorSelection.h"
 #include "Importers/FBXImporter.h"
+#include "Pulsar/Components/DirectionalLightComponent.h"
 #include "Pulsar/Components/StaticMeshRendererComponent.h"
 #include "Tools/ObjectDebugTool.h"
 #include "Tools/WorldDebugTool.h"
@@ -112,10 +114,18 @@ namespace pulsared
             MenuEntrySubMenu_sp menu = mksptr(new MenuEntrySubMenu("Node"));
             menu->Priority = 200;
             mainMenu->AddEntry(menu);
+
+            {
+                auto entry = mksptr(new MenuEntryButton("CreateNode"));
+                menu->AddEntry(entry);
+                entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
+                    World::Current()->GetPersistentScene()->NewNode("New Node");
+                });
+            }
         }
 
         {
-            MenuEntrySubMenu_sp menu = mksptr(new MenuEntrySubMenu("Component"));
+            MenuEntrySubMenu_sp menu = mksptr(new MenuEntrySubMenu("Components"));
             menu->Priority = 500;
             mainMenu->AddEntry(menu);
             for (auto type : AssemblyManager::GlobalSearchType(cltypeof<Component>()))
@@ -128,7 +138,11 @@ namespace pulsared
                     ComponentInfoManager::GetFriendlyComponentName(type)));
                 menu->AddEntry(itemEntry);
                 itemEntry->Action = MenuAction::FromLambda([](MenuContexts_rsp ctxs) {
-
+                    if(auto node = ref_cast<Node>(EditorSelection::Selection.GetSelected()))
+                    {
+                        Type* type = AssemblyManager::GlobalFindType(ctxs->EntryName);
+                        node->AddComponent(type);
+                    }
                 });
             }
         }
@@ -219,8 +233,9 @@ namespace pulsared
 
         config->EnableValid = true;
 
-        strcpy(config->ProgramName, "Pulsar");
-        strcpy(config->Title, "Pulsar Editor v0.1 - Vulkan1.2");
+
+        StringUtil::strcpy(config->ProgramName, "Pulsar");
+        StringUtil::strcpy(config->Title, "Pulsar Editor v0.1 - Vulkan1.2");
 
         Logger::Log("pre intialized");
     }
@@ -244,16 +259,10 @@ namespace pulsared
         }
 
         {
-            auto meshNode = Node::StaticCreate("mesh test 1");
-            auto meshComponent = meshNode->AddComponent<StaticMeshRendererComponent>();
+            auto dlight = Node::StaticCreate("Light");
+            dlight->AddComponent<DirectionalLightComponent>();
 
-            // auto staticMesh = GetAssetManager()->LoadAsset<StaticMesh>("Engine/Shapes/CoordArrow", true);
-            // auto staticMesh = GetAssetManager()->LoadAsset<StaticMesh>("Engine/Shapes/CoordArrow", true);
-            // meshComponent->SetStaticMesh(staticMesh);
-
-
-            meshComponent->SetMaterial(0, vertexColorMat);
-            World::Current()->GetPersistentScene()->AddNode(meshNode);
+            World::Current()->GetPersistentScene()->AddNode(dlight);
         }
 
     }

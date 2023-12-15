@@ -11,7 +11,9 @@ namespace pulsar
     class World;
 
     using MessageId = size_t;
-    constexpr size_t MessageId_OnChangedTransform = 1;
+    inline size_t MessageId_OnChangedTransform() { static bool b; return reinterpret_cast<size_t>(&b); };
+    inline size_t MessageId_OnDrawGizmos() { static bool b; return reinterpret_cast<size_t>(&b); };
+    inline size_t MessageId_OnSelectedDrawGizmos() { static bool b; return reinterpret_cast<size_t>(&b); };
 
     class AbstractComponentAttribute : public Attribute
     {
