@@ -8,10 +8,7 @@ namespace pulsar
     {
         using base = rendering::RenderObject;
 
-    public:
-        array_list<Vector3f> m_pointPairs;
-        array_list<Color4f> m_pointColors;
-
+    private:
         array_list<StaticMeshVertex> m_verties;
 
         gfx::GFXBuffer_sp m_vertBuffer;
@@ -24,7 +21,8 @@ namespace pulsar
     public:
         LineRenderObject() = default;
 
-        static inline gfx::GFXDescriptorSetLayout_wp MeshDescriptorSetLayout{};
+        void SetPoints(const array_list<Vector3f>& pointPairs, const array_list<Color4f>& pointColors);
+        void SetVerties(const array_list<StaticMeshVertex>& verties);
         void OnCreateResource() override;
         void OnDestroyResource() override
         {

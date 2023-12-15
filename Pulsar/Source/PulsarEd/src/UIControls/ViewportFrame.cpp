@@ -119,7 +119,7 @@ namespace pulsared
         {
             m_rightMousePressed = false;
         }
-
+        
         if (m_altPressed)
         {
             if (m_leftMousePressed)

@@ -5,6 +5,23 @@
 
 namespace pulsar
 {
+    static inline gfx::GFXDescriptorSetLayout_wp MeshDescriptorSetLayout{};
+
+    void LineRenderObject::SetPoints(const array_list<Vector3f>& pointPairs, const array_list<Color4f>& pointColors)
+    {
+        for (size_t i = 0; i < pointPairs.size(); i++)
+        {
+            StaticMeshVertex vert{};
+            vert.Color = pointColors[i];
+            vert.Position = pointPairs[i];
+
+            m_verties.push_back(vert);
+        }
+    }
+    void LineRenderObject::SetVerties(const array_list<StaticMeshVertex>& verties)
+    {
+        m_verties = verties;
+    }
 
     void LineRenderObject::OnCreateResource()
     {
@@ -27,15 +44,6 @@ namespace pulsar
         m_meshObjDescriptorSet = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_meshDescriptorSetLayout);
         m_meshObjDescriptorSet->AddDescriptor("ModelObject", 0)->SetConstantBuffer(m_meshConstantBuffer.get());
         m_meshObjDescriptorSet->Submit();
-
-        for (size_t i = 0; i < m_pointPairs.size(); i++)
-        {
-            StaticMeshVertex vert{};
-            vert.Color = m_pointColors[i];
-            vert.Position = m_pointPairs[i];
-
-            m_verties.push_back(vert);
-        }
 
         m_vertBuffer = Application::GetGfxApp()->CreateBuffer(gfx::GFXBufferUsage::Vertex, m_verties.size() * sizeof(StaticMeshVertex));
         m_vertBuffer->Fill(m_verties.data());

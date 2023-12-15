@@ -51,8 +51,8 @@ namespace pulsared
             if (z == 0)
             {
                 Color4f color = detailLineColor;
-                color.r = 0.2f;
-                color.g = 0.2f;
+                color.r = 0.15f;
+                color.g = 0.18f;
                 color.b = 1.f;
                 m_vert.emplace_back(detail_distance * z, 0, total_width / 2);
                 m_colors.push_back(color);
@@ -92,8 +92,7 @@ namespace pulsared
     sptr<rendering::RenderObject> Grid3DComponent::CreateRenderObject()
     {
         auto ro = new LineRenderObject();
-        ro->m_pointPairs = m_vert;
-        ro->m_pointColors = m_colors;
+        ro->SetPoints(m_vert, m_colors);
 
         return mksptr(ro);
     }

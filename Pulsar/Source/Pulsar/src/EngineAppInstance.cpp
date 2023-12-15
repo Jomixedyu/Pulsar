@@ -62,9 +62,14 @@ namespace pulsar
                 {
                     for (auto& batch : renderObject->GetMeshBatchs())
                     {
-                        if (batch.Material)
+                        auto stateHash = batch.GetRenderState();
+                        if(batchs.contains(stateHash))
                         {
-                            batchs[batch.GetRenderState()] = batch;
+                            batchs[stateHash].Append(batch);
+                        }
+                        else
+                        {
+                            batchs[stateHash] = batch;
                         }
                     }
                 }
