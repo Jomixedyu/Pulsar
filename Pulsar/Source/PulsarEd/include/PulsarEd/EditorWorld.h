@@ -15,7 +15,7 @@ namespace pulsared
 
         virtual void Tick(float dt) override;
 
-
+        void AddGrid3d();
         virtual CameraComponent_ref GetPreviewCamera() override;
     protected:
         virtual void OnWorldBegin() override; // NOLINT(*-use-override)

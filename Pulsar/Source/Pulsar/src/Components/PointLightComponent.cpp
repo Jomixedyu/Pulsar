@@ -50,7 +50,6 @@ namespace pulsar
         auto sphere = CreateSphereVolume(36, {1, 1, 1, 1});
         ro->SetVerties(sphere);
         GetWorld()->AddRenderObject(ro);
-        m_gizmos->SetTransform(GetAttachedNode()->GetTransform()->GetLocalToWorldMatrix());
     }
     void PointLightComponent::EndComponent()
     {

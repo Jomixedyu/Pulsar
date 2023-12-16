@@ -1,6 +1,7 @@
 #pragma once
 #include "LightComponent.h"
 #include "Pulsar/Rendering/RenderObject.h"
+#include "Pulsar/Scene.h"
 
 namespace pulsar
 {
@@ -11,7 +12,17 @@ namespace pulsar
         void BeginComponent() override;
         void EndComponent() override;
 
+
+    protected:
+
+        void PostEditChange(FieldInfo* info) override;
+
+        void OnIntensityChanged() override;
+        void OnLightColorChanged() override;
+
         void OnMsg_TransformChanged() override;
         sptr<rendering::RenderObject> m_gizmos;
+
+        std::unique_ptr<DirectionalLightSceneInfo> m_sceneInfo;
     };
 }

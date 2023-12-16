@@ -83,7 +83,7 @@ namespace pulsared
         static void ReloadAsset(ObjectHandle id);
         static void Save(AssetObject_ref asset);
         static void SaveAll();
-        static void NewAsset(string_view folderPath, Type* assetType);
+        static void NewAsset(string_view folderPath, string_view assetName, Type* assetType);
         static bool CreateAsset(AssetObject_ref asset, string_view path);
         static bool DeleteAsset(string_view assetPath);
 

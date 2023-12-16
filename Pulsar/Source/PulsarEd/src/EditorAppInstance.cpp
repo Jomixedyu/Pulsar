@@ -27,24 +27,25 @@
 #include <PulsarEd/Windows/EditorWindowManager.h>
 #include <filesystem>
 #include <gfx/GFXRenderPipeline.h>
+#include <utility>
 
 #include <CoreLib.Serialization/DataSerializer.h>
 #include <Pulsar/Assets/StaticMesh.h>
 
-#include <PulsarEd/Windows/SceneWindow.h>
-#include <PulsarEd/Windows/WorkspaceWindow.h>
+#include <PulsarEd/Tools/MenuDebugTool.h>
 #include <PulsarEd/Windows/ConsoleWindow.h>
-#include <PulsarEd/Windows/PropertiesWindow.h>
 #include <PulsarEd/Windows/OutlinerWindow.h>
 #include <PulsarEd/Windows/OutputWindow.h>
-#include <PulsarEd/Tools/MenuDebugTool.h>
+#include <PulsarEd/Windows/PropertiesWindow.h>
+#include <PulsarEd/Windows/SceneWindow.h>
+#include <PulsarEd/Windows/WorkspaceWindow.h>
 
 namespace pulsared
 {
 
     static bool _RequestQuit()
     {
-        //请求关闭程序
+        // 请求关闭程序
         return Application::inst()->RequestQuitEvents.IsValidReturnInvoke();
     }
 
@@ -52,7 +53,7 @@ namespace pulsared
     {
         Logger::Log("engine application is quitting");
 
-        //通知程序即将关闭
+        // 通知程序即将关闭
         Application::inst()->QuittingEvents.Invoke();
     }
 
@@ -63,17 +64,17 @@ namespace pulsared
 
     void EditorAppInstance::RequestQuit()
     {
-        //SystemInterface::RequestQuitEvents();
+        // SystemInterface::RequestQuitEvents();
     }
 
     Vector2f EditorAppInstance::GetOutputScreenSize()
     {
-        return this->output_size_;
+        return this->m_outputSize;
     }
 
     void EditorAppInstance::SetOutputScreenSize(Vector2f size)
     {
-        this->output_size_ = size;
+        this->m_outputSize = size;
     }
 
     string EditorAppInstance::GetTitle()
@@ -89,7 +90,6 @@ namespace pulsared
     {
         return StringUtil::StringCast(std::filesystem::current_path().generic_u8string());
     }
-
 
     static void InitBasicMenu()
     {
@@ -130,15 +130,15 @@ namespace pulsared
             mainMenu->AddEntry(menu);
             for (auto type : AssemblyManager::GlobalSearchType(cltypeof<Component>()))
             {
-                if(type->IsDefinedAttribute(cltypeof<AbstractComponentAttribute>(), false))
+                if (type->IsDefinedAttribute(cltypeof<AbstractComponentAttribute>(), false))
                 {
                     continue;
                 }
                 auto itemEntry = mksptr(new MenuEntryButton(type->GetName(),
-                    ComponentInfoManager::GetFriendlyComponentName(type)));
+                                                            ComponentInfoManager::GetFriendlyComponentName(type)));
                 menu->AddEntry(itemEntry);
                 itemEntry->Action = MenuAction::FromLambda([](MenuContexts_rsp ctxs) {
-                    if(auto node = ref_cast<Node>(EditorSelection::Selection.GetSelected()))
+                    if (auto node = ref_cast<Node>(EditorSelection::Selection.GetSelected()))
                     {
                         Type* type = AssemblyManager::GlobalFindType(ctxs->EntryName);
                         node->AddComponent(type);
@@ -187,15 +187,14 @@ namespace pulsared
             menu->Priority = 2000;
             mainMenu->AddEntry(menu);
         }
-
     }
 
     static void _InitWindowMenu()
     {
         EditorWindowManager::RegisterPanelWindowType(cltypeof<SceneWindow>());
         EditorWindowManager::GetPanelWindow(cltypeof<SceneWindow>())->Open();
-        //EditorWindowManager::RegisterPanelWindowType(cltypeof<OutputWindow>());
-        //EditorWindowManager::GetPanelWindow(cltypeof<OutputWindow>())->Open();
+        // EditorWindowManager::RegisterPanelWindowType(cltypeof<OutputWindow>());
+        // EditorWindowManager::GetPanelWindow(cltypeof<OutputWindow>())->Open();
         EditorWindowManager::RegisterPanelWindowType(cltypeof<OutlinerWindow>());
         EditorWindowManager::GetPanelWindow(cltypeof<OutlinerWindow>())->Open();
         EditorWindowManager::RegisterPanelWindowType(cltypeof<PropertiesWindow>());
@@ -204,7 +203,6 @@ namespace pulsared
         EditorWindowManager::GetPanelWindow(cltypeof<WorkspaceWindow>())->Open();
         EditorWindowManager::RegisterPanelWindowType(cltypeof<ConsoleWindow>());
         EditorWindowManager::GetPanelWindow(cltypeof<ConsoleWindow>())->Open();
-
     }
 
     void EditorAppInstance::OnPreInitialize(gfx::GFXGlobalConfig* config)
@@ -232,7 +230,6 @@ namespace pulsared
         }
 
         config->EnableValid = true;
-
 
         StringUtil::strcpy(config->ProgramName, "Pulsar");
         StringUtil::strcpy(config->Title, "Pulsar Editor v0.1 - Vulkan1.2");
@@ -264,7 +261,6 @@ namespace pulsared
 
             World::Current()->GetPersistentScene()->AddNode(dlight);
         }
-
     }
 
     static void _RegisterIcon(Type* type, string_view path)
@@ -303,11 +299,13 @@ namespace pulsared
         AssetDatabase::AddPackage("Engine");
         AssetDatabase::AddPackage("Editor");
 
-        //world
+        // world
         Logger::Log("initialize world");
-        m_world = World::Reset<EditorWorld>("MainWorld");
+        auto edWorld = World::Reset<EditorWorld>("MainWorld");
+        edWorld->AddGrid3d();
+        m_world = edWorld;
 
-        auto renderPipeline = new EditorRenderPipeline{ m_world };
+        auto renderPipeline = new EditorRenderPipeline{m_world};
 
         Application::GetGfxApp()->SetRenderPipeline(renderPipeline);
 
@@ -332,7 +330,7 @@ namespace pulsared
         InitBasicMenu();
 
         Logger::Log("initialize subsystems");
-        //collect subsystem
+        // collect subsystem
         for (Type* type : *__PulsarSubsystemRegistry::types())
         {
             if (type->IsSubclassOf(cltypeof<EditorSubsystem>()))
@@ -342,7 +340,7 @@ namespace pulsared
             }
         }
 
-        //initialize subsystem
+        // initialize subsystem
         for (auto& subsystem : this->subsystems)
         {
             Logger::Log("initializing subsystem: " + subsystem->GetType()->GetName());
@@ -354,7 +352,7 @@ namespace pulsared
             subsystem->OnInitialized();
         }
 
-        //init window ui
+        // init window ui
         Logger::Log("initialize editor window manager");
         EditorWindowManager::Initialize();
         _InitWindowMenu();
@@ -367,7 +365,7 @@ namespace pulsared
     {
         World::Reset(nullptr);
 
-        //terminate subsystem
+        // terminate subsystem
         for (auto& subsystem : this->subsystems)
         {
             subsystem->OnTerminate();
@@ -405,17 +403,25 @@ namespace pulsared
         pulsared::EditorWindowManager::Draw(dt);
         pulsared::EditorTickerManager::Ticker.Invoke(dt);
 
+        if (m_modalDialog)
+        {
+            m_modalDialog->Tick(dt);
+            if (m_modalDialog->m_shouldClose)
+                m_modalDialog.reset();
+        }
+
+        OnRenderTick.Invoke(dt);
+
         m_gui->EndFrame();
     }
 
     void EditorAppInstance::OnEndRender(float dt)
     {
-
     }
 
     bool EditorAppInstance::IsQuit()
     {
-        //return SystemInterface::GetIsQuit();
+        // return SystemInterface::GetIsQuit();
         return false;
     }
 
@@ -428,7 +434,7 @@ namespace pulsared
     {
         int32_t w, h;
         Application::GetGfxApp()->GetViewport()->GetSize(&w, &h);
-        return Vector2f((float)w, (float)h);
+        return {(float)w, (float)h};
     }
 
     void EditorAppInstance::SetAppSize(Vector2f size)
@@ -449,6 +455,10 @@ namespace pulsared
     void EditorAppInstance::StopInteractiveRendering()
     {
         m_isPlaying = false;
+    }
+    void EditorAppInstance::ShowModalDialog(sptr<ModalDialog> dialog)
+    {
+        m_modalDialog = std::move(dialog);
     }
 
 

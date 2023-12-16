@@ -3,8 +3,14 @@
 OutPixelAssembly main(InPixelAssembly v2f)
 {
     OutPixelAssembly p2o;
-    float3 v = normalize(TargetBuffer.CamPosition.xyz - v2f.Position.xyz);
+
     float3 l = -WorldBuffer.WorldSpaceLightVector.xyz;
-    p2o.Color = dot(v, l) + WorldBuffer.SkyLightColor.xyz * WorldBuffer.SkyLightColor.w;
+
+    float3 skylightColor = WorldBuffer.SkyLightColor.xyz * WorldBuffer.SkyLightColor.w;
+
+    float3 dirLightColor = WorldBuffer.WorldSpaceLightColor.xyz * WorldBuffer.WorldSpaceLightColor.w;
+
+    float3 color = dot(v2f.WorldNormal, l) * dirLightColor + skylightColor;
+    p2o.Color = float4(color, 1);
     return p2o;
 }

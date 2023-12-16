@@ -49,6 +49,7 @@ namespace jxcorlib
 
     void FieldInfo::SetValue(Object* instance, sptr<Object> value)
     {
+        assert(instance->GetType()->IsSubclassOf(m_parentType));
         this->m_setter(instance, std::move(value));
     }
 

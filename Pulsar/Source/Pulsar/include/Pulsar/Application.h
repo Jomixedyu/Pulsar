@@ -21,4 +21,20 @@ namespace pulsar
 
     };
 
+    class AppInstanceTickable
+    {
+    private:
+        uint32_t m_handler;
+    public:
+        AppInstanceTickable()
+        {
+            m_handler = Application::inst()->OnRenderTick.AddListener(this, &AppInstanceTickable::Tick);
+        }
+        virtual void Tick(float dt) = 0;
+        virtual ~AppInstanceTickable()
+        {
+            Application::inst()->OnRenderTick.RemoveListenerByIndex(m_handler);
+        }
+    };
+
 }

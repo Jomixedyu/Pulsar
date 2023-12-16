@@ -5,15 +5,6 @@
 
 namespace pulsar
 {
-    struct CBuffer_World
-    {
-        Vector4f WorldSpaceLightPos;
-        Vector4f WorldSpaceLightColor;
-        float TotalTime;
-        float DeltaTime;
-        Vector2f _Padding0;
-        Vector4f _Padding1;
-    };
 
     static std::unique_ptr<World> _world_inst = nullptr;
     World* World::Current()
@@ -62,13 +53,7 @@ namespace pulsar
         {
             if (IsValid(scene))
             {
-                for (auto& node : *scene->GetNodes())
-                {
-                    if (IsValid(node) && node->GetIsActive())
-                    {
-                        node->OnTick(m_ticker);
-                    }
-                }
+                scene->Tick(m_ticker);
             }
         }
     }
@@ -151,11 +136,20 @@ namespace pulsar
     }
     void World::UpdateWorldCBuffer()
     {
-        CBuffer_World data;
-        data.DeltaTime = m_ticker.deltatime;
-        data.TotalTime = m_totalTime;
+        WorldRenderBufferData buffer{};
+        buffer.DeltaTime = m_ticker.deltatime;
+        buffer.TotalTime = m_totalTime;
 
-        m_worldDescriptorBuffer->Fill(&data);
+        const auto& sceneEnv = m_focusScene->GetRuntimeEnvironment();
+        if (const auto dirLight = sceneEnv.DirectionalLight)
+        {
+            buffer.WorldSpaceLightVector = dirLight->Vector;
+            auto c = dirLight->Color;
+            buffer.WorldSpaceLightColor = {c.r, c.g, c.b, c.a};
+            buffer.WorldSpaceLightColor.w = dirLight->Intensity;
+        }
+
+        m_worldDescriptorBuffer->Fill(&buffer);
     }
 
     void World::AddRenderObject(const rendering::RenderObject_sp renderObject)
@@ -186,7 +180,7 @@ namespace pulsar
         m_worldDescriptorLayout = Application::GetGfxApp()->CreateDescriptorSetLayout(&info, 1);
         m_worldDescriptorBuffer = Application::GetGfxApp()->CreateBuffer(
             gfx::GFXBufferUsage::ConstantBuffer,
-            sizeof(CBuffer_World));
+            sizeof(WorldRenderBufferData));
 
         m_worldDescriptors = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_worldDescriptorLayout);
         m_worldDescriptors->AddDescriptor("World", 0)->SetConstantBuffer(m_worldDescriptorBuffer.get());

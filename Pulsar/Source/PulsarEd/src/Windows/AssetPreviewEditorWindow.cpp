@@ -65,9 +65,9 @@ namespace pulsared
             ->NewNode("Light")
             ->AddComponent<DirectionalLightComponent>()
             ->GetAttachedNode()->GetTransform()
-            ->RotateEuler({-45,0,0});
+            ->TranslateRotateEuler({3,3,-3}, {45,45,0});
 
-        m_world->GetPreviewCamera()->GetAttachedNode()->GetTransform()->GetParent()->RotateEuler({20,0,0});
+        //m_world->GetPreviewCamera()->GetAttachedNode()->GetTransform()->GetParent()->RotateEuler({20,0,0});
         auto gfxpipe = Application::GetGfxApp()->GetRenderPipeline();
         auto pipe = dynamic_cast<EngineRenderPipeline*>(gfxpipe);
         pipe->AddWorld(m_world);

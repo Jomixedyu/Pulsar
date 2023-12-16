@@ -44,12 +44,18 @@ namespace pulsar
         void OnReceiveMessage(MessageId id) override;
 
     protected:
+        void ResizeMaterials(size_t size);
+        void BeginListenMaterialStateChanged(size_t index);
+        void EndListenMaterialStateChanged(size_t index);
+        void OnMaterialStateChanged();
         void OnMsg_TransformChanged() override;
         void OnMeshChanged();
         void OnMaterialChanged();
     protected:
         CORELIB_REFL_DECL_FIELD(m_materials, new ListItemAttribute(cltypeof<Material>()));
         List_sp<Material_ref> m_materials;
+        size_t m_materialsSize = 0;
+        array_list<uint32_t> m_materialStateChangedCallbacks;
 
         CORELIB_REFL_DECL_FIELD(m_staticMesh);
         StaticMesh_ref m_staticMesh;

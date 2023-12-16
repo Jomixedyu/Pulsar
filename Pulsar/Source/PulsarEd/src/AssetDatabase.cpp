@@ -225,6 +225,12 @@ namespace pulsared
         {
             auto assetPath = GetPathByAsset(asset);
             auto node = FileTree->Find(assetPath);
+
+            ser::JsonSerializerSettings metaJsonSettings{};
+            metaJsonSettings.IndentSpace = 4;
+            auto metaJson = ser::JsonSerializer::Serialize(node->AssetMeta.get(), metaJsonSettings);
+            FileUtil::WriteAllText(node->PhysicsPath, metaJson);
+
             auto assetPhyicsPath = node->PhysicsPath;
             assetPhyicsPath.replace_extension({".pa"});
 
@@ -258,12 +264,12 @@ namespace pulsared
         }
     }
 
-    void AssetDatabase::NewAsset(string_view folderPath, Type* assetType)
+    void AssetDatabase::NewAsset(string_view folderPath, string_view assetName, Type* assetType)
     {
-        Logger::Log("new asset : " + string{folderPath} + " ; " + assetType->GetName());
+        Logger::Log("new asset : " + string{folderPath} + " ; " + string{assetName});
         const auto asset = sptr_cast<AssetObject>(assetType->CreateSharedInstance({}));
         asset->Construct();
-        CreateAsset(asset, GetUniquePath(string{folderPath} + "/" + assetType->GetShortName()));
+        CreateAsset(asset, GetUniquePath(string{folderPath} + "/" + string{assetName}));
     }
 
     static void _WriteAssetToDisk(std::shared_ptr<AssetFileNode> root, string_view path, AssetObject_ref asset)

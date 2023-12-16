@@ -8,10 +8,13 @@ namespace pulsared
     void EditorWorld::Tick(float dt)
     {
 
-
-
         base::Tick(dt);
-
+    }
+    void EditorWorld::AddGrid3d()
+    {
+        auto grid3d = Node::StaticCreate("Grid3d", nullptr, OF_NoPack);
+        grid3d->AddComponent<Grid3DComponent>();
+        GetPersistentScene()->AddNode(grid3d);
     }
 
     CameraComponent_ref EditorWorld::GetPreviewCamera()
@@ -54,11 +57,8 @@ namespace pulsared
 
         scene->AddNode(camCtrlNode);
         scene->AddNode(camNode);
-
-        auto grid3d = Node::StaticCreate("Grid3d", nullptr, OF_NoPack);
-        grid3d->AddComponent<Grid3DComponent>();
-        scene->AddNode(grid3d);
     }
+
     void EditorWorld::OnUnloadingPersistentScene(ObjectPtr<Scene> scene)
     {
         base::OnUnloadingPersistentScene(scene);

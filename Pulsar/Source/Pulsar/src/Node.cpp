@@ -154,6 +154,7 @@ namespace pulsar
         //}
 
         component->BeginComponent();
+        component->OnReceiveMessage(MessageId_OnChangedTransform());
     }
 
     void Node::EndComponent(Component_ref component)

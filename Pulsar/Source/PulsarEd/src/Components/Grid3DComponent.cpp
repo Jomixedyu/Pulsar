@@ -80,13 +80,17 @@ namespace pulsared
 
         m_renderObject = CreateRenderObject();
         GetAttachedNode()->GetRuntimeWorld()->AddRenderObject(m_renderObject);
-        m_renderObject->SetTransform(GetAttachedNode()->GetTransform()->GetLocalToWorldMatrix());
     }
     void Grid3DComponent::EndComponent()
     {
         base::EndComponent();
         GetAttachedNode()->GetRuntimeWorld()->RemoveRenderObject(m_renderObject);
         m_renderObject.reset();
+    }
+    void Grid3DComponent::OnMsg_TransformChanged()
+    {
+        base::OnMsg_TransformChanged();
+        m_renderObject->SetTransform(GetAttachedNode()->GetTransform()->GetLocalToWorldMatrix());
     }
 
     sptr<rendering::RenderObject> Grid3DComponent::CreateRenderObject()
@@ -99,7 +103,7 @@ namespace pulsared
     void Grid3DComponent::OnTick(Ticker ticker)
     {
         base::OnTick(ticker);
-        m_renderObject->SetTransform(GetAttachedNode()->GetTransform()->GetLocalToWorldMatrix());
+
     }
 
 } // namespace pulsared

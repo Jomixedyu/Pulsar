@@ -1,6 +1,7 @@
 #include "Assets/Material.h"
 #include "Application.h"
 #include "Assets/StaticMesh.h"
+#include "Logger.h"
 
 #include <CoreLib.Serialization/JsonSerializer.h>
 #include <Pulsar/AssetManager.h>
@@ -52,7 +53,7 @@ namespace pulsar
         {
             return true;
         }
-        if (!m_shader)
+        if (!m_shader || m_shader->GetSourceData().ApiMaps.empty())
         {
             return false;
         }
@@ -68,7 +69,18 @@ namespace pulsar
             // create shader pass state config
             gfx::GFXShaderPassConfig config{};
             {
-                const auto sourceConfig = ser::JsonSerializer::Deserialize<ShaderPassConfig>(passes[i].Config);
+                ShaderPassConfig_sp sourceConfig;
+                try
+                {
+                    sourceConfig = ser::JsonSerializer::Deserialize<ShaderPassConfig>(passes[i].Config);
+                }
+                catch (const std::exception& e)
+                {
+                    Logger::Log("shader config json error!", LogLevel::Error);
+                    m_createdGpuResource = false;
+                    return false;
+                }
+
                 config.CullMode = sourceConfig->CullMode;
                 config.DepthCompareOp = sourceConfig->DepthCompareOp;
                 config.DepthTestEnable = sourceConfig->DepthTestEnable;
@@ -87,7 +99,6 @@ namespace pulsar
             }
 
             {
-
 
                 // create shader pass
                 auto shaderPass = Application::GetGfxApp()->CreateShaderPass(
@@ -134,6 +145,9 @@ namespace pulsar
         // MaterialSerializationData_sp data;
         if (s->IsWrite)
         {
+            auto shaderObjectHandle = s->Object->New(ser::VarientType::String);
+            shaderObjectHandle->Assign(m_shader.handle.to_string());
+            s->Object->Add("Shader", shaderObjectHandle);
         }
         else
         {
@@ -244,7 +258,15 @@ namespace pulsar
         m_isDirtyParameter = false;
         m_descriptorSet->Submit();
     }
-
+    void Material::PostEditChange(FieldInfo* info)
+    {
+        base::PostEditChange(info);
+        auto& name = info->GetName();
+        if (name == NAMEOF(m_shader))
+        {
+            SetShader(m_shader);
+        }
+    }
     Shader_ref Material::GetShader() const
     {
         if (m_shader)
@@ -252,6 +274,11 @@ namespace pulsar
             return m_shader;
         }
         return Application::inst()->GetAssetManager()->LoadAsset<Shader>("Engine/Shaders/Missing");
+    }
+    void Material::SetShader(Shader_ref value)
+    {
+        m_shader = value;
+        OnShaderChanged.Invoke();
     }
     gfx::GFXShaderPass_sp Material::GetGfxShaderPass(size_t index)
     {

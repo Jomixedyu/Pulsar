@@ -19,6 +19,7 @@ namespace pulsared
         void OnTick(Ticker ticker) override;
         virtual void EndComponent() override;
 
+        void OnMsg_TransformChanged() override;
     private:
         array_list<Vector3f> m_vert;
         array_list<Color4f> m_colors;

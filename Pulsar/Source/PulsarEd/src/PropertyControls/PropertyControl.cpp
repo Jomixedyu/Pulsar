@@ -117,6 +117,8 @@ namespace pulsared
                 {
                     list->Add(list->GetIListElementType()->CreateSharedInstance({}));
                 }
+
+                isChanged = true;
             }
             ImGui::SameLine();
             if (ImGui::Button(ICON_FK_MINUS))
@@ -125,11 +127,16 @@ namespace pulsared
                 {
                     list->RemoveAt(list->GetCount() - 1);
                 }
+                isChanged = true;
             }
             ImGui::SameLine();
             if (ImGui::Button(ICON_FK_TRASH))
             {
-                list->Clear();
+                if(list->GetCount() != 0)
+                {
+                    list->Clear();
+                    isChanged = true;
+                }
             }
 
             if (treeOpened)
@@ -185,13 +192,14 @@ namespace pulsared
 
                 ImGui::PushID((int)i);
                 Object_sp fieldInstSptr;
+                Object* parentObj = obj;
                 if (type == BoxingObjectPtrBase::StaticType())
                 {
                     const auto objptr = static_cast<BoxingObjectPtrBase*>(obj);
                     if (objptr->handle)
                     {
-                        const auto ptr = objptr->get_unboxing_value().GetTPtr<ObjectBase>();
-                        fieldInstSptr = field->GetValue(ptr);
+                        parentObj = objptr->get_unboxing_value().GetTPtr<ObjectBase>();
+                        fieldInstSptr = field->GetValue(parentObj);
                     }
                     else
                     {
@@ -230,7 +238,7 @@ namespace pulsared
                 {
                     if (fieldType->IsBoxingType())
                     {
-                        field->SetValue(obj, fieldInstSptr);
+                        field->SetValue(parentObj, fieldInstSptr);
                     }
                     receiver->PostEditChange(receiverField);
                 }

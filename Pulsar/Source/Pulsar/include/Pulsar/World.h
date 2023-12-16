@@ -12,6 +12,16 @@ namespace pulsar
 
     constexpr uint32_t kRenderingDescriptorSpace_World = 1;
 
+    struct WorldRenderBufferData
+    {
+        Vector4f WorldSpaceLightVector;
+        Vector4f WorldSpaceLightColor; // w is intensity
+        float TotalTime;
+        float DeltaTime;
+        Vector2f _Padding0;
+        Vector4f SkyLightColor; // w is intensity
+    };
+
     class World
     {
     public: //static functions

@@ -35,7 +35,7 @@ namespace pulsar
         void SetEuler(Vector3f value);
         void RotateEuler(Vector3f value);
         void RotateQuat(Quat4f quat);
-
+        void TranslateRotateEuler(Vector3f pos, Vector3f euler);
 
         Vector3f GetForward();
         Vector3f GetUp();

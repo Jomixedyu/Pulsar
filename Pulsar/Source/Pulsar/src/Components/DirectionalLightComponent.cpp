@@ -1,6 +1,7 @@
 #include "Components/DirectionalLightComponent.h"
 
 #include "Node.h"
+#include "Scene.h"
 #include "TransformUtil.h"
 #include "World.h"
 #include <Pulsar/Rendering/LineRenderObject.h>
@@ -43,16 +44,44 @@ namespace pulsar
 
         m_gizmos = ro;
         GetWorld()->AddRenderObject(m_gizmos);
+
+        m_sceneInfo = std::make_unique<DirectionalLightSceneInfo>();
+        GetRuntimeScene()->AddDirectionalLight(m_sceneInfo.get());
+        OnIntensityChanged();
+        OnLightColorChanged();
     }
     void DirectionalLightComponent::EndComponent()
     {
         base::EndComponent();
         GetWorld()->RemoveRenderObject(m_gizmos);
+        GetRuntimeScene()->RemoveDirectionalLight(m_sceneInfo.get());
+        m_sceneInfo.reset();
         m_gizmos.reset();
+    }
+    void DirectionalLightComponent::PostEditChange(FieldInfo* info)
+    {
+        base::PostEditChange(info);
+
+    }
+    void DirectionalLightComponent::OnIntensityChanged()
+    {
+        base::OnIntensityChanged();
+        m_sceneInfo->Intensity = m_intensity;
+        GetRuntimeScene()->UpdateDirectionalLight();
+    }
+    void DirectionalLightComponent::OnLightColorChanged()
+    {
+        base::OnLightColorChanged();
+        m_sceneInfo->Color = m_lightColor;
+        GetRuntimeScene()->UpdateDirectionalLight();
     }
     void DirectionalLightComponent::OnMsg_TransformChanged()
     {
         base::OnMsg_TransformChanged();
+
+        m_sceneInfo->Vector = GetAttachedNode()->GetTransform()->GetForward();
+        GetRuntimeScene()->UpdateDirectionalLight();
+
         m_gizmos->SetTransform(GetAttachedNode()->GetTransform()->GetLocalToWorldMatrix());
     }
 

@@ -100,9 +100,16 @@ namespace pulsar
         // m_rotation *= jmath::Inverse(quat) * quat * m_rotation;
         MakeTransformChanged();
     }
+    void TransformComponent::TranslateRotateEuler(Vector3f pos, Vector3f euler)
+    {
+        Translate(pos);
+        RotateEuler(euler);
+    }
     Vector3f TransformComponent::GetForward()
     {
-        return GetLocalToWorldMatrix() * Vector3f{0, 0, 1};
+        Matrix4f mat = GetLocalToWorldMatrix();
+        mat[3] = Vector4f{0, 0, 0, 1};
+        return mat * Vector3f{0, 0, 1};
     }
     Vector3f TransformComponent::GetUp()
     {
