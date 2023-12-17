@@ -12,9 +12,9 @@
 namespace pulsared
 {
 
-    void MaterialEditorWindow::OnDrawAssetPropertiesUI()
+    void MaterialEditorWindow::OnDrawAssetPropertiesUI(float dt)
     {
-        base::OnDrawAssetPropertiesUI();
+        base::OnDrawAssetPropertiesUI(dt);
 
         if (PImGui::PropertyGroup("Material"))
         {

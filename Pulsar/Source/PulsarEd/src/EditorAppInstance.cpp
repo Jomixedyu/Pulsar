@@ -39,7 +39,7 @@
 #include <PulsarEd/Windows/PropertiesWindow.h>
 #include <PulsarEd/Windows/SceneWindow.h>
 #include <PulsarEd/Windows/WorkspaceWindow.h>
-
+#include <Pulsar/Assets/Texture2D.h>
 namespace pulsared
 {
 
@@ -325,6 +325,7 @@ namespace pulsared
         _RegisterIcon(cltypeof<Material>(), "Editor/Icons/material.png");
         _RegisterIcon(cltypeof<StaticMesh>(), "Editor/Icons/staticmesh.png");
         _RegisterIcon(cltypeof<AssetObject>(), "Editor/Icons/PreviewFrame.png");
+        _RegisterIcon(cltypeof<Texture2D>(), "Editor/Icons/texture.png");
         _RegisterIcon("WorkspaceWindow.Dirty", "Editor/Icons/Star.png");
 
         InitBasicMenu();

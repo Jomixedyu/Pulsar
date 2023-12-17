@@ -12,7 +12,7 @@
 namespace pulsared
 {
 
-    void AssetPreviewEditorWindow::OnDrawAssetPropertiesUI()
+    void AssetPreviewEditorWindow::OnDrawAssetPropertiesUI(float dt)
     {
         if (PImGui::PropertyGroup("Asset Info"))
         {
@@ -28,31 +28,13 @@ namespace pulsared
             }
         }
     }
-    void AssetPreviewEditorWindow::OnDrawImGui(float dt)
+    void AssetPreviewEditorWindow::OnDrawAssetPreviewUI(float dt)
     {
-        base::OnDrawImGui(dt);
-        if (!m_assetObject)
-        {
-            ImGui::Text("no asset");
-            return;
-        }
-        ImGui::Columns(2);
-        if (ImGui::BeginChild("#Preview"))
-        {
-            m_world->Tick(dt);
-            m_viewportFrame.Render(dt);
-        }
-        ImGui::EndChild();
-
-        ImGui::NextColumn();
-        if (ImGui::BeginChild("Properties"))
-        {
-            OnDrawAssetPropertiesUI();
-        }
-        ImGui::EndChild();
-
-        ImGui::Columns(1);
+        base::OnDrawAssetPreviewUI(dt);
+        m_world->Tick(dt);
+        m_viewportFrame.Render(dt);
     }
+
     void AssetPreviewEditorWindow::OnOpen()
     {
         base::OnOpen();

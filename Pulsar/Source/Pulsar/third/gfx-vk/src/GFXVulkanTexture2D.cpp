@@ -146,26 +146,27 @@ namespace gfx
 
     std::shared_ptr<GFXVulkanTexture2D> GFXVulkanTexture2D::CreateFromMemory(
         GFXVulkanApplication* app, const uint8_t* fileData, size_t length, bool enableReadWrite,
-        GFXTextureFormat format, const GFXSamplerConfig& samplerCfg)
+        bool isSrgb, const GFXSamplerConfig& samplerCfg)
     {
         int x, y, channel;
         std::vector<uint8_t> buffer;
 
-        switch (format)
+
+        buffer = gfx::LoadImageFromMemory(fileData, length, &x, &y, &channel, 0, isSrgb);
+
+        GFXTextureFormat format;
+
+        if(channel == 1)
         {
-        case gfx::GFXTextureFormat::R8G8B8A8:
-        {
-            buffer = gfx::LoadImageFromMemory(fileData, length, &x, &y, &channel, 4, false);
+            format = GFXTextureFormat::R8;
         }
-        break;
-        case gfx::GFXTextureFormat::R8G8B8A8_SRGB:
+        else if(channel == 3)
         {
-            buffer = gfx::LoadImageFromMemory(fileData, length, &x, &y, &channel, 4, true);
+            format = GFXTextureFormat::R8G8B8;
         }
-        break;
-        default:
-            assert(false);
-            break;
+        else if(channel == 4)
+        {
+            format = isSrgb ? GFXTextureFormat::R8G8B8A8_SRGB : GFXTextureFormat::R8G8B8A8;
         }
 
         auto tex = new GFXVulkanTexture2D(app, buffer.data(), x, y, channel, BufferHelper::GetVkFormat(format), enableReadWrite, samplerCfg);

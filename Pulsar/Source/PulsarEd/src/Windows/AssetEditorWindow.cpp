@@ -65,6 +65,12 @@ namespace pulsared
     {
         return std::to_string(GetWindowId());
     }
+    void AssetEditorWindow::OnDrawAssetPropertiesUI(float dt)
+    {
+    }
+    void AssetEditorWindow::OnDrawAssetPreviewUI(float dt)
+    {
+    }
     void AssetEditorWindow::OnDrawImGui(float dt)
     {
         base::OnDrawImGui(dt);
@@ -74,6 +80,26 @@ namespace pulsared
             MenuRenderer::RenderMenu(MenuManager::GetMenu("AssetEditor"), m_menuBarCtxs);
             ImGui::EndMenuBar();
         }
+        if (!m_assetObject)
+        {
+            ImGui::Text("no asset");
+            return;
+        }
+        ImGui::Columns(2);
+        if (ImGui::BeginChild("#Preview"))
+        {
+            OnDrawAssetPreviewUI(dt);
+        }
+        ImGui::EndChild();
+
+        ImGui::NextColumn();
+        if (ImGui::BeginChild("Properties"))
+        {
+            OnDrawAssetPropertiesUI(dt);
+        }
+        ImGui::EndChild();
+
+        ImGui::Columns(1);
     }
     void AssetEditorWindow::OnRefreshMenuContexts()
     {

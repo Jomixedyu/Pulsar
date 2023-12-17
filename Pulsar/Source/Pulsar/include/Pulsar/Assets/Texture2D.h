@@ -40,18 +40,22 @@ namespace pulsar
 
     public:
         // host memory
-        void LoadHostResource(const uint8_t* data, int32_t length, const SamplerConfig& samplerConfig, bool enableReadWrite, TextureFormat format);
+        void LoadHostResource(const uint8_t* data, int32_t length);
         void UnloadHostResource();
-        array_list<uint8_t>& GetHostResource() { return m_nativeHostMemory; }
+        array_list<uint8_t>& GetHostResource() { return m_nativeOriginalHostMemory; }
     public:
         //IGPUResource
         bool CreateGPUResource() override;
         void DestroyGPUResource() override;
         bool IsCreatedGPUResource() const override;
 
+        std::shared_ptr<gfx::GFXTexture2D> GetGFXTexture() const { return m_tex; }
     protected:
 
-        array_list<uint8_t> m_nativeHostMemory;
+        CORELIB_REFL_DECL_FIELD(m_isSrgb);
+        bool m_isSrgb;
+
+        array_list<uint8_t> m_nativeOriginalHostMemory;
         bool m_loadedHostMemory = false;
 
         gfx::GFXSamplerConfig m_samplerConfig{};

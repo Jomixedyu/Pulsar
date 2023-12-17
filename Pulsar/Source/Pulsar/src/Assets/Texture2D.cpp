@@ -16,13 +16,13 @@ namespace pulsar
         {
             if (m_loadedHostMemory)
             {
-               sser::ReadWriteStream(s->Stream, s->IsWrite, m_nativeHostMemory);
+               sser::ReadWriteStream(s->Stream, s->IsWrite, m_nativeOriginalHostMemory);
             }
         }
         else //read
         {
-            m_nativeHostMemory.clear();
-            sser::ReadWriteStream(s->Stream, s->IsWrite, m_nativeHostMemory);
+            m_nativeOriginalHostMemory.clear();
+            sser::ReadWriteStream(s->Stream, s->IsWrite, m_nativeOriginalHostMemory);
             m_loadedHostMemory = true;
         }
     }
@@ -37,21 +37,15 @@ namespace pulsar
         Texture2D* tex = static_cast<Texture2D*>(obj);
     }
 
-    void Texture2D::LoadHostResource(
-        const uint8_t* data, int32_t length,
-        const SamplerConfig& samplerConfig,
-        bool enableReadWrite, TextureFormat format)
+    void Texture2D::LoadHostResource(const uint8_t* data, int32_t length)
     {
-        m_nativeHostMemory.resize(length);
-        std::memcpy(m_nativeHostMemory.data(), data, length);
-        m_samplerConfig = samplerConfig;
-        m_enableReadWrite = enableReadWrite;
-        m_format = format;
+        m_nativeOriginalHostMemory.resize(length);
+        std::memcpy(m_nativeOriginalHostMemory.data(), data, length);
         m_loadedHostMemory = true;
     }
     void Texture2D::UnloadHostResource()
     {
-        decltype(m_nativeHostMemory)().swap(m_nativeHostMemory);
+        decltype(m_nativeOriginalHostMemory)().swap(m_nativeOriginalHostMemory);
         m_loadedHostMemory = false;
     }
 
@@ -64,9 +58,9 @@ namespace pulsar
         m_isCreatedGPUResource = true;
 
         m_tex = Application::GetGfxApp()->CreateTexture2DFromMemory(
-            m_nativeHostMemory.data(),
-            m_nativeHostMemory.size(),
-            m_samplerConfig, m_enableReadWrite, m_format);
+            m_nativeOriginalHostMemory.data(),
+            m_nativeOriginalHostMemory.size(),
+            m_samplerConfig, m_enableReadWrite, m_isSrgb);
         return true;
     }
 

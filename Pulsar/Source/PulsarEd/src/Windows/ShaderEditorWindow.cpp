@@ -86,9 +86,9 @@ namespace pulsared
         m_menuBarCtxs->Contexts.push_back(mksptr(new ShaderEditorMenuContext{this->GetAssetObject()}));
     }
 
-    void ShaderEditorWindow::OnDrawAssetPropertiesUI()
+    void ShaderEditorWindow::OnDrawAssetPropertiesUI(float dt)
     {
-        base::OnDrawAssetPropertiesUI();
+        base::OnDrawAssetPropertiesUI(dt);
         Shader_ref shader = m_assetObject;
         if (PImGui::PropertyGroup("Shader"))
         {
