@@ -50,6 +50,10 @@ namespace pulsar
         bool IsCreatedGPUResource() const override;
 
         std::shared_ptr<gfx::GFXTexture2D> GetGFXTexture() const { return m_tex; }
+
+    public:
+        bool IsSRGB() const { return m_isSrgb; }
+        void SetIsSRGB(bool value) { m_isSrgb = value; }
     protected:
 
         CORELIB_REFL_DECL_FIELD(m_isSrgb);

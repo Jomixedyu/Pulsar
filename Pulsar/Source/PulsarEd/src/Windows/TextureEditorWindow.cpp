@@ -43,7 +43,7 @@ namespace pulsared
         base::OnDrawAssetPreviewUI(dt);
         Texture2D_ref tex = m_assetObject;
 
-        ImGui::Image((void*)m_imageDesc->GetId(), {30,30});
+        ImGui::Image((void*)m_imageDesc->GetId(), {500,500});
     }
 
     void TextureEditorWindow::OnDrawAssetPropertiesUI(float dt)

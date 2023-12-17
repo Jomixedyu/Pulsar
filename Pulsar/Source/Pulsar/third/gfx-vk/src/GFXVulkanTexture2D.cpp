@@ -152,7 +152,7 @@ namespace gfx
         std::vector<uint8_t> buffer;
 
 
-        buffer = gfx::LoadImageFromMemory(fileData, length, &x, &y, &channel, 0, isSrgb);
+        buffer = gfx::LoadImageFromMemory(fileData, length, &x, &y, &channel, 4, isSrgb);
 
         GFXTextureFormat format;
 
@@ -160,11 +160,7 @@ namespace gfx
         {
             format = GFXTextureFormat::R8;
         }
-        else if(channel == 3)
-        {
-            format = GFXTextureFormat::R8G8B8;
-        }
-        else if(channel == 4)
+        else if(channel == 3 || channel == 4)
         {
             format = isSrgb ? GFXTextureFormat::R8G8B8A8_SRGB : GFXTextureFormat::R8G8B8A8;
         }

@@ -18,6 +18,7 @@ namespace pulsared
             auto fileBytes = FileUtil::ReadAllBytes(file);
             asset->LoadHostResource(fileBytes.data(), fileBytes.size());
 
+            asset->SetIsSRGB(false);
 
             auto assetRef = AssetObject_ref(asset.get());
             auto assetPath = settings->TargetPath + "/" + PathUtil::GetFilenameWithoutExt(file);
