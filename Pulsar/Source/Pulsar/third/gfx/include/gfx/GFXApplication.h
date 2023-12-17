@@ -86,10 +86,10 @@ namespace gfx
             bool enableReadWrite, GFXTextureFormat format, const GFXSamplerConfig& samplerCfg) = 0;
 
         virtual GFXTexture2D_sp CreateTexture2DFromMemory(
-            const uint8_t* data, int32_t length,
+            const uint8_t* originalData, size_t length,
             const GFXSamplerConfig& samplerConfig,
-            bool enableReadWrite = false,
-            GFXTextureFormat format = GFXTextureFormat::R8G8B8A8_SRGB) = 0;
+            bool enableReadWrite,
+            bool isSrgb) = 0;
 
         virtual GFXRenderTarget_sp CreateRenderTarget(
             int32_t width, int32_t height, GFXRenderTargetType type,

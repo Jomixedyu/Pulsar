@@ -19,7 +19,7 @@ namespace pulsared
             return ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoCollapse;
         }
         virtual string GetWindowName() const override;
-        virtual void DrawImGui() override;
+        virtual void DrawImGui(float dt) override;
 
     };
 }

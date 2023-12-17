@@ -1,6 +1,9 @@
-﻿#include "CoreLib.Platform/FolderWatch.h"
+﻿#include <PulsarEd/Windows/WorkspaceWindow.h>
+
+#include "CoreLib.Platform/FolderWatch.h"
 #include "CoreLib.Platform/System.h"
 #include "CoreLib.Platform/Window.h"
+#include "EditorAppInstance.h"
 #include "Importers/AssetImporter.h"
 #include "Windows/EditorWindowManager.h"
 
@@ -8,7 +11,6 @@
 #include <PulsarEd/AssetDatabase.h>
 #include <PulsarEd/AssetProviders/AssetProvider.h>
 #include <PulsarEd/Menus/Types.h>
-#include <PulsarEd/Windows/WorkspaceWindow.h>
 #include <PulsarEd/Workspace.h>
 
 #include <PulsarEd/Utils/AssetUtil.h>
@@ -20,10 +22,23 @@ namespace pulsared
 {
     namespace PImGui
     {
-        static bool FileButton(const char* str,
-                               ImTextureID texture_id, ImVec2 size, float label_height, bool selected, bool is_dirty, ImTextureID dirty_texid,
-                               void* user_data, const std::function<void(void*)>& tootip,
-                               ImVec2 uv0 = ImVec2(0, 0), ImVec2 uv1 = ImVec2(1, 1))
+        struct FileButtonContext
+        {
+            const char* str;
+            ImTextureID texture_id;
+            ImVec2 size;
+            float label_height;
+            bool selected;
+            bool is_dirty;
+            ImTextureID dirty_texid;
+            void* user_data;
+            std::function<void(void*)> tootip;
+            ImVec2 uv0 = ImVec2(0, 0);
+            ImVec2 uv1 = ImVec2(1, 1);
+            bool is_input_mode;
+        };
+
+        static bool FileButton(FileButtonContext* ctx)
         {
             using namespace ImGui;
 
@@ -32,14 +47,14 @@ namespace pulsared
             if (window->SkipItems)
                 return false;
 
-            ImGuiID id = window->GetID(str);
+            ImGuiID id = window->GetID(ctx->str);
 
             const ImVec2 padding = g.Style.FramePadding;
 
-            ImVec2 offset = size;
-            offset.y += label_height;
+            ImVec2 offset = ctx->size;
+            offset.y += ctx->label_height;
 
-            ImRect pic_bb(window->DC.CursorPos, window->DC.CursorPos + size + padding * 2.0f);
+            ImRect pic_bb(window->DC.CursorPos, window->DC.CursorPos + ctx->size + padding * 2.0f);
             ImRect dirty_bb(window->DC.CursorPos, window->DC.CursorPos + ImVec2{16, 16});
 
             const ImRect bb(window->DC.CursorPos, window->DC.CursorPos + offset + padding * 2.0f);
@@ -57,7 +72,7 @@ namespace pulsared
 
             // Render
             ImU32 col{};
-            if (selected)
+            if (ctx->selected)
             {
                 col = GetColorU32(ImGuiCol_ButtonHovered);
             }
@@ -71,26 +86,26 @@ namespace pulsared
 
             if (bg_col.w > 0.0f)
                 window->DrawList->AddRectFilled(bb.Min + padding, bb.Max - padding, GetColorU32(bg_col));
-            window->DrawList->AddImage(texture_id, pic_bb.Min + padding, pic_bb.Max - padding, uv0, uv1, GetColorU32(tint_col));
+            window->DrawList->AddImage(ctx->texture_id, pic_bb.Min + padding, pic_bb.Max - padding, ctx->uv0, ctx->uv1, GetColorU32(tint_col));
 
-            if (is_dirty)
+            if (ctx->is_dirty)
             {
-                window->DrawList->AddImage(dirty_texid, dirty_bb.Min + padding, dirty_bb.Max,
-                                           uv0, uv1, GetColorU32(tint_col));
+                window->DrawList->AddImage(ctx->dirty_texid, dirty_bb.Min + padding, dirty_bb.Max,
+                                           ctx->uv0, ctx->uv1, GetColorU32(tint_col));
             }
 
             auto label_pos = bb.Min + padding;
-            label_pos.y += size.y;
-            RenderText(label_pos, str);
+            label_pos.y += ctx->size.y;
+            RenderText(label_pos, ctx->str);
 
             if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort | ImGuiHoveredFlags_NoSharedDelay))
             {
-                if (tootip)
+                if (ctx->tootip)
                 {
                     // SetNextWindowSize({ 300, -FLT_MIN });
                     if (BeginTooltip())
                     {
-                        tootip(user_data);
+                        ctx->tootip(ctx->user_data);
                         EndTooltip();
                     }
                 }
@@ -99,17 +114,14 @@ namespace pulsared
             return pressed;
         }
 
-        static bool DragFileButton(const char* str,
-                                   ImTextureID texture_id, ImVec2 size, float label_height, bool selected, bool is_dirty, ImTextureID dirty_texid,
-                                   void* user_data, const std::function<void(void*)>& tootip, const char* drag_type, string_view drag_data,
-                                   ImVec2 uv0 = ImVec2(0, 0), ImVec2 uv1 = ImVec2(1, 1))
+        static bool DragFileButton(FileButtonContext* ctx, const char* drag_type, string_view drag_data)
         {
-            bool b = FileButton(str, texture_id, size, label_height, selected, is_dirty, dirty_texid, user_data, tootip, uv0, uv1);
+            bool b = FileButton(ctx);
             if (drag_type)
             {
                 if (ImGui::BeginDragDropSource())
                 {
-                    ImGui::Image(texture_id, size, uv0, uv1);
+                    ImGui::Image(ctx->texture_id, ctx->size, ctx->uv0, ctx->uv1);
                     ImGui::SetDragDropPayload(drag_type, drag_data.data(), drag_data.size());
                     ImGui::EndDragDropSource();
                 }
@@ -152,7 +164,7 @@ namespace pulsared
         {
             if (node->IsFolder)
             {
-                for (auto& i : node->Children)
+                for (auto& i : node->GetChildren())
                 {
                     RenderFolderTree(i);
                 }
@@ -177,7 +189,7 @@ namespace pulsared
         MenuManager::UnregisterContextProvider("Assets", m_onGetContextCallback);
     }
 
-    void WorkspaceWindow::OnDrawImGui()
+    void WorkspaceWindow::OnDrawImGui(float dt)
     {
         if (!Workspace::IsOpened())
         {
@@ -208,6 +220,35 @@ namespace pulsared
 
         ImGui::Columns(1);
     }
+
+
+    struct RenameDialog : ModalDialog
+    {
+        char m_inputBuffer[64]{};
+        std::function<void(const char*)> m_okCallback;
+
+        using ModalDialog::ModalDialog;
+
+        void OnDraw(float dt) override
+        {
+            ImGui::Text("name:");
+            ImGui::InputText("##x", m_inputBuffer, 64);
+
+            if (ImGui::Button("ok"))
+            {
+                m_shouldClose = true;
+                if (m_okCallback)
+                    m_okCallback(m_inputBuffer);
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("cancel"))
+            {
+                m_shouldClose = true;
+            }
+        }
+
+    };
+
     static void InitMainMenuAsset()
     {
         auto menu = mksptr(new MenuEntrySubMenu("Assets"));
@@ -236,8 +277,13 @@ namespace pulsared
                 if (AssetsMenuContext_sp ctx; ctxs && (ctx = ctxs->FindContext<AssetsMenuContext>()))
                 {
                     Type* type = AssemblyManager::GlobalFindType(ctxs->EntryName);
-                    AssetDatabase::NewAsset(ctx->CurrentPath, type);
-                    Logger::Log("create asset : " + ctx->CurrentPath + " ; " + type->GetName());
+                    auto curPath = ctx->CurrentPath;
+
+                    auto dialog = mksptr(new RenameDialog("New Asset"));
+                    dialog->m_okCallback = [curPath, type](const char* str) {
+                        AssetDatabase::NewAsset(curPath, str, type);
+                    };
+                    GetEdApp()->ShowModalDialog(dialog);
                 }
             });
 
@@ -245,7 +291,8 @@ namespace pulsared
             {
                 if (!type->IsDefinedAttribute(cltypeof<MenuItemCreateAssetAttribute>()))
                 {
-                    continue;;
+                    continue;
+                    ;
                 }
                 auto typePaths = StringUtil::Split(type->GetName(), "::");
                 MenuEntrySubMenu_sp submenu = entry;
@@ -272,7 +319,6 @@ namespace pulsared
                     }
                 }
             }
-
         }
 
         {
@@ -298,6 +344,9 @@ namespace pulsared
         {
             auto entry = mksptr(new MenuEntryButton("Rename"));
             entry->CanOperate = hasPathLambda;
+            entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
+
+            });
             menu->AddEntry(entry);
         }
         {
@@ -308,17 +357,34 @@ namespace pulsared
         {
             auto entry = mksptr(new MenuEntryButton("Save"));
             entry->CanOperate = hasPathLambda;
+            entry->Action = MenuAction::FromLambda([](MenuContexts_rsp ctxs)
+            {
+                if (AssetsMenuContext_sp ctx; ctxs && ((ctx = ctxs->FindContext<AssetsMenuContext>())))
+                {
+                    for (const auto& selectedFile : ctx->SelectedFiles)
+                    {
+                        if (!selectedFile.lock()->IsFolder)
+                        {
+                            auto asset = AssetDatabase::LoadAssetAtPath(selectedFile.lock()->AssetPath);
+                            AssetDatabase::Save(asset);
+                        }
+                    }
+                }
+            });
             menu->AddEntry(entry);
         }
         {
             auto entry = mksptr(new MenuEntryButton("Delete"));
             entry->CanOperate = hasPathLambda;
-            menu->AddEntry(entry);
-        }
-
-        {
-            auto entry = mksptr(new MenuEntryButton("Delete"));
-            entry->CanOperate = hasPathLambda;
+            entry->Action = MenuAction::FromLambda([](const MenuContexts_sp& ctxs) {
+                if (AssetsMenuContext_sp ctx; ctxs && ((ctx = ctxs->FindContext<AssetsMenuContext>())))
+                {
+                    for (const auto& selectedFile : ctx->SelectedFiles)
+                    {
+                        AssetDatabase::DeleteAsset(selectedFile.lock()->AssetPath);
+                    }
+                }
+            });
             menu->AddEntry(entry);
         }
         {
@@ -514,7 +580,7 @@ namespace pulsared
 
         ImGui::Columns(columnCount, 0, false);
 
-        for (auto& child : p->Children)
+        for (auto& child : p->GetChildren())
         {
             ImGui::PushStyleColor(ImGuiCol_Button, {});
 
@@ -535,10 +601,18 @@ namespace pulsared
                 ";",
                 isFolder ? child->AssetPath : child->AssetMeta->Handle.to_string());
 
-            if (PImGui::DragFileButton(
-                    child->AssetName.c_str(), iconDesc, iconSize,
-                    /*label */ 30, isSelected, isDirty, dirtyDesc, child.get(), &_RenderFileToolTips,
-                    dragType, dragData))
+            PImGui::FileButtonContext uictx{};
+            uictx.str = child->AssetName.c_str();
+            uictx.texture_id = iconDesc;
+            uictx.size = iconSize;
+            uictx.label_height = 30;
+            uictx.selected = isSelected;
+            uictx.is_dirty = isDirty;
+            uictx.dirty_texid = dirtyDesc;
+            uictx.user_data = child.get();
+            uictx.tootip = &_RenderFileToolTips;
+
+            if (PImGui::DragFileButton(&uictx, dragType, dragData))
             {
                 if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
                 {

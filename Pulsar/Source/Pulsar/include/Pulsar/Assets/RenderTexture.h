@@ -19,10 +19,11 @@ namespace pulsar
     public:
         RenderTexture();
         ~RenderTexture();
+        void OnDestroy() override;
     public:
         //Texture
-        virtual int32_t GetWidth() const override { return m_width; }
-        virtual int32_t GetHeight() const override { return m_height; }
+        int32_t GetWidth() const override { return m_width; }
+        int32_t GetHeight() const override { return m_height; }
     public:
         
         void PostInitializeData(int32_t width, int32_t height);
@@ -32,9 +33,9 @@ namespace pulsar
         static ObjectPtr<RenderTexture> StaticCreate(index_string name, int width, int height, bool hasColor, bool hasDepth);
     public:
         //IGPUResource
-        virtual void CreateGPUResource() override;
-        virtual void DestroyGPUResource() override;
-        virtual bool IsCreatedGPUResource() const override;
+        bool CreateGPUResource() override;
+        void DestroyGPUResource() override;
+        bool IsCreatedGPUResource() const override;
         void EnableRenderTarget();
         void DisableRenderTarget();
 
@@ -42,11 +43,6 @@ namespace pulsar
         const std::shared_ptr<gfx::GFXFrameBufferObject>& GetGfxFrameBufferObject() const { return m_framebuffer; }
 
     protected:
-        //int32_t width_;
-        //int32_t height_;
-
-        //uint32_t buffer_;
-        //int32_t last_buffer_;
 
         int32_t m_width;
         int32_t m_height;
@@ -54,6 +50,8 @@ namespace pulsar
         std::shared_ptr<gfx::GFXRenderTarget> m_color0;
         std::shared_ptr<gfx::GFXRenderTarget> m_depth;
         std::shared_ptr<gfx::GFXFrameBufferObject> m_framebuffer;
+
+        bool m_createdGPUResource = false;
     };
     DECL_PTR(RenderTexture);
 

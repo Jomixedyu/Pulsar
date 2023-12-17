@@ -17,7 +17,7 @@ namespace pulsar
     {
         Shader_sp self = mksptr(new Shader);
         self->Construct();
-        self->m_name = name;
+        self->SetName(name);
         self->m_shaderSource = std::move(pass);
 
         return self;

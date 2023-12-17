@@ -2,7 +2,7 @@
 
 namespace pulsared
 {
-    void OutputWindow::OnDrawImGui()
+    void OutputWindow::OnDrawImGui(float dt)
     {
         ImGui::Text("a");
     }

@@ -20,9 +20,13 @@ namespace pulsar
     {
         return GetAttachedNode()->GetRuntimeWorld();
     }
+    ObjectPtr<Scene> Component::GetRuntimeScene() const
+    {
+        return m_runtimeScene;
+    }
     void Component::OnReceiveMessage(MessageId id)
     {
-        if(id == MessageId_OnChangedTransform)
+        if(id == MessageId_OnChangedTransform())
         {
             OnMsg_TransformChanged();
         }
@@ -50,6 +54,7 @@ namespace pulsar
     void Component::BeginComponent()
     {
         m_beginning = true;
+        m_runtimeScene = GetAttachedNode()->GetRuntimeOwnerScene();
     }
     void Component::EndComponent()
     {

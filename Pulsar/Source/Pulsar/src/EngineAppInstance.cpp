@@ -14,127 +14,143 @@
 namespace pulsar
 {
 
-    void EngineRenderPipeline::OnRender(gfx::GFXRenderContext* context, const std::vector<gfx::GFXFrameBufferObject*>& framebuffers)
+    void EngineRenderPipeline::OnRender(
+        gfx::GFXRenderContext* context, gfx::GFXFrameBufferObject* backbuffer)
     {
-        array_list<gfx::GFXFrameBufferObject*> targetFBOs;
-        targetFBOs.insert(targetFBOs.end(), framebuffers.begin(), framebuffers.end());
-
-        // fill cameras rendertarget
-        for (auto& cam : m_world->GetCameraManager().GetCameras())
+        for (auto world : m_worlds)
         {
-            targetFBOs.push_back(cam->GetRenderTarget()->GetGfxFrameBufferObject().get());
-        }
-
-        if (targetFBOs.size() == 0)
-        {
-            return;
-        }
-        auto& renderObjects = m_world->GetRenderObjects();
-        auto pipelineMgr = context->GetApplication()->GetGraphicsPipelineManager();
-
-        auto& cmdBuffer = context->AddCommandBuffer();
-        cmdBuffer.Begin();
-
-        for (auto& targetFBO : targetFBOs)
-        {
-            cmdBuffer.SetFrameBuffer(targetFBO);
-
-            for (auto& rt : targetFBO->GetRenderTargets())
+            array_list<gfx::GFXFrameBufferObject*> targetFBOs;
+            // fill cameras rendertarget
+            for (auto& cam : world->GetCameraManager().GetCameras())
             {
-                cmdBuffer.CmdClearColor(rt);
+                targetFBOs.push_back(cam->GetRenderTarget()->GetGfxFrameBufferObject().get());
             }
 
-            cmdBuffer.CmdBeginFrameBuffer();
-            cmdBuffer.CmdSetViewport(0, 0, (float)targetFBO->GetWidth(), (float)targetFBO->GetHeight());
-
-            //targetFBO->RefData.at(0);
-
-            // for each render object
-            for (auto ro : renderObjects)
+            if (targetFBOs.empty())
             {
-                //setup descriptor
-
+                return;
             }
+            auto& renderObjects = world->GetRenderObjects();
+            auto pipelineMgr = context->GetApplication()->GetGraphicsPipelineManager();
 
-            //combine batch
-            std::unordered_map<size_t, rendering::MeshBatch> batchs;
-            for (const rendering::RenderObject_sp& renderObject : renderObjects)
+            auto& cmdBuffer = context->AddCommandBuffer();
+            cmdBuffer.Begin();
+
+            for (auto& targetFBO : targetFBOs)
             {
-                for (auto& batch : renderObject->GetMeshBatchs())
+                cmdBuffer.SetFrameBuffer(targetFBO);
+
+                for (auto& rt : targetFBO->GetRenderTargets())
                 {
-                    if(batch.Material)
-                    {
-                        batchs[batch.GetRenderState()] = batch;
-                    }
+                    cmdBuffer.CmdClearColor(rt);
                 }
-            }
 
-            // batch render
-            for (auto& [state, batch] : batchs)
-            {
-                const auto passCount = batch.Material->GetShaderPassCount();
-                for (size_t i = 0; i < passCount; i++)
+                cmdBuffer.CmdBeginFrameBuffer();
+                cmdBuffer.CmdSetViewport(0, 0, (float)targetFBO->GetWidth(), (float)targetFBO->GetHeight());
+
+                // targetFBO->RefData.at(0);
+
+                // for each render object
+                for (auto ro : renderObjects)
                 {
-                    auto shaderPass = batch.Material->GetGfxShaderPass(i);
+                    // setup descriptor
+                }
 
-                    // bind render state
-                    array_list<gfx::GFXDescriptorSetLayout_sp> descriptorSetLayouts;
-
-                    for (auto& refData : targetFBO->RefData)
+                // combine batch
+                std::unordered_map<size_t, rendering::MeshBatch> batchs;
+                for (const rendering::RenderObject_sp& renderObject : renderObjects)
+                {
+                    for (auto& batch : renderObject->GetMeshBatchs())
                     {
-                        descriptorSetLayouts.push_back(refData.lock()->GetDescriptorSetLayout());
-                    }
-                    descriptorSetLayouts.push_back(m_world->GetWorldDescriptorSet()->GetDescriptorSetLayout());
-                    descriptorSetLayouts.push_back(batch.DescriptorSetLayout);
-
-
-                    auto gfxPipeline = pipelineMgr->GetGraphicsPipeline(shaderPass, descriptorSetLayouts, targetFBO->GetRenderPassLayout(), batch.State);
-                    cmdBuffer.CmdBindGraphicsPipeline(gfxPipeline.get());
-
-                    for (auto& element : batch.Elements)
-                    {
-                        // bind descriptor sets
+                        auto stateHash = batch.GetRenderState();
+                        if(batchs.contains(stateHash))
                         {
-                            array_list<gfx::GFXDescriptorSet*> descriptorSets;
-                            // setup cam
-                            for (auto& refData : targetFBO->RefData)
-                            {
-                                descriptorSets.push_back(refData.lock().get());
-                            }
-                            //setup world
-                            descriptorSets.push_back(m_world->GetWorldDescriptorSet().get());
-                            //setup model
-                            descriptorSets.push_back(element.ModelDescriptor.get());
-                            //setup matinst
-                            // todo
-                            cmdBuffer.CmdBindDescriptorSets(descriptorSets, gfxPipeline.get());
-                        }
-
-                        cmdBuffer.CmdBindVertexBuffers({ element.Vertex.get() });
-                        if (batch.IsUsedIndices)
-                        {
-                            cmdBuffer.CmdBindIndexBuffer(element.Indices.get());
-                        }
-                        if (batch.IsUsedIndices)
-                        {
-                            cmdBuffer.CmdDrawIndexed(element.Indices->GetSize() / sizeof(uint32_t));
+                            batchs[stateHash].Append(batch);
                         }
                         else
                         {
-                            cmdBuffer.CmdDraw(element.Vertex->GetSize());
+                            batchs[stateHash] = batch;
                         }
                     }
-
                 }
-            }
 
-            //post processing
-            cmdBuffer.CmdEndFrameBuffer();
-            cmdBuffer.SetFrameBuffer(nullptr);
+                // batch render
+                for (auto& [state, batch] : batchs)
+                {
+                    const auto passCount = batch.Material->GetShaderPassCount();
+                    for (size_t i = 0; i < passCount; i++)
+                    {
+                        auto shaderPass = batch.Material->GetGfxShaderPass(i);
+
+                        // bind render state
+                        array_list<gfx::GFXDescriptorSetLayout_sp> descriptorSetLayouts;
+
+                        for (auto& refData : targetFBO->RefData)
+                        {
+                            descriptorSetLayouts.push_back(refData.lock()->GetDescriptorSetLayout());
+                        }
+                        descriptorSetLayouts.push_back(world->GetWorldDescriptorSet()->GetDescriptorSetLayout());
+                        descriptorSetLayouts.push_back(batch.DescriptorSetLayout);
+
+                        auto gfxPipeline = pipelineMgr->GetGraphicsPipeline(shaderPass, descriptorSetLayouts, targetFBO->GetRenderPassLayout(), batch.State);
+                        cmdBuffer.CmdBindGraphicsPipeline(gfxPipeline.get());
+
+                        for (auto& element : batch.Elements)
+                        {
+                            // bind descriptor sets
+                            {
+                                array_list<gfx::GFXDescriptorSet*> descriptorSets;
+                                // setup cam
+                                for (auto& refData : targetFBO->RefData)
+                                {
+                                    descriptorSets.push_back(refData.lock().get());
+                                }
+                                // setup world
+                                descriptorSets.push_back(world->GetWorldDescriptorSet().get());
+                                // setup model
+                                descriptorSets.push_back(element.ModelDescriptor.get());
+                                // setup matinst
+                                //  todo
+                                cmdBuffer.CmdBindDescriptorSets(descriptorSets, gfxPipeline.get());
+                            }
+
+                            cmdBuffer.CmdBindVertexBuffers({element.Vertex.get()});
+                            if (batch.IsUsedIndices)
+                            {
+                                cmdBuffer.CmdBindIndexBuffer(element.Indices.get());
+                            }
+                            if (batch.IsUsedIndices)
+                            {
+                                cmdBuffer.CmdDrawIndexed(element.Indices->GetSize() / sizeof(uint32_t));
+                            }
+                            else
+                            {
+                                cmdBuffer.CmdDraw(element.Vertex->GetSize());
+                            }
+                        }
+                    }
+                }
+
+                // post processing
+                cmdBuffer.CmdEndFrameBuffer();
+                cmdBuffer.SetFrameBuffer(nullptr);
+            }
+            cmdBuffer.End();
         }
-        cmdBuffer.End();
     }
-    
+    void EngineRenderPipeline::AddWorld(World* world)
+    {
+        m_worlds.push_back(world);
+    }
+    void EngineRenderPipeline::RemoveWorld(World* world)
+    {
+        auto it = std::ranges::find(m_worlds, world);
+        if(it != m_worlds.end())
+        {
+            m_worlds.erase(it);
+        }
+    }
+
     const char* EngineAppInstance::AppType()
     {
         return "engine";
@@ -172,8 +188,8 @@ namespace pulsar
         //SystemInterface::SetQuitCallBack(_quitting);
         //RenderInterface::SetViewport(0, 0, (int)size.x, (int)size.y);
 
-        World::Reset<World>();
-        Application::GetGfxApp()->SetRenderPipeline(new EngineRenderPipeline(World::Current()));
+        World::Reset<World>("MainWorld");
+        Application::GetGfxApp()->SetRenderPipeline(new EngineRenderPipeline{ World::Current() });
     }
 
     void EngineAppInstance::OnTerminate()

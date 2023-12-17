@@ -25,7 +25,7 @@ namespace pulsared
             ImGui::TreePop();
         }
     }
-    void MenuDebugTool::OnDrawImGui()
+    void MenuDebugTool::OnDrawImGui(float dt)
     {
         for (auto& menu : MenuManager::GetMenus())
         {

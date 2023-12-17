@@ -101,6 +101,17 @@ namespace pulsar
     {
         RuntimeObjectWrapper::OnPostEditChanged.Invoke(this);
     }
+    void ObjectBase::SetIndexName(index_string name)
+    {
+        m_name = name;
+        #ifdef WITH_EDITOR
+        m_objectName = name.to_string();
+        #endif
+    }
+    void ObjectBase::SetName(string_view name)
+    {
+        SetIndexName(name);
+    }
 
     void ObjectBase::OnConstruct()
     {

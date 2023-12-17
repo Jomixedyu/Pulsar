@@ -1,6 +1,7 @@
-#include <Pulsar/Scene.h>
-#include <Pulsar/Node.h>
 #include <CoreLib.Serialization/DataSerializer.h>
+#include <Pulsar/Node.h>
+#include <Pulsar/Scene.h>
+#include <ranges>
 
 namespace pulsar
 {
@@ -21,12 +22,10 @@ namespace pulsar
         {
             _BeginNode(self_ref(), node);
         }
-
     }
 
     void Scene::OnRemoveNode(Node_ref node)
     {
-
     }
 
     void Scene::BeginScene(World* world)
@@ -36,7 +35,6 @@ namespace pulsar
         {
             node->BeginNode(self_ref());
         }
-
     }
     void Scene::EndScene()
     {
@@ -47,21 +45,58 @@ namespace pulsar
 
         m_runtimeWorld = nullptr;
     }
+    void Scene::Tick(Ticker ticker)
+    {
+        for (auto& node : *GetNodes())
+        {
+            if (IsValid(node) && node->GetIsActive())
+            {
+                node->OnTick(ticker);
+            }
+        }
+    }
 
     Scene::Scene()
     {
-
     }
 
     ObjectPtr<Scene> Scene::StaticCreate(string_view name)
     {
         auto self = mksptr(new Scene);
         self->Construct();
-        self->m_name = name;
+        self->SetIndexName(name);
         self->SetObjectFlags(self->GetObjectFlags() | OF_Persistent | OF_Instantiable);
 
         return self;
     }
+
+    void Scene::AddDirectionalLight(DirectionalLightSceneInfo* light)
+    {
+        m_directionalLights.push_back(light);
+        UpdateDirectionalLight();
+    }
+    void Scene::RemoveDirectionalLight(DirectionalLightSceneInfo* light)
+    {
+        auto it = std::ranges::find(m_directionalLights, light);
+        if (it != m_directionalLights.end())
+        {
+            m_directionalLights.erase(it);
+        }
+        UpdateDirectionalLight();
+    }
+    void Scene::UpdateDirectionalLight()
+    {
+        DirectionalLightSceneInfo* maxIntensityDirectionalLight = nullptr;
+        for (const auto& dlight : m_directionalLights)
+        {
+            if (maxIntensityDirectionalLight == nullptr || dlight->Intensity > maxIntensityDirectionalLight->Intensity)
+            {
+                maxIntensityDirectionalLight = dlight;
+            }
+        }
+        m_runtimeEnvironment.DirectionalLight = maxIntensityDirectionalLight;
+    }
+
     void Scene::OnDestroy()
     {
         base::OnDestroy();
@@ -71,5 +106,4 @@ namespace pulsar
             DestroyObject(node);
         }
     }
-}
-
+} // namespace pulsar

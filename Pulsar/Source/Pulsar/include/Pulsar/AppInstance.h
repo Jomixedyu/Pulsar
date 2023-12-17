@@ -12,6 +12,8 @@ namespace pulsar
     class Material;
     class AssetManager;
 
+
+
     class AppInstance
     {
         friend class Application;
@@ -46,6 +48,8 @@ namespace pulsar
         virtual void OnBeginRender(float dt) = 0;
         virtual void OnEndRender(float d4) = 0;
         virtual bool IsQuit() = 0;
+
+        Action<float> OnRenderTick;
     protected:
         array_list<Subsystem_sp> subsystems;
     protected:

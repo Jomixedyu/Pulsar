@@ -10,7 +10,7 @@ namespace pulsared
     {
         m_winSize = {800,500};
     }
-    void ObjectDebugTool::OnDrawImGui()
+    void ObjectDebugTool::OnDrawImGui(float dt)
     {
         ImGui::InputText("Search", m_search, sizeof(m_search));
 

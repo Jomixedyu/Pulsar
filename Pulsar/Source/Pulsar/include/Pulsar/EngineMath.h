@@ -27,6 +27,15 @@ namespace pulsar::math
         result[2][2] = -(zFar + zNear) / (zFar - zNear);
         result[3][2] = -(2 * zFar * zNear) / (zFar - zNear);
     }
+    inline void Perspective_LHZO(Matrix4f& result, const float& fovy, const float& aspect, const float& zNear, const float& zFar)
+    {
+        float const tanHalfFovy = tan(fovy / 2);
+        result[0][0] = 1 / (aspect * tanHalfFovy);
+        result[1][1] = 1 / (tanHalfFovy);
+        result[2][2] = zFar / (zFar - zNear);
+        result[2][3] = 1;
+        result[3][2] = -(zFar * zNear) / (zFar - zNear);
+    }
 
     inline void Ortho(Matrix4f& Result, float left, float right, float bottom, float top, float zNear, float zFar)
     {

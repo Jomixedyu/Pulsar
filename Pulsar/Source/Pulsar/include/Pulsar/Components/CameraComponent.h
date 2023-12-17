@@ -47,7 +47,7 @@ namespace pulsar
         CameraProjectionMode  GetProjectionMode() const { return m_projectionMode; }
         void                  SetProjectionMode(CameraProjectionMode mode);
         const RenderTexture_ref&  GetRenderTarget() const { return m_renderTarget; }
-        void                      SetRenderTarget(const RenderTexture_ref& value);
+        void                      SetRenderTarget(const RenderTexture_ref& value, bool managed = false);
 
     protected:
         void BeginRT();
@@ -77,6 +77,8 @@ namespace pulsar
 
         CORELIB_REFL_DECL_FIELD(m_renderTarget);
         RenderTexture_ref m_renderTarget;
+
+        bool m_managedRT{false};
 #ifdef WITH_EDITOR
         CORELIB_REFL_DECL_FIELD(debug_view_mat, new DebugPropertyAttribute, new ReadOnlyPropertyAttribute);
         Matrix4f debug_view_mat;

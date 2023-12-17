@@ -43,7 +43,7 @@ namespace pulsar
         Matrix4f ret{1};
         if (this->m_projectionMode == CameraProjectionMode::Perspective)
         {
-            math::Perspective(ret,
+            math::Perspective_LHZO(ret,
                 math::Radians(this->m_fov),
                 size.x / size.y,
                 this->m_near,
@@ -119,9 +119,14 @@ namespace pulsar
         m_cameraDataBuffer->Fill(&target);
     }
 
-    void CameraComponent::SetRenderTarget(const RenderTexture_ref& value)
+    void CameraComponent::SetRenderTarget(const RenderTexture_ref& value, bool managed)
     {
+        if (m_managedRT && m_renderTarget)
+        {
+            DestroyObject(m_renderTarget);
+        }
         m_renderTarget = value;
+        m_managedRT = managed;
         UpdateRT();
         BeginRT();
     }
@@ -169,6 +174,10 @@ namespace pulsar
     {
         base::EndComponent();
         GetAttachedNode()->GetRuntimeOwnerScene()->GetWorld()->GetCameraManager().RemoveCamera(THIS_REF);
+        if (m_managedRT && m_renderTarget)
+        {
+            DestroyObject(m_renderTarget);
+        }
         m_camDescriptorLayout.reset();
         m_cameraDescriptorSet.reset();
         m_cameraDataBuffer.reset();

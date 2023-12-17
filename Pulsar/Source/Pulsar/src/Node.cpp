@@ -71,7 +71,7 @@ namespace pulsar
     {
         for (auto& comp : *m_components)
         {
-            comp->EndComponent();
+            EndComponent(comp);
         }
         m_runtimeScene = nullptr;
     }
@@ -154,18 +154,22 @@ namespace pulsar
         //}
 
         component->BeginComponent();
+        component->OnReceiveMessage(MessageId_OnChangedTransform());
     }
 
     void Node::EndComponent(Component_ref component)
     {
-
+        if(component)
+        {
+            component->EndComponent();
+        }
     }
 
     ObjectPtr<Node> Node::StaticCreate(string_view name, TransformComponent_ref parent, ObjectFlags flags)
     {
         Node_sp node = mksptr(new Node);
         node->SetObjectFlags(flags);
-        node->m_name = name;
+        node->SetName(name);
         node->Construct();
         node->GetTransform()->SetParent(parent);
         return node;

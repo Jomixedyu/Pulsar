@@ -9,9 +9,12 @@ namespace pulsar
 {
     class Node;
     class World;
+    class Scene;
 
     using MessageId = size_t;
-    constexpr size_t MessageId_OnChangedTransform = 1;
+    inline size_t MessageId_OnChangedTransform() { static bool b; return reinterpret_cast<size_t>(&b); };
+    inline size_t MessageId_OnDrawGizmos() { static bool b; return reinterpret_cast<size_t>(&b); };
+    inline size_t MessageId_OnSelectedDrawGizmos() { static bool b; return reinterpret_cast<size_t>(&b); };
 
     class AbstractComponentAttribute : public Attribute
     {
@@ -27,6 +30,7 @@ namespace pulsar
         ObjectPtr<Node> GetAttachedNode() const;
         ObjectPtr<Node> GetOwnerNode() const;
         World* GetWorld() const;
+        ObjectPtr<Scene> GetRuntimeScene() const;
         virtual bool get_is_tickable() const { return true; }
         virtual void OnReceiveMessage(MessageId id);
     public:
@@ -50,6 +54,7 @@ namespace pulsar
     private:
         ObjectPtr<Node> m_ownerNode;
         ObjectPtr<Node> m_attachedNode;
+        ObjectPtr<Scene> m_runtimeScene;
     protected:
         bool m_beginning = false;
     public:

@@ -6,7 +6,7 @@ namespace pulsared
     class ConsoleWindow : public PanelWindow
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::ConsoleWindow, PanelWindow);
-        virtual void OnDrawImGui() override;
+        virtual void OnDrawImGui(float dt) override;
         virtual ImGuiWindowFlags GetGuiWindowFlags() const override;
 
         virtual void OnOpen() override;

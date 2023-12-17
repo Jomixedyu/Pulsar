@@ -20,12 +20,18 @@ namespace pulsared
         string AssetPath;
         bool IsFolder;
         bool IsPhysicsFile;
+        bool IsCreated;
 
         bool Valid;
         std::weak_ptr<T> Parent;
+    protected:
         std::vector<std::shared_ptr<T>> Children;
+    public:
 
-
+        const std::vector<std::shared_ptr<T>>& GetChildren() const
+        {
+            return Children;
+        }
         string GetPhysicsPath() const
         {
             return std::filesystem::absolute(PhysicsPath).string();
@@ -74,6 +80,26 @@ namespace pulsared
                 }
             }
             return child;
+        }
+        void AddChild(const std::shared_ptr<T>& child)
+        {
+            child->Parent = sharedthis::shared_from_this();
+            Children.push_back(child);
+        }
+        std::shared_ptr<T> NewChild()
+        {
+            auto newChild = std::make_shared<T>();
+            newChild->Parent = sharedthis::shared_from_this();
+            Children.push_back(newChild);
+            return newChild;
+        }
+        void RemoveChild(const std::shared_ptr<T>& node)
+        {
+            auto it = std::ranges::find(Children, node);
+            if (it != Children.end())
+            {
+                Children.erase(it);
+            }
         }
         std::shared_ptr<T> CreateChildFolder(string_view name)
         {

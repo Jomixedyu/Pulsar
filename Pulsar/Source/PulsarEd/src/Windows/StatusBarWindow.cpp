@@ -46,7 +46,7 @@ namespace pulsared
 
     }
 
-    void StatusBarWindow::OnDrawImGui()
+    void StatusBarWindow::OnDrawImGui(float dt)
     {
         ImGui::PushStyleColor(ImGuiCol_MenuBarBg, { 0.08, 0.08, 0.08, 1 });
         if (BeginMainStatusBar())
@@ -60,9 +60,9 @@ namespace pulsared
         ImGui::PopStyleColor();
     }
 
-    void StatusBarWindow::DrawImGui()
+    void StatusBarWindow::DrawImGui(float dt)
     {
-        OnDrawImGui();
+        OnDrawImGui(dt);
     }
 
     void StatusBarWindow::OnWindowResize()

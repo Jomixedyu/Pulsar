@@ -12,8 +12,12 @@ namespace pulsared
     public:
         virtual string_view GetWindowDisplayName() const { return "Material Editor"; }
     protected:
+        virtual void OnDrawAssetPropertiesUI(float dt) override;
         virtual void OnOpen() override;
         virtual void OnClose() override;
         void OnRefreshMenuContexts() override;
+
+    protected:
+        Shader_ref m_shader;
     };
 }

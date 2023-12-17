@@ -37,7 +37,7 @@ namespace pulsared
 
         virtual string_view GetDescription() const = 0;
         virtual std::shared_ptr<AssetImporter> CreateImporter() = 0;
-        virtual sptr<AssetImporterSettings> CreateImporterSettings() = 0;
+        virtual sptr<AssetImporterSettings> CreateImporterSettings();
     protected:
         array_list<string> m_supportedFormats;
     };

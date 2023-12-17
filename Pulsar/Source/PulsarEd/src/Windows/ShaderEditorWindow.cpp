@@ -1,4 +1,8 @@
 #include "Windows/ShaderEditorWindow.h"
+
+#include "Pulsar/Components/StaticMeshRendererComponent.h"
+#include "Pulsar/Scene.h"
+
 #include <PulsarEd/Menus/Menu.h>
 #include <PulsarEd/Menus/MenuEntry.h>
 #include <PulsarEd/Menus/MenuEntrySubMenu.h>
@@ -58,10 +62,22 @@ namespace pulsared
     void ShaderEditorWindow::OnOpen()
     {
         base::OnOpen();
+
+        m_previewMaterial = Material::StaticCreate("PreviewMaterial", m_assetObject);
+
+        auto previewMesh = Node::StaticCreate("PreviewMesh");
+        auto renderer = previewMesh->AddComponent<StaticMeshRendererComponent>();
+
+        renderer->SetStaticMesh(GetAssetManager()->LoadAsset<StaticMesh>("Engine/Shapes/Sphere"));
+        renderer->SetMaterial(0, m_previewMaterial);
+        m_world->GetPersistentScene()->AddNode(previewMesh);
+
     }
     void ShaderEditorWindow::OnClose()
     {
         base::OnClose();
+        DestroyObject(m_previewMaterial);
+        m_previewMaterial.Reset();
     }
 
     void ShaderEditorWindow::OnRefreshMenuContexts()
@@ -70,9 +86,9 @@ namespace pulsared
         m_menuBarCtxs->Contexts.push_back(mksptr(new ShaderEditorMenuContext{this->GetAssetObject()}));
     }
 
-    void ShaderEditorWindow::OnDrawAssetPropertiesUI()
+    void ShaderEditorWindow::OnDrawAssetPropertiesUI(float dt)
     {
-        base::OnDrawAssetPropertiesUI();
+        base::OnDrawAssetPropertiesUI(dt);
         Shader_ref shader = m_assetObject;
         if (PImGui::PropertyGroup("Shader"))
         {
@@ -96,10 +112,10 @@ namespace pulsared
         }
     }
 
-    void ShaderEditorWindow::OnDrawImGui()
+    void ShaderEditorWindow::OnDrawImGui(float dt)
     {
         static MenuInit _MenuInit_;
-        base::OnDrawImGui();
+        base::OnDrawImGui(dt);
     }
 
-}
+} // namespace pulsared

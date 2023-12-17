@@ -127,6 +127,10 @@ namespace jxcorlib::platform::window
             {
                 filter_str[i] = '\0';
             }
+            else if(c == '|')
+            {
+                filter_str[i] = ';';
+            }
             else
             {
                 filter_str[i] = c;

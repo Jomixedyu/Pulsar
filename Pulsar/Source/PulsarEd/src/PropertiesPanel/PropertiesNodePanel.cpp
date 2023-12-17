@@ -1,4 +1,8 @@
 #include "PropertiesPanel/PropertiesNodePanel.h"
+
+#include "Menus/Menu.h"
+#include "Menus/MenuRenderer.h"
+
 #include <PulsarEd/EditorSelection.h>
 #include <PulsarEd/PropertyControls/PropertyControl.h>
 
@@ -71,7 +75,17 @@ namespace pulsared
         ImGui::AlignTextToFramePadding();
         ImGui::Text("Components");
         ImGui::SameLine();
-        ImGui::Button("Add Component", {-FLT_MIN, 20});
+        if(ImGui::Button("Add Component", {-FLT_MIN, 20}))
+        {
+            ImGui::OpenPopup("Main.Components");
+
+        }
+        if (ImGui::BeginPopup("Main.Components"))
+        {
+            auto menu = MenuManager::GetMainMenu()->FindSubMenuEntry("Components");
+            MenuRenderer::RenderMenu(menu.get(), mksptr(new MenuContexts));
+            ImGui::EndPopup();
+        }
 
         auto componentArr = selected->GetAllComponentArray();
         for (auto& comp : componentArr)

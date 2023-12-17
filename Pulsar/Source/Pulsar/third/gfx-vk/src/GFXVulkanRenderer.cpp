@@ -39,7 +39,7 @@ namespace gfx
         renderContext.SetQueue(viewport->GetQueue());
         renderContext.DeltaTime = deltaTime;
 
-        const auto renderTargets = std::vector{ viewport->GetFrameBufferObject() };
+        const auto renderTargets = viewport->GetFrameBufferObject();
         m_app->GetRenderPipeline()->OnRender(&renderContext, renderTargets);
         renderContext.Submit();
 

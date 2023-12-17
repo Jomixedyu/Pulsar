@@ -5,7 +5,7 @@
 
 namespace pulsared
 {
-    void DockspaceWindow::OnDrawImGui()
+    void DockspaceWindow::OnDrawImGui(float dt)
     {
 
         static bool opt_fullscreen = true;

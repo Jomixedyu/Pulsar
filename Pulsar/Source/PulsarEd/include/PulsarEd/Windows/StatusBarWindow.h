@@ -15,8 +15,8 @@ namespace pulsared
         virtual void OnClose() override;
         static string_view StaticWindowName() { return "StatusBar"; }
         virtual string_view GetWindowDisplayName() const override { return StaticWindowName(); }
-        virtual void OnDrawImGui() override;
-        virtual void DrawImGui() override;
+        virtual void OnDrawImGui(float dt) override;
+        virtual void DrawImGui(float dt) override;
 
     private:
         virtual void OnWindowResize();

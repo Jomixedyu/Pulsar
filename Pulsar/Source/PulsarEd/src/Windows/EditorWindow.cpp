@@ -6,7 +6,7 @@
 namespace pulsared
 {
 
-    void EditorWindow::DrawImGui()
+    void EditorWindow::DrawImGui(float dt)
     {
         bool isOpened;
         ImGui::SetNextWindowSize(ImVec2{m_winSize.x, m_winSize.y});
@@ -16,7 +16,7 @@ namespace pulsared
             m_isOpened = isOpened;
             if (isDrawable)
             {
-                this->OnDrawImGui();
+                this->OnDrawImGui(dt);
             }
             if (m_allowResize)
             {
@@ -34,7 +34,7 @@ namespace pulsared
         ImGui::End();
     }
 
-    void EditorWindow::OnDrawImGui()
+    void EditorWindow::OnDrawImGui(float dt)
     {
 
     }

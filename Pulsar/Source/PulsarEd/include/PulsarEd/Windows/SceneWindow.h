@@ -20,7 +20,7 @@ namespace pulsared
         virtual void OnClose() override;
         static string_view StaticWindowName() { return ICON_FK_MAP " Scene" "###Scene"; }
         virtual string_view GetWindowDisplayName() const override { return StaticWindowName(); }
-        virtual void OnDrawImGui() override;
+        virtual void OnDrawImGui(float dt) override;
 
 
         //Node_ref GetSceneCameraNode() { return this->m_camNode; }

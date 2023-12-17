@@ -484,9 +484,9 @@ namespace gfx
     }
 
     std::shared_ptr<GFXTexture2D> gfx::GFXVulkanApplication::CreateTexture2DFromMemory(
-        const uint8_t* data, int32_t length, const GFXSamplerConfig& samplerConfig, bool enableReadWrite, GFXTextureFormat format)
+        const uint8_t* originalData, size_t length, const GFXSamplerConfig& samplerConfig, bool enableReadWrite, bool isSrgb)
     {
-        return GFXVulkanTexture2D::CreateFromMemory(this, data, length, enableReadWrite, format, samplerConfig);
+        return GFXVulkanTexture2D::CreateFromMemory(this, originalData, length, enableReadWrite, isSrgb, samplerConfig);
     }
 
     std::shared_ptr<GFXFrameBufferObject> GFXVulkanApplication::CreateFrameBufferObject(

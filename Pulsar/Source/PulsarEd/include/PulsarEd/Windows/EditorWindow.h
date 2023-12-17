@@ -12,7 +12,7 @@ namespace pulsared
         virtual string_view GetWindowDisplayName() const { return "EditorWindow"; }
         virtual string GetWindowName() const { return GetType()->GetName(); }
 
-        virtual void DrawImGui();
+        virtual void DrawImGui(float dt);
         virtual ImGuiWindowFlags GetGuiWindowFlags() const { return ImGuiWindowFlags_None; }
         EditorWindow();
 
@@ -23,7 +23,7 @@ namespace pulsared
         bool Open();
         void Close();
     protected:
-        virtual void OnDrawImGui();
+        virtual void OnDrawImGui(float dt);
         virtual void OnOpen() {}
         virtual void OnClose() {}
 

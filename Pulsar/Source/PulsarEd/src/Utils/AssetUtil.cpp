@@ -16,7 +16,7 @@ namespace pulsared
         {
             if (sptr_cast<AssetEditorWindow>(win)->GetAssetObject() == asset)
             {
-                //todo raise
+                //todo throw exceptions
                 return;
             }
         }

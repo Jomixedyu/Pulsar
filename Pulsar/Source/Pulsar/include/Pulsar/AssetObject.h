@@ -10,6 +10,11 @@
 
 namespace pulsar
 {
+    template <typename T>
+    void new_init_sptr(sptr<T>& ptr)
+    {
+        ptr = mksptr(new T);
+    }
 
     class MenuItemCreateAssetAttribute : public Attribute
     {
@@ -50,6 +55,13 @@ namespace pulsar
         String_sp m_latestModification;
         CORELIB_REFL_DECL_FIELD(m_hash);
         String_sp m_hash;
+
+        ImportedFileInfo()
+        {
+            new_init_sptr(m_filename);
+            new_init_sptr(m_latestModification);
+            new_init_sptr(m_hash);
+        }
     };
     CORELIB_DECL_SHORTSPTR(ImportedFileInfo);
 

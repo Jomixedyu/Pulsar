@@ -4,23 +4,11 @@
 #include <Pulsar/IGPUResource.h>
 #include <Pulsar/AssetObject.h>
 #include <Pulsar/Assets/Material.h>
+#include "Pulsar/Rendering/PrimitiveStruct.h"
 
 namespace pulsar
 {
     class Texture2D;
-
-    constexpr int STATICMESH_MAX_TEXTURE_COORDS = 4;
-
-    struct StaticMeshVertex
-    {
-        Vector3f Position;
-        Vector3f Normal;
-        Vector3f Tangent;
-        Vector3f Bitangent;
-        Color4f Color;
-        Vector2f TexCoords[STATICMESH_MAX_TEXTURE_COORDS];
-    };
-    constexpr inline int kSizeofStaticMeshVertex = sizeof(StaticMeshVertex);
 
     struct StaticMeshSection
     {
@@ -70,7 +58,7 @@ namespace pulsar
         const array_list<string>& GetMaterialNames() const { return m_materialNames; }
         size_t GetMaterialCount() const { return m_materialNames.size(); }
     public:
-        void CreateGPUResource() override;
+        bool CreateGPUResource() override;
         void DestroyGPUResource() override;
         bool IsCreatedGPUResource() const override;
         const array_list<gfx::GFXBuffer_sp>& GetGPUResourceVertexBuffers() const { return m_vertexBuffers; }

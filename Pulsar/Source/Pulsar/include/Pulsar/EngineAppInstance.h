@@ -2,6 +2,8 @@
 #include "AppInstance.h"
 #include "Rendering/RenderObject.h"
 
+#include <ranges>
+
 namespace pulsar
 {
     class World;
@@ -9,14 +11,22 @@ namespace pulsar
     class EngineRenderPipeline : public gfx::GFXRenderPipeline
     {
     public:
-        World* m_world;
-        EngineRenderPipeline(World* world)
-            : m_world(world)
+        EngineRenderPipeline(const std::initializer_list<World*>& worlds)
         {
+            for (auto world : worlds)
+            {
+                AddWorld(world);
+            }
         }
 
-        virtual void OnRender(gfx::GFXRenderContext* context, const std::vector<gfx::GFXFrameBufferObject*>& framebuffers) override;
 
+        void OnRender(gfx::GFXRenderContext* context, gfx::GFXFrameBufferObject* backbuffer) override;
+
+        void AddWorld(World* world);
+        void RemoveWorld(World* world);
+
+    protected:
+        array_list<World*> m_worlds;
     };
 
 

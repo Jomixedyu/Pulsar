@@ -11,7 +11,7 @@ namespace pulsared
     public:
         ObjectDebugTool();
         virtual string_view GetWindowDisplayName() const override { return ICON_FK_WRENCH " ObjectDebugTool"; }
-        virtual void OnDrawImGui();
+        virtual void OnDrawImGui(float dt);
 
     private:
         char m_search[128]{};

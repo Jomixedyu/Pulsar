@@ -23,8 +23,15 @@ namespace pulsar
 
         node->GetTransform()->GetChildren();
 
-
         OnAddNode(node);
+    }
+    Node_ref NodeCollection::NewNode(string_view name)
+    {
+        auto node = Node::StaticCreate(name);
+        m_nodes->push_back(node);
+        m_rootNodes->push_back(node);
+        OnAddNode(node);
+        return node;
     }
     void NodeCollection::RemoveNode(Node_ref node)
     {
