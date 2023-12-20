@@ -146,7 +146,7 @@ namespace pulsar
         base::PostEditChange(info);
         if (info->GetName() == NAMEOF(m_staticMesh))
         {
-            OnMeshChanged();
+            SetStaticMesh(m_staticMesh);
         }
         else if (info->GetName() == NAMEOF(m_materials))
         {
@@ -266,6 +266,7 @@ namespace pulsar
             if (m_staticMesh->GetMaterialCount() > m_materials->size())
             {
                 ResizeMaterials(m_staticMesh->GetMaterialCount());
+                OnMaterialChanged();
             }
         }
 

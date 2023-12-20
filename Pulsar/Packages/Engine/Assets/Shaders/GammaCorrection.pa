@@ -1,0 +1,5 @@
+{
+    "Passes": [
+        "Engine/Shaders/GammaCorrection.sh.json"
+    ]
+}

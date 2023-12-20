@@ -1,11 +1,11 @@
 #include "Node.h"
+#include "Scene.h"
+#include "World.h"
+#include <Components/RendererComponent.h>
 #include <Pulsar/Components/Component.h>
+#include <Pulsar/Logger.h>
 #include <Pulsar/TransformUtil.h>
 #include <stack>
-#include <Pulsar/Logger.h>
-#include "Scene.h"
-#include <Components/RendererComponent.h>
-#include "World.h"
 
 using namespace std;
 
@@ -31,12 +31,67 @@ namespace pulsar
         }
         return true;
     }
+    void Node::SetIsActiveSelf(bool value)
+    {
+        if (m_active == value)
+        {
+            return;
+        }
+        m_active = value;
+        if (value)
+            OnActive();
+        else
+            OnInactive();
+        for (auto child : *GetTransform()->GetChildren())
+        {
+            if (child->GetAttachedNode()->GetIsActiveSelf())
+            {
+                child->GetAttachedNode()->OnParentActiveChanged();
+            }
+        }
+    }
+    ObjectPtr<Node> Node::GetParent() const
+    {
+        if (auto p = GetTransform()->GetParent())
+        {
+            return p->GetAttachedNode();
+        }
+        return {};
+    }
+    void Node::OnActive()
+    {
+        for (auto& comp : *m_components)
+        {
+            BeginComponent(comp);
+        }
+    }
+    void Node::OnInactive()
+    {
+        for (auto& comp : *m_components)
+        {
+            EndComponent(comp);
+        }
+    }
+
+    void Node::OnParentActiveChanged()
+    {
+        if (m_runtimeScene)
+        {
+            if (GetIsActive())
+            {
+                OnActive();
+            }
+            else
+            {
+                OnInactive();
+            }
+        }
+    }
 
     Node::Node()
     {
         this->m_components = mksptr(new List<ObjectPtr<Component>>);
     }
-
 
     void Node::OnConstruct()
     {
@@ -56,22 +111,21 @@ namespace pulsar
         {
             DestroyObject(comp);
         }
-
     }
 
     void Node::BeginNode(ObjectPtr<Scene> scene)
     {
         m_runtimeScene = scene;
-        for (auto& comp : *m_components)
+        if (GetIsActive())
         {
-            BeginComponent(comp);
+            OnActive();
         }
     }
     void Node::EndNode()
     {
-        for (auto& comp : *m_components)
+        if (GetIsActive())
         {
-            EndComponent(comp);
+            OnInactive();
         }
         m_runtimeScene = nullptr;
     }
@@ -82,7 +136,7 @@ namespace pulsar
         Component_sp component = sptr_cast<Component>(obj);
         component->Construct();
 
-        //init
+        // init
         component->m_attachedNode = self_ref();
         component->m_ownerNode = self_ref();
         this->m_components->push_back(component);
@@ -94,7 +148,6 @@ namespace pulsar
 
         return component;
     }
-
 
     ObjectPtr<Component> Node::GetComponent(Type* type) const
     {
@@ -120,7 +173,6 @@ namespace pulsar
         return *this->m_components;
     }
 
-
     void Node::SendMessage(MessageId id)
     {
         for (auto& comp : *this->m_components)
@@ -141,25 +193,13 @@ namespace pulsar
     }
     void Node::BeginComponent(Component_ref component)
     {
-
-        //if (component->GetType()->IsImplementedInterface(cltypeof<IRendererComponent>()))
-        //{
-        //    if (auto ro = interface_cast<IRendererComponent>(component.GetPtr())->CreateRenderObject())
-        //    {
-        //        if (auto world = GetRuntimeWorld())
-        //        {
-        //            world->AddRenderObject(ro);
-        //        }
-        //    }
-        //}
-
         component->BeginComponent();
         component->OnReceiveMessage(MessageId_OnChangedTransform());
     }
 
     void Node::EndComponent(Component_ref component)
     {
-        if(component)
+        if (component)
         {
             component->EndComponent();
         }
@@ -182,5 +222,4 @@ namespace pulsar
         }
         return nullptr;
     }
-}
-
+} // namespace pulsar

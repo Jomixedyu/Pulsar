@@ -86,9 +86,9 @@ namespace pulsared
     {
     }
 
-    string EditorAppInstance::AppRootDir()
+    std::filesystem::path EditorAppInstance::AppRootDir()
     {
-        return StringUtil::StringCast(std::filesystem::current_path().generic_u8string());
+        return std::filesystem::current_path();
     }
 
     static void InitBasicMenu()
@@ -210,10 +210,10 @@ namespace pulsared
         using namespace std::filesystem;
         EditorLogRecorder::Initialize();
 
-        auto uicfg = PathUtil::Combine(AppRootDir(), "uiconfig.json");
+        auto uicfg = AppRootDir() / "uiconfig.json";
 
         // load config
-        if (exists(path{uicfg}))
+        if (exists(uicfg))
         {
             auto json = FileUtil::ReadAllText(uicfg);
             auto cfg = ser::JsonSerializer::Deserialize<EditorUIConfig>(json);
@@ -256,10 +256,11 @@ namespace pulsared
         }
 
         {
-            auto dlight = Node::StaticCreate("Light");
+            auto dlight = Node::StaticCreate("Directional Light");
             dlight->AddComponent<DirectionalLightComponent>();
 
             World::Current()->GetPersistentScene()->AddNode(dlight);
+            dlight->GetTransform()->TranslateRotateEuler({-3,3,-3}, {45,-20,0});
         }
     }
 
@@ -378,7 +379,7 @@ namespace pulsared
 
         using namespace std::filesystem;
 
-        auto uicfg_path = PathUtil::Combine(AppRootDir(), "uiconfig.json");
+        auto uicfg_path = AppRootDir() / "uiconfig.json";
         auto cfg = mksptr(new EditorUIConfig);
 
         cfg->WindowSize = GetAppSize();

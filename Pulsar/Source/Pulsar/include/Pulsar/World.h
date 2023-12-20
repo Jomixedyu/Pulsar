@@ -49,7 +49,7 @@ namespace pulsar
 
     public: // properties
         Ticker                      GetTicker() const { return m_ticker; }
-        virtual CameraComponent_ref GetPreviewCamera();
+        virtual ObjectPtr<CameraComponent> GetPreviewCamera();
         const ObjectPtr<Scene>&     GetScene(int index) const { return m_scenes[index]; }
         ObjectPtr<Scene>            GetFocusScene() const { return m_focusScene; }
         void                        SetFocusScene(ObjectPtr<Scene> scene);

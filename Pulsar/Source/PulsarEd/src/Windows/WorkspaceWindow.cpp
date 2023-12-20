@@ -551,7 +551,7 @@ namespace pulsared
         ImGui::Text(("Type: " + assetType->GetName()).c_str());
 
         ImGui::Text(("Path: " + node->AssetPath).c_str());
-        ImGui::Text(("DiskPath: " + node->PhysicsPath.string()).c_str());
+        ImGui::Text(("DiskPath: " + node->GetPhysicsPath()).c_str());
     }
 
     template <typename IT, typename V>
@@ -681,7 +681,7 @@ namespace pulsared
     void WorkspaceWindow::OnClick_Import()
     {
         const auto mainWindow = jxcorlib::platform::window::GetMainWindowHandle();
-        string selectedFileName;
+        fs::path selectedFileName;
 
         string filterStr;
         for (const auto factory : AssetImporterFactoryManager::GetFactories())
@@ -691,7 +691,7 @@ namespace pulsared
 
         if (jxcorlib::platform::window::OpenFileDialog(mainWindow, filterStr, "", &selectedFileName))
         {
-            const auto factory = AssetImporterFactoryManager::FindFactoryByExt(std::filesystem::path(selectedFileName).extension().string());
+            const auto factory = AssetImporterFactoryManager::FindFactoryByExt(selectedFileName.extension().string());
             if (!factory)
             {
                 Logger::Log("no import factory.", LogLevel::Error);
@@ -699,7 +699,7 @@ namespace pulsared
             }
             const auto settings = factory->CreateImporterSettings();
             settings->TargetPath = m_currentFolder; // current target
-            settings->ImportFiles->push_back(selectedFileName);
+            settings->ImportFiles->push_back(StringUtil::StringCast(selectedFileName.generic_u8string()));
 
             factory->CreateImporter()->Import(settings.get());
         }

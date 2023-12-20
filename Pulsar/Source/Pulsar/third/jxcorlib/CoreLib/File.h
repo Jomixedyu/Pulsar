@@ -16,12 +16,18 @@
 
 namespace jxcorlib
 {
+    namespace fs = std::filesystem;
+
+
+    fs::path u8path(std::string_view u8str);
+
     namespace FileUtil
     {
         std::string ReadAllText(std::filesystem::path path);
         void WriteAllText(std::filesystem::path path, std::string_view content);
         std::vector<uint8_t> ReadAllBytes(std::filesystem::path path);
     }
+
     namespace PathUtil
     {
         std::string GetFilenameWithoutExt(std::string_view path);

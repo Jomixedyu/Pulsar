@@ -25,7 +25,7 @@ namespace pulsared
     {
         using namespace jxcorlib::platform;
 
-        string selected_path;
+        fs::path selected_path;
 
         if (window::OpenFileDialog(window::GetMainWindowHandle(), "peproj(*.peproj);*.peproj", "", &selected_path))
         {

@@ -11,7 +11,7 @@ namespace pulsar
         const List_sp<Node_ref>& GetRootNodes() const { return m_rootNodes; }
         const List_sp<Node_ref>& GetNodes() const { return m_nodes; }
 
-        Node_ref FindNodeByName(string_view name) const;
+        Node_ref FindNodeByName(index_string name) const;
         Node_ref FindNodeByPath(string_view name) const;
 
         void AddNode(Node_ref node);

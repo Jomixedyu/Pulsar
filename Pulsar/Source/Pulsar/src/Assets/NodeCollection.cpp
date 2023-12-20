@@ -2,9 +2,16 @@
 
 namespace pulsar
 {
-    Node_ref NodeCollection::FindNodeByName(string_view name) const
+    Node_ref NodeCollection::FindNodeByName(index_string name) const
     {
-        return Node_ref();
+        for (const auto node : *m_rootNodes)
+        {
+            if (node->GetIndexName() == name)
+            {
+                return node;
+            }
+        }
+        return {};
     }
 
 

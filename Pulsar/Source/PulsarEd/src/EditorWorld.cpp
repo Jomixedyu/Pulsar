@@ -12,7 +12,7 @@ namespace pulsared
     }
     void EditorWorld::AddGrid3d()
     {
-        auto grid3d = Node::StaticCreate("Grid3d", nullptr, OF_NoPack);
+        auto grid3d = Node::StaticCreate("__ReferenceGrid3d", nullptr, OF_NoPack);
         grid3d->AddComponent<Grid3DComponent>();
         GetPersistentScene()->AddNode(grid3d);
     }
@@ -43,10 +43,6 @@ namespace pulsared
 
         m_cam = camNode->AddComponent<CameraComponent>();
 
-        auto camRt = RenderTexture::StaticCreate("BackBufferRT"_idxstr, 2, 2, true, true);
-        //GetDeferredDestroyedQueue().push_back(camRt);
-
-        m_cam->SetRenderTarget(camRt, true);
         m_cam->SetProjectionMode(CameraProjectionMode::Perspective);
         m_cam->SetBackgroundColor(Color4f{ 0.3f, 0.3f, 0.3f, 1.0f });
         m_cam->SetFOV(45.f);

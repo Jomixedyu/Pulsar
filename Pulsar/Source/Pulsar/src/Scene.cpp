@@ -11,10 +11,10 @@ namespace pulsar
         {
             node->BeginNode(scene);
         }
-        for (auto& child : *node->GetTransform()->GetChildren())
-        {
-            _BeginNode(scene, child->GetAttachedNode());
-        }
+        // for (auto& child : *node->GetTransform()->GetChildren())
+        // {
+        //     _BeginNode(scene, child->GetAttachedNode());
+        // }
     }
     void Scene::OnAddNode(Node_ref node)
     {
@@ -70,32 +70,7 @@ namespace pulsar
         return self;
     }
 
-    void Scene::AddDirectionalLight(DirectionalLightSceneInfo* light)
-    {
-        m_directionalLights.push_back(light);
-        UpdateDirectionalLight();
-    }
-    void Scene::RemoveDirectionalLight(DirectionalLightSceneInfo* light)
-    {
-        auto it = std::ranges::find(m_directionalLights, light);
-        if (it != m_directionalLights.end())
-        {
-            m_directionalLights.erase(it);
-        }
-        UpdateDirectionalLight();
-    }
-    void Scene::UpdateDirectionalLight()
-    {
-        DirectionalLightSceneInfo* maxIntensityDirectionalLight = nullptr;
-        for (const auto& dlight : m_directionalLights)
-        {
-            if (maxIntensityDirectionalLight == nullptr || dlight->Intensity > maxIntensityDirectionalLight->Intensity)
-            {
-                maxIntensityDirectionalLight = dlight;
-            }
-        }
-        m_runtimeEnvironment.DirectionalLight = maxIntensityDirectionalLight;
-    }
+
 
     void Scene::OnDestroy()
     {

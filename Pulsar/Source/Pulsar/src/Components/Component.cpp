@@ -24,6 +24,10 @@ namespace pulsar
     {
         return m_runtimeScene;
     }
+    ObjectPtr<TransformComponent> Component::GetTransform() const
+    {
+        return GetAttachedNode()->GetTransform();
+    }
     void Component::OnReceiveMessage(MessageId id)
     {
         if(id == MessageId_OnChangedTransform())

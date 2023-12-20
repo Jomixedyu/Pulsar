@@ -1,4 +1,5 @@
 #pragma once
+#include <Pulsar/Assets/Material.h>
 #include "Component.h"
 #include "gfx/GFXBuffer.h"
 #include "gfx/GFXDescriptorSet.h"
@@ -23,16 +24,19 @@ namespace pulsar
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::CameraComponent, Component);
     public:
+        CameraComponent();
         ~CameraComponent() override = default;
         void Render();
     public:
         Matrix4f GetViewMat() const;
         Matrix4f GetProjectionMat() const;
 
-        virtual void BeginComponent() override;
-        virtual void EndComponent() override;
+        void BeginComponent() override;
+        void EndComponent() override;
 
-        virtual void PostEditChange(FieldInfo* info) override;
+        void PostEditChange(FieldInfo* info) override;
+
+        void ResizeManagedRenderTexture(int width, int height);
 
         void OnTick(Ticker ticker) override;
     public:
@@ -49,6 +53,8 @@ namespace pulsar
         const RenderTexture_ref&  GetRenderTarget() const { return m_renderTarget; }
         void                      SetRenderTarget(const RenderTexture_ref& value, bool managed = false);
 
+        float GetOrthoSize() const { return m_orthoSize; }
+        void SetOrthoSize(float value) { m_orthoSize = value; }
     protected:
         void BeginRT();
     private:
@@ -78,12 +84,20 @@ namespace pulsar
         CORELIB_REFL_DECL_FIELD(m_renderTarget);
         RenderTexture_ref m_renderTarget;
 
+        CORELIB_REFL_DECL_FIELD(m_orthoSize);
+        float m_orthoSize = 1;
+
         bool m_managedRT{false};
 #ifdef WITH_EDITOR
-        CORELIB_REFL_DECL_FIELD(debug_view_mat, new DebugPropertyAttribute, new ReadOnlyPropertyAttribute);
-        Matrix4f debug_view_mat;
+        CORELIB_REFL_DECL_FIELD(m_debugViewMat, new DebugPropertyAttribute, new ReadOnlyPropertyAttribute);
+        Matrix4f m_debugViewMat;
 #endif
 
+    public:
+        RenderTexture_ref m_postprocessRt;
+
+        CORELIB_REFL_DECL_FIELD(m_postProcessMaterials, new ListItemAttribute(cltypeof<Material>()));
+        List_sp<Material_ref> m_postProcessMaterials;
     };
     DECL_PTR(CameraComponent);
 }

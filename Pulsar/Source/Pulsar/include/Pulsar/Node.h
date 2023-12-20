@@ -38,7 +38,13 @@ namespace pulsar
     public:
         bool GetIsActive() const;
         bool GetIsActiveSelf() const { return m_active; }
-        void SetIsActiveSelf(bool value) { m_active = value; }
+        void SetIsActiveSelf(bool value);
+
+        ObjectPtr<Node> GetParent() const;
+
+        virtual void OnActive();
+        virtual void OnInactive();
+        void OnParentActiveChanged();
 
         TransformComponent_ref GetTransform() const { return m_components->at(0); }
     public:
@@ -86,7 +92,7 @@ namespace pulsar
     private:
 
         CORELIB_REFL_DECL_FIELD(m_active);
-        bool m_active;
+        bool m_active = true;
 
         CORELIB_REFL_DECL_FIELD(m_components);
         List_sp<ObjectPtr<Component>> m_components;

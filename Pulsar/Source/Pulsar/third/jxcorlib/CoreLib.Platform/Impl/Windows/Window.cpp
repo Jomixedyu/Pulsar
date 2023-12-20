@@ -110,7 +110,7 @@ namespace jxcorlib::platform::window
         return _MessageBoxImpl(owner, text, title, mode);
     }
 
-    bool OpenFileDialog(intptr_t owner, std::string_view _filter, std::string_view default_path, string* out)
+    bool OpenFileDialog(intptr_t owner, std::string_view _filter, std::filesystem::path default_path, std::filesystem::path* out_select)
     {
         OPENFILENAME ofn = { 0 };
         ofn.lStructSize = sizeof(ofn);
@@ -118,7 +118,7 @@ namespace jxcorlib::platform::window
 
         auto filter = UTF8ToANSI(_filter.data());
         char* filter_str = new char[filter.length() + 2];
-        auto default_dir = UTF8ToANSI(default_path.data());
+        auto default_dir = UTF8ToANSI(default_path.string().c_str());
 
         for (size_t i = 0; i < filter.length(); i++)
         {
@@ -145,14 +145,17 @@ namespace jxcorlib::platform::window
         ofn.lpstrFile = szBuffer; 
         ofn.nMaxFile = sizeof(szBuffer) / sizeof(*szBuffer);
         ofn.nFilterIndex = 0;
-        ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_EXPLORER;
+        ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_EXPLORER | OFN_NOCHANGEDIR;
 
         BOOL bSel = GetOpenFileName(&ofn);
 
         delete[] filter_str;
         if (bSel)
         {
-            if (out) *out = ANSIToUTF8(szBuffer);
+            if (out_select)
+            {
+                *out_select = szBuffer;
+            }
             return true;
         }
         return false;
