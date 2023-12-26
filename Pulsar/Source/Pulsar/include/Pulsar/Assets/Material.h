@@ -25,6 +25,7 @@ namespace pulsar
         virtual Matrix4f GetMatrix4f(const index_string& name) = 0;
     };
 
+
     struct MaterialParameterValue
     {
     public:
@@ -118,6 +119,8 @@ namespace pulsar
             return 0;
         }
     };
+
+
 
     class Material final : public AssetObject, public IMaterialParameter, public IGPUResource
     {

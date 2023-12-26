@@ -43,6 +43,8 @@ namespace pulsar
 
         void OnReceiveMessage(MessageId id) override;
 
+        int32_t GetRenderQueuePriority() const { return m_renderQueuePriority; }
+        void SetRenderQueuePriority(int32_t value) { m_renderQueuePriority = value; }
     protected:
         void ResizeMaterials(size_t size);
         void BeginListenMaterialStateChanged(size_t index);
@@ -62,6 +64,9 @@ namespace pulsar
 
         CORELIB_REFL_DECL_FIELD(m_isCastShadow);
         bool m_isCastShadow = true;
+
+        CORELIB_REFL_DECL_FIELD(m_renderQueuePriority);
+        int32_t m_renderQueuePriority{1000};
 
         sptr<StaticMeshRenderObject> m_renderObject;
 

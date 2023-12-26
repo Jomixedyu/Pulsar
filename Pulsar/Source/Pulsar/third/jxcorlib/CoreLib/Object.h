@@ -17,7 +17,10 @@
     inline struct __corelib_AssemblyClass_##NAME : public ::jxcorlib::AssemblyTypeObject \
     {  const char* name() { return #NAME; } } AssemblyObject_##NAME;
 
-#define CORELIB_DECL_SHORTSPTR(CLASS) using CLASS##_sp = ::jxcorlib::sptr<class CLASS>; using CLASS##_rsp = const ::jxcorlib::sptr<class CLASS>&; using CLASS##_wp = ::jxcorlib::wptr<class CLASS>;
+#define CORELIB_DECL_SHORTSPTR(CLASS) static_assert(sizeof(CLASS)); \
+    using CLASS##_sp = ::jxcorlib::sptr<class CLASS>; \
+    using CLASS##_rsp = const ::jxcorlib::sptr<class CLASS>&; \
+    using CLASS##_wp = ::jxcorlib::wptr<class CLASS>;
 
 #define CORELIB_DECL_TEMP_SHORTSPTR(NAME) \
     template<typename T> \

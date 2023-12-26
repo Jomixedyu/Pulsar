@@ -124,11 +124,11 @@ namespace pulsar
                             }
                             if (batch.IsUsedIndices)
                             {
-                                cmdBuffer.CmdDrawIndexed(element.Indices->GetSize() / sizeof(uint32_t));
+                                cmdBuffer.CmdDrawIndexed(element.Indices->GetElementCount());
                             }
                             else
                             {
-                                cmdBuffer.CmdDraw(element.Vertex->GetSize());
+                                cmdBuffer.CmdDraw(element.Vertex->GetElementCount());
                             }
                         }
                     }

@@ -46,6 +46,7 @@ namespace pulsar
         m_meshObjDescriptorSet->Submit();
 
         m_vertBuffer = Application::GetGfxApp()->CreateBuffer(gfx::GFXBufferUsage::Vertex, m_verties.size() * sizeof(StaticMeshVertex));
+        m_vertBuffer->SetElementCount(m_verties.size());
         m_vertBuffer->Fill(m_verties.data());
 
         m_batchs.resize(1);

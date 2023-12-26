@@ -12,9 +12,16 @@ namespace pulsar
         CameraProjectionMode,
         Perspective,
         Orthographic);
+
+    CORELIB_DEF_ENUM(AssemblyObject_pulsar, pulsar,
+        RenderingPathMode,
+        Forward,
+        Deferred);
 }
 
 CORELIB_DECL_BOXING(pulsar::CameraProjectionMode, pulsar::BoxingCameraProjectionMode);
+CORELIB_DECL_BOXING(pulsar::RenderingPathMode, pulsar::BoxingRenderingPathMode);
+
 
 namespace pulsar
 {
@@ -86,6 +93,9 @@ namespace pulsar
 
         CORELIB_REFL_DECL_FIELD(m_orthoSize);
         float m_orthoSize = 1;
+
+        CORELIB_REFL_DECL_FIELD(m_renderingPath);
+        RenderingPathMode m_renderingPath;
 
         bool m_managedRT{false};
 #ifdef WITH_EDITOR

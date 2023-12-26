@@ -37,7 +37,7 @@ namespace gfx
     void GFXVulkanCommandBuffer::CmdSetViewport(float x, float y, float width, float height)
     {
         VkViewport viewport{};
-#if VULKAN_REVERT_VIEWPORT
+#if VULKAN_FLIPPING_VIEWPORT
         viewport.x = x;
         viewport.y = y + height;
         viewport.width = width;

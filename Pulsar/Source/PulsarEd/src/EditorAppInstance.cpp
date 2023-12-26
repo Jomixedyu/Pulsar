@@ -4,6 +4,8 @@
 #include "EditorSelection.h"
 #include "Importers/FBXImporter.h"
 #include "Pulsar/Components/DirectionalLightComponent.h"
+#include "Pulsar/Components/PointLightComponent.h"
+#include "Pulsar/Components/SkyLightComponent.h"
 #include "Pulsar/Components/StaticMeshRendererComponent.h"
 #include "Tools/ObjectDebugTool.h"
 #include "Tools/WorldDebugTool.h"
@@ -40,6 +42,7 @@
 #include <PulsarEd/Windows/SceneWindow.h>
 #include <PulsarEd/Windows/WorkspaceWindow.h>
 #include <Pulsar/Assets/Texture2D.h>
+#include <Pulsar/BuiltinAsset.h>
 namespace pulsared
 {
 
@@ -115,11 +118,73 @@ namespace pulsared
             menu->Priority = 200;
             mainMenu->AddEntry(menu);
 
+            auto shapeMenu =  mksptr(new MenuEntrySubMenu("Shapes"));
+            menu->AddEntry(shapeMenu);
             {
-                auto entry = mksptr(new MenuEntryButton("CreateNode"));
-                menu->AddEntry(entry);
+                auto entry = mksptr(new MenuEntryButton("Create Node"));
+                shapeMenu->AddEntry(entry);
                 entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
                     World::Current()->GetPersistentScene()->NewNode("New Node");
+                });
+            }
+            {
+                auto entry = mksptr(new MenuEntryButton("Create Sphere"));
+                shapeMenu->AddEntry(entry);
+                entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
+                    auto renderer = World::Current()->GetPersistentScene()->NewNode("New Sphere")
+                        ->AddComponent<StaticMeshRendererComponent>();
+                    renderer->SetStaticMesh(GetAssetManager()->LoadAsset<StaticMesh>(BuiltinAsset::Shapes_Sphere));
+                    renderer->SetMaterial(0, GetAssetManager()->LoadAsset<Material>(BuiltinAsset::Material_Lambert));
+
+                });
+            }
+            {
+                auto entry = mksptr(new MenuEntryButton("Create Cube"));
+                shapeMenu->AddEntry(entry);
+                entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
+                    auto renderer = World::Current()->GetPersistentScene()->NewNode("New Cube")
+                        ->AddComponent<StaticMeshRendererComponent>();
+                    renderer->SetStaticMesh(GetAssetManager()->LoadAsset<StaticMesh>(BuiltinAsset::Shapes_Cube));
+                    renderer->SetMaterial(0, GetAssetManager()->LoadAsset<Material>(BuiltinAsset::Material_Lambert));
+
+                });
+            }
+            {
+                auto entry = mksptr(new MenuEntryButton("Create Plane"));
+                shapeMenu->AddEntry(entry);
+                entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
+                    auto renderer = World::Current()->GetPersistentScene()->NewNode("New Plane")
+                        ->AddComponent<StaticMeshRendererComponent>();
+                    renderer->SetStaticMesh(GetAssetManager()->LoadAsset<StaticMesh>(BuiltinAsset::Shapes_Plane));
+                    renderer->SetMaterial(0, GetAssetManager()->LoadAsset<Material>(BuiltinAsset::Material_Lambert));
+
+                });
+            }
+
+            auto light3dMenu = mksptr(new MenuEntrySubMenu("Light3d"));
+            menu->AddEntry(light3dMenu);
+            {
+                auto entry = mksptr(new MenuEntryButton("Create Sky Light"));
+                light3dMenu->AddEntry(entry);
+                entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
+                    World::Current()->GetPersistentScene()->NewNode("New Sky Light")
+                        ->AddComponent<SkyLightComponent>();
+                });
+            }
+            {
+                auto entry = mksptr(new MenuEntryButton("Create Directional Light"));
+                light3dMenu->AddEntry(entry);
+                entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
+                    World::Current()->GetPersistentScene()->NewNode("New Directional Light")
+                        ->AddComponent<DirectionalLightComponent>();
+                });
+            }
+            {
+                auto entry = mksptr(new MenuEntryButton("Create Point Light"));
+                light3dMenu->AddEntry(entry);
+                entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
+                    World::Current()->GetPersistentScene()->NewNode("New Point Light")
+                        ->AddComponent<PointLightComponent>();
                 });
             }
         }
@@ -232,7 +297,7 @@ namespace pulsared
         config->EnableValid = true;
 
         StringUtil::strcpy(config->ProgramName, "Pulsar");
-        StringUtil::strcpy(config->Title, "Pulsar Editor v0.1 - Vulkan1.2");
+        StringUtil::strcpy(config->Title, "Pulsar Editor v0.2 - Vulkan1.3");
 
         Logger::Log("pre intialized");
     }
@@ -260,7 +325,7 @@ namespace pulsared
             dlight->AddComponent<DirectionalLightComponent>();
 
             World::Current()->GetPersistentScene()->AddNode(dlight);
-            dlight->GetTransform()->TranslateRotateEuler({-3,3,-3}, {45,-20,0});
+            dlight->GetTransform()->TranslateRotateEuler({-3,3,-3}, {45,45,0});
         }
     }
 

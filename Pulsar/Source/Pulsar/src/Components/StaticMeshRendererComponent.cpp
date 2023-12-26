@@ -187,7 +187,7 @@ namespace pulsar
         m_materials->at(index) = material;
         if (m_beginning && material)
         {
-            BeginListenMaterialStateChanged(material);
+            BeginListenMaterialStateChanged(index);
         }
         OnMaterialChanged();
     }
@@ -222,7 +222,10 @@ namespace pulsar
     {
         auto handle = m_materialStateChangedCallbacks[index];
         m_materialStateChangedCallbacks[index] = 0;
-        m_materials->at(index)->OnShaderChanged.RemoveListenerByIndex(handle);
+        if(auto mat = m_materials->at(index))
+        {
+            mat->OnShaderChanged.RemoveListenerByIndex(handle);
+        }
     }
     void StaticMeshRendererComponent::OnMaterialStateChanged()
     {

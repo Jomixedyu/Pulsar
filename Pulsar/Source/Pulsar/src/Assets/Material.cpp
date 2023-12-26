@@ -61,8 +61,10 @@ namespace pulsar
 
         const auto& passes = m_shader->GetSourceData().ApiMaps.at(Application::GetGfxApp()->GetApiType()).Passes;
 
+        array_list<ShaderPassConfig_sp> shaderpassConfigs;
         for (size_t i = 0; i < passes.size(); i++)
         {
+            // process deferred
             // create shader module from source
             gfx::GFXGpuProgram_sp gpuProgram = Application::GetGfxApp()->CreateGpuProgram(passes[i].Sources);
 
@@ -86,16 +88,57 @@ namespace pulsar
                 config.DepthTestEnable = sourceConfig->DepthTestEnable;
                 config.DepthWriteEnable = sourceConfig->DepthWriteEnable;
                 config.StencilTestEnable = sourceConfig->StencilTestEnable;
+                shaderpassConfigs.push_back(sourceConfig);
             }
 
             // create descriptor layout
             {
-                gfx::GFXDescriptorSetLayoutInfo descriptorLayoutInfo {
-                    gfx::GFXDescriptorType::ConstantBuffer,
-                    gfx::GFXShaderStageFlags::VertexFragment,
-                    0, 2
-                };
-                m_descriptorSetLayout = Application::GetGfxApp()->CreateDescriptorSetLayout(&descriptorLayoutInfo, 1);
+                size_t cbufferPropertyResource{}, textureResourceCount{};
+                for (auto cfg : shaderpassConfigs)
+                {
+                    if(!cfg->Properties)
+                    {
+                        continue;
+                    }
+                    for (auto prop : *cfg->Properties)
+                    {
+                        if (prop->Type == ShaderParameterType::Texture2D)
+                        {
+                            ++textureResourceCount;
+                        }
+                        else
+                        {
+                            ++cbufferPropertyResource;
+                        }
+                    }
+                }
+
+                array_list<gfx::GFXDescriptorSetLayoutInfo> descLayoutInfos;
+                if (cbufferPropertyResource != 0)
+                {
+                    auto info = gfx::GFXDescriptorSetLayoutInfo {
+                        gfx::GFXDescriptorType::ConstantBuffer,
+                        gfx::GFXShaderStageFlags::VertexFragment,
+                        0, 3
+                    };
+                    descLayoutInfos.push_back(info);
+                }
+                if (textureResourceCount != 0)
+                {
+                    for (size_t i = 0; i < textureResourceCount; ++i)
+                    {
+                        auto info = gfx::GFXDescriptorSetLayoutInfo {
+                            gfx::GFXDescriptorType::ConstantBuffer,
+                            gfx::GFXShaderStageFlags::VertexFragment,
+                            (uint32_t)i, 3
+                        };
+                        descLayoutInfos.push_back(info);
+                    }
+                }
+
+                m_descriptorSetLayout = Application::GetGfxApp()->CreateDescriptorSetLayout(
+                    descLayoutInfos.data(),
+                    descLayoutInfos.size());
             }
 
             {
@@ -108,12 +151,15 @@ namespace pulsar
 
                 m_gfxShaderPasses.push_back(shaderPass);
             }
-
         }
-        return true;
-        // m_descriptorSet = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_descriptorSetLayout.get());
+
+        size_t cbufferElementCount = 0;
+
+
+        // m_descriptorSet = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_descriptorSetLayout);
         // m_descriptorSet->AddDescriptor("ShaderParameter", 2)->SetConstantBuffer(m_materialBuffer.get());
         // m_descriptorSet->Submit();
+        return true;
     }
     void Material::DestroyGPUResource()
     {

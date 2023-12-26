@@ -11,7 +11,40 @@
 
 namespace pulsar
 {
+    CORELIB_DEF_ENUM(AssemblyObject_pulsar, pulsar,
+        ShaderPassRenderingType,
+        OpaqueForward,
+        OpaqueDeferred,
+        Transparency,
+        PostProcessing,
+        );
+
+    CORELIB_DEF_ENUM(AssemblyObject_pulsar, pulsar,
+        ShaderParameterType,
+        Scalar,
+        Vector,
+        Texture2D,
+    )
+}
+
+CORELIB_DECL_BOXING(pulsar::ShaderPassRenderingType, pulsar::BoxingShaderPassRenderingType);
+CORELIB_DECL_BOXING(pulsar::ShaderParameterType, pulsar::BoxingShaderParameterType);
+
+namespace pulsar
+{
     class Texture2D;
+
+    class ShaderPassConfigProperty : public Object
+    {
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::ShaderPassConfigProperty, Object);
+    public:
+        CORELIB_REFL_DECL_FIELD(Name);
+        string Name;
+
+        CORELIB_REFL_DECL_FIELD(Type);
+        ShaderParameterType Type;
+    };
+    CORELIB_DECL_SHORTSPTR(ShaderPassConfigProperty);
 
     class ShaderPassConfig : public Object
     {
@@ -36,32 +69,13 @@ namespace pulsar
         CORELIB_REFL_DECL_FIELD(StencilTestEnable);
         bool StencilTestEnable;
 
+        CORELIB_REFL_DECL_FIELD(RenderingType);
+        ShaderPassRenderingType RenderingType;
+
+        CORELIB_REFL_DECL_FIELD(Properties);
+        List_sp<ShaderPassConfigProperty_sp> Properties;
     };
     CORELIB_DECL_SHORTSPTR(ShaderPassConfig);
-
-
-    class ShaderConfig : public Object
-    {
-        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::ShaderConfig, Object);
-    public:
-        //CORELIB_REFL_DECL_FIELD(Passes);
-        //array_list<ShaderPassConfig_sp> Passes;
-    };
-    CORELIB_DECL_SHORTSPTR(ShaderConfig);
-
-
-
-    enum class ShaderParameterType
-    {
-        Float,
-        Sampler2D,
-        Vector3
-    };
-
-    class ShaderParameter
-    {
-
-    };
 
     struct ShaderSourceData
     {

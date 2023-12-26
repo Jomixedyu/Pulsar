@@ -16,7 +16,8 @@ namespace pulsared
     }
     PropertyControl* PropertyControlManager::FindControl(Type* type)
     {
-        const auto it = manager()->find(type);
+        const auto* mgr = manager();
+        const auto it = mgr->find(type);
         if (it != manager()->end())
         {
             return it->second;
