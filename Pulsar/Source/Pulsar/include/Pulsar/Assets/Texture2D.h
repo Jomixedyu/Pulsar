@@ -7,6 +7,23 @@
 
 namespace pulsar
 {
+    CORELIB_DEF_ENUM(AssemblyObject_pulsar, pulsar,
+        TextureCompressionFormat,
+        None,
+        ASTC
+        );
+    CORELIB_DEF_ENUM(AssemblyObject_pulsar, pulsar,
+        TextureCompressionLevel,
+        Higher,
+        Medium,
+        Lower
+    );
+}
+CORELIB_DECL_BOXING(pulsar::TextureCompressionFormat, pulsar::BoxingTextureCompressionFormat);
+CORELIB_DECL_BOXING(pulsar::TextureCompressionLevel, pulsar::BoxingTextureCompressionLevel);
+
+namespace pulsar
+{
     class BinaryData
     {
         array_list<uint8_t> m_buffer;
@@ -20,6 +37,8 @@ namespace pulsar
         const uint8_t* GetData() const { return m_buffer.data(); }
         size_t Size() const { return m_buffer.size(); }
     };
+
+
 
     class Texture2D : public Texture
     {
