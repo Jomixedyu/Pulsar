@@ -317,7 +317,7 @@ namespace pulsared
         }
         OnDeletedAsset.Invoke(assetPath);
 
-        //delete asset
+        // delete asset
         auto physicPath = AssetPathToPhysicsPath(assetPath);
 
         {
@@ -331,7 +331,7 @@ namespace pulsared
             ObjectPtr<AssetObject> asset = RuntimeObjectWrapper::GetObject(handle)->GetObjectHandle();
             DestroyObject(asset, true);
         }
-        //todo: remove registry mapping
+        // todo: remove registry mapping
         if (std::filesystem::exists(physicPath))
         {
             std::filesystem::remove(physicPath);
@@ -339,6 +339,23 @@ namespace pulsared
         return true;
     }
 
+    static void _FindAssets(array_list<string>& paths, AssetFileNode* node, Type* type)
+    {
+        if(node->GetAssetType() == type)
+        {
+            paths.push_back(node->AssetPath);
+        }
+        for (auto child : node->GetChildren())
+        {
+            _FindAssets(paths, child.get(), type);
+        }
+    }
+    array_list<string> AssetDatabase::FindAssets(Type* type)
+    {
+        array_list<string> ret;
+        _FindAssets(ret, FileTree.get(), type);
+        return ret;
+    }
 
     void AssetDatabase::MarkDirty(AssetObject_ref asset)
     {

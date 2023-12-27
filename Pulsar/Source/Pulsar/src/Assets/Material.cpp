@@ -43,10 +43,6 @@ namespace pulsar
     {
     }
 
-    void Material::SetInt(const index_string& name, int value)
-    {
-    }
-
     bool Material::CreateGPUResource()
     {
         if (m_createdGpuResource)
@@ -59,108 +55,121 @@ namespace pulsar
         }
         m_createdGpuResource = true;
 
-        const auto& passes = m_shader->GetSourceData().ApiMaps.at(Application::GetGfxApp()->GetApiType()).Passes;
+        const auto& passes = m_shader->GetSourceData().ApiMaps.at(Application::GetGfxApp()->GetApiType());
 
-        array_list<ShaderPassConfig_sp> shaderpassConfigs;
-        for (size_t i = 0; i < passes.size(); i++)
+        ShaderPassConfig_sp shaderpassConfig;
+
+        // process deferred
+        // create shader module from source
+        gfx::GFXGpuProgram_sp gpuProgram = Application::GetGfxApp()->CreateGpuProgram(passes.Sources);
+
+        // create shader pass state config
+        gfx::GFXShaderPassConfig config{};
         {
-            // process deferred
-            // create shader module from source
-            gfx::GFXGpuProgram_sp gpuProgram = Application::GetGfxApp()->CreateGpuProgram(passes[i].Sources);
-
-            // create shader pass state config
-            gfx::GFXShaderPassConfig config{};
+            ShaderPassConfig_sp sourceConfig;
+            try
             {
-                ShaderPassConfig_sp sourceConfig;
-                try
-                {
-                    sourceConfig = ser::JsonSerializer::Deserialize<ShaderPassConfig>(passes[i].Config);
-                }
-                catch (const std::exception& e)
-                {
-                    Logger::Log("shader config json error!", LogLevel::Error);
-                    m_createdGpuResource = false;
-                    return false;
-                }
-
-                config.CullMode = sourceConfig->CullMode;
-                config.DepthCompareOp = sourceConfig->DepthCompareOp;
-                config.DepthTestEnable = sourceConfig->DepthTestEnable;
-                config.DepthWriteEnable = sourceConfig->DepthWriteEnable;
-                config.StencilTestEnable = sourceConfig->StencilTestEnable;
-                shaderpassConfigs.push_back(sourceConfig);
+                sourceConfig = ser::JsonSerializer::Deserialize<ShaderPassConfig>(passes.Config);
+            }
+            catch (const std::exception& e)
+            {
+                Logger::Log("shader config json error!", LogLevel::Error);
+                m_createdGpuResource = false;
+                return false;
             }
 
-            // create descriptor layout
+            config.CullMode = sourceConfig->CullMode;
+            config.DepthCompareOp = sourceConfig->DepthCompareOp;
+            config.DepthTestEnable = sourceConfig->DepthTestEnable;
+            config.DepthWriteEnable = sourceConfig->DepthWriteEnable;
+            config.StencilTestEnable = sourceConfig->StencilTestEnable;
+            shaderpassConfig = sourceConfig;
+        }
+
+
+        // create shader pass
+        m_gfxShaderPasses = Application::GetGfxApp()->CreateShaderPass(
+            config,
+            gpuProgram,
+            {GetVertexLayout(Application::GetGfxApp())});
+
+
+        // create constant layouts and constant buffer
+        array_list<gfx::GFXDescriptorSetLayoutInfo> descLayoutInfos;
+
+        // create constant buffer
+        size_t constantBufferSize{};
+        if (shaderpassConfig->ConstantProperties)
+        {
+            size_t offset = 0;
+            for (const auto element : *shaderpassConfig->ConstantProperties)
             {
-                size_t cbufferPropertyResource{}, textureResourceCount{};
-                for (auto cfg : shaderpassConfigs)
+                m_propertyInfo.insert({ index_string{element->Name}, { offset, element->Type } });
+                switch (element->Type)
                 {
-                    if(!cfg->Properties)
-                    {
-                        continue;
-                    }
-                    for (auto prop : *cfg->Properties)
-                    {
-                        if (prop->Type == ShaderParameterType::Texture2D)
-                        {
-                            ++textureResourceCount;
-                        }
-                        else
-                        {
-                            ++cbufferPropertyResource;
-                        }
-                    }
+                case ShaderParameterType::Scalar:
+                    offset += sizeof(float);
+                    break;
+                case ShaderParameterType::Vector:
+                    offset += sizeof(Vector4f);
+                    break;
+                default:;
                 }
-
-                array_list<gfx::GFXDescriptorSetLayoutInfo> descLayoutInfos;
-                if (cbufferPropertyResource != 0)
-                {
-                    auto info = gfx::GFXDescriptorSetLayoutInfo {
-                        gfx::GFXDescriptorType::ConstantBuffer,
-                        gfx::GFXShaderStageFlags::VertexFragment,
-                        0, 3
-                    };
-                    descLayoutInfos.push_back(info);
-                }
-                if (textureResourceCount != 0)
-                {
-                    for (size_t i = 0; i < textureResourceCount; ++i)
-                    {
-                        auto info = gfx::GFXDescriptorSetLayoutInfo {
-                            gfx::GFXDescriptorType::ConstantBuffer,
-                            gfx::GFXShaderStageFlags::VertexFragment,
-                            (uint32_t)i, 3
-                        };
-                        descLayoutInfos.push_back(info);
-                    }
-                }
-
-                m_descriptorSetLayout = Application::GetGfxApp()->CreateDescriptorSetLayout(
-                    descLayoutInfos.data(),
-                    descLayoutInfos.size());
+                constantBufferSize = offset;
             }
+        }
+        if (constantBufferSize)
+        {
+            m_materialConstantBuffer =
+                Application::GetGfxApp()->CreateBuffer(gfx::GFXBufferUsage::ConstantBuffer, constantBufferSize);
+        }
 
+
+        if (constantBufferSize != 0)
+        {
+            auto info = gfx::GFXDescriptorSetLayoutInfo {
+                gfx::GFXDescriptorType::ConstantBuffer,
+                gfx::GFXShaderStageFlags::VertexFragment,
+                0, 3
+            };
+            descLayoutInfos.push_back(info);
+        }
+
+
+        // create texture parameter layout
+        if (shaderpassConfig->Properties)
+        {
+            auto offset = constantBufferSize != 0 ? 1 : 0;
+            const auto count = shaderpassConfig->Properties->size();
+            for (size_t i = 0; i < count; ++i)
             {
-
-                // create shader pass
-                auto shaderPass = Application::GetGfxApp()->CreateShaderPass(
-                    config,
-                    gpuProgram,
-                    {GetVertexLayout(Application::GetGfxApp())});
-
-                m_gfxShaderPasses.push_back(shaderPass);
+                //auto& item = shaderpassConfig->Properties->at(i);
+                auto info = gfx::GFXDescriptorSetLayoutInfo {
+                    gfx::GFXDescriptorType::ConstantBuffer,
+                    gfx::GFXShaderStageFlags::VertexFragment,
+                    (uint32_t)i+offset, 3
+                };
+                descLayoutInfos.push_back(info);
             }
         }
 
-        size_t cbufferElementCount = 0;
+        // create descriptorset layouts
+        m_descriptorSetLayout = Application::GetGfxApp()->CreateDescriptorSetLayout(
+            descLayoutInfos.data(),
+            descLayoutInfos.size());
 
 
-        // m_descriptorSet = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_descriptorSetLayout);
-        // m_descriptorSet->AddDescriptor("ShaderParameter", 2)->SetConstantBuffer(m_materialBuffer.get());
-        // m_descriptorSet->Submit();
+        // create descriptor set
+        m_descriptorSet = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_descriptorSetLayout);
+        if (m_materialConstantBuffer)
+        {
+            m_descriptorSet->AddDescriptor("PerMat", 0)->SetConstantBuffer(m_materialConstantBuffer.get());
+        }
+        m_descriptorSet->Submit();
+
         return true;
     }
+
     void Material::DestroyGPUResource()
     {
         if (!m_createdGpuResource)
@@ -168,7 +177,7 @@ namespace pulsar
             return;
         }
         m_createdGpuResource = false;
-        m_gfxShaderPasses.clear();
+        m_gfxShaderPasses.reset();
         m_descriptorSet.reset();
     }
     bool Material::IsCreatedGPUResource() const
@@ -215,36 +224,18 @@ namespace pulsar
         // m_descriptorSet->Find("ShaderParameter")->IsDirty = true;
     }
 
-    void Material::SetColor(const index_string& name, const Color4f& value)
-    {
-        m_isDirtyParameter = true;
-        m_parameterValues[name].SetValue(value);
-    }
-
     void Material::SetTexture(const index_string& name, Texture_ref value)
     {
         m_isDirtyParameter = true;
         m_parameterValues[name].SetValue(value);
     }
-    void Material::SetMatrix4f(const index_string& name, const Matrix4f& value)
-    {
-        m_isDirtyParameter = true;
-        m_parameterValues[name].SetValue(value);
-    }
+
     void Material::SetVector4(const index_string& name, const Vector4f& value)
     {
         m_isDirtyParameter = true;
         m_parameterValues[name].SetValue(value);
     }
-    int Material::GetInt(const index_string& name)
-    {
-        auto it = m_parameterValues.find(name);
-        if (it == m_parameterValues.end())
-        {
-            return 0;
-        }
-        return it->second.AsInt();
-    }
+
     float Material::GetFloat(const index_string& name)
     {
         auto it = m_parameterValues.find(name);
@@ -254,15 +245,7 @@ namespace pulsar
         }
         return it->second.AsFloat();
     }
-    Color4f Material::GetColor(const index_string& name)
-    {
-        auto it = m_parameterValues.find(name);
-        if (it == m_parameterValues.end())
-        {
-            return Color4f{};
-        }
-        return it->second.AsColor();
-    }
+
     Vector4f Material::GetVector4(const index_string& name)
     {
         auto it = m_parameterValues.find(name);
@@ -281,29 +264,47 @@ namespace pulsar
         }
         return it->second.AsTexture();
     }
-    Matrix4f Material::GetMatrix4f(const index_string& name)
-    {
-        auto it = m_parameterValues.find(name);
-        if (it == m_parameterValues.end())
-        {
-            return Matrix4f{};
-        }
-        return it->second.AsMatrix();
-    }
 
-    void Material::CommitParameters()
+
+    void Material::SubmitParameters()
     {
         if (!m_isDirtyParameter)
         {
             return;
         }
+
         // copy parameter
 
-        m_descriptorSet->Find("ShaderParameter")->SetConstantBuffer(m_materialBuffer.get());
+        m_bufferData.resize(m_materialConstantBuffer->GetSize());
+        for (auto value : m_parameterValues)
+        {
+            auto ptr = m_bufferData.data() + value.second.Offset;
+
+            switch (value.second.Type)
+            {
+            case MaterialParameterValue::FLOAT: {
+                *(float*)ptr = value.second.AsFloat();
+                break;
+            }
+            case MaterialParameterValue::VECTOR: {
+                *(Vector4f*)ptr = value.second.AsVector();
+                break;
+            }
+            case MaterialParameterValue::TEXTURE:
+                break;
+            default:;
+            }
+        }
+
+        m_materialConstantBuffer->Fill(m_bufferData.data());
+
+
+        m_descriptorSet->Find("PerMat")->SetConstantBuffer(m_materialConstantBuffer.get());
 
         m_isDirtyParameter = false;
         m_descriptorSet->Submit();
     }
+
     void Material::PostEditChange(FieldInfo* info)
     {
         base::PostEditChange(info);
@@ -326,14 +327,16 @@ namespace pulsar
         m_shader = value;
         OnShaderChanged.Invoke();
     }
-    gfx::GFXShaderPass_sp Material::GetGfxShaderPass(size_t index)
+
+    gfx::GFXShaderPass_sp Material::GetGfxShaderPass()
     {
-        if (index >= m_gfxShaderPasses.size())
+        if (!m_gfxShaderPasses)
         {
             auto missing = GetAssetManager()->LoadAsset<Material>("Engine/Materials/Missing");
             missing->CreateGPUResource();
-            return missing->GetGfxShaderPass(0);
+            return missing->GetGfxShaderPass();
         }
-        return m_gfxShaderPasses[index];
+        return m_gfxShaderPasses;
     }
+
 } // namespace pulsar

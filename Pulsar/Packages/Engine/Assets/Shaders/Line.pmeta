@@ -1,6 +1,8 @@
 {
-    "Type": "pulsar::Shader",
-	"Handle": "F7590427-473F-0330-17D7-11D91F411B05",
-	"ExtraFiles": [ "ccc" ],
-	"ImportFiles": []
+    "ExtraFiles": [
+        "ccc"
+    ],
+    "Handle": "f7590427473f033017d711d91f411b05",
+    "Tags": {},
+    "Type": "pulsar::Shader"
 }

@@ -37,6 +37,9 @@ namespace pulsar
 
         Material_ref GetMaterial(int index) const;
         void SetMaterial(int index, Material_ref material);
+        size_t AddMaterial();
+        void RemoveMaterial(size_t index);
+        size_t GetMaterialCount() const { return m_materialsSize; }
 
         void BeginComponent() override;
         void EndComponent() override;

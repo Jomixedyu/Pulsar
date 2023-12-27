@@ -48,7 +48,7 @@ namespace pulsar
 
         void OnChangedTransform() override
         {
-            m_meshConstantBuffer->Fill(&m_localToWorld);
+            m_meshConstantBuffer->Fill(&m_perModelData);
         }
 
         array_list<rendering::MeshBatch> GetMeshBatchs() override
@@ -190,6 +190,15 @@ namespace pulsar
             BeginListenMaterialStateChanged(index);
         }
         OnMaterialChanged();
+    }
+    size_t StaticMeshRendererComponent::AddMaterial()
+    {
+        ResizeMaterials(m_materials->size() + 1);
+        return m_materialsSize - 1;
+    }
+    void StaticMeshRendererComponent::RemoveMaterial(size_t index)
+    {
+        //todo
     }
 
     void StaticMeshRendererComponent::BeginComponent()

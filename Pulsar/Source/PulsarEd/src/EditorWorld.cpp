@@ -37,7 +37,7 @@ namespace pulsared
 
         auto camCtrlNode = Node::StaticCreate("EdCameraController", nullptr, OF_NoPack);
         auto camNode = Node::StaticCreate("EdCamera", camCtrlNode->GetTransform(), OF_NoPack);
-        camNode->GetTransform()->Translate({0,0,-3});
+        camNode->GetTransform()->Translate({0,0,-2});
         this->m_camNode = camNode;
         this->m_camCtrlNode = camCtrlNode;
 

@@ -33,6 +33,47 @@ namespace pulsared
             //     ->GetComponent<StaticMeshRendererComponent>()
             //     ->SetMaterial()
         }
+        if (PImGui::PropertyGroup("Parameters"))
+        {
+            for (auto prop : material->m_propertyInfo)
+            {
+                const auto type = prop.second.Type;
+                Object_sp obj;
+                switch (type)
+                {
+                case ShaderParameterType::Scalar:
+                    obj = mkbox(material->GetFloat(prop.first));
+                    break;
+                case ShaderParameterType::Vector: {
+                    const auto vec = material->GetVector4(prop.first);
+                    obj = mkbox(Color4f{vec.x, vec.y, vec.z, vec.w});
+                    break;
+                }
+                case ShaderParameterType::Texture2D:
+
+                    break;
+                }
+
+                if (PImGui::PropertyLine(prop.first.to_string(), obj->GetType(), obj.get()))
+                {
+                    switch (type)
+                    {
+                    case ShaderParameterType::Scalar:
+                        material->SetFloat(prop.first, UnboxUtil::Unbox<float>(obj));
+                        break;
+                    case ShaderParameterType::Vector: {
+                        auto color = UnboxUtil::Unbox<Color4f>(obj);
+                        material->SetVector4(prop.first, {color.r, color.g, color.b, color.a});
+                        break;
+                    }
+                    case ShaderParameterType::Texture2D:
+
+                        break;
+                    }
+                    material->SubmitParameters();
+                }
+            }
+        }
     }
     void MaterialEditorWindow::OnOpen()
     {

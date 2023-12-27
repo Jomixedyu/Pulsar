@@ -174,6 +174,7 @@ namespace jmath
         }
         static Vector3<T> Normalize(const Vector3<T>& target);
         void Normalized() { *this = Normalize(*this); }
+        Vector3<T> GetNormalized() const { return Normalize(*this); }
         static inline Vector3<T> Cross(const Vector3<T>& target1, const Vector3<T>& target2)
         {
             return Vector3<T>(
@@ -495,6 +496,11 @@ namespace jmath
 		T OneOverDeterminant = static_cast<T>(1) / Dot1;
 
 		return Inverse * OneOverDeterminant;
+    }
+    template<typename T>
+    Matrix4<T> Transpose(const Matrix4<T>& mat)
+    {
+        return Matrix4<T> { mat.GetRow(0), mat.GetRow(1), mat.GetRow(2), mat.GetRow(3) };
     }
 
     template<typename MAT>

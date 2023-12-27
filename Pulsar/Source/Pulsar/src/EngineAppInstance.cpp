@@ -80,58 +80,64 @@ namespace pulsar
                 // batch render
                 for (auto& [state, batch] : batchs)
                 {
-                    const auto passCount = batch.Material->GetShaderPassCount();
-                    for (size_t i = 0; i < passCount; i++)
+
+                    auto shaderPass = batch.Material->GetGfxShaderPass();
+
+                    // bind render state
+                    array_list<gfx::GFXDescriptorSetLayout_sp> descriptorSetLayouts;
+
+                    for (auto& refData : targetFBO->RefData)
                     {
-                        auto shaderPass = batch.Material->GetGfxShaderPass(i);
+                        descriptorSetLayouts.push_back(refData.lock()->GetDescriptorSetLayout());
+                    }
+                    descriptorSetLayouts.push_back(world->GetWorldDescriptorSet()->GetDescriptorSetLayout());
+                    descriptorSetLayouts.push_back(batch.DescriptorSetLayout);
+                    if (batch.Material->GetGfxDescriptorSet()->GetDescriptorCount() != 0)
+                    {
+                        descriptorSetLayouts.push_back(batch.Material->GetGfxDescriptorSetLayout());
+                    }
 
-                        // bind render state
-                        array_list<gfx::GFXDescriptorSetLayout_sp> descriptorSetLayouts;
+                    auto gfxPipeline = pipelineMgr->GetGraphicsPipeline(shaderPass, descriptorSetLayouts, targetFBO->GetRenderPassLayout(), batch.State);
+                    cmdBuffer.CmdBindGraphicsPipeline(gfxPipeline.get());
 
-                        for (auto& refData : targetFBO->RefData)
+                    for (auto& element : batch.Elements)
+                    {
+                        // bind descriptor sets
                         {
-                            descriptorSetLayouts.push_back(refData.lock()->GetDescriptorSetLayout());
+                            array_list<gfx::GFXDescriptorSet*> descriptorSets;
+                            // setup cam
+                            for (auto& refData : targetFBO->RefData)
+                            {
+                                descriptorSets.push_back(refData.lock().get());
+                            }
+                            // setup world
+                            descriptorSets.push_back(world->GetWorldDescriptorSet().get());
+                            // setup model
+                            descriptorSets.push_back(element.ModelDescriptor.get());
+                            // setup matinst
+                            const auto materialDesc = batch.Material->GetGfxDescriptorSet().get();
+                            if(materialDesc->GetDescriptorCount() != 0)
+                            {
+                                descriptorSets.push_back(materialDesc);
+                            }
+                            cmdBuffer.CmdBindDescriptorSets(descriptorSets, gfxPipeline.get());
                         }
-                        descriptorSetLayouts.push_back(world->GetWorldDescriptorSet()->GetDescriptorSetLayout());
-                        descriptorSetLayouts.push_back(batch.DescriptorSetLayout);
 
-                        auto gfxPipeline = pipelineMgr->GetGraphicsPipeline(shaderPass, descriptorSetLayouts, targetFBO->GetRenderPassLayout(), batch.State);
-                        cmdBuffer.CmdBindGraphicsPipeline(gfxPipeline.get());
-
-                        for (auto& element : batch.Elements)
+                        cmdBuffer.CmdBindVertexBuffers({element.Vertex.get()});
+                        if (batch.IsUsedIndices)
                         {
-                            // bind descriptor sets
-                            {
-                                array_list<gfx::GFXDescriptorSet*> descriptorSets;
-                                // setup cam
-                                for (auto& refData : targetFBO->RefData)
-                                {
-                                    descriptorSets.push_back(refData.lock().get());
-                                }
-                                // setup world
-                                descriptorSets.push_back(world->GetWorldDescriptorSet().get());
-                                // setup model
-                                descriptorSets.push_back(element.ModelDescriptor.get());
-                                // setup matinst
-                                //  todo
-                                cmdBuffer.CmdBindDescriptorSets(descriptorSets, gfxPipeline.get());
-                            }
-
-                            cmdBuffer.CmdBindVertexBuffers({element.Vertex.get()});
-                            if (batch.IsUsedIndices)
-                            {
-                                cmdBuffer.CmdBindIndexBuffer(element.Indices.get());
-                            }
-                            if (batch.IsUsedIndices)
-                            {
-                                cmdBuffer.CmdDrawIndexed(element.Indices->GetElementCount());
-                            }
-                            else
-                            {
-                                cmdBuffer.CmdDraw(element.Vertex->GetElementCount());
-                            }
+                            cmdBuffer.CmdBindIndexBuffer(element.Indices.get());
+                        }
+                        if (batch.IsUsedIndices)
+                        {
+                            cmdBuffer.CmdDrawIndexed(element.Indices->GetElementCount());
+                        }
+                        else
+                        {
+                            cmdBuffer.CmdDraw(element.Vertex->GetElementCount());
                         }
                     }
+
                 } // end batchs
 
                 cmdBuffer.CmdEndFrameBuffer();

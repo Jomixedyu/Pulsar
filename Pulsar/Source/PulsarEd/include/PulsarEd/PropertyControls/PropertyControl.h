@@ -42,6 +42,7 @@ namespace pulsared
 
         bool PropertyLine(const string& name, Type* type, Object* obj);
 
+
         // object field properties
         void ObjectFieldProperties(Type* type, Type* inner, Object* obj, ObjectBase* receiver, bool showDebug = false);
     }

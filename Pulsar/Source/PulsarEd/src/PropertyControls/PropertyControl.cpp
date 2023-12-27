@@ -73,14 +73,7 @@ namespace pulsared
         ImGui::Columns(1);
     }
 
-    bool PImGui::PropertyLine(const string& name, Type* type, Object* obj)
-    {
-        BeginPropertyItem(StringUtil::FriendlyName(name).c_str());
-        bool changed = PropertyControlManager::ShowProperty(name, type, obj);
-        EndPropertyItem();
 
-        return changed;
-    }
 
     // type 禁止BoxingObjectPtrBase
     static bool _ObjectFieldPropertyLine(
@@ -255,6 +248,38 @@ namespace pulsared
         }
         return isChanged;
     }
+
+    bool PImGui::PropertyLine(const string& name, Type* type, Object* obj)
+    {
+        bool changed = false;
+
+        if (ImGui::BeginTable("_lines", 2, ImGuiTableFlags_BordersV))
+        {
+            const float width = (float)ImGui::GetWindowWidth() * 0.38f;
+            ImGui::TableSetupColumn("name", ImGuiTableColumnFlags_WidthFixed, width);
+            ImGui::TableSetupColumn("value");
+
+            ImGui::TableNextRow();
+            ImGui::TableSetColumnIndex(0);
+            ImGui::AlignTextToFramePadding();
+
+            bool treeOpened = ImGui::TreeNodeEx(name.c_str(), ImGuiTreeNodeFlags_Leaf);
+
+            ImGui::TableSetColumnIndex(1);
+            ImGui::AlignTextToFramePadding();
+            changed = PropertyControlManager::ShowProperty(name, type, obj);
+
+            if (treeOpened)
+            {
+                ImGui::TreePop();
+            }
+
+            ImGui::EndTable();
+        }
+
+        return changed;
+    }
+
     void PImGui::ObjectFieldProperties(Type* type, Type* inner, Object* obj, ObjectBase* receiver, bool showDebug)
     {
         if (ImGui::BeginTable("ss", 2, ImGuiTableFlags_BordersV))

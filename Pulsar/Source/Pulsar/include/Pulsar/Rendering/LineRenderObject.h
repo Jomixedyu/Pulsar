@@ -31,7 +31,7 @@ namespace pulsar
         }
         void OnChangedTransform() override
         {
-            m_meshConstantBuffer->Fill(&m_localToWorld);
+            m_meshConstantBuffer->Fill(&m_perModelData);
         }
         array_list<rendering::MeshBatch> GetMeshBatchs() override
         {

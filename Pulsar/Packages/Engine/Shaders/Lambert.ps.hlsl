@@ -6,7 +6,7 @@ cbuffer shcbuf : register(b0, space3)
     float4 _Tint;
 }
 
-Texture2D _Color : register(t1, space3);
+Texture2D _DiffuseTex : register(t1, space3);
 
 SamplerState NormalSampler
 {
@@ -25,8 +25,9 @@ OutPixelAssembly main(InPixelAssembly v2f)
 
     float3 dirLightColor = WorldBuffer.WorldSpaceLightColor.xyz * WorldBuffer.WorldSpaceLightColor.w;
 
-    float3 lightingcolor = dot(v2f.WorldNormal, l) * dirLightColor + skylightColor;
-    float3 color = lightingcolor * _Tint.xyz * _Color.Sample(NormalSampler, v2f.TexCoord0).xyz;
-    p2o.Color = float4(color, 1);
+    float3 lightingcolor = saturate(dot(normalize(v2f.WorldNormal), l)) * dirLightColor * _Tint.xyz;
+    // float3 color = lightingcolor * _Tint.xyz * _Color.Sample(NormalSampler, v2f.TexCoord0).xyz;
+    p2o.Color = float4(lightingcolor + skylightColor, 1);
+
     return p2o;
 }

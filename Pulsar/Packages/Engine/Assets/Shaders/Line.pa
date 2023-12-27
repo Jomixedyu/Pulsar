@@ -1,5 +1,3 @@
 {
-    "Passes": [
-        "Engine/Shaders/Line.sh.json"
-    ]
+    "Passes": "Engine/Shaders/Line.sh.json"
 }

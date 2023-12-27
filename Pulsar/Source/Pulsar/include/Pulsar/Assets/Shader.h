@@ -72,6 +72,9 @@ namespace pulsar
         CORELIB_REFL_DECL_FIELD(RenderingType);
         ShaderPassRenderingType RenderingType;
 
+        CORELIB_REFL_DECL_FIELD(ConstantProperties);
+        List_sp<ShaderPassConfigProperty_sp> ConstantProperties;
+
         CORELIB_REFL_DECL_FIELD(Properties);
         List_sp<ShaderPassConfigProperty_sp> Properties;
     };
@@ -79,14 +82,10 @@ namespace pulsar
 
     struct ShaderSourceData
     {
-        struct Pass
+        struct ApiPlatform
         {
             string Config;
             hash_map<gfx::GFXShaderStageFlags, array_list<char>> Sources;
-        };
-        struct ApiPlatform
-        {
-            array_list<Pass> Passes;
         };
         hash_map<gfx::GFXApi, ApiPlatform> ApiMaps;
     };
@@ -123,16 +122,15 @@ namespace pulsar
 
         void ResetShaderSource(const ShaderSourceData& serData);
         const ShaderSourceData& GetSourceData() const { return m_shaderSource; }
-        List_sp<String_sp> GetPassNames() const { return m_passNames; }
-        size_t GetPassCount() const { return m_passNames->size(); }
+        String_sp GetPassName() const { return m_passName; }
 
         array_list<gfx::GFXApi> GetSupportedApi() const;
     private:
         // serialized
         ShaderSourceData m_shaderSource;
     private:
-        CORELIB_REFL_DECL_FIELD(m_passNames);
-        List_sp<String_sp> m_passNames;
+        CORELIB_REFL_DECL_FIELD(m_passName);
+        String_sp m_passName;
 
         CORELIB_REFL_DECL_FIELD(m_preDefines);
         List_sp<String_sp> m_preDefines;

@@ -19,6 +19,9 @@ namespace pulsar
     struct CBuffer_ModelObject
     {
         Matrix4f LocalToWorldMatrix;
+        Matrix4f WorldToLocalMatrix;
+        Matrix4f NormalLocalToWorldMatrix;
+        Vector4f NodePosition;
     };
 
     constexpr uint32_t kRenderingDescriptorSpace_ModelInfo = 2;

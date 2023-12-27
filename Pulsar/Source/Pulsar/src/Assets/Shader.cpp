@@ -38,7 +38,7 @@ namespace pulsar
     }
     Shader::Shader()
     {
-        m_passNames = mksptr(new List<String_sp>);
+        m_passName = mksptr(new String);
         m_preDefines = mksptr(new List<String_sp>);
     }
     void Shader::Serialize(AssetSerializer* s)
@@ -46,23 +46,17 @@ namespace pulsar
         base::Serialize(s);
         if (!s->IsWrite) // read
         {
-            m_passNames->clear();
             m_preDefines->clear();
 
             auto passes = s->Object->At("Passes");
-            for (size_t i = 0; i < passes->GetCount(); i++)
-            {
-                m_passNames->push_back(mkbox(passes->At(i)->AsString()));
-            }
+            *m_passName = passes->AsString();
         }
         else
         {
-            auto passNameArray = s->Object->New(ser::VarientType::Array);
-            for (auto& passName : *m_passNames)
-            {
-                passNameArray->Push(*passName);
-            }
-            s->Object->Add("Passes", passNameArray);
+            auto passNameString = s->Object->New(ser::VarientType::String);
+            passNameString->Assign(*m_passName);
+
+            s->Object->Add("Passes", passNameString);
         }
         if (s->ExistStream)
         {
@@ -91,15 +85,11 @@ namespace pulsar
 
     }
 
-    static std::iostream& ReadWriteStream(std::iostream& stream, bool write, ShaderSourceData::Pass& data)
+
+    static std::iostream& ReadWriteStream(std::iostream& stream, bool write, ShaderSourceData::ApiPlatform& data)
     {
         sser::ReadWriteStream(stream, write, data.Config);
         sser::ReadWriteStream(stream, write, data.Sources);
-        return stream;
-    }
-    static std::iostream& ReadWriteStream(std::iostream& stream, bool write, ShaderSourceData::ApiPlatform& data)
-    {
-        sser::ReadWriteStream(stream, write, data.Passes);
         return stream;
     }
     std::iostream& ReadWriteStream(std::iostream& stream, bool write, ShaderSourceData& data)
@@ -108,10 +98,6 @@ namespace pulsar
         using namespace ser;
 
         sser::ReadWriteStream(stream, write, data.ApiMaps);
-
-        //sser::ReadWriteStream(stream, write, data.Config);
-        //sser::ReadWriteStream(stream, write, data.Sources);
-
         return stream;
     }
 

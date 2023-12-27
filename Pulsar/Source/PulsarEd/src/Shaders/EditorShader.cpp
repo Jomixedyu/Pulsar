@@ -111,25 +111,25 @@ namespace pulsared
             for (auto& apiItem : api)
             {
                 auto& apiSerData = serDatas.ApiMaps[apiItem];
-                for (auto& passName : *shader->GetPassNames())
+
+                auto passName = shader->GetPassName();
+                auto& passSerData = apiSerData;
+                auto shaderPath = AssetDatabase::PackagePathToPhysicsPath(*passName);
+
+                auto passModules = CompilePulsarShader(shaderPath, apiItem, includes, defines);
+
+                for (auto& smodule : passModules)
                 {
-                    auto& passSerData = apiSerData.Passes.emplace_back();
-                    auto shaderPath = AssetDatabase::PackagePathToPhysicsPath(*passName);
-
-                    auto passModules = CompilePulsarShader(shaderPath, apiItem, includes, defines);
-
-                    for (auto& smodule : passModules)
+                    if (smodule.Partial == psc::FilePartialType::Sh)
                     {
-                        if (smodule.Partial == psc::FilePartialType::Sh)
-                        {
-                            passSerData.Config = std::get<string>(smodule.Data);
-                        }
-                        else
-                        {
-                            passSerData.Sources[_GetGFXStage(smodule.Partial)] = std::get<std::vector<char>>(smodule.Data);
-                        }
+                        passSerData.Config = std::get<string>(smodule.Data);
+                    }
+                    else
+                    {
+                        passSerData.Sources[_GetGFXStage(smodule.Partial)] = std::get<std::vector<char>>(smodule.Data);
                     }
                 }
+
             }
 
             Logger::Log("compile shader success.");

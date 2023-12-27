@@ -7,6 +7,7 @@
 #include "Pulsar/Components/PointLightComponent.h"
 #include "Pulsar/Components/SkyLightComponent.h"
 #include "Pulsar/Components/StaticMeshRendererComponent.h"
+#include "Shaders/EditorShader.h"
 #include "Tools/ObjectDebugTool.h"
 #include "Tools/WorldDebugTool.h"
 
@@ -117,16 +118,16 @@ namespace pulsared
             MenuEntrySubMenu_sp menu = mksptr(new MenuEntrySubMenu("Node"));
             menu->Priority = 200;
             mainMenu->AddEntry(menu);
-
-            auto shapeMenu =  mksptr(new MenuEntrySubMenu("Shapes"));
-            menu->AddEntry(shapeMenu);
             {
                 auto entry = mksptr(new MenuEntryButton("Create Node"));
-                shapeMenu->AddEntry(entry);
+                menu->AddEntry(entry);
                 entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
                     World::Current()->GetPersistentScene()->NewNode("New Node");
                 });
             }
+
+            auto shapeMenu =  mksptr(new MenuEntrySubMenu("Shapes"));
+            menu->AddEntry(shapeMenu);
             {
                 auto entry = mksptr(new MenuEntryButton("Create Sphere"));
                 shapeMenu->AddEntry(entry);
@@ -144,8 +145,9 @@ namespace pulsared
                 entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
                     auto renderer = World::Current()->GetPersistentScene()->NewNode("New Cube")
                         ->AddComponent<StaticMeshRendererComponent>();
-                    renderer->SetStaticMesh(GetAssetManager()->LoadAsset<StaticMesh>(BuiltinAsset::Shapes_Cube));
+                    renderer->AddMaterial();
                     renderer->SetMaterial(0, GetAssetManager()->LoadAsset<Material>(BuiltinAsset::Material_Lambert));
+                    renderer->SetStaticMesh(GetAssetManager()->LoadAsset<StaticMesh>(BuiltinAsset::Shapes_Cube));
 
                 });
             }
@@ -306,21 +308,6 @@ namespace pulsared
     {
         auto vertexColorMat = GetAssetManager()->LoadAsset<Material>("Engine/Materials/VertexColor", true);
         {
-            // auto meshNode = Node::StaticCreate("mesh test");
-            // auto meshComponent = meshNode->AddComponent<StaticMeshRendererComponent>();
-            //
-            // auto staticMesh = GetAssetManager()->LoadAsset<StaticMesh>("Engine/Shapes/Body");
-            // meshComponent->SetStaticMesh(staticMesh);
-            //
-            // auto missingMat = GetAssetManager()->LoadAsset<Material>("Engine/Materials/Missing");
-            // meshComponent->SetMaterial(0, missingMat);
-            // meshComponent->SetMaterial(1, missingMat);
-            // meshComponent->SetMaterial(2, missingMat);
-            // meshComponent->SetMaterial(3, missingMat);
-            // World::Current()->GetPersistentScene()->AddNode(meshNode);
-        }
-
-        {
             auto dlight = Node::StaticCreate("Directional Light");
             dlight->AddComponent<DirectionalLightComponent>();
 
@@ -364,6 +351,13 @@ namespace pulsared
         // add package
         AssetDatabase::AddPackage("Engine");
         AssetDatabase::AddPackage("Editor");
+
+        // recompile obsolete shaders
+        // for (auto element : AssetDatabase::FindAssets(cltypeof<Shader>()))
+        // {
+        //     auto asset = AssetDatabase::LoadAssetAtPath(element);
+        //     ShaderCompiler::CompileShader(asset, {gfx::GFXApi::Vulkan}, {}, {});
+        // }
 
         // world
         Logger::Log("initialize world");
