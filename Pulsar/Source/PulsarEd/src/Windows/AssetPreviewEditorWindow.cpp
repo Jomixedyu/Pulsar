@@ -16,15 +16,12 @@ namespace pulsared
     {
         if (PImGui::PropertyGroup("Asset Info"))
         {
-            if (PImGui::BeginPropertyItem("Asset Path"))
+            if (PImGui::BeginPropertyLine())
             {
-                ImGui::Text(AssetDatabase::GetPathByAsset(m_assetObject).c_str());
-                PImGui::EndPropertyItem();
-            }
-            if (PImGui::BeginPropertyItem("Object Id"))
-            {
-                ImGui::Text(m_assetObject.handle.to_string().c_str());
-                PImGui::EndPropertyItem();
+                PImGui::PropertyLineText("Asset Path", AssetDatabase::GetPathByAsset(m_assetObject));
+                PImGui::PropertyLineText("Asset Path", m_assetObject.handle.to_string());
+
+                PImGui::EndPropertyLine();
             }
         }
     }

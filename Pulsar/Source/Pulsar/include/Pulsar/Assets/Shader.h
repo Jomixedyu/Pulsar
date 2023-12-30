@@ -21,6 +21,7 @@ namespace pulsar
 
     CORELIB_DEF_ENUM(AssemblyObject_pulsar, pulsar,
         ShaderParameterType,
+        IntScalar,
         Scalar,
         Vector,
         Texture2D,
@@ -43,6 +44,9 @@ namespace pulsar
 
         CORELIB_REFL_DECL_FIELD(Type);
         ShaderParameterType Type;
+
+        CORELIB_REFL_DECL_FIELD(Value);
+        string Value;
     };
     CORELIB_DECL_SHORTSPTR(ShaderPassConfigProperty);
 

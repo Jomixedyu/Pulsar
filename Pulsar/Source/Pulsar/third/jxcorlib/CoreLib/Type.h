@@ -41,22 +41,20 @@ public: static inline ::jxcorlib::Type* StaticType() \
         return type; \
     } \
 private: \
-    using base = BASE; \
+    using base      = BASE; \
     using ThisClass = NAME; \
     friend class ::jxcorlib::Type; \
     friend class ::jxcorlib::TypeTraits; \
 public: \
-    inline virtual ::jxcorlib::Type* GetType() const { \
-        return StaticType(); \
-    } \
+    inline virtual ::jxcorlib::Type* GetType() const { return StaticType(); } \
 private: \
     static inline struct __corelib_type { \
         __corelib_type() { NAME::StaticType(); } \
     } __corelib_type_init_; \
-    ::jxcorlib::sptr<ThisClass> self() { return ::jxcorlib::sptr_cast<ThisClass>(shared_from_this()); } \
-    ::jxcorlib::sptr<const ThisClass> self() const { return ::jxcorlib::sptr_cast<const ThisClass>(shared_from_this()); } \
-    ::jxcorlib::wptr<ThisClass> self_weak() { return ::jxcorlib::wptr<ThisClass>(self()); } \
-    ::jxcorlib::wptr<const ThisClass> self_weak() const { return ::jxcorlib::wptr<const ThisClass>(self()); }
+    ::jxcorlib::sptr<ThisClass>         self()  { return ::jxcorlib::sptr_cast<ThisClass>(shared_from_this()); } \
+    ::jxcorlib::sptr<const ThisClass>   self()  const { return ::jxcorlib::sptr_cast<const ThisClass>(shared_from_this()); } \
+    ::jxcorlib::wptr<ThisClass>         self_weak() { return ::jxcorlib::wptr<ThisClass>(self()); } \
+    ::jxcorlib::wptr<const ThisClass>   self_weak() const { return ::jxcorlib::wptr<const ThisClass>(self()); }
 
 
 #define CORELIB_DEF_ENUMTYPE(ASSEMBLY, NAME, BASE) \

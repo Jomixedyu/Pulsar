@@ -398,6 +398,7 @@ namespace gfx
     {
         static struct Init
         {
+
             std::unordered_map<VkFormat, GFXTextureFormat>* ptr;
             Init()
             {

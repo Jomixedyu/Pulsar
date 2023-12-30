@@ -43,12 +43,40 @@ namespace pulsared
         base::OnDrawAssetPreviewUI(dt);
         Texture2D_ref tex = m_assetObject;
 
-        ImGui::Image((void*)m_imageDesc->GetId(), {500,500});
+        ImGui::Image((void*)m_imageDesc->GetId(), {300,300});
+
+        if (ImGui::Button("Fit"))
+        {
+
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("-"))
+        {
+
+        }
+        ImGui::SameLine();
+
+        ImGui::Text(" %s ", "100%");
+        ImGui::SameLine();
+        if (ImGui::Button("+"))
+        {
+
+        }
+
     }
 
     void TextureEditorWindow::OnDrawAssetPropertiesUI(float dt)
     {
         base::OnDrawAssetPropertiesUI(dt);
+
+        if (PImGui::PropertyGroup("Asset Info"))
+        {
+            if (PImGui::BeginPropertyLine())
+            {
+                PImGui::PropertyLineText("Object Handle", m_assetObject.GetHandle().to_string());
+                PImGui::EndPropertyLine();
+            }
+        }
 
     }
 

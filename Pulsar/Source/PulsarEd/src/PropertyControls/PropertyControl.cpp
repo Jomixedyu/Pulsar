@@ -56,24 +56,22 @@ namespace pulsared
         return ImGui::CollapsingHeader(label, ImGuiTreeNodeFlags_DefaultOpen);
     }
 
-    bool PImGui::BeginPropertyItem(const char* name)
-    {
-        ImGui::Columns(2);
-        ImGui::SetColumnWidth(0, 120);
-        ImGui::AlignTextToFramePadding();
-
-        ImGui::Text(name);
-        ImGui::NextColumn();
-        return true;
-    }
-
-    void PImGui::EndPropertyItem()
-    {
-        ImGui::NextColumn();
-        ImGui::Columns(1);
-    }
-
-
+    // bool PImGui::BeginPropertyItem(const char* name)
+    // {
+    //     ImGui::Columns(2);
+    //     ImGui::SetColumnWidth(0, 120);
+    //     ImGui::AlignTextToFramePadding();
+    //
+    //     ImGui::Text(name);
+    //     ImGui::NextColumn();
+    //     return true;
+    // }
+    //
+    // void PImGui::EndPropertyItem()
+    // {
+    //     ImGui::NextColumn();
+    //     ImGui::Columns(1);
+    // }
 
     // type 禁止BoxingObjectPtrBase
     static bool _ObjectFieldPropertyLine(
@@ -126,7 +124,7 @@ namespace pulsared
             ImGui::SameLine();
             if (ImGui::Button(ICON_FK_TRASH))
             {
-                if(list->GetCount() != 0)
+                if (list->GetCount() != 0)
                 {
                     list->Clear();
                     isChanged = true;
@@ -142,13 +140,13 @@ namespace pulsared
                     {
                         auto boxing = list->At(i);
                         isChanged |= _ObjectFieldPropertyLine(std::to_string(i), itemType, innerType,
-                            boxing.get(), receiver, receiverField, false, showDebug);
+                                                              boxing.get(), receiver, receiverField, false, showDebug);
                         list->SetAt(i, boxing);
                     }
                     else
                     {
                         isChanged |= _ObjectFieldPropertyLine(std::to_string(i), itemType, innerType,
-                            list->At(i).get(), receiver, receiverField, false, showDebug);
+                                                              list->At(i).get(), receiver, receiverField, false, showDebug);
                     }
                     ImGui::PopID();
                 }
@@ -179,7 +177,7 @@ namespace pulsared
                 {
                     continue;
                 }
-                if(!showDebug && field->IsDefinedAttribute(cltypeof<DebugPropertyAttribute>()))
+                if (!showDebug && field->IsDefinedAttribute(cltypeof<DebugPropertyAttribute>()))
                 {
                     continue;
                 }
@@ -211,7 +209,7 @@ namespace pulsared
                 {
                     fieldInnerType = attr->GetItemType();
                 }
-                else if(const auto* list = interface_cast<IList>(fieldInstSptr.get()))
+                else if (const auto* list = interface_cast<IList>(fieldInstSptr.get()))
                 {
                     fieldInnerType = list->GetIListElementType();
                 }
@@ -220,15 +218,15 @@ namespace pulsared
 
                 const bool isReadOnly = field->IsDefinedAttribute(cltypeof<ReadOnlyPropertyAttribute>());
 
-                if(isReadOnly)
+                if (isReadOnly)
                 {
                     ImGui::BeginDisabled();
                 }
 
                 bool curFieldChanged = false;
-                if(curFieldChanged |= _ObjectFieldPropertyLine(
-                    field->GetName(), field->GetFieldType(), fieldInnerType,
-                    fieldInstSptr.get(), receiver, receiverField, false, showDebug))
+                if (curFieldChanged |= _ObjectFieldPropertyLine(
+                        field->GetName(), field->GetFieldType(), fieldInnerType,
+                        fieldInstSptr.get(), receiver, receiverField, false, showDebug))
                 {
                     if (fieldType->IsBoxingType())
                     {
@@ -238,7 +236,7 @@ namespace pulsared
                 }
                 isChanged |= curFieldChanged;
 
-                if(isReadOnly)
+                if (isReadOnly)
                 {
                     ImGui::EndDisabled();
                 }
@@ -248,36 +246,59 @@ namespace pulsared
         }
         return isChanged;
     }
-
-    bool PImGui::PropertyLine(const string& name, Type* type, Object* obj)
+    bool PImGui::BeginPropertyLine()
     {
-        bool changed = false;
-
-        if (ImGui::BeginTable("_lines", 2, ImGuiTableFlags_BordersV))
+        bool b = ImGui::BeginTable("_lines", 2, ImGuiTableFlags_BordersV);
+        if (b)
         {
             const float width = (float)ImGui::GetWindowWidth() * 0.38f;
             ImGui::TableSetupColumn("name", ImGuiTableColumnFlags_WidthFixed, width);
             ImGui::TableSetupColumn("value");
+        }
+        return b;
+    }
+    bool PImGui::PropertyLine(const string& name, Type* type, Object* obj)
+    {
+        bool changed = false;
 
-            ImGui::TableNextRow();
-            ImGui::TableSetColumnIndex(0);
-            ImGui::AlignTextToFramePadding();
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
+        ImGui::AlignTextToFramePadding();
 
-            bool treeOpened = ImGui::TreeNodeEx(name.c_str(), ImGuiTreeNodeFlags_Leaf);
+        bool treeOpened = ImGui::TreeNodeEx(name.c_str(), ImGuiTreeNodeFlags_Leaf);
 
-            ImGui::TableSetColumnIndex(1);
-            ImGui::AlignTextToFramePadding();
-            changed = PropertyControlManager::ShowProperty(name, type, obj);
+        ImGui::TableSetColumnIndex(1);
+        ImGui::AlignTextToFramePadding();
 
-            if (treeOpened)
-            {
-                ImGui::TreePop();
-            }
+        changed = PropertyControlManager::ShowProperty(name, type, obj);
 
-            ImGui::EndTable();
+        if (treeOpened)
+        {
+            ImGui::TreePop();
         }
 
         return changed;
+    }
+    void PImGui::PropertyLineText(const string& name, string_view str)
+    {
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
+        ImGui::AlignTextToFramePadding();
+        bool treeOpened = ImGui::TreeNodeEx(name.c_str(), ImGuiTreeNodeFlags_Leaf);
+
+        ImGui::TableSetColumnIndex(1);
+        ImGui::AlignTextToFramePadding();
+
+        ImGui::Text(str.data());
+
+        if (treeOpened)
+        {
+            ImGui::TreePop();
+        }
+    }
+    void PImGui::EndPropertyLine()
+    {
+        ImGui::EndTable();
     }
 
     void PImGui::ObjectFieldProperties(Type* type, Type* inner, Object* obj, ObjectBase* receiver, bool showDebug)

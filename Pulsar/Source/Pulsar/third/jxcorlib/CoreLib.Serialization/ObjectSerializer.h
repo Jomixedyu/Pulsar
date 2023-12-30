@@ -48,6 +48,7 @@ namespace jxcorlib::ser
         virtual void AssignParse(std::string_view content) = 0;
 
         virtual size_t GetCount() = 0;
+        virtual std::vector<std::string> GetKeys() const = 0;
 
         virtual std::shared_ptr<Varient> At(size_t index) = 0;
         virtual std::shared_ptr<Varient> At(const std::string& key) = 0;
@@ -59,7 +60,10 @@ namespace jxcorlib::ser
         void Push(bool value) { Push(New(VarientType::Bool)->Assign(value)); }
         void Push(const std::string& value) { Push(New(VarientType::String)->Assign(value)); }
 
-        virtual void Add(const std::string& key, std::shared_ptr<Varient> value) = 0;
+        void Add(std::string_view key, std::shared_ptr<Varient> value);
+        void Add(std::string_view key, int value);
+        void Add(std::string_view key, float value);
+        void Add(std::string_view key, const std::string& value);
         virtual void Add(const char* key, std::shared_ptr<Varient> value) = 0;
         virtual void RemoveAt(size_t index) = 0;
         virtual void RemoveAt(const std::string& key) = 0;

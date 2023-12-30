@@ -23,6 +23,7 @@ set(GLFW_BUILD_EXAMPLES OFF)
 set(GLFW_BUILD_TESTS OFF)
 add_subdirectory("./third/glfw")
 
+add_subdirectory("./third/astc-encoder")
 
 if (${PROJECT_NAME}_BUILD_EXECUTABLE)
     add_executable(${PROJECT_NAME} ${Pulsar_SRC} "main.cpp")
@@ -34,6 +35,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC "./include")
 
 target_include_directories(${PROJECT_NAME} PRIVATE "./include/Pulsar")
 target_include_directories(${PROJECT_NAME} PUBLIC "..")
+target_include_directories(${PROJECT_NAME} PRIVATE "./third/astc-encoder/Source")
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC PULSAR_GFX_BUILD_VULKAN)
 
@@ -45,4 +47,5 @@ target_link_libraries(${PROJECT_NAME}
         gfx-vk
         imgui
 		jaudio
+        astcenc-native-static
 )

@@ -101,13 +101,16 @@ namespace pulsared
 
         if (PImGui::PropertyGroup("Compiled"))
         {
-            if (PImGui::BeginPropertyItem("Platforms"))
+            string apis;
+            for (auto api : shader->GetSupportedApi())
             {
-                for (auto api : shader->GetSupportedApi())
-                {
-                    ImGui::Text(gfx::to_string(api));
-                }
-                PImGui::EndPropertyItem();
+                apis += gfx::to_string(api);
+                apis += ";";
+            }
+            if (PImGui::BeginPropertyLine())
+            {
+                PImGui::PropertyLineText("Platforms", apis);
+                PImGui::EndPropertyLine();
             }
         }
     }

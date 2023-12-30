@@ -43,6 +43,7 @@ namespace pulsar
     {
     }
 
+
     bool Material::CreateGPUResource()
     {
         if (m_createdGpuResource)
@@ -86,13 +87,11 @@ namespace pulsar
             shaderpassConfig = sourceConfig;
         }
 
-
         // create shader pass
         m_gfxShaderPasses = Application::GetGfxApp()->CreateShaderPass(
             config,
             gpuProgram,
             {GetVertexLayout(Application::GetGfxApp())});
-
 
         // create constant layouts and constant buffer
         array_list<gfx::GFXDescriptorSetLayoutInfo> descLayoutInfos;
@@ -102,9 +101,9 @@ namespace pulsar
         if (shaderpassConfig->ConstantProperties)
         {
             size_t offset = 0;
-            for (const auto element : *shaderpassConfig->ConstantProperties)
+            for (const auto& element : *shaderpassConfig->ConstantProperties)
             {
-                m_propertyInfo.insert({ index_string{element->Name}, { offset, element->Type } });
+                m_propertyInfo.insert({index_string{element->Name}, {offset, element->Type}});
                 switch (element->Type)
                 {
                 case ShaderParameterType::Scalar:
@@ -120,21 +119,17 @@ namespace pulsar
         }
         if (constantBufferSize)
         {
-            m_materialConstantBuffer =
-                Application::GetGfxApp()->CreateBuffer(gfx::GFXBufferUsage::ConstantBuffer, constantBufferSize);
+            m_materialConstantBuffer = Application::GetGfxApp()->CreateBuffer(gfx::GFXBufferUsage::ConstantBuffer, constantBufferSize);
         }
-
 
         if (constantBufferSize != 0)
         {
-            auto info = gfx::GFXDescriptorSetLayoutInfo {
+            auto info = gfx::GFXDescriptorSetLayoutInfo{
                 gfx::GFXDescriptorType::ConstantBuffer,
                 gfx::GFXShaderStageFlags::VertexFragment,
-                0, 3
-            };
+                0, 3};
             descLayoutInfos.push_back(info);
         }
-
 
         // create texture parameter layout
         if (shaderpassConfig->Properties)
@@ -143,13 +138,18 @@ namespace pulsar
             const auto count = shaderpassConfig->Properties->size();
             for (size_t i = 0; i < count; ++i)
             {
-                //auto& item = shaderpassConfig->Properties->at(i);
-                auto info = gfx::GFXDescriptorSetLayoutInfo {
+                auto& item = shaderpassConfig->Properties->at(i);
+                auto info = gfx::GFXDescriptorSetLayoutInfo{
                     gfx::GFXDescriptorType::ConstantBuffer,
                     gfx::GFXShaderStageFlags::VertexFragment,
-                    (uint32_t)i+offset, 3
-                };
+                    (uint32_t)i + offset, 3};
                 descLayoutInfos.push_back(info);
+
+                ShaderConstantPropertyInfo prop{};
+                prop.Type = item->Type;
+                prop.Offset = 0;
+                m_propertyInfo.insert({index_string{item->Name}, prop});
+                //m_descriptorSet->AddDescriptor(item->Name, i + offset);
             }
         }
 
@@ -158,15 +158,27 @@ namespace pulsar
             descLayoutInfos.data(),
             descLayoutInfos.size());
 
-
         // create descriptor set
         m_descriptorSet = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_descriptorSetLayout);
-        if (m_materialConstantBuffer)
+        if (constantBufferSize)
         {
-            m_descriptorSet->AddDescriptor("PerMat", 0)->SetConstantBuffer(m_materialConstantBuffer.get());
+            m_descriptorSet->AddDescriptor("ConstantProperties", 0)->SetConstantBuffer(m_materialConstantBuffer.get());
         }
+        if (shaderpassConfig->Properties && !shaderpassConfig->Properties->empty())
+        {
+            auto count = shaderpassConfig->Properties->size();
+            auto offset = constantBufferSize ? 1 : 0;
+            for (int i = 0; i < count; ++i)
+            {
+                auto item = shaderpassConfig->Properties->at(i);
+                //m_descriptorSet->AddDescriptor(item->Name, i + offset);
+            }
+        }
+
         m_descriptorSet->Submit();
 
+        m_isDirtyParameter = true;
+        SubmitParameters();
         return true;
     }
 
@@ -185,24 +197,61 @@ namespace pulsar
         return m_createdGpuResource;
     }
 
-    class MaterialSerializationData : public Object
+    static ser::VarientRef NewVectorObject(const ser::VarientRef& ctx, Vector4f vec)
     {
-        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::MaterialSerializationData, Object);
-
-    public:
-        CORELIB_REFL_DECL_FIELD(Shader);
-        Shader_ref Shader;
-    };
-    CORELIB_DECL_SHORTSPTR(MaterialSerializationData);
+        auto obj = ctx->New(ser::VarientType::Object);
+        obj->Add("x", vec.x);
+        obj->Add("y", vec.y);
+        obj->Add("z", vec.z);
+        obj->Add("w", vec.w);
+        return obj;
+    }
+    static Vector4f GetVectorObject(const ser::VarientRef& var)
+    {
+        float x = var->At("x")->AsFloat();
+        float y = var->At("y")->AsFloat();
+        float z = var->At("z")->AsFloat();
+        float w = var->At("w")->AsFloat();
+        return {x, y, z, w};
+    }
 
     void Material::Serialize(AssetSerializer* s)
     {
-        // MaterialSerializationData_sp data;
         if (s->IsWrite)
         {
-            auto shaderObjectHandle = s->Object->New(ser::VarientType::String);
-            shaderObjectHandle->Assign(m_shader.handle.to_string());
-            s->Object->Add("Shader", shaderObjectHandle);
+            const auto shaderObject = s->Object->New(ser::VarientType::String);
+            shaderObject->Assign(m_shader.handle.to_string());
+            s->Object->Add("Shader", shaderObject);
+
+            const auto parametersArray = s->Object->New(ser::VarientType::Array);
+            for (auto& [name, value] : m_parameterValues)
+            {
+                ser::VarientRef parameter = parametersArray->New(ser::VarientType::Object);
+                parameter->Add("Name", name.to_string());
+                parameter->Add("Type", mkbox(value.Type)->GetName());
+                ser::VarientRef paramValue;
+                switch (value.Type)
+                {
+                case ShaderParameterType::IntScalar:
+                    paramValue = parameter->New(ser::VarientType::Number)->Assign(value.AsIntScalar());
+                    break;
+                case ShaderParameterType::Scalar:
+                    paramValue = parameter->New(ser::VarientType::Number)->Assign(value.AsScalar());
+                    break;
+                case ShaderParameterType::Vector:
+                    paramValue = parameter->New(ser::VarientType::Object);
+                    paramValue->Assign(NewVectorObject(parameter, value.AsVector()));
+                    break;
+                case ShaderParameterType::Texture2D:
+                    paramValue = parameter->New(ser::VarientType::String);
+                    paramValue->Assign(value.AsTexture().GetHandle().to_string());
+                    break;
+                default:;
+                }
+                parameter->Add("Value", paramValue);
+                parametersArray->Push(parameter);
+            }
+            s->Object->Add("Parameters", parametersArray);
         }
         else
         {
@@ -211,17 +260,59 @@ namespace pulsar
             // auto data = ser::JsonSerializer::Deserialize<MaterialSerializationData>(json);
             // m_shader = data->Shader;
             // InitObjectPtr(m_shader);
-            auto id = ObjectHandle::parse(s->Object->At("Shader")->AsString());
-            m_shader = id;
+
+            // shader
+            auto shaderObject = ObjectHandle::parse(s->Object->At("Shader")->AsString());
+            m_shader = shaderObject;
             TryFindOrLoadObject(m_shader);
+
+            // parameters
+            auto parameterObject = s->Object->At("Parameters");
+            auto parametersCount = parameterObject->GetCount();
+            for (int i = 0; i < parametersCount; ++i)
+            {
+                auto parameter = parameterObject->At(i);
+                auto name = parameter->At("Name")->AsString();
+                auto typestr = parameter->At("Type")->AsString();
+                auto valueObject = parameter->At("Value");
+                uint32_t typenum{};
+
+                Enum::StaticTryParse(cltypeof<BoxingShaderParameterType>(), typestr, &typenum);
+                ShaderParameterType type = static_cast<ShaderParameterType>(typenum);
+
+                MaterialParameterValue paramValue{};
+                switch (type)
+                {
+                case ShaderParameterType::IntScalar:
+                    paramValue.SetValue(valueObject->AsInt());
+                    break;
+                case ShaderParameterType::Scalar:
+                    paramValue.SetValue(valueObject->AsFloat());
+                    break;
+                case ShaderParameterType::Vector:
+                    paramValue.SetValue(GetVectorObject(valueObject));
+                    break;
+                case ShaderParameterType::Texture2D: {
+                    Texture_ref tex = ObjectHandle::parse(valueObject->AsString());
+                    paramValue.SetValue(tex);
+                    break;
+                }
+                default:;
+                }
+                m_parameterValues.insert({index_string{name}, paramValue});
+            }
         }
     }
 
+    void Material::SetIntScalar(const index_string& name, int value)
+    {
+        m_isDirtyParameter = true;
+        m_parameterValues[name].SetValue(value);
+    }
     void Material::SetFloat(const index_string& name, float value)
     {
         m_isDirtyParameter = true;
         m_parameterValues[name].SetValue(value);
-        // m_descriptorSet->Find("ShaderParameter")->IsDirty = true;
     }
 
     void Material::SetTexture(const index_string& name, Texture_ref value)
@@ -235,6 +326,15 @@ namespace pulsar
         m_isDirtyParameter = true;
         m_parameterValues[name].SetValue(value);
     }
+    int Material::GetIntScalar(const index_string& name)
+    {
+        auto it = m_parameterValues.find(name);
+        if (it == m_parameterValues.end())
+        {
+            return 0;
+        }
+        return it->second.AsIntScalar();
+    }
 
     float Material::GetFloat(const index_string& name)
     {
@@ -243,7 +343,7 @@ namespace pulsar
         {
             return 0;
         }
-        return it->second.AsFloat();
+        return it->second.AsScalar();
     }
 
     Vector4f Material::GetVector4(const index_string& name)
@@ -265,15 +365,16 @@ namespace pulsar
         return it->second.AsTexture();
     }
 
-
     void Material::SubmitParameters()
     {
         if (!m_isDirtyParameter)
         {
             return;
         }
-
-        // copy parameter
+        if (m_materialConstantBuffer == nullptr)
+        {
+            return;
+        }
 
         m_bufferData.resize(m_materialConstantBuffer->GetSize());
         for (auto value : m_parameterValues)
@@ -282,24 +383,30 @@ namespace pulsar
 
             switch (value.second.Type)
             {
-            case MaterialParameterValue::FLOAT: {
-                *(float*)ptr = value.second.AsFloat();
+            case ShaderParameterType::IntScalar: {
+                *(int*)ptr = value.second.AsIntScalar();
+                break;;
+            }
+            case ShaderParameterType::Scalar: {
+                *(float*)ptr = value.second.AsScalar();
                 break;
             }
-            case MaterialParameterValue::VECTOR: {
+            case ShaderParameterType::Vector: {
                 *(Vector4f*)ptr = value.second.AsVector();
                 break;
             }
-            case MaterialParameterValue::TEXTURE:
+            case ShaderParameterType::Texture2D: {
+                auto tex = value.second.AsTexture();
+
                 break;
+            }
             default:;
             }
         }
 
         m_materialConstantBuffer->Fill(m_bufferData.data());
 
-
-        m_descriptorSet->Find("PerMat")->SetConstantBuffer(m_materialConstantBuffer.get());
+        m_descriptorSet->Find("ConstantProperties")->SetConstantBuffer(m_materialConstantBuffer.get());
 
         m_isDirtyParameter = false;
         m_descriptorSet->Submit();

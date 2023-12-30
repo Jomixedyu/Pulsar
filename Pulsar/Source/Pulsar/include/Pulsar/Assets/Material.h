@@ -23,34 +23,43 @@ namespace pulsar
     struct MaterialParameterValue
     {
     public:
-        enum
-        {
-            FLOAT,
-            VECTOR,
-            TEXTURE,
-        } Type;
+        ShaderParameterType Type;
 
         std::string Name;
         int Offset;
+        void SetValue(int value)
+        {
+            Value = value;
+            Type = ShaderParameterType::IntScalar;
+        }
 
         void SetValue(float value)
         {
             Value = value;
-            Type = FLOAT;
+            Type = ShaderParameterType::Scalar;;
         }
 
         void SetValue(Vector4f value)
         {
             Value = value;
-            Type = VECTOR;
+            Type = ShaderParameterType::Vector;
+        }
+
+        void SetValue(Texture_ref value)
+        {
+            Value = value;
+            Type = ShaderParameterType::Texture2D;
         }
 
     private:
-        std::variant<float, Vector4f, Texture_ref> Value;
+        std::variant<int, float, Vector4f, Texture_ref> Value;
 
     public:
-
-        float AsFloat() const
+        int AsIntScalar() const
+        {
+            return std::get<int>(Value);
+        }
+        float AsScalar() const
         {
             return std::get<float>(Value);
         }
@@ -66,11 +75,10 @@ namespace pulsar
         {
             switch (Type)
             {
-                return sizeof(int);
-            case FLOAT:
+            case ShaderParameterType::IntScalar:
+            case ShaderParameterType::Scalar:
                 return sizeof(float);
-                return sizeof(Color4f);
-            case VECTOR:
+            case ShaderParameterType::Vector:
                 return sizeof(Vector4f);
             default:
                 break;
@@ -100,9 +108,11 @@ namespace pulsar
         void OnConstruct() override;
 
         // IMaterialParameter
+        void SetIntScalar(const index_string& name, int value);
         void SetFloat(const index_string& name, float value) override;
         void SetTexture(const index_string& name, Texture_ref value) override;
         void SetVector4(const index_string& name, const Vector4f& value) override;
+        int GetIntScalar(const index_string& name);
         float GetFloat(const index_string& name) override;
         Vector4f GetVector4(const index_string& name) override;
         Texture_ref GetTexture(const index_string& name) override;
@@ -146,12 +156,12 @@ namespace pulsar
 
 
     public:
-        struct ShaderConstantPropertInfo
+        struct ShaderConstantPropertyInfo
         {
             size_t Offset;
             ShaderParameterType Type;
         };
-        hash_map<index_string, ShaderConstantPropertInfo> m_propertyInfo;
+        hash_map<index_string, ShaderConstantPropertyInfo> m_propertyInfo;
     };
 
     DECL_PTR(Material);

@@ -1,3 +1,4 @@
+#include "Pulsar/Assets/Texture2D.h"
 #include "Pulsar/Components/StaticMeshRendererComponent.h"
 #include "Pulsar/Scene.h"
 
@@ -35,43 +36,54 @@ namespace pulsared
         }
         if (PImGui::PropertyGroup("Parameters"))
         {
-            for (auto prop : material->m_propertyInfo)
+            if (PImGui::BeginPropertyLine())
             {
-                const auto type = prop.second.Type;
-                Object_sp obj;
-                switch (type)
+                for (auto prop : material->m_propertyInfo)
                 {
-                case ShaderParameterType::Scalar:
-                    obj = mkbox(material->GetFloat(prop.first));
-                    break;
-                case ShaderParameterType::Vector: {
-                    const auto vec = material->GetVector4(prop.first);
-                    obj = mkbox(Color4f{vec.x, vec.y, vec.z, vec.w});
-                    break;
-                }
-                case ShaderParameterType::Texture2D:
-
-                    break;
-                }
-
-                if (PImGui::PropertyLine(prop.first.to_string(), obj->GetType(), obj.get()))
-                {
-                    switch (type)
+                    const auto paramType = prop.second.Type;
+                    Object_sp obj;
+                    Type* objType{};
+                    switch (paramType)
                     {
                     case ShaderParameterType::Scalar:
-                        material->SetFloat(prop.first, UnboxUtil::Unbox<float>(obj));
+                        obj = mkbox(material->GetFloat(prop.first));
+                        objType = obj->GetType();
                         break;
                     case ShaderParameterType::Vector: {
-                        auto color = UnboxUtil::Unbox<Color4f>(obj);
-                        material->SetVector4(prop.first, {color.r, color.g, color.b, color.a});
+                        const auto vec = material->GetVector4(prop.first);
+                        obj = mkbox(Color4f{vec.x, vec.y, vec.z, vec.w});
+                        objType = obj->GetType();
                         break;
                     }
-                    case ShaderParameterType::Texture2D:
+                    case ShaderParameterType::Texture2D: {
+                        auto tex = material->GetTexture(prop.first);
+                        objType = Texture2D::StaticType();
+                        obj = mkbox((ObjectPtrBase)tex);
+                        break;
+                    }
+                    }
 
-                        break;
+                    if (PImGui::PropertyLine(prop.first.to_string(), objType, obj.get()))
+                    {
+                        AssetDatabase::MarkDirty(m_assetObject);
+                        switch (paramType)
+                        {
+                        case ShaderParameterType::Scalar:
+                            material->SetFloat(prop.first, UnboxUtil::Unbox<float>(obj));
+                            break;
+                        case ShaderParameterType::Vector: {
+                            auto color = UnboxUtil::Unbox<Color4f>(obj);
+                            material->SetVector4(prop.first, {color.r, color.g, color.b, color.a});
+                            break;
+                        }
+                        case ShaderParameterType::Texture2D:
+
+                            break;
+                        }
+                        material->SubmitParameters();
                     }
-                    material->SubmitParameters();
                 }
+                PImGui::EndPropertyLine();
             }
         }
     }
@@ -91,8 +103,6 @@ namespace pulsared
     {
         base::OnClose();
     }
-
-
 
     void MaterialEditorWindow::OnRefreshMenuContexts()
     {

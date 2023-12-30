@@ -5,6 +5,7 @@
 #include <Pulsar/AssetObject.h>
 #include <gfx/GFXTexture2D.h>
 
+
 namespace pulsar
 {
     CORELIB_DEF_ENUM(AssemblyObject_pulsar, pulsar,
@@ -58,10 +59,12 @@ namespace pulsar
         virtual void OnInstantiateAsset(AssetObject* obj) override;
 
     public:
+        void LoadFromNativeData(const uint8_t* data, int32_t length);
+        void UnloadNativeData();
         // host memory
-        void LoadHostResource(const uint8_t* data, int32_t length);
+        void LoadHostResource();
         void UnloadHostResource();
-        array_list<uint8_t>& GetHostResource() { return m_nativeOriginalHostMemory; }
+        array_list<uint8_t>& GetHostResource() { return m_bakedDataMemory; }
     public:
         //IGPUResource
         bool CreateGPUResource() override;
@@ -78,7 +81,8 @@ namespace pulsar
         CORELIB_REFL_DECL_FIELD(m_isSrgb);
         bool m_isSrgb;
 
-        array_list<uint8_t> m_nativeOriginalHostMemory;
+        array_list<uint8_t> m_nativeOriginalMemory;
+        array_list<uint8_t> m_bakedDataMemory;
         bool m_loadedHostMemory = false;
 
         gfx::GFXSamplerConfig m_samplerConfig{};
@@ -93,6 +97,12 @@ namespace pulsar
 #ifdef WITH_EDITOR
         BinaryData m_originalImageData;
 #endif // WITH_EDITOR
+
+        CORELIB_REFL_DECL_FIELD(m_compressionFormat);
+        TextureCompressionFormat m_compressionFormat;
+
+        CORELIB_REFL_DECL_FIELD(m_compressionQuality);
+        TextureCompressionLevel m_compressionQuality;
 
     };
     DECL_PTR(Texture2D);
