@@ -86,8 +86,8 @@ namespace pulsar
         }
 
         auto rtname = GetAttachedNode()->GetName() + "_CamRT";
-        m_renderTarget = RenderTexture::StaticCreate(index_string{rtname}, width, height, true, true);
-        m_postprocessRt = RenderTexture::StaticCreate(index_string{rtname}, width, height, true, false);
+        m_renderTarget = RenderTexture::StaticCreate(index_string{rtname}, width, height);
+        m_postprocessRt = RenderTexture::StaticCreate(index_string{rtname}, width, height);
         UpdateRT();
         BeginRT();
     }

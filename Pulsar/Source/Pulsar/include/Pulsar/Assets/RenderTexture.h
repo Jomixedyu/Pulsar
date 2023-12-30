@@ -28,9 +28,7 @@ namespace pulsar
         
         void PostInitializeData(int32_t width, int32_t height);
 
-        void Initialize(int32_t width, int32_t height, TextureFormat format, bool enableDepthStencil);
-
-        static ObjectPtr<RenderTexture> StaticCreate(index_string name, int width, int height, bool hasColor, bool hasDepth);
+        static ObjectPtr<RenderTexture> StaticCreate(index_string name, int width, int height, int colorRTCount = 1, bool hasDepthStencil = true);
     public:
         //IGPUResource
         bool CreateGPUResource() override;
@@ -39,7 +37,7 @@ namespace pulsar
         void EnableRenderTarget();
         void DisableRenderTarget();
 
-        const std::shared_ptr<gfx::GFXRenderTarget>& GetGfxRenderTarget0() const { return m_color0; }
+        const std::shared_ptr<gfx::GFXRenderTarget>& GetGfxRenderTarget0() const { return m_renderTargets[0]; }
         const std::shared_ptr<gfx::GFXFrameBufferObject>& GetGfxFrameBufferObject() const { return m_framebuffer; }
 
     protected:
@@ -47,8 +45,7 @@ namespace pulsar
         int32_t m_width;
         int32_t m_height;
 
-        std::shared_ptr<gfx::GFXRenderTarget> m_color0;
-        std::shared_ptr<gfx::GFXRenderTarget> m_depth;
+        array_list<gfx::GFXRenderTarget_sp> m_renderTargets;
         std::shared_ptr<gfx::GFXFrameBufferObject> m_framebuffer;
 
         bool m_createdGPUResource = false;

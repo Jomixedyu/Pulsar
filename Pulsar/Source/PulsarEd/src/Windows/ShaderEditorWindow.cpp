@@ -1,5 +1,7 @@
 #include "Windows/ShaderEditorWindow.h"
 
+#include "Pulsar/BuiltinAsset.h"
+#include "Pulsar/Components/CameraComponent.h"
 #include "Pulsar/Components/StaticMeshRendererComponent.h"
 #include "Pulsar/Scene.h"
 
@@ -65,12 +67,22 @@ namespace pulsared
 
         m_previewMaterial = Material::StaticCreate("PreviewMaterial", m_assetObject);
 
+
         auto previewMesh = Node::StaticCreate("PreviewMesh");
         auto renderer = previewMesh->AddComponent<StaticMeshRendererComponent>();
 
-        renderer->SetStaticMesh(GetAssetManager()->LoadAsset<StaticMesh>("Engine/Shapes/Sphere"));
-        renderer->SetMaterial(0, m_previewMaterial);
+        renderer->SetStaticMesh(GetAssetManager()->LoadAsset<StaticMesh>(BuiltinAsset::Shapes_Sphere));
+
         m_world->GetPersistentScene()->AddNode(previewMesh);
+        if (m_previewMaterial->GetRenderingType() == ShaderPassRenderingType::PostProcessing)
+        {
+            renderer->SetMaterial(0, GetAssetManager()->LoadAsset<Material>(BuiltinAsset::Material_Lambert));
+            m_world->GetPreviewCamera()->m_postProcessMaterials->push_back(m_previewMaterial);
+        }
+        else
+        {
+            renderer->SetMaterial(0, m_previewMaterial);
+        }
 
     }
     void ShaderEditorWindow::OnClose()

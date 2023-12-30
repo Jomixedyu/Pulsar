@@ -33,7 +33,6 @@ float4 main(PPVSOutput v2f) : SV_TARGET
 {
     float4 output = _Image.Sample(DefaultSampler, v2f.TexCoord0);
 
-    [branch]
     if (_Flags & FLAGS_EnableCheckerBackground)
     {
         float2 channels = saturate(fmod((TargetBuffer.Resolution / _GridSize), 2));
@@ -43,7 +42,6 @@ float4 main(PPVSOutput v2f) : SV_TARGET
         output = lerp(checker, output, output.a);
     }
 
-    [flatten]
     if (_Flags & FLAGS_SRGB)
     {
         output = float4(pow(output.xyz, 2.2), 1);

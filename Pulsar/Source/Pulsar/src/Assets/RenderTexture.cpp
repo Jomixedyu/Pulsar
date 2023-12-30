@@ -6,14 +6,7 @@ namespace pulsar
     RenderTexture::RenderTexture()
     {
     }
-    void RenderTexture::Initialize(int32_t width, int32_t height, TextureFormat format, bool enableDepthStencil)
-    {
-        m_color0 = Application::GetGfxApp()->CreateRenderTarget(width, height, RenderTargetType::Color, format, {});
-        if (enableDepthStencil)
-        {
-            m_depth = Application::GetGfxApp()->CreateRenderTarget(width, height, RenderTargetType::Depth, format, {});
-        }
-    }
+
 
     RenderTexture::~RenderTexture()
     {
@@ -53,7 +46,7 @@ namespace pulsar
     {
     }
 
-    RenderTexture_ref RenderTexture::StaticCreate(index_string name, int width, int height, bool hasColor, bool hasDepth)
+    RenderTexture_ref RenderTexture::StaticCreate(index_string name, int width, int height, int colorRTCount, bool hasDepthStencil)
     {
         auto self = mksptr(new RenderTexture);
         self->Construct();
@@ -64,10 +57,22 @@ namespace pulsar
         auto depthFormats = gfx->GetSupportedDepthFormats();
         assert(depthFormats.size() != 0);
 
-        self->m_color0 = gfx->CreateRenderTarget(width, height, gfx::GFXRenderTargetType::Color, gfx::GFXTextureFormat::R8G8B8A8_SRGB, {});
-        self->m_depth = gfx->CreateRenderTarget(width, height, gfx::GFXRenderTargetType::DepthStencil, depthFormats[0], {});
+        if (colorRTCount != 0)
+        {
+            auto colorRt = gfx->CreateRenderTarget(width, height, gfx::GFXRenderTargetType::Color, gfx::GFXTextureFormat::R8G8B8A8_SRGB, {});
+            self->m_renderTargets.push_back(colorRt);
+        }
+        if (hasDepthStencil)
+        {
+            auto depth = gfx->CreateRenderTarget(width, height, gfx::GFXRenderTargetType::DepthStencil, depthFormats[0], {});;
+            self->m_renderTargets.push_back(depth);
+        }
 
-        std::vector rts = {self->m_color0.get(), self->m_depth.get()};
+        std::vector<gfx::GFXRenderTarget*> rts;
+        for (auto rt : self->m_renderTargets)
+        {
+            rts.push_back(rt.get());
+        }
 
         auto renderPass = gfx->CreateRenderPassLayout(rts);
         self->m_framebuffer = gfx->CreateFrameBufferObject(rts, renderPass);

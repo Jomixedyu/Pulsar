@@ -132,6 +132,8 @@ namespace pulsar
         Shader_ref GetShader() const;
         void SetShader(Shader_ref value);
 
+        ShaderPassRenderingType GetRenderingType() const;
+
         Action<> OnShaderChanged;
 
     protected:
@@ -154,6 +156,7 @@ namespace pulsar
         bool m_isDirtyParameter{};
         int m_renderQueue{};
 
+        ShaderPassConfig_sp m_shaderpassConfig;
 
     public:
         struct ShaderConstantPropertyInfo
