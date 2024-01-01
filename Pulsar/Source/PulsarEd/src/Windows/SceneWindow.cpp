@@ -70,7 +70,7 @@ namespace pulsared
 
     void SceneWindow::OnDrawImGui(float dt)
     {
-        ImGui::ShowDemoWindow();
+        // ImGui::ShowDemoWindow();
 
         if (ImGui::BeginMenuBar())
         {
