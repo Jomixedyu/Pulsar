@@ -64,7 +64,7 @@ namespace pulsared
         {
 
         }
-        
+
         base::OnDrawAssetPreviewUI(dt);
     }
 
