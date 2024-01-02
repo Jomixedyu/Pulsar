@@ -1,4 +1,6 @@
 #include "Pulsar/Assets/Texture2D.h"
+#include "Pulsar/BuiltinAsset.h"
+#include "Pulsar/Components/CameraComponent.h"
 #include "Pulsar/Components/StaticMeshRendererComponent.h"
 #include "Pulsar/Scene.h"
 
@@ -38,9 +40,9 @@ namespace pulsared
         {
             if (PImGui::BeginPropertyLine())
             {
-                for (auto prop : material->m_propertyInfo)
+                for (auto& prop : material->GetShaderPropertyInfo())
                 {
-                    const auto paramType = prop.second.Type;
+                    const auto paramType = prop.second.Value.Type;
                     Object_sp obj;
                     Type* objType{};
                     switch (paramType)
@@ -68,6 +70,9 @@ namespace pulsared
                         AssetDatabase::MarkDirty(m_assetObject);
                         switch (paramType)
                         {
+                        case ShaderParameterType::IntScalar:
+                            material->SetIntScalar(prop.first, UnboxUtil::Unbox<int>(obj));
+                            break;
                         case ShaderParameterType::Scalar:
                             material->SetFloat(prop.first, UnboxUtil::Unbox<float>(obj));
                             break;
@@ -91,11 +96,22 @@ namespace pulsared
     {
         base::OnOpen();
         Material_ref material = m_assetObject;
+        material->CreateGPUResource();
 
         auto previewMesh = Node::StaticCreate("PreviewMesh");
         auto renderer = previewMesh->AddComponent<StaticMeshRendererComponent>();
-        renderer->SetStaticMesh(GetAssetManager()->LoadAsset<StaticMesh>("Engine/Shapes/Sphere"));
-        renderer->SetMaterial(0, m_assetObject);
+        renderer->SetStaticMesh(GetAssetManager()->LoadAsset<StaticMesh>(BuiltinAsset::Shapes_Sphere));
+
+        if (material->GetRenderingType() == ShaderPassRenderingType::PostProcessing)
+        {
+            m_world->GetPreviewCamera()->m_postProcessMaterials->push_back(material);
+            renderer->SetMaterial(0, GetAssetManager()->LoadAsset<Material>(BuiltinAsset::Material_Lambert));
+        }
+        else
+        {
+            renderer->SetMaterial(0, m_assetObject);
+        }
+
         m_world->GetPersistentScene()->AddNode(previewMesh);
         m_shader = material->GetShader();
     }

@@ -9,7 +9,8 @@
   "ConstantProperties": [
     {
       "Name": "Tint",
-      "Type": "Vector"
+      "Type": "Vector",
+      "Value": "1,1,1,1"
     }
   ],
   "Properties": [

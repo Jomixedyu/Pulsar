@@ -62,6 +62,8 @@ namespace pulsar
 
         float GetOrthoSize() const { return m_orthoSize; }
         void SetOrthoSize(float value) { m_orthoSize = value; }
+
+
     protected:
         void BeginRT();
     private:

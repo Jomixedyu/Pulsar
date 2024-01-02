@@ -25,8 +25,6 @@ namespace pulsar
     public:
         ShaderParameterType Type;
 
-        std::string Name;
-        int Offset;
         void SetValue(int value)
         {
             Value = value;
@@ -87,7 +85,11 @@ namespace pulsar
         }
     };
 
-
+    struct MaterialParameterInfo
+    {
+        size_t Offset;
+        MaterialParameterValue Value;
+    };
 
     class Material final : public AssetObject, public IMaterialParameter, public IGPUResource
     {
@@ -136,6 +138,8 @@ namespace pulsar
 
         Action<> OnShaderChanged;
 
+    public:
+        const auto& GetShaderPropertyInfo() const { return m_propertyInfo; }
     protected:
         void PostEditChange(FieldInfo* info) override;
 
@@ -145,12 +149,13 @@ namespace pulsar
 
         gfx::GFXShaderPass_sp m_gfxShaderPasses;
 
-        hash_map<index_string, MaterialParameterValue> m_parameterValues;
+
         std::vector<uint8_t> m_bufferData;
 
         gfx::GFXDescriptorSet_sp m_descriptorSet;
         gfx::GFXDescriptorSetLayout_sp m_descriptorSetLayout;
         gfx::GFXBuffer_sp m_materialConstantBuffer;
+        size_t m_constantBufferSize{};
 
         bool m_createdGpuResource = false;
         bool m_isDirtyParameter{};
@@ -158,13 +163,9 @@ namespace pulsar
 
         ShaderPassConfig_sp m_shaderpassConfig;
 
-    public:
-        struct ShaderConstantPropertyInfo
-        {
-            size_t Offset;
-            ShaderParameterType Type;
-        };
-        hash_map<index_string, ShaderConstantPropertyInfo> m_propertyInfo;
+        hash_map<index_string, MaterialParameterInfo> m_propertyInfo;
+
+        hash_map<index_string, MaterialParameterInfo> m_parameterValues;
     };
 
     DECL_PTR(Material);
