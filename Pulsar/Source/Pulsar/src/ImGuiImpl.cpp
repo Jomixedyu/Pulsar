@@ -91,9 +91,9 @@ namespace pulsar
         style.GrabMinSize = 20;
         style.GrabRounding = 12;
         style.WindowTitleAlign = { 0.5,0.5 };
-        style.SeparatorTextBorderSize = 3;
+        style.SeparatorTextBorderSize = 1;
         style.SeparatorTextAlign = { 0.5,0.5 };
-        style.SeparatorTextPadding = { 20,4 };
+        style.SeparatorTextPadding = { 0,0 };
         style.DockingSeparatorSize = 3;
 
 

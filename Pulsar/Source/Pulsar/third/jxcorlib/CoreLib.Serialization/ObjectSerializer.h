@@ -52,6 +52,7 @@ namespace jxcorlib::ser
 
         virtual std::shared_ptr<Varient> At(size_t index) = 0;
         virtual std::shared_ptr<Varient> At(const std::string& key) = 0;
+        virtual bool ContainsKey(const std::string& key) = 0;
 
         virtual void Push(std::shared_ptr<Varient> value) = 0;
         void Push(int value) { Push(New(VarientType::Number)->Assign(value)); }

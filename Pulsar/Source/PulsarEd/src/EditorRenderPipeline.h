@@ -1,8 +1,10 @@
 #pragma once
 #include "Assembly.h"
+#include "Pulsar/Components/CameraComponent.h"
+
 #include <Pulsar/AppInstance.h>
-#include <Pulsar/ImGuiImpl.h>
 #include <Pulsar/EngineAppInstance.h>
+#include <Pulsar/ImGuiImpl.h>
 
 namespace pulsared
 {
@@ -16,24 +18,33 @@ namespace pulsared
 
         void OnRender(gfx::GFXRenderContext* context, gfx::GFXFrameBufferObject* backbuffer) override
         {
+            auto& cmd = context->AddCommandBuffer();
+            cmd.Begin();
             base::OnRender(context, backbuffer);
 
             // render editor ui
-            auto& buffer = context->AddCommandBuffer();
-            buffer.Begin();
 
-            buffer.SetFrameBuffer(backbuffer);
+            for (auto world : m_worlds)
+            {
+                for (auto cam : world->GetCameraManager().GetCameras())
+                {
+                    auto rt = cam->GetRenderTexture()->GetGfxRenderTarget0();
+                    cmd.CmdImageTransitionBarrier(rt.get(), gfx::GFXResourceLayout::ShaderReadOnly);
+                }
+            }
+
+            cmd.SetFrameBuffer(backbuffer);
             for (auto& rt : backbuffer->GetRenderTargets())
             {
-                buffer.CmdClearColor(rt, 0.0, 0.0, 0.0, 1);
+                cmd.CmdClearColor(rt, 0.0, 0.0, 0.0, 1);
             }
-            buffer.CmdBeginFrameBuffer();
-            buffer.CmdSetViewport(0, 0, (float)backbuffer->GetWidth(), (float)backbuffer->GetHeight());
-            ImGuiObject->Render(&buffer);
-            buffer.CmdEndFrameBuffer();
-            buffer.SetFrameBuffer(nullptr);
+            cmd.CmdBeginFrameBuffer();
+            cmd.CmdSetViewport(0, 0, (float)backbuffer->GetWidth(), (float)backbuffer->GetHeight());
+            ImGuiObject->Render(&cmd);
+            cmd.CmdEndFrameBuffer();
+            cmd.SetFrameBuffer(nullptr);
 
-            buffer.End();
+            cmd.End();
         }
     };
 }

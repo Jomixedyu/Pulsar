@@ -1,11 +1,7 @@
 #include "PostProcessing.inc.hlsl"
-#include "Common.inc.hlsl"
 
-struct PostProcessingBufferStruct
-{
 
-};
-cbuffer Properties : register(b0)
+cbuffer Properties : register(b0, space3)
 {
     float4 _CheckerColorA;
     float4 _CheckerColorB;
@@ -20,17 +16,12 @@ cbuffer Properties : register(b0)
 #define FLAGS_CHANNEL_B 16
 #define FLAGS_CHANNEL_A 32
 
-Texture2D _Image : register(t1);
+Texture2D _Image : register(t0, space3);
 
-SamplerState DefaultSampler
-{
-    Filter = MIN_MAG_MIP_LINEAR;
-    AddressU = Wrap;
-    AddressV = Wrap;
-};
 
 float4 main(PPVSOutput v2f) : SV_TARGET
 {
+    return _CheckerColorA;
     float4 output = _Image.Sample(DefaultSampler, v2f.TexCoord0);
 
     if (_Flags & FLAGS_EnableCheckerBackground)

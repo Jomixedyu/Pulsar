@@ -1,3 +1,13 @@
 {
-    "Passes": "Engine/Shaders/Missing.sh.json"
+    "Passes": "Engine/Shaders/Missing.sh.json",
+    "Available": true,
+    "RenderingType": 0,
+    "Config": {
+        "CullMode": "None",
+        "DepthTestEnable": true,
+        "DepthWriteEnable": true,
+        "DepthCompareOp": "Less",
+        "StencilTestEnable": false,
+        "Topology": 0
+    }
 }

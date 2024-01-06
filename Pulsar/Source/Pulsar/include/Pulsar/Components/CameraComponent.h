@@ -57,8 +57,8 @@ namespace pulsar
         void     SetBackgroundColor(const Color4f& value);
         CameraProjectionMode  GetProjectionMode() const { return m_projectionMode; }
         void                  SetProjectionMode(CameraProjectionMode mode);
-        const RenderTexture_ref&  GetRenderTarget() const { return m_renderTarget; }
-        void                      SetRenderTarget(const RenderTexture_ref& value, bool managed = false);
+        const RenderTexture_ref&  GetRenderTexture() const { return m_renderTarget; }
+        void                      SetRenderTexture(const RenderTexture_ref& value, bool managed = false);
 
         float GetOrthoSize() const { return m_orthoSize; }
         void SetOrthoSize(float value) { m_orthoSize = value; }
@@ -106,10 +106,20 @@ namespace pulsar
 #endif
 
     public:
-        RenderTexture_ref m_postprocessRt;
+
+        Material_ref GetPostprocess(size_t index) { return m_postProcessMaterials->at(index); }
+        void AddPostProcess(Material_ref material);
+
+    public:
+        RenderTexture_ref m_postprocessRtA;
+        gfx::GFXDescriptorSet_sp m_postprocessDescA;
+
+        RenderTexture_ref m_postprocessRtB;
+        gfx::GFXDescriptorSet_sp m_postprocessDescB;
 
         CORELIB_REFL_DECL_FIELD(m_postProcessMaterials, new ListItemAttribute(cltypeof<Material>()));
         List_sp<Material_ref> m_postProcessMaterials;
+
     };
     DECL_PTR(CameraComponent);
 }

@@ -28,6 +28,8 @@ namespace pulsar
         virtual std::filesystem::path AppRootDir() = 0;
         virtual rendering::Pipeline* GetPipeline() = 0;
 
+        virtual array_list<gfx::GFXApi> GetSupportedApis();
+
         jxcorlib::Action<> QuittingEvents;
         jxcorlib::Function<bool> RequestQuitEvents;
 

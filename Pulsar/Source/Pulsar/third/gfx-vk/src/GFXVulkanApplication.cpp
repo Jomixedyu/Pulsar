@@ -278,7 +278,8 @@ namespace gfx
     void GFXVulkanApplication::InitLogicalDevice()
     {
         const std::vector<const char*> deviceExtensions = {
-            VK_KHR_SWAPCHAIN_EXTENSION_NAME
+            VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+
         };
 
         vk::QueueFamilyIndices indices = vk::PhysicalDeviceHelper::FindQueueFamilies(m_surface, m_physicalDevice);

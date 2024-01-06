@@ -58,8 +58,8 @@ namespace pulsared
     void EditorWorld::OnUnloadingPersistentScene(ObjectPtr<Scene> scene)
     {
         base::OnUnloadingPersistentScene(scene);
-        DestroyObject(m_cam->GetRenderTarget());
-        m_cam->SetRenderTarget(nullptr);
+        DestroyObject(m_cam->GetRenderTexture());
+        m_cam->SetRenderTexture(nullptr);
     }
 
     void EditorWorld::OnSceneLoading(ObjectPtr<Scene> scene)

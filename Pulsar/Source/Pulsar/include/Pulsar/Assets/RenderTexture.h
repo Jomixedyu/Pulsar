@@ -39,6 +39,7 @@ namespace pulsar
 
         const std::shared_ptr<gfx::GFXRenderTarget>& GetGfxRenderTarget0() const { return m_renderTargets[0]; }
         const std::shared_ptr<gfx::GFXFrameBufferObject>& GetGfxFrameBufferObject() const { return m_framebuffer; }
+        const array_list<gfx::GFXRenderTarget_sp>& GetRenderTargets() const { return m_renderTargets; }
 
     protected:
 

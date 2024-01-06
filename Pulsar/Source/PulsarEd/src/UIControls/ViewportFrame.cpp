@@ -60,7 +60,7 @@ namespace pulsared
             {
                 desc = descSet->AddDescriptor("p", 0);
             }
-            desc->SetTextureSampler2D(cam->GetRenderTarget()->GetGfxRenderTarget0().get());
+            desc->SetTextureSampler2D(cam->GetRenderTexture()->GetGfxRenderTarget0().get());
         }
 
         descSet->Submit();

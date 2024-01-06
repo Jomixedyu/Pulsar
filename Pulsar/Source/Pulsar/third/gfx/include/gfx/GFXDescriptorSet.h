@@ -10,7 +10,8 @@ namespace gfx
     enum class GFXDescriptorType
     {
         ConstantBuffer,
-        CombinedImageSampler
+        CombinedImageSampler,
+        Texture2D
     };
     enum class GFXShaderStageFlags : uint32_t
     {

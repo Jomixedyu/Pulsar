@@ -97,7 +97,7 @@ namespace pulsar
         CORELIB_CLASS_ATTR(new MenuItemCreateAssetAttribute);
 
     public:
-        static ObjectPtr<Material> StaticCreate(string_view name, Shader_ref shader);
+        static ObjectPtr<Material> StaticCreate(string_view name);
 
         virtual void Serialize(AssetSerializer* s) override;
 
@@ -134,21 +134,20 @@ namespace pulsar
         Shader_ref GetShader() const;
         void SetShader(Shader_ref value);
 
-        ShaderPassRenderingType GetRenderingType() const;
-
         Action<> OnShaderChanged;
 
     public:
         const auto& GetShaderPropertyInfo() const { return m_propertyInfo; }
     protected:
         void PostEditChange(FieldInfo* info) override;
+        void OnShaderAvailable();
+        void InitShaderConfig();
 
     private:
         CORELIB_REFL_DECL_FIELD(m_shader);
         Shader_ref m_shader;
 
         gfx::GFXShaderPass_sp m_gfxShaderPasses;
-
 
         std::vector<uint8_t> m_bufferData;
 
@@ -160,8 +159,6 @@ namespace pulsar
         bool m_createdGpuResource = false;
         bool m_isDirtyParameter{};
         int m_renderQueue{};
-
-        ShaderPassConfig_sp m_shaderpassConfig;
 
         hash_map<index_string, MaterialParameterInfo> m_propertyInfo;
 

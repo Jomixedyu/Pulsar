@@ -200,6 +200,10 @@ namespace jxcorlib::ser
             n->js = js[key];
             return n;
         }
+        bool ContainsKey(const std::string& key) override
+        {
+            return js.contains(key);
+        }
 
         virtual void Clear() override
         {

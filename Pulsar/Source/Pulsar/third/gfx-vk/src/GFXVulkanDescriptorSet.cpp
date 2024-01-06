@@ -32,6 +32,8 @@ namespace gfx
         case gfx::GFXDescriptorType::CombinedImageSampler:
             return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             break;
+        case gfx::GFXDescriptorType::Texture2D:
+            return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
         default:
             assert(false);
             break;

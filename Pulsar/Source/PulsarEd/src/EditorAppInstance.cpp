@@ -9,6 +9,7 @@
 #include "Pulsar/Components/StaticMeshRendererComponent.h"
 #include "Shaders/EditorShader.h"
 #include "Tools/ObjectDebugTool.h"
+#include "Tools/ShaderDebugTool.h"
 #include "Tools/WorldDebugTool.h"
 
 #include <CoreLib.Serialization/JsonSerializer.h>
@@ -235,6 +236,13 @@ namespace pulsared
                 auto entry = mksptr(new MenuEntryButton("WorldDebug"));
                 entry->Action = MenuAction::FromRaw([](sptr<MenuContexts> ctx) {
                     ToolWindow::OpenToolWindow<WorldDebugTool>();
+                });
+                menu->AddEntry(entry);
+            }
+            {
+                auto entry = mksptr(new MenuEntryButton("ShaderDebugTool"));
+                entry->Action = MenuAction::FromRaw([](sptr<MenuContexts> ctx) {
+                    ToolWindow::OpenToolWindow<ShaderDebugTool>();
                 });
                 menu->AddEntry(entry);
             }

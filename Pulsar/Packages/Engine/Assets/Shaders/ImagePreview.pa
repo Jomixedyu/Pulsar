@@ -1,3 +1,42 @@
 {
-    "Passes": "Engine/Shaders/ImagePreview.sh.json"
+    "Available": true,
+    "Config": {
+        "ConstantProperties": [
+            {
+                "Name": "_CheckerColorA",
+                "Type": 2,
+                "Value": "0.99, 0.99, 0.99, 1"
+            },
+            {
+                "Name": "_CheckerColorB",
+                "Type": 2,
+                "Value": "0.75, 0.75, 0.75, 1"
+            },
+            {
+                "Name": "_GridSize",
+                "Type": 1,
+                "Value": "10"
+            },
+            {
+                "Name": "_Flags",
+                "Type": 0,
+                "Value": "ALL_FLAGS"
+            }
+        ],
+        "CullMode": 0,
+        "DepthCompareOp": 1,
+        "DepthTestEnable": true,
+        "DepthWriteEnable": true,
+        "Properties": [
+            {
+                "Name": "_Image",
+                "Type": 3,
+                "Value": "WHITE"
+            }
+        ],
+        "RenderingType": 3,
+        "StencilTestEnable": false
+    },
+    "Passes": "Engine/Shaders/ImagePreview.sh.json",
+    "RenderingType": 3
 }

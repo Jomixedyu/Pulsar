@@ -168,80 +168,90 @@ namespace pulsared
         else
         {
             // read fields
-            const auto fieldInfos = innerType->GetFieldInfos(TypeBinding::NonPublic);
-            for (size_t i = 0; i < fieldInfos.size(); ++i)
-            {
-                const auto& field = fieldInfos[i];
-                Type* fieldType = field->GetFieldType();
-                if (field->IsDefinedAttribute(cltypeof<HidePropertyAttribute>()))
-                {
-                    continue;
-                }
-                if (!showDebug && field->IsDefinedAttribute(cltypeof<DebugPropertyAttribute>()))
-                {
-                    continue;
-                }
 
-                ImGui::PushID((int)i);
-                Object_sp fieldInstSptr;
-                Object* parentObj = obj;
-                if (type == BoxingObjectPtrBase::StaticType())
+            bool opened = ignore ? true : ImGui::TreeNodeEx(StringUtil::FriendlyName(name).c_str());
+
+            if (opened)
+            {
+                const auto fieldInfos = innerType->GetFieldInfos(TypeBinding::NonPublic);
+                for (size_t i = 0; i < fieldInfos.size(); ++i)
                 {
-                    const auto objptr = static_cast<BoxingObjectPtrBase*>(obj);
-                    if (objptr->handle)
+                    const auto& field = fieldInfos[i];
+                    Type* fieldType = field->GetFieldType();
+                    if (field->IsDefinedAttribute(cltypeof<HidePropertyAttribute>()))
                     {
-                        parentObj = objptr->get_unboxing_value().GetTPtr<ObjectBase>();
-                        fieldInstSptr = field->GetValue(parentObj);
+                        continue;
+                    }
+                    if (!showDebug && field->IsDefinedAttribute(cltypeof<DebugPropertyAttribute>()))
+                    {
+                        continue;
+                    }
+
+                    ImGui::PushID((int)i);
+                    Object_sp fieldInstSptr;
+                    Object* parentObj = obj;
+                    if (type == BoxingObjectPtrBase::StaticType())
+                    {
+                        const auto objptr = static_cast<BoxingObjectPtrBase*>(obj);
+                        if (objptr->handle)
+                        {
+                            parentObj = objptr->get_unboxing_value().GetTPtr<ObjectBase>();
+                            fieldInstSptr = field->GetValue(parentObj);
+                        }
+                        else
+                        {
+                            // fieldInstSptr = mkbox(ObjectPtrBase{});
+                            fieldInstSptr = obj->shared_from_this();
+                        }
                     }
                     else
                     {
-                        // fieldInstSptr = mkbox(ObjectPtrBase{});
-                        fieldInstSptr = obj->shared_from_this();
+                        fieldInstSptr = field->GetValue(obj);
                     }
-                }
-                else
-                {
-                    fieldInstSptr = field->GetValue(obj);
-                }
 
-                Type* fieldInnerType = field->GetWrapType() ? field->GetWrapType() : field->GetFieldType();
-                if (const auto attr = field->GetAttribute<ListItemAttribute>())
-                {
-                    fieldInnerType = attr->GetItemType();
-                }
-                else if (const auto* list = interface_cast<IList>(fieldInstSptr.get()))
-                {
-                    fieldInnerType = list->GetIListElementType();
-                }
-
-                receiverField = ignore ? field : receiverField;
-
-                const bool isReadOnly = field->IsDefinedAttribute(cltypeof<ReadOnlyPropertyAttribute>());
-
-                if (isReadOnly)
-                {
-                    ImGui::BeginDisabled();
-                }
-
-                bool curFieldChanged = false;
-                if (curFieldChanged |= _ObjectFieldPropertyLine(
-                        field->GetName(), field->GetFieldType(), fieldInnerType,
-                        fieldInstSptr.get(), receiver, receiverField, false, showDebug))
-                {
-                    if (fieldType->IsBoxingType())
+                    Type* fieldInnerType = field->GetWrapType() ? field->GetWrapType() : field->GetFieldType();
+                    if (const auto attr = field->GetAttribute<ListItemAttribute>())
                     {
-                        field->SetValue(parentObj, fieldInstSptr);
+                        fieldInnerType = attr->GetItemType();
                     }
-                    receiver->PostEditChange(receiverField);
-                }
-                isChanged |= curFieldChanged;
+                    else if (const auto* list = interface_cast<IList>(fieldInstSptr.get()))
+                    {
+                        fieldInnerType = list->GetIListElementType();
+                    }
 
-                if (isReadOnly)
-                {
-                    ImGui::EndDisabled();
-                }
+                    receiverField = ignore ? field : receiverField;
 
-                ImGui::PopID();
+                    const bool isReadOnly = field->IsDefinedAttribute(cltypeof<ReadOnlyPropertyAttribute>());
+
+                    if (isReadOnly)
+                    {
+                        ImGui::BeginDisabled();
+                    }
+
+                    bool curFieldChanged = false;
+                    if (curFieldChanged |= _ObjectFieldPropertyLine(
+                            field->GetName(), field->GetFieldType(), fieldInnerType,
+                            fieldInstSptr.get(), receiver, receiverField, false, showDebug))
+                    {
+                        if (fieldType->IsBoxingType())
+                        {
+                            field->SetValue(parentObj, fieldInstSptr);
+                        }
+                        receiver->PostEditChange(receiverField);
+                    }
+                    isChanged |= curFieldChanged;
+
+                    if (isReadOnly)
+                    {
+                        ImGui::EndDisabled();
+                    }
+
+                    ImGui::PopID();
+                }
+            }
+            if (opened && !ignore)
+            {
+                ImGui::TreePop();
             }
         }
         return isChanged;
@@ -308,7 +318,7 @@ namespace pulsared
             const float width = (float)ImGui::GetWindowWidth() * 0.38f;
             ImGui::TableSetupColumn("name", ImGuiTableColumnFlags_WidthFixed, width);
             ImGui::TableSetupColumn("value");
-            _ObjectFieldPropertyLine("", type, inner, obj, receiver, nullptr, true, showDebug);
+            _ObjectFieldPropertyLine("pp", type, inner, obj, receiver, nullptr, true, showDebug);
             ImGui::EndTable();
         }
     }

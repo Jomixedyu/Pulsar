@@ -28,14 +28,16 @@ namespace gfx
             VkImageUsageFlags usage, VkMemoryPropertyFlags properties,
             VkImage& image, VkDeviceMemory& imageMemory);
 
-        static bool _HasStencilComponent(VkFormat format)
-        {
-            return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
-        }
 
         static void TransitionImageLayout(
             GFXVulkanApplication* app,
             VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
+        static void TransitionImageLayout(
+            VkCommandBuffer cmd, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
+
+        static VkPipelineStageFlags GetStageFlagsForLayout(VkImageLayout layout);
+
+        static VkAccessFlags GetAccessMaskForLayout(VkImageLayout layout);
 
         static void CopyBufferToImage(GFXVulkanApplication* app, VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
         static VkImageView CreateImageView(GFXVulkanApplication* app, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);

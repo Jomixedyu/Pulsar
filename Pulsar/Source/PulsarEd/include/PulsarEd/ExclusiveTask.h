@@ -30,7 +30,7 @@ namespace pulsared
         virtual bool                CanCancel() const { return true; }
         virtual void                OnComplete() {}
 
-        bool IsCancel;
+        bool IsCancel{};
     };
     CORELIB_DECL_SHORTSPTR(ExclusiveTask);
 

@@ -10,13 +10,19 @@ namespace gfx
 {
     class GFXApplication;
 
+    enum class GFXResourceLayout
+    {
+        RenderTarget,
+        ShaderReadOnly
+    };
+
     class GFXCommandBuffer
     {
     public:
-        GFXCommandBuffer() {}
+        GFXCommandBuffer() = default;
         GFXCommandBuffer(const GFXCommandBuffer&) = delete;
         GFXCommandBuffer(GFXCommandBuffer&&) = delete;
-        virtual ~GFXCommandBuffer() {}
+        virtual ~GFXCommandBuffer() = default;
     public:
         virtual void Begin() = 0;
         virtual void End() = 0;
@@ -34,6 +40,10 @@ namespace gfx
         virtual void CmdBeginFrameBuffer() = 0;
         virtual void CmdEndFrameBuffer() = 0;
         virtual void CmdSetViewport(float x, float y, float width, float height) = 0;
+
+        virtual void CmdBlit(GFXTexture* src, GFXTexture* dest) = 0;
+
+        virtual void CmdImageTransitionBarrier(GFXRenderTarget* rt, GFXResourceLayout layout) = 0;
     public:
         virtual GFXApplication* GetApplication() const = 0;
 

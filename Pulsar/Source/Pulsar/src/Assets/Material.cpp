@@ -7,6 +7,7 @@
 #include <CoreLib.Serialization/JsonSerializer.h>
 #include <Pulsar/AssetManager.h>
 #include <Pulsar/Assets/Material.h>
+#include <mutex>
 
 namespace pulsar
 {
@@ -30,12 +31,11 @@ namespace pulsar
         return vertDescLayout;
     }
 
-    ObjectPtr<Material> Material::StaticCreate(string_view name, Shader_ref shader)
+    ObjectPtr<Material> Material::StaticCreate(string_view name)
     {
         Material_sp material = mksptr(new Material);
         material->Construct();
         material->SetName(name);
-        material->SetShader(shader);
 
         return material;
     }
@@ -102,17 +102,17 @@ namespace pulsar
         {
             return true;
         }
-        if (!m_shader)
+
+        Shader_ref shader = m_shader;
+        if (!m_shader || !m_shader->m_isAvailable)
         {
-            SetShader(GetAssetManager()->LoadAsset<Material>(BuiltinAsset::Material_Missing));
+            shader = GetAssetManager()->LoadAsset<Shader>(BuiltinAsset::Shader_Missing);
         }
-        if (m_shader->GetSourceData().ApiMaps.empty())
-        {
-            return false;
-        }
+
         m_createdGpuResource = true;
 
-        const auto& passes = m_shader->GetSourceData().ApiMaps.at(Application::GetGfxApp()->GetApiType());
+        const auto& passes = shader->GetSourceData().ApiMaps.at(Application::GetGfxApp()->GetApiType());
+        auto shaderConfig = shader->GetConfig();
 
         // process deferred
         // create shader module from source
@@ -121,11 +121,11 @@ namespace pulsar
         // create shader pass state config
         gfx::GFXShaderPassConfig config{};
         {
-            config.CullMode = m_shaderpassConfig->CullMode;
-            config.DepthCompareOp = m_shaderpassConfig->DepthCompareOp;
-            config.DepthTestEnable = m_shaderpassConfig->DepthTestEnable;
-            config.DepthWriteEnable = m_shaderpassConfig->DepthWriteEnable;
-            config.StencilTestEnable = m_shaderpassConfig->StencilTestEnable;
+            config.CullMode = shaderConfig->CullMode;
+            config.DepthCompareOp = shaderConfig->DepthCompareOp;
+            config.DepthTestEnable = shaderConfig->DepthTestEnable;
+            config.DepthWriteEnable = shaderConfig->DepthWriteEnable;
+            config.StencilTestEnable = shaderConfig->StencilTestEnable;
         }
 
         // create shader pass
@@ -153,15 +153,15 @@ namespace pulsar
         }
 
         // create texture parameter layout
-        if (m_shaderpassConfig->Properties)
+        if (shaderConfig->Properties)
         {
             auto offset = m_constantBufferSize != 0 ? 1 : 0;
-            const auto count = m_shaderpassConfig->Properties->size();
+            const auto count = shaderConfig->Properties->size();
             for (size_t i = 0; i < count; ++i)
             {
-                auto& item = m_shaderpassConfig->Properties->at(i);
+                auto& item = shaderConfig->Properties->at(i);
                 auto info = gfx::GFXDescriptorSetLayoutInfo{
-                    gfx::GFXDescriptorType::ConstantBuffer,
+                    gfx::GFXDescriptorType::Texture2D,
                     gfx::GFXShaderStageFlags::VertexFragment,
                     (uint32_t)i + offset, 3};
                 descLayoutInfos.push_back(info);
@@ -179,13 +179,13 @@ namespace pulsar
         {
             m_descriptorSet->AddDescriptor("ConstantProperties", 0)->SetConstantBuffer(m_materialConstantBuffer.get());
         }
-        if (m_shaderpassConfig->Properties && !m_shaderpassConfig->Properties->empty())
+        if (shaderConfig->Properties && !shaderConfig->Properties->empty())
         {
-            auto count = m_shaderpassConfig->Properties->size();
+            auto count = shaderConfig->Properties->size();
             auto offset = m_constantBufferSize ? 1 : 0;
             for (int i = 0; i < count; ++i)
             {
-                auto item = m_shaderpassConfig->Properties->at(i);
+                auto item = shaderConfig->Properties->at(i);
                 // m_descriptorSet->AddDescriptor(item->Name, i + offset);
             }
         }
@@ -206,6 +206,8 @@ namespace pulsar
         m_createdGpuResource = false;
         m_gfxShaderPasses.reset();
         m_descriptorSet.reset();
+        m_descriptorSetLayout.reset();
+        m_materialConstantBuffer.reset();
     }
     bool Material::IsCreatedGPUResource() const
     {
@@ -315,25 +317,41 @@ namespace pulsar
 
     void Material::SetIntScalar(const index_string& name, int value)
     {
-        m_isDirtyParameter = true;
+        if (!m_parameterValues.contains(name))
+        {
+            return;
+        }
         m_parameterValues[name].Value.SetValue(value);
+        m_isDirtyParameter = true;
     }
     void Material::SetFloat(const index_string& name, float value)
     {
-        m_isDirtyParameter = true;
+        if (!m_parameterValues.contains(name))
+        {
+            return;
+        }
         m_parameterValues[name].Value.SetValue(value);
+        m_isDirtyParameter = true;
     }
 
     void Material::SetTexture(const index_string& name, Texture_ref value)
     {
-        m_isDirtyParameter = true;
+        if (!m_parameterValues.contains(name))
+        {
+            return;
+        }
         m_parameterValues[name].Value.SetValue(value);
+        m_isDirtyParameter = true;
     }
 
     void Material::SetVector4(const index_string& name, const Vector4f& value)
     {
-        m_isDirtyParameter = true;
+        if (!m_parameterValues.contains(name))
+        {
+            return;
+        }
         m_parameterValues[name].Value.SetValue(value);
+        m_isDirtyParameter = true;
     }
     int Material::GetIntScalar(const index_string& name)
     {
@@ -396,7 +414,6 @@ namespace pulsar
             case ShaderParameterType::IntScalar: {
                 *(int*)ptr = value.second.Value.AsIntScalar();
                 break;
-                ;
             }
             case ShaderParameterType::Scalar: {
                 *(float*)ptr = value.second.Value.AsScalar();
@@ -432,6 +449,86 @@ namespace pulsar
             SetShader(m_shader);
         }
     }
+    void Material::OnShaderAvailable()
+    {
+        bool b = m_shader->m_isAvailable;
+        if (b)
+        {
+            bool created = m_createdGpuResource;
+            if (created)
+            {
+                DestroyGPUResource();
+            }
+            InitShaderConfig();
+            if (created)
+            {
+                CreateGPUResource();
+            }
+        }
+        else
+        {
+        }
+    }
+
+    void Material::InitShaderConfig()
+    {
+        if (!m_shader->HasSupportedApiData(Application::GetGfxApp()->GetApiType()))
+        {
+            return;
+        }
+        auto config = m_shader->GetConfig();
+
+        if (config->ConstantProperties)
+        {
+            size_t offset = 0;
+            for (const auto& element : *config->ConstantProperties)
+            {
+                MaterialParameterInfo prop{};
+                prop.Offset = offset;
+                prop.Value = ParseDefaultValue(element->Value, element->Type);
+                m_propertyInfo.insert({index_string{element->Name}, prop});
+
+                switch (element->Type)
+                {
+                case ShaderParameterType::IntScalar:
+                    offset += sizeof(int);
+                    break;
+                case ShaderParameterType::Scalar:
+                    offset += sizeof(float);
+                    break;
+                case ShaderParameterType::Vector:
+                    offset += sizeof(Vector4f);
+                    break;
+                default:;
+                }
+                m_constantBufferSize = offset;
+            }
+        }
+        if (config->Properties)
+        {
+            const auto offset = config->ConstantProperties->empty() ? 0 : 1;
+            const auto count = config->Properties->size();
+            for (size_t i = 0; i < count; ++i)
+            {
+                const auto& item = config->Properties->at(i);
+                MaterialParameterInfo prop{};
+                prop.Offset = offset + i;
+                prop.Value = ParseDefaultValue(item->Value, item->Type);
+
+                m_propertyInfo.insert({index_string{item->Name}, prop});
+            }
+        }
+
+        // create parameter default value
+        for (auto& prop : m_propertyInfo)
+        {
+            if (!m_parameterValues.contains(prop.first))
+            {
+                m_parameterValues.insert(prop);
+            }
+        }
+    }
+
     Shader_ref Material::GetShader() const
     {
         return m_shader;
@@ -439,80 +536,26 @@ namespace pulsar
 
     void Material::SetShader(Shader_ref value)
     {
-        m_shader = value;
-
         if (m_shader)
         {
-            const auto& passes = m_shader->GetSourceData().ApiMaps.at(Application::GetGfxApp()->GetApiType());
-            {
-                try
-                {
-                    m_shaderpassConfig = ser::JsonSerializer::Deserialize<ShaderPassConfig>(passes.Config);
-                }
-                catch (const std::exception& e)
-                {
-                    Logger::Log("shader config json error!", LogLevel::Error);
-                    m_shader = nullptr;
-                    return;
-                }
-            }
-            if (m_shaderpassConfig->ConstantProperties)
-            {
-                size_t offset = 0;
-                for (const auto& element : *m_shaderpassConfig->ConstantProperties)
-                {
-                    MaterialParameterInfo prop{};
-                    prop.Offset = offset;
-                    prop.Value = ParseDefaultValue(element->Value, element->Type);
-                    m_propertyInfo.insert({index_string{element->Name}, prop});
-
-                    switch (element->Type)
-                    {
-                    case ShaderParameterType::IntScalar:
-                        offset += sizeof(int);
-                        break;
-                    case ShaderParameterType::Scalar:
-                        offset += sizeof(float);
-                        break;
-                    case ShaderParameterType::Vector:
-                        offset += sizeof(Vector4f);
-                        break;
-                    default:;
-                    }
-                    m_constantBufferSize = offset;
-                }
-            }
-            if (m_shaderpassConfig->Properties)
-            {
-                const auto offset = m_shaderpassConfig->ConstantProperties->empty() ? 0 : 1;
-                const auto count = m_shaderpassConfig->Properties->size();
-                for (size_t i = 0; i < count; ++i)
-                {
-                    const auto& item = m_shaderpassConfig->Properties->at(i);
-                    MaterialParameterInfo prop{};
-                    prop.Offset = offset + i;
-                    prop.Value = ParseDefaultValue(item->Value, item->Type);
-
-                    m_propertyInfo.insert({index_string{item->Name}, prop});
-                }
-            }
-
-            // create parameter default value
-            for (auto& prop : m_propertyInfo)
-            {
-                if (!m_parameterValues.contains(prop.first))
-                {
-                    m_parameterValues.insert(prop);
-                }
-            }
+            m_shader->OnAvailableChanged.RemoveListener(this, &ThisClass::OnShaderAvailable);
         }
-
+        m_shader = value;
+        if (m_shader)
+        {
+            std::lock_guard<std::mutex> lk{m_shader->m_isAvailableMutex};
+            if (m_shader->m_isAvailable)
+            {
+                InitShaderConfig();
+            }
+            m_shader->OnAvailableChanged.AddListener(this, &ThisClass::OnShaderAvailable);
+        }
+        if (m_createdGpuResource)
+        {
+            DestroyGPUResource();
+            CreateGPUResource();
+        }
         OnShaderChanged.Invoke();
-    }
-
-    ShaderPassRenderingType Material::GetRenderingType() const
-    {
-        return m_shaderpassConfig->RenderingType;
     }
 
     gfx::GFXShaderPass_sp Material::GetGfxShaderPass()

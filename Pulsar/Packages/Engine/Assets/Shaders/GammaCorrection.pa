@@ -1,0 +1,14 @@
+{
+    "Available": false,
+    "Config": {
+        "ConstantProperties": [],
+        "CullMode": 0,
+        "DepthCompareOp": 0,
+        "DepthTestEnable": false,
+        "DepthWriteEnable": false,
+        "Properties": [],
+        "RenderingType": 0,
+        "StencilTestEnable": false
+    },
+    "Passes": "Engine/Shaders/GammaCoreection.sh.json"
+}

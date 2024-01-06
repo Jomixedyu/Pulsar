@@ -38,8 +38,8 @@ namespace pulsar
     void EngineRenderPipeline::OnRender(
         gfx::GFXRenderContext* context, gfx::GFXFrameBufferObject* backbuffer)
     {
-        auto& cmdBuffer = context->AddCommandBuffer();
-        cmdBuffer.Begin();
+        auto& cmdBuffer = context->GetCommandBuffer(0);
+
         for (auto world : m_worlds)
         {
             auto& renderObjects = world->GetRenderObjects();
@@ -47,7 +47,7 @@ namespace pulsar
 
             for (auto cam : world->GetCameraManager().GetCameras())
             {
-                auto targetFBO = cam->GetRenderTarget()->GetGfxFrameBufferObject().get();
+                auto targetFBO = cam->GetRenderTexture()->GetGfxFrameBufferObject().get();
 
                 cmdBuffer.SetFrameBuffer(targetFBO);
 
@@ -80,7 +80,6 @@ namespace pulsar
                 // batch render
                 for (auto& [state, batch] : batchs)
                 {
-
                     auto shaderPass = batch.Material->GetGfxShaderPass();
 
                     // bind render state
@@ -144,17 +143,51 @@ namespace pulsar
                 cmdBuffer.SetFrameBuffer(nullptr);
 
                 // post processing
-                // cmdBuffer.SetFrameBuffer(cam->m_postprocessRt->GetGfxFrameBufferObject().get());
-                // cmdBuffer.CmdBeginFrameBuffer();
-                // cmdBuffer.CmdSetViewport(0, 0, (float)targetFBO->GetWidth(), (float)targetFBO->GetHeight());
-                // //=> bind ppmat
-                // cmdBuffer.CmdDraw(3);
-                //
-                // cmdBuffer.CmdEndFrameBuffer();
-                // cmdBuffer.SetFrameBuffer(nullptr);
+                auto ppcount = cam->m_postProcessMaterials->size();
+                for (size_t i = 0; i < ppcount; ++i)
+                {
+                    auto ppMat = cam->m_postProcessMaterials->at(i);
+                    RenderTexture_ref srcRt;
+                    RenderTexture_ref destRt;
+
+                    if(i % 2 == 1)
+                    {
+                        srcRt = cam->m_postprocessRtA;
+                        destRt = cam->m_postprocessRtB;
+                    }
+                    else
+                    {
+                        srcRt = cam->m_postprocessRtB;
+                        destRt = cam->m_postprocessRtA;
+                    }
+
+                    if (i == 0)
+                    {
+                        cmdBuffer.CmdBlit(cam->GetRenderTexture()->GetGfxRenderTarget0().get(), destRt->GetGfxRenderTarget0().get());
+                    }
+
+                    cmdBuffer.SetFrameBuffer(destRt->GetGfxFrameBufferObject().get());
+                    cmdBuffer.CmdBeginFrameBuffer();
+                    cmdBuffer.CmdSetViewport(0, 0, (float)targetFBO->GetWidth(), (float)targetFBO->GetHeight());
+
+                    array_list<gfx::GFXDescriptorSetLayout_sp> descriptorSetLayouts;
+
+                    auto pso = pipelineMgr->GetGraphicsPipeline(
+                        ppMat->GetGfxShaderPass(),
+                        descriptorSetLayouts,
+                        destRt->GetGfxFrameBufferObject()->GetRenderPassLayout(), {});
+
+                    cmdBuffer.CmdBindGraphicsPipeline(pso.get());
+
+                    //=> bind ppmat
+                    cmdBuffer.CmdDraw(3);
+
+                    cmdBuffer.CmdEndFrameBuffer();
+                    cmdBuffer.SetFrameBuffer(nullptr);
+                }
             }
         }
-        cmdBuffer.End();
+
     }
     void EngineRenderPipeline::AddWorld(World* world)
     {

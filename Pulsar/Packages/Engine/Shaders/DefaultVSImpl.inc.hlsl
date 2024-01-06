@@ -2,7 +2,7 @@
 #define _ENGINE_DEFAULTVS_INC
 
 #include "Common.inc.hlsl"
-
+#include "MeshRenderer.inc.hlsl"
 
 InPixelAssembly main(InVertexAssembly a2v)
 {

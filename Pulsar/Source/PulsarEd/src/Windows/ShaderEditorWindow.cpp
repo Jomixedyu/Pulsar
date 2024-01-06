@@ -44,7 +44,7 @@ namespace pulsared
                             return;
                         if (const Shader_ref shader = ref_cast<Shader>(ctx->Asset))
                         {
-                            ShaderCompiler::CompileShader(shader, {gfx::GFXApi::Vulkan}, {}, {});
+                            ShaderCompiler::CompileShader(shader);
                         }
                     });
                     menu->AddEntry(entry);
@@ -64,25 +64,28 @@ namespace pulsared
     void ShaderEditorWindow::OnOpen()
     {
         base::OnOpen();
+        Shader_ref shader = m_assetObject;
 
-        m_previewMaterial = Material::StaticCreate("PreviewMaterial", m_assetObject);
-
-
-        auto previewMesh = Node::StaticCreate("PreviewMesh");
-        auto renderer = previewMesh->AddComponent<StaticMeshRendererComponent>();
-
-        renderer->SetStaticMesh(GetAssetManager()->LoadAsset<StaticMesh>(BuiltinAsset::Shapes_Sphere));
-
-        m_world->GetPersistentScene()->AddNode(previewMesh);
-        if (m_previewMaterial->GetRenderingType() == ShaderPassRenderingType::PostProcessing)
-        {
-            renderer->SetMaterial(0, GetAssetManager()->LoadAsset<Material>(BuiltinAsset::Material_Lambert));
-            m_world->GetPreviewCamera()->m_postProcessMaterials->push_back(m_previewMaterial);
-        }
-        else
-        {
-            renderer->SetMaterial(0, m_previewMaterial);
-        }
+        // m_previewMaterial = Material::StaticCreate("PreviewMaterial");
+        // m_previewMaterial->SetShader(m_assetObject);
+        // m_previewMaterial->CreateGPUResource();
+        //
+        // auto previewMesh = Node::StaticCreate("PreviewMesh");
+        // auto renderer = previewMesh->AddComponent<StaticMeshRendererComponent>();
+        //
+        // renderer->SetStaticMesh(GetAssetManager()->LoadAsset<StaticMesh>(BuiltinAsset::Shapes_Sphere));
+        //
+        // m_world->GetPersistentScene()->AddNode(previewMesh);
+        //
+        // if (m_previewMaterial->GetShader()->GetRenderingType() == ShaderPassRenderingType::PostProcessing)
+        // {
+        //     renderer->SetMaterial(0, GetAssetManager()->LoadAsset<Material>(BuiltinAsset::Material_Lambert));
+        //     m_world->GetPreviewCamera()->m_postProcessMaterials->push_back(m_previewMaterial);
+        // }
+        // else
+        // {
+        //     renderer->SetMaterial(0, m_previewMaterial);
+        // }
 
     }
     void ShaderEditorWindow::OnClose()
@@ -126,6 +129,7 @@ namespace pulsared
             }
         }
     }
+
 
     void ShaderEditorWindow::OnDrawImGui(float dt)
     {

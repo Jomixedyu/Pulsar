@@ -4,5 +4,6 @@
   "DepthTestEnable": true,
   "DepthWriteEnable": true,
   "DepthCompareOp": "Less",
-  "StencilTestEnable": false
+  "StencilTestEnable": false,
+  "RenderingType": "PostProcessing"
 }

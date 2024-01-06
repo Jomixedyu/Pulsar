@@ -1,5 +1,4 @@
 {
-	"PassName": "Engine/Shaders/Missing.sh.json",
 	"CullMode": "None",
 	"DepthTestEnable": true,
 	"DepthWriteEnable": true,

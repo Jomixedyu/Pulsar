@@ -23,6 +23,10 @@ namespace pulsared
             const array_list<gfx::GFXApi>& api,
             const std::vector<std::filesystem::path>& includes,
             const std::vector<string>& defines);
+
+        static void CompileShader(Shader_ref shader);
+
+
     };
 
 }

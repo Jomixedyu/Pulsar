@@ -102,7 +102,11 @@ namespace pulsared
         auto renderer = previewMesh->AddComponent<StaticMeshRendererComponent>();
         renderer->SetStaticMesh(GetAssetManager()->LoadAsset<StaticMesh>(BuiltinAsset::Shapes_Sphere));
 
-        if (material->GetRenderingType() == ShaderPassRenderingType::PostProcessing)
+        if (material->GetShader() == nullptr)
+        {
+
+        }
+        else if (material->GetShader()->GetRenderingType() == ShaderPassRenderingType::PostProcessing)
         {
             m_world->GetPreviewCamera()->m_postProcessMaterials->push_back(material);
             renderer->SetMaterial(0, GetAssetManager()->LoadAsset<Material>(BuiltinAsset::Material_Lambert));

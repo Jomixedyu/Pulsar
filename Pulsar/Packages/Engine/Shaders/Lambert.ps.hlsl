@@ -1,5 +1,5 @@
 #include "Common.inc.hlsl"
-
+#include "MeshRenderer.inc.hlsl"
 
 cbuffer shcbuf : register(b0, space3)
 {

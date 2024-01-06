@@ -31,6 +31,12 @@ namespace gfx
 
     void GFXVulkanCommandBuffer::CmdEndFrameBuffer()
     {
+        for (auto rt : m_fbo->GetRenderTargets())
+        {
+            auto vkrt = static_cast<GFXVulkanRenderTarget*>(rt);
+
+            vkrt->m_imageLayout = vkrt->m_imageFinalLayout;
+        }
         vkCmdEndRenderPass(m_cmdBuffer);
     }
 
@@ -59,6 +65,68 @@ namespace gfx
         vkCmdSetScissor(m_cmdBuffer, 0, 1, &scissor);
     }
 
+    void GFXVulkanCommandBuffer::CmdBlit(GFXTexture* src, GFXTexture* dest)
+    {
+        auto _src = static_cast<GFXVulkanRenderTarget*>(src);
+        auto _dest = static_cast<GFXVulkanRenderTarget*>(dest);
+
+        VkBlitImageInfo2 info{};
+        info.sType = VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2;
+        info.srcImage = _src->GetVkImage();
+        info.srcImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        info.dstImage = _dest->GetVkImage();
+        info.dstImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        info.regionCount = 1;
+        VkImageBlit2 regions{};
+        regions.sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2;
+        regions.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        regions.srcSubresource.baseArrayLayer = 0;
+        regions.srcSubresource.layerCount = 1;
+        regions.srcOffsets[0] = {0, 0, 0};
+        regions.srcOffsets[1] = {_src->GetWidth(), _src->GetHeight(), 1};
+
+        regions.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        regions.dstSubresource.baseArrayLayer = 0;
+        regions.dstSubresource.layerCount = 1;
+        regions.dstOffsets[0] = {0, 0, 0};
+        regions.dstOffsets[1] = {_dest->GetWidth(), _dest->GetHeight(), 1};
+
+        info.pRegions = &regions;
+        info.filter = VK_FILTER_LINEAR;
+        vkCmdBlitImage2(m_cmdBuffer, &info);
+    }
+
+    void GFXVulkanCommandBuffer::CmdImageTransitionBarrier(GFXRenderTarget* rt, GFXResourceLayout layout)
+    {
+        auto vkrt = static_cast<GFXVulkanRenderTarget*>(rt);
+        VkImageLayout newLayout{};
+        if (rt->GetRenderTargetType() == GFXRenderTargetType::Color)
+        {
+            switch (layout)
+            {
+            case GFXResourceLayout::RenderTarget:
+                newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;;
+                break;
+            case GFXResourceLayout::ShaderReadOnly:
+                newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                break;
+            }
+        }
+        else
+        {
+            switch (layout)
+            {
+            case GFXResourceLayout::RenderTarget:
+                newLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+                break;
+            case GFXResourceLayout::ShaderReadOnly:
+                newLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+                break;
+            }
+        }
+
+        vkrt->CmdLayoutTransition(m_cmdBuffer, newLayout);
+    }
 
     GFXApplication* GFXVulkanCommandBuffer::GetApplication() const
     {
@@ -174,45 +242,18 @@ namespace gfx
             srRange.baseArrayLayer = 0;
             srRange.layerCount = 1;
 
-            {
-                VkImageMemoryBarrier barrier{};
-                barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-                barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-                barrier.newLayout = clearLayout;
-                barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-                barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-                barrier.image = rt->GetVkImage();
-                barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-                barrier.subresourceRange.baseMipLevel = 0;
-                barrier.subresourceRange.levelCount = 1;
-                barrier.subresourceRange.baseArrayLayer = 0;
-                barrier.subresourceRange.layerCount = 1;
-
-                vkCmdPipelineBarrier(
-                    m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                    0, 0, nullptr, 0, nullptr, 1, &barrier);
-            }
-
-
+            auto oldlayout = rt->GetVkImageLayout();
+            rt->CmdLayoutTransition(m_cmdBuffer, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
             vkCmdClearColorImage(m_cmdBuffer, image, clearLayout, &color, 1, &srRange);
+            if (oldlayout == VK_IMAGE_LAYOUT_UNDEFINED)
             {
-                VkImageMemoryBarrier barrier{};
-                barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-                barrier.oldLayout = clearLayout;
-                barrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-                barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-                barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-                barrier.image = image;
-                barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-                barrier.subresourceRange.baseMipLevel = 0;
-                barrier.subresourceRange.levelCount = 1;
-                barrier.subresourceRange.baseArrayLayer = 0;
-                barrier.subresourceRange.layerCount = 1;
-
-                vkCmdPipelineBarrier(
-                    m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                    0, 0, nullptr, 0, nullptr, 1, &barrier);
+                rt->CmdLayoutTransition(m_cmdBuffer, rt->GetVkImageFinalLayout());
             }
+            else
+            {
+                rt->CmdLayoutTransition(m_cmdBuffer, oldlayout);
+            }
+
             break;
         }
         case gfx::GFXRenderTargetType::DepthStencil:
