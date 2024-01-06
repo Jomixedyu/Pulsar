@@ -1,78 +1,99 @@
 #pragma once
 
-#include <Pulsar/IGPUResource.h>
 #include <Pulsar/AssetObject.h>
 #include <Pulsar/Assets/Texture.h>
+#include <Pulsar/IGPUResource.h>
 #include <Pulsar/ObjectBase.h>
 #include <Pulsar/Rendering/ShaderPass.h>
 #include <Pulsar/Rendering/Types.h>
 #include <gfx/GFXApi.h>
 #include <gfx/GFXShaderPass.h>
+#include <mutex>
+
+namespace pulsar
+{
+    CORELIB_DEF_ENUM(AssemblyObject_pulsar, pulsar,
+        ShaderPassRenderingType,
+        OpaqueForward,
+        OpaqueDeferred,
+        Transparency,
+        PostProcessing,
+        );
+
+    CORELIB_DEF_ENUM(AssemblyObject_pulsar, pulsar,
+        ShaderParameterType,
+        IntScalar,
+        Scalar,
+        Vector,
+        Texture2D,
+    )
+}
+
+CORELIB_DECL_BOXING(pulsar::ShaderPassRenderingType, pulsar::BoxingShaderPassRenderingType);
+CORELIB_DECL_BOXING(pulsar::ShaderParameterType, pulsar::BoxingShaderParameterType);
 
 namespace pulsar
 {
     class Texture2D;
+
+    class ShaderPassConfigProperty : public Object
+    {
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::ShaderPassConfigProperty, Object);
+    public:
+        CORELIB_REFL_DECL_FIELD(Name);
+        string Name;
+
+        CORELIB_REFL_DECL_FIELD(Type);
+        ShaderParameterType Type{};
+
+        CORELIB_REFL_DECL_FIELD(Value);
+        string Value;
+    };
+    CORELIB_DECL_SHORTSPTR(ShaderPassConfigProperty);
 
     class ShaderPassConfig : public Object
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::ShaderPassConfig, Object);
 
     public:
-        CORELIB_REFL_DECL_FIELD(PassName);
-        string PassName;
+        CORELIB_REFL_DECL_FIELD(RenderingType);
+        ShaderPassRenderingType RenderingType{};
 
         CORELIB_REFL_DECL_FIELD(CullMode);
-        CullMode CullMode;
+        CullMode CullMode{};
 
         CORELIB_REFL_DECL_FIELD(DepthTestEnable);
-        bool DepthTestEnable;
+        bool DepthTestEnable{};
 
         CORELIB_REFL_DECL_FIELD(DepthWriteEnable);
-        bool DepthWriteEnable;
+        bool DepthWriteEnable{};
 
         CORELIB_REFL_DECL_FIELD(DepthCompareOp);
-        CompareMode DepthCompareOp;
+        CompareMode DepthCompareOp{};
 
         CORELIB_REFL_DECL_FIELD(StencilTestEnable);
-        bool StencilTestEnable;
+        bool StencilTestEnable{};
 
+        CORELIB_REFL_DECL_FIELD(ConstantProperties, new ListItemAttribute(cltypeof<ShaderPassConfigProperty>()));
+        List_sp<ShaderPassConfigProperty_sp> ConstantProperties;
+
+        CORELIB_REFL_DECL_FIELD(Properties, new ListItemAttribute(cltypeof<ShaderPassConfigProperty>()));
+        List_sp<ShaderPassConfigProperty_sp> Properties;
+
+        ShaderPassConfig()
+        {
+            new_init_sptr(ConstantProperties);
+            new_init_sptr(Properties);
+        }
     };
     CORELIB_DECL_SHORTSPTR(ShaderPassConfig);
 
-
-    class ShaderConfig : public Object
-    {
-        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::ShaderConfig, Object);
-    public:
-        //CORELIB_REFL_DECL_FIELD(Passes);
-        //array_list<ShaderPassConfig_sp> Passes;
-    };
-    CORELIB_DECL_SHORTSPTR(ShaderConfig);
-
-
-
-    enum class ShaderParameterType
-    {
-        Float,
-        Sampler2D,
-        Vector3
-    };
-
-    class ShaderParameter
-    {
-
-    };
-
     struct ShaderSourceData
     {
-        struct Pass
+        struct ApiPlatform
         {
             string Config;
             hash_map<gfx::GFXShaderStageFlags, array_list<char>> Sources;
-        };
-        struct ApiPlatform
-        {
-            array_list<Pass> Passes;
         };
         hash_map<gfx::GFXApi, ApiPlatform> ApiMaps;
     };
@@ -109,19 +130,38 @@ namespace pulsar
 
         void ResetShaderSource(const ShaderSourceData& serData);
         const ShaderSourceData& GetSourceData() const { return m_shaderSource; }
-        List_sp<String_sp> GetPassNames() const { return m_passNames; }
-        size_t GetPassCount() const { return m_passNames->size(); }
+        String_sp GetPassName() const { return m_passName; }
+
+        ShaderPassConfig* GetConfig() const;
+        void SetConfig(ShaderPassConfig_rsp value) { m_shaderConfig = value; }
 
         array_list<gfx::GFXApi> GetSupportedApi() const;
+        bool HasSupportedApiData(gfx::GFXApi api) const;
+
+        ShaderPassRenderingType GetRenderingType() const { return m_renderingType; }
     private:
-        // serialized
         ShaderSourceData m_shaderSource;
-    private:
-        CORELIB_REFL_DECL_FIELD(m_passNames);
-        List_sp<String_sp> m_passNames;
+
+        CORELIB_REFL_DECL_FIELD(m_passName);
+        String_sp m_passName;
 
         CORELIB_REFL_DECL_FIELD(m_preDefines);
         List_sp<String_sp> m_preDefines;
+
+        // CORELIB_REFL_DECL_FIELD(m_shaderConfig);
+        ShaderPassConfig_sp m_shaderConfig;
+
+        CORELIB_REFL_DECL_FIELD(m_renderingType);
+        ShaderPassRenderingType m_renderingType{};
+    public:
+
+        #ifdef WITH_EDITOR
+
+        Action<> OnAvailableChanged;
+        std::mutex m_isAvailableMutex;
+        bool m_isAvailable = false;
+
+        #endif
     };
     DECL_PTR(Shader);
 

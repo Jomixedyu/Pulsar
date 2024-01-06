@@ -1,11 +1,13 @@
 #include "Assets/Material.h"
 #include "Application.h"
 #include "Assets/StaticMesh.h"
+#include "BuiltinAsset.h"
 #include "Logger.h"
 
 #include <CoreLib.Serialization/JsonSerializer.h>
 #include <Pulsar/AssetManager.h>
 #include <Pulsar/Assets/Material.h>
+#include <mutex>
 
 namespace pulsar
 {
@@ -29,12 +31,11 @@ namespace pulsar
         return vertDescLayout;
     }
 
-    ObjectPtr<Material> Material::StaticCreate(string_view name, Shader_ref shader)
+    ObjectPtr<Material> Material::StaticCreate(string_view name)
     {
         Material_sp material = mksptr(new Material);
         material->Construct();
         material->SetName(name);
-        material->m_shader = shader;
 
         return material;
     }
@@ -43,8 +44,56 @@ namespace pulsar
     {
     }
 
-    void Material::SetInt(const index_string& name, int value)
+    static MaterialParameterValue ParseDefaultValue(const string& value, ShaderParameterType type)
     {
+        MaterialParameterValue ret{};
+        switch (type)
+        {
+        case ShaderParameterType::IntScalar:
+            if (value.empty())
+            {
+                ret.SetValue(0);
+            }
+            else
+            {
+                ret.SetValue(std::atoi(value.c_str()));
+            }
+            break;
+        case ShaderParameterType::Scalar:
+            if (value.empty())
+            {
+                ret.SetValue(0.f);
+            }
+            else
+            {
+                ret.SetValue((float)std::atof(value.c_str()));
+            }
+            break;
+        case ShaderParameterType::Vector: {
+            if (value.empty())
+            {
+                ret.SetValue(Vector4f{});
+            }
+            else
+            {
+                auto strs = StringUtil::Split(value, ",");
+                Vector4f v{
+                    (float)std::atof(strs[0].c_str()),
+                    (float)std::atof(strs[1].c_str()),
+                    (float)std::atof(strs[2].c_str()),
+                    (float)std::atof(strs[3].c_str())};
+                ret.SetValue(v);
+            }
+            break;
+        }
+        case ShaderParameterType::Texture2D: {
+            ObjectPtr<Texture> tex = ObjectHandle::parse(value);
+            ret.SetValue(tex);
+            break;
+        }
+        }
+
+        return ret;
     }
 
     bool Material::CreateGPUResource()
@@ -53,68 +102,101 @@ namespace pulsar
         {
             return true;
         }
-        if (!m_shader || m_shader->GetSourceData().ApiMaps.empty())
+
+        Shader_ref shader = m_shader;
+        if (!m_shader || !m_shader->m_isAvailable)
         {
-            return false;
+            shader = GetAssetManager()->LoadAsset<Shader>(BuiltinAsset::Shader_Missing);
         }
+
         m_createdGpuResource = true;
 
-        const auto& passes = m_shader->GetSourceData().ApiMaps.at(Application::GetGfxApp()->GetApiType()).Passes;
+        const auto& passes = shader->GetSourceData().ApiMaps.at(Application::GetGfxApp()->GetApiType());
+        auto shaderConfig = shader->GetConfig();
 
-        for (size_t i = 0; i < passes.size(); i++)
+        // process deferred
+        // create shader module from source
+        gfx::GFXGpuProgram_sp gpuProgram = Application::GetGfxApp()->CreateGpuProgram(passes.Sources);
+
+        // create shader pass state config
+        gfx::GFXShaderPassConfig config{};
         {
-            // create shader module from source
-            gfx::GFXGpuProgram_sp gpuProgram = Application::GetGfxApp()->CreateGpuProgram(passes[i].Sources);
-
-            // create shader pass state config
-            gfx::GFXShaderPassConfig config{};
-            {
-                ShaderPassConfig_sp sourceConfig;
-                try
-                {
-                    sourceConfig = ser::JsonSerializer::Deserialize<ShaderPassConfig>(passes[i].Config);
-                }
-                catch (const std::exception& e)
-                {
-                    Logger::Log("shader config json error!", LogLevel::Error);
-                    m_createdGpuResource = false;
-                    return false;
-                }
-
-                config.CullMode = sourceConfig->CullMode;
-                config.DepthCompareOp = sourceConfig->DepthCompareOp;
-                config.DepthTestEnable = sourceConfig->DepthTestEnable;
-                config.DepthWriteEnable = sourceConfig->DepthWriteEnable;
-                config.StencilTestEnable = sourceConfig->StencilTestEnable;
-            }
-
-            // create descriptor layout
-            {
-                gfx::GFXDescriptorSetLayoutInfo descriptorLayoutInfo {
-                    gfx::GFXDescriptorType::ConstantBuffer,
-                    gfx::GFXShaderStageFlags::VertexFragment,
-                    0, 2
-                };
-                m_descriptorSetLayout = Application::GetGfxApp()->CreateDescriptorSetLayout(&descriptorLayoutInfo, 1);
-            }
-
-            {
-
-                // create shader pass
-                auto shaderPass = Application::GetGfxApp()->CreateShaderPass(
-                    config,
-                    gpuProgram,
-                    {GetVertexLayout(Application::GetGfxApp())});
-
-                m_gfxShaderPasses.push_back(shaderPass);
-            }
-
+            config.CullMode = shaderConfig->CullMode;
+            config.DepthCompareOp = shaderConfig->DepthCompareOp;
+            config.DepthTestEnable = shaderConfig->DepthTestEnable;
+            config.DepthWriteEnable = shaderConfig->DepthWriteEnable;
+            config.StencilTestEnable = shaderConfig->StencilTestEnable;
         }
+
+        // create shader pass
+        m_gfxShaderPasses = Application::GetGfxApp()->CreateShaderPass(
+            config,
+            gpuProgram,
+            {GetVertexLayout(Application::GetGfxApp())});
+
+        // create constant layouts and constant buffer
+        array_list<gfx::GFXDescriptorSetLayoutInfo> descLayoutInfos;
+
+        // create constant buffer
+        if (m_constantBufferSize)
+        {
+            m_materialConstantBuffer = Application::GetGfxApp()->CreateBuffer(gfx::GFXBufferUsage::ConstantBuffer, m_constantBufferSize);
+        }
+
+        if (m_constantBufferSize != 0)
+        {
+            auto info = gfx::GFXDescriptorSetLayoutInfo{
+                gfx::GFXDescriptorType::ConstantBuffer,
+                gfx::GFXShaderStageFlags::VertexFragment,
+                0, 3};
+            descLayoutInfos.push_back(info);
+        }
+
+        // create texture parameter layout
+        if (shaderConfig->Properties)
+        {
+            auto offset = m_constantBufferSize != 0 ? 1 : 0;
+            const auto count = shaderConfig->Properties->size();
+            for (size_t i = 0; i < count; ++i)
+            {
+                auto& item = shaderConfig->Properties->at(i);
+                auto info = gfx::GFXDescriptorSetLayoutInfo{
+                    gfx::GFXDescriptorType::Texture2D,
+                    gfx::GFXShaderStageFlags::VertexFragment,
+                    (uint32_t)i + offset, 3};
+                descLayoutInfos.push_back(info);
+            }
+        }
+
+        // create descriptorset layouts
+        m_descriptorSetLayout = Application::GetGfxApp()->CreateDescriptorSetLayout(
+            descLayoutInfos.data(),
+            descLayoutInfos.size());
+
+        // create descriptor set
+        m_descriptorSet = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_descriptorSetLayout);
+        if (m_constantBufferSize)
+        {
+            m_descriptorSet->AddDescriptor("ConstantProperties", 0)->SetConstantBuffer(m_materialConstantBuffer.get());
+        }
+        if (shaderConfig->Properties && !shaderConfig->Properties->empty())
+        {
+            auto count = shaderConfig->Properties->size();
+            auto offset = m_constantBufferSize ? 1 : 0;
+            for (int i = 0; i < count; ++i)
+            {
+                auto item = shaderConfig->Properties->at(i);
+                // m_descriptorSet->AddDescriptor(item->Name, i + offset);
+            }
+        }
+
+        m_descriptorSet->Submit();
+
+        m_isDirtyParameter = true;
+        SubmitParameters();
         return true;
-        // m_descriptorSet = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_descriptorSetLayout.get());
-        // m_descriptorSet->AddDescriptor("ShaderParameter", 2)->SetConstantBuffer(m_materialBuffer.get());
-        // m_descriptorSet->Submit();
     }
+
     void Material::DestroyGPUResource()
     {
         if (!m_createdGpuResource)
@@ -122,83 +204,165 @@ namespace pulsar
             return;
         }
         m_createdGpuResource = false;
-        m_gfxShaderPasses.clear();
+        m_gfxShaderPasses.reset();
         m_descriptorSet.reset();
+        m_descriptorSetLayout.reset();
+        m_materialConstantBuffer.reset();
     }
     bool Material::IsCreatedGPUResource() const
     {
         return m_createdGpuResource;
     }
 
-    class MaterialSerializationData : public Object
+    static ser::VarientRef NewVectorObject(const ser::VarientRef& ctx, Vector4f vec)
     {
-        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::MaterialSerializationData, Object);
-
-    public:
-        CORELIB_REFL_DECL_FIELD(Shader);
-        Shader_ref Shader;
-    };
-    CORELIB_DECL_SHORTSPTR(MaterialSerializationData);
+        auto obj = ctx->New(ser::VarientType::Object);
+        obj->Add("x", vec.x);
+        obj->Add("y", vec.y);
+        obj->Add("z", vec.z);
+        obj->Add("w", vec.w);
+        return obj;
+    }
+    static Vector4f GetVectorObject(const ser::VarientRef& var)
+    {
+        float x = var->At("x")->AsFloat();
+        float y = var->At("y")->AsFloat();
+        float z = var->At("z")->AsFloat();
+        float w = var->At("w")->AsFloat();
+        return {x, y, z, w};
+    }
 
     void Material::Serialize(AssetSerializer* s)
     {
-        // MaterialSerializationData_sp data;
         if (s->IsWrite)
         {
-            auto shaderObjectHandle = s->Object->New(ser::VarientType::String);
-            shaderObjectHandle->Assign(m_shader.handle.to_string());
-            s->Object->Add("Shader", shaderObjectHandle);
+            const auto shaderObject = s->Object->New(ser::VarientType::String);
+            shaderObject->Assign(m_shader.handle.to_string());
+            s->Object->Add("Shader", shaderObject);
+
+            const auto parametersArray = s->Object->New(ser::VarientType::Array);
+            for (auto& [name, value] : m_parameterValues)
+            {
+                ser::VarientRef parameter = parametersArray->New(ser::VarientType::Object);
+                parameter->Add("Name", name.to_string());
+                parameter->Add("Type", mkbox(value.Value.Type)->GetName());
+                ser::VarientRef paramValue;
+                switch (value.Value.Type)
+                {
+                case ShaderParameterType::IntScalar:
+                    paramValue = parameter->New(ser::VarientType::Number)->Assign(value.Value.AsIntScalar());
+                    break;
+                case ShaderParameterType::Scalar:
+                    paramValue = parameter->New(ser::VarientType::Number)->Assign(value.Value.AsScalar());
+                    break;
+                case ShaderParameterType::Vector:
+                    paramValue = parameter->New(ser::VarientType::Object);
+                    paramValue->Assign(NewVectorObject(parameter, value.Value.AsVector()));
+                    break;
+                case ShaderParameterType::Texture2D:
+                    paramValue = parameter->New(ser::VarientType::String);
+                    paramValue->Assign(value.Value.AsTexture().GetHandle().to_string());
+                    break;
+                default:;
+                }
+                parameter->Add("Value", paramValue);
+                parametersArray->Push(parameter);
+            }
+            s->Object->Add("Parameters", parametersArray);
         }
         else
         {
-            // string json;
-            // ReadWriteTextStream(s->Stream, s->IsWrite, json);
-            // auto data = ser::JsonSerializer::Deserialize<MaterialSerializationData>(json);
-            // m_shader = data->Shader;
-            // InitObjectPtr(m_shader);
-            auto id = ObjectHandle::parse(s->Object->At("Shader")->AsString());
-            m_shader = id;
-            TryFindOrLoadObject(m_shader);
+            // parameters
+            auto parameterObject = s->Object->At("Parameters");
+            auto parametersCount = parameterObject->GetCount();
+            for (int i = 0; i < parametersCount; ++i)
+            {
+                auto parameter = parameterObject->At(i);
+                auto name = parameter->At("Name")->AsString();
+                auto typestr = parameter->At("Type")->AsString();
+                auto valueObject = parameter->At("Value");
+                uint32_t typenum{};
+
+                Enum::StaticTryParse(cltypeof<BoxingShaderParameterType>(), typestr, &typenum);
+                ShaderParameterType type = static_cast<ShaderParameterType>(typenum);
+
+                MaterialParameterInfo paramValue{};
+                switch (type)
+                {
+                case ShaderParameterType::IntScalar:
+                    paramValue.Value.SetValue(valueObject->AsInt());
+                    break;
+                case ShaderParameterType::Scalar:
+                    paramValue.Value.SetValue(valueObject->AsFloat());
+                    break;
+                case ShaderParameterType::Vector:
+                    paramValue.Value.SetValue(GetVectorObject(valueObject));
+                    break;
+                case ShaderParameterType::Texture2D: {
+                    Texture_ref tex = ObjectHandle::parse(valueObject->AsString());
+                    paramValue.Value.SetValue(tex);
+                    break;
+                }
+                default:;
+                }
+                m_parameterValues.insert({index_string{name}, paramValue});
+            }
+
+            // shader
+            auto shaderObject = ObjectHandle::parse(s->Object->At("Shader")->AsString());
+            TryFindOrLoadObject(shaderObject);
+            SetShader(shaderObject);
         }
     }
 
+    void Material::SetIntScalar(const index_string& name, int value)
+    {
+        if (!m_parameterValues.contains(name))
+        {
+            return;
+        }
+        m_parameterValues[name].Value.SetValue(value);
+        m_isDirtyParameter = true;
+    }
     void Material::SetFloat(const index_string& name, float value)
     {
+        if (!m_parameterValues.contains(name))
+        {
+            return;
+        }
+        m_parameterValues[name].Value.SetValue(value);
         m_isDirtyParameter = true;
-        m_parameterValues[name].SetValue(value);
-        // m_descriptorSet->Find("ShaderParameter")->IsDirty = true;
-    }
-
-    void Material::SetColor(const index_string& name, const Color4f& value)
-    {
-        m_isDirtyParameter = true;
-        m_parameterValues[name].SetValue(value);
     }
 
     void Material::SetTexture(const index_string& name, Texture_ref value)
     {
+        if (!m_parameterValues.contains(name))
+        {
+            return;
+        }
+        m_parameterValues[name].Value.SetValue(value);
         m_isDirtyParameter = true;
-        m_parameterValues[name].SetValue(value);
     }
-    void Material::SetMatrix4f(const index_string& name, const Matrix4f& value)
-    {
-        m_isDirtyParameter = true;
-        m_parameterValues[name].SetValue(value);
-    }
+
     void Material::SetVector4(const index_string& name, const Vector4f& value)
     {
+        if (!m_parameterValues.contains(name))
+        {
+            return;
+        }
+        m_parameterValues[name].Value.SetValue(value);
         m_isDirtyParameter = true;
-        m_parameterValues[name].SetValue(value);
     }
-    int Material::GetInt(const index_string& name)
+    int Material::GetIntScalar(const index_string& name)
     {
         auto it = m_parameterValues.find(name);
         if (it == m_parameterValues.end())
         {
             return 0;
         }
-        return it->second.AsInt();
+        return it->second.Value.AsIntScalar();
     }
+
     float Material::GetFloat(const index_string& name)
     {
         auto it = m_parameterValues.find(name);
@@ -206,17 +370,9 @@ namespace pulsar
         {
             return 0;
         }
-        return it->second.AsFloat();
+        return it->second.Value.AsScalar();
     }
-    Color4f Material::GetColor(const index_string& name)
-    {
-        auto it = m_parameterValues.find(name);
-        if (it == m_parameterValues.end())
-        {
-            return Color4f{};
-        }
-        return it->second.AsColor();
-    }
+
     Vector4f Material::GetVector4(const index_string& name)
     {
         auto it = m_parameterValues.find(name);
@@ -224,8 +380,9 @@ namespace pulsar
         {
             return Vector4f{};
         }
-        return it->second.AsVector();
+        return it->second.Value.AsVector();
     }
+
     Texture_ref Material::GetTexture(const index_string& name)
     {
         auto it = m_parameterValues.find(name);
@@ -233,31 +390,56 @@ namespace pulsar
         {
             return Texture_ref{};
         }
-        return it->second.AsTexture();
-    }
-    Matrix4f Material::GetMatrix4f(const index_string& name)
-    {
-        auto it = m_parameterValues.find(name);
-        if (it == m_parameterValues.end())
-        {
-            return Matrix4f{};
-        }
-        return it->second.AsMatrix();
+        return it->second.Value.AsTexture();
     }
 
-    void Material::CommitParameters()
+    void Material::SubmitParameters()
     {
         if (!m_isDirtyParameter)
         {
             return;
         }
-        // copy parameter
+        if (m_materialConstantBuffer == nullptr)
+        {
+            return;
+        }
 
-        m_descriptorSet->Find("ShaderParameter")->SetConstantBuffer(m_materialBuffer.get());
+        m_bufferData.resize(m_materialConstantBuffer->GetSize());
+        for (auto value : m_parameterValues)
+        {
+            auto ptr = m_bufferData.data() + value.second.Offset;
+
+            switch (value.second.Value.Type)
+            {
+            case ShaderParameterType::IntScalar: {
+                *(int*)ptr = value.second.Value.AsIntScalar();
+                break;
+            }
+            case ShaderParameterType::Scalar: {
+                *(float*)ptr = value.second.Value.AsScalar();
+                break;
+            }
+            case ShaderParameterType::Vector: {
+                *(Vector4f*)ptr = value.second.Value.AsVector();
+                break;
+            }
+            case ShaderParameterType::Texture2D: {
+                auto tex = value.second.Value.AsTexture();
+
+                break;
+            }
+            default:;
+            }
+        }
+
+        m_materialConstantBuffer->Fill(m_bufferData.data());
+
+        m_descriptorSet->Find("ConstantProperties")->SetConstantBuffer(m_materialConstantBuffer.get());
 
         m_isDirtyParameter = false;
         m_descriptorSet->Submit();
     }
+
     void Material::PostEditChange(FieldInfo* info)
     {
         base::PostEditChange(info);
@@ -267,27 +449,118 @@ namespace pulsar
             SetShader(m_shader);
         }
     }
+    void Material::OnShaderAvailable()
+    {
+        bool b = m_shader->m_isAvailable;
+        if (b)
+        {
+            bool created = m_createdGpuResource;
+            if (created)
+            {
+                DestroyGPUResource();
+            }
+            InitShaderConfig();
+            if (created)
+            {
+                CreateGPUResource();
+            }
+        }
+        else
+        {
+        }
+    }
+
+    void Material::InitShaderConfig()
+    {
+        if (!m_shader->HasSupportedApiData(Application::GetGfxApp()->GetApiType()))
+        {
+            return;
+        }
+        auto config = m_shader->GetConfig();
+
+        if (config->ConstantProperties)
+        {
+            size_t offset = 0;
+            for (const auto& element : *config->ConstantProperties)
+            {
+                MaterialParameterInfo prop{};
+                prop.Offset = offset;
+                prop.Value = ParseDefaultValue(element->Value, element->Type);
+                m_propertyInfo.insert({index_string{element->Name}, prop});
+
+                switch (element->Type)
+                {
+                case ShaderParameterType::IntScalar:
+                    offset += sizeof(int);
+                    break;
+                case ShaderParameterType::Scalar:
+                    offset += sizeof(float);
+                    break;
+                case ShaderParameterType::Vector:
+                    offset += sizeof(Vector4f);
+                    break;
+                default:;
+                }
+                m_constantBufferSize = offset;
+            }
+        }
+        if (config->Properties)
+        {
+            const auto offset = config->ConstantProperties->empty() ? 0 : 1;
+            const auto count = config->Properties->size();
+            for (size_t i = 0; i < count; ++i)
+            {
+                const auto& item = config->Properties->at(i);
+                MaterialParameterInfo prop{};
+                prop.Offset = offset + i;
+                prop.Value = ParseDefaultValue(item->Value, item->Type);
+
+                m_propertyInfo.insert({index_string{item->Name}, prop});
+            }
+        }
+
+        // create parameter default value
+        for (auto& prop : m_propertyInfo)
+        {
+            if (!m_parameterValues.contains(prop.first))
+            {
+                m_parameterValues.insert(prop);
+            }
+        }
+    }
+
     Shader_ref Material::GetShader() const
+    {
+        return m_shader;
+    }
+
+    void Material::SetShader(Shader_ref value)
     {
         if (m_shader)
         {
-            return m_shader;
+            m_shader->OnAvailableChanged.RemoveListener(this, &ThisClass::OnShaderAvailable);
         }
-        return Application::inst()->GetAssetManager()->LoadAsset<Shader>("Engine/Shaders/Missing");
-    }
-    void Material::SetShader(Shader_ref value)
-    {
         m_shader = value;
+        if (m_shader)
+        {
+            std::lock_guard<std::mutex> lk{m_shader->m_isAvailableMutex};
+            if (m_shader->m_isAvailable)
+            {
+                InitShaderConfig();
+            }
+            m_shader->OnAvailableChanged.AddListener(this, &ThisClass::OnShaderAvailable);
+        }
+        if (m_createdGpuResource)
+        {
+            DestroyGPUResource();
+            CreateGPUResource();
+        }
         OnShaderChanged.Invoke();
     }
-    gfx::GFXShaderPass_sp Material::GetGfxShaderPass(size_t index)
+
+    gfx::GFXShaderPass_sp Material::GetGfxShaderPass()
     {
-        if (index >= m_gfxShaderPasses.size())
-        {
-            auto missing = GetAssetManager()->LoadAsset<Material>("Engine/Materials/Missing");
-            missing->CreateGPUResource();
-            return missing->GetGfxShaderPass(0);
-        }
-        return m_gfxShaderPasses[index];
+        return m_gfxShaderPasses;
     }
+
 } // namespace pulsar

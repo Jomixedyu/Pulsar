@@ -4,10 +4,17 @@ namespace jxcorlib
 {
     void Enum::InitDefinitions(const char* datas, DataMap** defs)
     {
-        if (*defs) return;
+        if (*defs)
+            return;
         *defs = new DataMap;
         auto enums = StringUtil::Split(datas, u8char(","));
-        for (string& enum_item : enums) {
+        for (string& enum_item : enums)
+        {
+            if (enum_item.empty())
+            {
+                continue;
+            }
+
             auto kv = StringUtil::Split(enum_item, u8char("="));
 
             string& m_name = StringUtil::TrimSelf(kv[0]);
@@ -29,7 +36,7 @@ namespace jxcorlib
                     value_ = 0;
                 }
             }
-            (*defs)->push_back({ m_name, value_ });
+            (*defs)->push_back({m_name, value_});
         }
     }
     bool Enum::StaticTryParse(Type* type, string_view name, uint32_t* out_value)
@@ -44,4 +51,4 @@ namespace jxcorlib
         }
         return false;
     }
-}
+} // namespace jxcorlib

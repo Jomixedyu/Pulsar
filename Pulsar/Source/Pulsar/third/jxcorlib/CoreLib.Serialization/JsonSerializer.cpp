@@ -29,6 +29,7 @@ namespace jxcorlib::ser
         if (obj->GetType()->IsEnum())
         {
             json enum_js;
+
             if (settings.StringEnum)
             {
                 enum_js = static_cast<Enum*>(obj)->GetName();

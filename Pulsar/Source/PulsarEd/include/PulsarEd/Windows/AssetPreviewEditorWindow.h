@@ -16,6 +16,7 @@ namespace pulsared
     protected:
         World* m_world{nullptr};
         ViewportFrame m_viewportFrame;
+        bool m_createDirectionalLight = true;
     };
 
 

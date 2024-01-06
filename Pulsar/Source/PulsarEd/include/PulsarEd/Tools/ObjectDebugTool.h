@@ -1,10 +1,8 @@
 #pragma once
-#include <PulsarEd/Assembly.h>
 #include <PulsarEd/Windows/ToolWindow.h>
 
 namespace pulsared
 {
-
     class ObjectDebugTool : public ToolWindow
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::ObjectDebugTool, ToolWindow);

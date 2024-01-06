@@ -793,22 +793,19 @@ namespace jxcorlib
     {
         if (name.size() == 0)
             return string{name};
-
         string pname{name};
-
-        string ret;
-        ret.reserve((size_t)((float)name.size() * 1.5f));
-
         if (pname.starts_with("m_"))
         {
             pname = pname.substr(2, pname.size() - 2);
         }
 
+        string ret;
+        ret.reserve((size_t)((float)name.size() * 1.5f));
+
         bool is_new = true;
         bool last_space = false;
-        for (size_t i = 0; i < pname.size(); i++)
-        {
-            char c = pname[i];
+        ForEach(pname, [&](u8char ch, size_t i, size_t bpos) -> bool {
+            auto c = ch;
             if (c == '_' || c == ' ')
             {
                 if (!last_space && i != 0 && i != pname.size() - 1)
@@ -818,29 +815,35 @@ namespace jxcorlib
                 is_new = true;
                 last_space = true;
             }
-            else if (std::isupper(c))
+            else if (c.Size() == 1 && std::isupper(c.value[0]))
             {
                 if (!last_space && i != 0 && i != pname.size() - 1)
                 {
                     ret.push_back(' ');
                 }
-                ret.push_back(c);
+                ret.append(c.value);
                 is_new = false;
+                last_space = false;
+            }
+            else if (c.Size() == 1 && std::islower(c.value[0]))
+            {
+                auto new_c = c;
+
+                if (is_new)
+                {
+                    new_c = (char)std::toupper(new_c.value[0]);
+                    is_new = false;
+                }
+                ret.push_back(new_c.value[0]);
                 last_space = false;
             }
             else
             {
-                char new_c = c;
-
-                if (is_new)
-                {
-                    new_c = (char)std::toupper(new_c);
-                    is_new = false;
-                }
-                ret.push_back(new_c);
-                last_space = false;
+                ret.append(ch.value);
             }
-        }
+            return true;
+        });
+
 
         return ret;
     }

@@ -1,6 +1,10 @@
+#include "CoreLib.Serialization/JsonSerializer.h"
+#include "EditorAppInstance.h"
+
+#include "PulsarEd/ExclusiveTask.h"
+#include <PulsarEd/AssetDatabase.h>
 #include <PulsarEd/Shaders/EditorShader.h>
 #include <psc/ShaderCompiler.h>
-#include <PulsarEd/AssetDatabase.h>
 
 namespace pulsared
 {
@@ -99,6 +103,21 @@ namespace pulsared
         return pscCompiler->CompilePSH(pshPath, info, { pscApi });
     }
 
+    // class ShaderCompilingExclusiveTask : public pulsared::ExclusiveTask
+    // {
+    //     CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::ShaderCompilingExclusiveTask, pulsared::ExclusiveTask);
+    // public:
+    //     virtual ExclusiveTaskState OnProcess(ExclusiveTaskProcessInfo& info) override
+    //     {
+    //         info.Description = "processing";
+    //         return ExclusiveTaskState::Continue;
+    //     }
+    //     virtual bool                CanCancel() const override { return false; }
+    //     virtual void                OnComplete() override {}
+    //
+    // };
+    // CORELIB_DECL_SHORTSPTR(ExclusiveTask);
+
     void ShaderCompiler::CompileShader(
         Shader_ref shader,
         const array_list<gfx::GFXApi>& api,
@@ -108,41 +127,59 @@ namespace pulsared
         ShaderSourceData serDatas;
         try
         {
+            auto passName = shader->GetPassName();
+
+            if (passName->empty())
+            {
+                Logger::Log("passname is empty.", LogLevel::Error);
+                return;
+            }
+
+            string config;
+            auto shaderPath = AssetDatabase::PackagePathToPhysicsPath(*passName);
+
             for (auto& apiItem : api)
             {
                 auto& apiSerData = serDatas.ApiMaps[apiItem];
-                for (auto& passName : *shader->GetPassNames())
+
+                auto passModules = CompilePulsarShader(shaderPath, apiItem, includes, defines);
+
+                for (auto& smodule : passModules)
                 {
-                    auto& passSerData = apiSerData.Passes.emplace_back();
-                    auto shaderPath = AssetDatabase::PackagePathToPhysicsPath(*passName);
-
-                    auto passModules = CompilePulsarShader(shaderPath, apiItem, includes, defines);
-
-                    for (auto& smodule : passModules)
+                    if (smodule.Partial == psc::FilePartialType::Sh)
                     {
-                        if (smodule.Partial == psc::FilePartialType::Sh)
-                        {
-                            passSerData.Config = std::get<string>(smodule.Data);
-                        }
-                        else
-                        {
-                            passSerData.Sources[_GetGFXStage(smodule.Partial)] = std::get<std::vector<char>>(smodule.Data);
-                        }
+                        config = std::get<string>(smodule.Data);
+                    }
+                    else
+                    {
+                        apiSerData.Sources[_GetGFXStage(smodule.Partial)] = std::get<std::vector<char>>(smodule.Data);
                     }
                 }
             }
 
             Logger::Log("compile shader success.");
 
+
+            std::lock_guard lock {shader->m_isAvailableMutex};
+            shader->SetConfig(ser::JsonSerializer::Deserialize<ShaderPassConfig>(config));
             shader->ResetShaderSource(serDatas);
+            if (shader->GetRenderingType() == shader->GetConfig()->RenderingType)
+            {
+                shader->m_isAvailable = true;
+                shader->OnAvailableChanged.Invoke();
+            }
+
             AssetDatabase::MarkDirty(shader);
         }
         catch (const std::exception& e)
         {
             Logger::Log(e.what(), LogLevel::Error);
         }
-
+    }
+    void ShaderCompiler::CompileShader(Shader_ref shader)
+    {
+        //GetEdApp()->GetTaskQueue().AddTask();
+        CompileShader(shader, Application::inst()->GetSupportedApis(), {}, {});
     }
 
-
-}
+} // namespace pulsared

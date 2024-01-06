@@ -29,6 +29,7 @@ namespace jxcorlib
     struct u8char final
     {
         char value[8]{ 0 };
+        size_t Size() const { return CharLength(value); }
         inline static int CharLength(const char* c)
         {
             for (int i = 0; i < 8; i++)

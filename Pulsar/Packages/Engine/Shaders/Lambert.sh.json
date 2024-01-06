@@ -4,5 +4,19 @@
   "DepthTestEnable": true,
   "DepthWriteEnable": true,
   "DepthCompareOp": "Less",
-  "StencilTestEnable": false
+  "StencilTestEnable": false,
+  "RenderingType": "OpaqueDeferred",
+  "ConstantProperties": [
+    {
+      "Name": "Tint",
+      "Type": "Vector",
+      "Value": "1,1,1,1"
+    }
+  ],
+  "Properties": [
+    {
+      "Name": "DiffuseTex",
+      "Type": "Texture2D"
+    }
+  ]
 }

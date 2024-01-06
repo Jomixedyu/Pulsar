@@ -55,9 +55,11 @@ namespace gfx
         int32_t width, int32_t height,
         VkImage image, VkImageView imageView, VkFormat format, VkImageLayout layout, GFXRenderTargetType type)
         : m_width(width), m_height(height), m_textureImage(image), m_textureImageView(imageView),
-        m_imageFormat(format), m_imageLayout(layout), m_type(type), m_mode(CreateMode_View)
+        m_imageFormat(format), m_imageFinalLayout(layout), m_imageLayout(VK_IMAGE_LAYOUT_UNDEFINED),
+        m_type(type), m_mode(CreateMode_View)
     {
         //DESTROYED_INSIGHT_CTOR(vkRtDOI);
+
     }
 
     GFXVulkanRenderTarget::GFXVulkanRenderTarget(
@@ -68,31 +70,21 @@ namespace gfx
     {
         m_imageFormat = BufferHelper::GetVkFormat(format);
 
-        VkImageUsageFlags usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+        VkImageUsageFlags usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT
+            | VK_IMAGE_USAGE_TRANSFER_DST_BIT
+            | VK_IMAGE_USAGE_SAMPLED_BIT;
 
         if (type == gfx::GFXRenderTargetType::Color)
         {
-            m_imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            m_imageFinalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
             usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
             m_aspectFlags |= VK_IMAGE_ASPECT_COLOR_BIT;
         }
         else if (type == gfx::GFXRenderTargetType::DepthStencil)
         {
-            m_imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+            m_imageFinalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
             usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
             m_aspectFlags |= VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
-        }
-        else if (type == gfx::GFXRenderTargetType::Depth)
-        {
-            m_imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
-            usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-            m_aspectFlags |= VK_IMAGE_ASPECT_DEPTH_BIT;
-        }
-        else if (type == gfx::GFXRenderTargetType::Stencil)
-        {
-            m_imageLayout = VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL;
-            usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-            m_aspectFlags |= VK_IMAGE_ASPECT_STENCIL_BIT;
         }
         else
         {
@@ -105,7 +97,8 @@ namespace gfx
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_textureImage, m_textureImageMemory);
 
         BufferHelper::TransitionImageLayout(app, m_textureImage, m_imageFormat,
-            VK_IMAGE_LAYOUT_UNDEFINED, m_imageLayout);
+            VK_IMAGE_LAYOUT_UNDEFINED, m_imageFinalLayout);
+        m_imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
         m_textureImageView = BufferHelper::CreateImageView(m_app, m_textureImage, m_imageFormat, m_aspectFlags);
         m_textureSampler = BufferHelper::CreateTextureSampler(m_app);
@@ -124,6 +117,12 @@ namespace gfx
                 vkDestroySampler(m_app->GetVkDevice(), m_textureSampler, nullptr);
             }
         }
-        //DESTROYED_INSIGHT_DESTOR(vkRtDOI);
+        // DESTROYED_INSIGHT_DESTOR(vkRtDOI);
     }
-}
+
+    void GFXVulkanRenderTarget::CmdLayoutTransition(VkCommandBuffer cmd, VkImageLayout newLayout)
+    {
+        BufferHelper::TransitionImageLayout(cmd, m_textureImage, m_imageFormat, m_imageLayout, newLayout);
+        m_imageLayout = newLayout;
+    }
+} // namespace gfx

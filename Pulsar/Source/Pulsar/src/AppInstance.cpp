@@ -2,6 +2,10 @@
 
 namespace pulsar
 {
+    array_list<gfx::GFXApi> AppInstance::GetSupportedApis()
+    {
+        return {gfx::GFXApi::Vulkan};
+    }
     Subsystem* AppInstance::GetSubsystemByType(Type* type)
     {
         for (auto& subsystem : this->subsystems)

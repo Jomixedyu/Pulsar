@@ -1,0 +1,40 @@
+{
+    "Parameters": [
+        {
+            "Name": "_CheckerColorA",
+            "Type": "Vector",
+            "Value": {
+                "w": 1.0,
+                "x": 0.9900000095367432,
+                "y": 0.9900000095367432,
+                "z": 0.9900000095367432
+            }
+        },
+        {
+            "Name": "_CheckerColorB",
+            "Type": "Vector",
+            "Value": {
+                "w": 1.0,
+                "x": 0.75,
+                "y": 0.75,
+                "z": 0.75
+            }
+        },
+        {
+            "Name": "_GridSize",
+            "Type": "Scalar",
+            "Value": 10.0
+        },
+        {
+            "Name": "_Image",
+            "Type": "Texture2D",
+            "Value": "00000000000000000000000000000000"
+        },
+        {
+            "Name": "_Flags",
+            "Type": "IntScalar",
+            "Value": 0
+        }
+    ],
+    "Shader": "d1b6f37729344e498392d597e7f6190c"
+}

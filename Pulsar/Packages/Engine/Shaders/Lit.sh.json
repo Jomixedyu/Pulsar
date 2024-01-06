@@ -1,0 +1,19 @@
+{
+	"PassName": "Engine/Shaders/Lit.sh.json",
+	"CullMode": "None",
+	"DepthTestEnable": true,
+	"DepthWriteEnable": true,
+	"DepthCompareOp": "Less",
+	"StencilTestEnable": false,
+	"RenderingType": "OpaqueDeferred",
+	"Properties": [
+		{
+			"Name": "BaseColor",
+			"Type": "Texture2D"
+		},
+		{
+			"Name": "MRA",
+			"Type": "Texture2D"
+		}
+	]
+}

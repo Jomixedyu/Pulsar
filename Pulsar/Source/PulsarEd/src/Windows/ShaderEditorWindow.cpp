@@ -1,5 +1,7 @@
 #include "Windows/ShaderEditorWindow.h"
 
+#include "Pulsar/BuiltinAsset.h"
+#include "Pulsar/Components/CameraComponent.h"
 #include "Pulsar/Components/StaticMeshRendererComponent.h"
 #include "Pulsar/Scene.h"
 
@@ -42,7 +44,7 @@ namespace pulsared
                             return;
                         if (const Shader_ref shader = ref_cast<Shader>(ctx->Asset))
                         {
-                            ShaderCompiler::CompileShader(shader, {gfx::GFXApi::Vulkan}, {}, {});
+                            ShaderCompiler::CompileShader(shader);
                         }
                     });
                     menu->AddEntry(entry);
@@ -62,15 +64,28 @@ namespace pulsared
     void ShaderEditorWindow::OnOpen()
     {
         base::OnOpen();
+        Shader_ref shader = m_assetObject;
 
-        m_previewMaterial = Material::StaticCreate("PreviewMaterial", m_assetObject);
-
-        auto previewMesh = Node::StaticCreate("PreviewMesh");
-        auto renderer = previewMesh->AddComponent<StaticMeshRendererComponent>();
-
-        renderer->SetStaticMesh(GetAssetManager()->LoadAsset<StaticMesh>("Engine/Shapes/Sphere"));
-        renderer->SetMaterial(0, m_previewMaterial);
-        m_world->GetPersistentScene()->AddNode(previewMesh);
+        // m_previewMaterial = Material::StaticCreate("PreviewMaterial");
+        // m_previewMaterial->SetShader(m_assetObject);
+        // m_previewMaterial->CreateGPUResource();
+        //
+        // auto previewMesh = Node::StaticCreate("PreviewMesh");
+        // auto renderer = previewMesh->AddComponent<StaticMeshRendererComponent>();
+        //
+        // renderer->SetStaticMesh(GetAssetManager()->LoadAsset<StaticMesh>(BuiltinAsset::Shapes_Sphere));
+        //
+        // m_world->GetPersistentScene()->AddNode(previewMesh);
+        //
+        // if (m_previewMaterial->GetShader()->GetRenderingType() == ShaderPassRenderingType::PostProcessing)
+        // {
+        //     renderer->SetMaterial(0, GetAssetManager()->LoadAsset<Material>(BuiltinAsset::Material_Lambert));
+        //     m_world->GetPreviewCamera()->m_postProcessMaterials->push_back(m_previewMaterial);
+        // }
+        // else
+        // {
+        //     renderer->SetMaterial(0, m_previewMaterial);
+        // }
 
     }
     void ShaderEditorWindow::OnClose()
@@ -101,16 +116,20 @@ namespace pulsared
 
         if (PImGui::PropertyGroup("Compiled"))
         {
-            if (PImGui::BeginPropertyItem("Platforms"))
+            string apis;
+            for (auto api : shader->GetSupportedApi())
             {
-                for (auto api : shader->GetSupportedApi())
-                {
-                    ImGui::Text(gfx::to_string(api));
-                }
-                PImGui::EndPropertyItem();
+                apis += gfx::to_string(api);
+                apis += ";";
+            }
+            if (PImGui::BeginPropertyLine())
+            {
+                PImGui::PropertyLineText("Platforms", apis);
+                PImGui::EndPropertyLine();
             }
         }
     }
+
 
     void ShaderEditorWindow::OnDrawImGui(float dt)
     {

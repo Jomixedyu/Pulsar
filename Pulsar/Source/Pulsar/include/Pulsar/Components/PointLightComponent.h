@@ -1,6 +1,6 @@
 #pragma once
 #include "LightComponent.h"
-#include "Rendering/RenderObject.h"
+#include "Pulsar/Rendering/RenderObject.h"
 
 namespace pulsar
 {

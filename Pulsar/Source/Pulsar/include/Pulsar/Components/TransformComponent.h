@@ -4,6 +4,11 @@
 
 namespace pulsar
 {
+    enum class TransformCoordSystem
+    {
+        Local,
+        Global
+    };
     class TransformComponent : public Component
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::TransformComponent, Component);

@@ -1,6 +1,7 @@
 #include <CoreLib/File.h>
 #include <Pulsar/Application.h>
 #include <Pulsar/Assets/Texture2D.h>
+#include <Pulsar/Compressions/TextureCompression.h>
 
 namespace pulsar
 {
@@ -16,13 +17,13 @@ namespace pulsar
         {
             if (m_loadedHostMemory)
             {
-               sser::ReadWriteStream(s->Stream, s->IsWrite, m_nativeOriginalHostMemory);
+               sser::ReadWriteStream(s->Stream, s->IsWrite, m_nativeOriginalMemory);
             }
         }
         else //read
         {
-            m_nativeOriginalHostMemory.clear();
-            sser::ReadWriteStream(s->Stream, s->IsWrite, m_nativeOriginalHostMemory);
+            m_nativeOriginalMemory.clear();
+            sser::ReadWriteStream(s->Stream, s->IsWrite, m_nativeOriginalMemory);
             m_loadedHostMemory = true;
         }
     }
@@ -34,18 +35,26 @@ namespace pulsar
     }
     void Texture2D::OnInstantiateAsset(AssetObject* obj)
     {
-        Texture2D* tex = static_cast<Texture2D*>(obj);
+
+    }
+    void Texture2D::LoadFromNativeData(const uint8_t* data, int32_t length)
+    {
+        m_nativeOriginalMemory.resize(length);
+        std::memcpy(m_nativeOriginalMemory.data(), data, length);
+    }
+    void Texture2D::UnloadNativeData()
+    {
+        decltype(m_nativeOriginalMemory){}.swap(m_nativeOriginalMemory);
     }
 
-    void Texture2D::LoadHostResource(const uint8_t* data, int32_t length)
+    void Texture2D::LoadHostResource()
     {
-        m_nativeOriginalHostMemory.resize(length);
-        std::memcpy(m_nativeOriginalHostMemory.data(), data, length);
+        m_bakedDataMemory = std::move(m_nativeOriginalMemory);
         m_loadedHostMemory = true;
     }
     void Texture2D::UnloadHostResource()
     {
-        decltype(m_nativeOriginalHostMemory)().swap(m_nativeOriginalHostMemory);
+        decltype(m_bakedDataMemory)().swap(m_bakedDataMemory);
         m_loadedHostMemory = false;
     }
 
@@ -55,12 +64,22 @@ namespace pulsar
         {
             return true;
         }
+        if (!m_loadedHostMemory)
+        {
+            LoadHostResource();
+        }
+
         m_isCreatedGPUResource = true;
 
         m_tex = Application::GetGfxApp()->CreateTexture2DFromMemory(
-            m_nativeOriginalHostMemory.data(),
-            m_nativeOriginalHostMemory.size(),
+            m_bakedDataMemory.data(),
+            m_bakedDataMemory.size(),
             m_samplerConfig, m_enableReadWrite, m_isSrgb);
+
+        if (m_loadedHostMemory)
+        {
+            UnloadHostResource();
+        }
         return true;
     }
 

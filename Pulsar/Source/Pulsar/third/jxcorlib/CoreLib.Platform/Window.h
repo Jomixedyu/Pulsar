@@ -1,7 +1,8 @@
 #pragma once
+#include <cstdint>
+#include <filesystem>
 #include <string>
 #include <string_view>
-#include <cstdint>
 #include <vector>
 
 namespace jxcorlib::platform
@@ -32,7 +33,7 @@ namespace jxcorlib::platform
         * @param default_path: u8str
         * @param out_select: u8str
         */
-        bool OpenFileDialog(intptr_t owner, std::string_view filter, std::string_view default_path, std::string* out_select);
+        bool OpenFileDialog(intptr_t owner, std::string_view filter, std::filesystem::path default_path, std::filesystem::path* out_select);
 
         float GetUIScaling();
     }

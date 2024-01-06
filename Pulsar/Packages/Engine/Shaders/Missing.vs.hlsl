@@ -1,3 +1,1 @@
-#include "DefaultVS.inc.hlsl"
-
-IMPL_DEFAULT_VERT(main)
+#include "DefaultVSImpl.inc.hlsl"

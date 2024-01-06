@@ -1,6 +1,6 @@
+#include "GFXVulkanCommandBufferPool.h"
 #include <gfx-vk/BufferHelper.h>
 #include <gfx-vk/GFXVulkanCommandBuffer.h>
-#include "GFXVulkanCommandBufferPool.h"
 
 #include <stdexcept>
 
@@ -86,8 +86,6 @@ namespace gfx
 
         vkQueueSubmit(app->GetVkGraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE);
         vkQueueWaitIdle(app->GetVkGraphicsQueue());
-
-
     }
 
     void BufferHelper::DestroyBuffer(GFXVulkanApplication* app, VkBuffer buffer, VkDeviceMemory mem)
@@ -112,7 +110,6 @@ namespace gfx
         imageInfo.usage = usage;
         imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
         imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
 
         if (vkCreateImage(app->GetVkDevice(), &imageInfo, nullptr, &image) != VK_SUCCESS)
         {
@@ -143,6 +140,17 @@ namespace gfx
     void BufferHelper::TransitionImageLayout(GFXVulkanApplication* app, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
     {
         GFXVulkanCommandBufferScope commandBuffer(app);
+        TransitionImageLayout(_GetVkCommandBuffer(commandBuffer), image, format, oldLayout, newLayout);
+    }
+
+    static bool _HasStencilComponent(VkFormat format)
+    {
+        return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
+    }
+
+    void BufferHelper::TransitionImageLayout(
+        VkCommandBuffer cmd, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
+    {
 
         VkImageMemoryBarrier barrier{};
         barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -172,54 +180,99 @@ namespace gfx
         barrier.subresourceRange.baseArrayLayer = 0;
         barrier.subresourceRange.layerCount = 1;
 
-        VkPipelineStageFlags sourceStage;
-        VkPipelineStageFlags destinationStage;
-
-        if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
-        {
-            barrier.srcAccessMask = 0;
-            barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-
-            sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-            destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-        }
-        else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
-        {
-            barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-            barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-            sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-            destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-        }
-        else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
-        {
-            barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-            barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-            sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-            destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-        }
-        else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
-        {
-            barrier.srcAccessMask = 0;
-            barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-
-            sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-            destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-        }
-        else {
-            throw std::invalid_argument("unsupported layout transition!");
-        }
+        VkPipelineStageFlags sourceStage = GetStageFlagsForLayout(oldLayout);
+        VkPipelineStageFlags destinationStage = GetStageFlagsForLayout(newLayout);
+        barrier.srcAccessMask = GetAccessMaskForLayout(oldLayout);
+        barrier.dstAccessMask = GetAccessMaskForLayout(newLayout);
 
         vkCmdPipelineBarrier(
-            _GetVkCommandBuffer(commandBuffer),
+            cmd,
             sourceStage, destinationStage,
             0,
             0, nullptr,
             0, nullptr,
-            1, &barrier
-        );
+            1, &barrier);
+    }
 
+    VkPipelineStageFlags BufferHelper::GetStageFlagsForLayout(VkImageLayout layout)
+    {
+        VkPipelineStageFlags flags{};
+        switch (layout)
+        {
+        case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
+        case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
+            return VK_PIPELINE_STAGE_TRANSFER_BIT;
+
+        case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+            return VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+        case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+        case VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL_KHR:
+        case VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL_KHR:
+            return VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+
+        case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+            return VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+
+        case VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL:
+        case VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL_KHR:
+        case VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL_KHR:
+        case VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL_KHR:
+        case VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL_KHR:
+            return VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+
+        case VK_IMAGE_LAYOUT_PRESENT_SRC_KHR:
+            return VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+
+        case VK_IMAGE_LAYOUT_GENERAL:
+        case VK_IMAGE_LAYOUT_UNDEFINED:
+            return VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+
+        default:
+            assert(false);
+        }
+        return {};
+    }
+    VkAccessFlags BufferHelper::GetAccessMaskForLayout(VkImageLayout layout)
+    {
+        switch (layout)
+        {
+        case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
+            return VK_ACCESS_TRANSFER_READ_BIT;
+
+        case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
+            return VK_ACCESS_TRANSFER_WRITE_BIT;
+
+        case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+            return VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+        case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+        case VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL_KHR:
+        case VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL_KHR:
+            return VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+        case VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL_KHR:
+        case VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL_KHR:
+            return VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+        case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+            return VK_ACCESS_SHADER_READ_BIT;
+
+        case VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL:
+        case VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL_KHR:
+        case VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL_KHR:
+            return VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
+
+        case VK_IMAGE_LAYOUT_PRESENT_SRC_KHR:
+            return 0;
+
+        case VK_IMAGE_LAYOUT_GENERAL:
+        case VK_IMAGE_LAYOUT_UNDEFINED:
+            return 0;
+        default:
+            assert(false);
+        }
+        return {};
     }
 
     void BufferHelper::CopyBufferToImage(GFXVulkanApplication* app, VkBuffer buffer, VkImage image, uint32_t width, uint32_t height)
@@ -236,12 +289,11 @@ namespace gfx
         region.imageSubresource.baseArrayLayer = 0;
         region.imageSubresource.layerCount = 1;
 
-        region.imageOffset = { 0, 0, 0 };
+        region.imageOffset = {0, 0, 0};
         region.imageExtent = {
             width,
             height,
-            1
-        };
+            1};
 
         vkCmdCopyBufferToImage(
             _GetVkCommandBuffer(commandBuffer),
@@ -249,8 +301,7 @@ namespace gfx
             image,
             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
             1,
-            &region
-        );
+            &region);
     }
 
     VkImageView BufferHelper::CreateImageView(GFXVulkanApplication* app, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags)
@@ -339,10 +390,9 @@ namespace gfx
     std::vector<VkFormat> BufferHelper::FindDepthFormats(GFXVulkanApplication* app, bool assertEmpty)
     {
         auto result = _FindSupportedFormats(app,
-            { VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT },
-            VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
-        );
+                                            {VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT},
+                                            VK_IMAGE_TILING_OPTIMAL,
+                                            VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
         if (assertEmpty)
         {
@@ -355,9 +405,12 @@ namespace gfx
     {
         switch (filter)
         {
-        case gfx::GFXSamplerFilter::Nearest: return VkFilter::VK_FILTER_NEAREST;
-        case gfx::GFXSamplerFilter::Linear: return VkFilter::VK_FILTER_LINEAR;
-        case gfx::GFXSamplerFilter::Cubic: return VkFilter::VK_FILTER_CUBIC_IMG;
+        case gfx::GFXSamplerFilter::Nearest:
+            return VkFilter::VK_FILTER_NEAREST;
+        case gfx::GFXSamplerFilter::Linear:
+            return VkFilter::VK_FILTER_LINEAR;
+        case gfx::GFXSamplerFilter::Cubic:
+            return VkFilter::VK_FILTER_CUBIC_IMG;
         default:
             assert(false);
             break;
@@ -368,9 +421,12 @@ namespace gfx
     {
         switch (mode)
         {
-        case gfx::GFXSamplerAddressMode::Repeat: return VkSamplerAddressMode::VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        case gfx::GFXSamplerAddressMode::MirroredRepeat: return VkSamplerAddressMode::VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
-        case gfx::GFXSamplerAddressMode::ClampToEdge: return VkSamplerAddressMode::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        case gfx::GFXSamplerAddressMode::Repeat:
+            return VkSamplerAddressMode::VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        case gfx::GFXSamplerAddressMode::MirroredRepeat:
+            return VkSamplerAddressMode::VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
+        case gfx::GFXSamplerAddressMode::ClampToEdge:
+            return VkSamplerAddressMode::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
         default:
             assert(false);
             break;
@@ -378,11 +434,9 @@ namespace gfx
         return {};
     }
 
-
     static auto _Tex2VkFormatMapping()
     {
-        static auto ptr = new std::unordered_map<GFXTextureFormat, VkFormat>
-        {
+        static auto ptr = new std::unordered_map<GFXTextureFormat, VkFormat>{
             {gfx::GFXTextureFormat::R8, VK_FORMAT_R8_UNORM},
             {gfx::GFXTextureFormat::R8G8B8, VK_FORMAT_R8G8B8_UNORM},
             {gfx::GFXTextureFormat::R8G8B8A8, VK_FORMAT_R8G8B8A8_UNORM},
@@ -398,6 +452,7 @@ namespace gfx
     {
         static struct Init
         {
+
             std::unordered_map<VkFormat, GFXTextureFormat>* ptr;
             Init()
             {
@@ -410,7 +465,6 @@ namespace gfx
         } _Init;
         return _Init.ptr;
     }
-
 
     VkFormat BufferHelper::GetVkFormat(GFXTextureFormat format)
     {
@@ -435,4 +489,4 @@ namespace gfx
         assert(("no texture format conversion function found.", false));
         return {};
     }
-}
+} // namespace gfx

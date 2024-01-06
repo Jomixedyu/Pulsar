@@ -37,12 +37,17 @@ namespace pulsar
 
         Material_ref GetMaterial(int index) const;
         void SetMaterial(int index, Material_ref material);
+        size_t AddMaterial();
+        void RemoveMaterial(size_t index);
+        size_t GetMaterialCount() const { return m_materialsSize; }
 
         void BeginComponent() override;
         void EndComponent() override;
 
         void OnReceiveMessage(MessageId id) override;
 
+        int32_t GetRenderQueuePriority() const { return m_renderQueuePriority; }
+        void SetRenderQueuePriority(int32_t value) { m_renderQueuePriority = value; }
     protected:
         void ResizeMaterials(size_t size);
         void BeginListenMaterialStateChanged(size_t index);
@@ -62,6 +67,9 @@ namespace pulsar
 
         CORELIB_REFL_DECL_FIELD(m_isCastShadow);
         bool m_isCastShadow = true;
+
+        CORELIB_REFL_DECL_FIELD(m_renderQueuePriority);
+        int32_t m_renderQueuePriority{1000};
 
         sptr<StaticMeshRenderObject> m_renderObject;
 

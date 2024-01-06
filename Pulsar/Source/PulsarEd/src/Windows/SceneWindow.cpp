@@ -74,14 +74,14 @@ namespace pulsared
 
         if (ImGui::BeginMenuBar())
         {
-            const char* items[] = { "Shade", "Wire", "Unlit" };
+            const char* items[] = { "Shade" };
 
             ImGui::Text("Draw Mode");
 
             ImGui::SetNextItemWidth(150);
             if (ImGui::BeginCombo("##Draw Mode", items[this->drawmode_select_index]))
             {
-                for (size_t i = 0; i < 3; i++)
+                for (size_t i = 0; i < sizeof(items) / sizeof(const char*); i++)
                 {
                     bool selected = this->drawmode_select_index == i;
                     if (ImGui::Selectable(items[i], selected))
@@ -93,12 +93,12 @@ namespace pulsared
                 ImGui::EndCombo();
             }
 
-            const char* editMode[] = { "SceneEditor", "Modeling" };
+            const char* editMode[] = { "SceneEditor" };
             ImGui::Text("Edit Mode");
             ImGui::SetNextItemWidth(150);
             if (ImGui::BeginCombo("##Edit Mode", editMode[this->m_editModeIndex]))
             {
-                for (size_t i = 0; i < 2; i++)
+                for (size_t i = 0; i < sizeof(editMode) / sizeof(const char*); i++)
                 {
                     bool selected = this->m_editModeIndex == i;
                     if (ImGui::Selectable(editMode[i], selected))
@@ -111,8 +111,56 @@ namespace pulsared
             }
 
             ImGui::Button(ICON_FK_ARROWS " Gizmos###Gizmos");
-            ImGui::Button(ICON_FK_CUBE " 2D###2D");
-            ImGui::Button(ICON_FK_TABLE " Grid###Grid");
+            if (ImGui::Button(ICON_FK_CUBE " 2D###2D"))
+            {
+                auto cam = GetEdApp()->GetEditorWorld()->GetPreviewCamera();
+                auto ctrl = cam->GetAttachedNode()->GetParent()->GetComponent<StdEditCameraControllerComponent>().GetPtr();
+                ctrl->m_enable2DMode = !ctrl->m_enable2DMode;
+
+                auto* storeData = &ctrl->m_saved3d;;
+                if (ctrl->m_enable2DMode)
+                {
+                    storeData = &ctrl->m_saved3d;;
+                }
+                else
+                {
+                    storeData = &ctrl->m_saved2d;
+                }
+                auto ctrlTransform = ctrl->GetTransform();
+                auto camTransform = cam->GetTransform();
+                storeData->ControllerPos = ctrlTransform->GetPosition();
+                storeData->ControllerEuler = ctrlTransform->GetEuler();
+                storeData->CamPos = camTransform->GetPosition();
+                storeData->CamEuler = camTransform->GetEuler();
+                storeData->ProjectionMode = cam->GetProjectionMode();
+
+                auto* loadData = &ctrl->m_saved3d;
+                if (ctrl->m_enable2DMode)
+                {
+                    loadData = &ctrl->m_saved2d;
+                }
+                else
+                {
+                    loadData = &ctrl->m_saved3d;
+                }
+                ctrlTransform->SetPosition(loadData->ControllerPos);
+                ctrlTransform->SetEuler(loadData->ControllerEuler);
+                camTransform->SetPosition(loadData->CamPos);
+                camTransform->SetEuler(loadData->CamEuler);
+                cam->SetProjectionMode(loadData->ProjectionMode);
+
+                m_sceneEditor->m_enabledRotate = !m_sceneEditor->m_enabledRotate;
+
+            }
+            if (ImGui::Button(ICON_FK_TABLE " Grid###Grid"))
+            {
+                static index_string name = "__ReferenceGrid3d"_idxstr;
+                auto node = GetEdApp()->GetEditorWorld()->GetPersistentScene()->FindNodeByName(name);
+                if (node)
+                {
+                    node->SetIsActiveSelf(!node->GetIsActiveSelf());
+                }
+            }
 
             ImGui::EndMenuBar();
         }

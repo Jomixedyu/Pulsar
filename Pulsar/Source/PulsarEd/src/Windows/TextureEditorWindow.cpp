@@ -1,5 +1,6 @@
 #include "Windows/TextureEditorWindow.h"
 
+#include "Pulsar/Components/CameraComponent.h"
 #include "Pulsar/Components/StaticMeshRendererComponent.h"
 #include "Pulsar/Scene.h"
 
@@ -15,23 +16,24 @@ namespace pulsared
 
     void TextureEditorWindow::OnOpen()
     {
+        m_createDirectionalLight = false;
         base::OnOpen();
+
         Texture2D_ref tex = m_assetObject;
         tex->CreateGPUResource();
-        gfx::GFXDescriptorSetLayoutInfo info{
-            gfx::GFXDescriptorSetLayoutInfo(gfx::GFXDescriptorType::CombinedImageSampler, gfx::GFXShaderStageFlags::Fragment, 0)};
-        m_descLayout = Application::GetGfxApp()->CreateDescriptorSetLayout(&info, 1);
 
-        m_imageDesc = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_descLayout);
-        m_imageDesc->AddDescriptor("p", 0)
-            ->SetTextureSampler2D(tex->GetGFXTexture().get());
-        m_imageDesc->Submit();
+        auto texPreviewPP = GetAssetManager()->LoadAsset<Material>("Engine/Materials/ImagePreview");
+        texPreviewPP->SetTexture("_Image"_idxstr, tex);
+        texPreviewPP->SubmitParameters();
+
+        auto camera = m_viewportFrame.GetWorld()->GetPreviewCamera();
+        camera->m_postProcessMaterials->push_back(texPreviewPP);
+
+
     }
     void TextureEditorWindow::OnClose()
     {
         base::OnClose();
-        m_imageDesc.reset();
-        m_descLayout.reset();
     }
 
     void TextureEditorWindow::OnRefreshMenuContexts()
@@ -40,15 +42,44 @@ namespace pulsared
     }
     void TextureEditorWindow::OnDrawAssetPreviewUI(float dt)
     {
-        base::OnDrawAssetPreviewUI(dt);
+
         Texture2D_ref tex = m_assetObject;
 
-        ImGui::Image((void*)m_imageDesc->GetId(), {500,500});
+        //ImGui::Image((void*)m_imageDesc->GetId(), {300,300});
+
+        if (ImGui::Button("Fit"))
+        {
+
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("-"))
+        {
+
+        }
+        ImGui::SameLine();
+
+        ImGui::Text(" %s ", "100%");
+        ImGui::SameLine();
+        if (ImGui::Button("+"))
+        {
+
+        }
+
+        base::OnDrawAssetPreviewUI(dt);
     }
 
     void TextureEditorWindow::OnDrawAssetPropertiesUI(float dt)
     {
         base::OnDrawAssetPropertiesUI(dt);
+
+        if (PImGui::PropertyGroup("Asset Info"))
+        {
+            if (PImGui::BeginPropertyLine())
+            {
+                PImGui::PropertyLineText("Object Handle", m_assetObject.GetHandle().to_string());
+                PImGui::EndPropertyLine();
+            }
+        }
 
     }
 

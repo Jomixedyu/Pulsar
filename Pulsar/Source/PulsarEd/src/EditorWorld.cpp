@@ -12,7 +12,7 @@ namespace pulsared
     }
     void EditorWorld::AddGrid3d()
     {
-        auto grid3d = Node::StaticCreate("Grid3d", nullptr, OF_NoPack);
+        auto grid3d = Node::StaticCreate("__ReferenceGrid3d", nullptr, OF_NoPack);
         grid3d->AddComponent<Grid3DComponent>();
         GetPersistentScene()->AddNode(grid3d);
     }
@@ -37,16 +37,12 @@ namespace pulsared
 
         auto camCtrlNode = Node::StaticCreate("EdCameraController", nullptr, OF_NoPack);
         auto camNode = Node::StaticCreate("EdCamera", camCtrlNode->GetTransform(), OF_NoPack);
-        camNode->GetTransform()->Translate({0,0,-3});
+        camNode->GetTransform()->Translate({0,0,-2});
         this->m_camNode = camNode;
         this->m_camCtrlNode = camCtrlNode;
 
         m_cam = camNode->AddComponent<CameraComponent>();
 
-        auto camRt = RenderTexture::StaticCreate("BackBufferRT"_idxstr, 2, 2, true, true);
-        //GetDeferredDestroyedQueue().push_back(camRt);
-
-        m_cam->SetRenderTarget(camRt, true);
         m_cam->SetProjectionMode(CameraProjectionMode::Perspective);
         m_cam->SetBackgroundColor(Color4f{ 0.3f, 0.3f, 0.3f, 1.0f });
         m_cam->SetFOV(45.f);
@@ -62,8 +58,8 @@ namespace pulsared
     void EditorWorld::OnUnloadingPersistentScene(ObjectPtr<Scene> scene)
     {
         base::OnUnloadingPersistentScene(scene);
-        DestroyObject(m_cam->GetRenderTarget());
-        m_cam->SetRenderTarget(nullptr);
+        DestroyObject(m_cam->GetRenderTexture());
+        m_cam->SetRenderTexture(nullptr);
     }
 
     void EditorWorld::OnSceneLoading(ObjectPtr<Scene> scene)

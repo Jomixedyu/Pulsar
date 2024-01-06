@@ -32,6 +32,7 @@ namespace pulsared
                     lastSep = false;
                 }
 
+
                 if (ImGui::BeginMenu(subMenu->DisplayName.c_str()))
                 {
                     RenderMenu(subMenu.get(), ctxs);
@@ -42,6 +43,8 @@ namespace pulsared
             {
                 ctxs->EntryName = check->Name;
                 bool checked = check->IsChecked;
+
+
                 ImGui::MenuItem(check->DisplayName.c_str(), 0,  &check->IsChecked);
                 if(checked != check->IsChecked)
                 {
@@ -77,6 +80,7 @@ namespace pulsared
                 }
 
                 if (!operate) ImGui::BeginDisabled();
+
 
                 if (ImGui::MenuItem(entry->DisplayName.c_str()))
                 {

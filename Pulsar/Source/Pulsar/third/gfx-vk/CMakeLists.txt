@@ -4,7 +4,7 @@ project ("gfx-vk")
 file(GLOB_RECURSE gfxvk_SRC "include/*.h" "src/*.h" "src/*.cpp")
 
 add_library(${PROJECT_NAME} STATIC OBJECT ${gfxvk_SRC})
-add_compile_definitions(VULKAN_REVERT_VIEWPORT)
+add_compile_definitions(VULKAN_FLIPPING_VIEWPORT)
 target_include_directories(${PROJECT_NAME} PUBLIC "../gfx/include")
 target_include_directories(${PROJECT_NAME} PUBLIC "include")
 target_include_directories(${PROJECT_NAME} PRIVATE "include/gfx-vk")

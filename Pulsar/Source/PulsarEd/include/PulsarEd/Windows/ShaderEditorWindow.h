@@ -19,6 +19,9 @@ namespace pulsared
         void OnRefreshMenuContexts() override;
         void OnDrawAssetPropertiesUI(float dt) override;
 
+        bool m_isShaderReady{};
+
         Material_ref m_previewMaterial;
+
     };
 }

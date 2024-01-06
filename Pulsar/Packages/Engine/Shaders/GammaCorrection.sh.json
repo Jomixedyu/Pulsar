@@ -1,0 +1,9 @@
+{
+  "PassName": "Engine/Shaders/GammaCorrection.sh.json",
+  "CullMode": "None",
+  "DepthTestEnable": true,
+  "DepthWriteEnable": true,
+  "DepthCompareOp": "Less",
+  "StencilTestEnable": false,
+  "RenderingType": "PostProcessing"
+}

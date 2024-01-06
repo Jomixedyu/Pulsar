@@ -15,10 +15,12 @@ namespace pulsared
             auto asset = mksptr(new Texture2D);
             asset->Construct();
 
-            auto fileBytes = FileUtil::ReadAllBytes(file);
-            asset->LoadHostResource(fileBytes.data(), fileBytes.size());
+            std::u8string u8str = (char8_t*)file.c_str();
+            auto fileBytes = FileUtil::ReadAllBytes(u8str);
 
-            asset->SetIsSRGB(false);
+            asset->LoadFromNativeData(fileBytes.data(), fileBytes.size());
+
+            asset->SetIsSRGB(true);
 
             auto assetRef = AssetObject_ref(asset.get());
             auto assetPath = settings->TargetPath + "/" + PathUtil::GetFilenameWithoutExt(file);

@@ -11,13 +11,8 @@ namespace pulsar
     class EngineRenderPipeline : public gfx::GFXRenderPipeline
     {
     public:
-        EngineRenderPipeline(const std::initializer_list<World*>& worlds)
-        {
-            for (auto world : worlds)
-            {
-                AddWorld(world);
-            }
-        }
+        EngineRenderPipeline(const std::initializer_list<World*>& worlds);
+
 
 
         void OnRender(gfx::GFXRenderContext* context, gfx::GFXFrameBufferObject* backbuffer) override;
@@ -43,7 +38,7 @@ namespace pulsar
         virtual void SetOutputScreenSize(Vector2f size) override;
         virtual string GetTitle() override;
         virtual void SetTitle(string_view title) override;
-        virtual string AppRootDir() override;
+        virtual std::filesystem::path AppRootDir() override;
         virtual AssetManager* GetAssetManager() override;
         virtual rendering::Pipeline* GetPipeline() override;
 

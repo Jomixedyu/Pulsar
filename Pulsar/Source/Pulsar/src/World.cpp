@@ -57,7 +57,7 @@ namespace pulsar
             }
         }
     }
-    CameraComponent_ref World::GetPreviewCamera()
+    ObjectPtr<CameraComponent> World::GetPreviewCamera()
     {
         return GetCameraManager().GetMainCamera();
     }
@@ -140,13 +140,20 @@ namespace pulsar
         buffer.DeltaTime = m_ticker.deltatime;
         buffer.TotalTime = m_totalTime;
 
-        const auto& sceneEnv = m_focusScene->GetRuntimeEnvironment();
-        if (const auto dirLight = sceneEnv.DirectionalLight)
+        auto& sceneEnv = m_focusScene->GetRuntimeEnvironment();
+
+        if (const auto dirLight = sceneEnv.GetDirectionalLight())
         {
             buffer.WorldSpaceLightVector = dirLight->Vector;
             auto c = dirLight->Color;
             buffer.WorldSpaceLightColor = {c.r, c.g, c.b, c.a};
             buffer.WorldSpaceLightColor.w = dirLight->Intensity;
+        }
+
+        {
+            auto skyLight = sceneEnv.GetSkyLight();
+            buffer.SkyLightColor = {skyLight.Color.r, skyLight.Color.g, skyLight.Color.b, 1};
+            buffer.SkyLightColor.w = skyLight.Intensity;
         }
 
         m_worldDescriptorBuffer->Fill(&buffer);

@@ -97,6 +97,7 @@ namespace pulsar
     void TransformComponent::RotateQuat(Quat4f quat)
     {
         m_rotation *= quat;
+        m_euler = m_rotation.GetEuler(jmath::EulerOrder::YXZ);
         // m_rotation *= jmath::Inverse(quat) * quat * m_rotation;
         MakeTransformChanged();
     }
@@ -109,15 +110,13 @@ namespace pulsar
     {
         Matrix4f mat = GetLocalToWorldMatrix();
         mat[3] = Vector4f{0, 0, 0, 1};
-        return mat * Vector3f{0, 0, 1};
+        return (mat * Vector3f{0, 0, 1}).GetNormalized();
     }
     Vector3f TransformComponent::GetUp()
     {
         Matrix4f mat = GetLocalToWorldMatrix();
         mat[3] = Vector4f{0, 0, 0, 1};
-        auto up = mat * Vector3f{0, 1, 0};
-        up.Normalized();
-        return up;
+        return (mat * Vector3f{0, 1, 0}).GetNormalized();
     }
     Vector3f TransformComponent::GetRight()
     {

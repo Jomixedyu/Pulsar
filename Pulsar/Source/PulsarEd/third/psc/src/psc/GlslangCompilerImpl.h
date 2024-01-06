@@ -196,9 +196,16 @@ namespace psc
 
             if (!shader.preprocess(&resources, DefaultVersion, ENoProfile, false, false, messages, &PreprocessedGLSL, includer))
             {
-                std::cout << shader.getInfoLog() << std::endl;
-                std::cout << shader.getInfoDebugLog() << std::endl;
-                throw std::runtime_error("Preprocessing Failed");
+                std::string errorInfo = "Preprocessing Failed: ";
+                errorInfo.append(shader.getInfoLog());
+                errorInfo.append(shader.getInfoDebugLog());
+                errorInfo.append("; ");
+                if (extraDebugPath)
+                {
+                    errorInfo += "path: ";
+                    errorInfo += extraDebugPath;
+                }
+                throw std::runtime_error(errorInfo);
             }
 
             const char* PreprocessedCStr = PreprocessedGLSL.c_str();

@@ -8,6 +8,7 @@
 namespace pulsar
 {
     class Node;
+    class TransformComponent;
     class World;
     class Scene;
 
@@ -31,6 +32,7 @@ namespace pulsar
         ObjectPtr<Node> GetOwnerNode() const;
         World* GetWorld() const;
         ObjectPtr<Scene> GetRuntimeScene() const;
+        ObjectPtr<TransformComponent> GetTransform() const;
         virtual bool get_is_tickable() const { return true; }
         virtual void OnReceiveMessage(MessageId id);
     public:

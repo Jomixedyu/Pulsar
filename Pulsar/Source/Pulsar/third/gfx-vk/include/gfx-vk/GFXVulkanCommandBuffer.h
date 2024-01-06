@@ -15,7 +15,7 @@ namespace gfx
     {
 
     public:
-        GFXVulkanCommandBuffer(GFXVulkanApplication* app);
+        explicit GFXVulkanCommandBuffer(GFXVulkanApplication* app);
         GFXVulkanCommandBuffer(GFXVulkanCommandBuffer&& r) noexcept;
 
         virtual ~GFXVulkanCommandBuffer() override;
@@ -37,6 +37,8 @@ namespace gfx
         virtual void CmdEndFrameBuffer() override;
         virtual void CmdSetViewport(float x, float y, float width, float height) override;
 
+        virtual void CmdBlit(GFXTexture* src, GFXTexture* dest) override;
+        virtual void CmdImageTransitionBarrier(GFXRenderTarget* rt, GFXResourceLayout layout) override;
     public:
         virtual GFXApplication* GetApplication() const override;
         const VkCommandBuffer& GetVkCommandBuffer() const { return m_cmdBuffer; }

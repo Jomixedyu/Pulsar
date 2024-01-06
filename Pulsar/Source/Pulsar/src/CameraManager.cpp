@@ -2,7 +2,7 @@
 
 namespace pulsar
 {
-    void CameraManager::AddCamera(CameraComponent_ref camera, bool isMainCamera)
+    void CameraManager::AddCamera(ObjectPtr<CameraComponent> camera, bool isMainCamera)
     {
         m_cameras.push_back(camera);
         if (isMainCamera || m_cameras.size() == 1)
@@ -11,7 +11,7 @@ namespace pulsar
         }
     }
 
-    void CameraManager::RemoveCamera(CameraComponent_ref camera)
+    void CameraManager::RemoveCamera(ObjectPtr<CameraComponent> camera)
     {
         auto it = std::find(m_cameras.begin(), m_cameras.end(), camera);
         if (it != m_cameras.end())

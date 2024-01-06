@@ -47,7 +47,7 @@ namespace pulsared
         virtual void SetOutputScreenSize(Vector2f size) override;
         virtual string GetTitle() override;
         virtual void SetTitle(string_view title) override;
-        virtual string AppRootDir() override;
+        virtual std::filesystem::path AppRootDir() override;
         virtual void OnPreInitialize(gfx::GFXGlobalConfig* config) override;
         virtual void OnInitialized() override;
         virtual void OnTerminate() override;

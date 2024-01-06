@@ -38,32 +38,53 @@ namespace pulsar
     }
     Shader::Shader()
     {
-        m_passNames = mksptr(new List<String_sp>);
-        m_preDefines = mksptr(new List<String_sp>);
+        new_init_sptr(m_passName);
+        new_init_sptr(m_preDefines);
+        new_init_sptr(m_shaderConfig);
     }
     void Shader::Serialize(AssetSerializer* s)
     {
         base::Serialize(s);
         if (!s->IsWrite) // read
         {
-            m_passNames->clear();
             m_preDefines->clear();
 
             auto passes = s->Object->At("Passes");
-            for (size_t i = 0; i < passes->GetCount(); i++)
+            *m_passName = passes->AsString();
+
+            m_shaderConfig = ser::JsonSerializer::Deserialize<ShaderPassConfig>(s->Object->At("Config")->ToString());
+
+            m_renderingType = (ShaderPassRenderingType)s->Object->At("RenderingType")->AsInt();
+
+            if (s->HasEditorData)
             {
-                m_passNames->push_back(mkbox(passes->At(i)->AsString()));
+                if (s->Object->ContainsKey("Available"))
+                {
+                    m_isAvailable = s->Object->At("Available")->AsBool();
+                }
             }
         }
         else
         {
-            auto passNameArray = s->Object->New(ser::VarientType::Array);
-            for (auto& passName : *m_passNames)
+            auto passNameString = s->Object->New(ser::VarientType::String);
+            passNameString->Assign(*m_passName);
+
+            s->Object->Add("Passes", passNameString);
+
+            auto config = s->Object->New(ser::VarientType::Object);
+            config->AssignParse(ser::JsonSerializer::Serialize(m_shaderConfig.get(), {}));
+            s->Object->Add("Config", config);
+
+            s->Object->Add("RenderingType", (int)m_renderingType);
+
+            if (s->HasEditorData)
             {
-                passNameArray->Push(*passName);
+                auto available = s->Object->New(ser::VarientType::Bool);
+                available->Assign(m_isAvailable);
+                s->Object->Add("Available", available);
             }
-            s->Object->Add("Passes", passNameArray);
         }
+
         if (s->ExistStream)
         {
             ReadWriteStream(s->Stream, s->IsWrite, m_shaderSource);
@@ -80,6 +101,11 @@ namespace pulsar
     {
         m_shaderSource = serData;
     }
+    ShaderPassConfig* Shader::GetConfig() const
+    {
+        return m_shaderConfig.get();
+    }
+
     array_list<gfx::GFXApi> Shader::GetSupportedApi() const
     {
         array_list<gfx::GFXApi> ret;
@@ -88,18 +114,22 @@ namespace pulsar
             ret.push_back(k);
         }
         return ret;
-
+    }
+    bool Shader::HasSupportedApiData(gfx::GFXApi api) const
+    {
+        for (auto& [k, v] : m_shaderSource.ApiMaps)
+        {
+            if (k == api)
+                return true;
+        }
+        return false;
     }
 
-    static std::iostream& ReadWriteStream(std::iostream& stream, bool write, ShaderSourceData::Pass& data)
+
+    static std::iostream& ReadWriteStream(std::iostream& stream, bool write, ShaderSourceData::ApiPlatform& data)
     {
         sser::ReadWriteStream(stream, write, data.Config);
         sser::ReadWriteStream(stream, write, data.Sources);
-        return stream;
-    }
-    static std::iostream& ReadWriteStream(std::iostream& stream, bool write, ShaderSourceData::ApiPlatform& data)
-    {
-        sser::ReadWriteStream(stream, write, data.Passes);
         return stream;
     }
     std::iostream& ReadWriteStream(std::iostream& stream, bool write, ShaderSourceData& data)
@@ -108,10 +138,6 @@ namespace pulsar
         using namespace ser;
 
         sser::ReadWriteStream(stream, write, data.ApiMaps);
-
-        //sser::ReadWriteStream(stream, write, data.Config);
-        //sser::ReadWriteStream(stream, write, data.Sources);
-
         return stream;
     }
 

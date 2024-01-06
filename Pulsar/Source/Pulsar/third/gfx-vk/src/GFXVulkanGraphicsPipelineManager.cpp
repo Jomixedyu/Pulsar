@@ -34,7 +34,7 @@ namespace gfx
         {
             return v->second;
         }
-        auto pipeline = new GFXVulkanGraphicsPipeline(m_app, shaderPass, descriptorSetLayouts, *renderPass.get(), gpInfo);
+        auto pipeline = new GFXVulkanGraphicsPipeline(m_app, shaderPass, descriptorSetLayouts, *renderPass, gpInfo);
         auto gpipeline = gfxmksptr(pipeline);
 
         m_caches.insert({ hash, gpipeline });

@@ -48,7 +48,7 @@ namespace pulsar
 
         void OnChangedTransform() override
         {
-            m_meshConstantBuffer->Fill(&m_localToWorld);
+            m_meshConstantBuffer->Fill(&m_perModelData);
         }
 
         array_list<rendering::MeshBatch> GetMeshBatchs() override
@@ -146,7 +146,7 @@ namespace pulsar
         base::PostEditChange(info);
         if (info->GetName() == NAMEOF(m_staticMesh))
         {
-            OnMeshChanged();
+            SetStaticMesh(m_staticMesh);
         }
         else if (info->GetName() == NAMEOF(m_materials))
         {
@@ -187,9 +187,18 @@ namespace pulsar
         m_materials->at(index) = material;
         if (m_beginning && material)
         {
-            BeginListenMaterialStateChanged(material);
+            BeginListenMaterialStateChanged(index);
         }
         OnMaterialChanged();
+    }
+    size_t StaticMeshRendererComponent::AddMaterial()
+    {
+        ResizeMaterials(m_materials->size() + 1);
+        return m_materialsSize - 1;
+    }
+    void StaticMeshRendererComponent::RemoveMaterial(size_t index)
+    {
+        //todo
     }
 
     void StaticMeshRendererComponent::BeginComponent()
@@ -215,14 +224,24 @@ namespace pulsar
     }
     void StaticMeshRendererComponent::BeginListenMaterialStateChanged(size_t index)
     {
-        auto handle = m_materials->at(index)->OnShaderChanged.AddListener(this, &ThisClass::OnMaterialStateChanged);
-        m_materialStateChangedCallbacks[index] = handle;
+        if (auto mat = m_materials->at(index))
+        {
+            auto handle = mat->OnShaderChanged.AddListener(this, &ThisClass::OnMaterialStateChanged);
+            m_materialStateChangedCallbacks[index] = handle;
+        }
+        else
+        {
+            m_materialStateChangedCallbacks[index] = 0;
+        }
     }
     void StaticMeshRendererComponent::EndListenMaterialStateChanged(size_t index)
     {
         auto handle = m_materialStateChangedCallbacks[index];
         m_materialStateChangedCallbacks[index] = 0;
-        m_materials->at(index)->OnShaderChanged.RemoveListenerByIndex(handle);
+        if(auto mat = m_materials->at(index))
+        {
+            mat->OnShaderChanged.RemoveListenerByIndex(handle);
+        }
     }
     void StaticMeshRendererComponent::OnMaterialStateChanged()
     {
@@ -266,6 +285,7 @@ namespace pulsar
             if (m_staticMesh->GetMaterialCount() > m_materials->size())
             {
                 ResizeMaterials(m_staticMesh->GetMaterialCount());
+                OnMaterialChanged();
             }
         }
 

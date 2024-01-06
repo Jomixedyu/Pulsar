@@ -1,3 +1,5 @@
+#include "Pulsar/Components/CameraComponent.h"
+
 #include <Pulsar/ImGuiImpl.h>
 #include <Pulsar/Node.h>
 #include <Pulsar/World.h>
@@ -48,17 +50,7 @@ namespace pulsared
             isResize = true;
             *viewportSize = contentSize;
 
-            // change new rt
-            const auto newRt = RenderTexture::StaticCreate("BackBufferRT"_idxstr, (int)viewportSize->x, (int)viewportSize->y, true, true);
-            if (const auto oldRt = cam->GetRenderTarget())
-            {
-                const auto oldClearColor = cam->GetRenderTarget()->GetGfxRenderTarget0()->ClearColor;
-                DestroyObject(oldRt);
-
-                newRt->GetGfxRenderTarget0()->ClearColor = oldClearColor;
-            }
-
-            cam->SetRenderTarget(newRt);
+            cam->ResizeManagedRenderTexture((int)viewportSize->x, (int)viewportSize->y);
         }
 
         const auto descSet = descriptorSet;
@@ -68,7 +60,7 @@ namespace pulsared
             {
                 desc = descSet->AddDescriptor("p", 0);
             }
-            desc->SetTextureSampler2D(cam->GetRenderTarget()->GetGfxRenderTarget0().get());
+            desc->SetTextureSampler2D(cam->GetRenderTexture()->GetGfxRenderTarget0().get());
         }
 
         descSet->Submit();
@@ -122,7 +114,7 @@ namespace pulsared
 
         if (m_altPressed)
         {
-            if (m_leftMousePressed)
+            if (m_leftMousePressed && m_enabledRotate)
             {
                 auto trans = m_world->GetPreviewCamera()->GetAttachedNode()->GetTransform()->GetParent();
                 auto euler = trans->GetEuler();
@@ -136,15 +128,27 @@ namespace pulsared
             }
             else if (m_rightMousePressed)
             {
-                auto tr = m_world->GetPreviewCamera()->GetAttachedNode()->GetTransform();
+                auto cam = m_world->GetPreviewCamera();
+                auto tr = cam->GetAttachedNode()->GetTransform();
                 auto dtDistance = (newpos.x - m_latestMousePos.x) * m_scaleSpeed;
-                if (tr->GetPosition().z + dtDistance > -0.2f)
+                if (cam->GetProjectionMode() == CameraProjectionMode::Perspective)
                 {
-                    // nothing
+                    if (tr->GetPosition().z + dtDistance > -0.2f)
+                    {
+                        // nothing
+                    }
+                    else
+                    {
+                        tr->Translate({0.f, 0, dtDistance});
+                    }
                 }
                 else
                 {
-                    tr->Translate({0.f, 0, dtDistance});
+                    const auto targetValue = cam->GetOrthoSize() - dtDistance;
+                    if(targetValue > 0)
+                    {
+                        cam->SetOrthoSize(targetValue);
+                    }
                 }
             }
             else if (m_middleMousePressed)

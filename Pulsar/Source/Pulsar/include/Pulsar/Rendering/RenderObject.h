@@ -1,8 +1,10 @@
 #pragma once
+#include "PrimitiveStruct.h"
+
+#include <Pulsar/Assets/Material.h>
+#include <Pulsar/EngineMath.h>
 #include <gfx/GFXApplication.h>
 #include <gfx/GFXBuffer.h>
-#include <Pulsar/EngineMath.h>
-#include <Pulsar/Assets/Material.h>
 
 namespace pulsar::rendering
 {
@@ -47,13 +49,7 @@ namespace pulsar::rendering
     {
     public:
         virtual ~RenderObject() = default;
-        void SetTransform(const Matrix4f& localToWorld)
-        {
-            m_localToWorld = localToWorld;
-            m_isLocalToWorldDeterminantNegative = localToWorld.Determinant() < 0;
-
-            OnChangedTransform();
-        }
+        void SetTransform(const Matrix4f& localToWorld);
         virtual void OnChangedTransform() {}
         void UpdateConstantBuffer()
         {
@@ -72,7 +68,7 @@ namespace pulsar::rendering
 
     protected:
         bool      m_active = false;
-        Matrix4f  m_localToWorld{1};
+        CBuffer_ModelObject  m_perModelData{};;
         bool      m_isLocalToWorldDeterminantNegative{};
         int       m_lineWidth{1};
     };

@@ -34,6 +34,7 @@ namespace jxcorlib
         std::vector<uint8_t> ReadAllBytes(std::filesystem::path path)
         {
             std::vector<unsigned char> data;
+            auto a = path.u8string();
             std::ifstream file(path, std::ios::binary);
             if (!file.is_open())
             {
@@ -63,19 +64,19 @@ namespace jxcorlib
             }
             if (last < 0)
             {
-                return std::string{ path };
+                return std::string{path};
             }
-            return std::string{ path.substr(static_cast<size_t>(last) + 1, path.find_last_of('.') - last - 1) };
+            return std::string{path.substr(static_cast<size_t>(last) + 1, path.find_last_of('.') - last - 1)};
         }
         std::string GetFilename(std::string_view path)
         {
             auto u8str = std::filesystem::path(path).filename().generic_u8string();
 
-            std::string ret( u8str.size(), '\0' );
+            std::string ret(u8str.size(), '\0');
 
             memset(ret.data(), 0, u8str.size() + 1);
             memcpy(const_cast<char*>(ret.c_str()), u8str.c_str(), u8str.size());
-            
+
             return ret;
         }
         std::string GetFilenameExt(std::string_view path)
@@ -85,7 +86,7 @@ namespace jxcorlib
                 char c = path[i];
                 if (c == '.')
                 {
-                    return std::string{ path.substr(i) };
+                    return std::string{path.substr(i)};
                 }
                 else if (path[i] == '/' || path[i] == '\\')
                 {
@@ -101,7 +102,7 @@ namespace jxcorlib
                 char c = path[i];
                 if (path[i] == '/' || path[i] == '\\')
                 {
-                    return std::string{ path.substr(0, i) };
+                    return std::string{path.substr(0, i)};
                 }
             }
             return std::string{};
@@ -140,12 +141,15 @@ namespace jxcorlib
         }
         bool AInB(std::string_view a, std::string_view b)
         {
-            if (b.empty() && !a.empty()) return true;
-            if (a == b || a.length() <= b.length()) return false;
+            if (b.empty() && !a.empty())
+                return true;
+            if (a == b || a.length() <= b.length())
+                return false;
 
             for (size_t i = 0; i < b.length(); i++)
             {
-                if (a[i] != b[i]) return false;
+                if (a[i] != b[i])
+                    return false;
             }
             return a[b.length()] == '/' || a[b.length()] == '\\';
         }
@@ -153,7 +157,7 @@ namespace jxcorlib
         std::vector<std::string> Dir(std::string_view path, const std::vector<std::string>& target)
         {
             std::vector<std::string> ret;
-            std::string pathstart = path.length() == 0 ? "" : std::string{ path } + '/';
+            std::string pathstart = path.length() == 0 ? "" : std::string{path} + '/';
             for (auto& item : target)
             {
                 if (item.length() > path.length() && item.starts_with(pathstart))
@@ -170,7 +174,8 @@ namespace jxcorlib
 
         std::string GetRoot(std::string_view path)
         {
-            if (path.empty()) return "";
+            if (path.empty())
+                return "";
             int index = -1;
             for (int i = 0; i < path.length(); i++)
             {
@@ -180,7 +185,8 @@ namespace jxcorlib
                     break;
                 }
             }
-            if (index == -1) return std::string{ path };
+            if (index == -1)
+                return std::string{path};
             return {};
         }
 
@@ -192,6 +198,11 @@ namespace jxcorlib
                     i = '/';
             }
         }
+    } // namespace PathUtil
+
+    fs::path u8path(std::string_view u8str)
+    {
+        return std::u8string((char8_t*)u8str.data());
     }
 }
 

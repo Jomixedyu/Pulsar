@@ -105,7 +105,7 @@ namespace pulsared
             _ProcessMesh(&sections[i], mesh, scene);
             auto sectionMat = scene->mMaterials[mesh->mMaterialIndex];
 
-            materials.push_back(Material::StaticCreate(sectionMat->GetName().C_Str(), nullptr));
+            materials.push_back(Material::StaticCreate(sectionMat->GetName().C_Str()));
 
             sections[i].MaterialIndex = materials.size() - 1;
         }

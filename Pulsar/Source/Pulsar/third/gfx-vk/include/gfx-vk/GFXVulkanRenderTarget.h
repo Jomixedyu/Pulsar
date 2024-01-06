@@ -37,7 +37,8 @@ namespace gfx
 
     public:
         virtual GFXRenderTargetType GetRenderTargetType() const override { return m_type; }
-        VkImageLayout GetVkImageFinalLayout() const { return m_imageLayout; }
+        VkImageLayout GetVkImageLayout() const { return m_imageLayout; }
+        VkImageLayout GetVkImageFinalLayout() const { return m_imageFinalLayout; }
         VkImageView GetVkImageView() const { return m_textureImageView; }
         VkImage GetVkImage() const { return m_textureImage; }
         VkSampler GetVkSampler() const { return m_textureSampler; }
@@ -45,6 +46,8 @@ namespace gfx
         VkImageAspectFlags GetAspectFlags() const { return m_aspectFlags; }
         virtual int32_t GetWidth() const override { return m_width; }
         virtual int32_t GetHeight() const override { return m_height; }
+
+        void CmdLayoutTransition(VkCommandBuffer cmd, VkImageLayout newLayout);
     protected:
         
         GFXRenderTargetType m_type;
@@ -57,11 +60,14 @@ namespace gfx
 
         GFXVulkanApplication* m_app;
         VkImage m_textureImage;
-        VkImageLayout m_imageLayout;
+
         VkDeviceMemory m_textureImageMemory;
         VkImageView m_textureImageView;
         VkSampler m_textureSampler{};
         VkFormat m_imageFormat;
         VkImageAspectFlags m_aspectFlags;
+    public:
+        VkImageLayout m_imageLayout{};
+        VkImageLayout m_imageFinalLayout{};
     };
 }

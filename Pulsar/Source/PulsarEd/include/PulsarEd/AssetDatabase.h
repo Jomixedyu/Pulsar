@@ -86,10 +86,13 @@ namespace pulsared
         static void NewAsset(string_view folderPath, string_view assetName, Type* assetType);
         static bool CreateAsset(AssetObject_ref asset, string_view path);
         static bool DeleteAsset(string_view assetPath);
+        static array_list<string> FindAssets(Type* type);
+
 
         static void MarkDirty(AssetObject_ref asset);
         static bool IsDirty(AssetObject_ref asset);
         static void ResolveDirty(AssetObject_ref asset);
+
 
         static inline const char* FileTreeRootPath = "Packages";
 

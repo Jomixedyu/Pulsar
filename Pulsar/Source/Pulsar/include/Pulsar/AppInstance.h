@@ -25,8 +25,10 @@ namespace pulsar
         virtual void SetOutputScreenSize(Vector2f size) = 0;
         virtual string GetTitle() = 0;
         virtual void SetTitle(string_view title) = 0;
-        virtual string AppRootDir() = 0;
+        virtual std::filesystem::path AppRootDir() = 0;
         virtual rendering::Pipeline* GetPipeline() = 0;
+
+        virtual array_list<gfx::GFXApi> GetSupportedApis();
 
         jxcorlib::Action<> QuittingEvents;
         jxcorlib::Function<bool> RequestQuitEvents;

@@ -4,8 +4,12 @@
 #include "EditorSelection.h"
 #include "Importers/FBXImporter.h"
 #include "Pulsar/Components/DirectionalLightComponent.h"
+#include "Pulsar/Components/PointLightComponent.h"
+#include "Pulsar/Components/SkyLightComponent.h"
 #include "Pulsar/Components/StaticMeshRendererComponent.h"
+#include "Shaders/EditorShader.h"
 #include "Tools/ObjectDebugTool.h"
+#include "Tools/ShaderDebugTool.h"
 #include "Tools/WorldDebugTool.h"
 
 #include <CoreLib.Serialization/JsonSerializer.h>
@@ -40,6 +44,7 @@
 #include <PulsarEd/Windows/SceneWindow.h>
 #include <PulsarEd/Windows/WorkspaceWindow.h>
 #include <Pulsar/Assets/Texture2D.h>
+#include <Pulsar/BuiltinAsset.h>
 namespace pulsared
 {
 
@@ -86,9 +91,9 @@ namespace pulsared
     {
     }
 
-    string EditorAppInstance::AppRootDir()
+    std::filesystem::path EditorAppInstance::AppRootDir()
     {
-        return StringUtil::StringCast(std::filesystem::current_path().generic_u8string());
+        return std::filesystem::current_path();
     }
 
     static void InitBasicMenu()
@@ -114,12 +119,75 @@ namespace pulsared
             MenuEntrySubMenu_sp menu = mksptr(new MenuEntrySubMenu("Node"));
             menu->Priority = 200;
             mainMenu->AddEntry(menu);
-
             {
-                auto entry = mksptr(new MenuEntryButton("CreateNode"));
+                auto entry = mksptr(new MenuEntryButton("Create Node"));
                 menu->AddEntry(entry);
                 entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
                     World::Current()->GetPersistentScene()->NewNode("New Node");
+                });
+            }
+
+            auto shapeMenu =  mksptr(new MenuEntrySubMenu("Shapes"));
+            menu->AddEntry(shapeMenu);
+            {
+                auto entry = mksptr(new MenuEntryButton("Create Sphere"));
+                shapeMenu->AddEntry(entry);
+                entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
+                    auto renderer = World::Current()->GetPersistentScene()->NewNode("New Sphere")
+                        ->AddComponent<StaticMeshRendererComponent>();
+                    renderer->SetStaticMesh(GetAssetManager()->LoadAsset<StaticMesh>(BuiltinAsset::Shapes_Sphere));
+                    renderer->SetMaterial(0, GetAssetManager()->LoadAsset<Material>(BuiltinAsset::Material_Lambert));
+
+                });
+            }
+            {
+                auto entry = mksptr(new MenuEntryButton("Create Cube"));
+                shapeMenu->AddEntry(entry);
+                entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
+                    auto renderer = World::Current()->GetPersistentScene()->NewNode("New Cube")
+                        ->AddComponent<StaticMeshRendererComponent>();
+                    renderer->AddMaterial();
+                    renderer->SetMaterial(0, GetAssetManager()->LoadAsset<Material>(BuiltinAsset::Material_Lambert));
+                    renderer->SetStaticMesh(GetAssetManager()->LoadAsset<StaticMesh>(BuiltinAsset::Shapes_Cube));
+
+                });
+            }
+            {
+                auto entry = mksptr(new MenuEntryButton("Create Plane"));
+                shapeMenu->AddEntry(entry);
+                entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
+                    auto renderer = World::Current()->GetPersistentScene()->NewNode("New Plane")
+                        ->AddComponent<StaticMeshRendererComponent>();
+                    renderer->SetStaticMesh(GetAssetManager()->LoadAsset<StaticMesh>(BuiltinAsset::Shapes_Plane));
+                    renderer->SetMaterial(0, GetAssetManager()->LoadAsset<Material>(BuiltinAsset::Material_Lambert));
+
+                });
+            }
+
+            auto light3dMenu = mksptr(new MenuEntrySubMenu("Light3d"));
+            menu->AddEntry(light3dMenu);
+            {
+                auto entry = mksptr(new MenuEntryButton("Create Sky Light"));
+                light3dMenu->AddEntry(entry);
+                entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
+                    World::Current()->GetPersistentScene()->NewNode("New Sky Light")
+                        ->AddComponent<SkyLightComponent>();
+                });
+            }
+            {
+                auto entry = mksptr(new MenuEntryButton("Create Directional Light"));
+                light3dMenu->AddEntry(entry);
+                entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
+                    World::Current()->GetPersistentScene()->NewNode("New Directional Light")
+                        ->AddComponent<DirectionalLightComponent>();
+                });
+            }
+            {
+                auto entry = mksptr(new MenuEntryButton("Create Point Light"));
+                light3dMenu->AddEntry(entry);
+                entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
+                    World::Current()->GetPersistentScene()->NewNode("New Point Light")
+                        ->AddComponent<PointLightComponent>();
                 });
             }
         }
@@ -171,6 +239,13 @@ namespace pulsared
                 });
                 menu->AddEntry(entry);
             }
+            {
+                auto entry = mksptr(new MenuEntryButton("ShaderDebugTool"));
+                entry->Action = MenuAction::FromRaw([](sptr<MenuContexts> ctx) {
+                    ToolWindow::OpenToolWindow<ShaderDebugTool>();
+                });
+                menu->AddEntry(entry);
+            }
         }
         {
             MenuEntrySubMenu_sp menu = mksptr(new MenuEntrySubMenu("Build"));
@@ -210,10 +285,10 @@ namespace pulsared
         using namespace std::filesystem;
         EditorLogRecorder::Initialize();
 
-        auto uicfg = PathUtil::Combine(AppRootDir(), "uiconfig.json");
+        auto uicfg = AppRootDir() / "uiconfig.json";
 
         // load config
-        if (exists(path{uicfg}))
+        if (exists(uicfg))
         {
             auto json = FileUtil::ReadAllText(uicfg);
             auto cfg = ser::JsonSerializer::Deserialize<EditorUIConfig>(json);
@@ -232,7 +307,7 @@ namespace pulsared
         config->EnableValid = true;
 
         StringUtil::strcpy(config->ProgramName, "Pulsar");
-        StringUtil::strcpy(config->Title, "Pulsar Editor v0.1 - Vulkan1.2");
+        StringUtil::strcpy(config->Title, "Pulsar Editor v0.2 - Vulkan1.3");
 
         Logger::Log("pre intialized");
     }
@@ -241,25 +316,11 @@ namespace pulsared
     {
         auto vertexColorMat = GetAssetManager()->LoadAsset<Material>("Engine/Materials/VertexColor", true);
         {
-            // auto meshNode = Node::StaticCreate("mesh test");
-            // auto meshComponent = meshNode->AddComponent<StaticMeshRendererComponent>();
-            //
-            // auto staticMesh = GetAssetManager()->LoadAsset<StaticMesh>("Engine/Shapes/Body");
-            // meshComponent->SetStaticMesh(staticMesh);
-            //
-            // auto missingMat = GetAssetManager()->LoadAsset<Material>("Engine/Materials/Missing");
-            // meshComponent->SetMaterial(0, missingMat);
-            // meshComponent->SetMaterial(1, missingMat);
-            // meshComponent->SetMaterial(2, missingMat);
-            // meshComponent->SetMaterial(3, missingMat);
-            // World::Current()->GetPersistentScene()->AddNode(meshNode);
-        }
-
-        {
-            auto dlight = Node::StaticCreate("Light");
+            auto dlight = Node::StaticCreate("Directional Light");
             dlight->AddComponent<DirectionalLightComponent>();
 
             World::Current()->GetPersistentScene()->AddNode(dlight);
+            dlight->GetTransform()->TranslateRotateEuler({-3,3,-3}, {45,45,0});
         }
     }
 
@@ -298,6 +359,13 @@ namespace pulsared
         // add package
         AssetDatabase::AddPackage("Engine");
         AssetDatabase::AddPackage("Editor");
+
+        // recompile obsolete shaders
+        // for (auto element : AssetDatabase::FindAssets(cltypeof<Shader>()))
+        // {
+        //     auto asset = AssetDatabase::LoadAssetAtPath(element);
+        //     ShaderCompiler::CompileShader(asset, {gfx::GFXApi::Vulkan}, {}, {});
+        // }
 
         // world
         Logger::Log("initialize world");
@@ -378,7 +446,7 @@ namespace pulsared
 
         using namespace std::filesystem;
 
-        auto uicfg_path = PathUtil::Combine(AppRootDir(), "uiconfig.json");
+        auto uicfg_path = AppRootDir() / "uiconfig.json";
         auto cfg = mksptr(new EditorUIConfig);
 
         cfg->WindowSize = GetAppSize();
