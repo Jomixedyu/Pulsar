@@ -1,5 +1,6 @@
 # Pulsar Engine
 
+![](doc/shed.png)
 ![](doc/ui.png)
 ![](doc/ui2.png)
 
