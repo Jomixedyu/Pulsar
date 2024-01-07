@@ -20,13 +20,13 @@
             {
                 "Name": "_Flags",
                 "Type": 0,
-                "Value": "ALL_FLAGS"
+                "Value": "-1"
             }
         ],
-        "CullMode": 0,
+        "CullMode": 2,
         "DepthCompareOp": 1,
-        "DepthTestEnable": true,
-        "DepthWriteEnable": true,
+        "DepthTestEnable": false,
+        "DepthWriteEnable": false,
         "Properties": [
             {
                 "Name": "_Image",

@@ -505,12 +505,10 @@ namespace gfx
 
     GFXShaderPass_sp GFXVulkanApplication::CreateShaderPass(
         const GFXShaderPassConfig& config,
-        const GFXGpuProgram_sp& gpuProgram,
-        //const array_list<GFXDescriptorSetLayout_sp>& descSetLayout,
-        const array_list<GFXVertexLayoutDescription_sp>& vertexLayout)
+        const GFXGpuProgram_sp& gpuProgram)
     {
         auto pass = new GFXVulkanShaderPass(this, config,
-            std::static_pointer_cast<GFXVulkanGpuProgram>(gpuProgram), vertexLayout);
+            std::static_pointer_cast<GFXVulkanGpuProgram>(gpuProgram));
         return gfxmksptr(pass);
     }
 

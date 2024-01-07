@@ -9,6 +9,7 @@ namespace gfx
         GFXPrimitiveTopology Topology{};
         float LineWidth{1.0};
         bool IsReverseCulling{false};
+        array_list<GFXVertexLayoutDescription_sp> VertexLayouts;
 
         size_t GetHashCode() const
         {

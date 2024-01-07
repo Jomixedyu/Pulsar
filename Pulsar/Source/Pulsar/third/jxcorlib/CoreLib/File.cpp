@@ -47,6 +47,12 @@ namespace jxcorlib
             file.close();
             return data;
         }
+        void WriteAllBytes(std::filesystem::path path, char* data, size_t len)
+        {
+            ofstream outfile(path, ios::ate | ios::out | ios::binary);
+            outfile.write((char*)data, len);
+            outfile.close();
+        }
     }
 
 

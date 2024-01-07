@@ -5,12 +5,8 @@
 Texture2D PP_InColor    : register(t0, space2);
 Texture2D PP_InDepth    : register(t1, space2);
 
-SamplerState DefaultSampler
-{
-    Filter = MIN_MAG_MIP_LINEAR;
-    AddressU = Wrap;
-    AddressV = Wrap;
-};
+SamplerState ColorSampler : register(s0, space2);
+SamplerState InDepthSampler : register(s1, space2);
 
 struct PPVSOutput
 {

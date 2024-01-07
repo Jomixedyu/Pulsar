@@ -70,13 +70,17 @@ namespace gfx
         auto _src = static_cast<GFXVulkanRenderTarget*>(src);
         auto _dest = static_cast<GFXVulkanRenderTarget*>(dest);
 
+        _src->CmdLayoutTransition(m_cmdBuffer, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+        _dest->CmdLayoutTransition(m_cmdBuffer, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
         VkBlitImageInfo2 info{};
         info.sType = VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2;
         info.srcImage = _src->GetVkImage();
-        info.srcImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        info.srcImageLayout = _src->GetVkImageLayout();
         info.dstImage = _dest->GetVkImage();
-        info.dstImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        info.dstImageLayout = _dest->GetVkImageLayout();
         info.regionCount = 1;
+
         VkImageBlit2 regions{};
         regions.sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2;
         regions.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;

@@ -152,12 +152,16 @@ namespace pulsared
                     }
                     else
                     {
-                        apiSerData.Sources[_GetGFXStage(smodule.Partial)] = std::get<std::vector<char>>(smodule.Data);
+                        auto stage = _GetGFXStage(smodule.Partial);;
+                        apiSerData.Sources[stage] = std::get<std::vector<char>>(smodule.Data);
+
+                        FileUtil::WriteAllBytes(to_string(stage), apiSerData.Sources[stage].data(), apiSerData.Sources[stage].size());
                     }
                 }
             }
 
             Logger::Log("compile shader success.");
+
 
 
             std::lock_guard lock {shader->m_isAvailableMutex};

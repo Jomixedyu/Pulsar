@@ -162,7 +162,7 @@ namespace pulsar
 
         hash_map<index_string, MaterialParameterInfo> m_propertyInfo;
 
-        hash_map<index_string, MaterialParameterInfo> m_parameterValues;
+        hash_map<index_string, MaterialParameterValue> m_parameterValues;
     };
 
     DECL_PTR(Material);

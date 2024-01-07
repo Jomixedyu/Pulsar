@@ -40,9 +40,7 @@ namespace gfx
         virtual GFXGpuProgram_sp CreateGpuProgram(const std::unordered_map<gfx::GFXShaderStageFlags, array_list<char>>& codes) override;
         virtual GFXShaderPass_sp CreateShaderPass(
             const GFXShaderPassConfig& config,
-            const GFXGpuProgram_sp& gpuProgram,
-            //const array_list<GFXDescriptorSetLayout_sp>& descSetLayout,
-            const array_list<GFXVertexLayoutDescription_sp>& vertexLayout) override;
+            const GFXGpuProgram_sp& gpuProgram) override;
 
         virtual GFXGraphicsPipelineManager* GetGraphicsPipelineManager() const override
         {

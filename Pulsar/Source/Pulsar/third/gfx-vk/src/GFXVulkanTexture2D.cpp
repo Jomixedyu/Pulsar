@@ -135,7 +135,12 @@ namespace gfx
         return nullptr;
     }
 
-    std::shared_ptr<GFXVulkanTexture2D> GFXVulkanTexture2D::CreateFromImageData(GFXVulkanApplication* app, 
+    size_t GFXVulkanTexture2D::StaticTexutreType()
+    {
+        static bool b;
+        return reinterpret_cast<size_t>(&b);
+    }
+    std::shared_ptr<GFXVulkanTexture2D> GFXVulkanTexture2D::CreateFromImageData(GFXVulkanApplication* app,
         const uint8_t* imageData, int32_t width, int32_t height, int32_t channel,
         bool enableReadWrite, GFXTextureFormat format, const GFXSamplerConfig& samplerCfg)
     {

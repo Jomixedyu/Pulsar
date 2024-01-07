@@ -143,34 +143,69 @@ namespace pulsar
                 cmdBuffer.SetFrameBuffer(nullptr);
 
                 // post processing
+                RenderTexture_ref lastPPRt;
                 auto ppcount = cam->m_postProcessMaterials->size();
                 for (size_t i = 0; i < ppcount; ++i)
                 {
                     auto ppMat = cam->m_postProcessMaterials->at(i);
                     RenderTexture_ref srcRt;
                     RenderTexture_ref destRt;
-
+                    gfx::GFXDescriptorSet_sp srcResourceDescSet;
                     if(i % 2 == 1)
                     {
-                        srcRt = cam->m_postprocessRtA;
-                        destRt = cam->m_postprocessRtB;
-                    }
-                    else
-                    {
+                        srcResourceDescSet = cam->m_postprocessDescA;
                         srcRt = cam->m_postprocessRtB;
                         destRt = cam->m_postprocessRtA;
                     }
+                    else //first
+                    {
+                        srcResourceDescSet = cam->m_postprocessDescB;
+                        srcRt = cam->m_postprocessRtA;
+                        destRt = cam->m_postprocessRtB;
+                    }
+                    lastPPRt = destRt;
 
                     if (i == 0)
                     {
-                        cmdBuffer.CmdBlit(cam->GetRenderTexture()->GetGfxRenderTarget0().get(), destRt->GetGfxRenderTarget0().get());
+                        cmdBuffer.CmdBlit(cam->GetRenderTexture()->GetGfxRenderTarget0().get(), srcRt->GetGfxRenderTarget0().get());
                     }
+                    cmdBuffer.CmdImageTransitionBarrier(srcRt->GetGfxRenderTarget0().get(), gfx::GFXResourceLayout::ShaderReadOnly);
+                    cmdBuffer.CmdImageTransitionBarrier(destRt->GetGfxRenderTarget0().get(), gfx::GFXResourceLayout::RenderTarget);
 
                     cmdBuffer.SetFrameBuffer(destRt->GetGfxFrameBufferObject().get());
                     cmdBuffer.CmdBeginFrameBuffer();
                     cmdBuffer.CmdSetViewport(0, 0, (float)targetFBO->GetWidth(), (float)targetFBO->GetHeight());
 
                     array_list<gfx::GFXDescriptorSetLayout_sp> descriptorSetLayouts;
+                    for (auto& refData : targetFBO->RefData)
+                    {
+                        descriptorSetLayouts.push_back(refData.lock()->GetDescriptorSetLayout());
+                    }
+                    descriptorSetLayouts.push_back(world->GetWorldDescriptorSet()->GetDescriptorSetLayout());
+
+                    struct InitPPDescLayout
+                    {
+                        InitPPDescLayout()
+                        {
+                            gfx::GFXDescriptorSetLayoutInfo info[2] {
+                                {
+                                    gfx::GFXDescriptorType::CombinedImageSampler,
+                                    gfx::GFXShaderStageFlags::VertexFragment,
+                                    0, 2
+                                },
+                                {
+                                    gfx::GFXDescriptorType::CombinedImageSampler,
+                                    gfx::GFXShaderStageFlags::VertexFragment,
+                                    1, 2
+                                }
+                            };
+                            layout = Application::GetGfxApp()->CreateDescriptorSetLayout(info, 2);
+                        }
+                        gfx::GFXDescriptorSetLayout_sp layout;
+                    } _InitPPDescLayout{};
+
+                    descriptorSetLayouts.push_back(_InitPPDescLayout.layout);
+                    descriptorSetLayouts.push_back(ppMat->GetGfxDescriptorSetLayout());
 
                     auto pso = pipelineMgr->GetGraphicsPipeline(
                         ppMat->GetGfxShaderPass(),
@@ -179,11 +214,35 @@ namespace pulsar
 
                     cmdBuffer.CmdBindGraphicsPipeline(pso.get());
 
-                    //=> bind ppmat
+                    {
+                        array_list<gfx::GFXDescriptorSet*> descriptorSets;
+                        // setup cam
+                        for (auto& refData : targetFBO->RefData)
+                        {
+                            descriptorSets.push_back(refData.lock().get());
+                        }
+                        // setup world
+                        descriptorSets.push_back(world->GetWorldDescriptorSet().get());
+                        // setup model
+                        descriptorSets.push_back(srcResourceDescSet.get());
+                        // setup matinst
+                        const auto materialDesc = ppMat->GetGfxDescriptorSet().get();
+                        if(materialDesc->GetDescriptorCount() != 0)
+                        {
+                            descriptorSets.push_back(materialDesc);
+                        }
+                        cmdBuffer.CmdBindDescriptorSets(descriptorSets, pso.get());
+                    }
+
                     cmdBuffer.CmdDraw(3);
 
                     cmdBuffer.CmdEndFrameBuffer();
                     cmdBuffer.SetFrameBuffer(nullptr);
+                }
+                if (ppcount)
+                {
+                    //blit to target
+                    cmdBuffer.CmdBlit(lastPPRt->GetGfxRenderTarget0().get(), cam->GetRenderTexture()->GetGfxRenderTarget0().get());
                 }
             }
         }

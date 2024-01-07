@@ -11,7 +11,7 @@ namespace gfx
         using base = GFXTexture2D;
     public:
         using DataDeleter = void(*)(uint8_t*);
-        static inline size_t StaticTexutreType() { return 1; }
+        static inline size_t StaticTexutreType();
         virtual size_t GetTextureType() const override { return StaticTexutreType(); }
     public:
         static std::shared_ptr<GFXVulkanTexture2D> CreateFromImageData(

@@ -23,6 +23,7 @@ namespace gfx
         const VkDescriptorSetLayout& GetVkDescriptorSetLayout() const { return m_descriptorSetLayout; }
 
     protected:
+        array_list<GFXDescriptorSetLayoutInfo> m_debugInfo;
         VkDescriptorSetLayout m_descriptorSetLayout;
         GFXVulkanApplication* m_app;
     };
@@ -39,8 +40,12 @@ namespace gfx
         }
         virtual void SetConstantBuffer(GFXBuffer* buffer) override;
         virtual void SetTextureSampler2D(GFXTexture* texture) override;
-        uint32_t GetBindingPoint() const { return m_bindingPoint; }
-    public:
+        virtual void SetTexture2D(GFXTexture* texture) override;
+
+        uint32_t GetBindingPoint() const
+        {
+            return m_bindingPoint;
+        }
         VkDescriptorBufferInfo BufferInfo{};
         VkDescriptorImageInfo ImageInfo{};
         VkWriteDescriptorSet WriteInfo{};

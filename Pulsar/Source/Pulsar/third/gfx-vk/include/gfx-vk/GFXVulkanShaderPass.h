@@ -15,9 +15,7 @@ namespace gfx
         GFXVulkanShaderPass(
             GFXVulkanApplication* app,
             const GFXShaderPassConfig& config,
-            const GFXVulkanGpuProgram_sp& gpuProgram,
-            //const array_list<GFXDescriptorSetLayout_sp>& descriptorSetLayout,
-            const array_list<GFXVertexLayoutDescription_sp>& vertexLayout);
+            const GFXVulkanGpuProgram_sp& gpuProgram);
 
         GFXVulkanShaderPass(const GFXVulkanShaderPass&) = delete;
 
@@ -27,7 +25,6 @@ namespace gfx
         virtual GFXShaderPassConfig                         GetStateConfig() const override { return m_passConfig; }
         //virtual array_list<GFXDescriptorSetLayout_sp>       GetDescriptorSetLayout() const override { return m_descriptorSetLayout; }
         //array_list<VkDescriptorSetLayout>                   GetVkDescriptorSetLayout() const;
-        virtual array_list<GFXVertexLayoutDescription_sp>   GetVertexLayout() const override { return m_vertexLayoutDescription; }
         const array_list<VkPipelineShaderStageCreateInfo>&  GetVkStages() const { return m_stages; }
 
         GFXVulkanApplication* GetApplication() const { return m_app; }
@@ -38,7 +35,6 @@ namespace gfx
         array_list<VkPipelineShaderStageCreateInfo> m_stages;
         GFXVulkanGpuProgram_sp                      m_gpuProgram;
         array_list<GFXDescriptorSetLayout_sp>       m_descriptorSetLayout;
-        array_list<GFXVertexLayoutDescription_sp>   m_vertexLayoutDescription;
 
         GFXVulkanApplication* m_app;
     };

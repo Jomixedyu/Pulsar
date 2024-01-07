@@ -10,5 +10,6 @@
         "RenderingType": 0,
         "StencilTestEnable": false
     },
+    "RenderingType": 0,
     "Passes": "Engine/Shaders/GammaCoreection.sh.json"
 }

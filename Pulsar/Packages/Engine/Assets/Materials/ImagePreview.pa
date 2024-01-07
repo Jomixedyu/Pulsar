@@ -29,11 +29,6 @@
             "Name": "_Image",
             "Type": "Texture2D",
             "Value": "00000000000000000000000000000000"
-        },
-        {
-            "Name": "_Flags",
-            "Type": "IntScalar",
-            "Value": 0
         }
     ],
     "Shader": "d1b6f37729344e498392d597e7f6190c"

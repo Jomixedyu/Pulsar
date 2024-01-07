@@ -88,8 +88,26 @@ namespace pulsar
         auto rtname = GetAttachedNode()->GetName() + "_CamRT";
         m_renderTarget = RenderTexture::StaticCreate(index_string{rtname}, width, height);
 
-        m_postprocessRtA = RenderTexture::StaticCreate(index_string{rtname}, width, height);
-        m_postprocessRtB = RenderTexture::StaticCreate(index_string{rtname}, width, height);
+        m_postprocessRtA = RenderTexture::StaticCreate(index_string{rtname}, width, height, 1, false);
+        m_postprocessRtB = RenderTexture::StaticCreate(index_string{rtname}, width, height, 1, false);
+
+        gfx::GFXDescriptorSetLayoutInfo ppDescLayouts[2]{
+            {gfx::GFXDescriptorType::CombinedImageSampler,
+             gfx::GFXShaderStageFlags::VertexFragment,
+             0, 2},
+            {gfx::GFXDescriptorType::CombinedImageSampler,
+             gfx::GFXShaderStageFlags::VertexFragment,
+             1, 2},
+        };
+
+        auto layout = Application::GetGfxApp()->CreateDescriptorSetLayout(ppDescLayouts, 2);
+        m_postprocessDescA = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(layout);
+        m_postprocessDescA->AddDescriptor("Color", 0)->SetTextureSampler2D(m_postprocessRtB->GetGfxRenderTarget0().get());
+        m_postprocessDescA->Submit();
+        m_postprocessDescB = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(layout);
+        m_postprocessDescB->AddDescriptor("Color", 0)->SetTextureSampler2D(m_postprocessRtA->GetGfxRenderTarget0().get());
+        m_postprocessDescB->Submit();
+
         UpdateRT();
         BeginRT();
     }
@@ -212,22 +230,6 @@ namespace pulsar
         m_cameraDescriptorSet = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_camDescriptorLayout);
         m_cameraDescriptorSet->AddDescriptor("Target", 0)->SetConstantBuffer(m_cameraDataBuffer.get());
         m_cameraDescriptorSet->Submit();
-
-
-        gfx::GFXDescriptorSetLayoutInfo ppDescLayouts[2]{
-            {gfx::GFXDescriptorType::Texture2D,
-             gfx::GFXShaderStageFlags::Fragment,
-             0, 2},
-            {gfx::GFXDescriptorType::Texture2D,
-             gfx::GFXShaderStageFlags::Fragment,
-             1, 2},
-        };
-
-        auto layout = Application::GetGfxApp()->CreateDescriptorSetLayout(ppDescLayouts);
-        m_postprocessDescA = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(layout);
-        m_postprocessDescA->AddDescriptor("Color", 0)->SetTextureSampler2D(m_postprocessRtB->GetGfxRenderTarget0().get());
-        m_postprocessDescB = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(layout);
-        m_postprocessDescB->AddDescriptor("Color", 0)->SetTextureSampler2D(m_postprocessRtA->GetGfxRenderTarget0().get());
 
         BeginRT();
     }

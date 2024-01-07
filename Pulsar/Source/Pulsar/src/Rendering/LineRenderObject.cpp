@@ -1,5 +1,6 @@
 #include "Application.h"
 #include "AssetManager.h"
+#include "Assets/StaticMesh.h"
 
 #include <Pulsar/Rendering/LineRenderObject.h>
 
@@ -57,6 +58,7 @@ namespace pulsar
         batch.Elements[0].ModelDescriptor = m_meshObjDescriptorSet;
         batch.State.Topology = gfx::GFXPrimitiveTopology::LineList;
         batch.State.LineWidth = 1.f;
+        batch.State.VertexLayouts = {StaticMesh::StaticGetVertexLayout()};
         batch.IsUsedIndices = false;
         batch.Material = GetAssetManager()->LoadAsset<Material>("Engine/Materials/VertexColor");
     }

@@ -67,15 +67,13 @@ namespace gfx
         virtual GFXGpuProgram_sp CreateGpuProgram(const std::unordered_map<gfx::GFXShaderStageFlags, array_list<char>>& codes) = 0;
         virtual GFXShaderPass_sp CreateShaderPass(
             const GFXShaderPassConfig& config,
-            const GFXGpuProgram_sp& gpuProgram,
-            //const array_list<GFXDescriptorSetLayout_sp>& descSetLayout,
-            const array_list<GFXVertexLayoutDescription_sp>& vertexLayout) = 0;
+            const GFXGpuProgram_sp& gpuProgram) = 0;
 
         virtual GFXDescriptorManager* GetDescriptorManager() = 0;
 
         virtual GFXDescriptorSetLayout_sp CreateDescriptorSetLayout(
             const GFXDescriptorSetLayoutInfo* layouts,
-            size_t layoutCount = 1) = 0;
+            size_t layoutCount) = 0;
         virtual GFXDescriptorSetLayout_sp CreateDescriptorSetLayout(
             std::initializer_list<GFXDescriptorSetLayoutInfo> layouts);
 

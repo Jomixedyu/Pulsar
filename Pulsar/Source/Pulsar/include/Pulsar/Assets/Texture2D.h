@@ -49,9 +49,9 @@ namespace pulsar
         ~Texture2D() override;
     public:
         void Serialize(AssetSerializer* s) override;
-        virtual int32_t GetWidth() const override { return m_init ? m_tex->GetWidth() : 0; }
-        virtual int32_t GetHeight() const override { return m_init ? m_tex->GetHeight() : 0; }
-        int32_t GetChannelCount() const { return m_init ? m_tex->GetChannelCount() : 0; }
+        virtual int32_t GetWidth() const override { return m_isCreatedGPUResource ? m_tex->GetWidth() : 0; }
+        virtual int32_t GetHeight() const override { return m_isCreatedGPUResource ? m_tex->GetHeight() : 0; }
+        int32_t GetChannelCount() const { return m_isCreatedGPUResource ? m_tex->GetChannelCount() : 0; }
 
     public:
         void OnDestroy() override;

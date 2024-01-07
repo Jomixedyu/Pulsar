@@ -68,6 +68,7 @@ namespace pulsar
             auto& batch = m_batchs.emplace_back();
             batch.State.Topology = gfx::GFXPrimitiveTopology::TriangleList;
             batch.State.IsReverseCulling = IsDetermiantNegative();
+            batch.State.VertexLayouts = {StaticMesh::StaticGetVertexLayout()};
             batch.IsUsedIndices = true;
             batch.IsCastShadow = true;
             batch.IsUsedIndices = true;

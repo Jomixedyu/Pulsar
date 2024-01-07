@@ -19,6 +19,16 @@ namespace gfx
         Fragment = 1 << 1,
         VertexFragment = Vertex | Fragment,
     };
+    inline const char* to_string(GFXShaderStageFlags stage)
+    {
+        switch (stage)
+        {
+        case GFXShaderStageFlags::Vertex: return "Vertex";
+        case GFXShaderStageFlags::Fragment: return "Fragment";
+        case GFXShaderStageFlags::VertexFragment: return "VertexFragment";
+        }
+        return nullptr;
+    }
 
     struct GFXDescriptorSetLayoutInfo final
     {
@@ -57,7 +67,8 @@ namespace gfx
 
         virtual void SetConstantBuffer(GFXBuffer* buffer) = 0;
         virtual void SetTextureSampler2D(GFXTexture* texture) = 0;
-        
+        virtual void SetTexture2D(GFXTexture* texture) = 0;
+
         bool IsDirty;
         std::string name;
     };

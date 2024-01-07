@@ -1,6 +1,7 @@
 #include "Assets/Material.h"
 #include "Application.h"
 #include "Assets/StaticMesh.h"
+#include "Assets/Texture2D.h"
 #include "BuiltinAsset.h"
 #include "Logger.h"
 
@@ -11,25 +12,6 @@
 
 namespace pulsar
 {
-    static auto GetVertexLayout(gfx::GFXApplication* app)
-    {
-        auto vertDescLayout = app->CreateVertexLayoutDescription();
-        vertDescLayout->BindingPoint = 0;
-        vertDescLayout->Stride = sizeof(StaticMeshVertex);
-
-        vertDescLayout->Attributes.push_back({(int)EngineInputSemantic::POSITION, gfx::GFXVertexInputDataFormat::R32G32B32_SFloat, offsetof(StaticMeshVertex, Position)});
-        vertDescLayout->Attributes.push_back({(int)EngineInputSemantic::NORMAL, gfx::GFXVertexInputDataFormat::R32G32B32_SFloat, offsetof(StaticMeshVertex, Normal)});
-        vertDescLayout->Attributes.push_back({(int)EngineInputSemantic::TANGENT, gfx::GFXVertexInputDataFormat::R32G32B32_SFloat, offsetof(StaticMeshVertex, Tangent)});
-        vertDescLayout->Attributes.push_back({(int)EngineInputSemantic::BITANGENT, gfx::GFXVertexInputDataFormat::R32G32B32_SFloat, offsetof(StaticMeshVertex, Bitangent)});
-        vertDescLayout->Attributes.push_back({(int)EngineInputSemantic::COLOR, gfx::GFXVertexInputDataFormat::R32G32B32_SFloat, offsetof(StaticMeshVertex, Color)});
-
-        for (size_t i = 0; i < STATICMESH_MAX_TEXTURE_COORDS; i++)
-        {
-            vertDescLayout->Attributes.push_back({(int)EngineInputSemantic::TEXCOORD0 + i, gfx::GFXVertexInputDataFormat::R32G32_SFloat, offsetof(StaticMeshVertex, TexCoords[i])});
-        }
-
-        return vertDescLayout;
-    }
 
     ObjectPtr<Material> Material::StaticCreate(string_view name)
     {
@@ -131,8 +113,7 @@ namespace pulsar
         // create shader pass
         m_gfxShaderPasses = Application::GetGfxApp()->CreateShaderPass(
             config,
-            gpuProgram,
-            {GetVertexLayout(Application::GetGfxApp())});
+            gpuProgram);
 
         // create constant layouts and constant buffer
         array_list<gfx::GFXDescriptorSetLayoutInfo> descLayoutInfos;
@@ -161,7 +142,7 @@ namespace pulsar
             {
                 auto& item = shaderConfig->Properties->at(i);
                 auto info = gfx::GFXDescriptorSetLayoutInfo{
-                    gfx::GFXDescriptorType::Texture2D,
+                    gfx::GFXDescriptorType::CombinedImageSampler,
                     gfx::GFXShaderStageFlags::VertexFragment,
                     (uint32_t)i + offset, 3};
                 descLayoutInfos.push_back(info);
@@ -186,11 +167,9 @@ namespace pulsar
             for (int i = 0; i < count; ++i)
             {
                 auto item = shaderConfig->Properties->at(i);
-                // m_descriptorSet->AddDescriptor(item->Name, i + offset);
+                auto desc = m_descriptorSet->AddDescriptor(item->Name, i + offset);
             }
         }
-
-        m_descriptorSet->Submit();
 
         m_isDirtyParameter = true;
         SubmitParameters();
@@ -245,23 +224,23 @@ namespace pulsar
             {
                 ser::VarientRef parameter = parametersArray->New(ser::VarientType::Object);
                 parameter->Add("Name", name.to_string());
-                parameter->Add("Type", mkbox(value.Value.Type)->GetName());
+                parameter->Add("Type", mkbox(value.Type)->GetName());
                 ser::VarientRef paramValue;
-                switch (value.Value.Type)
+                switch (value.Type)
                 {
                 case ShaderParameterType::IntScalar:
-                    paramValue = parameter->New(ser::VarientType::Number)->Assign(value.Value.AsIntScalar());
+                    paramValue = parameter->New(ser::VarientType::Number)->Assign(value.AsIntScalar());
                     break;
                 case ShaderParameterType::Scalar:
-                    paramValue = parameter->New(ser::VarientType::Number)->Assign(value.Value.AsScalar());
+                    paramValue = parameter->New(ser::VarientType::Number)->Assign(value.AsScalar());
                     break;
                 case ShaderParameterType::Vector:
                     paramValue = parameter->New(ser::VarientType::Object);
-                    paramValue->Assign(NewVectorObject(parameter, value.Value.AsVector()));
+                    paramValue->Assign(NewVectorObject(parameter, value.AsVector()));
                     break;
                 case ShaderParameterType::Texture2D:
                     paramValue = parameter->New(ser::VarientType::String);
-                    paramValue->Assign(value.Value.AsTexture().GetHandle().to_string());
+                    paramValue->Assign(value.AsTexture().GetHandle().to_string());
                     break;
                 default:;
                 }
@@ -281,26 +260,27 @@ namespace pulsar
                 auto name = parameter->At("Name")->AsString();
                 auto typestr = parameter->At("Type")->AsString();
                 auto valueObject = parameter->At("Value");
+
                 uint32_t typenum{};
 
                 Enum::StaticTryParse(cltypeof<BoxingShaderParameterType>(), typestr, &typenum);
                 ShaderParameterType type = static_cast<ShaderParameterType>(typenum);
 
-                MaterialParameterInfo paramValue{};
+                MaterialParameterValue paramValue{};
                 switch (type)
                 {
                 case ShaderParameterType::IntScalar:
-                    paramValue.Value.SetValue(valueObject->AsInt());
+                    paramValue.SetValue(valueObject->AsInt());
                     break;
                 case ShaderParameterType::Scalar:
-                    paramValue.Value.SetValue(valueObject->AsFloat());
+                    paramValue.SetValue(valueObject->AsFloat());
                     break;
                 case ShaderParameterType::Vector:
-                    paramValue.Value.SetValue(GetVectorObject(valueObject));
+                    paramValue.SetValue(GetVectorObject(valueObject));
                     break;
                 case ShaderParameterType::Texture2D: {
                     Texture_ref tex = ObjectHandle::parse(valueObject->AsString());
-                    paramValue.Value.SetValue(tex);
+                    paramValue.SetValue(tex);
                     break;
                 }
                 default:;
@@ -321,7 +301,7 @@ namespace pulsar
         {
             return;
         }
-        m_parameterValues[name].Value.SetValue(value);
+        m_parameterValues[name].SetValue(value);
         m_isDirtyParameter = true;
     }
     void Material::SetFloat(const index_string& name, float value)
@@ -330,7 +310,7 @@ namespace pulsar
         {
             return;
         }
-        m_parameterValues[name].Value.SetValue(value);
+        m_parameterValues[name].SetValue(value);
         m_isDirtyParameter = true;
     }
 
@@ -340,7 +320,7 @@ namespace pulsar
         {
             return;
         }
-        m_parameterValues[name].Value.SetValue(value);
+        m_parameterValues[name].SetValue(value);
         m_isDirtyParameter = true;
     }
 
@@ -350,7 +330,7 @@ namespace pulsar
         {
             return;
         }
-        m_parameterValues[name].Value.SetValue(value);
+        m_parameterValues[name].SetValue(value);
         m_isDirtyParameter = true;
     }
     int Material::GetIntScalar(const index_string& name)
@@ -358,9 +338,14 @@ namespace pulsar
         auto it = m_parameterValues.find(name);
         if (it == m_parameterValues.end())
         {
+            auto meta = m_propertyInfo.find(name);
+            if (meta != m_propertyInfo.end())
+            {
+                return meta->second.Value.AsIntScalar();
+            }
             return 0;
         }
-        return it->second.Value.AsIntScalar();
+        return it->second.AsIntScalar();
     }
 
     float Material::GetFloat(const index_string& name)
@@ -368,9 +353,14 @@ namespace pulsar
         auto it = m_parameterValues.find(name);
         if (it == m_parameterValues.end())
         {
+            auto meta = m_propertyInfo.find(name);
+            if (meta != m_propertyInfo.end())
+            {
+                return meta->second.Value.AsScalar();
+            }
             return 0;
         }
-        return it->second.Value.AsScalar();
+        return it->second.AsScalar();
     }
 
     Vector4f Material::GetVector4(const index_string& name)
@@ -378,9 +368,14 @@ namespace pulsar
         auto it = m_parameterValues.find(name);
         if (it == m_parameterValues.end())
         {
+            auto meta = m_propertyInfo.find(name);
+            if (meta != m_propertyInfo.end())
+            {
+                return meta->second.Value.AsVector();
+            }
             return Vector4f{};
         }
-        return it->second.Value.AsVector();
+        return it->second.AsVector();
     }
 
     Texture_ref Material::GetTexture(const index_string& name)
@@ -388,9 +383,14 @@ namespace pulsar
         auto it = m_parameterValues.find(name);
         if (it == m_parameterValues.end())
         {
+            auto meta = m_propertyInfo.find(name);
+            if (meta != m_propertyInfo.end())
+            {
+                return meta->second.Value.AsTexture();
+            }
             return Texture_ref{};
         }
-        return it->second.Value.AsTexture();
+        return it->second.AsTexture();
     }
 
     void Material::SubmitParameters()
@@ -405,27 +405,27 @@ namespace pulsar
         }
 
         m_bufferData.resize(m_materialConstantBuffer->GetSize());
-        for (auto value : m_parameterValues)
+        for (auto& [name, value] : m_parameterValues)
         {
-            auto ptr = m_bufferData.data() + value.second.Offset;
-
-            switch (value.second.Value.Type)
+            auto offset = m_propertyInfo[name].Offset;
+            auto ptr = m_bufferData.data() + offset;
+            switch (value.Type)
             {
             case ShaderParameterType::IntScalar: {
-                *(int*)ptr = value.second.Value.AsIntScalar();
+                *(int*)ptr = value.AsIntScalar();
                 break;
             }
             case ShaderParameterType::Scalar: {
-                *(float*)ptr = value.second.Value.AsScalar();
+                *(float*)ptr = value.AsScalar();
                 break;
             }
             case ShaderParameterType::Vector: {
-                *(Vector4f*)ptr = value.second.Value.AsVector();
+                *(Vector4f*)ptr = value.AsVector();
                 break;
             }
             case ShaderParameterType::Texture2D: {
-                auto tex = value.second.Value.AsTexture();
-
+                Texture2D_ref tex = value.AsTexture();
+                m_descriptorSet->Find(name.to_string())->SetTextureSampler2D(tex->GetGFXTexture().get());
                 break;
             }
             default:;
@@ -524,7 +524,7 @@ namespace pulsar
         {
             if (!m_parameterValues.contains(prop.first))
             {
-                m_parameterValues.insert(prop);
+                m_parameterValues.insert({prop.first, prop.second.Value});
             }
         }
     }

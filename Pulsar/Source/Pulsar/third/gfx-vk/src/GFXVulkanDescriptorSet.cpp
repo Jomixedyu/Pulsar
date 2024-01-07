@@ -65,6 +65,7 @@ namespace gfx
         for (size_t i = 0; i < layoutCount; ++i)
         {
             const auto layoutInfo = layouts[i];
+            m_debugInfo.push_back(layoutInfo);
 
             VkDescriptorSetLayoutBinding& binding = bindings.emplace_back();
             binding.binding = layoutInfo.BindingPoint;
@@ -142,6 +143,38 @@ namespace gfx
         WriteInfo.dstBinding = m_bindingPoint;
         WriteInfo.dstArrayElement = 0;
         WriteInfo.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        WriteInfo.descriptorCount = 1;
+        WriteInfo.pImageInfo = &ImageInfo;
+
+        IsDirty = true;
+    }
+    void GFXVulkanDescriptor::SetTexture2D(GFXTexture* texture)
+    {
+        VkImageView imageView{};
+        if (texture->GetTextureType() == GFXVulkanTexture2D::StaticTexutreType())
+        {
+            auto tex2d = static_cast<GFXVulkanTexture2D*>(texture);
+            imageView = tex2d->GetVkImageView();
+        }
+        else if (texture->GetTextureType() == GFXVulkanRenderTarget::StaticTexutreType())
+        {
+            auto rt = static_cast<GFXVulkanRenderTarget*>(texture);
+            imageView = rt->GetVkImageView();
+        }
+        else
+        {
+            assert(0);
+        }
+
+        ImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        ImageInfo.imageView = imageView;
+        ImageInfo.sampler = nullptr;
+
+        WriteInfo.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        WriteInfo.dstSet = m_descriptorSet->GetVkDescriptorSet();
+        WriteInfo.dstBinding = m_bindingPoint;
+        WriteInfo.dstArrayElement = 0;
+        WriteInfo.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
         WriteInfo.descriptorCount = 1;
         WriteInfo.pImageInfo = &ImageInfo;
 

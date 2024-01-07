@@ -41,6 +41,8 @@ namespace pulsar
         StaticMesh() = default;
         ~StaticMesh() override;
     public:
+        static gfx::GFXVertexLayoutDescription_sp StaticGetVertexLayout();
+
         virtual void Serialize(AssetSerializer* s) override;
 
         static ObjectPtr<StaticMesh> StaticCreate(

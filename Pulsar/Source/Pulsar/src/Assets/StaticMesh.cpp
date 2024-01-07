@@ -8,6 +8,26 @@
 
 namespace pulsar
 {
+    static auto _GetVertexLayout()
+    {
+        auto vertDescLayout = Application::GetGfxApp()->CreateVertexLayoutDescription();
+        vertDescLayout->BindingPoint = 0;
+        vertDescLayout->Stride = sizeof(StaticMeshVertex);
+
+        vertDescLayout->Attributes.push_back({(int)EngineInputSemantic::POSITION, gfx::GFXVertexInputDataFormat::R32G32B32_SFloat, offsetof(StaticMeshVertex, Position)});
+        vertDescLayout->Attributes.push_back({(int)EngineInputSemantic::NORMAL, gfx::GFXVertexInputDataFormat::R32G32B32_SFloat, offsetof(StaticMeshVertex, Normal)});
+        vertDescLayout->Attributes.push_back({(int)EngineInputSemantic::TANGENT, gfx::GFXVertexInputDataFormat::R32G32B32_SFloat, offsetof(StaticMeshVertex, Tangent)});
+        vertDescLayout->Attributes.push_back({(int)EngineInputSemantic::BITANGENT, gfx::GFXVertexInputDataFormat::R32G32B32_SFloat, offsetof(StaticMeshVertex, Bitangent)});
+        vertDescLayout->Attributes.push_back({(int)EngineInputSemantic::COLOR, gfx::GFXVertexInputDataFormat::R32G32B32_SFloat, offsetof(StaticMeshVertex, Color)});
+
+        for (size_t i = 0; i < STATICMESH_MAX_TEXTURE_COORDS; i++)
+        {
+            vertDescLayout->Attributes.push_back({(int)EngineInputSemantic::TEXCOORD0 + i, gfx::GFXVertexInputDataFormat::R32G32_SFloat, offsetof(StaticMeshVertex, TexCoords[i])});
+        }
+
+        return vertDescLayout;
+    }
+
     void StaticMesh::OnInstantiateAsset(AssetObject* obj)
     {
         base::OnInstantiateAsset(obj);
@@ -54,6 +74,19 @@ namespace pulsar
     }
 
     StaticMesh::~StaticMesh() = default;
+
+
+    gfx::GFXVertexLayoutDescription_sp StaticMesh::StaticGetVertexLayout()
+    {
+        static gfx::GFXVertexLayoutDescription_wp layout;
+        if (layout.expired())
+        {
+            auto newLayout = _GetVertexLayout();
+            layout = newLayout;
+            return newLayout;
+        }
+        return layout.lock();
+    }
 
     void StaticMesh::Serialize(AssetSerializer* s)
     {
