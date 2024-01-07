@@ -231,13 +231,13 @@ namespace pulsared
             m_imageScale = std::min(rateX, rateY);
         }
 
-
-        //ImGui::SetNextWindowPos(ImGui::GetWindowPos() + size / 2 - (ImVec2(width, height) / 2) * m_imageScale);
+        ImGui::BeginChild("picframe", size);
+        ImGui::SetNextWindowPos(ImGui::GetWindowPos() + size / 2 - (ImVec2(width, height) / 2) * m_imageScale);
         if (ImGui::BeginChild("pic", {width * m_imageScale, height * m_imageScale}))
         {
-
             base::OnDrawAssetPreviewUI(dt);
         }
+        ImGui::EndChild();
         ImGui::EndChild();
     }
 
