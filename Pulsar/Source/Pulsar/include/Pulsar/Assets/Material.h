@@ -14,7 +14,7 @@ namespace pulsar
         virtual void SetVector4(const index_string& name, const Vector4f& vec) = 0;
         virtual void SetTexture(const index_string& name, Texture_ref) = 0;
 
-        virtual float GetFloat(const index_string& name) = 0;
+        virtual float GetScalar(const index_string& name) = 0;
         virtual Vector4f GetVector4(const index_string& name) = 0;
         virtual Texture_ref GetTexture(const index_string& name) = 0;
     };
@@ -100,7 +100,7 @@ namespace pulsar
         static ObjectPtr<Material> StaticCreate(string_view name);
 
         virtual void Serialize(AssetSerializer* s) override;
-
+        void OnInstantiateAsset(AssetObject* obj) override;
     public:
         virtual bool CreateGPUResource() override;
         virtual void DestroyGPUResource() override;
@@ -115,11 +115,11 @@ namespace pulsar
         void SetTexture(const index_string& name, Texture_ref value) override;
         void SetVector4(const index_string& name, const Vector4f& value) override;
         int GetIntScalar(const index_string& name);
-        float GetFloat(const index_string& name) override;
+        float GetScalar(const index_string& name) override;
         Vector4f GetVector4(const index_string& name) override;
         Texture_ref GetTexture(const index_string& name) override;
 
-        void SubmitParameters();
+        void SubmitParameters(bool force = false);
 
         gfx::GFXDescriptorSet_sp GetGfxDescriptorSet() const
         {

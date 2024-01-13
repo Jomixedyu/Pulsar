@@ -1,26 +1,26 @@
 #include "GFXVulkanApplication.h"
-#include <glfw/include/GLFW/glfw3.h>
-#include <stdexcept>
-#include <iostream>
-#include "PhysicalDeviceHelper.h"
 #include "BufferHelper.h"
-#include "GFXVulkanCommandBuffer.h"
 #include "GFXVulkanBuffer.h"
-#include "GFXVulkanVertexLayoutDescription.h"
-#include "GFXVulkanTexture2D.h"
+#include "GFXVulkanCommandBuffer.h"
+#include "GFXVulkanCommandBufferPool.h"
 #include "GFXVulkanDescriptorManager.h"
 #include "GFXVulkanGpuProgram.h"
-#include "GFXVulkanShaderPass.h"
 #include "GFXVulkanGraphicsPipeline.h"
-#include "GFXVulkanRenderer.h"
-#include "GFXVulkanRenderPass.h"
-#include "GFXVulkanViewport.h"
-#include "GFXVulkanCommandBufferPool.h"
 #include "GFXVulkanGraphicsPipelineManager.h"
-#include <set>
-#include <cmath>
-#include <array>
+#include "GFXVulkanRenderPass.h"
+#include "GFXVulkanRenderer.h"
+#include "GFXVulkanShaderPass.h"
+#include "GFXVulkanTexture2D.h"
+#include "GFXVulkanVertexLayoutDescription.h"
+#include "GFXVulkanViewport.h"
+#include "PhysicalDeviceHelper.h"
 #include <algorithm>
+#include <array>
+#include <cmath>
+#include <glfw/include/GLFW/glfw3.h>
+#include <iostream>
+#include <set>
+#include <stdexcept>
 #include <stdlib.h>
 
 #undef max
@@ -31,7 +31,7 @@ namespace gfx
     {
         if (m_extensions.empty())
         {
-            uint32_t     glfwExtensionCount = 0;
+            uint32_t glfwExtensionCount = 0;
             const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
             m_count = glfwExtensionCount;
@@ -74,9 +74,8 @@ namespace gfx
     }
 
     static const std::vector<const char*> validationLayers =
-    {
-        "VK_LAYER_KHRONOS_validation"
-    };
+        {
+            "VK_LAYER_KHRONOS_validation"};
 
     static bool _CheckValidationLayerSupport()
     {
@@ -92,13 +91,15 @@ namespace gfx
 
             for (const auto& layerProperties : availableLayers)
             {
-                if (strcmp(layerName, layerProperties.layerName) == 0) {
+                if (strcmp(layerName, layerProperties.layerName) == 0)
+                {
                     layerFound = true;
                     break;
                 }
             }
 
-            if (!layerFound) {
+            if (!layerFound)
+            {
                 return false;
             }
         }
@@ -111,17 +112,23 @@ namespace gfx
         black = 0,
         dark_blue = 1,
         dark_green = 2,
-        dark_aqua, dark_cyan = 3,
+        dark_aqua,
+        dark_cyan = 3,
         dark_red = 4,
-        dark_purple = 5, dark_pink = 5, dark_magenta = 5,
+        dark_purple = 5,
+        dark_pink = 5,
+        dark_magenta = 5,
         dark_yellow = 6,
         dark_white = 7,
         gray = 8,
         blue = 9,
         green = 10,
-        aqua = 11, cyan = 11,
+        aqua = 11,
+        cyan = 11,
         red = 12,
-        purple = 13, pink = 13, magenta = 13,
+        purple = 13,
+        pink = 13,
+        magenta = 13,
         yellow = 14,
         white = 15
     };
@@ -164,7 +171,6 @@ namespace gfx
             _SetColor(ConsoleColor::gray, ConsoleColor::black);
         }
 
-
         std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
 
         return VK_FALSE;
@@ -174,12 +180,9 @@ namespace gfx
         createInfo = {};
         createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
         createInfo.messageSeverity =
-            VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT
-            | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT
-            | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+            VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
         createInfo.messageType =
-            VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT
-            | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT;
+            VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT;
         //| VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
 
         createInfo.pfnUserCallback = _VkDebugCallback;
@@ -233,7 +236,8 @@ namespace gfx
             _PopulateDebugMessengerCreateInfo(debugCreateInfo);
             createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
         }
-        else {
+        else
+        {
             createInfo.enabledLayerCount = 0;
 
             createInfo.pNext = nullptr;
@@ -243,9 +247,7 @@ namespace gfx
         {
             throw std::runtime_error("failed to create instance!");
         }
-
     }
-
 
     void GFXVulkanApplication::InitPickPhysicalDevice()
     {
@@ -285,7 +287,7 @@ namespace gfx
         vk::QueueFamilyIndices indices = vk::PhysicalDeviceHelper::FindQueueFamilies(m_surface, m_physicalDevice);
 
         std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-        std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value() };
+        std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily.value(), indices.presentFamily.value()};
 
         float queuePriority = 1.0f;
         for (uint32_t queueFamily : uniqueQueueFamilies)
@@ -317,7 +319,7 @@ namespace gfx
             createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
             createInfo.ppEnabledLayerNames = validationLayers.data();
             _PopulateDebugMessengerCreateInfo(debugCreateInfo);
-            //createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
+            // createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
         }
         else
         {
@@ -333,20 +335,17 @@ namespace gfx
         vkGetDeviceQueue(m_device, indices.presentFamily.value(), 0, &m_presentQueue);
     }
 
-
     static bool _HasStencilComponent(VkFormat format)
     {
         return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
     }
-
-
 
     void GFXVulkanApplication::Initialize()
     {
         glfwInit();
 
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        //glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+        // glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
         m_window = glfwCreateWindow(m_config.WindowWidth, m_config.WindowHeight, m_config.Title, nullptr, nullptr);
         glfwSetWindowUserPointer(m_window, this);
@@ -360,10 +359,10 @@ namespace gfx
             VkDebugUtilsMessengerCreateInfoEXT createInfo{};
             _PopulateDebugMessengerCreateInfo(createInfo);
 
-            //if (_CreateDebugUtilsMessengerEXT(m_instance, &createInfo, nullptr, &m_debugMessenger) != VK_SUCCESS) 
+            // if (_CreateDebugUtilsMessengerEXT(m_instance, &createInfo, nullptr, &m_debugMessenger) != VK_SUCCESS)
             //{
-            //    throw std::runtime_error("failed to set up debug messenger!");
-            //}
+            //     throw std::runtime_error("failed to set up debug messenger!");
+            // }
         }
         // create surface
         if (glfwCreateWindowSurface(m_instance, m_window, nullptr, &m_surface) != VK_SUCCESS)
@@ -373,7 +372,6 @@ namespace gfx
 
         this->InitPickPhysicalDevice();
         this->InitLogicalDevice();
-
 
         m_cmdPool = new GFXVulkanCommandBufferPool(this);
 
@@ -477,17 +475,11 @@ namespace gfx
         return gfxmksptr(new GFXVulkanVertexLayoutDescription());
     }
 
-    GFXTexture2D_sp GFXVulkanApplication::CreateFromImageData(
-        const uint8_t* imageData, int32_t width, int32_t height, int32_t channel,
-        bool enableReadWrite, GFXTextureFormat format, const GFXSamplerConfig& samplerCfg)
-    {
-        return GFXVulkanTexture2D::CreateFromImageData(this, imageData, width, height, channel, enableReadWrite, format, samplerCfg);
-    }
 
     std::shared_ptr<GFXTexture2D> gfx::GFXVulkanApplication::CreateTexture2DFromMemory(
-        const uint8_t* originalData, size_t length, const GFXSamplerConfig& samplerConfig, bool enableReadWrite, bool isSrgb)
+        const uint8_t* imageData, size_t length, int width, int height, GFXTextureFormat format, const GFXSamplerConfig& samplerConfig)
     {
-        return GFXVulkanTexture2D::CreateFromMemory(this, originalData, length, enableReadWrite, isSrgb, samplerConfig);
+        return gfxmksptr(new GFXVulkanTexture2D(this, imageData, length, width, height, BufferHelper::GetVkFormat(format), false, samplerConfig));
     }
 
     std::shared_ptr<GFXFrameBufferObject> GFXVulkanApplication::CreateFrameBufferObject(
@@ -508,7 +500,7 @@ namespace gfx
         const GFXGpuProgram_sp& gpuProgram)
     {
         auto pass = new GFXVulkanShaderPass(this, config,
-            std::static_pointer_cast<GFXVulkanGpuProgram>(gpuProgram));
+                                            std::static_pointer_cast<GFXVulkanGpuProgram>(gpuProgram));
         return gfxmksptr(pass);
     }
 
@@ -541,8 +533,6 @@ namespace gfx
         return gfxmksptr(new GFXVulkanDescriptorSetLayout(this, layouts, layoutCount));
     }
 
-
-
     array_list<GFXTextureFormat> GFXVulkanApplication::GetSupportedDepthFormats()
     {
         if (m_depthFormatCache.size() == 0)
@@ -554,4 +544,4 @@ namespace gfx
         }
         return m_depthFormatCache;
     }
-}
+} // namespace gfx

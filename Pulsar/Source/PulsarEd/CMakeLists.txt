@@ -30,13 +30,12 @@ target_link_libraries(${PROJECT_NAME} PUBLIC fbxsdk)
 target_include_directories(${PROJECT_NAME} PUBLIC "./include")
 target_include_directories(${PROJECT_NAME} PRIVATE "./include/PulsarEd")
 
-message(${CMAKE_DEBUG_POSTFIX})
 
 #pulsar
 target_link_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}/Pulsar.out")
 message("${CMAKE_CURRENT_BINARY_DIR}/Pulsar.out")
 target_link_libraries(${PROJECT_NAME} PUBLIC Pulsar)
-target_link_options(${PROJECT_NAME} PUBLIC "/WHOLEARCHIVE:Pulsar${CMAKE_DEBUG_POSTFIX}")
+target_link_options(${PROJECT_NAME} PUBLIC "/WHOLEARCHIVE:Pulsar$<$<CONFIG:Debug>:${CMAKE_DEBUG_POSTFIX}>")
 
 target_link_libraries(${PROJECT_NAME} PUBLIC psc)
 

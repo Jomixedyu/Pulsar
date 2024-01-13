@@ -1,0 +1,15 @@
+{
+    "Parameters": [
+        {
+            "Name": "BaseColor",
+            "Type": "Texture2D",
+            "Value": "00000000000000000000000000000000"
+        },
+        {
+            "Name": "MRA",
+            "Type": "Texture2D",
+            "Value": "00000000000000000000000000000000"
+        }
+    ],
+    "Shader": "253fcdbbf1e0d44698dd15e6be7a3442"
+}

@@ -1,6 +1,15 @@
 {
-    "Passes": "Engine/Shaders/VertexColor.sh.json",
     "Available": true,
-    "RenderingType": 0,
-    "Config": {}
+    "Config": {
+        "ConstantProperties": [],
+        "CullMode": 0,
+        "DepthCompareOp": 1,
+        "DepthTestEnable": true,
+        "DepthWriteEnable": true,
+        "Properties": [],
+        "RenderingType": 0,
+        "StencilTestEnable": false
+    },
+    "Passes": "Engine/Shaders/VertexColor.sh.json",
+    "RenderingType": 0
 }

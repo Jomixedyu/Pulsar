@@ -48,6 +48,10 @@ namespace pulsar
 
         void OnChangedTransform() override
         {
+            for (auto& batch : m_batchs)
+            {
+                batch.IsReverseCulling = IsDetermiantNegative();
+            }
             m_meshConstantBuffer->Fill(&m_perModelData);
         }
 
@@ -67,7 +71,7 @@ namespace pulsar
         {
             auto& batch = m_batchs.emplace_back();
             batch.State.Topology = gfx::GFXPrimitiveTopology::TriangleList;
-            batch.State.IsReverseCulling = IsDetermiantNegative();
+
             batch.State.VertexLayouts = {StaticMesh::StaticGetVertexLayout()};
             batch.IsUsedIndices = true;
             batch.IsCastShadow = true;
@@ -78,6 +82,7 @@ namespace pulsar
                 batch.Material = GetAssetManager()->LoadAsset<Material>("Engine/Materials/Missing");
                 batch.Material->CreateGPUResource();
             }
+            batch.CullMode = batch.Material->GetShader()->GetConfig()->CullMode;
 
             batch.DescriptorSetLayout = m_meshDescriptorSetLayout;
 
@@ -199,7 +204,7 @@ namespace pulsar
     }
     void StaticMeshRendererComponent::RemoveMaterial(size_t index)
     {
-        //todo
+        // todo
     }
 
     void StaticMeshRendererComponent::BeginComponent()
@@ -239,7 +244,7 @@ namespace pulsar
     {
         auto handle = m_materialStateChangedCallbacks[index];
         m_materialStateChangedCallbacks[index] = 0;
-        if(auto mat = m_materials->at(index))
+        if (auto mat = m_materials->at(index))
         {
             mat->OnShaderChanged.RemoveListenerByIndex(handle);
         }

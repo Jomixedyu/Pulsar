@@ -18,7 +18,9 @@ namespace pulsared
             std::u8string u8str = (char8_t*)file.c_str();
             auto fileBytes = FileUtil::ReadAllBytes(u8str);
 
-            asset->LoadFromNativeData(fileBytes.data(), fileBytes.size());
+            int32_t width{0}, height{0}, channel{0};
+            gfx::LoadImageFromMemory(fileBytes.data(), fileBytes.size(), &width, &height, &channel, 0, true);
+            asset->FromNativeData(fileBytes.data(), fileBytes.size(), true, width, height, channel);
 
             asset->SetIsSRGB(true);
 

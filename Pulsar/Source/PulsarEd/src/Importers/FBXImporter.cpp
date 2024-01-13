@@ -197,6 +197,10 @@ namespace pulsared
     {
         return {static_cast<float>(vec[0]), static_cast<float>(vec[1]), static_cast<float>(vec[2])};
     }
+    static inline Vector2f _Vec2(const FbxVector2& vec)
+    {
+        return Vector2f(vec[0], vec[1]);
+    }
     static inline Color4f _Color4f(const FbxColor& color)
     {
         return Color4f(color.mRed, color.mGreen, color.mBlue, color.mAlpha);
@@ -262,6 +266,18 @@ namespace pulsared
                         FbxVector4 normal;
                         fbxMesh->GetPolygonVertexNormal(polyIndex, vertIndex, normal);
                         vertex.Normal = _Vec3(normal);
+                        for (int i = 0; i < fbxMesh->GetUVLayerCount(); ++i)
+                        {
+                            if (i >= STATICMESH_MAX_TEXTURE_COORDS)
+                            {
+                                continue;
+                            }
+
+                            auto uvElement = fbxMesh->GetElementUV(i);
+                            auto uv = uvElement->GetDirectArray().GetAt(index);
+                            vertex.TexCoords[i] = _Vec2(uv);
+                        }
+
                         // color
                         if (auto fbxColors = fbxMesh->GetLayer(0)->GetVertexColors())
                         {

@@ -256,9 +256,10 @@ namespace pulsared
         }
         return isChanged;
     }
+    constexpr auto _TableBorderFlags = ImGuiTableFlags_BordersV;
     bool PImGui::BeginPropertyLine()
     {
-        bool b = ImGui::BeginTable("_lines", 2, ImGuiTableFlags_BordersV);
+        bool b = ImGui::BeginTable("_lines", 2, _TableBorderFlags);
         if (b)
         {
             const float width = (float)ImGui::GetWindowWidth() * 0.38f;
@@ -311,15 +312,17 @@ namespace pulsared
         ImGui::EndTable();
     }
 
-    void PImGui::ObjectFieldProperties(Type* type, Type* inner, Object* obj, ObjectBase* receiver, bool showDebug)
+    bool PImGui::ObjectFieldProperties(Type* type, Type* inner, Object* obj, ObjectBase* receiver, bool showDebug)
     {
-        if (ImGui::BeginTable("ss", 2, ImGuiTableFlags_BordersV))
+        bool changed = false;
+        if (ImGui::BeginTable("ss", 2, _TableBorderFlags))
         {
             const float width = (float)ImGui::GetWindowWidth() * 0.38f;
             ImGui::TableSetupColumn("name", ImGuiTableColumnFlags_WidthFixed, width);
             ImGui::TableSetupColumn("value");
-            _ObjectFieldPropertyLine("pp", type, inner, obj, receiver, nullptr, true, showDebug);
+            changed = _ObjectFieldPropertyLine("pp", type, inner, obj, receiver, nullptr, true, showDebug);
             ImGui::EndTable();
         }
+        return changed;
     }
 }

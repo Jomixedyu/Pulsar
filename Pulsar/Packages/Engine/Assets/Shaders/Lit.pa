@@ -1,0 +1,26 @@
+{
+    "Available": true,
+    "Config": {
+        "ConstantProperties": [],
+        "CullMode": 0,
+        "DepthCompareOp": 1,
+        "DepthTestEnable": true,
+        "DepthWriteEnable": true,
+        "Properties": [
+            {
+                "Name": "BaseColor",
+                "Type": 3,
+                "Value": ""
+            },
+            {
+                "Name": "MRA",
+                "Type": 3,
+                "Value": ""
+            }
+        ],
+        "RenderingType": 0,
+        "StencilTestEnable": false
+    },
+    "Passes": "Engine/Shaders/Lit.sh.json",
+    "RenderingType": 0
+}

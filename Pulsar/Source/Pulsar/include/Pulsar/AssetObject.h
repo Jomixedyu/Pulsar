@@ -10,6 +10,15 @@
 
 namespace pulsar
 {
+    CORELIB_DEF_ENUM(AssemblyObject_pulsar, pulsar,
+        OSPlatform,
+        Windows64
+        );
+}
+CORELIB_DECL_BOXING(pulsar::OSPlatform, pulsar::BoxingOSPlatform);
+
+namespace pulsar
+{
     template <typename T>
     void new_init_sptr(sptr<T>& ptr)
     {
@@ -40,6 +49,8 @@ namespace pulsar
     public:
         ser::VarientRef Object;
         std::iostream& Stream;
+        OSPlatform Platform;
+        bool CookedOnly;
         bool ExistStream;
         const bool IsWrite;
         const bool HasEditorData;

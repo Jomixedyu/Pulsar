@@ -57,11 +57,12 @@ namespace pulsar
         auto depthFormats = gfx->GetSupportedDepthFormats();
         assert(depthFormats.size() != 0);
 
-        if (colorRTCount != 0)
+        for (int i = 0; i < colorRTCount; ++i)
         {
-            auto colorRt = gfx->CreateRenderTarget(width, height, gfx::GFXRenderTargetType::Color, gfx::GFXTextureFormat::R8G8B8A8_SRGB, {});
+            auto colorRt = gfx->CreateRenderTarget(width, height, gfx::GFXRenderTargetType::Color, gfx::GFXTextureFormat::R8G8B8A8_UNorm, {});
             self->m_renderTargets.push_back(colorRt);
         }
+
         if (hasDepthStencil)
         {
             auto depth = gfx->CreateRenderTarget(width, height, gfx::GFXRenderTargetType::DepthStencil, depthFormats[0], {});;

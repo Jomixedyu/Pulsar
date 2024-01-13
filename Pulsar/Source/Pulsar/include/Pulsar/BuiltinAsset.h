@@ -11,5 +11,6 @@ namespace pulsar
         static inline const char* Material_Missing = "Engine/Materials/Missing";
         static inline const char* Shader_Missing = "Engine/Shaders/Missing";
         static inline const char* Material_Lambert = "Engine/Materials/Lambert";
+        static inline const char* Texture_White = "Engine/Texture/T_White";
     };
 }

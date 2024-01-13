@@ -46,15 +46,13 @@ namespace gfx
         {
             return m_graphicsPipelineManager;
         }
-        virtual GFXTexture2D_sp CreateFromImageData(
-            const uint8_t* imageData, int32_t width, int32_t height, int32_t channel,
-            bool enableReadWrite, GFXTextureFormat format, const GFXSamplerConfig& samplerCfg) override;
 
         virtual GFXTexture2D_sp CreateTexture2DFromMemory(
-            const uint8_t* originalData, size_t length,
-            const GFXSamplerConfig& samplerConfig,
-            bool enableReadWrite = false,
-            bool isSrgb = false) override;
+            const uint8_t* imageData, size_t length,
+            int width, int height,
+            GFXTextureFormat format,
+            const GFXSamplerConfig& samplerConfig
+            ) override;
 
 
         virtual GFXFrameBufferObject_sp CreateFrameBufferObject(

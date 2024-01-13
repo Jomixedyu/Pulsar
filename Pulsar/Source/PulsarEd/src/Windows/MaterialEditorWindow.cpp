@@ -47,10 +47,16 @@ namespace pulsared
                     Type* objType{};
                     switch (paramType)
                     {
-                    case ShaderParameterType::Scalar:
-                        obj = mkbox(material->GetFloat(prop.first));
+                    case ShaderParameterType::IntScalar: {
+                        obj = mkbox(material->GetIntScalar(prop.first));
                         objType = obj->GetType();
                         break;
+                    }
+                    case ShaderParameterType::Scalar: {
+                        obj = mkbox(material->GetScalar(prop.first));
+                        objType = obj->GetType();
+                        break;
+                    }
                     case ShaderParameterType::Vector: {
                         const auto vec = material->GetVector4(prop.first);
                         obj = mkbox(Color4f{vec.x, vec.y, vec.z, vec.w});
@@ -81,9 +87,12 @@ namespace pulsared
                             material->SetVector4(prop.first, {color.r, color.g, color.b, color.a});
                             break;
                         }
-                        case ShaderParameterType::Texture2D:
-
+                        case ShaderParameterType::Texture2D: {
+                            auto objptr = UnboxUtil::Unbox<ObjectPtrBase>(obj);
+                            Texture2D_ref tex = objptr;
+                            material->SetTexture(prop.first, tex);
                             break;
+                        }
                         }
                         material->SubmitParameters();
                     }

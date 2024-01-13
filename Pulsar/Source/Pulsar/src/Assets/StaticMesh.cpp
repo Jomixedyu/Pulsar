@@ -57,7 +57,7 @@ namespace pulsar
             indicesBuffer->SetElementCount(section.Indices.size());
             m_indicesBuffers.push_back(indicesBuffer);
         }
-        return false;
+        return true;
     }
     void StaticMesh::DestroyGPUResource()
     {

@@ -8,7 +8,7 @@
                 "Value": "1,1,1,1"
             }
         ],
-        "CullMode": 0,
+        "CullMode": 2,
         "DepthCompareOp": 1,
         "DepthTestEnable": true,
         "DepthWriteEnable": true,
@@ -19,6 +19,7 @@
                 "Value": ""
             }
         ],
+        "RenderingType": 1,
         "StencilTestEnable": false
     },
     "Passes": "Engine/Shaders/Lambert.sh.json",

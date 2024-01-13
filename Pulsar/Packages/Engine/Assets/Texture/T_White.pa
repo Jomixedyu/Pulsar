@@ -1,0 +1,10 @@
+{
+    "ChannelCount": 4,
+    "CompressedFormat": "ColorSRGB_Compressed",
+    "IsCompressedNativeData": true,
+    "IsSRGB": true,
+    "Size": {
+        "x": 4,
+        "y": 4
+    }
+}

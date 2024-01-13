@@ -20,6 +20,7 @@ namespace pulsar
         }
         AssetObject_sp obj = sptr_cast<AssetObject>(this->GetType()->CreateSharedInstance({}));
         obj->Construct();
+        obj->SetIndexName(this->GetIndexName());
 
         this->OnInstantiateAsset(obj.get());
 

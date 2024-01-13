@@ -1,11 +1,10 @@
 {
-	"PassName": "Engine/Shaders/Lit.sh.json",
 	"CullMode": "None",
 	"DepthTestEnable": true,
 	"DepthWriteEnable": true,
 	"DepthCompareOp": "Less",
 	"StencilTestEnable": false,
-	"RenderingType": "OpaqueDeferred",
+	"RenderingType": "OpaqueForward",
 	"Properties": [
 		{
 			"Name": "BaseColor",

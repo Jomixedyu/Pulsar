@@ -1,2 +1,0 @@
-#include "DefaultVSImpl.inc.hlsl"
-

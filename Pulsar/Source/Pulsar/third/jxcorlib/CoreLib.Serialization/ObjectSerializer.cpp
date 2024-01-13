@@ -218,6 +218,10 @@ namespace jxcorlib::ser
     {
         Add(key.data(), std::move(value));
     }
+    void Varient::Add(std::string_view key, bool value)
+    {
+        Add(key.data(), New(VarientType::Bool)->Assign(value));
+    }
     void Varient::Add(std::string_view key, int value)
     {
         Add(key.data(), New(VarientType::Number)->Assign(value));

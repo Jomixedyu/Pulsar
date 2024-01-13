@@ -62,6 +62,7 @@ namespace jxcorlib::ser
         void Push(const std::string& value) { Push(New(VarientType::String)->Assign(value)); }
 
         void Add(std::string_view key, std::shared_ptr<Varient> value);
+        void Add(std::string_view key, bool value);
         void Add(std::string_view key, int value);
         void Add(std::string_view key, float value);
         void Add(std::string_view key, const std::string& value);

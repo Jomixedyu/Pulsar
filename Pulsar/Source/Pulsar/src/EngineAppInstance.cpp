@@ -98,6 +98,7 @@ namespace pulsar
 
                     auto gfxPipeline = pipelineMgr->GetGraphicsPipeline(shaderPass, descriptorSetLayouts, targetFBO->GetRenderPassLayout(), batch.State);
                     cmdBuffer.CmdBindGraphicsPipeline(gfxPipeline.get());
+                    cmdBuffer.CmdSetCullMode(batch.GetCullMode());
 
                     for (auto& element : batch.Elements)
                     {

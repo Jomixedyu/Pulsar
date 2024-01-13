@@ -322,6 +322,25 @@ namespace pulsared
             World::Current()->GetPersistentScene()->AddNode(dlight);
             dlight->GetTransform()->TranslateRotateEuler({-3,3,-3}, {45,45,0});
         }
+
+        array_list<StaticMeshSection> sections;
+        auto& section = sections.emplace_back();
+        StaticMeshVertex vert0{};
+        vert0.Position = {0,0.5,0};
+        StaticMeshVertex vert1{};
+        vert1.Position = {1,0,0};
+        StaticMeshVertex vert2{};
+        vert2.Position = {0,0,3};
+
+        section.Vertex.push_back(vert0);
+        section.Vertex.push_back(vert1);
+        section.Vertex.push_back(vert2);
+        section.Indices.push_back(0);
+        section.Indices.push_back(1);
+        section.Indices.push_back(2);
+
+        auto sm = StaticMesh::StaticCreate("aa", std::move(sections), {});
+        World::Current()->GetPersistentScene()->NewNode("sm")->AddComponent<StaticMeshRendererComponent>()->SetStaticMesh(sm);
     }
 
     static void _RegisterIcon(Type* type, string_view path)

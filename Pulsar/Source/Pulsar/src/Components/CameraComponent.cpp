@@ -29,6 +29,7 @@ namespace pulsar
 
     CameraComponent::CameraComponent()
     {
+        m_renderingPath = RenderingPathMode::Deferred;
         new_init_sptr(m_postProcessMaterials);
     }
     void CameraComponent::Render()
@@ -73,6 +74,12 @@ namespace pulsar
         {
             UpdateRTBackgroundColor();
         }
+        else if(name == NAMEOF(m_renderingPath))
+        {
+            auto width = GetRenderTexture()->GetWidth();
+            auto height = GetRenderTexture()->GetHeight();
+            ResizeManagedRenderTexture(width, height);
+        }
     }
     void CameraComponent::ResizeManagedRenderTexture(int width, int height)
     {
@@ -80,13 +87,22 @@ namespace pulsar
             return;
         if (!m_managedRT)
             return;
+
         if (m_renderTarget)
         {
             DestroyObject(m_renderTarget);
         }
+        DestroyObject(m_postprocessRtA);
+        DestroyObject(m_postprocessRtB);
 
         auto rtname = GetAttachedNode()->GetName() + "_CamRT";
-        m_renderTarget = RenderTexture::StaticCreate(index_string{rtname}, width, height);
+
+        int renderTargetCount = 1;
+        if (m_renderingPath == RenderingPathMode::Deferred)
+        {
+            renderTargetCount = 5;
+        }
+        m_renderTarget = RenderTexture::StaticCreate(index_string{rtname}, width, height, renderTargetCount, true);
 
         m_postprocessRtA = RenderTexture::StaticCreate(index_string{rtname}, width, height, 1, false);
         m_postprocessRtB = RenderTexture::StaticCreate(index_string{rtname}, width, height, 1, false);
@@ -241,6 +257,10 @@ namespace pulsar
         if (m_managedRT && m_renderTarget)
         {
             DestroyObject(m_renderTarget);
+        }
+        if (m_managedRT)
+        {
+
         }
         m_camDescriptorLayout.reset();
         m_cameraDescriptorSet.reset();

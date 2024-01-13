@@ -307,6 +307,7 @@ namespace pulsared
 
     bool AssetDatabase::DeleteAsset(string_view assetPath)
     {
+        namespace fs = std::filesystem;
         if (!ExistsAssetPath(assetPath))
         {
             return false;
@@ -319,9 +320,10 @@ namespace pulsared
 
         // delete asset
         auto physicPath = AssetPathToPhysicsPath(assetPath);
-
+        string packageName;
         {
             auto node = FileTree->Find(assetPath);
+            packageName = node->GetPackageName();
             auto parentNode = node->Parent.lock();
             parentNode->RemoveChild(node);
         }
@@ -331,11 +333,23 @@ namespace pulsared
             ObjectPtr<AssetObject> asset = RuntimeObjectWrapper::GetObject(handle)->GetObjectHandle();
             DestroyObject(asset, true);
         }
-        // todo: remove registry mapping
-        if (std::filesystem::exists(physicPath))
+
+        auto assetId = GetIdByPath(assetPath);
+        _AssetRegistry.at(packageName).AssetPathMapping.erase(assetId);
+
+        array_list<fs::path> removePaths;
+        removePaths.push_back(fs::path(physicPath).replace_extension("pa"));
+        removePaths.push_back(fs::path(physicPath).replace_extension("pmeta"));
+        removePaths.push_back(fs::path(physicPath).replace_extension("pba"));
+
+        for (auto& removePath : removePaths)
         {
-            std::filesystem::remove(physicPath);
+            if (std::filesystem::exists(removePath))
+            {
+                std::filesystem::remove(removePath);
+            }
         }
+
         return true;
     }
 

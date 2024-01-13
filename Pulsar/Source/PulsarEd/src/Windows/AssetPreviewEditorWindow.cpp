@@ -19,7 +19,7 @@ namespace pulsared
             if (PImGui::BeginPropertyLine())
             {
                 PImGui::PropertyLineText("Asset Path", AssetDatabase::GetPathByAsset(m_assetObject));
-                PImGui::PropertyLineText("Asset Path", m_assetObject.handle.to_string());
+                PImGui::PropertyLineText("Asset Id", m_assetObject.handle.to_string());
 
                 PImGui::EndPropertyLine();
             }

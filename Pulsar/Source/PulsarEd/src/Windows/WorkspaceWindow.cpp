@@ -661,10 +661,8 @@ namespace pulsared
         }
         if (ImGui::BeginPopup("WorkspaceWindow.AssetContext"))
         {
-            // auto menu = MenuManager::GetMenu("WorkspaceWindow.AssetsContext");
-            auto menu = MenuManager::GetMainMenu()->FindSubMenuEntry("Assets");
-
-            auto ctxs = mksptr(new MenuContexts());
+            const auto menu = MenuManager::GetMainMenu()->FindSubMenuEntry("Assets");
+            const auto ctxs = mksptr(new MenuContexts());
             ctxs->Contexts.push_back(MakeMenuContext());
             MenuRenderer::RenderMenu(menu.get(), ctxs);
 

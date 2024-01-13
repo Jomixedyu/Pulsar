@@ -5,15 +5,15 @@
             "Type": "Vector",
             "Value": {
                 "w": 1.0,
-                "x": 0.48235294222831726,
-                "y": 0.5137255191802979,
+                "x": 1.0,
+                "y": 1.0,
                 "z": 1.0
             }
         },
         {
             "Name": "DiffuseTex",
             "Type": "Texture2D",
-            "Value": "00000000000000000000000000000000"
+            "Value": "94e1e6b8e5272d4bac18c1a714656223"
         }
     ],
     "Shader": "d0bcbdb69f3a7f4c9fbcf4244ce26e9c"

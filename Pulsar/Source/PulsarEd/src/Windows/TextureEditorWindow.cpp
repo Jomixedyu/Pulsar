@@ -13,6 +13,13 @@
 
 namespace pulsared
 {
+    #define FLAGS_GAMMA 0x01
+    #define FLAGS_EnableCheckerBackground 0x02
+    #define FLAGS_CHANNEL_R 0x04
+    #define FLAGS_CHANNEL_G 0x08
+    #define FLAGS_CHANNEL_B 0x10
+    #define FLAGS_CHANNEL_A 0x20
+    #define FLAGS_NORMALMAP 0x40
 
     void TextureEditorWindow::OnOpen()
     {
@@ -22,19 +29,27 @@ namespace pulsared
         Texture2D_ref tex = m_assetObject;
         tex->CreateGPUResource();
 
-        m_ppMat = GetAssetManager()->LoadAsset<Material>("Engine/Materials/ImagePreview");
+        m_ppMat = GetAssetManager()->LoadAsset<Material>("Engine/Materials/ImagePreview")->InstantiateAsset();
         m_ppMat->SetTexture("_Image"_idxstr, tex);
+        int32_t flags{};
+        flags |= FLAGS_GAMMA;
+        flags |= FLAGS_CHANNEL_R | FLAGS_CHANNEL_G | FLAGS_CHANNEL_B | FLAGS_CHANNEL_A;
+        if (tex->GetCompressedFormat() == TextureCompressionFormat::NormalMap_Compressed)
+        {
+            flags |= FLAGS_NORMALMAP;
+        }
+        m_ppMat->SetIntScalar("_Flags"_idxstr, flags);
         m_ppMat->CreateGPUResource();
-        // texPreviewPP->SubmitParameters();
 
         auto camera = m_viewportFrame.GetWorld()->GetPreviewCamera();
         camera->m_postProcessMaterials->push_back(m_ppMat);
 
-        m_enableGamma = tex->IsSRGB();
+        m_enableGamma = true;
     }
     void TextureEditorWindow::OnClose()
     {
         base::OnClose();
+        DestroyObject(m_ppMat);
     }
 
     void TextureEditorWindow::OnRefreshMenuContexts()
@@ -136,12 +151,7 @@ namespace pulsared
         return changed;
     }
 
-    #define FLAGS_SRGB 1
-    #define FLAGS_EnableCheckerBackground 2
-    #define FLAGS_CHANNEL_R 4
-    #define FLAGS_CHANNEL_G 8
-    #define FLAGS_CHANNEL_B 16
-    #define FLAGS_CHANNEL_A 32
+
     void TextureEditorWindow::OnDrawAssetPreviewUI(float dt)
     {
         Texture2D_ref tex = m_assetObject;
@@ -201,18 +211,18 @@ namespace pulsared
             m_ppMat->SubmitParameters();
         }
         ImGui::SameLine();
-        if (ImGui::Checkbox("Gamma2.2", &m_enableGamma))
+        if (ImGui::Checkbox("Gamma", &m_enableGamma))
         {
             int flag = m_ppMat->GetIntScalar("_Flags"_idxstr);
             if (m_enableGamma)
-                flag |= FLAGS_SRGB;
+                flag |= FLAGS_GAMMA;
             else
-                flag &= ~FLAGS_SRGB;
+                flag &= ~FLAGS_GAMMA;
             m_ppMat->SetIntScalar("_Flags"_idxstr, flag);
             m_ppMat->SubmitParameters();
         }
         ImGui::SameLine();
-        if (ImGui::Checkbox("Background", &m_enableTransparency))
+        if (ImGui::Checkbox("bg", &m_enableTransparency))
         {
             int flag = m_ppMat->GetIntScalar("_Flags"_idxstr);
             if (m_enableTransparency)
@@ -245,13 +255,39 @@ namespace pulsared
     {
         base::OnDrawAssetPropertiesUI(dt);
 
-        if (PImGui::PropertyGroup("Asset Info"))
+        if (PImGui::PropertyGroup("Texture"))
         {
-            if (PImGui::BeginPropertyLine())
+            bool changed = PImGui::ObjectFieldProperties(
+                BoxingObjectPtrBase::StaticType(),
+                m_assetObject->GetType(),
+                mkbox((ObjectPtrBase)m_assetObject).get(),
+                m_assetObject.GetPtr());
+
+            Texture2D_ref tex = m_assetObject;
+            auto flags = m_ppMat->GetIntScalar("_Flags"_idxstr);
+            if(tex->GetCompressedFormat() == TextureCompressionFormat::NormalMap_Compressed)
             {
-                PImGui::PropertyLineText("Object Handle", m_assetObject.GetHandle().to_string());
-                PImGui::EndPropertyLine();
+                flags |= FLAGS_NORMALMAP;
             }
+            else
+            {
+                flags &= ~FLAGS_NORMALMAP;
+            }
+            m_ppMat->SetIntScalar("_Flags"_idxstr, flags);
+            if (changed)
+            {
+                m_ppMat->SubmitParameters(true);
+            }
+        }
+
+        if (PImGui::PropertyGroup("Formats (Win64)"))
+        {
+            PImGui::BeginPropertyLine();
+            for (auto item : *Texture2D::StaticGetFormatMapping(OSPlatform::Windows64))
+            {
+                PImGui::PropertyLineText(mkbox(item.first)->GetName(), to_string(item.second));
+            }
+            PImGui::EndPropertyLine();
         }
     }
 

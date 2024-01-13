@@ -294,6 +294,14 @@ namespace pulsar
             SetShader(shaderObject);
         }
     }
+    void Material::OnInstantiateAsset(AssetObject* obj)
+    {
+        base::OnInstantiateAsset(obj);
+        auto self = static_cast<Material*>(obj);
+        self->m_propertyInfo = m_propertyInfo;
+        self->m_parameterValues = m_parameterValues;
+        self->SetShader(m_shader);
+    }
 
     void Material::SetIntScalar(const index_string& name, int value)
     {
@@ -348,7 +356,7 @@ namespace pulsar
         return it->second.AsIntScalar();
     }
 
-    float Material::GetFloat(const index_string& name)
+    float Material::GetScalar(const index_string& name)
     {
         auto it = m_parameterValues.find(name);
         if (it == m_parameterValues.end())
@@ -393,9 +401,9 @@ namespace pulsar
         return it->second.AsTexture();
     }
 
-    void Material::SubmitParameters()
+    void Material::SubmitParameters(bool force)
     {
-        if (!m_isDirtyParameter)
+        if (!m_isDirtyParameter && !force)
         {
             return;
         }
@@ -425,6 +433,11 @@ namespace pulsar
             }
             case ShaderParameterType::Texture2D: {
                 Texture2D_ref tex = value.AsTexture();
+                if (!tex)
+                {
+                    tex = GetAssetManager()->LoadAsset<Texture2D>(BuiltinAsset::Texture_White);
+                }
+                tex->CreateGPUResource();
                 m_descriptorSet->Find(name.to_string())->SetTextureSampler2D(tex->GetGFXTexture().get());
                 break;
             }

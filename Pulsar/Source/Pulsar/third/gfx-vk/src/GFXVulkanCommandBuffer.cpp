@@ -49,10 +49,10 @@ namespace gfx
         viewport.width = width;
         viewport.height = -height;
 #else
-        viewport.x = x;
-        viewport.y = y;
-        viewport.width = width;
-        viewport.height = height;
+         viewport.x = x;
+         viewport.y = y;
+         viewport.width = width;
+         viewport.height = height;
 #endif
         viewport.minDepth = 0.0f;
         viewport.maxDepth = 1.0f;
@@ -60,9 +60,13 @@ namespace gfx
         vkCmdSetViewport(m_cmdBuffer, 0, 1, &viewport);
 
         VkRect2D scissor{};
-        scissor.offset = { 0, 0 };
-        scissor.extent = { (uint32_t)width, (uint32_t)height };
+        scissor.offset = {0, 0};
+        scissor.extent = {(uint32_t)width, (uint32_t)height};
         vkCmdSetScissor(m_cmdBuffer, 0, 1, &scissor);
+    }
+    void GFXVulkanCommandBuffer::CmdSetCullMode(GFXCullMode mode)
+    {
+        vkCmdSetCullMode(m_cmdBuffer, (VkCullModeFlags)mode);
     }
 
     void GFXVulkanCommandBuffer::CmdBlit(GFXTexture* src, GFXTexture* dest)
