@@ -35,15 +35,15 @@ namespace pulsared
 //    }
 //    return textures;
 //}
-    static inline Color4f _Color4f(const aiColor4D& v)
+    static inline Color4f ToColor4f(const aiColor4D& v)
     {
         return Color4f(v.r, v.g, v.b, v.a);
     }
-    static inline Vector3f _Vec3(const aiVector3D& v3)
+    static inline Vector3f ToVector3f(const aiVector3D& v3)
     {
         return { v3.x, v3.y, v3.z };
     }
-    static inline Vector2f _Vec2(aiVector2D v2)
+    static inline Vector2f ToVector2f(aiVector2D v2)
     {
         return { v2.x, v2.y };
     }
@@ -54,15 +54,15 @@ namespace pulsared
         for (unsigned int vertnum = 0; vertnum < mesh->mNumVertices; ++vertnum)
         {
             StaticMeshVertex& vert = section->Vertex[vertnum];
-            vert.Position = _Vec3(mesh->mVertices[vertnum]);
-            vert.Normal = _Vec3(mesh->mNormals[vertnum]);
+            vert.Position = ToVector3f(mesh->mVertices[vertnum]);
+            vert.Normal = ToVector3f(mesh->mNormals[vertnum]);
             if (mesh->mTangents)
             {
-                vert.Tangent = _Vec3(mesh->mTangents[vertnum]);
+                vert.Tangent = ToVector3f(mesh->mTangents[vertnum]);
             }
             if (mesh->mBitangents)
             {
-                vert.Bitangent = _Vec3(mesh->mBitangents[vertnum]);
+                vert.Bitangent = ToVector3f(mesh->mBitangents[vertnum]);
             }
 
             for (size_t i = 0; i < STATICMESH_MAX_TEXTURE_COORDS; i++)
@@ -76,7 +76,7 @@ namespace pulsared
 
             if (mesh->HasVertexColors(0))
             {
-                vert.Color = _Color4f(mesh->mColors[0][vertnum]);
+                vert.Color = ToColor4f(mesh->mColors[0][vertnum]);
             }
 
         }
