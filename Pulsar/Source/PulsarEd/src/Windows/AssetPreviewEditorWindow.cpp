@@ -40,7 +40,7 @@ namespace pulsared
         m_world = new EditorWorld(worldName);
         m_world->OnWorldBegin();
 
-        m_world->GetPersistentScene()
+        m_world->GetResidentScene()
             ->NewNode("Light")
             ->AddComponent<DirectionalLightComponent>()
             ->GetAttachedNode()->GetTransform()

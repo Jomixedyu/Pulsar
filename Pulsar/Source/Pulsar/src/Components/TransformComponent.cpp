@@ -131,7 +131,6 @@ namespace pulsar
         : m_localToWorldMatrix{1.f}, m_worldToLocalMatrix{1.f},
           m_scale(1.f, 1.f, 1.f)
     {
-        m_flags |= OF_DontDestroy;
         m_children = mksptr(new List<ObjectPtr<TransformComponent>>);
     }
     void TransformComponent::OnTick(Ticker ticker)
@@ -213,7 +212,10 @@ namespace pulsar
     void TransformComponent::MakeTransformChanged()
     {
         m_isDirtyMatrix = true;
-        GetAttachedNode()->SendMessage(MessageId_OnChangedTransform());
+        if (m_beginning)
+        {
+            GetAttachedNode()->SendMessage(MessageId_OnChangedTransform());
+        }
     }
 
     void TransformComponent::SetParent(ObjectPtr<TransformComponent> parent)

@@ -53,7 +53,7 @@ namespace jxcorlib
         this->m_setter(instance, std::move(value));
     }
 
-    sptr<Object> FieldInfo::GetValue(Object* instance) const
+    sptr<Object> FieldInfo::GetValue(const Object* instance) const
     {
         if(!GetParentType()->IsInstanceOfType(instance))
         {

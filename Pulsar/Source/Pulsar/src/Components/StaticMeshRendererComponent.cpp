@@ -212,6 +212,7 @@ namespace pulsar
         base::BeginComponent();
         m_renderObject = sptr_static_cast<StaticMeshRenderObject>(CreateRenderObject());
         GetWorld()->AddRenderObject(m_renderObject);
+        ResizeMaterials(m_materials->size());
         for (size_t i = 0; i < m_materials->GetCount(); ++i)
         {
             BeginListenMaterialStateChanged(i);

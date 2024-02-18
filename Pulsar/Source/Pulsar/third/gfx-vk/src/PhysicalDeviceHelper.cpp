@@ -7,9 +7,6 @@
 namespace gfx::vk
 {
 
-
-
-
     static QueueFamilyIndices _FindQueueFamilies(VkSurfaceKHR surface, VkPhysicalDevice device)
     {
         QueueFamilyIndices indices;

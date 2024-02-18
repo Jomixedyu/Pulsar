@@ -22,7 +22,7 @@ namespace pulsared
     } // namespace PImGui
 
     // ret: viewport Size Changed
-    static bool PreviewFrame(World* world, bool isPreviewCam, Vector2f* viewportSize, gfx::GFXDescriptorSet* descriptorSet)
+    static bool PreviewFrame(World* world, bool isPreviewCam, Vector2f* viewportSize, gfx::GFXDescriptorSet* descriptorSet, bool forceResize = false)
     {
         if (!world)
         {
@@ -45,7 +45,7 @@ namespace pulsared
         bool isResize = false;
 
         const auto contentSize = PImGui::GetContentSize();
-        if (*viewportSize != contentSize)
+        if (*viewportSize != contentSize || forceResize)
         {
             isResize = true;
             *viewportSize = contentSize;
@@ -71,9 +71,19 @@ namespace pulsared
         return isResize;
     }
 
+    void ViewportFrame::SetWorld(World* world)
+    {
+        if (m_world == world)
+        {
+            return;
+        }
+        m_world = world;
+        m_newWorld = true;
+    }
     void ViewportFrame::Render(float dt)
     {
-        PreviewFrame(m_world, true, &m_viewportSize, m_descriptorSet.get());
+        PreviewFrame(m_world, true, &m_viewportSize, m_descriptorSet.get(), m_newWorld);
+        m_newWorld = false;
 
         auto newpos = ImGui::GetMousePos();
         if (ImGui::IsKeyDown(ImGuiKey_LeftAlt) && ImGui::IsWindowHovered())

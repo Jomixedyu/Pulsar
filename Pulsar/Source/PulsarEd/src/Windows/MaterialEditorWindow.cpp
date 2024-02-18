@@ -28,10 +28,10 @@ namespace pulsared
                 m_assetObject.GetPtr());
         }
 
-        Material_ref material = m_assetObject;
+        Material_ref material = ref_cast<Material>(m_assetObject);
         if (m_shader != material->GetShader())
         {
-            // m_world->GetPersistentScene()
+            // m_world->GetResidentScene()
             //     ->FindNodeByName("PreviewMesh")
             //     ->GetComponent<StaticMeshRendererComponent>()
             //     ->SetMaterial()
@@ -107,7 +107,7 @@ namespace pulsared
         Material_ref material = m_assetObject;
         material->CreateGPUResource();
 
-        auto previewMesh = Node::StaticCreate("PreviewMesh");
+        auto previewMesh =m_world->GetResidentScene()->NewNode("PreviewMesh");
         auto renderer = previewMesh->AddComponent<StaticMeshRendererComponent>();
         renderer->SetStaticMesh(GetAssetManager()->LoadAsset<StaticMesh>(BuiltinAsset::Shapes_Sphere));
 
@@ -125,7 +125,6 @@ namespace pulsared
             renderer->SetMaterial(0, m_assetObject);
         }
 
-        m_world->GetPersistentScene()->AddNode(previewMesh);
         m_shader = material->GetShader();
     }
     void MaterialEditorWindow::OnClose()

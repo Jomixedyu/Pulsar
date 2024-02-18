@@ -1,6 +1,21 @@
 
 cmake_minimum_required(VERSION 3.8)
 project("Pulsar")
+
+set(PUBLIC_MODULE
+        jxcorlib
+        glfw
+        gfx
+        gfx-vk
+        imgui
+        imext
+        jaudio
+)
+set(PRIVATE_MODULE
+        DirectXTex
+        astc
+)
+
 set(CMAKE_CXX_STANDARD 23)
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
@@ -8,47 +23,33 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 endif ()
 
 option(${PROJECT_NAME}_BUILD_EXECUTABLE "enable executable mode" OFF)
-#set(${PROJECT_NAME}_BUILD_EXECUTABLE ON)
 
 file(GLOB_RECURSE Pulsar_SRC "src/*.h" "src/*.hpp" "src/*.cpp" "include/*.h" "include/*.hpp")
-
-add_subdirectory("./third/jxcorlib")
-add_subdirectory("./third/gfx")
-add_subdirectory("./third/gfx-vk")
-add_subdirectory("./third/imgui")
-add_subdirectory("./third/jaudio")
-set(GLFW_BUILD_DOCS OFF)
-set(GLFW_INSTALL OFF)
-set(GLFW_BUILD_EXAMPLES OFF)
-set(GLFW_BUILD_TESTS OFF)
-add_subdirectory("./third/glfw")
-
-add_subdirectory("./third/astc-encoder")
-add_subdirectory("./third/DirectXTex")
 
 if (${PROJECT_NAME}_BUILD_EXECUTABLE)
     add_executable(${PROJECT_NAME} ${Pulsar_SRC} "main.cpp")
 else ()
-    add_library(${PROJECT_NAME} STATIC ${Pulsar_SRC})
+    add_library(${PROJECT_NAME} ${Pulsar_SRC})
 endif ()
-
-target_include_directories(${PROJECT_NAME} PUBLIC "./include")
-
-target_include_directories(${PROJECT_NAME} PRIVATE "./include/Pulsar")
-target_include_directories(${PROJECT_NAME} PUBLIC "..")
-target_include_directories(${PROJECT_NAME} PRIVATE "./third/astc-encoder/Source")
-target_include_directories(${PROJECT_NAME} PRIVATE "./third/DirectXTex")
-
 target_compile_definitions(${PROJECT_NAME} PUBLIC PULSAR_GFX_BUILD_VULKAN)
 
-target_link_libraries(${PROJECT_NAME}
-        PUBLIC
-        jxcorlib
-        glfw
-        gfx
-        gfx-vk
-        imgui
-		jaudio
-        astcenc-native-static
-        DirectXTex
-)
+
+set(AllModule ${PUBLIC_MODULE})
+list(APPEND AllModule ${PRIVATE_MODULE})
+
+foreach (module ${AllModule})
+    add_subdirectory("./third/${module}")
+endforeach ()
+
+
+target_include_directories(${PROJECT_NAME} PUBLIC "./include")
+target_include_directories(${PROJECT_NAME} PRIVATE "./include/${PROJECT_NAME}")
+
+foreach (module ${PUBLIC_MODULE})
+    target_link_libraries(${PROJECT_NAME} PUBLIC ${module})
+endforeach ()
+
+foreach (module ${PRIVATE_MODULE})
+    target_link_libraries(${PROJECT_NAME} PRIVATE ${module})
+endforeach ()
+

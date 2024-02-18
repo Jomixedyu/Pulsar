@@ -46,12 +46,12 @@ namespace pulsar
     using ObjectFlags = uint16_t;
     enum ObjectFlags_ : uint16_t
     {
-        OF_NoFlag       = 0,
-        OF_Persistent   = 1 << 0,
-        OF_Instantiable = 1 << 1,
-        OF_Instance     = 1 << 2,
-        OF_NoPack       = 1 << 3,
-        OF_DontDestroy  = 1 << 4,
+        OF_NoFlag           = 0,
+        OF_Persistent       = 1 << 0,
+        OF_Instantiable     = 1 << 1,
+        OF_Instance         = 1 << 2,
+        OF_NoPack           = 1 << 3,
+        OF_LifecycleManaged = 1 << 4,
     };
 
     class ObjectBase : public Object
@@ -60,21 +60,21 @@ namespace pulsar
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::ObjectBase, Object);
     public:
         ObjectBase();
-        ~ObjectBase() override;
+        ~ObjectBase() noexcept override;
     public:
-        ObjectHandle GetObjectHandle() const { return this->m_objectHandle; }
+        ObjectHandle GetObjectHandle() const noexcept { return this->m_objectHandle; }
     public:
         void Construct(ObjectHandle handle = {});
         virtual void PostEditChange(FieldInfo* info);
     public:
-        index_string GetIndexName() const { return m_name; }
-        void         SetIndexName(index_string name);
-        string       GetName() const { return m_name.to_string(); }
-        void         SetName(string_view name);
-        uint16_t     GetObjectFlags() const { return m_flags; }
-        bool         HasObjectFlags(ObjectFlags flags) const { return m_flags & flags;}
-        void         SetObjectFlags(uint16_t flags) { m_flags = flags; }
-        bool         IsPersistentObject() const { return m_flags & OF_Persistent; }
+        index_string GetIndexName() const noexcept { return m_name; }
+        void         SetIndexName(index_string name) noexcept;
+        string       GetName() const noexcept { return m_name.to_string(); }
+        void         SetName(string_view name) noexcept;
+        uint16_t     GetObjectFlags() const noexcept { return m_flags; }
+        bool         HasObjectFlags(ObjectFlags flags) const noexcept { return m_flags & flags;}
+        void         SetObjectFlags(uint16_t flags) noexcept { m_flags = flags; }
+        bool         IsPersistentObject() const noexcept { return m_flags & OF_Persistent; }
     protected:
         virtual void OnConstruct();
         virtual void OnDestroy();
@@ -97,11 +97,11 @@ namespace pulsar
     class RuntimeObjectWrapper final
     {
     public:
-        static ObjectBase* GetObject(ObjectHandle id);
-        static sptr<ObjectBase> GetSharedObject(ObjectHandle id);
-        static bool IsValid(ObjectHandle id);
-        static void NewInstance(sptr<ObjectBase>&& managedObj, ObjectHandle handle);
-        static void DestroyObject(ObjectHandle id, bool isForce = false);
+        static ObjectBase* GetObject(ObjectHandle id) noexcept;
+        static sptr<ObjectBase> GetSharedObject(ObjectHandle id) noexcept;
+        static bool IsValid(ObjectHandle id) noexcept;
+        static void NewInstance(sptr<ObjectBase>&& managedObj, ObjectHandle handle) noexcept;
+        static bool DestroyObject(ObjectHandle id, bool isForce = false) noexcept;
         static void Terminate();
 
         static void ForEachObject(const std::function<void(ObjectHandle, ObjectBase*)>& func);
@@ -163,33 +163,34 @@ namespace pulsar
     concept baseof_objectbase = std::is_base_of<ObjectBase, T>::value;
 
 
-    inline bool IsValid(const ObjectPtrBase& object)
+    inline bool IsValid(const ObjectPtrBase& object) noexcept
     {
         return RuntimeObjectWrapper::IsValid(object.handle);
     }
 
-    inline void DestroyObject(const ObjectPtrBase& object, bool isForce = false)
+    inline void DestroyObject(const ObjectPtrBase& object, bool isForce = false) noexcept
     {
         RuntimeObjectWrapper::DestroyObject(object.handle, isForce);
     }
-    
+
     template<typename T>
     struct ObjectPtr : public ObjectPtrBase
     {
         using element_type = T;
         T* Ptr;
 
-        ObjectPtr(ObjectHandle inHandle)
+        ObjectPtr(ObjectHandle inHandle) noexcept
         {
             handle = inHandle;
             Ptr = GetPtr();
         }
-        ObjectPtr(ObjectPtrBase ptr)
+        ObjectPtr(ObjectPtrBase objectptr) noexcept
         {
-            handle = ptr.handle;
+            handle = objectptr.handle;
             Ptr = GetPtr();
+            assert(Ptr->GetType()->IsSubclassOf(cltypeof<T>()));
         }
-        ObjectPtr(T* ptr)
+        ObjectPtr(T* ptr) noexcept
         {
             if (Ptr = ptr)
             {
@@ -198,15 +199,15 @@ namespace pulsar
         }
 
 
-        template<typename U>
-        ObjectPtr(const ObjectPtr<U>& other)
+        template<typename U> requires std::is_base_of_v<T, U>
+        ObjectPtr(const ObjectPtr<U>& other) noexcept
         {
             handle = other.handle;
             Ptr = GetPtr();
         }
-        ObjectPtr() : Ptr(nullptr) {}
-        ObjectPtr(std::nullptr_t) {}
-        ObjectPtr(const sptr<T>& object)
+        ObjectPtr() noexcept : Ptr(nullptr) {}
+        ObjectPtr(std::nullptr_t) noexcept : Ptr(nullptr)  {}
+        ObjectPtr(const sptr<T>& object) noexcept
         {
             if (object != nullptr)
             {
@@ -215,15 +216,15 @@ namespace pulsar
             Ptr = GetPtr();
         }
 
-        sptr<T> GetShared() const
+        sptr<T> GetShared() const noexcept
         {
             return sptr_cast<T>(RuntimeObjectWrapper::GetSharedObject(handle));
         }
-        T* GetPtr() const
+        T* GetPtr() const noexcept
         {
             return GetTPtr<T>();
         }
-        T* operator->() const
+        T* operator->() const noexcept(false)
         {
             auto ptr = GetPtr();
             if(ptr == nullptr)
@@ -239,7 +240,7 @@ namespace pulsar
         template<typename U>
         bool operator==(const ObjectPtr<U>& r) const { return handle == r.handle; }
 
-        bool IsValid() const
+        bool IsValid() const noexcept
         {
             return RuntimeObjectWrapper::IsValid(handle);
         }
@@ -247,7 +248,7 @@ namespace pulsar
         {
             return IsValid();
         }
-        void Reset()
+        void Reset() noexcept
         {
             handle = {};
         }

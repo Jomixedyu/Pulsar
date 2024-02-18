@@ -56,23 +56,6 @@ namespace pulsared
         return ImGui::CollapsingHeader(label, ImGuiTreeNodeFlags_DefaultOpen);
     }
 
-    // bool PImGui::BeginPropertyItem(const char* name)
-    // {
-    //     ImGui::Columns(2);
-    //     ImGui::SetColumnWidth(0, 120);
-    //     ImGui::AlignTextToFramePadding();
-    //
-    //     ImGui::Text(name);
-    //     ImGui::NextColumn();
-    //     return true;
-    // }
-    //
-    // void PImGui::EndPropertyItem()
-    // {
-    //     ImGui::NextColumn();
-    //     ImGui::Columns(1);
-    // }
-
     // type 禁止BoxingObjectPtrBase
     static bool _ObjectFieldPropertyLine(
         const string& name, Type* type, Type* innerType,

@@ -8,14 +8,7 @@
 #include <iostream>
 #include <utility>
 
-namespace pulsar
-{
-    CORELIB_DEF_ENUM(AssemblyObject_pulsar, pulsar,
-        OSPlatform,
-        Windows64
-        );
-}
-CORELIB_DECL_BOXING(pulsar::OSPlatform, pulsar::BoxingOSPlatform);
+
 
 namespace pulsar
 {

@@ -27,7 +27,9 @@ struct MaterialAttributes
 struct PointLight
 {
     float4 Position;
+    float4 Color; // w intensity
 };
+
 
 MaterialAttributes SurfaceMain(InPixelAssembly s);
 

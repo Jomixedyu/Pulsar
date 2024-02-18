@@ -586,7 +586,7 @@ namespace pulsared
 
             Type* assetType = child->GetAssetType();
             gfx::GFXDescriptorSet_wp descSet = AssetDatabase::IconPool->GetDescriptorSet({assetType->GetName()});
-            gfx::GFXDescriptorSet_wp dirtySet = AssetDatabase::IconPool->GetDescriptorSet("WorkspaceWindow.Dirty"_idxstr);
+            gfx::GFXDescriptorSet_wp dirtySet = AssetDatabase::IconPool->GetDescriptorSet("WorkspaceWindow.Dirty");
 
             const bool isFolder = child->IsFolder;
             const auto isSelected = weaks_find(m_selectedFiles.begin(), m_selectedFiles.end(), std::weak_ptr{child}) != m_selectedFiles.end();

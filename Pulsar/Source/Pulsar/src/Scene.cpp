@@ -70,7 +70,31 @@ namespace pulsar
         return self;
     }
 
+    void Scene::AddPrefab(Prefab_ref prefab)
+    {
+        auto prefabHandles = prefab->GetCollectionHandles().get();
+        for (auto node : *prefab->GetNodes())
+        {
+            auto newNode = BeginNewNode(node->GetIndexName());
+            array_list<Component_ref> components;
+            node->GetAllComponents(components);
 
+            for (const auto component : components)
+            {
+                auto objser = ser::CreateVarient("json");
+                ComponentSerializer ser{objser, true, true};
+                component->Serialize(&ser);
+
+                auto newComponent = newNode->AddComponent(component->GetType());
+                ser.IsWrite = false;
+                newComponent->Serialize(&ser);
+
+            }
+
+            EndNewNode(newNode);
+            //instantiate component
+        }
+    }
 
     void Scene::OnDestroy()
     {

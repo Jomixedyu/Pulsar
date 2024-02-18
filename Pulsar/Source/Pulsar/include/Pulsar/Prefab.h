@@ -9,5 +9,8 @@ namespace pulsar
 
     public:
 
+        static ObjectPtr<Prefab> StaticCreate(string_view name);
     };
+    DECL_PTR(Prefab);
+
 }

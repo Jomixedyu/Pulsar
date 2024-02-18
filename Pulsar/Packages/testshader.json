@@ -1,0 +1,15 @@
+{
+    "$schema": "./ShaderSchema.json",
+    "DepthCompareOp": "Less",
+    "ConstantProperties": [
+        {
+            "Name": "aaa"
+        }
+    ],
+    "Features": [
+        {
+            "Name": "ENABLE_SHADOW",
+            "Default": true
+        }
+    ]
+}

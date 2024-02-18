@@ -21,7 +21,7 @@ namespace jxcorlib
         static guid_t create_new();
         static guid_t parse(std::string_view str);
     public:
-        std::string to_string() const;
+        std::string to_string(bool sep = false) const;
         bool is_empty() const;
         bool operator==(guid_t right) const;
         operator bool() const;

@@ -11,6 +11,25 @@ using namespace std;
 
 namespace pulsar
 {
+    void Node::Serialize(NodeSerializer* s)
+    {
+        if (s->IsWrite)
+        {
+            s->Object->Add("Name", GetName());
+            s->Object->Add("IsActive", m_active);
+
+            auto componentsObj = s->Object->New(ser::VarientType::Array);
+            for (auto& component : *m_components)
+            {
+                auto compObj = s->Object->New(ser::VarientType::Object);
+                ComponentSerializer componentSerializer{compObj, s->IsWrite, s->HasEditorData};
+                component->Serialize(&componentSerializer);
+                componentsObj->Push(compObj);
+            }
+            s->Object->Add("Components", componentsObj);
+
+        }
+    }
     bool Node::GetIsActive() const
     {
         Node_ref node = this->GetObjectHandle();
@@ -58,6 +77,10 @@ namespace pulsar
         }
         return {};
     }
+    void Node::SetParent(ObjectPtr<Node> parent)
+    {
+        GetTransform()->SetParent(parent->GetTransform());
+    }
     void Node::OnActive()
     {
         for (auto& comp : *m_components)
@@ -87,10 +110,19 @@ namespace pulsar
             }
         }
     }
+    TransformComponent_ref Node::GetTransform() const
+    {
+        return ref_cast<TransformComponent>(m_components->at(0));
+    }
 
     Node::Node()
     {
+        m_flags |= OF_LifecycleManaged;
         this->m_components = mksptr(new List<ObjectPtr<Component>>);
+    }
+    Node::~Node()
+    {
+
     }
 
     void Node::OnConstruct()
@@ -109,7 +141,7 @@ namespace pulsar
 
         for (auto& comp : *m_components)
         {
-            DestroyObject(comp);
+            DestroyObject(comp, true);
         }
     }
 
@@ -139,7 +171,16 @@ namespace pulsar
         // init
         component->m_attachedNode = self_ref();
         component->m_ownerNode = self_ref();
-        this->m_components->push_back(component);
+
+        if (!m_components->empty() && type->IsSubclassOf(cltypeof<TransformComponent>()))
+        {
+            DestroyObject(m_components->at(0), true);
+            m_components->at(0) = component;
+        }
+        else
+        {
+            this->m_components->push_back(component);
+        }
 
         if (m_runtimeScene && m_runtimeScene->GetWorld())
         {
@@ -147,6 +188,32 @@ namespace pulsar
         }
 
         return component;
+    }
+    void Node::DestroyComponent(ObjectPtr<Component> component)
+    {
+        auto it = std::ranges::find(*m_components, component);
+        if (it == m_components->end())
+        {
+            return;
+        }
+        if (m_runtimeScene)
+        {
+            EndComponent(component);
+        }
+        DestroyObject(component, true);
+        m_components->erase(it);
+    }
+    int Node::IndexOf(ObjectPtr<Component> component) const
+    {
+        const auto count = GetComponentCount();
+        for (int i = 0; i < count; ++i)
+        {
+            if (m_components->at(i) == component)
+            {
+                return i;
+            }
+        }
+        return -1;
     }
 
     ObjectPtr<Component> Node::GetComponent(Type* type) const
@@ -161,11 +228,11 @@ namespace pulsar
         return nullptr;
     }
 
-    void Node::GetAllComponents(List_sp<ObjectPtr<Component>>& list)
+    void Node::GetAllComponents(array_list<ObjectPtr<Component>>& list)
     {
         for (auto& item : *this->m_components)
         {
-            list->push_back(item);
+            list.push_back(item);
         }
     }
     array_list<ObjectPtr<Component>> Node::GetAllComponentArray() const
@@ -205,15 +272,6 @@ namespace pulsar
         }
     }
 
-    ObjectPtr<Node> Node::StaticCreate(string_view name, TransformComponent_ref parent, ObjectFlags flags)
-    {
-        Node_sp node = mksptr(new Node);
-        node->SetObjectFlags(flags);
-        node->SetName(name);
-        node->Construct();
-        node->GetTransform()->SetParent(parent);
-        return node;
-    }
     World* Node::GetRuntimeWorld() const
     {
         if (IsValid(m_runtimeScene))

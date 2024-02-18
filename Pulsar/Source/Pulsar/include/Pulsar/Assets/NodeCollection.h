@@ -1,32 +1,46 @@
 #pragma once
 #include <Pulsar/AssetObject.h>
-#include <Pulsar/Node.h>
+
 
 namespace pulsar
 {
+    class Node;
     class NodeCollection : public AssetObject
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::NodeCollection, AssetObject)
     public:
-        const List_sp<Node_ref>& GetRootNodes() const { return m_rootNodes; }
-        const List_sp<Node_ref>& GetNodes() const { return m_nodes; }
+        void Serialize(AssetSerializer* s) override;
 
-        Node_ref FindNodeByName(index_string name) const;
-        Node_ref FindNodeByPath(string_view name) const;
+        const List_sp<ObjectPtr<Node>>& GetRootNodes() const { return m_rootNodes; }
+        const List_sp<ObjectPtr<Node>>& GetNodes() const { return m_nodes; }
 
-        void AddNode(Node_ref node);
-        Node_ref NewNode(string_view name = "Node");
-        void RemoveNode(Node_ref node);
+        ObjectPtr<Node> FindNodeByName(index_string name) const;
+        ObjectPtr<Node> FindNodeByPath(string_view name) const;
 
-        virtual void OnAddNode(Node_ref node) {}
-        virtual void OnRemoveNode(Node_ref node) {}
+
+        ObjectPtr<Node> NewNode(index_string name = "Node", ObjectPtr<Node> parent = nullptr, ObjectFlags flags = 0);
+        void RemoveNode(ObjectPtr<Node> node);
+
+        virtual void OnAddNode(ObjectPtr<Node> node);
+        virtual void OnRemoveNode(ObjectPtr<Node> node);
+
+        virtual void CopyFrom(ObjectPtr<NodeCollection> nc);
+        const List_sp<ObjectHandle>& GetCollectionHandles() const { return m_collectionHandles; }
 
         NodeCollection();
     protected:
+        ObjectPtr<Node> BeginNewNode(index_string name = "Node", ObjectPtr<Node> parent = nullptr, ObjectFlags flags = 0);
+        void EndNewNode(ObjectPtr<Node> node);
+    protected:
         CORELIB_REFL_DECL_FIELD(m_rootNodes);
-        List_sp<Node_ref> m_rootNodes;
+        List_sp<ObjectPtr<Node>> m_rootNodes;
 
         CORELIB_REFL_DECL_FIELD(m_nodes);
-        List_sp<Node_ref> m_nodes;
+        List_sp<ObjectPtr<Node>> m_nodes;
+
+        CORELIB_REFL_DECL_FIELD(m_collectionHandles);
+        List_sp<ObjectHandle> m_collectionHandles;
     };
+    DECL_PTR(NodeCollection);
+
 }

@@ -7,10 +7,13 @@
 #include "Pulsar/Components/PointLightComponent.h"
 #include "Pulsar/Components/SkyLightComponent.h"
 #include "Pulsar/Components/StaticMeshRendererComponent.h"
+#include "Pulsar/Prefab.h"
 #include "Shaders/EditorShader.h"
+#include "Tools/FbxInfoViewer/FbxInfoViewer.h"
 #include "Tools/ObjectDebugTool.h"
 #include "Tools/ShaderDebugTool.h"
 #include "Tools/WorldDebugTool.h"
+#include "Utils/PrefabUtil.h"
 
 #include <CoreLib.Serialization/JsonSerializer.h>
 #include <CoreLib/File.h>
@@ -123,7 +126,7 @@ namespace pulsared
                 auto entry = mksptr(new MenuEntryButton("Create Node"));
                 menu->AddEntry(entry);
                 entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
-                    World::Current()->GetPersistentScene()->NewNode("New Node");
+                    World::Current()->GetResidentScene()->NewNode("New Node");
                 });
             }
 
@@ -133,7 +136,7 @@ namespace pulsared
                 auto entry = mksptr(new MenuEntryButton("Create Sphere"));
                 shapeMenu->AddEntry(entry);
                 entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
-                    auto renderer = World::Current()->GetPersistentScene()->NewNode("New Sphere")
+                    auto renderer = World::Current()->GetResidentScene()->NewNode("New Sphere")
                         ->AddComponent<StaticMeshRendererComponent>();
                     renderer->SetStaticMesh(GetAssetManager()->LoadAsset<StaticMesh>(BuiltinAsset::Shapes_Sphere));
                     renderer->SetMaterial(0, GetAssetManager()->LoadAsset<Material>(BuiltinAsset::Material_Lambert));
@@ -144,7 +147,7 @@ namespace pulsared
                 auto entry = mksptr(new MenuEntryButton("Create Cube"));
                 shapeMenu->AddEntry(entry);
                 entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
-                    auto renderer = World::Current()->GetPersistentScene()->NewNode("New Cube")
+                    auto renderer = World::Current()->GetResidentScene()->NewNode("New Cube")
                         ->AddComponent<StaticMeshRendererComponent>();
                     renderer->AddMaterial();
                     renderer->SetMaterial(0, GetAssetManager()->LoadAsset<Material>(BuiltinAsset::Material_Lambert));
@@ -156,7 +159,7 @@ namespace pulsared
                 auto entry = mksptr(new MenuEntryButton("Create Plane"));
                 shapeMenu->AddEntry(entry);
                 entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
-                    auto renderer = World::Current()->GetPersistentScene()->NewNode("New Plane")
+                    auto renderer = World::Current()->GetResidentScene()->NewNode("New Plane")
                         ->AddComponent<StaticMeshRendererComponent>();
                     renderer->SetStaticMesh(GetAssetManager()->LoadAsset<StaticMesh>(BuiltinAsset::Shapes_Plane));
                     renderer->SetMaterial(0, GetAssetManager()->LoadAsset<Material>(BuiltinAsset::Material_Lambert));
@@ -170,7 +173,7 @@ namespace pulsared
                 auto entry = mksptr(new MenuEntryButton("Create Sky Light"));
                 light3dMenu->AddEntry(entry);
                 entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
-                    World::Current()->GetPersistentScene()->NewNode("New Sky Light")
+                    World::Current()->GetResidentScene()->NewNode("New Sky Light")
                         ->AddComponent<SkyLightComponent>();
                 });
             }
@@ -178,7 +181,7 @@ namespace pulsared
                 auto entry = mksptr(new MenuEntryButton("Create Directional Light"));
                 light3dMenu->AddEntry(entry);
                 entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
-                    World::Current()->GetPersistentScene()->NewNode("New Directional Light")
+                    World::Current()->GetResidentScene()->NewNode("New Directional Light")
                         ->AddComponent<DirectionalLightComponent>();
                 });
             }
@@ -186,7 +189,7 @@ namespace pulsared
                 auto entry = mksptr(new MenuEntryButton("Create Point Light"));
                 light3dMenu->AddEntry(entry);
                 entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
-                    World::Current()->GetPersistentScene()->NewNode("New Point Light")
+                    World::Current()->GetResidentScene()->NewNode("New Point Light")
                         ->AddComponent<PointLightComponent>();
                 });
             }
@@ -243,6 +246,13 @@ namespace pulsared
                 auto entry = mksptr(new MenuEntryButton("ShaderDebugTool"));
                 entry->Action = MenuAction::FromRaw([](sptr<MenuContexts> ctx) {
                     ToolWindow::OpenToolWindow<ShaderDebugTool>();
+                });
+                menu->AddEntry(entry);
+            }
+            {
+                auto entry = mksptr(new MenuEntryButton("FbxInfoViewer"));
+                entry->Action = MenuAction::FromRaw([](sptr<MenuContexts> ctx) {
+                    ToolWindow::OpenToolWindow<FbxInfoViewer>();
                 });
                 menu->AddEntry(entry);
             }
@@ -316,10 +326,9 @@ namespace pulsared
     {
         auto vertexColorMat = GetAssetManager()->LoadAsset<Material>("Engine/Materials/VertexColor", true);
         {
-            auto dlight = Node::StaticCreate("Directional Light");
+            auto dlight = World::Current()->GetResidentScene()->NewNode("Directional Light");
             dlight->AddComponent<DirectionalLightComponent>();
 
-            World::Current()->GetPersistentScene()->AddNode(dlight);
             dlight->GetTransform()->TranslateRotateEuler({-3,3,-3}, {45,45,0});
         }
 
@@ -340,7 +349,7 @@ namespace pulsared
         section.Indices.push_back(2);
 
         auto sm = StaticMesh::StaticCreate("aa", std::move(sections), {});
-        World::Current()->GetPersistentScene()->NewNode("sm")->AddComponent<StaticMeshRendererComponent>()->SetStaticMesh(sm);
+        World::Current()->GetResidentScene()->NewNode("sm")->AddComponent<StaticMeshRendererComponent>()->SetStaticMesh(sm);
     }
 
     static void _RegisterIcon(Type* type, string_view path)
@@ -413,6 +422,7 @@ namespace pulsared
         _RegisterIcon(cltypeof<StaticMesh>(), "Editor/Icons/staticmesh.png");
         _RegisterIcon(cltypeof<AssetObject>(), "Editor/Icons/PreviewFrame.png");
         _RegisterIcon(cltypeof<Texture2D>(), "Editor/Icons/texture.png");
+        _RegisterIcon(cltypeof<Prefab>(), "Editor/Icons/prefab.png");
         _RegisterIcon("WorkspaceWindow.Dirty", "Editor/Icons/Star.png");
 
         InitBasicMenu();
@@ -451,6 +461,7 @@ namespace pulsared
 
     void EditorAppInstance::OnTerminate()
     {
+        PrefabUtil::ClosePrefabMode();
         World::Reset(nullptr);
 
         // terminate subsystem
@@ -486,7 +497,8 @@ namespace pulsared
     {
         m_gui->NewFrame();
 
-        World::Current()->Tick(dt);
+        EditorWorld::GetPreviewWorld()->Tick(dt);
+        //World::Current()->Tick(dt);
 
         pulsared::EditorWindowManager::Draw(dt);
         pulsared::EditorTickerManager::Ticker.Invoke(dt);

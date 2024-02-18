@@ -28,6 +28,9 @@ add_library(${PROJECT_NAME} STATIC ${_imgui_Sources})
 
 target_include_directories(${PROJECT_NAME} PUBLIC "./include")
 target_include_directories(${PROJECT_NAME} PRIVATE "./include/imgui")
+include_directories("./include/imgui")
+
+target_include_directories(${PROJECT_NAME} PUBLIC "../glfw/glfw/include")
 
 find_package(Vulkan REQUIRED)
 target_include_directories(${PROJECT_NAME} PUBLIC ${Vulkan_INCLUDE_DIRS})

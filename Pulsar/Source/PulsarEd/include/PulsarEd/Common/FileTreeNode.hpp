@@ -6,6 +6,7 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include <CoreLib/UString.h>
 
 namespace pulsared
 {
@@ -35,19 +36,19 @@ namespace pulsared
         }
         string GetPhysicsPath() const
         {
-            return StringUtil::StringCast(absolute(PhysicsPath).generic_u8string());
+            return jxcorlib::StringUtil::StringCast(absolute(PhysicsPath).generic_u8string());
         }
         string GetPhysicsName() const
         {
-            return StringUtil::StringCast(PhysicsPath.filename().generic_u8string());
+            return jxcorlib::StringUtil::StringCast(PhysicsPath.filename().generic_u8string());
         }
         string GetPhysicsNameWithoutExt() const
         {
-            return  StringUtil::StringCast(PhysicsPath.filename().replace_extension().generic_u8string());
+            return  jxcorlib::StringUtil::StringCast(PhysicsPath.filename().replace_extension().generic_u8string());
         }
         string GetPhysicsNameExt() const
         {
-            return IsFolder ? string{} :  StringUtil::StringCast(PhysicsPath.extension().generic_u8string());
+            return IsFolder ? string{} :  jxcorlib::StringUtil::StringCast(PhysicsPath.extension().generic_u8string());
         }
         string GetRootName() const
         {
@@ -120,7 +121,7 @@ namespace pulsared
             newChild->Parent = sharedthis::shared_from_this();
             newChild->AssetName = name;
             newChild->AssetPath = AssetPath + "/" + string{name};
-            newChild->PhysicsPath = PhysicsPath / u8path(string{name} + string{ext});
+            newChild->PhysicsPath = PhysicsPath / jxcorlib::u8path(string{name} + string{ext});
             Children.push_back(newChild);
             Sort();
             return newChild;
@@ -136,7 +137,7 @@ namespace pulsared
 
             auto splits = path
                 | std::views::split('/')
-                | std::ranges::to<array_list<string>>();
+                | std::ranges::to<std::vector<string>>();
 
             for(size_t i = 0; auto item : splits)
             {

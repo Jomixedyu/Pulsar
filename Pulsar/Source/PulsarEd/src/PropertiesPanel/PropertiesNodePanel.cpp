@@ -30,7 +30,10 @@ namespace pulsared
     void PropertiesNodePanel::OnDrawImGui()
     {
         auto selectedObj = EditorSelection::Selection.GetSelected();
-
+        if (!selectedObj)
+        {
+            return;
+        }
         Node_ref selected;
         if (cltypeof<Node>()->IsInstanceOfType(selectedObj.GetPtr()))
         {
@@ -93,7 +96,7 @@ namespace pulsared
             if(!IsValid(comp)) continue;
 
             bool opened = true;
-            const bool dontDestroy = comp->HasObjectFlags(OF_DontDestroy);
+            const bool dontDestroy = comp->GetType()->IsSubclassOf(cltypeof<TransformComponent>());
             string componentFriendlyName = ComponentInfoManager::GetFriendlyComponentName(comp->GetType());
 
             ImGui::PushID(comp.GetPtr());
@@ -116,27 +119,17 @@ namespace pulsared
 
             if(!opened)
             {
-                DestroyObject(comp);
+                selected->DestroyComponent(comp);
             }
         }
 
-        if (ImGui::CollapsingHeader("__Node Infomation", nullptr, ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_DefaultOpen))
+        if (PImGui::PropertyGroup("Node MetaInfo"))
         {
-            ImGui::BeginDisabled();
-
-            _Property2Name();
-            ImGui::Text("Type");
-            _Property2Value();
-            ImGui::Text(selected->GetType()->GetName().c_str());
-            _Property2End();
-
-            _Property2Name();
-            ImGui::Text("Handle");
-            _Property2Value();
-            ImGui::Text(selected->GetObjectHandle().to_string().c_str());
-            _Property2End();
-
-            ImGui::EndDisabled();
+            if (PImGui::BeginPropertyLine())
+            {
+                PImGui::PropertyLineText("Handle", selected->GetObjectHandle().to_string().c_str());
+                PImGui::EndPropertyLine();
+            }
         }
 
         ImGui::Spacing();

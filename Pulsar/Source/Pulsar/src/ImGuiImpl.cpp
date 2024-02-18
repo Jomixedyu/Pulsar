@@ -68,7 +68,7 @@ namespace pulsar
             //fontConfig.OversampleH = 2;
             //fontConfig.OversampleV = 2;
             //strcpy(fontConfig.Name, "YaHei");
-            io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\STXIHEI.TTF", 16.f, &fontConfig, io.Fonts->GetGlyphRangesChineseSimplifiedCommon());
+            io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\msyh.ttc", 16.f, &fontConfig, io.Fonts->GetGlyphRangesChineseSimplifiedCommon());
         }
 
        

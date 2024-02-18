@@ -70,12 +70,10 @@ namespace pulsared
         m_previewMaterial->SetShader(m_assetObject);
         m_previewMaterial->CreateGPUResource();
 
-        auto previewMesh = Node::StaticCreate("PreviewMesh");
+        auto previewMesh = m_world->GetResidentScene()->NewNode("PreviewMesh");
         auto renderer = previewMesh->AddComponent<StaticMeshRendererComponent>();
 
         renderer->SetStaticMesh(GetAssetManager()->LoadAsset<StaticMesh>(BuiltinAsset::Shapes_Sphere));
-
-        m_world->GetPersistentScene()->AddNode(previewMesh);
 
         if (m_previewMaterial->GetShader()->GetRenderingType() == ShaderPassRenderingType::PostProcessing)
         {

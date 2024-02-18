@@ -74,8 +74,11 @@ protected:
         return hash;
     }
 public:
-    constexpr basic_index_string() : index(none) {}
-    constexpr basic_index_string(std::basic_string_view<char_t> view)
+    basic_index_string(const basic_index_string&) = default;
+    constexpr basic_index_string() = default;
+    constexpr basic_index_string(const char_t* str) : basic_index_string(std::basic_string_view<char_t>(str)) {}
+    constexpr basic_index_string(const std::basic_string<char_t>& str) : basic_index_string(std::basic_string_view<char_t>(str)) {}
+    constexpr basic_index_string(const std::basic_string_view<char_t>& view)
     {
         if (view.empty())
         {
@@ -153,25 +156,12 @@ public:
         return str.index == this->index;
     }
 
-    basic_index_string& operator=(std::basic_string_view<char_t> view)
-    {
-        return *new(this)basic_index_string(view);
-    }
-    basic_index_string& operator=(basic_index_string str)
-    {
-        this->index = str.index;
-        return *this;
-    }
-
     index_t index{};
 };
 
 using index_string = basic_index_string<char>;
 
-inline index_string operator ""_idxstr(const char* str, size_t len)
-{
-    return index_string{ str };
-}
+
 namespace std
 {
     template<>

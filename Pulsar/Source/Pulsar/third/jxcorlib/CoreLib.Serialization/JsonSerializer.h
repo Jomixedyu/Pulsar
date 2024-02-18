@@ -34,7 +34,7 @@ namespace jxcorlib::ser
     public:
         static string Serialize(Object* obj, const JsonSerializerSettings& settings);
     public:
-        static sptr<Object> Deserialize(const string& jstr, Type* type);
+        static sptr<Object> Deserialize(const string& jstr, Type* type, Object_sp defaultObject = nullptr);
         template<typename T, typename O = Object>
         static sptr<T> Deserialize(const string& str)
         {

@@ -12,13 +12,14 @@ namespace pulsared
     {
     public:
         virtual ~ViewportFrame() = default;
-        void SetWorld(World* world) { m_world = world; }
+        void SetWorld(World* world);
         World* GetWorld() const { return m_world; }
         virtual void Render(float dt);
         virtual void Initialize();
         virtual void Terminate();
     protected:
         World* m_world = nullptr;
+        bool m_newWorld {};
         Vector2f m_viewportSize{};
         gfx::GFXDescriptorSetLayout_sp m_descriptorLayout;
         gfx::GFXDescriptorSet_sp m_descriptorSet;

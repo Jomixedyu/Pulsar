@@ -272,7 +272,7 @@ namespace pulsared
         CreateAsset(asset, GetUniquePath(string{folderPath} + "/" + string{assetName}));
     }
 
-    static void _WriteAssetToDisk(std::shared_ptr<AssetFileNode> root, string_view path, AssetObject_ref asset)
+    static void _WriteAssetToDisk(const std::shared_ptr<AssetFileNode>& root, string_view path, AssetObject_ref asset)
     {
         const auto newAsset = root->PrepareChildFile(path, ".pmeta");
         newAsset->AssetMeta = mksptr(new AssetMetaData);

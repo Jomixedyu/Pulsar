@@ -58,7 +58,7 @@ namespace pulsar
         void PostEditChange(FieldInfo* info) override;
         void MakeTransformChanged();
     protected:
-        CORELIB_REFL_DECL_FIELD(m_localToWorldMatrix, new DebugPropertyAttribute, new ReadOnlyPropertyAttribute);
+        CORELIB_REFL_DECL_FIELD(m_localToWorldMatrix, new NoSerializableAttribtue, new DebugPropertyAttribute, new ReadOnlyPropertyAttribute);
         Matrix4f m_localToWorldMatrix;
         Matrix4f m_worldToLocalMatrix;
         bool m_isDirtyMatrix = false;

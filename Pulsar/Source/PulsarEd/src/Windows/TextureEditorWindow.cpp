@@ -30,7 +30,7 @@ namespace pulsared
         tex->CreateGPUResource();
 
         m_ppMat = GetAssetManager()->LoadAsset<Material>("Engine/Materials/ImagePreview")->InstantiateAsset();
-        m_ppMat->SetTexture("_Image"_idxstr, tex);
+        m_ppMat->SetTexture("_Image", tex);
         int32_t flags{};
         flags |= FLAGS_GAMMA;
         flags |= FLAGS_CHANNEL_R | FLAGS_CHANNEL_G | FLAGS_CHANNEL_B | FLAGS_CHANNEL_A;
@@ -38,7 +38,7 @@ namespace pulsared
         {
             flags |= FLAGS_NORMALMAP;
         }
-        m_ppMat->SetIntScalar("_Flags"_idxstr, flags);
+        m_ppMat->SetIntScalar("_Flags", flags);
         m_ppMat->CreateGPUResource();
 
         auto camera = m_viewportFrame.GetWorld()->GetPreviewCamera();
@@ -178,7 +178,7 @@ namespace pulsared
         ImGui::SameLine();
         if(auto result = RGBAButtons(&m_enableChannelR, &m_enableChannelG, &m_enableChannelB, &m_enableChannelA))
         {
-            int flag = m_ppMat->GetIntScalar("_Flags"_idxstr);
+            int flag = m_ppMat->GetIntScalar("_Flags");
             if (result & RGBAButtonBits_R)
             {
                 if (m_enableChannelR)
@@ -207,29 +207,29 @@ namespace pulsared
                 else
                     flag &= ~FLAGS_CHANNEL_A;
             }
-            m_ppMat->SetIntScalar("_Flags"_idxstr, flag);
+            m_ppMat->SetIntScalar("_Flags", flag);
             m_ppMat->SubmitParameters();
         }
         ImGui::SameLine();
         if (ImGui::Checkbox("Gamma", &m_enableGamma))
         {
-            int flag = m_ppMat->GetIntScalar("_Flags"_idxstr);
+            int flag = m_ppMat->GetIntScalar("_Flags");
             if (m_enableGamma)
                 flag |= FLAGS_GAMMA;
             else
                 flag &= ~FLAGS_GAMMA;
-            m_ppMat->SetIntScalar("_Flags"_idxstr, flag);
+            m_ppMat->SetIntScalar("_Flags", flag);
             m_ppMat->SubmitParameters();
         }
         ImGui::SameLine();
         if (ImGui::Checkbox("bg", &m_enableTransparency))
         {
-            int flag = m_ppMat->GetIntScalar("_Flags"_idxstr);
+            int flag = m_ppMat->GetIntScalar("_Flags");
             if (m_enableTransparency)
                 flag |= FLAGS_EnableCheckerBackground;
             else
                 flag &= ~FLAGS_EnableCheckerBackground;
-            m_ppMat->SetIntScalar("_Flags"_idxstr, flag);
+            m_ppMat->SetIntScalar("_Flags", flag);
             m_ppMat->SubmitParameters();
         }
 
@@ -263,8 +263,8 @@ namespace pulsared
                 mkbox((ObjectPtrBase)m_assetObject).get(),
                 m_assetObject.GetPtr());
 
-            Texture2D_ref tex = m_assetObject;
-            auto flags = m_ppMat->GetIntScalar("_Flags"_idxstr);
+            Texture2D_ref tex = ref_cast<Texture2D>(m_assetObject);
+            auto flags = m_ppMat->GetIntScalar("_Flags");
             if(tex->GetCompressedFormat() == TextureCompressionFormat::NormalMap_Compressed)
             {
                 flags |= FLAGS_NORMALMAP;
@@ -273,7 +273,7 @@ namespace pulsared
             {
                 flags &= ~FLAGS_NORMALMAP;
             }
-            m_ppMat->SetIntScalar("_Flags"_idxstr, flags);
+            m_ppMat->SetIntScalar("_Flags", flags);
             if (changed)
             {
                 m_ppMat->SubmitParameters(true);

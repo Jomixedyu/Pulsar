@@ -1,5 +1,5 @@
-#include <Pulsar/ObjectBase.h>
 #include <CoreLib/Guid.h>
+#include <Pulsar/ObjectBase.h>
 #include <map>
 
 namespace pulsar
@@ -11,7 +11,6 @@ namespace pulsar
         return table;
     }
 
-
     Action<ObjectBase*> RuntimeObjectWrapper::OnPostEditChanged{};
 
     static inline ObjectHandle _NewId()
@@ -19,9 +18,10 @@ namespace pulsar
         return ObjectHandle::create_new();
     }
 
-    ObjectBase* RuntimeObjectWrapper::GetObject(ObjectHandle id)
+    ObjectBase* RuntimeObjectWrapper::GetObject(ObjectHandle id) noexcept
     {
-        if (id.is_empty()) return nullptr;
+        if (id.is_empty())
+            return nullptr;
         auto it = _object_table()->find(id);
         if (it != _object_table()->end())
         {
@@ -30,9 +30,10 @@ namespace pulsar
         return nullptr;
     }
 
-    sptr<ObjectBase> RuntimeObjectWrapper::GetSharedObject(ObjectHandle id)
+    sptr<ObjectBase> RuntimeObjectWrapper::GetSharedObject(ObjectHandle id) noexcept
     {
-        if (id.is_empty()) return nullptr;
+        if (id.is_empty())
+            return nullptr;
         auto it = _object_table()->find(id);
         if (it != _object_table()->end())
         {
@@ -41,45 +42,58 @@ namespace pulsar
         return nullptr;
     }
 
-    bool RuntimeObjectWrapper::IsValid(ObjectHandle id)
+    bool RuntimeObjectWrapper::IsValid(ObjectHandle id) noexcept
     {
-        if (id.is_empty()) return false;
+        if (id.is_empty())
+            return false;
         return _object_table()->find(id) != _object_table()->end();
     }
-    void RuntimeObjectWrapper::NewInstance(sptr<ObjectBase>&& managedObj, ObjectHandle handle)
+    void RuntimeObjectWrapper::NewInstance(sptr<ObjectBase>&& managedObj, ObjectHandle handle) noexcept
     {
         const auto id = handle.is_empty() ? _NewId() : handle;
         managedObj->m_objectHandle = id;
         _object_table()->emplace(id, std::move(managedObj));
     }
 
-    void RuntimeObjectWrapper::DestroyObject(ObjectHandle id, bool isForce)
+    bool RuntimeObjectWrapper::DestroyObject(ObjectHandle id, bool isForce) noexcept
     {
-        if (id.is_empty()) return;
+        if (id.is_empty())
+            return false;
 
-        if(auto obj = GetObject(id))
+        if (auto obj = GetObject(id))
         {
-            const bool persistent = obj->HasObjectFlags(OF_Persistent);
-            if (!persistent || (persistent && isForce))
+            const bool dontDestory = obj->HasObjectFlags(OF_LifecycleManaged);
+            if (!dontDestory || (dontDestory && isForce))
             {
                 obj->Destroy();
                 _object_table()->erase(id);
+                return true;
             }
         }
+        return false;
     }
     void RuntimeObjectWrapper::Terminate()
     {
-        auto map = *_object_table();
-        for (auto& [id, ptr] : map)
+        array_list<ObjectHandle> destroyList;
+        for (const auto& [id, ptr] : *_object_table())
         {
-            DestroyObject(id, true);
+            if (!ptr->HasObjectFlags(OF_LifecycleManaged))
+            {
+                continue;
+            }
+            destroyList.push_back(id);
         }
+        for(auto& id : destroyList)
+        {
+            DestroyObject(id);
+        }
+
         // release memory
         std::remove_reference_t<decltype(*_object_table())>{}.swap(*_object_table());
     }
     void RuntimeObjectWrapper::ForEachObject(const std::function<void(ObjectHandle, ObjectBase*)>& func)
     {
-        for(auto& item : *_object_table())
+        for (auto& item : *_object_table())
         {
             func(item.first, item.second.get());
         }
@@ -87,7 +101,6 @@ namespace pulsar
 
     ObjectBase::ObjectBase()
     {
-
     }
     void ObjectBase::Construct(ObjectHandle handle)
     {
@@ -101,14 +114,14 @@ namespace pulsar
     {
         RuntimeObjectWrapper::OnPostEditChanged.Invoke(this);
     }
-    void ObjectBase::SetIndexName(index_string name)
+    void ObjectBase::SetIndexName(index_string name) noexcept
     {
         m_name = name;
-        #ifdef WITH_EDITOR
+#ifdef WITH_EDITOR
         m_objectName = name.to_string();
-        #endif
+#endif
     }
-    void ObjectBase::SetName(string_view name)
+    void ObjectBase::SetName(string_view name) noexcept
     {
         SetIndexName(name);
     }
@@ -117,11 +130,11 @@ namespace pulsar
     {
     }
 
-    ObjectBase::~ObjectBase()
+    ObjectBase::~ObjectBase() noexcept
     {
         if (m_objectHandle)
         {
-            //throw EngineException("not destory");
+            // throw EngineException("not destory");
             assert(true);
         }
     }
@@ -133,9 +146,7 @@ namespace pulsar
 
     void ObjectBase::OnDestroy()
     {
-
     }
-
 
     std::iostream& ReadWriteStream(std::iostream& stream, bool isWrite, ObjectPtrBase& obj)
     {
@@ -145,4 +156,4 @@ namespace pulsar
         sser::ReadWriteStream(stream, isWrite, obj.handle.w);
         return stream;
     }
-}
+} // namespace pulsar

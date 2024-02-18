@@ -54,19 +54,19 @@ namespace pulsar
         ObjectPtr<Scene>            GetFocusScene() const { return m_focusScene; }
         void                        SetFocusScene(ObjectPtr<Scene> scene);
         size_t                      GetSceneCount() const { return m_scenes.size(); }
-        ObjectPtr<Scene>            GetPersistentScene() const { return m_scenes[0]; }
+        ObjectPtr<Scene>            GetResidentScene() const { return m_scenes[0]; }
 
 
     public: // scene managment
-        void ChangeScene(ObjectPtr<Scene> scene, bool clearPresistentScene = true);
+        void ChangeScene(ObjectPtr<Scene> scene, bool clearResidentScene = true);
         void LoadScene(ObjectPtr<Scene> scene);
         void UnloadScene(ObjectPtr<Scene> scene);
     private:
-        void InitializePersistentScene();
-        void UnloadAllScene(bool unloadPresistentScene = true);
+        void InitializeResidentScene();
+        void UnloadAllScene(bool unloadResidentScene = true);
     protected:
-        virtual void OnLoadingPersistentScene(ObjectPtr<Scene> scene);
-        virtual void OnUnloadingPersistentScene(ObjectPtr<Scene> scene);
+        virtual void OnLoadingResidentScene(ObjectPtr<Scene> scene);
+        virtual void OnUnloadingResidentScene(ObjectPtr<Scene> scene);
 
 
     public: //rendering

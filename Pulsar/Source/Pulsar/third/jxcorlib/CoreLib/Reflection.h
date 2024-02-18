@@ -36,8 +36,8 @@
             ReflectionBuilder::CreateFieldInfo<ThisClass, FieldType>( \
                 #NAME, jxcorlib::is_detected<_Detected, ThisClass>::value, \
                 std::is_same_v<RealType, WrapType> ? nullptr : cltypeof<typename get_boxing_type<WrapType>::type>(), \
-                [](Object* p) -> sptr<Object> { \
-                    auto rawptr = (ThisClass*)p; \
+                [](const Object* p) -> sptr<Object> { \
+                    auto rawptr = (const ThisClass*)p; \
                     return get_object_pointer<CleanType>::get(rawptr->NAME); \
                 }, \
                 [](Object* p, sptr<Object> value) { \
@@ -169,7 +169,7 @@ namespace jxcorlib
             bool IsConst;
         };
 
-        using GetterFunction = std::function<sptr<Object>(Object* instance)>;
+        using GetterFunction = std::function<sptr<Object>(const Object* instance)>;
         using SetterFunction = std::function<void(Object* instance, sptr<Object> value)>;
 
     protected:
@@ -199,7 +199,7 @@ namespace jxcorlib
 
     public:
         void SetValue(Object* instance, sptr<Object> value);
-        sptr<Object> GetValue(Object* instance) const;
+        sptr<Object> GetValue(const Object* instance) const;
 
     };
 

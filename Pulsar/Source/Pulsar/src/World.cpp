@@ -66,12 +66,12 @@ namespace pulsar
         m_focusScene = scene;
     }
 
-    void World::ChangeScene(ObjectPtr<Scene> scene, bool clearPresistentScene)
+    void World::ChangeScene(ObjectPtr<Scene> scene, bool clearResidentScene)
     {
-        if (clearPresistentScene)
+        if (clearResidentScene)
         {
             UnloadAllScene(true);
-            InitializePersistentScene();
+            InitializeResidentScene();
         }
         else
         {
@@ -95,13 +95,13 @@ namespace pulsar
         }
         if (it == m_scenes.begin())
         {
-            OnUnloadingPersistentScene(scene);
+            OnUnloadingResidentScene(scene);
         }
         else
         {
             if (m_focusScene == scene)
             {
-                m_focusScene = GetPersistentScene();
+                m_focusScene = GetResidentScene();
             }
         }
         OnSceneUnloading(scene);
@@ -110,28 +110,28 @@ namespace pulsar
         DestroyObject(scene, true);
     }
 
-    void World::InitializePersistentScene()
+    void World::InitializeResidentScene()
     {
-        auto scene = Scene::StaticCreate("PresistentScene");
-        scene->SetObjectFlags(scene->GetObjectFlags() | OF_Instance);
+        auto scene = Scene::StaticCreate("ResidentScene");
+        scene->SetObjectFlags(scene->GetObjectFlags() | OF_Instance & ~OF_Persistent & ~OF_Instantiable);
 
         LoadScene(scene);
-        OnLoadingPersistentScene(scene);
+        OnLoadingResidentScene(scene);
     }
-    void World::UnloadAllScene(bool unloadPresistentScene)
+    void World::UnloadAllScene(bool unloadResidentScene)
     {
         auto scenes = m_scenes;
-        auto startIndex = unloadPresistentScene ? 0 : 1;
+        auto startIndex = unloadResidentScene ? 0 : 1;
         for (int i = (int)scenes.size() - 1; i >= 0; i--)
         {
             UnloadScene(scenes[i]);
         }
     }
 
-    void World::OnLoadingPersistentScene(ObjectPtr<Scene> scene)
+    void World::OnLoadingResidentScene(ObjectPtr<Scene> scene)
     {
     }
-    void World::OnUnloadingPersistentScene(ObjectPtr<Scene> scene)
+    void World::OnUnloadingResidentScene(ObjectPtr<Scene> scene)
     {
     }
     void World::UpdateWorldCBuffer()
@@ -176,8 +176,8 @@ namespace pulsar
 
     void World::OnWorldBegin()
     {
-        InitializePersistentScene();
-        m_focusScene = GetPersistentScene();
+        InitializeResidentScene();
+        m_focusScene = GetResidentScene();
 
         gfx::GFXDescriptorSetLayoutInfo info{
             gfx::GFXDescriptorType::ConstantBuffer,

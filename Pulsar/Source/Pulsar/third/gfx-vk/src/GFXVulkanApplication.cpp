@@ -75,7 +75,8 @@ namespace gfx
 
     static const std::vector<const char*> validationLayers =
         {
-            "VK_LAYER_KHRONOS_validation"};
+            "VK_LAYER_KHRONOS_validation"
+        };
 
     static bool _CheckValidationLayerSupport()
     {

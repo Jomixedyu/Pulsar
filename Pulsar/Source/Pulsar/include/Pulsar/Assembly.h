@@ -20,3 +20,12 @@ namespace pulsar
     using namespace jxcorlib;
     CORELIB_DECL_ASSEMBLY(pulsar);
 }
+
+namespace pulsar
+{
+    CORELIB_DEF_ENUM(AssemblyObject_pulsar, pulsar,
+        OSPlatform,
+        Windows64
+        );
+}
+CORELIB_DECL_BOXING(pulsar::OSPlatform, pulsar::BoxingOSPlatform);

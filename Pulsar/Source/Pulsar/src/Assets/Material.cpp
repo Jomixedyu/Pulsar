@@ -432,7 +432,7 @@ namespace pulsar
                 break;
             }
             case ShaderParameterType::Texture2D: {
-                Texture2D_ref tex = value.AsTexture();
+                Texture2D_ref tex = ref_cast<Texture2D>(value.AsTexture());
                 if (!tex)
                 {
                     tex = GetAssetManager()->LoadAsset<Texture2D>(BuiltinAsset::Texture_White);

@@ -1,12 +1,15 @@
 #include "Importers/AssimpFBXImporter.h"
-#include <Pulsar/Assets/StaticMesh.h>
-#include <Pulsar/Assets/Material.h>
-#include <Pulsar/Components/MeshContainerComponent.h>
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
-#include <Pulsar/Components/StaticMeshRendererComponent.h>
+
+#include "Pulsar/Scene.h"
+
 #include <Pulsar/Application.h>
+#include <Pulsar/Assets/Material.h>
+#include <Pulsar/Assets/StaticMesh.h>
+#include <Pulsar/Components/MeshContainerComponent.h>
+#include <Pulsar/Components/StaticMeshRendererComponent.h>
+#include <assimp/Importer.hpp>
+#include <assimp/postprocess.h>
+#include <assimp/scene.h>
 
 namespace pulsared
 {
@@ -93,7 +96,7 @@ namespace pulsared
 
     }
 
-    static void _ProcessNode(aiNode* node, const aiScene* scene, Node_ref pnode, const string& dir, float scale_factor)
+    static void _ProcessNode(aiNode* node, const aiScene* scene, Node_ref pnode, Scene_ref pscene, const string& dir, float scale_factor)
     {
         array_list<StaticMeshSection> sections;
         sections.resize(node->mNumMeshes);
@@ -111,7 +114,7 @@ namespace pulsared
         }
         
         
-        auto newNode = Node::StaticCreate(node->mName.C_Str(), pnode->GetTransform());
+        auto newNode = pscene->NewNode(node->mName.C_Str(), pnode);
 
         array_list<string> materialNames;
         for (auto& mat : materials)
@@ -135,31 +138,32 @@ namespace pulsared
         // process children
         for (unsigned int i = 0; i < node->mNumChildren; i++)
         {
-            _ProcessNode(node->mChildren[i], scene, newNode, dir, scale_factor);
+            _ProcessNode(node->mChildren[i], scene, newNode, pscene, dir, scale_factor);
         }
     }
 
     Node_ref AssimpFBXImporter::Import(string_view path, string& error)
     {
-        float scale_factor = 1;
-
-        auto node = Node::StaticCreate(PathUtil::GetFilenameWithoutExt(path));
-
-        Assimp::Importer importer;
-        const aiScene* scene = importer.ReadFile(path.data(), aiProcess_Triangulate | aiProcess_FlipUVs);
-
-        if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
-        {
-            error = importer.GetErrorString();
-            return nullptr;
-        }
-        string directory = string{ path.substr(0, path.find_last_of('/')) };
-
-        for (unsigned int i = 0; i < scene->mRootNode->mNumChildren; i++)
-        {
-            _ProcessNode(scene->mRootNode->mChildren[i], scene, node, directory, scale_factor);
-        }
-
-        return node;
+        // float scale_factor = 1;
+        //
+        // auto node = Node::StaticCreate(PathUtil::GetFilenameWithoutExt(path));
+        //
+        // Assimp::Importer importer;
+        // const aiScene* scene = importer.ReadFile(path.data(), aiProcess_Triangulate | aiProcess_FlipUVs);
+        //
+        // if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
+        // {
+        //     error = importer.GetErrorString();
+        //     return nullptr;
+        // }
+        // string directory = string{ path.substr(0, path.find_last_of('/')) };
+        //
+        // for (unsigned int i = 0; i < scene->mRootNode->mNumChildren; i++)
+        // {
+        //     _ProcessNode(scene->mRootNode->mChildren[i], scene, node, directory, scale_factor);
+        // }
+        //
+        // return node;
+        return {};
     }
 }

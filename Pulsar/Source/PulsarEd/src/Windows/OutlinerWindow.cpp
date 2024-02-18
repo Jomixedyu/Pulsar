@@ -1,8 +1,10 @@
-#include <PulsarEd/Windows/OutlinerWindow.h>
-#include <Pulsar/World.h>
+#include "EditorWorld.h"
+
 #include <Pulsar/Scene.h>
+#include <Pulsar/World.h>
 #include <PulsarEd/EditorNode.h>
 #include <PulsarEd/EditorSelection.h>
+#include <PulsarEd/Windows/OutlinerWindow.h>
 
 namespace pulsared
 {
@@ -65,20 +67,23 @@ namespace pulsared
     }
     void OutlinerWindow::OnDrawImGui(float dt)
     {
-        auto world = World::Current();
+        World* world = EditorWorld::GetPreviewWorld();
         if (!world)
         {
             return;
         }
 
         ImGuiTreeNodeFlags base_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_DefaultOpen;
-        for (size_t i = 0; i < World::Current()->GetSceneCount(); i++)
+
+        for (int i = 0; i < world->GetSceneCount(); i++)
         {
-            auto currentScene = World::Current()->GetScene(i);
-            if (ImGui::TreeNodeEx(currentScene->GetName().c_str(), base_flags))
+            auto currentScene = world->GetScene(i);
+            ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4{0,0,0,1});
+            bool opened = ImGui::TreeNodeEx(currentScene->GetName().c_str(), base_flags);
+            ImGui::PopStyleColor();
+            if (opened)
             {
                 _Show(currentScene->GetRootNodes());
-
                 ImGui::TreePop();
             }
         }

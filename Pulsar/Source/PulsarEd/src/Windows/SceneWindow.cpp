@@ -1,17 +1,19 @@
-#include <PulsarEd/Windows/SceneWindow.h>
+#include "EditorAppInstance.h"
+#include "EditorWorld.h"
 #include <Pulsar/Assets/Shader.h>
+#include <Pulsar/Components/CameraComponent.h>
+#include <Pulsar/Rendering/RenderContext.h>
 #include <Pulsar/Scene.h>
 #include <PulsarEd/Assembly.h>
-#include <PulsarEd/EditorNode.h>
-#include <Pulsar/Components/CameraComponent.h>
-#include <PulsarEd/Importers/FBXImporter.h>
-#include <PulsarEd/Components/StdEditCameraControllerComponent.h>
 #include <PulsarEd/Components/Grid3DComponent.h>
-#include <Pulsar/Rendering/RenderContext.h>
+#include <PulsarEd/Components/StdEditCameraControllerComponent.h>
+#include <PulsarEd/EditorNode.h>
+#include <PulsarEd/Importers/FBXImporter.h>
+#include <PulsarEd/Windows/SceneWindow.h>
+#include <gfx-vk/GFXVulkanRenderTarget.h>
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_vulkan.h>
-#include <gfx-vk/GFXVulkanRenderTarget.h>
-#include "EditorAppInstance.h"
+
 #include <PulsarEd/ExclusiveTask.h>
 #include <PulsarEd/Workspace.h>
 
@@ -70,10 +72,22 @@ namespace pulsared
 
     void SceneWindow::OnDrawImGui(float dt)
     {
-        // ImGui::ShowDemoWindow();
+        auto world = EditorWorld::GetPreviewWorld();
+
+        m_sceneEditor->SetWorld(world);
 
         if (ImGui::BeginMenuBar())
         {
+            if (!EditorWorld::PreviewWorldStackEmpty())
+            {
+                if (ImGui::Button("Pop"))
+                {
+                    EditorWorld::PopPreviewWorld();
+                    world = EditorWorld::GetPreviewWorld();
+                    m_sceneEditor->SetWorld(world);
+                }
+            }
+
             const char* items[] = { "Shade" };
 
             ImGui::Text("Draw Mode");
@@ -111,9 +125,10 @@ namespace pulsared
             }
 
             ImGui::Button(ICON_FK_ARROWS " Gizmos###Gizmos");
+
             if (ImGui::Button(ICON_FK_CUBE " 2D###2D"))
             {
-                auto cam = GetEdApp()->GetEditorWorld()->GetPreviewCamera();
+                auto cam = world->GetPreviewCamera();
                 auto ctrl = cam->GetAttachedNode()->GetParent()->GetComponent<StdEditCameraControllerComponent>().GetPtr();
                 ctrl->m_enable2DMode = !ctrl->m_enable2DMode;
 
@@ -154,8 +169,8 @@ namespace pulsared
             }
             if (ImGui::Button(ICON_FK_TABLE " Grid###Grid"))
             {
-                static index_string name = "__ReferenceGrid3d"_idxstr;
-                auto node = GetEdApp()->GetEditorWorld()->GetPersistentScene()->FindNodeByName(name);
+                static index_string name = "__ReferenceGrid3d";
+                auto node = world->GetResidentScene()->FindNodeByName(name);
                 if (node)
                 {
                     node->SetIsActiveSelf(!node->GetIsActiveSelf());

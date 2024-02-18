@@ -1,8 +1,13 @@
 #include "Importers/FBXImporter.h"
+
+#include "Pulsar/Prefab.h"
+#include "Pulsar/Scene.h"
+
 #include <Pulsar/Assets/StaticMesh.h>
 #include <Pulsar/Components/MeshContainerComponent.h>
 #include <Pulsar/Components/StaticMeshRendererComponent.h>
 #include <PulsarEd/AssetDatabase.h>
+#include <Pulsar/Assets/NodeCollection.h>
 #include <fbxsdk.h>
 
 #ifdef IOS_REF
@@ -336,21 +341,28 @@ namespace pulsared
         return StaticMesh::StaticCreate(name, std::move(sections), std::move(materialNames));
     }
 
-    static void ProcessNode(FbxNode* fbxNode, Node_ref pnode, FBXImporterSettings* settings)
+    static void ProcessNode(FbxNode* fbxNode, Node_ref parentNode, NodeCollection_ref pscene, FBXImporterSettings* settings, const string& meshFolder)
     {
+        auto newNodeName = fbxNode->GetName();
+        const auto newNode = pscene->NewNode(newNodeName, parentNode);
+
+        if (auto staticMesh = ProcessMesh(fbxNode))
+        {
+            AssetDatabase::CreateAsset(staticMesh, meshFolder + "/" + staticMesh->GetName());
+            newNode->AddComponent<StaticMeshRendererComponent>()->SetStaticMesh(staticMesh);
+            auto translation = fbxNode->GetGeometricTranslation(FbxNode::eSourcePivot);
+            auto rotation = fbxNode->GetGeometricRotation(FbxNode::eSourcePivot);
+            auto scaling = fbxNode->GetGeometricScaling(FbxNode::eSourcePivot);
+            auto transform = newNode->GetTransform();
+            transform->SetPosition(ToVector3f(translation));
+            transform->SetScale(ToVector3f(scaling));
+        }
+
         const auto childCount = fbxNode->GetChildCount();
-        for (size_t childIndex = 0; childIndex < childCount; childIndex++)
+        for (int childIndex = 0; childIndex < childCount; childIndex++)
         {
             const auto childFbxNode = fbxNode->GetChild(childIndex);
-            const auto npNode = Node::StaticCreate(childFbxNode->GetName(), pnode->GetTransform());
-
-            if (auto staticMesh = ProcessMesh(childFbxNode))
-            {
-                AssetDatabase::CreateAsset(staticMesh, settings->TargetPath + "/" + staticMesh->GetName());
-                npNode->AddComponent<StaticMeshRendererComponent>()->SetStaticMesh(staticMesh);
-            }
-
-            ProcessNode(childFbxNode, npNode, settings);
+            ProcessNode(childFbxNode, newNode, pscene, settings, meshFolder);
         }
     }
 
@@ -377,12 +389,9 @@ namespace pulsared
                     ourAxisSystem.ConvertScene(fbxScene);
                 }
             }
-            auto mm = FbxSystemUnit::m;
-            auto cmm = FbxSystemUnit::cm;
 
             auto originUnit = fbxScene->GetGlobalSettings().GetOriginalSystemUnit();
             auto unit = fbxScene->GetGlobalSettings().GetSystemUnit();
-            ;
 
             if (unit != FbxSystemUnit::m)
             {
@@ -393,12 +402,18 @@ namespace pulsared
             geomConverter.Triangulate(fbxScene, true);
             geomConverter.SplitMeshesPerMaterial(fbxScene, true);
 
-            const auto rootNode = fbxScene->GetRootNode();
+            const auto fbxRootNode = fbxScene->GetRootNode();
+            const auto filename = PathUtil::GetFilenameWithoutExt(importFile);
+            auto prefab = Prefab::StaticCreate(filename);
+            const auto targetMeshFolder = settings->TargetPath + "/" + filename + "_Items";
+            const auto rootCount = fbxRootNode->GetChildCount();
+            for (int i = 0; i < rootCount; ++i)
+            {
+                auto sceneRootNode = fbxRootNode->GetChild(i);
+                ProcessNode(sceneRootNode, nullptr, prefab, fbxsetting, targetMeshFolder);
+            }
 
-            const auto rootpNode = Node::StaticCreate(PathUtil::GetFilenameWithoutExt(importFile));
-
-            ProcessNode(rootNode, rootpNode, fbxsetting);
-
+            AssetDatabase::CreateAsset(prefab, settings->TargetPath + "/" + filename);
             DestroySdkObjects(fbxManager, 0);
         }
         return {};
