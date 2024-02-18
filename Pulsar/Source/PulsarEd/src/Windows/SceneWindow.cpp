@@ -72,6 +72,9 @@ namespace pulsared
 
     void SceneWindow::OnDrawImGui(float dt)
     {
+        static bool b = true;
+        ImGui::ShowDemoWindow(&b);
+
         auto world = EditorWorld::GetPreviewWorld();
 
         m_sceneEditor->SetWorld(world);

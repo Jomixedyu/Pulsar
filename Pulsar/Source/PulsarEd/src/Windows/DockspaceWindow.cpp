@@ -1,13 +1,19 @@
 #include "Windows/DockspaceWindow.h"
 #include "EditorAppInstance.h"
+#include "Menus/Menu.h"
 #include "Menus/MenuRenderer.h"
 #include "Windows/EditorWindowManager.h"
 
 namespace pulsared
 {
-    void DockspaceWindow::OnDrawImGui(float dt)
+
+    DockspaceWindow::DockspaceWindow()
     {
 
+    }
+
+    void DockspaceWindow::OnDrawImGui(float dt)
+    {
         static bool opt_fullscreen = true;
         static bool opt_padding = false;
 
@@ -66,20 +72,20 @@ namespace pulsared
         {
             ImGui::Separator();
             ImGui::Button(ICON_FK_FLOPPY_O); //save button
-
-            ImGui::BeginDisabled(GetEdApp()->IsInteractiveRendering());
-            if (ImGui::Button(ICON_FK_PLAY))
-            {
-                GetEdApp()->StartInteractiveRendering();
-            }
-            ImGui::EndDisabled();
-
-            ImGui::BeginDisabled(!GetEdApp()->IsInteractiveRendering());
-            if (ImGui::Button(ICON_FK_STOP))
-            {
-                GetEdApp()->StopInteractiveRendering();
-            }
-            ImGui::EndDisabled();
+            //
+            // ImGui::BeginDisabled(GetEdApp()->IsInteractiveRendering());
+            // if (ImGui::Button(ICON_FK_PLAY))
+            // {
+            //     GetEdApp()->StartInteractiveRendering();
+            // }
+            // ImGui::EndDisabled();
+            //
+            // ImGui::BeginDisabled(!GetEdApp()->IsInteractiveRendering());
+            // if (ImGui::Button(ICON_FK_STOP))
+            // {
+            //     GetEdApp()->StopInteractiveRendering();
+            // }
+            // ImGui::EndDisabled();
 
             ImGui::EndMenuBar();
         }

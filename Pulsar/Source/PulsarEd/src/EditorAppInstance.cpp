@@ -14,6 +14,7 @@
 #include "Tools/ShaderDebugTool.h"
 #include "Tools/WorldDebugTool.h"
 #include "Utils/PrefabUtil.h"
+#include "Windows/ShelfBarWindow.h"
 
 #include <CoreLib.Serialization/JsonSerializer.h>
 #include <CoreLib/File.h>
@@ -288,6 +289,8 @@ namespace pulsared
         EditorWindowManager::GetPanelWindow(cltypeof<WorkspaceWindow>())->Open();
         EditorWindowManager::RegisterPanelWindowType(cltypeof<ConsoleWindow>());
         EditorWindowManager::GetPanelWindow(cltypeof<ConsoleWindow>())->Open();
+
+        mksptr(new ShelfBarWindow)->Open();
     }
 
     void EditorAppInstance::OnPreInitialize(gfx::GFXGlobalConfig* config)
