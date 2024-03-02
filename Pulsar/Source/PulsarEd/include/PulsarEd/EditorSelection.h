@@ -1,5 +1,6 @@
 #pragma once
 #include "SelectionSet.h"
+#include <Pulsar/Node.h>
 
 namespace pulsared
 {
@@ -7,6 +8,6 @@ namespace pulsared
     class EditorSelection
     {
     public:
-        static inline SelectionSet Selection;
+        static inline SelectionSet<Node> Selection;
     };
 }

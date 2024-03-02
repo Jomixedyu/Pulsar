@@ -925,7 +925,34 @@ namespace jmath
 
     using Color4b = Color4<uint8_t>;
     using Color4f = Color4<float>;
+    using Color4d = Color4<double>;
 
+
+
+    template <typename T>
+    struct Box3
+    {
+        Vector3<T> Min;
+        Vector3<T> Max;
+
+        Vector3<T> GetCenter() const
+        {
+            return (Min + Max) * T(0.5);
+        }
+
+        Vector3<T> GetExtend() const
+        {
+            return (Max - Min) * T(0.5);
+        }
+
+        Vector3<T> GetSize() const
+        {
+            return Max - Min;
+        }
+    };
+
+    using Box3f = Box3<float>;
+    using Box3d = Box3<double>;
 
     template<typename B, typename L>
     Color4<B> FloatColorToBitColor(const Color4<L>& l)

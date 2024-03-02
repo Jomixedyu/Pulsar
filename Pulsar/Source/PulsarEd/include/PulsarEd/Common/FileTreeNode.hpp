@@ -30,6 +30,16 @@ namespace pulsared
         std::vector<std::shared_ptr<T>> Children;
     public:
 
+        void SetAssetPath(string_view assetPath)
+        {
+            AssetPath = string { assetPath };
+            auto index = assetPath.rfind('/');
+            if (index != string_view::npos)
+            {
+                AssetName = string { assetPath.substr(index + 1) };
+            }
+        }
+
         const std::vector<std::shared_ptr<T>>& GetChildren() const
         {
             return Children;
@@ -110,6 +120,7 @@ namespace pulsared
             newChild->AssetName = name;
             newChild->AssetPath = AssetPath + "/" + string{name};
             newChild->Parent = sharedthis::shared_from_this();
+            newChild->PhysicsPath = PhysicsPath / name;
             Children.push_back(newChild);
             Sort();
             return newChild;

@@ -45,14 +45,15 @@ namespace pulsar
 
         void ResizeManagedRenderTexture(int width, int height);
 
+        void OnMsg_TransformChanged() override;
         void OnTick(Ticker ticker) override;
     public:
         float GetFOV() const { return m_fov; }
-        void  SetFOV(float value) { m_fov = value; }
+        void  SetFOV(float value);
         float GetNear() const { return m_near; }
-        void  SetNear(float value) { m_near = value; }
+        void  SetNear(float value);
         float GetFar() const { return m_far; }
-        void  SetFar(float value) { m_far = value; }
+        void  SetFar(float value);
         Color4f  GetBackgroundColor() const { return m_backgroundColor; }
         void     SetBackgroundColor(const Color4f& value);
         CameraProjectionMode  GetProjectionMode() const { return m_projectionMode; }
@@ -61,7 +62,7 @@ namespace pulsar
         void                      SetRenderTexture(const RenderTexture_ref& value, bool managed = false);
 
         float GetOrthoSize() const { return m_orthoSize; }
-        void SetOrthoSize(float value) { m_orthoSize = value; }
+        void SetOrthoSize(float value);
 
 
     protected:

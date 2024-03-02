@@ -117,13 +117,58 @@ namespace pulsar
     void ObjectBase::SetIndexName(index_string name) noexcept
     {
         m_name = name;
-#ifdef WITH_EDITOR
-        m_objectName = name.to_string();
-#endif
     }
     void ObjectBase::SetName(string_view name) noexcept
     {
         SetIndexName(name);
+    }
+
+    void ObjectBase::OnDependencyMessage(ObjectHandle inDependency, int msg)
+    {
+
+    }
+    void ObjectBase::AddOutDependency(ObjectHandle obj)
+    {
+        if (!m_outDependency)
+        {
+            m_outDependency = std::make_unique<array_list<ObjectHandle>>();
+        }
+        if (!std::ranges::contains(*m_outDependency, obj))
+        {
+            m_outDependency->push_back(obj);
+        }
+    }
+    bool ObjectBase::HasOutDependency(ObjectHandle obj) const
+    {
+        if (m_outDependency)
+        {
+            return std::ranges::contains(*m_outDependency, obj);
+        }
+        return false;
+    }
+    void ObjectBase::RemoveOutDependency(ObjectHandle obj)
+    {
+        if (m_outDependency)
+        {
+            auto it = std::remove(m_outDependency->begin(), m_outDependency->end(), obj);
+            if (it != m_outDependency->end())
+            {
+                m_outDependency->pop_back();
+            }
+        }
+    }
+    void ObjectBase::SendMsgToOutDependency(int msg) const
+    {
+        if (m_outDependency)
+        {
+            for (auto& element : *m_outDependency)
+            {
+                if (auto obj = ObjectPtr<ObjectBase>{element})
+                {
+                    obj->OnDependencyMessage(m_objectHandle, msg);
+                }
+            }
+        }
     }
 
     void ObjectBase::OnConstruct()
@@ -146,6 +191,7 @@ namespace pulsar
 
     void ObjectBase::OnDestroy()
     {
+        SendMsgToOutDependency(DependMsg_OnDestroy);
     }
 
     std::iostream& ReadWriteStream(std::iostream& stream, bool isWrite, ObjectPtrBase& obj)

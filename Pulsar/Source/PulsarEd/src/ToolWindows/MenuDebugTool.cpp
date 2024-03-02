@@ -1,5 +1,5 @@
-#include <PulsarEd/Tools/MenuDebugTool.h>
 #include <PulsarEd/Menus/Menu.h>
+#include <PulsarEd/ToolWindows/MenuDebugTool.h>
 namespace pulsared
 {
     static void _ShowMenu(ISubMenu* menu)

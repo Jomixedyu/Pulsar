@@ -43,8 +43,8 @@ namespace pulsar
     template<typename T>
     using hash_set = std::unordered_set<T>;
 
-    using ObjectFlags = uint16_t;
-    enum ObjectFlags_ : uint16_t
+    using ObjectFlags = uint64_t;
+    enum ObjectFlags_ : uint64_t
     {
         OF_NoFlag           = 0,
         OF_Persistent       = 1 << 0,
@@ -75,24 +75,32 @@ namespace pulsar
         bool         HasObjectFlags(ObjectFlags flags) const noexcept { return m_flags & flags;}
         void         SetObjectFlags(uint16_t flags) noexcept { m_flags = flags; }
         bool         IsPersistentObject() const noexcept { return m_flags & OF_Persistent; }
+
+
+        constexpr static int DependMsg_OnDestroy = 1;
+        virtual void OnDependencyMessage(ObjectHandle inDependency, int msg);
+
+        void AddOutDependency(ObjectHandle obj);
+        bool HasOutDependency(ObjectHandle obj) const;
+        void RemoveOutDependency(ObjectHandle obj);
     protected:
+        void SendMsgToOutDependency(int msg) const;
         virtual void OnConstruct();
         virtual void OnDestroy();
     private:
         void Destroy();
-        // base 24
+        // base class 24
         index_string m_name;         // 8
         ObjectHandle m_objectHandle; // 16
     protected:
-        ObjectFlags  m_flags{};      // 16
-
-        #ifdef WITH_EDITOR
-        string m_objectName;
-        #endif
+        ObjectFlags  m_flags{};      // 8
+        std::unique_ptr<array_list<ObjectHandle>> m_outDependency; // 8
     public:
     };
 
     inline constexpr int kSizeObjectBase = sizeof(ObjectBase);
+
+
 
     class RuntimeObjectWrapper final
     {
@@ -301,14 +309,6 @@ namespace pulsar
 }
 namespace std
 {
-    template<>
-    struct hash<pulsar::ObjectHandle>
-    {
-        size_t operator()(const pulsar::ObjectHandle& handle) const noexcept
-        {
-            return *reinterpret_cast<const uint64_t*>(&handle) ^ *((reinterpret_cast<const uint64_t*>(&handle) + 1));
-        }
-    };
 
     template<>
     struct hash<pulsar::ObjectPtrBase>

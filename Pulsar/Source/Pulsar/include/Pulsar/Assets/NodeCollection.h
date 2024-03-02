@@ -24,6 +24,9 @@ namespace pulsar
         virtual void OnAddNode(ObjectPtr<Node> node);
         virtual void OnRemoveNode(ObjectPtr<Node> node);
 
+        void RegisterRootNode(const ObjectPtr<Node>& node);
+        void UnregisterRootNode(const ObjectPtr<Node>& node);
+
         virtual void CopyFrom(ObjectPtr<NodeCollection> nc);
         const List_sp<ObjectHandle>& GetCollectionHandles() const { return m_collectionHandles; }
 

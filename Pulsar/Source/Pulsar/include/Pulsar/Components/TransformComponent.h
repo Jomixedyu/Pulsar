@@ -14,6 +14,7 @@ namespace pulsar
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::TransformComponent, Component);
         CORELIB_CLASS_ATTR(new AbstractComponentAttribute);
     public:
+        void Serialize(ComponentSerializer* s) override;
         
         ObjectPtr<TransformComponent> FindByName(string_view name) const;
         ObjectPtr<TransformComponent> FindByPath(string_view path) const;
@@ -40,6 +41,8 @@ namespace pulsar
         void SetEuler(Vector3f value);
         void RotateEuler(Vector3f value);
         void RotateQuat(Quat4f quat);
+
+
         void TranslateRotateEuler(Vector3f pos, Vector3f euler);
 
         Vector3f GetForward();
@@ -47,6 +50,8 @@ namespace pulsar
         Vector3f GetRight();
 
         TransformComponent();
+        void BeginComponent() override;
+
         void OnTick(Ticker ticker) override;
 
         const Matrix4f& GetParentLocalToWorldMatrix();
@@ -54,8 +59,10 @@ namespace pulsar
         const Matrix4f& GetLocalToWorldMatrix();
         const Matrix4f& GetWorldToLocalMatrix();
     protected:
+        void OnMsg_TransformChanged() override;
         void RebuildLocalToWorldMatrix();
         void PostEditChange(FieldInfo* info) override;
+    public:
         void MakeTransformChanged();
     protected:
         CORELIB_REFL_DECL_FIELD(m_localToWorldMatrix, new NoSerializableAttribtue, new DebugPropertyAttribute, new ReadOnlyPropertyAttribute);

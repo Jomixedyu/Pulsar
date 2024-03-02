@@ -30,7 +30,7 @@ namespace pulsar
     CameraComponent::CameraComponent()
     {
         m_renderingPath = RenderingPathMode::Deferred;
-        new_init_sptr(m_postProcessMaterials);
+        init_sptr_member(m_postProcessMaterials);
     }
     void CameraComponent::Render()
     {
@@ -80,6 +80,7 @@ namespace pulsar
             auto height = GetRenderTexture()->GetHeight();
             ResizeManagedRenderTexture(width, height);
         }
+        UpdateCBuffer();
     }
     void CameraComponent::ResizeManagedRenderTexture(int width, int height)
     {
@@ -127,20 +128,40 @@ namespace pulsar
         UpdateRT();
         BeginRT();
     }
+    void CameraComponent::OnMsg_TransformChanged()
+    {
+        base::OnMsg_TransformChanged();
+        UpdateCBuffer();
+    }
     void CameraComponent::OnTick(Ticker ticker)
     {
         base::OnTick(ticker);
-        m_debugViewMat = GetViewMat();
+    }
+    void CameraComponent::SetFOV(float value)
+    {
+        m_fov = value;
+        UpdateCBuffer();
+    }
+    void CameraComponent::SetNear(float value)
+    {
+        m_near = value;
+        UpdateCBuffer();
+    }
+    void CameraComponent::SetFar(float value)
+    {
+        m_far = value;
         UpdateCBuffer();
     }
     void CameraComponent::SetBackgroundColor(const Color4f& value)
     {
         m_backgroundColor = value;
         UpdateRTBackgroundColor();
+        UpdateCBuffer();
     }
     void CameraComponent::SetProjectionMode(CameraProjectionMode mode)
     {
         m_projectionMode = mode;
+        UpdateCBuffer();
     }
 
     void CameraComponent::UpdateRTBackgroundColor()
@@ -155,12 +176,16 @@ namespace pulsar
         rt0->ClearColor[2] = m_backgroundColor.b;
         rt0->ClearColor[3] = m_backgroundColor.a;
     }
+
     void CameraComponent::UpdateRT()
     {
         UpdateRTBackgroundColor();
     }
+
     void CameraComponent::UpdateCBuffer()
     {
+        m_debugViewMat = GetViewMat();
+
         CBuffer_Target target{};
         target.MatrixV = GetViewMat();
         target.MatrixP = GetProjectionMat();
@@ -175,6 +200,7 @@ namespace pulsar
         target.Resolution = m_renderTarget->GetSize2df();
         m_cameraDataBuffer->Fill(&target);
     }
+
     void CameraComponent::AddPostProcess(Material_ref material)
     {
         m_postProcessMaterials->push_back(material);
@@ -204,6 +230,13 @@ namespace pulsar
         UpdateRT();
         BeginRT();
     }
+
+    void CameraComponent::SetOrthoSize(float value)
+    {
+        m_orthoSize = value;
+        UpdateCBuffer();
+    }
+
     void CameraComponent::BeginRT()
     {
         if (m_beginning && m_renderTarget)
@@ -211,6 +244,8 @@ namespace pulsar
             auto& refData = m_renderTarget->GetGfxFrameBufferObject()->RefData;
             refData.clear();
             refData.push_back(m_cameraDescriptorSet);
+
+            UpdateCBuffer();
         }
     }
 
@@ -219,14 +254,6 @@ namespace pulsar
     void CameraComponent::BeginComponent()
     {
         base::BeginComponent();
-
-        if (!m_renderTarget)
-        {
-            m_managedRT = true;
-            ResizeManagedRenderTexture(1, 1);
-        }
-
-        GetAttachedNode()->GetRuntimeOwnerScene()->GetWorld()->GetCameraManager().AddCamera(THIS_REF);
 
         if (_CameraDescriptorLayout.expired())
         {
@@ -246,6 +273,15 @@ namespace pulsar
         m_cameraDescriptorSet = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_camDescriptorLayout);
         m_cameraDescriptorSet->AddDescriptor("Target", 0)->SetConstantBuffer(m_cameraDataBuffer.get());
         m_cameraDescriptorSet->Submit();
+
+
+        if (!m_renderTarget)
+        {
+            m_managedRT = true;
+            ResizeManagedRenderTexture(1, 1);
+        }
+
+        GetAttachedNode()->GetRuntimeOwnerScene()->GetWorld()->GetCameraManager().AddCamera(THIS_REF);
 
         BeginRT();
     }

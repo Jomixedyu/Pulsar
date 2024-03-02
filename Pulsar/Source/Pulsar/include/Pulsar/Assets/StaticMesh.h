@@ -59,6 +59,8 @@ namespace pulsar
         size_t GetMeshSectionCount() const { return m_sections.size(); }
         const array_list<string>& GetMaterialNames() const { return m_materialNames; }
         size_t GetMaterialCount() const { return m_materialNames.size(); }
+
+        Box3f GetBounds() const { return m_bounds; }
     public:
         bool CreateGPUResource() override;
         void DestroyGPUResource() override;
@@ -72,6 +74,8 @@ namespace pulsar
         bool m_isCreatedResource = false;
         array_list<gfx::GFXBuffer_sp> m_vertexBuffers;
         array_list<gfx::GFXBuffer_sp> m_indicesBuffers;
+
+        Box3f m_bounds{};
     };
     DECL_PTR(StaticMesh);
 

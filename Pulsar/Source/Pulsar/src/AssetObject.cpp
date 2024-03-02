@@ -9,8 +9,8 @@ namespace pulsar
     }
     AssetObject::AssetObject()
     {
-        new_init_sptr(m_importFiles);
-        new_init_sptr(m_tags);
+        init_sptr_member(m_importFiles);
+        init_sptr_member(m_tags);
     }
     AssetObject_ref AssetObject::InstantiateAsset()
     {
@@ -26,6 +26,17 @@ namespace pulsar
 
         return obj;
     }
+
+    void AssetObject::Decref()
+    {
+        assert(m_cref > 0);
+        --m_cref;
+        if (m_cref == 0)
+        {
+            DestroyObject(THIS_REF);
+        }
+    }
+
     void AssetObject::OnInstantiateAsset(AssetObject* obj)
     {
         obj->SetIndexName(this->GetIndexName());

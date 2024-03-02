@@ -52,12 +52,21 @@ namespace pulsar
     }
     void NodeCollection::RemoveNode(Node_ref node)
     {
+        std::erase(*m_collectionHandles, node.GetHandle());
     }
     void NodeCollection::OnAddNode(ObjectPtr<Node> node)
     {
     }
     void NodeCollection::OnRemoveNode(ObjectPtr<Node> node)
     {
+    }
+    void NodeCollection::RegisterRootNode(const ObjectPtr<Node>& node)
+    {
+        m_rootNodes->push_back(node);
+    }
+    void NodeCollection::UnregisterRootNode(const ObjectPtr<Node>& node)
+    {
+        std::erase(*m_rootNodes, node);
     }
 
     void NodeCollection::CopyFrom(ObjectPtr<NodeCollection> nc)
@@ -68,8 +77,9 @@ namespace pulsar
 
     NodeCollection::NodeCollection()
     {
-        m_rootNodes = mksptr(new List<Node_ref>);
-        m_nodes = mksptr(new List<Node_ref>);
+        init_sptr_member(m_rootNodes);
+        init_sptr_member(m_nodes);
+        init_sptr_member(m_collectionHandles);
     }
     ObjectPtr<Node> NodeCollection::BeginNewNode(index_string name, ObjectPtr<Node> parent, ObjectFlags flags)
     {
@@ -89,6 +99,7 @@ namespace pulsar
         {
             m_rootNodes->push_back(node);
         }
+        m_collectionHandles->push_back(node.GetHandle());
         return node;
     }
     void NodeCollection::EndNewNode(ObjectPtr<Node> node)

@@ -82,8 +82,8 @@ namespace pulsar
 
         ShaderPassConfig()
         {
-            new_init_sptr(ConstantProperties);
-            new_init_sptr(Properties);
+            init_sptr_member(ConstantProperties);
+            init_sptr_member(Properties);
         }
     };
     CORELIB_DECL_SHORTSPTR(ShaderPassConfig);

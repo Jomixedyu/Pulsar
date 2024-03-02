@@ -1,5 +1,10 @@
+#include "EdTools/MoveEdTool.h"
+#include "EdTools/RotationEdTool.h"
+#include "EdTools/ScaleEdTool.h"
+#include "EdTools/SelectorEdTool.h"
 #include "EditorAppInstance.h"
 #include "EditorWorld.h"
+
 #include <Pulsar/Assets/Shader.h>
 #include <Pulsar/Components/CameraComponent.h>
 #include <Pulsar/Rendering/RenderContext.h>
@@ -22,16 +27,13 @@ namespace pulsared
 
     SceneWindow::SceneWindow()
     {
-
     }
-
 
     void SceneWindow::OnOpenWorkspace()
     {
         m_sceneEditor = new SceneEditorViewportFrame;
         m_sceneEditor->Initialize();
         m_sceneEditor->SetWorld(GetEdApp()->GetEditorWorld());
-        m_sceneEditor->m_scaleSpeed = 0.1f;
     }
     void SceneWindow::OnCloseWorkspace()
     {
@@ -51,8 +53,6 @@ namespace pulsared
         {
             this->OnOpenWorkspace();
         }
-
-
     }
 
     void SceneWindow::OnClose()
@@ -66,14 +66,12 @@ namespace pulsared
         {
             this->OnCloseWorkspace();
         }
-
-
     }
 
     void SceneWindow::OnDrawImGui(float dt)
     {
         static bool b = true;
-        ImGui::ShowDemoWindow(&b);
+        // ImGui::ShowDemoWindow(&b);
 
         auto world = EditorWorld::GetPreviewWorld();
 
@@ -91,7 +89,7 @@ namespace pulsared
                 }
             }
 
-            const char* items[] = { "Shade" };
+            const char* items[] = {"Shade"};
 
             ImGui::Text("Draw Mode");
 
@@ -110,7 +108,7 @@ namespace pulsared
                 ImGui::EndCombo();
             }
 
-            const char* editMode[] = { "SceneEditor" };
+            const char* editMode[] = {"SceneEditor"};
             ImGui::Text("Edit Mode");
             ImGui::SetNextItemWidth(150);
             if (ImGui::BeginCombo("##Edit Mode", editMode[this->m_editModeIndex]))
@@ -135,10 +133,12 @@ namespace pulsared
                 auto ctrl = cam->GetAttachedNode()->GetParent()->GetComponent<StdEditCameraControllerComponent>().GetPtr();
                 ctrl->m_enable2DMode = !ctrl->m_enable2DMode;
 
-                auto* storeData = &ctrl->m_saved3d;;
+                auto* storeData = &ctrl->m_saved3d;
+
                 if (ctrl->m_enable2DMode)
                 {
-                    storeData = &ctrl->m_saved3d;;
+                    storeData = &ctrl->m_saved3d;
+                    ;
                 }
                 else
                 {
@@ -167,8 +167,10 @@ namespace pulsared
                 camTransform->SetEuler(loadData->CamEuler);
                 cam->SetProjectionMode(loadData->ProjectionMode);
 
-                m_sceneEditor->m_enabledRotate = !m_sceneEditor->m_enabledRotate;
-
+                if (auto tool = dynamic_cast<ViewEdTool*>(m_sceneEditor->GetTool()))
+                {
+                    tool->m_enabledRotate = !tool->m_enabledRotate;
+                }
             }
             if (ImGui::Button(ICON_FK_TABLE " Grid###Grid"))
             {
@@ -187,6 +189,28 @@ namespace pulsared
         {
             m_sceneEditor->Render(0);
         }
+
+        if (ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_Q, false))
+        {
+            SetTool(std::make_unique<SelectorEdTool>());
+        }
+        else if (ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_W, false))
+        {
+            SetTool(std::make_unique<MoveEdTool>());
+        }
+        else if (ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_E, false))
+        {
+            SetTool(std::make_unique<RotationEdTool>());
+        }
+        else if (ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_R, false))
+        {
+            SetTool(std::make_unique<ScaleEdTool>());
+        }
+    }
+
+    void SceneWindow::SetTool(std::unique_ptr<EdTool>&& tool)
+    {
+        m_sceneEditor->SetTool(std::move(tool));
     }
 
     void SceneWindow::OnWindowResize()
@@ -195,7 +219,5 @@ namespace pulsared
         {
             return;
         }
-
     }
-
-}
+} // namespace pulsared

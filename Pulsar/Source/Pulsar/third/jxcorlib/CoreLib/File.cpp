@@ -27,6 +27,12 @@ namespace jxcorlib
         }
         void WriteAllText(std::filesystem::path path, std::string_view content)
         {
+            auto folder = path.parent_path();
+            if (!exists(folder))
+            {
+                std::filesystem::create_directories(folder);
+            }
+
             ofstream outfile(path, ios::ate | ios::out | ios::binary);
             outfile << content;
             outfile.close();

@@ -12,12 +12,6 @@
 
 namespace pulsar
 {
-    template <typename T>
-    void new_init_sptr(sptr<T>& ptr)
-    {
-        ptr = mksptr(new T);
-    }
-
     class MenuItemCreateAssetAttribute : public Attribute
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::MenuItemCreateAssetAttribute, Attribute);
@@ -62,9 +56,9 @@ namespace pulsar
 
         ImportedFileInfo()
         {
-            new_init_sptr(m_filename);
-            new_init_sptr(m_latestModification);
-            new_init_sptr(m_hash);
+            init_sptr_member(m_filename);
+            init_sptr_member(m_latestModification);
+            init_sptr_member(m_hash);
         }
     };
     CORELIB_DECL_SHORTSPTR(ImportedFileInfo);
@@ -84,6 +78,9 @@ namespace pulsar
         AssetObject(AssetObject&&) = delete;
         AssetObject& operator=(const AssetObject&) = delete;
 
+        void Incref() { ++m_cref; }
+        void Decref();
+        uint32_t GetCref() const { return m_cref; }
     protected:
         virtual void OnInstantiateAsset(AssetObject* obj);
 
@@ -99,6 +96,8 @@ namespace pulsar
 
         CORELIB_REFL_DECL_FIELD(m_tags);
         List_sp<String_sp> m_tags;
+
+        uint32_t m_cref{};
     };
 
     DECL_PTR(AssetObject);

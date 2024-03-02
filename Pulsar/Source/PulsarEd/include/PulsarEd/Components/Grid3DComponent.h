@@ -16,7 +16,6 @@ namespace pulsared
         virtual void BeginComponent() override;
 
         virtual sptr<rendering::RenderObject> CreateRenderObject() override;
-        void OnTick(Ticker ticker) override;
         virtual void EndComponent() override;
 
         void OnMsg_TransformChanged() override;

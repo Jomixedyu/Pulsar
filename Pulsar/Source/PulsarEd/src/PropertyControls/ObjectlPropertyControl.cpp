@@ -1,9 +1,9 @@
 #include "AssetDatabase.h"
 #include "PropertyControls/ObjectPropertyControl.h"
+#include <Pulsar/AssetManager.h>
 #include <Pulsar/IconsForkAwesome.h>
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
-#include <Pulsar/AssetManager.h>
 
 namespace PImGui
 {
@@ -13,31 +13,30 @@ namespace PImGui
 namespace pulsared
 {
 
-
     bool ObjectPropertyControl::OnDrawImGui(const string& name, Type* type, Object* prop)
     {
         bool isChanged = false;
         auto objectPtr = dynamic_cast<BoxingObjectPtrBase*>(prop);
 
-        if(!objectPtr)
+        if (!objectPtr)
         {
             throw EngineException();
         }
 
-        char buf[128] = "Null";
+        char buf[128] = "[Null Object Reference]";
 
         string objectName;
-        if(!objectPtr->handle.is_empty())
+        if (!objectPtr->handle.is_empty())
         {
             auto obj = RuntimeObjectWrapper::GetObject(objectPtr->handle);
-            if(!obj)
+            if (!obj)
             {
                 obj = AssetDatabase::LoadAssetById(objectPtr->handle).GetPtr();
             }
             auto objectShortHandle = objectPtr->handle.to_string().substr(24, 8);
-            if(obj)
+            if (obj)
             {
-                objectName = StringUtil::Concat(obj->GetName(), " (", objectShortHandle , ")");
+                objectName = StringUtil::Concat(obj->GetName(), " (", objectShortHandle, ")");
                 StringUtil::strcpy(buf, objectName);
             }
             else
@@ -48,22 +47,22 @@ namespace pulsared
 
         ImGui::InputTextEx("##i", nullptr, buf, sizeof(buf), ImVec2(-50, 0), 0);
 
-        if(ImGui::BeginDragDropTarget())
+        if (ImGui::BeginDragDropTarget())
         {
             const ImGuiPayload* payload = ImGui::GetDragDropPayload();
             string dragType;
 
-            if(!std::strcmp(payload->DataType, "PULSARED_DRAG"))
+            if (!std::strcmp(payload->DataType, "PULSARED_DRAG"))
             {
-                const auto str = string_view( static_cast<char*>(payload->Data), payload->DataSize );
+                const auto str = string_view(static_cast<char*>(payload->Data), payload->DataSize);
 
                 auto strs = StringUtil::Split(str, ";");
                 auto& intype = strs[0];
                 auto& id = strs[1];
 
-                if(intype == type->GetName())
+                if (intype == type->GetName())
                 {
-                    if(payload = ImGui::AcceptDragDropPayload("PULSARED_DRAG"))
+                    if (payload = ImGui::AcceptDragDropPayload("PULSARED_DRAG"))
                     {
                         objectPtr->handle = ObjectHandle::parse(id);
                         TryFindOrLoadObject(objectPtr->handle);

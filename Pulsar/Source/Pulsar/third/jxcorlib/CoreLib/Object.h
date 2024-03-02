@@ -119,6 +119,12 @@ namespace jxcorlib
         using type = typename T::element_type;
     };
 
+    template <typename T>
+    void init_sptr_member(sptr<T>& ptr)
+    {
+        ptr = mksptr(new T);
+    }
+
     class Object : public std::enable_shared_from_this<Object>
     {
     public:
@@ -150,6 +156,7 @@ namespace jxcorlib
         }
     };
 
+    constexpr int kSizeObject = sizeof(Object);
 
     CORELIB_DECL_SHORTSPTR(Object);
 

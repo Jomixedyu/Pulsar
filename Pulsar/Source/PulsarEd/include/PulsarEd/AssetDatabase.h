@@ -40,6 +40,7 @@ namespace pulsared
         string GetPackageName() const { return GetRootName(); }
         Type* GetAssetType() const;
     };
+    using AssetFileNodePtr = std::shared_ptr<AssetFileNode>;
 
     class FolderAsset : public Object
     {
@@ -52,6 +53,12 @@ namespace pulsared
     // AssetPath   : Engine/Material/xxx (Engine/AssetsMaterial/xxx)
     // PhysicsPath
 
+    struct AssetFilter
+    {
+        array_list<Type*> WhiteList;
+        array_list<Type*> BlackList;
+        string FolderPath;
+    };
     class AssetDatabase
     {
     public:
@@ -59,7 +66,7 @@ namespace pulsared
         static void Refresh();
         static void Terminate();
 
-        static void AddProgramPackageSearchPath(std::filesystem::path path);
+        static void AddProgramPackageSearchPath(const std::filesystem::path& path);
         static void AddPackage(string_view packageName);
         static std::filesystem::path GetPackagePhysicsPath(string_view packageName);
         static string GetPackageName(string_view assetPath);
@@ -67,6 +74,9 @@ namespace pulsared
         static std::filesystem::path PackagePathToPhysicsPath(string_view packagePath);
         static string AssetPathToPackagePath(string_view assetPath);
         static std::filesystem::path AssetPathToPhysicsPath(string_view assetPath);
+        static string AssetPathToAssetName(string_view assetPath);
+        static string AssetPathToParentPath(string_view path);
+        static bool IsFolderPath(string_view assetPath);
 
         static array_list<ProgramPackage> GetPackageInfos();
 
@@ -77,7 +87,6 @@ namespace pulsared
         static string GetPathByAsset(AssetObject_ref asset);
         static ObjectHandle GetIdByPath(string_view path);
         static string GetUniquePath(string_view path);
-        static array_list<string> GetFoldersByPath(string_view path);
 
         static bool ExistsAsset(AssetObject_ref asset);
         static void ReloadAsset(ObjectHandle id);
@@ -85,9 +94,17 @@ namespace pulsared
         static void SaveAll();
         static void NewAsset(string_view folderPath, string_view assetName, Type* assetType);
         static bool CreateAsset(AssetObject_ref asset, string_view path);
-        static bool DeleteAsset(string_view assetPath);
-        static array_list<string> FindAssets(Type* type);
+        // Delete assets without folder
+        static bool DeleteAssets(const array_list<string>& assetPaths, array_list<string>* errinfo = nullptr);
+        // Only empty folders can be deleted
+        static void DeleteEmptyFolder(string_view path);
+        static void DeleteFolder(string_view path, array_list<string>* errinfo = nullptr);
 
+        static array_list<string> FindAssets(const AssetFilter& filter);
+        static array_list<string> FindAssets(Type* type, string_view folderPath = {});
+        static bool IsEmptyFolder(string_view path);
+
+        static bool Rename(string_view srcAsset, string_view dstAsset);
 
         static void MarkDirty(AssetObject_ref asset);
         static bool IsDirty(AssetObject_ref asset);
@@ -96,7 +113,7 @@ namespace pulsared
 
         static inline const char* FileTreeRootPath = "Packages";
 
-        static inline Function<bool, string_view> OnRequestDeleteAsset;
+        static inline Function<bool, string_view, array_list<string>*> OnRequestDeleteAsset;
         static inline Action<string_view> OnDeletedAsset;
 
         static inline Function<bool, AssetObject_ref> OnRequestSaveAsset;

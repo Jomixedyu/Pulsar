@@ -1,3 +1,5 @@
+#include "Components/ConstDataComponent.h"
+
 #include <CoreLib.Serialization/DataSerializer.h>
 #include <Pulsar/Node.h>
 #include <Pulsar/Scene.h>
@@ -35,6 +37,10 @@ namespace pulsar
         {
             node->BeginNode(self_ref());
         }
+        for (auto& node : *m_rootNodes)
+        {
+            node->GetTransform()->MakeTransformChanged();
+        }
     }
     void Scene::EndScene()
     {
@@ -47,6 +53,7 @@ namespace pulsar
     }
     void Scene::Tick(Ticker ticker)
     {
+        return;
         for (auto& node : *GetNodes())
         {
             if (IsValid(node) && node->GetIsActive())
@@ -58,6 +65,7 @@ namespace pulsar
 
     Scene::Scene()
     {
+
     }
 
     ObjectPtr<Scene> Scene::StaticCreate(string_view name)
@@ -73,26 +81,62 @@ namespace pulsar
     void Scene::AddPrefab(Prefab_ref prefab)
     {
         auto prefabHandles = prefab->GetCollectionHandles().get();
-        for (auto node : *prefab->GetNodes())
+        hash_map<guid_t, guid_t> map;
+
+        array_list<Node_ref> addedNodes;
+        addedNodes.reserve(prefab->GetCollectionHandles()->size());
+
+        hash_map<Node_ref, Node_ref> newOldMapping;
+
+        for (auto& node : *prefab->GetNodes())
         {
             auto newNode = BeginNewNode(node->GetIndexName());
+            addedNodes.emplace_back(newNode);
+            map[node.GetHandle()] = newNode.GetHandle();
+            newOldMapping[newNode] = node;
+
             array_list<Component_ref> components;
             node->GetAllComponents(components);
 
-            for (const auto component : components)
+            for (auto& component : components)
             {
-                auto objser = ser::CreateVarient("json");
-                ComponentSerializer ser{objser, true, true};
-                component->Serialize(&ser);
-
                 auto newComponent = newNode->AddComponent(component->GetType());
-                ser.IsWrite = false;
-                newComponent->Serialize(&ser);
-
+                map[component.GetHandle()] = newComponent.GetHandle();
             }
+        }
 
-            EndNewNode(newNode);
-            //instantiate component
+        for (auto& addedNode : addedNodes)
+        {
+            auto finded = newOldMapping.find(addedNode);
+            if (finded != newOldMapping.end())
+            {
+                auto oldNode = finded->second;
+                for (size_t i = 0; i < oldNode->GetComponentCount(); ++i)
+                {
+                    auto oldComponent = oldNode->GetAllComponentArray()[i];
+
+                    auto objser = ser::CreateVarient("json");
+                    ComponentSerializer ser{objser, true, true};
+                    oldComponent->Serialize(&ser);
+
+                    auto newComponent = addedNode->GetAllComponentArray()[i];
+                    ser.IsWrite = false;
+                    ser.MovingTable = &map;
+                    newComponent->Serialize(&ser);
+
+                    if (auto transform = ref_cast<TransformComponent>(newComponent))
+                    {
+                        if (transform->GetParent())
+                        {
+                            UnregisterRootNode(addedNode);
+                        }
+                    }
+                }
+            }
+        }
+        for (auto& addedNode : addedNodes)
+        {
+            EndNewNode(addedNode);
         }
     }
 

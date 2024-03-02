@@ -202,6 +202,10 @@ namespace pulsared
     {
         return {static_cast<float>(vec[0]), static_cast<float>(vec[1]), static_cast<float>(vec[2])};
     }
+    static inline Vector3f ToVector3f(const FbxDouble3& vec)
+    {
+        return {static_cast<float>(vec[0]), static_cast<float>(vec[1]), static_cast<float>(vec[2])};
+    }
     static inline Vector2f ToVector2f(const FbxVector2& vec)
     {
         return {(float)vec[0], (float)vec[1]};
@@ -210,8 +214,13 @@ namespace pulsared
     {
         return {(float)color.mRed, (float)color.mGreen, (float)color.mBlue, (float)color.mAlpha};
     }
+    static inline Quat4f ToQuat(const FbxQuaternion& q)
+    {
+        return {(float)q[0], (float)q[1], (float)q[2], (float)q[3]};
+    }
 
-    static StaticMesh_ref ProcessMesh(FbxNode* fbxNode)
+
+    static StaticMesh_ref ProcessMesh(FbxNode* fbxNode, bool inverseCoordsystem)
     {
         const auto name = fbxNode->GetName();
 
@@ -225,7 +234,6 @@ namespace pulsared
         }
 
         const auto attrCount = fbxNode->GetNodeAttributeCount();
-
         for (int attrIndex = 0; attrIndex < attrCount; attrIndex++)
         {
             auto attr = fbxNode->GetNodeAttributeByIndex(attrIndex);
@@ -237,7 +245,6 @@ namespace pulsared
                 assert(fbxMesh);
 
                 constexpr int kPolygonCount = 3;
-
                 const auto vertexCount = fbxMesh->GetPolygonVertexCount();
                 const auto polygonCount = fbxMesh->GetPolygonCount();
                 assert(vertexCount == polygonCount * kPolygonCount);
@@ -325,7 +332,15 @@ namespace pulsared
                         }
 
                         section.Vertex[vertexIndex] = vertex;
-                        section.Indices[vertexIndex] = vertexIndex;
+                        auto indicesValue = vertexIndex;
+                        if (inverseCoordsystem)
+                        {
+                            if (vertIndexInFace == 1)
+                                indicesValue += 1;
+                            if (vertIndexInFace == 2)
+                                indicesValue -= 1;
+                        }
+                        section.Indices[vertexIndex] = indicesValue;
                     }
                 }
 
@@ -341,28 +356,43 @@ namespace pulsared
         return StaticMesh::StaticCreate(name, std::move(sections), std::move(materialNames));
     }
 
-    static void ProcessNode(FbxNode* fbxNode, Node_ref parentNode, NodeCollection_ref pscene, FBXImporterSettings* settings, const string& meshFolder)
+    static void ProcessNode(
+        FbxNode* fbxNode,
+        Node_ref parentNode,
+        NodeCollection_ref pscene,
+        FBXImporterSettings* settings,
+        bool inverseCoordsystem,
+        const string& meshFolder)
     {
         auto newNodeName = fbxNode->GetName();
         const auto newNode = pscene->NewNode(newNodeName, parentNode);
 
-        if (auto staticMesh = ProcessMesh(fbxNode))
+        if (auto staticMesh = ProcessMesh(fbxNode, inverseCoordsystem))
         {
-            AssetDatabase::CreateAsset(staticMesh, meshFolder + "/" + staticMesh->GetName());
+            const auto meshPath = meshFolder + "/" + staticMesh->GetName();
+            AssetDatabase::CreateAsset(staticMesh, meshPath);
             newNode->AddComponent<StaticMeshRendererComponent>()->SetStaticMesh(staticMesh);
-            auto translation = fbxNode->GetGeometricTranslation(FbxNode::eSourcePivot);
-            auto rotation = fbxNode->GetGeometricRotation(FbxNode::eSourcePivot);
-            auto scaling = fbxNode->GetGeometricScaling(FbxNode::eSourcePivot);
+            auto translation = ToVector3f(fbxNode->LclTranslation.Get());
+            auto scaling = ToVector3f(fbxNode->LclScaling.Get());
+
+            FbxEuler::EOrder order{};
+            fbxNode->GetRotationOrder(FbxNode::EPivotSet::eSourcePivot, order);
+            assert(order == FbxEuler::EOrder::eOrderXYZ);
+            FbxQuaternion q;
+            q.ComposeSphericalXYZ(FbxVector4(fbxNode->LclRotation.Get()));
+            auto rotation = ToQuat(q);
+
             auto transform = newNode->GetTransform();
-            transform->SetPosition(ToVector3f(translation));
-            transform->SetScale(ToVector3f(scaling));
+            transform->SetPosition(translation);
+            transform->SetRotation(rotation);
+            transform->SetScale(scaling);
         }
 
         const auto childCount = fbxNode->GetChildCount();
         for (int childIndex = 0; childIndex < childCount; childIndex++)
         {
             const auto childFbxNode = fbxNode->GetChild(childIndex);
-            ProcessNode(childFbxNode, newNode, pscene, settings, meshFolder);
+            ProcessNode(childFbxNode, newNode, pscene, settings, inverseCoordsystem, meshFolder);
         }
     }
 
@@ -380,9 +410,14 @@ namespace pulsared
         {
             LoadScene(fbxManager, fbxScene, importFile.c_str());
 
+            bool inverseCoordSystem = false;
             if (fbxsetting->ConvertAxisSystem)
             {
                 const auto axisSystem = fbxScene->GetGlobalSettings().GetAxisSystem();
+                if (axisSystem.GetCoorSystem() == FbxAxisSystem::eRightHanded)
+                {
+                    inverseCoordSystem = true;
+                }
                 const auto ourAxisSystem = FbxAxisSystem(FbxAxisSystem::eYAxis, FbxAxisSystem::eParityOdd, FbxAxisSystem::eLeftHanded);
                 if (axisSystem != ourAxisSystem)
                 {
@@ -410,7 +445,7 @@ namespace pulsared
             for (int i = 0; i < rootCount; ++i)
             {
                 auto sceneRootNode = fbxRootNode->GetChild(i);
-                ProcessNode(sceneRootNode, nullptr, prefab, fbxsetting, targetMeshFolder);
+                ProcessNode(sceneRootNode, nullptr, prefab, fbxsetting, inverseCoordSystem, targetMeshFolder);
             }
 
             AssetDatabase::CreateAsset(prefab, settings->TargetPath + "/" + filename);

@@ -2,7 +2,7 @@
 #include "Pulsar/Scene.h"
 
 #include <PulsarEd/Menus/Menu.h>
-#include <PulsarEd/Tools/StaticMeshAttributeTool.h>
+#include <PulsarEd/ToolWindows/StaticMeshAttributeTool.h>
 
 namespace pulsared
 {

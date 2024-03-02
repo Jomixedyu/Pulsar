@@ -6,6 +6,22 @@
 
 namespace pulsar
 {
+    void TransformComponent::Serialize(ComponentSerializer* s)
+    {
+        base::Serialize(s);
+        if (!s->IsWrite)
+        {
+            if (m_parent)
+            {
+                m_parent = s->MovingTable->at(m_parent.GetHandle());
+            }
+            for (auto& child : *m_children)
+            {
+                child = s->MovingTable->at(child.GetHandle());
+            }
+
+        }
+    }
     ObjectPtr<TransformComponent> TransformComponent::FindByName(string_view name) const
     {
         for (auto& comp : *m_children)
@@ -133,10 +149,13 @@ namespace pulsar
     {
         m_children = mksptr(new List<ObjectPtr<TransformComponent>>);
     }
+    void TransformComponent::BeginComponent()
+    {
+        base::BeginComponent();
+    }
     void TransformComponent::OnTick(Ticker ticker)
     {
         base::OnTick(ticker);
-        RebuildLocalToWorldMatrix();
     }
 
     static Matrix4f RootIdentMat{1};
@@ -173,6 +192,14 @@ namespace pulsar
         if (m_isDirtyMatrix)
             RebuildLocalToWorldMatrix();
         return m_worldToLocalMatrix;
+    }
+    void TransformComponent::OnMsg_TransformChanged()
+    {
+        base::OnMsg_TransformChanged();
+        for (auto childTransform : *this->m_children)
+        {
+            childTransform->MakeTransformChanged();
+        }
     }
 
     void TransformComponent::RebuildLocalToWorldMatrix()

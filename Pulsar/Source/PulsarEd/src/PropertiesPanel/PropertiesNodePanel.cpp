@@ -45,7 +45,7 @@ namespace pulsared
         }
 
         static char name[255];
-        strcpy_s(name, 255, selected->GetName().c_str());
+        StringUtil::strcpy(name, selected->GetName());
 
         ImGui::Spacing();
         {

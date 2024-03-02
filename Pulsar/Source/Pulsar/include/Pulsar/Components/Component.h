@@ -37,6 +37,7 @@ namespace pulsar
         ComponentSerializer(ComponentSerializer&&) = delete;
     public:
         ser::VarientRef Object;
+        hash_map<ObjectHandle, ObjectHandle>* MovingTable = nullptr;
         bool IsWrite;
         const bool HasEditorData;
     };
@@ -55,6 +56,9 @@ namespace pulsar
         ObjectPtr<TransformComponent> GetTransform() const;
         array_list<ObjectHandle> GetReferenceHandles() const;
         virtual bool get_is_tickable() const { return true; }
+        void SendMessage(MessageId msgid);
+        virtual Box3f CalcBoudingBox() const { return {}; }
+    protected:
         virtual void OnReceiveMessage(MessageId id);
     public:
 		virtual bool EqualsComponentType(Type* type);
@@ -69,7 +73,7 @@ namespace pulsar
         virtual void EndPlay() {}
 
         virtual void OnMsg_TransformChanged() {}
-    public:        
+    public:
         // ITickable interface
         void OnTick(Ticker ticker) override;
     public:

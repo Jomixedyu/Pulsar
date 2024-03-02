@@ -97,9 +97,9 @@ namespace pulsar
         ObjectPtr<Component> GetComponent(Type* type) const;
 
 
-        void                             GetAllComponents(array_list<ObjectPtr<Component>>& list);
-        array_list<ObjectPtr<Component>> GetAllComponentArray() const;
-        size_t                           GetComponentCount() const { return this->m_components->size(); }
+        void                                    GetAllComponents(array_list<ObjectPtr<Component>>& list);
+        const array_list<ObjectPtr<Component>>& GetAllComponentArray() const;
+        size_t                                  GetComponentCount() const { return this->m_components->size(); }
 
     protected:
         void BeginComponent(Component_ref component);

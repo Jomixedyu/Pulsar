@@ -1,5 +1,7 @@
 #pragma once
+#include "EdTools/EdTool.h"
 #include "PanelWindow.h"
+
 #include <Pulsar/Components/CameraComponent.h>
 #include <Pulsar/Node.h>
 #include <PulsarEd/UIControls/ViewportFrame.h>
@@ -26,6 +28,8 @@ namespace pulsared
         //Node_ref GetSceneCameraNode() { return this->m_camNode; }
         //Node_ref GetSceneCameraControllerNode() { return this->m_camCtrlNode; }
         //CameraComponent_ref GetSceneCamera() { return this->GetSceneCameraNode()->GetComponent<CameraComponent>(); }
+
+        void SetTool(std::unique_ptr<EdTool>&& tool);
     private:
         virtual void OnWindowResize();
 
@@ -35,6 +39,7 @@ namespace pulsared
         int32_t drawmode_select_index = 0;
         int32_t m_editModeIndex = 0;
         SceneEditorViewportFrame* m_sceneEditor = nullptr;
+
 
         //Node_ref m_camNode;
         //Node_ref m_camCtrlNode;

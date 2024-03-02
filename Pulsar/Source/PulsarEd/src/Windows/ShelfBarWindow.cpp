@@ -3,6 +3,7 @@
 #include "Menus/ISubMenu.h"
 #include "Menus/Menu.h"
 #include "Menus/MenuEntrySubMenu.h"
+#include "imgui/imgui_internal.h"
 
 namespace pulsared
 {
@@ -22,15 +23,19 @@ namespace pulsared
                         int itemIndex = 0;
                         for (auto& submenuEntry : submenu->GetEntries())
                         {
+                            ImGui::PushID(itemIndex);
                             if (auto btn = sptr_cast<MenuEntryButton>(submenuEntry))
                             {
-                                ImGui::PushID(itemIndex);
                                 if (ImGui::Button(btn->DisplayName.c_str(), {0, -FLT_MIN}))
                                 {
                                 }
-                                ImGui::PopID();
-                                ImGui::SameLine();
                             }
+                            else if(sptr_cast<MenuEntrySeparate>(submenuEntry))
+                            {
+                                ImGui::SeparatorEx(ImGuiSeparatorFlags_Horizontal);
+                            }
+                            ImGui::PopID();
+                            ImGui::SameLine();
                             ++itemIndex;
                         }
                         ImGui::EndTabItem();
@@ -52,12 +57,14 @@ namespace pulsared
     }
     ShelfBarWindow::ShelfBarWindow()
     {
-        auto lighting = mksptr(new MenuEntrySubMenu("Lighting"));
-        MenuManager::GetOrAddMenu("ToolBar")->AddEntry(lighting);
-
-        auto rendering = mksptr(new MenuEntrySubMenu("Rendering"));
+        auto rendering = mksptr(new MenuEntrySubMenu("App"));
         rendering->AddEntry(mksptr(new MenuEntryButton("Play")));
         rendering->AddEntry(mksptr(new MenuEntryButton("Stop")));
+        rendering->AddEntry(mksptr(new MenuEntrySeparate("0")));
+        rendering->AddEntry(mksptr(new MenuEntryButton("Build")));
         MenuManager::GetOrAddMenu("ToolBar")->AddEntry(rendering);
+
+        auto lighting = mksptr(new MenuEntrySubMenu("Rendering"));
+        MenuManager::GetOrAddMenu("ToolBar")->AddEntry(lighting);
     }
 } // namespace pulsared

@@ -57,10 +57,7 @@ namespace pulsar
             return;
         }
         m_active = value;
-        if (value)
-            OnActive();
-        else
-            OnInactive();
+
         for (auto child : *GetTransform()->GetChildren())
         {
             if (child->GetAttachedNode()->GetIsActiveSelf())
@@ -68,6 +65,10 @@ namespace pulsar
                 child->GetAttachedNode()->OnParentActiveChanged();
             }
         }
+        if (value)
+            OnActive();
+        else
+            OnInactive();
     }
     ObjectPtr<Node> Node::GetParent() const
     {
@@ -152,6 +153,7 @@ namespace pulsar
         {
             OnActive();
         }
+
     }
     void Node::EndNode()
     {
@@ -185,6 +187,7 @@ namespace pulsar
         if (m_runtimeScene && m_runtimeScene->GetWorld())
         {
             BeginComponent(component);
+            component->SendMessage(MessageId_OnChangedTransform());
         }
 
         return component;
@@ -235,17 +238,22 @@ namespace pulsar
             list.push_back(item);
         }
     }
-    array_list<ObjectPtr<Component>> Node::GetAllComponentArray() const
+    const array_list<ObjectPtr<Component>>& Node::GetAllComponentArray() const
     {
         return *this->m_components;
     }
 
     void Node::SendMessage(MessageId id)
     {
+        if (m_runtimeScene == nullptr)
+        {
+            return;
+        }
         for (auto& comp : *this->m_components)
         {
-            comp->OnReceiveMessage(id);
+            comp->SendMessage(id);
         }
+
     }
 
     void Node::OnTick(Ticker ticker)
@@ -261,7 +269,6 @@ namespace pulsar
     void Node::BeginComponent(Component_ref component)
     {
         component->BeginComponent();
-        component->OnReceiveMessage(MessageId_OnChangedTransform());
     }
 
     void Node::EndComponent(Component_ref component)

@@ -163,6 +163,15 @@ namespace pulsar
             OnMaterialChanged();
         }
     }
+    Box3f StaticMeshRendererComponent::CalcBoudingBox() const
+    {
+        if (!m_staticMesh)
+            return {};
+        Box3f box;
+        box.Min = GetTransform()->GetLocalToWorldMatrix() * m_staticMesh->GetBounds().Min;
+        box.Max = GetTransform()->GetLocalToWorldMatrix() * m_staticMesh->GetBounds().Max;
+        return box;
+    }
 
     void StaticMeshRendererComponent::SetStaticMesh(StaticMesh_ref staticMesh)
     {
@@ -217,6 +226,7 @@ namespace pulsar
         {
             BeginListenMaterialStateChanged(i);
         }
+        OnMsg_TransformChanged();
     }
     void StaticMeshRendererComponent::EndComponent()
     {

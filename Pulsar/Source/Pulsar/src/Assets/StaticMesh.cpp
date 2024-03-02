@@ -107,6 +107,34 @@ namespace pulsar
         self->m_sections = std::move(vertData);
         self->m_materialNames = std::move(materialNames);
 
+        Box3f box{};
+        bool init = false;
+        for (auto& data : vertData)
+        {
+            for (uint32_t index : data.Indices)
+            {
+                //min max
+                auto& v = data.Vertex[index].Position;
+                if (!init)
+                {
+                    box.Min = v;
+                    box.Max = v;
+                    init = true;
+                    continue;
+                }
+                if (v.x <= box.Min.x && v.y <= box.Min.y && v.z <= box.Min.z)
+                {
+                    box.Min = v;
+                }
+                else if (v.x >= box.Max.x && v.y >= box.Max.y && v.z >= box.Max.z)
+                {
+                    box.Max = v;
+                }
+            }
+        }
+
+        self->m_bounds = box;
+
         return self;
     }
 

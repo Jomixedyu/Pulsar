@@ -1,4 +1,6 @@
 #pragma once
+#include "EdTools/EdTool.h"
+
 #include <PulsarEd/Assembly.h>
 
 namespace pulsared
@@ -17,22 +19,16 @@ namespace pulsared
         virtual void Render(float dt);
         virtual void Initialize();
         virtual void Terminate();
+
+        EdTool* GetTool() const { return m_tool.get(); }
+        void SetTool(std::unique_ptr<EdTool>&& tool);
     protected:
         World* m_world = nullptr;
         bool m_newWorld {};
         Vector2f m_viewportSize{};
         gfx::GFXDescriptorSetLayout_sp m_descriptorLayout;
         gfx::GFXDescriptorSet_sp m_descriptorSet;
-
-        bool m_altPressed = false;
-        bool m_leftMousePressed = false;
-        bool m_middleMousePressed = false;
-        bool m_rightMousePressed = false;
-        Vector2f m_latestMousePos{};
-    public:
-        float m_scaleSpeed = 1.f;
-        bool m_enabledMove{true};
-        bool m_enabledRotate{true};
+        std::unique_ptr<EdTool> m_tool = nullptr;
     };
 
     class SceneEditorViewportFrame : public ViewportFrame

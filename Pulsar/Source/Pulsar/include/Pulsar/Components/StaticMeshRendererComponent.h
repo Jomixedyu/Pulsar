@@ -32,6 +32,8 @@ namespace pulsar
             m_materials = mksptr(new List<Material_ref>);
         }
 
+        Box3f CalcBoudingBox() const override;
+
         StaticMesh_ref GetStaticMesh() const { return m_staticMesh; }
         void SetStaticMesh(StaticMesh_ref staticMesh);
 

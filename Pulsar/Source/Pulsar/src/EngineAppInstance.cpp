@@ -59,26 +59,26 @@ namespace pulsar
                 cmdBuffer.CmdBeginFrameBuffer();
                 cmdBuffer.CmdSetViewport(0, 0, (float)targetFBO->GetWidth(), (float)targetFBO->GetHeight());
 
-                // combine batch
-                std::unordered_map<size_t, rendering::MeshBatch> batchs;
+                // combine batches
+                std::unordered_map<size_t, rendering::MeshBatch> batches;
                 for (const rendering::RenderObject_sp& renderObject : renderObjects)
                 {
                     for (auto& batch : renderObject->GetMeshBatchs())
                     {
                         auto stateHash = batch.GetRenderState();
-                        if (batchs.contains(stateHash))
+                        if (batches.contains(stateHash))
                         {
-                            batchs[stateHash].Append(batch);
+                            batches[stateHash].Append(batch);
                         }
                         else
                         {
-                            batchs[stateHash] = batch;
+                            batches[stateHash] = batch;
                         }
                     }
                 }
 
                 // batch render
-                for (auto& [state, batch] : batchs)
+                for (auto& [state, batch] : batches)
                 {
                     auto shaderPass = batch.Material->GetGfxShaderPass();
 
@@ -138,7 +138,7 @@ namespace pulsar
                         }
                     }
 
-                } // end batchs
+                } // end batches
 
                 cmdBuffer.CmdEndFrameBuffer();
                 cmdBuffer.SetFrameBuffer(nullptr);
@@ -146,9 +146,14 @@ namespace pulsar
                 // post processing
                 RenderTexture_ref lastPPRt;
                 auto ppcount = cam->m_postProcessMaterials->size();
+                size_t ppCount = 0;
                 for (size_t i = 0; i < ppcount; ++i)
                 {
                     auto ppMat = cam->m_postProcessMaterials->at(i);
+                    if (!ppMat)
+                    {
+                        continue;
+                    }
                     RenderTexture_ref srcRt;
                     RenderTexture_ref destRt;
                     gfx::GFXDescriptorSet_sp srcResourceDescSet;
@@ -239,8 +244,10 @@ namespace pulsar
 
                     cmdBuffer.CmdEndFrameBuffer();
                     cmdBuffer.SetFrameBuffer(nullptr);
-                }
-                if (ppcount)
+
+                    ++ppCount;
+                } // end for pp
+                if (ppCount)
                 {
                     //blit to target
                     cmdBuffer.CmdBlit(lastPPRt->GetGfxRenderTarget0().get(), cam->GetRenderTexture()->GetGfxRenderTarget0().get());

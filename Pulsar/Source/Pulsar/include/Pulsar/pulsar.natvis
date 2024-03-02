@@ -1,6 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
-<Type Name="index_string">
-  <DisplayString>{to_string()}</DisplayString>
-</Type>
+    <Type Name="basic_index_string&lt;*&gt;">
+        <DisplayString>{{name = {to_string().c_str()}}}</DisplayString>
+    </Type>
+    <Type Name="jxcorlib::guid_t">
+        <DisplayString>{{value = {to_string(true).c_str()}}}</DisplayString>
+    </Type>
+    <Type Name="pulsar::ObjectPtr&lt;*&gt;">
+        <DisplayString>{{ptr = {operator->()->GetName().c_str()}}}</DisplayString>
+        <Expand>
+            <Item Name="[Ptr]">
+                operator->()
+            </Item>
+        </Expand>
+    </Type>
 </AutoVisualizer>

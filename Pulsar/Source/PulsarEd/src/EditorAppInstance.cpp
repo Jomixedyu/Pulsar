@@ -9,10 +9,10 @@
 #include "Pulsar/Components/StaticMeshRendererComponent.h"
 #include "Pulsar/Prefab.h"
 #include "Shaders/EditorShader.h"
-#include "Tools/FbxInfoViewer/FbxInfoViewer.h"
-#include "Tools/ObjectDebugTool.h"
-#include "Tools/ShaderDebugTool.h"
-#include "Tools/WorldDebugTool.h"
+#include "ToolWindows/FbxInfoViewer/FbxInfoViewer.h"
+#include "ToolWindows/ObjectDebugTool.h"
+#include "ToolWindows/ShaderDebugTool.h"
+#include "ToolWindows/WorldDebugTool.h"
 #include "Utils/PrefabUtil.h"
 #include "Windows/ShelfBarWindow.h"
 
@@ -40,15 +40,15 @@
 #include <CoreLib.Serialization/DataSerializer.h>
 #include <Pulsar/Assets/StaticMesh.h>
 
-#include <PulsarEd/Tools/MenuDebugTool.h>
+#include <Pulsar/Assets/Texture2D.h>
+#include <Pulsar/BuiltinAsset.h>
+#include <PulsarEd/ToolWindows/MenuDebugTool.h>
 #include <PulsarEd/Windows/ConsoleWindow.h>
 #include <PulsarEd/Windows/OutlinerWindow.h>
 #include <PulsarEd/Windows/OutputWindow.h>
 #include <PulsarEd/Windows/PropertiesWindow.h>
 #include <PulsarEd/Windows/SceneWindow.h>
 #include <PulsarEd/Windows/WorkspaceWindow.h>
-#include <Pulsar/Assets/Texture2D.h>
-#include <Pulsar/BuiltinAsset.h>
 namespace pulsared
 {
 
@@ -290,7 +290,7 @@ namespace pulsared
         EditorWindowManager::RegisterPanelWindowType(cltypeof<ConsoleWindow>());
         EditorWindowManager::GetPanelWindow(cltypeof<ConsoleWindow>())->Open();
 
-        mksptr(new ShelfBarWindow)->Open();
+        // mksptr(new ShelfBarWindow)->Open();
     }
 
     void EditorAppInstance::OnPreInitialize(gfx::GFXGlobalConfig* config)

@@ -2,7 +2,7 @@
 #include "Pulsar/Scene.h"
 
 #include <PulsarEd/Menus/Menu.h>
-#include <PulsarEd/Tools/WorldDebugTool.h>
+#include <PulsarEd/ToolWindows/WorldDebugTool.h>
 
 namespace pulsared
 {

@@ -1,7 +1,7 @@
 #include "AssetDatabase.h"
 
 #include <PulsarEd/Menus/Menu.h>
-#include <PulsarEd/Tools/ObjectDebugTool.h>
+#include <PulsarEd/ToolWindows/ObjectDebugTool.h>
 
 namespace pulsared
 {

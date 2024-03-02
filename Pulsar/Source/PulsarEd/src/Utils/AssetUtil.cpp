@@ -12,9 +12,9 @@ namespace pulsared
 
     void AssetUtil::OpenAssetEditor(AssetObject_ref asset)
     {
-        if (asset->GetType()->IsSubclassOf(cltypeof<Prefab>()))
+        if (auto prefab = ref_cast<Prefab>(asset))
         {
-            PrefabUtil::OpenPrefab(asset);
+            PrefabUtil::OpenPrefab(prefab);
             return;
         }
 

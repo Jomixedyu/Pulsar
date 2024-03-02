@@ -38,9 +38,9 @@ namespace pulsar
     }
     Shader::Shader()
     {
-        new_init_sptr(m_passName);
-        new_init_sptr(m_preDefines);
-        new_init_sptr(m_shaderConfig);
+        init_sptr_member(m_passName);
+        init_sptr_member(m_preDefines);
+        init_sptr_member(m_shaderConfig);
     }
     void Shader::Serialize(AssetSerializer* s)
     {

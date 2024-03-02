@@ -2,7 +2,7 @@
 #include "Pulsar/AssetManager.h"
 #include "Shaders/EditorShader.h"
 
-#include <PulsarEd/Tools/ShaderDebugTool.h>
+#include <PulsarEd/ToolWindows/ShaderDebugTool.h>
 
 namespace pulsared
 {
