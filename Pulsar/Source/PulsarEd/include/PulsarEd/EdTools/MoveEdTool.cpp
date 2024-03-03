@@ -34,7 +34,7 @@ namespace pulsared
         auto node = EditorSelection::Selection.GetSelected();
         auto matrix = node->GetTransform()->GetLocalToWorldMatrix();
 
-        static ImGuizmo::MODE CurrentGizmoMode(ImGuizmo::WORLD);
+        static ImGuizmo::MODE CurrentGizmoMode(ImGuizmo::LOCAL);
 
 
         if (ImGuizmo::Manipulate(
