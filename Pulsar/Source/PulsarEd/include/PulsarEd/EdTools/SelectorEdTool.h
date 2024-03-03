@@ -13,6 +13,8 @@ namespace pulsared
 
         bool m_frameSelector{};
         Vector2f m_frameSelectorStartPos{};
+    protected:
+        bool m_enableSelect = true;
     };
 
 } // namespace pulsared

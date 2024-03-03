@@ -24,7 +24,7 @@ namespace pulsared
     void SelectorEdTool::Tick(float dt)
     {
         base::Tick(dt);
-        if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !IsModifilerKeysDown())
+        if (m_enableSelect && ImGui::IsWindowHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !IsModifilerKeysDown())
         {
             m_frameSelector = true;
             auto startpos = ImGui::GetMousePos();
