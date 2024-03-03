@@ -111,9 +111,9 @@ namespace pulsar
             }
         }
     }
-    TransformComponent_ref Node::GetTransform() const
+    TransformComponent* Node::GetTransform() const
     {
-        return ref_cast<TransformComponent>(m_components->at(0));
+        return m_transform;
     }
 
     Node::Node()
@@ -174,7 +174,8 @@ namespace pulsar
         component->m_attachedNode = self_ref();
         component->m_ownerNode = self_ref();
 
-        if (!m_components->empty() && type->IsSubclassOf(cltypeof<TransformComponent>()))
+        bool isTransform = type->IsSubclassOf(cltypeof<TransformComponent>());
+        if (!m_components->empty() && isTransform)
         {
             DestroyObject(m_components->at(0), true);
             m_components->at(0) = component;
@@ -182,6 +183,10 @@ namespace pulsar
         else
         {
             this->m_components->push_back(component);
+        }
+        if (isTransform)
+        {
+            m_transform = sptr_cast<TransformComponent>(component).get();
         }
 
         if (m_runtimeScene && m_runtimeScene->GetWorld())
@@ -192,6 +197,7 @@ namespace pulsar
 
         return component;
     }
+
     void Node::DestroyComponent(ObjectPtr<Component> component)
     {
         auto it = std::ranges::find(*m_components, component);

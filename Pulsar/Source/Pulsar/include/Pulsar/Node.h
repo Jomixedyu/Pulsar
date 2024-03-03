@@ -49,6 +49,9 @@ namespace pulsar
         const bool HasEditorData;
     };
 
+    class Component;
+    class TransformComponent;
+
     class Node final : public ObjectBase, public ITickable
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::Node, ObjectBase);
@@ -66,7 +69,7 @@ namespace pulsar
         void OnInactive();
         void OnParentActiveChanged();
 
-        TransformComponent_ref GetTransform() const;
+        TransformComponent* GetTransform() const;
     public:
         Node(const Node& r) = delete;
         Node(Node&& r) = delete;
@@ -114,6 +117,7 @@ namespace pulsar
 
         CORELIB_REFL_DECL_FIELD(m_components);
         List_sp<ObjectPtr<Component>> m_components;
+        TransformComponent* m_transform = nullptr;
 
         bool m_isInitialized = false;
 
