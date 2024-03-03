@@ -9,6 +9,7 @@ namespace pulsared
         using base = SelectorEdTool;
     public:
         void Begin() override;
+        void Tick(float dt) override;
     };
 
 } // namespace pulsared
