@@ -21,7 +21,7 @@ CORELIB_DECL_SHORTSPTR(ExampleClass);
 namespace jxcorlib
 {
     // template class List<int>;
-    // template class List< sptr<class ExampleClass> >;
+    // template class List< SPtr<class ExampleClass> >;
 }
 
 template<typename T, typename K>

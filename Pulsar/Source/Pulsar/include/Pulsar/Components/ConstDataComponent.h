@@ -14,7 +14,7 @@ namespace pulsar
         int m_integer{};
 
         CORELIB_REFL_DECL_FIELD(m_string);
-        sptr<String> m_string;
+        SPtr<String> m_string;
 
         CORELIB_REFL_DECL_FIELD(m_float);
         float m_float{};

@@ -9,8 +9,8 @@ namespace pulsar
     {
         struct RuntimeObjectPointerValue
         {
-            sptr<ObjectBase> OriginalObject;
-            [[not_null]] sptr<ManagedPointer> PointerRef;
+            SPtr<ObjectBase> OriginalObject;
+            [[not_null]] SPtr<ManagedPointer> PointerRef;
 
             [[always_inline]] bool IsValid() const
             {
@@ -46,7 +46,7 @@ namespace pulsar
         return nullptr;
     }
 
-    sptr<ObjectBase> RuntimeObjectWrapper::GetSharedObject(const ObjectHandle& id) noexcept
+    SPtr<ObjectBase> RuntimeObjectWrapper::GetSharedObject(const ObjectHandle& id) noexcept
     {
         if (id.is_empty())
             return nullptr;
@@ -57,7 +57,7 @@ namespace pulsar
         }
         return nullptr;
     }
-    sptr<ManagedPointer> RuntimeObjectWrapper::GetPointer(const ObjectHandle& id) noexcept
+    SPtr<ManagedPointer> RuntimeObjectWrapper::GetPointer(const ObjectHandle& id) noexcept
     {
         auto it = _object_table().find(id);
         if (it != _object_table().end())
@@ -67,7 +67,7 @@ namespace pulsar
         return nullptr;
     }
 
-    sptr<ManagedPointer> RuntimeObjectWrapper::AddWaitPointer(const ObjectHandle& id)
+    SPtr<ManagedPointer> RuntimeObjectWrapper::AddWaitPointer(const ObjectHandle& id)
     {
         RuntimeObjectPointerValue value{};
         value.PointerRef = mksptr(new ManagedPointer{});
@@ -87,7 +87,7 @@ namespace pulsar
         return it->second.IsValid();
     }
 
-    void RuntimeObjectWrapper::NewInstance(sptr<ObjectBase>&& managedObj, const ObjectHandle& handle) noexcept
+    void RuntimeObjectWrapper::NewInstance(SPtr<ObjectBase>&& managedObj, const ObjectHandle& handle) noexcept
     {
         const auto id = handle.is_empty() ? _NewId() : handle;
         managedObj->m_objectHandle = id;

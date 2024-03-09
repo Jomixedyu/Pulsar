@@ -19,8 +19,8 @@ namespace pulsared
         static ISubMenu* GetMainMenu();
         static array_list<ISubMenu*> GetMenus();
 
-        static void RegisterContextProvider(string_view name, const sptr<OnGetContext>& callback);
-        static void UnregisterContextProvider(string_view name, const sptr<OnGetContext>& callback);
+        static void RegisterContextProvider(string_view name, const SPtr<OnGetContext>& callback);
+        static void UnregisterContextProvider(string_view name, const SPtr<OnGetContext>& callback);
         static MenuContexts_sp RequestContexts(string_view name);
     };
 }

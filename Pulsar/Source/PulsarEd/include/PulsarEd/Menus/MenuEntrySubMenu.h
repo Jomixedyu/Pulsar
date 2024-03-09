@@ -49,7 +49,7 @@ namespace pulsared
             }
         }
 
-        sptr<MenuCanVisibility> Visibility;
+        SPtr<MenuCanVisibility> Visibility;
     protected:
         array_list<MenuEntry_sp> entries;
     };

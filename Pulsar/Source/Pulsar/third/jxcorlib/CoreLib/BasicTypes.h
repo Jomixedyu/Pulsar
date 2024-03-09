@@ -86,7 +86,7 @@ namespace jxcorlib
 
         virtual string ToString() const override { return *this; }
         string get_unboxing_value() { return *this; }
-        static sptr<String> FromString(string_view str)
+        static SPtr<String> FromString(string_view str)
         {
             return mksptr(new String(str));
         }
@@ -199,7 +199,7 @@ namespace jxcorlib
     struct BoxUtil
     {
         template<typename T>
-        static inline sptr<Object> Box(const T& value)
+        static inline SPtr<Object> Box(const T& value)
         {
             if constexpr (cltype_sptr_concept<T>)
             {
@@ -216,13 +216,13 @@ namespace jxcorlib
     struct UnboxUtil
     {
         template<typename T>
-        static inline T Unbox(const sptr<Object>& value)
+        static inline T Unbox(const SPtr<Object>& value)
         {
             return static_cast<get_boxing_type_t<T>*>(value.get())->get_unboxing_value();
         }
 		
         template<typename T>
-        static inline auto TryUnbox(const sptr<Object>& value)
+        static inline auto TryUnbox(const SPtr<Object>& value)
         {
             if constexpr (std::is_base_of_v<BoxingObject, T>)
             {
@@ -236,7 +236,7 @@ namespace jxcorlib
     };
 
     template<typename T>
-    sptr<typename get_boxing_type<T>::type> mkbox(T value)
+    SPtr<typename get_boxing_type<T>::type> mkbox(T value)
     {
         return mksptr(new get_boxing_type_t<T>(value));
     }
@@ -244,8 +244,8 @@ namespace jxcorlib
 
     namespace ObjectUtil
     {
-        void DeepCopyObject(const sptr<Object>& from, sptr<Object>& to);
-        sptr<Object> DeepCopyObject(const sptr<Object>& from);
+        void DeepCopyObject(const SPtr<Object>& from, SPtr<Object>& to);
+        SPtr<Object> DeepCopyObject(const SPtr<Object>& from);
     }
 
 }

@@ -282,7 +282,7 @@ namespace jxcorlib::ser
         if (type->IsImplementedInterface(cltypeof<IStringify>()))
         {
             if (!js.is_string()) return nullptr;
-            sptr<Object> obj = type->CreateSharedInstance({});
+            SPtr<Object> obj = type->CreateSharedInstance({});
 
             interface_cast<IStringify>(obj.get())->IStringify_Parse(js.get<string>());
             return obj;
@@ -299,7 +299,7 @@ namespace jxcorlib::ser
     }
 
 
-    sptr<Object> JsonSerializer::Deserialize(const string& jstr, Type* type, Object_sp defaultObject)
+    SPtr<Object> JsonSerializer::Deserialize(const string& jstr, Type* type, Object_sp defaultObject)
     {
         return _DeserializeObject(nlohmann::json::parse(jstr), type, nullptr, std::move(defaultObject));
     }

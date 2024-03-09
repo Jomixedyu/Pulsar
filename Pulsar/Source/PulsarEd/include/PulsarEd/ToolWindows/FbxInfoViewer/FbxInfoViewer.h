@@ -20,7 +20,7 @@ namespace pulsared
             array_list<string> AttributeType;
             string TypeName;
         };
-        using FbxInfoNodePtr = sptr<FbxInfoNode>;
+        using FbxInfoNodePtr = SPtr<FbxInfoNode>;
 
     protected:
         void ShowNode(FbxInfoNodePtr node);

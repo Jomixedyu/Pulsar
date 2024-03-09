@@ -37,7 +37,7 @@ namespace pulsared
         {
             return std::make_shared<FBXImporter>();
         }
-        sptr<AssetImporterSettings> CreateImporterSettings() override
+        SPtr<AssetImporterSettings> CreateImporterSettings() override
         {
             return mksptr(new FBXImporterSettings);
         }

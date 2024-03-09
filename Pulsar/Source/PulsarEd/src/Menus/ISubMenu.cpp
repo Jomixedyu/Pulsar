@@ -4,11 +4,11 @@
 
 namespace pulsared
 {
-    sptr<MenuEntrySubMenu> ISubMenu::FindSubMenuEntry(string_view name)
+    SPtr<MenuEntrySubMenu> ISubMenu::FindSubMenuEntry(string_view name)
     {
         return sptr_cast<MenuEntrySubMenu>(this->FindEntry(name));
     }
-    sptr<MenuEntrySubMenu> ISubMenu::FindOrNewMenuEntry(string_view name)
+    SPtr<MenuEntrySubMenu> ISubMenu::FindOrNewMenuEntry(string_view name)
     {
         if (auto ret = FindSubMenuEntry(name))
         {
@@ -18,11 +18,11 @@ namespace pulsared
         AddEntry(menu);
         return menu;
     }
-    sptr<MenuEntryCheck> ISubMenu::FindCheckEntry(string_view name)
+    SPtr<MenuEntryCheck> ISubMenu::FindCheckEntry(string_view name)
     {
         return sptr_cast<MenuEntryCheck>(this->FindEntry(name));
     }
-    sptr<MenuEntryButton> ISubMenu::FindButtonEntry(string_view name)
+    SPtr<MenuEntryButton> ISubMenu::FindButtonEntry(string_view name)
     {
         return sptr_cast<MenuEntryButton>(this->FindEntry(name));
     }

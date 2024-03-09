@@ -56,7 +56,7 @@ namespace std
         }
         return "{null}";
     }
-    string to_string(const jxcorlib::sptr<jxcorlib::Object>& obj)
+    string to_string(const jxcorlib::SPtr<jxcorlib::Object>& obj)
     {
         if (obj)
         {

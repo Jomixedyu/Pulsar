@@ -15,7 +15,7 @@ namespace pulsar
         CORELIB_DEF_INTERFACE(AssemblyObject_pulsar, pulsar::IRendererComponent, IInterface);
         CORELIB_CLASS_ATTR(new AbstractComponentAttribute);
     public:
-        virtual sptr<rendering::RenderObject> CreateRenderObject() = 0;
+        virtual SPtr<rendering::RenderObject> CreateRenderObject() = 0;
 
 
     };

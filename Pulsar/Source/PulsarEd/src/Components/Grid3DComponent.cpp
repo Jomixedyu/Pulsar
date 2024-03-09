@@ -94,7 +94,7 @@ namespace pulsared
         m_renderObject->SetTransform(GetAttachedNode()->GetTransform()->GetLocalToWorldMatrix());
     }
 
-    sptr<rendering::RenderObject> Grid3DComponent::CreateRenderObject()
+    SPtr<rendering::RenderObject> Grid3DComponent::CreateRenderObject()
     {
         auto ro = new LineRenderObject();
         ro->SetPoints(m_vert, m_colors);

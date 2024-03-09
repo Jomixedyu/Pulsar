@@ -7,10 +7,10 @@
 
 namespace pulsared
 {
-    using MenuCanVisibility = FunctionDelegate<bool, sptr<MenuContexts>>;
-    using MenuCanOperate = FunctionDelegate<bool, sptr<MenuContexts>>;
-    using MenuAction = FunctionDelegate<void, sptr<MenuContexts>>;
-    using MenuCheckAction = FunctionDelegate<void, sptr<MenuContexts>, bool>;
+    using MenuCanVisibility = FunctionDelegate<bool, SPtr<MenuContexts>>;
+    using MenuCanOperate = FunctionDelegate<bool, SPtr<MenuContexts>>;
+    using MenuAction = FunctionDelegate<void, SPtr<MenuContexts>>;
+    using MenuCheckAction = FunctionDelegate<void, SPtr<MenuContexts>, bool>;
 
     class MenuEntry : public Object
     {
@@ -20,7 +20,7 @@ namespace pulsared
         string DisplayName;
         int Priority;
 
-        sptr<MenuCanOperate> CanOperate;
+        SPtr<MenuCanOperate> CanOperate;
 
         explicit MenuEntry(const string& name) : Name(name), DisplayName(name), Priority(9999) {}
         MenuEntry(string name, string displayName) :
@@ -45,8 +45,8 @@ namespace pulsared
     public:
         using base::base;
 
-        sptr<MenuCanVisibility> Visibility;
-        sptr<MenuAction> Action;
+        SPtr<MenuCanVisibility> Visibility;
+        SPtr<MenuAction> Action;
     };
     CORELIB_DECL_SHORTSPTR(MenuEntryButton);
 
@@ -57,12 +57,12 @@ namespace pulsared
         CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::MenuEntryCheck, MenuEntry);
     public:
         MenuEntryCheck(const string& name, const string& displayName,
-            const sptr<MenuCheckAction>& checkedAction, bool isChecked = false)
+            const SPtr<MenuCheckAction>& checkedAction, bool isChecked = false)
             : base(name, displayName), IsChecked(isChecked), CheckedAction(checkedAction)
         { }
 
         bool IsChecked;
-        sptr<MenuCheckAction> CheckedAction;
+        SPtr<MenuCheckAction> CheckedAction;
     };
     CORELIB_DECL_SHORTSPTR(MenuEntryCheck);
 

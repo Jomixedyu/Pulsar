@@ -38,7 +38,7 @@ namespace pulsared
 
                 {
                     const auto entry = mksptr(new MenuEntryButton("Compile Shader"));
-                    entry->Action = MenuAction::FromLambda([](const sptr<MenuContexts>& ctxs) {
+                    entry->Action = MenuAction::FromLambda([](const SPtr<MenuContexts>& ctxs) {
                         const auto ctx = ctxs->FindContext<AssetEditorMenuContext>();
                         if (!ctx)
                             return;

@@ -132,7 +132,7 @@ namespace pulsared
         }
     } // namespace PImGui
 
-    void WorkspaceWindow::RenderFolderTree(sptr<AssetFileNode> node)
+    void WorkspaceWindow::RenderFolderTree(SPtr<AssetFileNode> node)
     {
         ImGuiTreeNodeFlags base_flags =
             ImGuiTreeNodeFlags_OpenOnArrow |
@@ -454,7 +454,7 @@ namespace pulsared
         {
             auto entry = mksptr(new MenuEntryButton("ShowExplorer", "Show In Explorer"));
             entry->CanOperate = hasPathLambda;
-            entry->Action = MenuAction::FromLambda([](sptr<MenuContexts>) {
+            entry->Action = MenuAction::FromLambda([](SPtr<MenuContexts>) {
                 if (auto win = EditorWindowManager::GetPanelWindow(cltypeof<WorkspaceWindow>()))
                 {
                     static_cast<WorkspaceWindow*>(win.get())->OpenExplorer();

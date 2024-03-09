@@ -20,7 +20,7 @@ namespace pulsared
         static array_list<EditorWindow_sp> GetOpeningWindows(Type* type);
 
         template <typename T>
-        static sptr<T> GetOpeningWindow()
+        static SPtr<T> GetOpeningWindow()
         {
             return sptr_cast<T>(GetOpeningWindow(cltypeof<T>()));
         }

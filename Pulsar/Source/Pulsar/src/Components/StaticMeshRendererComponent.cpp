@@ -126,7 +126,7 @@ namespace pulsar
         SubmitChange();
     }
 
-    sptr<rendering::RenderObject> StaticMeshRendererComponent::CreateRenderObject()
+    SPtr<rendering::RenderObject> StaticMeshRendererComponent::CreateRenderObject()
     {
         auto ro = mksptr(new StaticMeshRenderObject());
         // m_staticMesh->CreateGPUResource();

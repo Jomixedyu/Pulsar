@@ -21,7 +21,7 @@ namespace pulsar
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::StaticMeshRendererComponent, Component);
         CORELIB_IMPL_INTERFACES(IRendererComponent);
     public:
-        sptr<rendering::RenderObject> CreateRenderObject() override;
+        SPtr<rendering::RenderObject> CreateRenderObject() override;
     public:
         List_sp<RCPtr<Material>> GetMaterials() const { return this->m_materials; }
 
@@ -73,7 +73,7 @@ namespace pulsar
         CORELIB_REFL_DECL_FIELD(m_renderQueuePriority);
         int32_t m_renderQueuePriority{1000};
 
-        sptr<StaticMeshRenderObject> m_renderObject;
+        SPtr<StaticMeshRenderObject> m_renderObject;
 
     private:
 

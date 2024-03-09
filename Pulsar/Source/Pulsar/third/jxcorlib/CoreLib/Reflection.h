@@ -36,11 +36,11 @@
             ReflectionBuilder::CreateFieldInfo<ThisClass, FieldType>( \
                 #NAME, jxcorlib::is_detected<_Detected, ThisClass>::value, \
                 std::is_same_v<RealType, WrapType> ? nullptr : cltypeof<typename get_boxing_type<WrapType>::type>(), \
-                [](const Object* p) -> sptr<Object> { \
+                [](const Object* p) -> SPtr<Object> { \
                     auto rawptr = (const ThisClass*)p; \
                     return get_object_pointer<CleanType>::get(rawptr->NAME); \
                 }, \
-                [](Object* p, sptr<Object> value) { \
+                [](Object* p, SPtr<Object> value) { \
                     auto rawptr = (ThisClass*)p; \
                     object_assign<CleanType>::assign(&rawptr->NAME, value); \
                 }, \
@@ -76,7 +76,7 @@ namespace jxcorlib
 {
     struct MethodDescription
     {
-        virtual sptr<Delegate> CreateDelegate(Object_rsp target) = 0;
+        virtual SPtr<Delegate> CreateDelegate(Object_rsp target) = 0;
         virtual ~MethodDescription() = default;
     };
 
@@ -88,7 +88,7 @@ namespace jxcorlib
         {
         }
 
-        sptr<Delegate> CreateDelegate(Object_rsp target) override
+        SPtr<Delegate> CreateDelegate(Object_rsp target) override
         {
             return mksptr(new FunctionDelegate<TReturn, TArgs...>(m_ptr));
         }
@@ -104,7 +104,7 @@ namespace jxcorlib
         {
         }
 
-        sptr<Delegate> CreateDelegate(Object_rsp target) override
+        SPtr<Delegate> CreateDelegate(Object_rsp target) override
         {
             return mksptr(new FunctionDelegate<TReturn, TArgs...>(sptr_cast<TClass>(target), m_ptr));
         }
@@ -125,15 +125,15 @@ namespace jxcorlib
         TypeInfo(TypeInfo&&) = delete;
 
     public:
-        sptr<Attribute> GetAttribute(Type* type);
-        array_list<sptr<Attribute>> GetAttributes(Type* type);
+        SPtr<Attribute> GetAttribute(Type* type);
+        array_list<SPtr<Attribute>> GetAttributes(Type* type);
         bool IsDefinedAttribute(Type* type);
 
         template <typename T>
-        sptr<T> GetAttribute() { return sptr_cast<T>(GetAttribute(cltypeof<T>())); }
+        SPtr<T> GetAttribute() { return sptr_cast<T>(GetAttribute(cltypeof<T>())); }
 
     private:
-        array_list<sptr<Attribute>> m_attributes;
+        array_list<SPtr<Attribute>> m_attributes;
     };
 
     class MemberInfo : public TypeInfo
@@ -169,8 +169,8 @@ namespace jxcorlib
             bool IsConst;
         };
 
-        using GetterFunction = std::function<sptr<Object>(const Object* instance)>;
-        using SetterFunction = std::function<void(Object* instance, sptr<Object> value)>;
+        using GetterFunction = std::function<SPtr<Object>(const Object* instance)>;
+        using SetterFunction = std::function<void(Object* instance, SPtr<Object> value)>;
 
     protected:
         FieldTypeInfo m_info;
@@ -198,8 +198,8 @@ namespace jxcorlib
         FieldInfo(FieldInfo&& right) = delete;
 
     public:
-        void SetValue(Object* instance, sptr<Object> value);
-        sptr<Object> GetValue(const Object* instance) const;
+        void SetValue(Object* instance, SPtr<Object> value);
+        SPtr<Object> GetValue(const Object* instance) const;
 
     };
 
@@ -274,7 +274,7 @@ namespace jxcorlib
 
     public:
         template <typename T>
-        sptr<T> CreateDelegate(Object_rsp target)
+        SPtr<T> CreateDelegate(Object_rsp target)
         {
             return sptr_cast<T>(this->m_delegate->CreateDelegate(target));
         }
@@ -376,8 +376,8 @@ namespace jxcorlib
         using WrapType = typename type_wrapper<RealType>::type;
 
         ReflectionFieldDeclare(
-            std::function<sptr<Object>(Object*)>&& getter,
-            std::function<void(Object*, sptr<Object>)>&& setter,
+            std::function<SPtr<Object>(Object*)>&& getter,
+            std::function<void(Object*, SPtr<Object>)>&& setter,
             std::initializer_list<class Attribute*>&& arrt)
         {
             Type* typeWrapper = std::is_same_v<RealType, WrapType> ? nullptr : cltypeof<typename get_boxing_type<WrapType>::type>();

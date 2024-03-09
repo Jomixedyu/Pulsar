@@ -71,7 +71,7 @@ public:
     bool is_human = true;
 
     CORELIB_REFL_DECL_FIELD(name);
-    sptr<Object> name;
+    SPtr<Object> name;
 
     CORELIB_REFL_DECL_STATICMETHOD(Add);
     static int Add(int32_t a, int64_t b) { return a + int(b); }
@@ -85,7 +85,7 @@ public:
 
 void TestReflection()
 {
-    sptr<Object> n;
+    SPtr<Object> n;
 
     //dynamic create
     Type* dyn_type = AssemblyManager::FindAssemblyByName(AssemblyObject_Test.name())->FindType("space::DynCreateClass");

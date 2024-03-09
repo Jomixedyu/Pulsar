@@ -99,7 +99,7 @@ namespace pulsared
             return GetIdByPath(path);
         }
 
-        sptr<AssetObject> assetObj;
+        SPtr<AssetObject> assetObj;
 
         auto json = FileUtil::ReadAllText(node->GetPhysicsPath());
         auto meta = ser::JsonSerializer::Deserialize<AssetMetaData>(json);

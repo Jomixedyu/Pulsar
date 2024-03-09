@@ -39,7 +39,7 @@ namespace pulsared
         {
             return std::make_shared<ImageImporter>();
         }
-        sptr<AssetImporterSettings> CreateImporterSettings() override
+        SPtr<AssetImporterSettings> CreateImporterSettings() override
         {
             return mksptr(new ImageImporterSettings);
         }

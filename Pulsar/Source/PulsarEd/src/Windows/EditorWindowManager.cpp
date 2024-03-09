@@ -83,13 +83,13 @@ namespace pulsared
         }
     };
 
-    static WaitableList<sptr<EditorWindow>> _OpeningWindows;
+    static WaitableList<SPtr<EditorWindow>> _OpeningWindows;
 
     static array_list<EditorWindow_sp> _PanelWindows;
 
-    static sptr<DockspaceWindow> _DockspaceWindow;
-    static sptr<MainMenuBarWindow> _MainMenuBarWindow;
-    static sptr<StatusBarWindow> _StatusBarWindow;
+    static SPtr<DockspaceWindow> _DockspaceWindow;
+    static SPtr<MainMenuBarWindow> _MainMenuBarWindow;
+    static SPtr<StatusBarWindow> _StatusBarWindow;
 
     static void _ChangeWindowCheckedSatete(string_view window_name, bool check_state)
     {
@@ -188,7 +188,7 @@ namespace pulsared
         _OpeningWindows.Remove(window);
     }
 
-    static void _CheckableLabelAction(sptr<MenuContexts> ctxs, bool checked)
+    static void _CheckableLabelAction(SPtr<MenuContexts> ctxs, bool checked)
     {
         auto win = EditorWindowManager::GetPanelWindow(ctxs->EntryName);
         if (checked)

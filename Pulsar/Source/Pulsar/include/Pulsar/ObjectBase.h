@@ -129,11 +129,11 @@ namespace pulsar
     {
     public:
         static ObjectBase* GetObject(const ObjectHandle& id) noexcept;
-        static sptr<ObjectBase> GetSharedObject(const ObjectHandle& id) noexcept;
-        static sptr<ManagedPointer> GetPointer(const ObjectHandle& id) noexcept;
-        static sptr<ManagedPointer> AddWaitPointer(const ObjectHandle& id);
+        static SPtr<ObjectBase> GetSharedObject(const ObjectHandle& id) noexcept;
+        static SPtr<ManagedPointer> GetPointer(const ObjectHandle& id) noexcept;
+        static SPtr<ManagedPointer> AddWaitPointer(const ObjectHandle& id);
         static bool IsValid(const ObjectHandle& id) noexcept;
-        static void NewInstance(sptr<ObjectBase>&& managedObj, const ObjectHandle& handle) noexcept;
+        static void NewInstance(SPtr<ObjectBase>&& managedObj, const ObjectHandle& handle) noexcept;
         static bool DestroyObject(const ObjectHandle& id, bool isForce = false) noexcept;
         static void Terminate();
 
@@ -152,7 +152,7 @@ namespace pulsar
     struct ObjectPtrBase
     {
         ObjectHandle Handle;
-        sptr<ManagedPointer> Pointer;
+        SPtr<ManagedPointer> Pointer;
 
         ObjectPtrBase() = default;
         ObjectPtrBase(const ObjectPtrBase&) = default;
@@ -254,7 +254,7 @@ namespace pulsar
             Pointer = ptr.Pointer;
         }
 
-        ObjectPtr(const sptr<T>& ptr) : ObjectPtr(ptr.get())
+        ObjectPtr(const SPtr<T>& ptr) : ObjectPtr(ptr.get())
         {
         }
 
@@ -267,7 +267,7 @@ namespace pulsar
 
         ObjectPtr() = default;
 
-        [[always_inline]] sptr<T> GetShared() const noexcept
+        [[always_inline]] SPtr<T> GetShared() const noexcept
         {
             return sptr_cast<T>(RuntimeObjectWrapper::GetSharedObject(Handle));
         }
@@ -317,7 +317,7 @@ namespace pulsar
     {
     public:
         ObjectHandle Handle;
-        sptr<ManagedPointer> Pointer;
+        SPtr<ManagedPointer> Pointer;
     private:
         [[always_inline]] void Incref()
         {
@@ -427,7 +427,7 @@ namespace pulsar
         }
 
         RCPtr(const RCPtrBase& ptr) : base(ptr) {}
-        RCPtr(const sptr<T>& t) : base(t.get()) {}
+        RCPtr(const SPtr<T>& t) : base(t.get()) {}
 
         [[always_inline]] T* GetPtr() const noexcept
         {

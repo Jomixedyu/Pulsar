@@ -109,7 +109,7 @@ namespace pulsared
             mainMenu->AddEntry(file);
 
             auto openWorkSpace = mksptr(new MenuEntryButton("Open Workspace"));
-            openWorkSpace->Action = MenuAction::FromRaw([](sptr<MenuContexts> ctx) {
+            openWorkSpace->Action = MenuAction::FromRaw([](SPtr<MenuContexts> ctx) {
                 Workspace::OpenDialogUserWorkspace();
             });
             file->AddEntry(openWorkSpace);
@@ -224,35 +224,35 @@ namespace pulsared
             mainMenu->AddEntry(menu);
             {
                 auto entry = mksptr(new MenuEntryButton("MenuDebug"));
-                entry->Action = MenuAction::FromRaw([](sptr<MenuContexts> ctx) {
+                entry->Action = MenuAction::FromRaw([](SPtr<MenuContexts> ctx) {
                     ToolWindow::OpenToolWindow<MenuDebugTool>();
                 });
                 menu->AddEntry(entry);
             }
             {
                 auto entry = mksptr(new MenuEntryButton("ObjectDebug"));
-                entry->Action = MenuAction::FromRaw([](sptr<MenuContexts> ctx) {
+                entry->Action = MenuAction::FromRaw([](SPtr<MenuContexts> ctx) {
                     ToolWindow::OpenToolWindow<ObjectDebugTool>();
                 });
                 menu->AddEntry(entry);
             }
             {
                 auto entry = mksptr(new MenuEntryButton("WorldDebug"));
-                entry->Action = MenuAction::FromRaw([](sptr<MenuContexts> ctx) {
+                entry->Action = MenuAction::FromRaw([](SPtr<MenuContexts> ctx) {
                     ToolWindow::OpenToolWindow<WorldDebugTool>();
                 });
                 menu->AddEntry(entry);
             }
             {
                 auto entry = mksptr(new MenuEntryButton("ShaderDebugTool"));
-                entry->Action = MenuAction::FromRaw([](sptr<MenuContexts> ctx) {
+                entry->Action = MenuAction::FromRaw([](SPtr<MenuContexts> ctx) {
                     ToolWindow::OpenToolWindow<ShaderDebugTool>();
                 });
                 menu->AddEntry(entry);
             }
             {
                 auto entry = mksptr(new MenuEntryButton("FbxInfoViewer"));
-                entry->Action = MenuAction::FromRaw([](sptr<MenuContexts> ctx) {
+                entry->Action = MenuAction::FromRaw([](SPtr<MenuContexts> ctx) {
                     ToolWindow::OpenToolWindow<FbxInfoViewer>();
                 });
                 menu->AddEntry(entry);
@@ -436,7 +436,7 @@ namespace pulsared
         {
             if (type->IsSubclassOf(cltypeof<EditorSubsystem>()))
             {
-                sptr<Subsystem> subsys = sptr_cast<Subsystem>(type->CreateSharedInstance({}));
+                SPtr<Subsystem> subsys = sptr_cast<Subsystem>(type->CreateSharedInstance({}));
                 this->subsystems.push_back(subsys);
             }
         }
@@ -559,7 +559,7 @@ namespace pulsared
     {
         m_isPlaying = false;
     }
-    void EditorAppInstance::ShowModalDialog(sptr<ModalDialog> dialog)
+    void EditorAppInstance::ShowModalDialog(SPtr<ModalDialog> dialog)
     {
         m_modalDialog = std::move(dialog);
     }

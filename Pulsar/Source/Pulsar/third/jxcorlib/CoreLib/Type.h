@@ -51,10 +51,10 @@ private: \
     static inline struct __corelib_type { \
         __corelib_type() { NAME::StaticType(); } \
     } __corelib_type_init_; \
-    ::jxcorlib::sptr<ThisClass>         self()  { return ::jxcorlib::sptr_cast<ThisClass>(shared_from_this()); } \
-    ::jxcorlib::sptr<const ThisClass>   self()  const { return ::jxcorlib::sptr_cast<const ThisClass>(shared_from_this()); } \
-    ::jxcorlib::wptr<ThisClass>         self_weak() { return ::jxcorlib::wptr<ThisClass>(self()); } \
-    ::jxcorlib::wptr<const ThisClass>   self_weak() const { return ::jxcorlib::wptr<const ThisClass>(self()); }
+    ::jxcorlib::SPtr<ThisClass>         self()  { return ::jxcorlib::sptr_cast<ThisClass>(shared_from_this()); } \
+    ::jxcorlib::SPtr<const ThisClass>   self()  const { return ::jxcorlib::sptr_cast<const ThisClass>(shared_from_this()); } \
+    ::jxcorlib::WPtr<ThisClass>         self_weak() { return ::jxcorlib::WPtr<ThisClass>(self()); } \
+    ::jxcorlib::WPtr<const ThisClass>   self_weak() const { return ::jxcorlib::WPtr<const ThisClass>(self()); }
 
 
 #define CORELIB_DEF_ENUMTYPE(ASSEMBLY, NAME, BASE) \
@@ -178,10 +178,10 @@ private: \
         static inline struct __corelib_type { \
             __corelib_type() { NAME<__VA_ARGS__>::StaticType(); } \
         } __corelib_type_init_; \
-        ::jxcorlib::sptr<ThisClass> self() { return ::jxcorlib::sptr_cast<ThisClass>(shared_from_this()); } \
-        ::jxcorlib::sptr<const ThisClass> self() const { return ::jxcorlib::sptr_cast<const ThisClass>(shared_from_this()); } \
-        ::jxcorlib::wptr<ThisClass> self_weak() { return ::jxcorlib::wptr<ThisClass>(self()); } \
-        ::jxcorlib::wptr<const ThisClass> self_weak() const { return ::jxcorlib::wptr<const ThisClass>(self()); }
+        ::jxcorlib::SPtr<ThisClass> self() { return ::jxcorlib::sptr_cast<ThisClass>(shared_from_this()); } \
+        ::jxcorlib::SPtr<const ThisClass> self() const { return ::jxcorlib::sptr_cast<const ThisClass>(shared_from_this()); } \
+        ::jxcorlib::WPtr<ThisClass> self_weak() { return ::jxcorlib::WPtr<ThisClass>(self()); } \
+        ::jxcorlib::WPtr<const ThisClass> self_weak() const { return ::jxcorlib::WPtr<const ThisClass>(self()); }
 
 
 #define CORELIB_IMPL_INTERFACES(...) \
@@ -288,8 +288,8 @@ namespace jxcorlib
         bool                   m_isInterface;
         bool                   m_isGeneric;
 
-        array_list<sptr<Attribute>>    m_attributes;
-        std::map<string, sptr<MemberInfo>>  m_memberInfos;
+        array_list<SPtr<Attribute>>    m_attributes;
+        std::map<string, SPtr<MemberInfo>>  m_memberInfos;
         array_list<std::tuple<Type*, InterfaceGetter, SharedInterfaceGetter>> m_interfaces;
 
     private:
@@ -320,15 +320,15 @@ namespace jxcorlib
         bool IsEnum() const { return this->m_enumGetter; }
         bool IsImplementedInterface(Type* type);
         bool IsInstanceOfType(const Object* object) const;
-        bool IsSharedInstanceOfType(const sptr<Object>& ptr) const;
+        bool IsSharedInstanceOfType(const SPtr<Object>& ptr) const;
         bool IsSubclassOf(const Type* type) const;
 
-        sptr<Attribute>             GetAttribute(Type* type, bool inherit = true);
-        array_list<sptr<Attribute>> GetAttributes(Type* type, bool inherit = true);
+        SPtr<Attribute>             GetAttribute(Type* type, bool inherit = true);
+        array_list<SPtr<Attribute>> GetAttributes(Type* type, bool inherit = true);
         bool                        IsDefinedAttribute(Type* type, bool inherit = true);
 
         Object*      CreateInstance(const ParameterPackage& v);
-        sptr<Object> CreateSharedInstance(const ParameterPackage& v);
+        SPtr<Object> CreateSharedInstance(const ParameterPackage& v);
     public:
         virtual string ToString() const override;
     public:
@@ -537,7 +537,7 @@ namespace jxcorlib
     using get_boxing_type_t = typename get_boxing_type<T>::type;
 
     template<typename T>
-    sptr<T> interface_sptr_cast(Object_rsp obj)
+    SPtr<T> interface_sptr_cast(Object_rsp obj)
     {
         if (obj == nullptr) return nullptr;
         return sptr_static_cast<T>(obj->GetType()->GetSharedInterface(obj, cltypeof<T>()));
@@ -558,7 +558,7 @@ namespace jxcorlib
     template<typename T>
     struct get_object_pointer<T, true>
     {
-        static sptr<Object> get(const sptr<T>& t)
+        static SPtr<Object> get(const SPtr<T>& t)
         {
             return t;
         }
@@ -568,7 +568,7 @@ namespace jxcorlib
     struct get_object_pointer<T, false>
     {
         using ClType = get_boxing_type<T>::type;
-        static sptr<Object> get(const T& t)
+        static SPtr<Object> get(const T& t)
         {
             return mksptr(new ClType(t));
         }
@@ -596,7 +596,7 @@ namespace jxcorlib
     template<typename T>
     struct object_assign<T, true>
     {
-        static void assign(sptr<T>* target, sptr<Object>& value)
+        static void assign(SPtr<T>* target, SPtr<Object>& value)
         {
             *target = std::static_pointer_cast<T>(value);
         }
@@ -605,7 +605,7 @@ namespace jxcorlib
     struct object_assign<T, false>
     {
         using ClType = get_boxing_type<T>::type;
-        static void assign(T* target, sptr<Object>& value)
+        static void assign(T* target, SPtr<Object>& value)
         {
             auto ptr = static_cast<ClType*>(value.get());
             *target = ptr->get_unboxing_value();
