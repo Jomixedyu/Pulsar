@@ -78,9 +78,6 @@ namespace pulsar
         AssetObject(AssetObject&&) = delete;
         AssetObject& operator=(const AssetObject&) = delete;
 
-        void Incref() { ++m_cref; }
-        void Decref();
-        uint32_t GetCref() const { return m_cref; }
     protected:
         virtual void OnInstantiateAsset(AssetObject* obj);
 

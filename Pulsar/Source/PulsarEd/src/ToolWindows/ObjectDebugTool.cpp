@@ -14,7 +14,7 @@ namespace pulsared
     {
         ImGui::InputText("Search", m_search, sizeof(m_search));
 
-        ImGui::BeginTable("tab", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable);
+        ImGui::BeginTable("tab", 5, ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable);
         ImGui::TableSetupColumn("Object Name");
         ImGui::TableSetupColumn("Type");
         ImGui::TableSetupColumn("Object Handle");

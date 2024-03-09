@@ -24,7 +24,7 @@ namespace pulsared
             PImGui::ObjectFieldProperties(
                 BoxingObjectPtrBase::StaticType(),
                 m_assetObject->GetType(),
-                mkbox(m_assetObject.Handle).get(),
+                mkbox(ObjectPtrBase(m_assetObject.Handle)).get(),
                 m_assetObject.GetPtr());
         }
 

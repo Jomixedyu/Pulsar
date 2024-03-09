@@ -175,7 +175,7 @@ namespace pulsared
                     Object* parentObj = obj;
                     if (type == BoxingObjectPtrBase::StaticType())
                     {
-                        const auto objptr = static_cast<BoxingObjectPtrBase*>(obj);
+                        const auto objptr = dynamic_cast<BoxingObjectPtrBase*>(obj);
                         if (objptr->GetHandle())
                         {
                             parentObj = objptr->get_unboxing_value().GetObjectPointer();

@@ -9,6 +9,7 @@
 #include <Pulsar/AssetManager.h>
 #include <Pulsar/Assets/Material.h>
 #include <mutex>
+#include <utility>
 
 namespace pulsar
 {
@@ -171,8 +172,8 @@ namespace pulsar
             }
         }
 
-        m_isDirtyParameter = true;
-        SubmitParameters();
+
+        SubmitParameters(true);
         return true;
     }
 
@@ -563,13 +564,11 @@ namespace pulsar
         if (m_shader)
         {
             m_shader->RemoveOutDependency(GetObjectHandle());
-            m_shader->Decref();
         }
-        m_shader = value;
+        m_shader = std::move(value);
 
         if (m_shader)
         {
-            m_shader->Incref();
             m_shader->AddOutDependency(GetObjectHandle());
 
             if (m_shader->m_isAvailable)

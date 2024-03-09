@@ -34,6 +34,7 @@ namespace pulsared
         m_sceneEditor = new SceneEditorViewportFrame;
         m_sceneEditor->Initialize();
         m_sceneEditor->SetWorld(GetEdApp()->GetEditorWorld());
+        SetTool(std::make_unique<SelectorEdTool>());
     }
     void SceneWindow::OnCloseWorkspace()
     {

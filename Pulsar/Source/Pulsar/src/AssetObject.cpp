@@ -27,16 +27,6 @@ namespace pulsar
         return obj;
     }
 
-    void AssetObject::Decref()
-    {
-        assert(m_cref > 0);
-        --m_cref;
-        if (m_cref == 0)
-        {
-            DestroyObject(THIS_REF);
-        }
-    }
-
     void AssetObject::OnInstantiateAsset(AssetObject* obj)
     {
         obj->SetIndexName(this->GetIndexName());

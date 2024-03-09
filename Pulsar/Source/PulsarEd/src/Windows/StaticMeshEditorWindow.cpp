@@ -25,7 +25,6 @@ namespace pulsared
         base::OnOpen();
 
         m_staticmesh = cref_cast<StaticMesh>(m_assetObject);
-        m_staticmesh->Incref();
         m_staticmesh->CreateGPUResource();
 
         auto previewMesh = m_world->GetResidentScene()->NewNode("PreviewMesh");
@@ -42,7 +41,7 @@ namespace pulsared
         base::OnClose();
         if (m_staticmesh)
         {
-            m_staticmesh->Decref();
+            m_staticmesh.Reset();
         }
     }
 
