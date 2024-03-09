@@ -10,11 +10,11 @@ namespace pulsared
         CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::AssetEditorMenuContext, MenuContextBase);
 
     public:
-        explicit AssetEditorMenuContext(AssetObject_ref asset)
+        explicit AssetEditorMenuContext(RCPtr<AssetObject> asset)
             : Asset(asset)
         {
         }
-        AssetObject_ref Asset;
+        RCPtr<AssetObject> Asset;
     };
 
     class AssetEditorWindow : public PanelWindow
@@ -30,13 +30,13 @@ namespace pulsared
         virtual void OnDrawAssetPropertiesUI(float dt);
         virtual void OnDrawAssetPreviewUI(float dt);
 
-        AssetObject_ref GetAssetObject() const { return m_assetObject; }
-        void SetAssetObject(AssetObject_ref asset) { m_assetObject = asset; }
+        RCPtr<AssetObject> GetAssetObject() const { return m_assetObject; }
+        void SetAssetObject(RCPtr<AssetObject> asset) { m_assetObject = asset; }
 
         void OnDrawImGui(float dt) override;
         virtual void OnRefreshMenuContexts();
     protected:
-        AssetObject_ref m_assetObject;
+        RCPtr<AssetObject> m_assetObject;
         MenuContexts_sp m_menuBarCtxs;
     };
 

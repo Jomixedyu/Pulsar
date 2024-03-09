@@ -46,7 +46,7 @@ namespace pulsar
     {
     }
 
-    RenderTexture_ref RenderTexture::StaticCreate(index_string name, int width, int height, int colorRTCount, bool hasDepthStencil)
+    RCPtr<RenderTexture> RenderTexture::StaticCreate(index_string name, int width, int height, int colorRTCount, bool hasDepthStencil)
     {
         auto self = mksptr(new RenderTexture);
         self->Construct();
@@ -81,7 +81,7 @@ namespace pulsar
         self->m_width = width;
         self->m_height = height;
 
-        return self;
+        return self.get();
     }
 
     void RenderTexture::PostInitializeData(int32_t width, int32_t height)

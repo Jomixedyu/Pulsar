@@ -23,7 +23,7 @@ namespace pulsared
     {
     public:
         virtual ~AssetImporter() = default;
-        virtual array_list<AssetObject_ref> Import(AssetImporterSettings* settings) = 0;
+        virtual array_list<RCPtr<AssetObject>> Import(AssetImporterSettings* settings) = 0;
         virtual string GetImporterType() const = 0;
     };
 

@@ -24,11 +24,11 @@ namespace pulsared
             PImGui::ObjectFieldProperties(
                 BoxingObjectPtrBase::StaticType(),
                 m_assetObject->GetType(),
-                mkbox((ObjectPtrBase)m_assetObject).get(),
+                mkbox(m_assetObject.Handle).get(),
                 m_assetObject.GetPtr());
         }
 
-        Material_ref material = ref_cast<Material>(m_assetObject);
+        RCPtr<Material> material = cref_cast<Material>(m_assetObject);
         if (m_shader != material->GetShader())
         {
             // m_world->GetResidentScene()
@@ -66,7 +66,7 @@ namespace pulsared
                     case ShaderParameterType::Texture2D: {
                         auto tex = material->GetTexture(prop.first);
                         objType = Texture2D::StaticType();
-                        obj = mkbox((ObjectPtrBase)tex);
+                        obj = mkbox(ObjectPtrBase(tex.GetHandle()));
                         break;
                     }
                     }
@@ -89,7 +89,7 @@ namespace pulsared
                         }
                         case ShaderParameterType::Texture2D: {
                             auto objptr = UnboxUtil::Unbox<ObjectPtrBase>(obj);
-                            Texture2D_ref tex = objptr;
+                            RCPtr<Texture2D> tex = objptr.GetHandle();
                             material->SetTexture(prop.first, tex);
                             break;
                         }
@@ -104,7 +104,7 @@ namespace pulsared
     void MaterialEditorWindow::OnOpen()
     {
         base::OnOpen();
-        Material_ref material = m_assetObject;
+        RCPtr<Material> material = m_assetObject;
         material->CreateGPUResource();
 
         auto previewMesh =m_world->GetResidentScene()->NewNode("PreviewMesh");

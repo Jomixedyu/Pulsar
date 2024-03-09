@@ -21,7 +21,7 @@ namespace pulsared
     public:
         //static Node_ref Import(string_view path, FBXImporterSettings* settings);
         string GetImporterType() const override { return "FBXImporter"; }
-        array_list<AssetObject_ref> Import(AssetImporterSettings* settings) override;
+        array_list<RCPtr<AssetObject>> Import(AssetImporterSettings* settings) override;
     };
 
     class PULSARED_API FBXImporterFactory final : public AssetImporterFactory

@@ -25,7 +25,7 @@ namespace pulsared
         {
             ImGui::PushID(i);
             auto path = m_shaderPaths[i];
-            auto shader = m_shaders[i];
+            auto& shader = m_shaders[i];
             ImGui::TableNextRow();
 
             ImGui::TableSetColumnIndex(0);
@@ -43,7 +43,7 @@ namespace pulsared
             ImGui::TableSetColumnIndex(3);
             if (ImGui::Button("Compile"))
             {
-                ShaderCompiler::CompileShader(shader);
+                ShaderCompiler::CompileShader(shader.GetPtr());
             }
             ImGui::PopID();
         }

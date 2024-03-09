@@ -47,11 +47,11 @@ namespace pulsared
 	class EditorAssetManager : public pulsar::AssetManager
 	{
 	public:
-		virtual pulsar::AssetObject_ref LoadAssetAtPath(string_view path) override
+		virtual RCPtr<AssetObject> LoadAssetAtPath(string_view path) override
 		{
 			return AssetDatabase::LoadAssetAtPath(path);
 		}
-		virtual AssetObject_ref LoadAssetById(ObjectHandle id) override
+		virtual RCPtr<AssetObject> LoadAssetById(ObjectHandle id) override
 		{
 			return AssetDatabase::LoadAssetById(id);
 		}

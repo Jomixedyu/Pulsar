@@ -13,13 +13,13 @@
 namespace pulsar
 {
 
-    ObjectPtr<Material> Material::StaticCreate(string_view name)
+    RCPtr<Material> Material::StaticCreate(string_view name)
     {
         Material_sp material = mksptr(new Material);
         material->Construct();
         material->SetName(name);
 
-        return material;
+        return material.get();
     }
 
     void Material::OnConstruct()
@@ -85,7 +85,7 @@ namespace pulsar
             return true;
         }
 
-        Shader_ref shader = m_shader;
+        RCPtr<Shader> shader = m_shader;
         if (!m_shader || !m_shader->m_isAvailable)
         {
             shader = GetAssetManager()->LoadAsset<Shader>(BuiltinAsset::Shader_Missing);
@@ -192,6 +192,18 @@ namespace pulsar
     {
         return m_createdGpuResource;
     }
+    void Material::OnDependencyMessage(ObjectHandle inDependency, int msg)
+    {
+        base::OnDependencyMessage(inDependency, msg);
+        if (msg == DependMsg_OnAvailable)
+        {
+
+        }
+        else if (msg == DependMsg_OnUnavailable || msg == DependMsg_OnDestroy)
+        {
+
+        }
+    }
 
     static ser::VarientRef NewVectorObject(const ser::VarientRef& ctx, Vector4f vec)
     {
@@ -216,7 +228,7 @@ namespace pulsar
         if (s->IsWrite)
         {
             const auto shaderObject = s->Object->New(ser::VarientType::String);
-            shaderObject->Assign(m_shader.handle.to_string());
+            shaderObject->Assign(m_shader.GetHandle().to_string());
             s->Object->Add("Shader", shaderObject);
 
             const auto parametersArray = s->Object->New(ser::VarientType::Array);
@@ -279,7 +291,7 @@ namespace pulsar
                     paramValue.SetValue(GetVectorObject(valueObject));
                     break;
                 case ShaderParameterType::Texture2D: {
-                    Texture_ref tex = ObjectHandle::parse(valueObject->AsString());
+                    RCPtr<Texture2D> tex = ObjectHandle::parse(valueObject->AsString());
                     paramValue.SetValue(tex);
                     break;
                 }
@@ -290,8 +302,7 @@ namespace pulsar
 
             // shader
             auto shaderObject = ObjectHandle::parse(s->Object->At("Shader")->AsString());
-            TryFindOrLoadObject(shaderObject);
-            SetShader(shaderObject);
+            SetShader(GetAssetManager()->LoadAssetById(shaderObject));
         }
     }
     void Material::OnInstantiateAsset(AssetObject* obj)
@@ -322,7 +333,7 @@ namespace pulsar
         m_isDirtyParameter = true;
     }
 
-    void Material::SetTexture(const index_string& name, Texture_ref value)
+    void Material::SetTexture(const index_string& name, RCPtr<Texture2D> value)
     {
         if (!m_parameterValues.contains(name))
         {
@@ -386,7 +397,7 @@ namespace pulsar
         return it->second.AsVector();
     }
 
-    Texture_ref Material::GetTexture(const index_string& name)
+    RCPtr<Texture2D> Material::GetTexture(const index_string& name)
     {
         auto it = m_parameterValues.find(name);
         if (it == m_parameterValues.end())
@@ -396,7 +407,7 @@ namespace pulsar
             {
                 return meta->second.Value.AsTexture();
             }
-            return Texture_ref{};
+            return {};
         }
         return it->second.AsTexture();
     }
@@ -432,7 +443,7 @@ namespace pulsar
                 break;
             }
             case ShaderParameterType::Texture2D: {
-                Texture2D_ref tex = ref_cast<Texture2D>(value.AsTexture());
+                auto tex = cref_cast<Texture2D>(value.AsTexture());
                 if (!tex)
                 {
                     tex = GetAssetManager()->LoadAsset<Texture2D>(BuiltinAsset::Texture_White);
@@ -542,26 +553,30 @@ namespace pulsar
         }
     }
 
-    Shader_ref Material::GetShader() const
+    RCPtr<Shader> Material::GetShader() const
     {
         return m_shader;
     }
 
-    void Material::SetShader(Shader_ref value)
+    void Material::SetShader(RCPtr<Shader> value)
     {
         if (m_shader)
         {
-            m_shader->OnAvailableChanged.RemoveListener(this, &ThisClass::OnShaderAvailable);
+            m_shader->RemoveOutDependency(GetObjectHandle());
+            m_shader->Decref();
         }
         m_shader = value;
+
         if (m_shader)
         {
-            std::lock_guard<std::mutex> lk{m_shader->m_isAvailableMutex};
+            m_shader->Incref();
+            m_shader->AddOutDependency(GetObjectHandle());
+
             if (m_shader->m_isAvailable)
             {
                 InitShaderConfig();
             }
-            m_shader->OnAvailableChanged.AddListener(this, &ThisClass::OnShaderAvailable);
+
         }
         if (m_createdGpuResource)
         {

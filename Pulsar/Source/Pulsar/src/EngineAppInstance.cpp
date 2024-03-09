@@ -144,7 +144,7 @@ namespace pulsar
                 cmdBuffer.SetFrameBuffer(nullptr);
 
                 // post processing
-                RenderTexture_ref lastPPRt;
+                RCPtr<RenderTexture> lastPPRt;
                 auto ppcount = cam->m_postProcessMaterials->size();
                 size_t ppCount = 0;
                 for (size_t i = 0; i < ppcount; ++i)
@@ -154,8 +154,8 @@ namespace pulsar
                     {
                         continue;
                     }
-                    RenderTexture_ref srcRt;
-                    RenderTexture_ref destRt;
+                    RCPtr<RenderTexture> srcRt;
+                    RCPtr<RenderTexture> destRt;
                     gfx::GFXDescriptorSet_sp srcResourceDescSet;
                     if(i % 2 == 1)
                     {

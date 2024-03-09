@@ -12,7 +12,7 @@ namespace pulsar
         init_sptr_member(m_importFiles);
         init_sptr_member(m_tags);
     }
-    AssetObject_ref AssetObject::InstantiateAsset()
+    RCPtr<AssetObject> AssetObject::InstantiateAsset()
     {
         if (!CanInstantiateAsset())
         {

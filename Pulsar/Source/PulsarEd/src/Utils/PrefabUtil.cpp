@@ -6,7 +6,7 @@
 namespace pulsared
 {
 
-    Scene_ref PrefabUtil::NewSceneFromPrefab(Prefab_ref prefab)
+    Scene_ref PrefabUtil::NewSceneFromPrefab(RCPtr<Prefab> prefab)
     {
         auto scene = Scene::StaticCreate(prefab->GetName());
         //scene->CopyFrom(prefab);
@@ -14,7 +14,7 @@ namespace pulsared
         return scene;
     }
 
-    void PrefabUtil::OpenPrefab(Prefab_ref prefab)
+    void PrefabUtil::OpenPrefab(RCPtr<Prefab> prefab)
     {
         auto world = new EditorWorld(prefab->GetName());
         EditorWorld::PushPreviewWorld(std::unique_ptr<EditorWorld>{world});

@@ -42,7 +42,17 @@
     #define JXCORELIB_API
 #endif
 
-
+#ifndef always_inline
+    #if   defined(_MSC_VER)
+        #define always_inline msvc::forceinline
+    #elif defined(__GNUC__)
+        #define always_inline gnu::always_inline
+    #elif defined(__clang__)
+        #define always_inline clang::always_inline
+    #else
+        #define always_inline always_inline
+    #endif
+#endif
 
 namespace jxcorlib
 {

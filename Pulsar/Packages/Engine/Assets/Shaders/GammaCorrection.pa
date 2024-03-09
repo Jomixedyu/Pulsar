@@ -1,15 +1,15 @@
 {
-    "Available": false,
+    "Available": true,
     "Config": {
         "ConstantProperties": [],
         "CullMode": 0,
-        "DepthCompareOp": 0,
-        "DepthTestEnable": false,
-        "DepthWriteEnable": false,
+        "DepthCompareOp": 1,
+        "DepthTestEnable": true,
+        "DepthWriteEnable": true,
         "Properties": [],
-        "RenderingType": 0,
+        "RenderingType": 3,
         "StencilTestEnable": false
     },
-    "RenderingType": 0,
-    "Passes": "Engine/Shaders/GammaCoreection.sh.json"
+    "Passes": "Engine/Shaders/GammaCorrection.sh.json",
+    "RenderingType": 3
 }

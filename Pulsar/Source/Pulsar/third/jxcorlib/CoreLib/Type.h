@@ -581,6 +581,9 @@ namespace jxcorlib
     };
 
     template<typename T>
+    using type_redirect_t = typename type_redirect<T>::type;
+
+    template<typename T>
     struct type_wrapper
     {
         using type = T;

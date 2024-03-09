@@ -45,7 +45,7 @@ namespace pulsar
 
         virtual void Serialize(AssetSerializer* s) override;
 
-        static ObjectPtr<StaticMesh> StaticCreate(
+        static RCPtr<StaticMesh> StaticCreate(
             string_view name,
             array_list<StaticMeshSection>&& vertData,
             array_list<string>&& materialNames);

@@ -13,7 +13,7 @@
 namespace pulsared
 {
 
-    static std::unordered_set<ObjectHandle> _DirtyObjects;
+    static std::unordered_set<RCPtr<AssetObject>> _DirtyObjects;
 
     class PackageAssetRegistry
     {
@@ -77,7 +77,7 @@ namespace pulsared
         return { physicMeta, physicAsset, physicBinary };
     }
 
-    AssetObject_ref AssetDatabase::LoadAssetAtPath(string_view path)
+    RCPtr<AssetObject> AssetDatabase::LoadAssetAtPath(string_view path)
     {
         // string pathStr{path};
 
@@ -85,7 +85,7 @@ namespace pulsared
         {
             if(auto obj = RuntimeObjectWrapper::GetObject(id))
             {
-                return id;
+                return obj;
             }
         }
 
@@ -141,7 +141,7 @@ namespace pulsared
         return assetObj;
     }
 
-    AssetObject_ref AssetDatabase::LoadAssetById(ObjectHandle id)
+    RCPtr<AssetObject> AssetDatabase::LoadAssetById(ObjectHandle id)
     {
         for (auto& [packageName, registry] : _AssetRegistry)
         {
@@ -174,9 +174,9 @@ namespace pulsared
 
         return {};
     }
-    string AssetDatabase::GetPathByAsset(AssetObject_ref asset)
+    string AssetDatabase::GetPathByAsset(RCPtr<AssetObject> asset)
     {
-        return GetPathById(asset.handle);
+        return GetPathById(asset.GetHandle());
     }
 
     ObjectHandle AssetDatabase::GetIdByPath(string_view path)
@@ -202,7 +202,7 @@ namespace pulsared
     }
 
 
-    void AssetDatabase::ResolveDirty(AssetObject_ref asset)
+    void AssetDatabase::ResolveDirty(RCPtr<AssetObject> asset)
     {
         auto it = _DirtyObjects.find(asset.GetHandle());
         if (it != _DirtyObjects.end())
@@ -211,7 +211,7 @@ namespace pulsared
         }
     }
 
-    bool AssetDatabase::ExistsAsset(AssetObject_ref asset)
+    bool AssetDatabase::ExistsAsset(RCPtr<AssetObject> asset)
     {
         return !GetPathByAsset(asset).empty();
     }
@@ -223,7 +223,7 @@ namespace pulsared
         ResolveDirty(id);
     }
 
-    void AssetDatabase::Save(AssetObject_ref asset)
+    void AssetDatabase::Save(RCPtr<AssetObject> asset)
     {
         if (!asset)
             return;
@@ -273,7 +273,7 @@ namespace pulsared
 
         for (auto& item : copy)
         {
-            Save(item);
+            Save(item.GetPtr());
         }
     }
 
@@ -282,18 +282,18 @@ namespace pulsared
         Logger::Log("new asset : " + string{folderPath} + " ; " + string{assetName});
         const auto asset = sptr_cast<AssetObject>(assetType->CreateSharedInstance({}));
         asset->Construct();
-        CreateAsset(asset, GetUniquePath(string{folderPath} + "/" + string{assetName}));
+        CreateAsset(asset.get(), GetUniquePath(string{folderPath} + "/" + string{assetName}));
     }
 
     static void _WriteAssetToDisk(
         const std::shared_ptr<AssetFileNode>& root,
         string_view path,
-        AssetObject_ref asset)
+        RCPtr<AssetObject> asset)
     {
         const auto newAsset = root->PrepareChildFile(path, ".pmeta");
         newAsset->AssetMeta = mksptr(new AssetMetaData);
         newAsset->AssetMeta->Type = asset->GetType()->GetName();
-        newAsset->AssetMeta->Handle = asset.handle;
+        newAsset->AssetMeta->Handle = asset.GetHandle();
         newAsset->IsPhysicsFile = false;
         //newAsset->PhysicsPath = phypath;
         // ser::JsonSerializerSettings settings;
@@ -302,7 +302,7 @@ namespace pulsared
         // FileUtil::WriteAllText(newAsset->PhysicsPath, json);
     }
 
-    bool AssetDatabase::CreateAsset(AssetObject_ref asset, string_view path)
+    bool AssetDatabase::CreateAsset(RCPtr<AssetObject> asset, string_view path)
     {
         if (ExistsAsset(asset))
         {
@@ -314,7 +314,7 @@ namespace pulsared
         }
 
         _WriteAssetToDisk(FileTree, path, asset);
-        _AssetRegistry[GetPackageName(path)].AssetPathMapping[asset.handle] = path;
+        _AssetRegistry[GetPackageName(path)].AssetPathMapping[asset->GetObjectHandle()] = path;
 
         MarkDirty(asset);
 
@@ -418,7 +418,7 @@ namespace pulsared
     {
         if (filter.FolderPath.empty() || node->Parent.lock()->AssetPath == filter.FolderPath)
         {
-            if (!filter.WhiteList.empty() && std::ranges::contains(filter.WhiteList, node->GetAssetType()))
+            if (!filter.WhiteList.empty())
             {
                 if (std::ranges::contains(filter.WhiteList, node->GetAssetType()))
                 {
@@ -455,6 +455,7 @@ namespace pulsared
     array_list<string> AssetDatabase::FindAssets(Type* type, string_view folderPath)
     {
         AssetFilter filter;
+        filter.WhiteList.push_back(type);
         filter.WhiteList.push_back(type);
         filter.FolderPath = folderPath;
         return FindAssets(filter);
@@ -546,14 +547,14 @@ namespace pulsared
         return _RenameAsset(srcAsset, dstAsset);
     }
 
-    void AssetDatabase::MarkDirty(AssetObject_ref asset)
+    void AssetDatabase::MarkDirty(RCPtr<AssetObject> asset)
     {
-        _DirtyObjects.insert(asset.GetHandle());
+        _DirtyObjects.insert(asset);
     }
 
-    bool AssetDatabase::IsDirty(AssetObject_ref asset)
+    bool AssetDatabase::IsDirty(RCPtr<AssetObject> asset)
     {
-        return _DirtyObjects.contains(asset.GetHandle());
+        return _DirtyObjects.contains(asset);
     }
 
     Type* AssetFileNode::GetAssetType() const

@@ -108,7 +108,7 @@ namespace pulsar
         SceneRuntimeEnvironment& GetRuntimeEnvironment() { return m_runtimeEnvironment; }
 
 #ifdef WITH_EDITOR
-        void AddPrefab(Prefab_ref prefab);
+        void AddPrefab(RCPtr<Prefab> prefab);
 #endif
 
     protected:

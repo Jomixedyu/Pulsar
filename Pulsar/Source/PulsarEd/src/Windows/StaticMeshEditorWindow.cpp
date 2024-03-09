@@ -24,7 +24,7 @@ namespace pulsared
     {
         base::OnOpen();
 
-        m_staticmesh = ref_cast<StaticMesh>(m_assetObject);
+        m_staticmesh = cref_cast<StaticMesh>(m_assetObject);
         m_staticmesh->Incref();
         m_staticmesh->CreateGPUResource();
 

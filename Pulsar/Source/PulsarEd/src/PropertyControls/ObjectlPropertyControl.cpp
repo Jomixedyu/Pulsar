@@ -17,23 +17,44 @@ namespace pulsared
     {
         bool isChanged = false;
         auto objectPtr = dynamic_cast<BoxingObjectPtrBase*>(prop);
+        auto rcobjPtr = dynamic_cast<BoxingRCPtrBase*>(prop);
 
-        if (!objectPtr)
+        if (!objectPtr && !rcobjPtr)
         {
             throw EngineException();
         }
+        ObjectHandle handle;
+        if (objectPtr)
+        {
+            handle = objectPtr->GetHandle();
+        }
+        else
+        {
+            handle = rcobjPtr->GetHandle();
+        }
+        auto SetHandle = [=](ObjectHandle handle)
+        {
+            if (objectPtr)
+            {
+                objectPtr->SetHandle(handle);
+            }
+            else
+            {
+                rcobjPtr->SetHandle(handle);
+            }
+        };
 
         char buf[128] = "[Null Object Reference]";
 
         string objectName;
-        if (!objectPtr->handle.is_empty())
+        if (!handle.is_empty())
         {
-            auto obj = RuntimeObjectWrapper::GetObject(objectPtr->handle);
+            auto obj = RuntimeObjectWrapper::GetObject(handle);
             if (!obj)
             {
-                obj = AssetDatabase::LoadAssetById(objectPtr->handle).GetPtr();
+                obj = AssetDatabase::LoadAssetById(handle).GetPtr();
             }
-            auto objectShortHandle = objectPtr->handle.to_string().substr(24, 8);
+            auto objectShortHandle = handle.to_string().substr(24, 8);
             if (obj)
             {
                 objectName = StringUtil::Concat(obj->GetName(), " (", objectShortHandle, ")");
@@ -64,8 +85,7 @@ namespace pulsared
                 {
                     if (payload = ImGui::AcceptDragDropPayload("PULSARED_DRAG"))
                     {
-                        objectPtr->handle = ObjectHandle::parse(id);
-                        TryFindOrLoadObject(objectPtr->handle);
+                        SetHandle(ObjectHandle::parse(id));
                         isChanged = true;
                     }
                 }

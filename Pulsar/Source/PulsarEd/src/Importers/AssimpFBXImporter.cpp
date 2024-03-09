@@ -101,7 +101,7 @@ namespace pulsared
         array_list<StaticMeshSection> sections;
         sections.resize(node->mNumMeshes);
 
-        array_list<Material_ref> materials;
+        array_list<RCPtr<Material>> materials;
         for (unsigned int i = 0; i < node->mNumMeshes; i++)
         {
             aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
@@ -125,8 +125,6 @@ namespace pulsared
         if (node->mNumMeshes > 0)
         {
             auto staticMesh = StaticMesh::StaticCreate(node->mName.C_Str(), std::move(sections), std::move(materialNames));
-
-            newNode->AddComponent<MeshContainerComponent>()->SetMesh(staticMesh);
 
             auto renderer = newNode->AddComponent<StaticMeshRendererComponent>();
             for (auto& mat : materials)

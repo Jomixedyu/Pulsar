@@ -12,11 +12,11 @@ namespace pulsar
     public:
         virtual void SetFloat(const index_string& name, float value) = 0;
         virtual void SetVector4(const index_string& name, const Vector4f& vec) = 0;
-        virtual void SetTexture(const index_string& name, Texture_ref) = 0;
+        virtual void SetTexture(const index_string& name, RCPtr<Texture2D>) = 0;
 
         virtual float GetScalar(const index_string& name) = 0;
         virtual Vector4f GetVector4(const index_string& name) = 0;
-        virtual Texture_ref GetTexture(const index_string& name) = 0;
+        virtual RCPtr<Texture2D> GetTexture(const index_string& name) = 0;
     };
 
 
@@ -43,14 +43,14 @@ namespace pulsar
             Type = ShaderParameterType::Vector;
         }
 
-        void SetValue(Texture_ref value)
+        void SetValue(const RCPtr<Texture2D>& value)
         {
             Value = value;
             Type = ShaderParameterType::Texture2D;
         }
 
     private:
-        std::variant<int, float, Vector4f, Texture_ref> Value;
+        std::variant<int, float, Vector4f, RCPtr<Texture2D>> Value;
 
     public:
         int AsIntScalar() const
@@ -65,9 +65,9 @@ namespace pulsar
         {
             return std::get<Vector4f>(Value);
         }
-        Texture_ref AsTexture() const
+        RCPtr<Texture2D> AsTexture() const
         {
-            return std::get<Texture_ref>(Value);
+            return std::get<RCPtr<Texture2D>>(Value);
         }
         int GetDataSize() const
         {
@@ -97,7 +97,7 @@ namespace pulsar
         CORELIB_CLASS_ATTR(new MenuItemCreateAssetAttribute);
 
     public:
-        static ObjectPtr<Material> StaticCreate(string_view name);
+        static RCPtr<Material> StaticCreate(string_view name);
 
         virtual void Serialize(AssetSerializer* s) override;
         void OnInstantiateAsset(AssetObject* obj) override;
@@ -106,18 +106,20 @@ namespace pulsar
         virtual void DestroyGPUResource() override;
         virtual bool IsCreatedGPUResource() const override;
 
+    protected:
+        void OnDependencyMessage(ObjectHandle inDependency, int msg) override;
     public:
         void OnConstruct() override;
 
         // IMaterialParameter
         void SetIntScalar(const index_string& name, int value);
         void SetFloat(const index_string& name, float value) override;
-        void SetTexture(const index_string& name, Texture_ref value) override;
+        void SetTexture(const index_string& name, RCPtr<Texture2D> value) override;
         void SetVector4(const index_string& name, const Vector4f& value) override;
         int GetIntScalar(const index_string& name);
         float GetScalar(const index_string& name) override;
         Vector4f GetVector4(const index_string& name) override;
-        Texture_ref GetTexture(const index_string& name) override;
+        RCPtr<Texture2D> GetTexture(const index_string& name) override;
 
         void SubmitParameters(bool force = false);
 
@@ -131,8 +133,8 @@ namespace pulsar
         }
         gfx::GFXShaderPass_sp GetGfxShaderPass();
     public:
-        Shader_ref GetShader() const;
-        void SetShader(Shader_ref value);
+        RCPtr<Shader> GetShader() const;
+        void SetShader(RCPtr<Shader> value);
 
         Action<> OnShaderChanged;
 
@@ -145,7 +147,7 @@ namespace pulsar
 
     private:
         CORELIB_REFL_DECL_FIELD(m_shader);
-        Shader_ref m_shader;
+        RCPtr<Shader> m_shader;
 
         gfx::GFXShaderPass_sp m_gfxShaderPasses;
 

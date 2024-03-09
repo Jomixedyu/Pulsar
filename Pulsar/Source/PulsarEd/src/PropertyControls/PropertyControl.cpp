@@ -176,9 +176,9 @@ namespace pulsared
                     if (type == BoxingObjectPtrBase::StaticType())
                     {
                         const auto objptr = static_cast<BoxingObjectPtrBase*>(obj);
-                        if (objptr->handle)
+                        if (objptr->GetHandle())
                         {
-                            parentObj = objptr->get_unboxing_value().GetTPtr<ObjectBase>();
+                            parentObj = objptr->get_unboxing_value().GetObjectPointer();
                             fieldInstSptr = field->GetValue(parentObj);
                         }
                         else

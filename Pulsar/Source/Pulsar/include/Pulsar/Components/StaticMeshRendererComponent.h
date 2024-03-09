@@ -23,22 +23,22 @@ namespace pulsar
     public:
         sptr<rendering::RenderObject> CreateRenderObject() override;
     public:
-        List_sp<Material_ref> GetMaterials() const { return this->m_materials; }
+        List_sp<RCPtr<Material>> GetMaterials() const { return this->m_materials; }
 
         void PostEditChange(FieldInfo* info) override;
 
         StaticMeshRendererComponent() : CORELIB_INIT_INTERFACE(IRendererComponent)
         {
-            m_materials = mksptr(new List<Material_ref>);
+            m_materials = mksptr(new List<RCPtr<Material>>);
         }
 
         Box3f CalcBoudingBox() const override;
 
-        StaticMesh_ref GetStaticMesh() const { return m_staticMesh; }
-        void SetStaticMesh(StaticMesh_ref staticMesh);
+        RCPtr<StaticMesh> GetStaticMesh() const { return m_staticMesh; }
+        void SetStaticMesh(RCPtr<StaticMesh> staticMesh);
 
-        Material_ref GetMaterial(int index) const;
-        void SetMaterial(int index, Material_ref material);
+        RCPtr<StaticMesh> GetMaterial(int index) const;
+        void SetMaterial(int index, RCPtr<Material> material);
         size_t AddMaterial();
         void RemoveMaterial(size_t index);
         size_t GetMaterialCount() const { return m_materialsSize; }
@@ -60,12 +60,12 @@ namespace pulsar
         void OnMaterialChanged();
     protected:
         CORELIB_REFL_DECL_FIELD(m_materials, new ListItemAttribute(cltypeof<Material>()));
-        List_sp<Material_ref> m_materials;
+        List_sp<RCPtr<Material>> m_materials;
         size_t m_materialsSize = 0;
         array_list<uint32_t> m_materialStateChangedCallbacks;
 
         CORELIB_REFL_DECL_FIELD(m_staticMesh);
-        StaticMesh_ref m_staticMesh;
+        RCPtr<StaticMesh> m_staticMesh;
 
         CORELIB_REFL_DECL_FIELD(m_isCastShadow);
         bool m_isCastShadow = true;

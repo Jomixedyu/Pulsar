@@ -13,14 +13,14 @@ namespace pulsar
 {
     using namespace std;
 
-    sptr<Shader> Shader::StaticCreate(string_view name, ShaderSourceData&& pass)
+    RCPtr<Shader> Shader::StaticCreate(string_view name, ShaderSourceData&& pass)
     {
         Shader_sp self = mksptr(new Shader);
         self->Construct();
         self->SetName(name);
         self->m_shaderSource = std::move(pass);
 
-        return self;
+        return self.get();
     }
 
     static size_t BeginBinaryField(std::iostream& stream, bool write, string& name)

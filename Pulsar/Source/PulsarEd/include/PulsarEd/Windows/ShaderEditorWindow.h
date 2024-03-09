@@ -21,7 +21,7 @@ namespace pulsared
 
         bool m_isShaderReady{};
 
-        Material_ref m_previewMaterial;
+        RCPtr<Material> m_previewMaterial;
 
     };
 }

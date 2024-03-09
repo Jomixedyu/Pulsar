@@ -3,7 +3,7 @@
 namespace pulsar
 {
 
-    ObjectPtr<Sprite> Sprite::StaticCreate(index_string name, Texture2D_ref tex, Vector2f uv0, Vector2f uv1)
+    RCPtr<Sprite> Sprite::StaticCreate(index_string name, Texture2D_ref tex, Vector2f uv0, Vector2f uv1)
     {
         auto ptr = mksptr(new Sprite);
         ptr->Construct();
@@ -13,7 +13,7 @@ namespace pulsar
         ptr->m_texcoord0 = uv0;
         ptr->m_texcoord1 = uv1;
 
-        return ptr;
+        return ptr.get();
     }
     void Sprite::PostEditChange(FieldInfo* info)
     {

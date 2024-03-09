@@ -79,12 +79,12 @@ namespace pulsar
     protected:
         void UpdateWorldCBuffer();
     public:
-        void         SetDefaultMaterial(Material_ref value) { m_defaultMaterial = value; }
-        Material_ref GetDefaultMaterial() const { return m_defaultMaterial; }
+        void         SetDefaultMaterial(RCPtr<Material> value) { m_defaultMaterial = value; }
+        RCPtr<Material> GetDefaultMaterial() const { return m_defaultMaterial; }
 
 
     protected:
-        Material_ref                          m_defaultMaterial;
+        RCPtr<Material>                       m_defaultMaterial;
         hash_set<rendering::RenderObject_sp>  m_renderObjects;
         array_list<ObjectPtr<Scene>>          m_scenes;
         ObjectPtr<Scene>                      m_focusScene;

@@ -78,7 +78,7 @@ namespace pulsar
         return self;
     }
 
-    void Scene::AddPrefab(Prefab_ref prefab)
+    void Scene::AddPrefab(RCPtr<Prefab> prefab)
     {
         auto prefabHandles = prefab->GetCollectionHandles().get();
         hash_map<guid_t, guid_t> map;

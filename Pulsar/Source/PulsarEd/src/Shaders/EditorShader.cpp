@@ -119,7 +119,7 @@ namespace pulsared
     // CORELIB_DECL_SHORTSPTR(ExclusiveTask);
 
     void ShaderCompiler::CompileShader(
-        Shader_ref shader,
+        Shader* shader,
         const array_list<gfx::GFXApi>& api,
         const std::vector<std::filesystem::path>& includes,
         const std::vector<string>& defines)
@@ -137,6 +137,12 @@ namespace pulsared
 
             string config;
             auto shaderPath = AssetDatabase::PackagePathToPhysicsPath(*passName);
+            if (!exists(shaderPath))
+            {
+                auto assetPath = AssetDatabase::GetPathByAsset(shader);
+                string errinfo = std::format("file not found: {}, asset: {}", passName->get_unboxing_value(), assetPath);
+                throw std::ios_base::failure{ errinfo };
+            }
 
             for (auto& apiItem : api)
             {
@@ -163,14 +169,12 @@ namespace pulsared
             Logger::Log("compile shader success.");
 
 
-
-            std::lock_guard lock {shader->m_isAvailableMutex};
             shader->SetConfig(ser::JsonSerializer::Deserialize<ShaderPassConfig>(config));
             shader->ResetShaderSource(serDatas);
             if (shader->GetRenderingType() == shader->GetConfig()->RenderingType)
             {
                 shader->m_isAvailable = true;
-                shader->OnAvailableChanged.Invoke();
+
             }
 
             AssetDatabase::MarkDirty(shader);
@@ -180,7 +184,7 @@ namespace pulsared
             Logger::Log(e.what(), LogLevel::Error);
         }
     }
-    void ShaderCompiler::CompileShader(Shader_ref shader)
+    void ShaderCompiler::CompileShader(Shader* shader)
     {
         //GetEdApp()->GetTaskQueue().AddTask();
         CompileShader(shader, Application::inst()->GetSupportedApis(), {}, {});

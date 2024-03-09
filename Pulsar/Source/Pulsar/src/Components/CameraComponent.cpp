@@ -201,12 +201,12 @@ namespace pulsar
         m_cameraDataBuffer->Fill(&target);
     }
 
-    void CameraComponent::AddPostProcess(Material_ref material)
+    void CameraComponent::AddPostProcess(RCPtr<Material> material)
     {
         m_postProcessMaterials->push_back(material);
     }
 
-    void CameraComponent::SetRenderTexture(const RenderTexture_ref& value, bool managed)
+    void CameraComponent::SetRenderTexture(const RCPtr<RenderTexture>& value, bool managed)
     {
         if (value)
         {

@@ -7,7 +7,8 @@ namespace pulsar
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::Sprite, AssetObject);
     public:
-        ObjectPtr<Sprite> StaticCreate(index_string name, Texture2D_ref tex, Vector2f uv0, Vector2f uv1);
+        static RCPtr<Sprite> StaticCreate(index_string name, Texture2D_ref tex, Vector2f uv0, Vector2f uv1);
+
         void PostEditChange(FieldInfo* info) override;
 
         Texture2D_ref GetTexture() const noexcept { return m_texture; }

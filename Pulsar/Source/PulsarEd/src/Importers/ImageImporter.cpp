@@ -7,9 +7,9 @@
 namespace pulsared
 {
 
-    array_list<AssetObject_ref> ImageImporter::Import(AssetImporterSettings* settings)
+    array_list<RCPtr<AssetObject>> ImageImporter::Import(AssetImporterSettings* settings)
     {
-        array_list<AssetObject_ref> importAssets;
+        array_list<RCPtr<AssetObject>> importAssets;
         for (auto& file : *settings->ImportFiles)
         {
             auto asset = mksptr(new Texture2D);
@@ -24,11 +24,10 @@ namespace pulsared
 
             asset->SetIsSRGB(true);
 
-            auto assetRef = AssetObject_ref(asset.get());
             auto assetPath = settings->TargetPath + "/" + PathUtil::GetFilenameWithoutExt(file);
             assetPath = AssetDatabase::GetUniquePath(assetPath);
-            AssetDatabase::CreateAsset(assetRef, assetPath);
-            importAssets.push_back(assetRef);
+            AssetDatabase::CreateAsset(asset.get(), assetPath);
+            importAssets.push_back(asset.get());
         }
 
         return importAssets;

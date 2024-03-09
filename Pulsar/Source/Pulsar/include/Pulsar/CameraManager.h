@@ -1,5 +1,6 @@
 #pragma once
 #include "ObjectBase.h"
+#include "Components/CameraComponent.h"
 
 namespace pulsar
 {

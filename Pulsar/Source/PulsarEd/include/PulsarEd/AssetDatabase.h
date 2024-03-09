@@ -80,20 +80,20 @@ namespace pulsared
 
         static array_list<ProgramPackage> GetPackageInfos();
 
-        static AssetObject_ref LoadAssetAtPath(string_view path);
-        static AssetObject_ref LoadAssetById(ObjectHandle id);
+        static RCPtr<AssetObject> LoadAssetAtPath(string_view path);
+        static RCPtr<AssetObject> LoadAssetById(ObjectHandle id);
         static bool ExistsAssetPath(string_view path);
         static string GetPathById(ObjectHandle id);
-        static string GetPathByAsset(AssetObject_ref asset);
+        static string GetPathByAsset(RCPtr<AssetObject> asset);
         static ObjectHandle GetIdByPath(string_view path);
         static string GetUniquePath(string_view path);
 
-        static bool ExistsAsset(AssetObject_ref asset);
+        static bool ExistsAsset(RCPtr<AssetObject> asset);
         static void ReloadAsset(ObjectHandle id);
-        static void Save(AssetObject_ref asset);
+        static void Save(RCPtr<AssetObject> asset);
         static void SaveAll();
         static void NewAsset(string_view folderPath, string_view assetName, Type* assetType);
-        static bool CreateAsset(AssetObject_ref asset, string_view path);
+        static bool CreateAsset(RCPtr<AssetObject> asset, string_view path);
         // Delete assets without folder
         static bool DeleteAssets(const array_list<string>& assetPaths, array_list<string>* errinfo = nullptr);
         // Only empty folders can be deleted
@@ -106,9 +106,9 @@ namespace pulsared
 
         static bool Rename(string_view srcAsset, string_view dstAsset);
 
-        static void MarkDirty(AssetObject_ref asset);
-        static bool IsDirty(AssetObject_ref asset);
-        static void ResolveDirty(AssetObject_ref asset);
+        static void MarkDirty(RCPtr<AssetObject> asset);
+        static bool IsDirty(RCPtr<AssetObject> asset);
+        static void ResolveDirty(RCPtr<AssetObject> asset);
 
 
         static inline const char* FileTreeRootPath = "Packages";
@@ -116,11 +116,11 @@ namespace pulsared
         static inline Function<bool, string_view, array_list<string>*> OnRequestDeleteAsset;
         static inline Action<string_view> OnDeletedAsset;
 
-        static inline Function<bool, AssetObject_ref> OnRequestSaveAsset;
-        static inline Action<AssetObject_ref> OnSavedAsset;
+        static inline Function<bool, RCPtr<AssetObject>> OnRequestSaveAsset;
+        static inline Action<RCPtr<AssetObject>> OnSavedAsset;
 
-        static inline Function<bool, AssetObject_ref, string_view> OnRequestCreateAsset;
-        static inline Action<AssetObject_ref> OnCreatedAsset;
+        static inline Function<bool, RCPtr<AssetObject>, string_view> OnRequestCreateAsset;
+        static inline Action<RCPtr<AssetObject>> OnCreatedAsset;
 
         static inline std::shared_ptr<AssetFileNode> FileTree;
         static inline std::unique_ptr<PersistentImagePool> IconPool;

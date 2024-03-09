@@ -10,6 +10,6 @@ namespace pulsared
     class AssetUtil
     {
     public:
-        static void OpenAssetEditor(AssetObject_ref asset);
+        static void OpenAssetEditor(RCPtr<AssetObject> asset);
     };
 }

@@ -220,7 +220,7 @@ namespace pulsared
     }
 
 
-    static StaticMesh_ref ProcessMesh(FbxNode* fbxNode, bool inverseCoordsystem)
+    static RCPtr<StaticMesh> ProcessMesh(FbxNode* fbxNode, bool inverseCoordsystem)
     {
         const auto name = fbxNode->GetName();
 
@@ -370,7 +370,7 @@ namespace pulsared
         if (auto staticMesh = ProcessMesh(fbxNode, inverseCoordsystem))
         {
             const auto meshPath = meshFolder + "/" + staticMesh->GetName();
-            AssetDatabase::CreateAsset(staticMesh, meshPath);
+            AssetDatabase::CreateAsset(staticMesh.GetPtr(), meshPath);
             newNode->AddComponent<StaticMeshRendererComponent>()->SetStaticMesh(staticMesh);
             auto translation = ToVector3f(fbxNode->LclTranslation.Get());
             auto scaling = ToVector3f(fbxNode->LclScaling.Get());
@@ -396,7 +396,7 @@ namespace pulsared
         }
     }
 
-    array_list<AssetObject_ref> FBXImporter::Import(AssetImporterSettings* settings)
+    array_list<RCPtr<AssetObject>> FBXImporter::Import(AssetImporterSettings* settings)
     {
         FBXImporterSettings* fbxsetting = static_cast<FBXImporterSettings*>(settings);
 
@@ -448,7 +448,7 @@ namespace pulsared
                 ProcessNode(sceneRootNode, nullptr, prefab, fbxsetting, inverseCoordSystem, targetMeshFolder);
             }
 
-            AssetDatabase::CreateAsset(prefab, settings->TargetPath + "/" + filename);
+            AssetDatabase::CreateAsset(prefab.GetPtr(), settings->TargetPath + "/" + filename);
             DestroySdkObjects(fbxManager, 0);
         }
         return {};

@@ -10,9 +10,9 @@
 namespace pulsared
 {
 
-    void AssetUtil::OpenAssetEditor(AssetObject_ref asset)
+    void AssetUtil::OpenAssetEditor(RCPtr<AssetObject> asset)
     {
-        if (auto prefab = ref_cast<Prefab>(asset))
+        if (auto prefab = cref_cast<Prefab>(asset))
         {
             PrefabUtil::OpenPrefab(prefab);
             return;

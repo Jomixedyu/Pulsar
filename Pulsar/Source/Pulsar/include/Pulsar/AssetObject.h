@@ -70,7 +70,7 @@ namespace pulsar
     public:
         virtual void Serialize(AssetSerializer* s);
         virtual bool CanInstantiateAsset() const { return true; }
-        ObjectPtr<AssetObject> InstantiateAsset();
+        RCPtr<AssetObject> InstantiateAsset();
 
     public:
         AssetObject();

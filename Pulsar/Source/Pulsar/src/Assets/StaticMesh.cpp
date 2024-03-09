@@ -96,7 +96,7 @@ namespace pulsar
     }
 
 
-    ObjectPtr<StaticMesh> StaticMesh::StaticCreate(
+    RCPtr<StaticMesh> StaticMesh::StaticCreate(
         string_view name,
         array_list<StaticMeshSection>&& vertData,
         array_list<string>&& materialNames)

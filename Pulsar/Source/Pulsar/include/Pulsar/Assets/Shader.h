@@ -121,7 +121,7 @@ namespace pulsar
     public:
         virtual void Serialize(AssetSerializer* s) override;
 
-        static sptr<Shader> StaticCreate(string_view name, ShaderSourceData&& pass);
+        static RCPtr<Shader> StaticCreate(string_view name, ShaderSourceData&& pass);
 
     public:
         Shader();
@@ -157,8 +157,6 @@ namespace pulsar
 
         #ifdef WITH_EDITOR
 
-        Action<> OnAvailableChanged;
-        std::mutex m_isAvailableMutex;
         bool m_isAvailable = false;
 
         #endif

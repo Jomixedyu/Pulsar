@@ -9,10 +9,7 @@ namespace pulsar
         AssetPackage()
         {
         }
-        AssetObject_ref LoadAsset(const ObjectHandle& handle)
-        {
 
-        }
     private:
         struct AssetInfo
         {

@@ -29,6 +29,6 @@ namespace pulsared
         bool m_enableChannelB{true};
         bool m_enableChannelA{true};
 
-        Material_ref m_ppMat;
+        RCPtr<Material> m_ppMat;
     };
 }

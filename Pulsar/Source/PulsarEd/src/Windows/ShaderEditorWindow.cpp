@@ -20,7 +20,7 @@ namespace pulsared
         CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::ShaderEditorMenuContext, AssetEditorMenuContext);
 
     public:
-        ShaderEditorMenuContext(AssetObject_ref asset)
+        ShaderEditorMenuContext(RCPtr<AssetObject> asset)
             : base(asset)
         {
         }
@@ -42,9 +42,9 @@ namespace pulsared
                         const auto ctx = ctxs->FindContext<AssetEditorMenuContext>();
                         if (!ctx)
                             return;
-                        if (const Shader_ref shader = ref_cast<Shader>(ctx->Asset))
+                        if (const RCPtr<Shader> shader = cref_cast<Shader>(ctx->Asset))
                         {
-                            ShaderCompiler::CompileShader(shader);
+                            ShaderCompiler::CompileShader(shader.GetPtr());
                         }
                     });
                     menu->AddEntry(entry);
@@ -64,10 +64,10 @@ namespace pulsared
     void ShaderEditorWindow::OnOpen()
     {
         base::OnOpen();
-        Shader_ref shader = m_assetObject;
+        RCPtr<Shader> shader = cref_cast<Shader>(m_assetObject);
 
         m_previewMaterial = Material::StaticCreate("PreviewMaterial");
-        m_previewMaterial->SetShader(m_assetObject);
+        m_previewMaterial->SetShader(shader);
         m_previewMaterial->CreateGPUResource();
 
         auto previewMesh = m_world->GetResidentScene()->NewNode("PreviewMesh");
@@ -102,13 +102,13 @@ namespace pulsared
     void ShaderEditorWindow::OnDrawAssetPropertiesUI(float dt)
     {
         base::OnDrawAssetPropertiesUI(dt);
-        Shader_ref shader = m_assetObject;
+        RCPtr<Shader> shader = cref_cast<Shader>(m_assetObject);
         if (PImGui::PropertyGroup("Shader"))
         {
             PImGui::ObjectFieldProperties(
                 BoxingObjectPtrBase::StaticType(),
                 m_assetObject->GetType(),
-                mkbox((ObjectPtrBase)m_assetObject).get(),
+                mkbox(ObjectPtrBase(m_assetObject.GetHandle())).get(),
                 m_assetObject.GetPtr());
         }
 

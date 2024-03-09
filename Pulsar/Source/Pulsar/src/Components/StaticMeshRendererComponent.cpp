@@ -15,24 +15,24 @@ namespace pulsar
     {
     public:
         array_list<rendering::MeshBatch> m_batchs;
-        StaticMesh_ref m_staticMesh;
-        array_list<Material_ref> m_materials;
+        RCPtr<StaticMesh> m_staticMesh;
+        array_list<RCPtr<Material>> m_materials;
 
         gfx::GFXBuffer_sp m_meshConstantBuffer;
         gfx::GFXDescriptorSet_sp m_meshObjDescriptorSet;
         gfx::GFXDescriptorSetLayout_sp m_meshDescriptorSetLayout;
 
-        explicit StaticMeshRenderObject(StaticMesh_ref staticMesh, const array_list<Material_ref>& materials)
+        explicit StaticMeshRenderObject(RCPtr<StaticMesh> staticMesh, const array_list<RCPtr<Material>>& materials)
             : m_staticMesh(staticMesh), m_materials(materials)
         {
         }
         StaticMeshRenderObject() = default;
-        StaticMeshRenderObject* SetStaticMesh(StaticMesh_ref mesh)
+        StaticMeshRenderObject* SetStaticMesh(RCPtr<StaticMesh> mesh)
         {
             m_staticMesh = mesh;
             return this;
         }
-        StaticMeshRenderObject* SetMaterials(const array_list<Material_ref>& materials)
+        StaticMeshRenderObject* SetMaterials(const array_list<RCPtr<Material>>& materials)
         {
             m_materials = materials;
             return this;
@@ -173,17 +173,17 @@ namespace pulsar
         return box;
     }
 
-    void StaticMeshRendererComponent::SetStaticMesh(StaticMesh_ref staticMesh)
+    void StaticMeshRendererComponent::SetStaticMesh(RCPtr<StaticMesh> staticMesh)
     {
         m_staticMesh = staticMesh;
         OnMeshChanged();
     }
-    Material_ref StaticMeshRendererComponent::GetMaterial(int index) const
+    RCPtr<StaticMesh> StaticMeshRendererComponent::GetMaterial(int index) const
     {
         return m_materials->at(index);
     }
 
-    void StaticMeshRendererComponent::SetMaterial(int index, Material_ref material)
+    void StaticMeshRendererComponent::SetMaterial(int index, RCPtr<Material> material)
     {
         if (index >= m_materials->size())
         {
@@ -298,7 +298,7 @@ namespace pulsar
     {
         if (m_staticMesh)
         {
-            TryFindOrLoadObject(m_staticMesh);
+            TryLoadAssetRCPtr(m_staticMesh);
             if (m_staticMesh->GetMaterialCount() > m_materials->size())
             {
                 ResizeMaterials(m_staticMesh->GetMaterialCount());
@@ -319,7 +319,7 @@ namespace pulsar
             {
                 if (!mat.GetPtr())
                 {
-                    TryFindOrLoadObject(mat);
+                    TryLoadAssetRCPtr(mat);
                 }
             }
             m_renderObject->SetMaterials(*m_materials)->SubmitChange();

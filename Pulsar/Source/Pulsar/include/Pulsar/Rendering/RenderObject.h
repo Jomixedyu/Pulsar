@@ -20,7 +20,7 @@ namespace pulsar::rendering
     {
         array_list<MeshBatchElement> Elements;
         gfx::GFXDescriptorSetLayout_sp DescriptorSetLayout;
-        Material_ref Material;
+        RCPtr<Material> Material;
 
         gfx::GFXGraphicsPipelineState State{};
         bool IsUsedIndices{};
@@ -33,7 +33,7 @@ namespace pulsar::rendering
         {
             constexpr size_t prime = 16777619;
             return (2166136261 * prime
-                ^ std::hash<ObjectPtrBase>()(Material)) * prime
+                ^ std::hash<RCPtrBase>()(Material)) * prime
                 ^ State.GetHashCode() * prime;
         }
 

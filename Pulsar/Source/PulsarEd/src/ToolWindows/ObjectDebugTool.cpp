@@ -19,6 +19,7 @@ namespace pulsared
         ImGui::TableSetupColumn("Type");
         ImGui::TableSetupColumn("Object Handle");
         ImGui::TableSetupColumn("Persistent Path");
+        ImGui::TableSetupColumn("Counter");
         ImGui::TableHeadersRow();
 
         RuntimeObjectWrapper::ForEachObject([](ObjectHandle handle, ObjectBase* obj) {
@@ -35,6 +36,10 @@ namespace pulsared
 
             ImGui::TableSetColumnIndex(3);
             ImGui::Text(AssetDatabase::GetPathById(handle).c_str());
+
+            ImGui::TableSetColumnIndex(4);
+            ImGui::Text(std::to_string(RuntimeObjectWrapper::GetPointer(handle)->RefCount()).c_str());
+
         });
         ImGui::EndTable();
     }

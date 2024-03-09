@@ -18,6 +18,6 @@ namespace pulsared
         void OnRefreshMenuContexts() override;
 
     protected:
-        StaticMesh_ref m_staticmesh;
+        RCPtr<StaticMesh> m_staticmesh;
     };
 }
