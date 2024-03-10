@@ -1,17 +1,22 @@
 {
+	"$schema": "ShaderSchema.json",
 	"CullMode": "None",
 	"DepthTestEnable": true,
 	"DepthWriteEnable": true,
 	"DepthCompareOp": "Less",
 	"StencilTestEnable": false,
-	"RenderingType": "OpaqueForward",
+	"RenderingType": "OpaqueDeferred",
 	"Properties": [
 		{
-			"Name": "BaseColor",
+			"Name": "BaseColorMap",
 			"Type": "Texture2D"
 		},
 		{
-			"Name": "MRA",
+			"Name": "NormalMap",
+			"Type": "Texture2D"
+		},
+		{
+			"Name": "MRAMap",
 			"Type": "Texture2D"
 		}
 	]
