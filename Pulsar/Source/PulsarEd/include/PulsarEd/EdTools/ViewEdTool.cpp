@@ -97,6 +97,38 @@ namespace pulsared
                 tr->Translate(tr->GetUp() * dtY * 0.1f);
             }
         }
+
+        auto& io = ImGui::GetIO();
+        if (ImGui::IsWindowHovered())
+        {
+            if (io.MouseWheel != 0)
+            {
+                auto cam = m_world->GetPreviewCamera();
+                auto tr = cam->GetAttachedNode()->GetTransform();
+                auto dtDistance = io.MouseWheel * m_scaleSpeed * 10;
+                if (cam->GetProjectionMode() == CameraProjectionMode::Perspective)
+                {
+                    if (tr->GetPosition().z + dtDistance > -0.2f)
+                    {
+                        // nothing
+                    }
+                    else
+                    {
+                        tr->Translate({0.f, 0, dtDistance});
+                    }
+                }
+                else
+                {
+                    const auto targetValue = cam->GetOrthoSize() - dtDistance;
+                    if (targetValue > 0)
+                    {
+                        cam->SetOrthoSize(targetValue);
+                    }
+                }
+            }
+
+        }
+
         m_latestMousePos = newpos;
     }
     void ViewEdTool::Begin()

@@ -45,6 +45,7 @@ namespace pulsared
         };
 
         char buf[128] = "[Null Object Reference]";
+        enum { eNullRef = 0x01, eObject = 0x02, eMissing = 0x04 } mode = eNullRef;
 
         string objectName;
         if (!handle.is_empty())
@@ -59,10 +60,12 @@ namespace pulsared
             {
                 objectName = StringUtil::Concat(obj->GetName(), " (", objectShortHandle, ")");
                 StringUtil::strcpy(buf, objectName);
+                mode = eObject;
             }
             else
             {
-                StringUtil::strcpy(buf, StringUtil::Concat("missing object (", objectShortHandle, ")"));
+                StringUtil::strcpy(buf, StringUtil::Concat("[Missing Object (", objectShortHandle, ")]"));
+                mode = eMissing;
             }
         }
 

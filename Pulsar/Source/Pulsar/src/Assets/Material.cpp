@@ -70,7 +70,7 @@ namespace pulsar
             break;
         }
         case ShaderParameterType::Texture2D: {
-            ObjectPtr<Texture> tex = ObjectHandle::parse(value);
+            RCPtr<Texture2D> tex = ObjectHandle::parse(value);
             ret.SetValue(tex);
             break;
         }

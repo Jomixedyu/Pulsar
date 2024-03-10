@@ -397,9 +397,28 @@ namespace pulsar
             }
         }
 
+        [[always_inline]] bool IsValid() const noexcept
+        {
+            if (Pointer == nullptr)
+            {
+                return false;
+            }
+            return Pointer->Get() != nullptr;
+        }
+
+        [[always_inline]] operator bool() const noexcept
+        {
+            return IsValid();
+        }
+
         bool operator==(const RCPtrBase& ptr) const noexcept
         {
             return Handle == ptr.Handle;
+        }
+
+        bool operator==(std::nullptr_t) const noexcept
+        {
+            return !IsValid();
         }
 
         void Reset()
@@ -434,14 +453,6 @@ namespace pulsar
             return static_cast<T*>(GetPointer());
         }
 
-        [[always_inline]] operator bool() const noexcept
-        {
-            if (Pointer == nullptr)
-            {
-                return false;
-            }
-            return Pointer->Get() != nullptr;
-        }
     };
 
     template<typename T, typename U>
