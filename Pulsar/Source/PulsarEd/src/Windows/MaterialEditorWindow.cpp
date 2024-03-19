@@ -40,57 +40,58 @@ namespace pulsared
         {
             if (PImGui::BeginPropertyLine())
             {
-                for (auto& prop : material->GetShaderPropertyInfo())
+                for (auto& name : material->GetShader()->GetPropertyNames())
                 {
-                    const auto paramType = prop.second.Value.Type;
+                    auto& prop = *material->GetShader()->GetPropertyInfo(name);
+                    const auto paramType = prop.Value.Type;
                     Object_sp obj;
                     Type* objType{};
                     switch (paramType)
                     {
                     case ShaderParameterType::IntScalar: {
-                        obj = mkbox(material->GetIntScalar(prop.first));
+                        obj = mkbox(material->GetIntScalar(name));
                         objType = obj->GetType();
                         break;
                     }
                     case ShaderParameterType::Scalar: {
-                        obj = mkbox(material->GetScalar(prop.first));
+                        obj = mkbox(material->GetScalar(name));
                         objType = obj->GetType();
                         break;
                     }
                     case ShaderParameterType::Vector: {
-                        const auto vec = material->GetVector4(prop.first);
+                        const auto vec = material->GetVector4(name);
                         obj = mkbox(Color4f{vec.x, vec.y, vec.z, vec.w});
                         objType = obj->GetType();
                         break;
                     }
                     case ShaderParameterType::Texture2D: {
-                        auto tex = material->GetTexture(prop.first);
+                        auto tex = material->GetTexture(name);
                         objType = Texture2D::StaticType();
                         obj = mkbox(ObjectPtrBase(tex.GetHandle()));
                         break;
                     }
                     }
 
-                    if (PImGui::PropertyLine(prop.first.to_string(), objType, obj.get()))
+                    if (PImGui::PropertyLine(name.to_string(), objType, obj.get()))
                     {
                         AssetDatabase::MarkDirty(m_assetObject);
                         switch (paramType)
                         {
                         case ShaderParameterType::IntScalar:
-                            material->SetIntScalar(prop.first, UnboxUtil::Unbox<int>(obj));
+                            material->SetIntScalar(name, UnboxUtil::Unbox<int>(obj));
                             break;
                         case ShaderParameterType::Scalar:
-                            material->SetFloat(prop.first, UnboxUtil::Unbox<float>(obj));
+                            material->SetFloat(name, UnboxUtil::Unbox<float>(obj));
                             break;
                         case ShaderParameterType::Vector: {
                             auto color = UnboxUtil::Unbox<Color4f>(obj);
-                            material->SetVector4(prop.first, {color.r, color.g, color.b, color.a});
+                            material->SetVector4(name, {color.r, color.g, color.b, color.a});
                             break;
                         }
                         case ShaderParameterType::Texture2D: {
                             auto objptr = UnboxUtil::Unbox<ObjectPtrBase>(obj);
                             RCPtr<Texture2D> tex = objptr.GetHandle();
-                            material->SetTexture(prop.first, tex);
+                            material->SetTexture(name, tex);
                             break;
                         }
                         }
@@ -101,6 +102,7 @@ namespace pulsared
             }
         }
     }
+
     void MaterialEditorWindow::OnOpen()
     {
         base::OnOpen();
@@ -115,7 +117,7 @@ namespace pulsared
         {
 
         }
-        else if (material->GetShader()->GetRenderingType() == ShaderPassRenderingType::PostProcessing)
+        else if (material->GetShader()->GetConfig()->RenderingType == ShaderPassRenderingType::PostProcessing)
         {
             m_world->GetPreviewCamera()->m_postProcessMaterials->push_back(material);
             renderer->SetMaterial(0, GetAssetManager()->LoadAsset<Material>(BuiltinAsset::Material_Lambert));
@@ -137,4 +139,5 @@ namespace pulsared
         base::OnRefreshMenuContexts();
         // m_menuBarCtxs->Contexts.push_back();
     }
+
 } // namespace pulsared

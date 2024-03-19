@@ -51,7 +51,7 @@ namespace pulsar
 
         for (auto& scene : m_scenes)
         {
-            if (IsValid(scene))
+            if (scene)
             {
                 scene->Tick(m_ticker);
             }
@@ -176,6 +176,10 @@ namespace pulsar
 
     void World::OnWorldBegin()
     {
+        #ifdef WITH_EDITOR
+        assert(GetWorldTypeName() != StaticWorldTypeName());
+        #endif
+
         InitializeResidentScene();
         m_focusScene = GetResidentScene();
 

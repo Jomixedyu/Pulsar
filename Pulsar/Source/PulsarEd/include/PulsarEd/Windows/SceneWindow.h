@@ -29,7 +29,6 @@ namespace pulsared
         //Node_ref GetSceneCameraControllerNode() { return this->m_camCtrlNode; }
         //CameraComponent_ref GetSceneCamera() { return this->GetSceneCameraNode()->GetComponent<CameraComponent>(); }
 
-        void SetTool(std::unique_ptr<EdTool>&& tool);
     private:
         virtual void OnWindowResize();
 

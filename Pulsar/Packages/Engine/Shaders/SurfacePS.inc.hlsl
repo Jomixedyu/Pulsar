@@ -5,7 +5,7 @@
 #include "Common.inc.hlsl"
 
 #define SHADING_MODEL_UNLIT      0x01
-#define SHADING_MODEL_DEFAULTPBR 0x02
+#define SHADING_MODEL_LIT        0x02
 
 struct MaterialAttributes
 {
@@ -31,10 +31,8 @@ struct PointLight
 };
 
 
-MaterialAttributes SurfaceMain(InPixelAssembly s);
+MaterialAttributes SurfacePixelMain(InPixelAssembly s);
 
-//forward or deferred
-//如果前向 直接include并计算光照模型，如果延迟，就返回gbuffer，等lightpass计算光照
 
 float4 CalcLighting(MaterialAttributes attr)
 {
@@ -52,7 +50,7 @@ OutPixelDeferred main(InPixelAssembly v2f)
 float4 main(InPixelAssembly v2f) : SV_TARGET0
 #endif
 {
-    MaterialAttributes attr = SurfaceMain(v2f);
+    MaterialAttributes attr = SurfacePixelMain(v2f);
 #ifdef RENDERING_PATH_DEFERRED
     OutPixelDeferred o;
     

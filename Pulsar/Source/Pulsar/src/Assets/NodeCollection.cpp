@@ -1,6 +1,8 @@
 #include "Assets/NodeCollection.h"
 #include <Pulsar/Node.h>
 
+#include <utility>
+
 namespace pulsar
 {
     void NodeCollection::Serialize(AssetSerializer* s)
@@ -26,6 +28,17 @@ namespace pulsar
             s->Object->Add("RootNodes", rootNodes);
         }
     }
+    void NodeCollection::OnDestroy()
+    {
+        base::OnDestroy();
+        const auto count = m_rootNodes->size();
+
+        for (int i = count - 1; i >= 0; --i)
+        {
+            RemoveNode(m_rootNodes->at(i));
+        }
+
+    }
     Node_ref NodeCollection::FindNodeByName(index_string name) const
     {
         for (const auto node : *m_rootNodes)
@@ -41,10 +54,11 @@ namespace pulsar
 
     Node_ref NodeCollection::FindNodeByPath(string_view name) const
     {
+        assert(false);
         return Node_ref();
     }
 
-    Node_ref NodeCollection::NewNode(index_string name, Node_ref parent, ObjectFlags flags)
+    Node_ref NodeCollection::NewNode(index_string name, const Node_ref& parent, ObjectFlags flags)
     {
         auto node = BeginNewNode(name, parent, flags);
         EndNewNode(node);
@@ -52,6 +66,30 @@ namespace pulsar
     }
     void NodeCollection::RemoveNode(Node_ref node)
     {
+        const auto transform = node->GetTransform();
+        const auto count = (int)transform->GetChildCount();
+        for (int i = count - 1; i >= 0; --i)
+        {
+            const auto child = transform->GetChildren()->at(i)->GetAttachedNode();
+            RemoveNode(child);
+            transform->GetChildren()->RemoveAt(i);
+        }
+
+
+        OnRemoveNode(node);
+
+        std::erase(*m_nodes, node);
+        for (size_t i = 0; i < m_rootNodes->size(); ++i)
+        {
+            if (m_rootNodes->at(i).GetHandle() == node.GetHandle())
+            {
+                m_rootNodes->RemoveAt((int)i);
+                break;;
+            }
+        }
+
+        DestroyObject(node, true);
+
         std::erase(*m_collectionHandles, node.GetHandle());
     }
     void NodeCollection::OnAddNode(ObjectPtr<Node> node)
@@ -81,12 +119,12 @@ namespace pulsar
         init_sptr_member(m_nodes);
         init_sptr_member(m_collectionHandles);
     }
-    ObjectPtr<Node> NodeCollection::BeginNewNode(index_string name, ObjectPtr<Node> parent, ObjectFlags flags)
+    ObjectPtr<Node> NodeCollection::BeginNewNode(index_string name, const ObjectPtr<Node>& parent, ObjectFlags flags)
     {
         auto newNode = mksptr(new Node);
         newNode->Construct();
         newNode->SetIndexName(name);
-        newNode->SetObjectFlags(newNode->GetObjectFlags() | flags);
+        newNode->SetObjectFlags(newNode->GetObjectFlags() | flags | OF_LifecycleManaged);
 
         auto node = ObjectPtr{newNode};
 

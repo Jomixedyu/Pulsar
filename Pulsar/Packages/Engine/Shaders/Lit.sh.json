@@ -8,15 +8,15 @@
 	"RenderingType": "OpaqueDeferred",
 	"Properties": [
 		{
-			"Name": "BaseColorMap",
+			"Name": "_BaseColorMap",
 			"Type": "Texture2D"
 		},
 		{
-			"Name": "NormalMap",
+			"Name": "_NormalMap",
 			"Type": "Texture2D"
 		},
 		{
-			"Name": "MRAMap",
+			"Name": "_MRAMap",
 			"Type": "Texture2D"
 		}
 	]

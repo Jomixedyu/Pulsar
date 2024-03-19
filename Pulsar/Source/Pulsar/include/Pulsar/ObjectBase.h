@@ -54,10 +54,17 @@ namespace pulsar
         OF_LifecycleManaged = 1 << 4,
     };
 
+    enum class DependencyObjectState
+    {
+        Unload = 0x01,
+        Reload = 0x02,
+    };
+    ENUM_CLASS_FLAGS(DependencyObjectState);
+
 
     class ObjectBase : public Object
     {
-        friend class RuntimeObjectWrapper;
+        friend class RuntimeObjectManager;
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::ObjectBase, Object);
     public:
         ObjectBase();
@@ -77,20 +84,13 @@ namespace pulsar
         void         SetObjectFlags(uint16_t flags) noexcept { m_flags = flags; }
         bool         IsPersistentObject() const noexcept { return m_flags & OF_Persistent; }
 
+        virtual void OnDependencyMessage(ObjectHandle inDependency, DependencyObjectState msg);
 
-        constexpr static int DependMsg_OnDestroy = 1;
-        constexpr static int DependMsg_OnAvailable = 2;
-        constexpr static int DependMsg_OnUnavailable = 3;
-
-        virtual void OnDependencyMessage(ObjectHandle inDependency, int msg);
-
-        void AddOutDependency(ObjectHandle obj);
-        bool HasOutDependency(ObjectHandle obj) const;
-        void RemoveOutDependency(ObjectHandle obj);
     protected:
-        void SendMsgToOutDependency(int msg) const;
         virtual void OnConstruct();
         virtual void OnDestroy();
+    protected:
+        void SendOuterDependencyMsg(DependencyObjectState msg) const;
     private:
         void Destroy();
         // base class 24
@@ -99,15 +99,13 @@ namespace pulsar
     protected:
         ObjectFlags  m_flags{};      // 8
     public:
-        std::unique_ptr<array_list<ObjectHandle>> m_outDependency; // 8
-    public:
     };
 
     inline constexpr int kSizeObjectBase = sizeof(ObjectBase);
 
     struct ManagedPointer
     {
-        friend class RuntimeObjectWrapper;
+        friend class RuntimeObjectManager;
     private:
         ObjectBase* Pointer{};
         int Counter{};
@@ -125,7 +123,7 @@ namespace pulsar
         }
     };
 
-    class RuntimeObjectWrapper final
+    class RuntimeObjectManager final
     {
     public:
         static ObjectBase* GetObject(const ObjectHandle& id) noexcept;
@@ -135,16 +133,18 @@ namespace pulsar
         static bool IsValid(const ObjectHandle& id) noexcept;
         static void NewInstance(SPtr<ObjectBase>&& managedObj, const ObjectHandle& handle) noexcept;
         static bool DestroyObject(const ObjectHandle& id, bool isForce = false) noexcept;
+        static void GetData(size_t* total, size_t* place, size_t* alive);
         static void Terminate();
-
-        static void ForEachObject(const std::function<void(ObjectHandle, ObjectBase*)>& func);
+        static void TickGCollect();
+        static void ForEachObject(const std::function<void(ObjectHandle, ObjectBase*, int)>& func);
 
         //<id, type, is_create>
         static Action<ObjectHandle, Type*, bool> ObjectHook;
         static Action<ObjectBase*> OnPostEditChanged;
 
         static void AddDependList(ObjectHandle src, ObjectHandle dest);
-        static void NotifyDependObjects(ObjectHandle dest, int id);
+        static void RemoveDependList(ObjectHandle src, ObjectHandle dest);
+        static void NotifyDependObjects(ObjectHandle dest, DependencyObjectState id);
     };
 
 
@@ -152,7 +152,7 @@ namespace pulsar
     struct ObjectPtrBase
     {
         ObjectHandle Handle;
-        SPtr<ManagedPointer> Pointer;
+        SPtr<ManagedPointer> ManagedPtr;
 
         ObjectPtrBase() = default;
         ObjectPtrBase(const ObjectPtrBase&) = default;
@@ -161,10 +161,10 @@ namespace pulsar
         {
             if (!handle.is_empty())
             {
-                Pointer = RuntimeObjectWrapper::GetPointer(handle);
-                if (Pointer == nullptr)
+                ManagedPtr = RuntimeObjectManager::GetPointer(handle);
+                if (ManagedPtr == nullptr)
                 {
-                    Pointer = RuntimeObjectWrapper::AddWaitPointer(handle);
+                    ManagedPtr = RuntimeObjectManager::AddWaitPointer(handle);
                 }
             }
         }
@@ -181,9 +181,9 @@ namespace pulsar
         }
         [[always_inline]] ObjectBase* GetObjectPointer() const
         {
-            if (Pointer)
+            if (ManagedPtr)
             {
-                return Pointer->Get();
+                return ManagedPtr->Get();
             }
             return nullptr;
         }
@@ -231,12 +231,6 @@ namespace pulsar
     concept baseof_objectbase = std::is_base_of<ObjectBase, T>::value;
 
 
-    inline bool IsValid(const ObjectPtrBase& object) noexcept
-    {
-        return RuntimeObjectWrapper::IsValid(object.GetHandle());
-    }
-
-
     template<typename T>
     struct ObjectPtr : public ObjectPtrBase
     {
@@ -251,7 +245,7 @@ namespace pulsar
         ObjectPtr(const ObjectPtrBase& ptr)
         {
             Handle = ptr.Handle;
-            Pointer = ptr.Pointer;
+            ManagedPtr = ptr.ManagedPtr;
         }
 
         ObjectPtr(const SPtr<T>& ptr) : ObjectPtr(ptr.get())
@@ -262,14 +256,14 @@ namespace pulsar
         ObjectPtr(const ObjectPtr<U>& derived) noexcept
         {
             Handle = derived.Handle;
-            Pointer = derived.Pointer;
+            ManagedPtr = derived.ManagedPtr;
         }
 
         ObjectPtr() = default;
 
         [[always_inline]] SPtr<T> GetShared() const noexcept
         {
-            return sptr_cast<T>(RuntimeObjectWrapper::GetSharedObject(Handle));
+            return sptr_cast<T>(RuntimeObjectManager::GetSharedObject(Handle));
         }
         [[always_inline]] T* GetPtr() const noexcept
         {
@@ -291,9 +285,9 @@ namespace pulsar
 
         [[always_inline]] bool IsValid() const noexcept
         {
-            return RuntimeObjectWrapper::IsValid(Handle);
+            return GetObjectPointer() != nullptr;
         }
-        [[always_inline]] operator bool() const noexcept
+        [[always_inline]] explicit operator bool() const noexcept
         {
             return IsValid();
         }
@@ -301,7 +295,7 @@ namespace pulsar
         void Reset() noexcept
         {
             Handle = {};
-            Pointer = nullptr;
+            ManagedPtr = nullptr;
         }
     };
 
@@ -317,17 +311,22 @@ namespace pulsar
     {
     public:
         ObjectHandle Handle;
-        SPtr<ManagedPointer> Pointer;
-    private:
-        [[always_inline]] void Incref()
+        SPtr<ManagedPointer> ManagedPtr;
+    protected:
+        [[always_inline]] void Incref() const noexcept
         {
-            Pointer->Incref();
+            if (GetPointer())
+            {
+                ManagedPtr->Incref();
+            }
         }
         [[always_inline]] void Decref()
         {
-            if (Pointer->Decref() == 0)
+            if (ManagedPtr->Decref() == 0)
             {
-                RuntimeObjectWrapper::DestroyObject(Handle);
+                if (ManagedPtr.use_count() == 2)
+                    ManagedPtr.reset();
+                RuntimeObjectManager::DestroyObject(Handle);
             }
         }
     public:
@@ -341,9 +340,9 @@ namespace pulsar
         }
         [[always_inline]] ObjectBase* GetPointer() const noexcept
         {
-            if (Pointer)
+            if (ManagedPtr)
             {
-                return Pointer->Get();
+                return ManagedPtr->Get();
             }
             return nullptr;
         }
@@ -352,46 +351,45 @@ namespace pulsar
             if (!handle.is_empty())
             {
                 Handle = handle;
-                Pointer = RuntimeObjectWrapper::GetPointer(handle);
-                if (!Pointer)
+                ManagedPtr = RuntimeObjectManager::GetPointer(handle);
+                if (!ManagedPtr)
                 {
-                    Pointer = RuntimeObjectWrapper::AddWaitPointer(handle);
+                    ManagedPtr = RuntimeObjectManager::AddWaitPointer(handle);
                 }
-                Pointer->Incref();
+                ManagedPtr->Incref();
             }
         }
         RCPtrBase() : Handle({}) {}
         RCPtrBase(const ObjectBase* ptr) : RCPtrBase(ptr ? ptr->GetObjectHandle() : ObjectHandle{})
         {
         }
-        RCPtrBase(const RCPtrBase& ptr) noexcept : Handle(ptr.Handle), Pointer(ptr.Pointer)
+        RCPtrBase(const RCPtrBase& ptr) noexcept : Handle(ptr.Handle), ManagedPtr(ptr.ManagedPtr)
         {
-            if (Pointer) Pointer->Incref();
+            if (ManagedPtr) ManagedPtr->Incref();
         }
-        RCPtrBase(RCPtrBase&& ptr) noexcept : Handle(ptr.Handle), Pointer(std::move(ptr.Pointer))
+        RCPtrBase(RCPtrBase&& ptr) noexcept : Handle(ptr.Handle), ManagedPtr(std::move(ptr.ManagedPtr))
         {
-            ptr.Pointer = nullptr;
+            ptr.ManagedPtr = nullptr;
         }
         RCPtrBase& operator=(const RCPtrBase& ptr) noexcept
         {
-            if (Pointer) Decref();
+            if (this == &ptr) return *this;
+            if (ManagedPtr) Decref();
             Handle = ptr.Handle;
-            Pointer = ptr.Pointer;
-            if (Pointer) Incref();
+            ManagedPtr = ptr.ManagedPtr;
+            if (ManagedPtr) Incref();
             return *this;
         }
         RCPtrBase& operator=(RCPtrBase&& ptr) noexcept
         {
-            if (Pointer) Decref();
+            if (ManagedPtr) Decref();
             Handle = ptr.Handle;
-            Pointer = std::move(ptr.Pointer);
-            ptr.Pointer = nullptr;
-            if (Pointer) Incref();
+            ManagedPtr = std::move(ptr.ManagedPtr);
             return *this;
         }
         ~RCPtrBase() noexcept
         {
-            if (Pointer)
+            if (ManagedPtr)
             {
                 Decref();
             }
@@ -399,14 +397,14 @@ namespace pulsar
 
         [[always_inline]] bool IsValid() const noexcept
         {
-            if (Pointer == nullptr)
+            if (ManagedPtr == nullptr)
             {
                 return false;
             }
-            return Pointer->Get() != nullptr;
+            return ManagedPtr->Get() != nullptr;
         }
 
-        [[always_inline]] operator bool() const noexcept
+        [[always_inline]] explicit operator bool() const noexcept
         {
             return IsValid();
         }
@@ -424,7 +422,7 @@ namespace pulsar
         void Reset()
         {
             Handle = {};
-            Pointer.reset();
+            ManagedPtr.reset();
         }
     };
 
@@ -432,8 +430,6 @@ namespace pulsar
     struct RCPtr : public RCPtrBase
     {
         using base = RCPtrBase;
-
-        using base::base;
 
         T* operator->() const
         {
@@ -444,9 +440,35 @@ namespace pulsar
             }
             return ptr;
         }
+        RCPtr() : base() {}
+        RCPtr(const ObjectHandle& handle) : base(handle) {}
+        RCPtr(const ObjectBase* ptr) : base(ptr ? ptr->GetObjectHandle() : ObjectHandle{}) {}
+        RCPtr(const SPtr<T>& t) : base(t.get()) {}
 
         RCPtr(const RCPtrBase& ptr) : base(ptr) {}
-        RCPtr(const SPtr<T>& t) : base(t.get()) {}
+
+        // RCPtr(const RCPtr& ptr) : base(ptr) {}
+        // RCPtr(RCPtr&& ptr) noexcept : base(std::move(ptr))
+        // {
+        // }
+        // RCPtr& operator=(const RCPtr& ptr) noexcept
+        // {
+        //     if (this == &ptr) return *this;
+        //     if (ManagedPtr) Decref();
+        //     Handle = ptr.Handle;
+        //     ManagedPtr = ptr.ManagedPtr;
+        //     if (ManagedPtr) Incref();
+        //     return *this;
+        // }
+        // RCPtr& operator=(RCPtr&& ptr) noexcept
+        // {
+        //     if (ManagedPtr) Decref();
+        //     Handle = ptr.Handle;
+        //     ManagedPtr = std::move(ptr.ManagedPtr);
+        //     ptr.Handle = {};
+        //     ptr.ManagedPtr = nullptr;
+        //     return *this;
+        // }
 
         [[always_inline]] T* GetPtr() const noexcept
         {
@@ -489,7 +511,7 @@ namespace pulsar
         }
         [[always_inline]] void SetHandle(const ObjectHandle& handle) noexcept
         {
-            ptr.Handle = handle;
+            ptr = handle;
         }
 
         RCPtrBase ptr;
@@ -497,11 +519,11 @@ namespace pulsar
 
     inline void DestroyObject(const ObjectPtrBase& object, bool isForce = false) noexcept
     {
-        RuntimeObjectWrapper::DestroyObject(object.GetHandle(), isForce);
+        RuntimeObjectManager::DestroyObject(object.GetHandle(), isForce);
     }
     inline void DestroyObject(const RCPtrBase& object, bool isForce = false) noexcept
     {
-        RuntimeObjectWrapper::DestroyObject(object.GetHandle(), isForce);
+        RuntimeObjectManager::DestroyObject(object.GetHandle(), isForce);
     }
 
     std::iostream& ReadWriteStream(std::iostream& stream, bool isWrite, ObjectPtrBase& obj);

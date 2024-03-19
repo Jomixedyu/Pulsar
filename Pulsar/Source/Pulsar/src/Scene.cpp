@@ -9,7 +9,7 @@ namespace pulsar
 {
     static void _BeginNode(Scene_ref scene, Node_ref node)
     {
-        if (!IsValid(node->GetRuntimeOwnerScene()))
+        if (!node->GetRuntimeOwnerScene())
         {
             node->BeginNode(scene);
         }
@@ -28,6 +28,10 @@ namespace pulsar
 
     void Scene::OnRemoveNode(Node_ref node)
     {
+        if (m_runtimeWorld)
+        {
+            node->EndNode();
+        }
     }
 
     void Scene::BeginScene(World* world)
@@ -56,7 +60,7 @@ namespace pulsar
         return;
         for (auto& node : *GetNodes())
         {
-            if (IsValid(node) && node->GetIsActive())
+            if (node && node->GetIsActive())
             {
                 node->OnTick(ticker);
             }

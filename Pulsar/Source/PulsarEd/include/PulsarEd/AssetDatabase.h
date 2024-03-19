@@ -102,13 +102,13 @@ namespace pulsared
 
         static array_list<string> FindAssets(const AssetFilter& filter);
         static array_list<string> FindAssets(Type* type, string_view folderPath = {});
-        static bool IsEmptyFolder(string_view path);
+        static bool IsEmptyFolder(string_view path) noexcept;
 
         static bool Rename(string_view srcAsset, string_view dstAsset);
 
-        static void MarkDirty(RCPtr<AssetObject> asset);
-        static bool IsDirty(RCPtr<AssetObject> asset);
-        static void ResolveDirty(RCPtr<AssetObject> asset);
+        static void MarkDirty(RCPtr<AssetObject> asset) noexcept;
+        static bool IsDirty(RCPtr<AssetObject> asset) noexcept;
+        static void ResolveDirty(RCPtr<AssetObject> asset) noexcept;
 
 
         static inline const char* FileTreeRootPath = "Packages";

@@ -1,5 +1,7 @@
 #include "RotationEdTool.h"
-#include "EditorSelection.h"
+
+#include "EditorWorld.h"
+
 #include <imgui/imgui.h>
 #include "ImGuizmo.h"
 #include "Pulsar/Components/CameraComponent.h"
@@ -62,7 +64,8 @@ namespace pulsared
         m_enableSelect = !ImGuizmo::IsOver();
         base::Tick(dt);
 
-        if (EditorSelection::Selection.IsEmpty())
+
+        if (GetSelection().IsEmpty())
         {
             return;
         }
@@ -76,7 +79,7 @@ namespace pulsared
 
         auto viewMat = m_world->GetPreviewCamera()->GetViewMat();
         auto projMat = m_world->GetPreviewCamera()->GetProjectionMat();
-        auto node = EditorSelection::Selection.GetSelected();
+        auto node = GetSelection().GetSelected();
         auto matrix = node->GetTransform()->GetLocalToWorldMatrix();
 
         static ImGuizmo::MODE CurrentGizmoMode(ImGuizmo::LOCAL);

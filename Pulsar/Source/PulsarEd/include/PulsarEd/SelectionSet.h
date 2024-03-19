@@ -21,7 +21,7 @@ namespace pulsared
         }
         array_list<ObjectPtr<T>> GetSelection() const
         {
-            array_list<ObjectBase_ref> ret;
+            array_list<ObjectPtr<T>> ret;
             for (auto& item : this->selection)
             {
                 if (item)

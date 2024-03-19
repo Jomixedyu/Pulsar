@@ -26,7 +26,7 @@ namespace pulsar
     {
         for (auto& comp : *m_children)
         {
-            if (IsValid(comp))
+            if (comp)
             {
                 if (comp->GetAttachedNode()->GetName() == name)
                 {

@@ -1,5 +1,6 @@
 #pragma once
 #include "EdTool.h"
+#include "SelectionSet.h"
 #include "ViewEdTool.h"
 
 namespace pulsared
@@ -10,6 +11,9 @@ namespace pulsared
     public:
         void Begin() override;
         void Tick(float dt) override;
+
+    protected:
+        SelectionSet<Node>& GetSelection();
 
         bool m_frameSelector{};
         Vector2f m_frameSelectorStartPos{};

@@ -9,6 +9,7 @@ namespace pulsared
 
     ShaderDebugTool::ShaderDebugTool()
     {
+        m_winSize = {900,500};
     }
     void ShaderDebugTool::OnDrawImGui(float dt)
     {
@@ -23,10 +24,13 @@ namespace pulsared
 
         for (size_t i = 0; i < m_shaderPaths.size(); ++i)
         {
-            ImGui::PushID(i);
+            ImGui::TableNextRow();
+
             auto path = m_shaderPaths[i];
             auto& shader = m_shaders[i];
-            ImGui::TableNextRow();
+            TryLoadAssetRCPtr(shader);
+
+            ImGui::PushID(path.c_str());
 
             ImGui::TableSetColumnIndex(0);
             ImGui::Text(path.c_str());
@@ -41,6 +45,13 @@ namespace pulsared
             ImGui::Text(compiled.c_str());
 
             ImGui::TableSetColumnIndex(3);
+            // if (i == 3)
+            // {
+            //     if (ImGui::Button("Compile"))
+            //     {
+            //         int a = 3;
+            //     }
+            // }
             if (ImGui::Button("Compile"))
             {
                 ShaderCompiler::CompileShader(shader.GetPtr());

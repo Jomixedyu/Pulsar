@@ -3,17 +3,17 @@
 
 namespace pulsared
 {
-
+    class EditorWorld;
     class EdTool
     {
     public:
         virtual ~EdTool() = default;
-        void Initialize(World* world);
+        void Initialize(EditorWorld* world);
         virtual void Begin() {}
         virtual void Tick(float dt) {}
         virtual void End(){}
     protected:
-        World* m_world{};
+        EditorWorld* m_world{};
     };
 
 } // namespace pulsared

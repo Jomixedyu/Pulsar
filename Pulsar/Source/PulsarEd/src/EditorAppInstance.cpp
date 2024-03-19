@@ -1,7 +1,6 @@
 ﻿#include "EditorAppInstance.h"
 #include "EditorAssetManager.h"
 #include "EditorRenderPipeline.h"
-#include "EditorSelection.h"
 #include "Importers/FBXImporter.h"
 #include "Pulsar/Components/DirectionalLightComponent.h"
 #include "Pulsar/Components/PointLightComponent.h"
@@ -210,7 +209,9 @@ namespace pulsared
                                                             ComponentInfoManager::GetFriendlyComponentName(type)));
                 menu->AddEntry(itemEntry);
                 itemEntry->Action = MenuAction::FromLambda([](MenuContexts_rsp ctxs) {
-                    if (auto node = ref_cast<Node>(EditorSelection::Selection.GetSelected()))
+                    auto edworld = dynamic_cast<EditorWorld*>(EditorWorld::GetPreviewWorld());
+
+                    if (auto node = ref_cast<Node>(edworld->GetSelection().GetSelected()))
                     {
                         Type* type = AssemblyManager::GlobalFindType(ctxs->EntryName);
                         node->AddComponent(type);
@@ -492,7 +493,7 @@ namespace pulsared
         delete m_assetManager;
         m_assetManager = nullptr;
         AssetDatabase::Terminate();
-        RuntimeObjectWrapper::Terminate();
+        RuntimeObjectManager::Terminate();
         EditorLogRecorder::Terminate();
     }
 
@@ -520,6 +521,7 @@ namespace pulsared
 
     void EditorAppInstance::OnEndRender(float dt)
     {
+        RuntimeObjectManager::TickGCollect();
     }
 
     bool EditorAppInstance::IsQuit()

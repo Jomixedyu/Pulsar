@@ -24,11 +24,6 @@
             "Name": "_GridSize",
             "Type": "Scalar",
             "Value": 10.0
-        },
-        {
-            "Name": "_Image",
-            "Type": "Texture2D",
-            "Value": "00000000000000000000000000000000"
         }
     ],
     "Shader": "d1b6f37729344e498392d597e7f6190c"

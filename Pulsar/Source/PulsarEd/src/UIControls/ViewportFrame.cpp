@@ -105,18 +105,6 @@ namespace pulsared
         m_descriptorSet.reset();
         m_descriptorLayout.reset();
     }
-    void ViewportFrame::SetTool(std::unique_ptr<EdTool>&& tool)
-    {
-        if (m_tool)
-        {
-            m_tool->End();
-        }
-        m_tool = std::move(tool);
-        if (m_tool)
-        {
-            m_tool->Initialize(m_world);
-            m_tool->Begin();
-        }
-    }
+
 
 } // namespace pulsared

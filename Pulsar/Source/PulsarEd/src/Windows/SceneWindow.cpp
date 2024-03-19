@@ -34,7 +34,6 @@ namespace pulsared
         m_sceneEditor = new SceneEditorViewportFrame;
         m_sceneEditor->Initialize();
         m_sceneEditor->SetWorld(GetEdApp()->GetEditorWorld());
-        SetTool(std::make_unique<SelectorEdTool>());
     }
     void SceneWindow::OnCloseWorkspace()
     {
@@ -74,7 +73,7 @@ namespace pulsared
         static bool b = true;
         // ImGui::ShowDemoWindow(&b);
 
-        auto world = EditorWorld::GetPreviewWorld();
+        auto world = dynamic_cast<EditorWorld*>(EditorWorld::GetPreviewWorld());
 
         m_sceneEditor->SetWorld(world);
 
@@ -85,7 +84,7 @@ namespace pulsared
                 if (ImGui::Button("Pop"))
                 {
                     EditorWorld::PopPreviewWorld();
-                    world = EditorWorld::GetPreviewWorld();
+                    world = dynamic_cast<EditorWorld*>(EditorWorld::GetPreviewWorld());
                     m_sceneEditor->SetWorld(world);
                 }
             }
@@ -139,7 +138,6 @@ namespace pulsared
                 if (ctrl->m_enable2DMode)
                 {
                     storeData = &ctrl->m_saved3d;
-                    ;
                 }
                 else
                 {
@@ -168,7 +166,7 @@ namespace pulsared
                 camTransform->SetEuler(loadData->CamEuler);
                 cam->SetProjectionMode(loadData->ProjectionMode);
 
-                if (auto tool = dynamic_cast<ViewEdTool*>(m_sceneEditor->GetTool()))
+                if (auto tool = dynamic_cast<ViewEdTool*>(world->GetTool()))
                 {
                     tool->m_enabledRotate = !tool->m_enabledRotate;
                 }
@@ -193,25 +191,36 @@ namespace pulsared
 
         if (ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_Q, false))
         {
-            SetTool(std::make_unique<SelectorEdTool>());
+            world->SetTool(std::make_unique<SelectorEdTool>());
         }
         else if (ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_W, false))
         {
-            SetTool(std::make_unique<MoveEdTool>());
+            world->SetTool(std::make_unique<MoveEdTool>());
         }
         else if (ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_E, false))
         {
-            SetTool(std::make_unique<RotationEdTool>());
+            world->SetTool(std::make_unique<RotationEdTool>());
         }
         else if (ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_R, false))
         {
-            SetTool(std::make_unique<ScaleEdTool>());
+            world->SetTool(std::make_unique<ScaleEdTool>());
         }
-    }
+        if (ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_Delete, false))
+        {
+            auto selection = world->GetSelection().GetSelection();
 
-    void SceneWindow::SetTool(std::unique_ptr<EdTool>&& tool)
-    {
-        m_sceneEditor->SetTool(std::move(tool));
+            for (auto& item : selection)
+            {
+                if (item)
+                {
+                    item->GetRuntimeOwnerScene()->RemoveNode(item);
+                }
+            }
+        }
+        if (auto tool = world->GetTool())
+        {
+            tool->Tick(dt);
+        }
     }
 
     void SceneWindow::OnWindowResize()

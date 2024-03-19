@@ -49,7 +49,7 @@ namespace pulsared
     void TextureEditorWindow::OnClose()
     {
         base::OnClose();
-        DestroyObject(m_ppMat);
+        m_ppMat.Reset();
     }
 
     void TextureEditorWindow::OnRefreshMenuContexts()
@@ -255,7 +255,10 @@ namespace pulsared
     {
         base::OnDrawAssetPropertiesUI(dt);
 
-        if (PImGui::PropertyGroup("Texture"))
+        RCPtr<Texture2D> tex = m_assetObject;
+        const auto texSize = tex->GetSize2df();
+
+        if (PImGui::PropertyGroup("Texture2D"))
         {
             bool changed = PImGui::ObjectFieldProperties(
                 BoxingObjectPtrBase::StaticType(),
@@ -263,7 +266,7 @@ namespace pulsared
                 mkbox(ObjectPtrBase(m_assetObject.GetHandle())).get(),
                 m_assetObject.GetPtr());
 
-            RCPtr<Texture2D> tex = m_assetObject;
+
             auto flags = m_ppMat->GetIntScalar("_Flags");
             if(tex->GetCompressedFormat() == TextureCompressionFormat::NormalMap_Compressed)
             {
@@ -278,16 +281,28 @@ namespace pulsared
             {
                 m_ppMat->SubmitParameters(true);
             }
+
         }
 
+        if (PImGui::PropertyGroup("Info"))
+        {
+            if (PImGui::BeginPropertyLine())
+            {
+                PImGui::PropertyLineText("Size", std::format("{} x {}", texSize.x, texSize.y) );
+                PImGui::EndPropertyLine();
+            }
+        }
         if (PImGui::PropertyGroup("Formats (Win64)"))
         {
-            PImGui::BeginPropertyLine();
-            for (auto item : *Texture2D::StaticGetFormatMapping(OSPlatform::Windows64))
+            if (PImGui::BeginPropertyLine())
             {
-                PImGui::PropertyLineText(mkbox(item.first)->GetName(), to_string(item.second));
+                for (auto item : *Texture2D::StaticGetFormatMapping(OSPlatform::Windows64))
+                {
+                    PImGui::PropertyLineText(mkbox(item.first)->GetName(), to_string(item.second));
+                }
+                PImGui::EndPropertyLine();
             }
-            PImGui::EndPropertyLine();
+
         }
     }
 

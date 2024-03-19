@@ -83,7 +83,7 @@ namespace pulsared
 
         if(auto id = GetIdByPath(path))
         {
-            if(auto obj = RuntimeObjectWrapper::GetObject(id))
+            if(auto obj = RuntimeObjectManager::GetObject(id))
             {
                 return obj;
             }
@@ -104,7 +104,7 @@ namespace pulsared
         auto json = FileUtil::ReadAllText(node->GetPhysicsPath());
         auto meta = ser::JsonSerializer::Deserialize<AssetMetaData>(json);
 
-        if (auto existObj = RuntimeObjectWrapper::GetObject(meta->Handle))
+        if (auto existObj = RuntimeObjectManager::GetObject(meta->Handle))
         {
             return static_cast<AssetObject*>(existObj);
         }
@@ -202,7 +202,7 @@ namespace pulsared
     }
 
 
-    void AssetDatabase::ResolveDirty(RCPtr<AssetObject> asset)
+    void AssetDatabase::ResolveDirty(RCPtr<AssetObject> asset) noexcept
     {
         auto it = _DirtyObjects.find(asset.GetHandle());
         if (it != _DirtyObjects.end())
@@ -218,7 +218,7 @@ namespace pulsared
 
     void AssetDatabase::ReloadAsset(ObjectHandle id)
     {
-        RuntimeObjectWrapper::DestroyObject(id, true);
+        RuntimeObjectManager::DestroyObject(id, true);
         LoadAssetById(id);
         ResolveDirty(id);
     }
@@ -364,9 +364,9 @@ namespace pulsared
 
             // destroy memory object
             auto handle = GetIdByPath(assetPath);
-            if (RuntimeObjectWrapper::IsValid(handle))
+            if (RuntimeObjectManager::IsValid(handle))
             {
-                ObjectPtr<AssetObject> asset = RuntimeObjectWrapper::GetObject(handle)->GetObjectHandle();
+                ObjectPtr<AssetObject> asset = RuntimeObjectManager::GetObject(handle)->GetObjectHandle();
                 DestroyObject(asset, true);
             }
 
@@ -478,7 +478,7 @@ namespace pulsared
         return true;
     }
 
-    bool AssetDatabase::IsEmptyFolder(string_view path)
+    bool AssetDatabase::IsEmptyFolder(string_view path) noexcept
     {
         if (auto node = FileTree->Find(path))
         {
@@ -547,12 +547,12 @@ namespace pulsared
         return _RenameAsset(srcAsset, dstAsset);
     }
 
-    void AssetDatabase::MarkDirty(RCPtr<AssetObject> asset)
+    void AssetDatabase::MarkDirty(RCPtr<AssetObject> asset) noexcept
     {
         _DirtyObjects.insert(asset);
     }
 
-    bool AssetDatabase::IsDirty(RCPtr<AssetObject> asset)
+    bool AssetDatabase::IsDirty(RCPtr<AssetObject> asset) noexcept
     {
         return _DirtyObjects.contains(asset);
     }
@@ -588,13 +588,13 @@ namespace pulsared
         FileTree->IsCollapsed = true;
 
         Workspace::OnWorkspaceOpened += _OnWorkspaceOpened;
-        RuntimeObjectWrapper::OnPostEditChanged += _OnPostEditChanged;
+        RuntimeObjectManager::OnPostEditChanged += _OnPostEditChanged;
     }
 
     void AssetDatabase::Terminate()
     {
         Workspace::OnWorkspaceOpened -= _OnWorkspaceOpened;
-        RuntimeObjectWrapper::OnPostEditChanged -= _OnPostEditChanged;
+        RuntimeObjectManager::OnPostEditChanged -= _OnPostEditChanged;
         IconPool.reset();
         decltype(_DirtyObjects){}.swap(_DirtyObjects);
         decltype(_AssetRegistry){}.swap(_AssetRegistry);

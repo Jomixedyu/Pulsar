@@ -11,6 +11,8 @@ namespace pulsar
     public:
         void Serialize(AssetSerializer* s) override;
 
+        void OnDestroy() override;
+
         const List_sp<ObjectPtr<Node>>& GetRootNodes() const { return m_rootNodes; }
         const List_sp<ObjectPtr<Node>>& GetNodes() const { return m_nodes; }
 
@@ -18,7 +20,7 @@ namespace pulsar
         ObjectPtr<Node> FindNodeByPath(string_view name) const;
 
 
-        ObjectPtr<Node> NewNode(index_string name = "Node", ObjectPtr<Node> parent = nullptr, ObjectFlags flags = 0);
+        ObjectPtr<Node> NewNode(index_string name = "Node", const ObjectPtr<Node>& parent = nullptr, ObjectFlags flags = 0);
         void RemoveNode(ObjectPtr<Node> node);
 
         virtual void OnAddNode(ObjectPtr<Node> node);
@@ -32,7 +34,7 @@ namespace pulsar
 
         NodeCollection();
     protected:
-        ObjectPtr<Node> BeginNewNode(index_string name = "Node", ObjectPtr<Node> parent = nullptr, ObjectFlags flags = 0);
+        ObjectPtr<Node> BeginNewNode(index_string name = "Node", const ObjectPtr<Node>& parent = nullptr, ObjectFlags flags = 0);
         void EndNewNode(ObjectPtr<Node> node);
     protected:
         CORELIB_REFL_DECL_FIELD(m_rootNodes);

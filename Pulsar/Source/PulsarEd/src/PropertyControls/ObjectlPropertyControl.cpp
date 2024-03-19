@@ -50,7 +50,7 @@ namespace pulsared
         string objectName;
         if (!handle.is_empty())
         {
-            auto obj = RuntimeObjectWrapper::GetObject(handle);
+            auto obj = RuntimeObjectManager::GetObject(handle);
             if (!obj)
             {
                 obj = AssetDatabase::LoadAssetById(handle).GetPtr();

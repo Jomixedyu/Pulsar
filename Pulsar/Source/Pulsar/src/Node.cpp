@@ -266,7 +266,7 @@ namespace pulsar
     {
         for (auto& comp : *this->m_components)
         {
-            if (IsValid(comp))
+            if (comp)
             {
                 comp->OnTick(ticker);
             }
@@ -287,7 +287,7 @@ namespace pulsar
 
     World* Node::GetRuntimeWorld() const
     {
-        if (IsValid(m_runtimeScene))
+        if (m_runtimeScene)
         {
             return m_runtimeScene->GetWorld();
         }

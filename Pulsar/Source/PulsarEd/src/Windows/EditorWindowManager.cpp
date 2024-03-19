@@ -114,7 +114,7 @@ namespace pulsared
         {
             win->Close();
         }
-        _OpeningWindows.items.clear();
+        _OpeningWindows.Refresh();
 
         _DockspaceWindow.reset();
         _MainMenuBarWindow.reset();

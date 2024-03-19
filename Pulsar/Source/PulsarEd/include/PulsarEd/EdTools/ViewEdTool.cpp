@@ -1,6 +1,7 @@
 
 #include "ViewEdTool.h"
 
+#include "EditorWorld.h"
 #include "Pulsar/Components/CameraComponent.h"
 #include "Pulsar/Node.h"
 #include "imgui/imgui.h"

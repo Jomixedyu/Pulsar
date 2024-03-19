@@ -20,8 +20,6 @@ namespace pulsared
         virtual void Initialize();
         virtual void Terminate();
 
-        EdTool* GetTool() const { return m_tool.get(); }
-        void SetTool(std::unique_ptr<EdTool>&& tool);
     protected:
         World* m_world = nullptr;
         bool m_newWorld {};

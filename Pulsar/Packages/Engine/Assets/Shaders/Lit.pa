@@ -1,5 +1,4 @@
 {
-    "Available": true,
     "Config": {
         "ConstantProperties": [],
         "CullMode": 0,
@@ -8,19 +7,23 @@
         "DepthWriteEnable": true,
         "Properties": [
             {
-                "Name": "BaseColor",
+                "Name": "_BaseColorMap",
                 "Type": 3,
                 "Value": ""
             },
             {
-                "Name": "MRA",
+                "Name": "_NormalMap",
+                "Type": 3,
+                "Value": ""
+            },
+            {
+                "Name": "_MRAMap",
                 "Type": 3,
                 "Value": ""
             }
         ],
-        "RenderingType": 0,
+        "RenderingType": 1,
         "StencilTestEnable": false
     },
-    "Passes": "Engine/Shaders/Lit.sh.json",
-    "RenderingType": 0
+    "Passes": "Engine/Shaders/Lit.sh.json"
 }

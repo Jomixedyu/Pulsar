@@ -124,9 +124,9 @@ namespace pulsared
         const std::vector<std::filesystem::path>& includes,
         const std::vector<string>& defines)
     {
-        ShaderSourceData serDatas;
         try
         {
+            ShaderSourceData serDatas;
             auto passName = shader->GetPassName();
 
             if (passName->empty())
@@ -135,7 +135,6 @@ namespace pulsared
                 return;
             }
 
-            string config;
             auto shaderPath = AssetDatabase::PackagePathToPhysicsPath(*passName);
             if (!exists(shaderPath))
             {
@@ -154,7 +153,7 @@ namespace pulsared
                 {
                     if (smodule.Partial == psc::FilePartialType::Sh)
                     {
-                        config = std::get<string>(smodule.Data);
+                        apiSerData.Config = std::get<string>(smodule.Data);
                     }
                     else
                     {
@@ -168,14 +167,7 @@ namespace pulsared
 
             Logger::Log("compile shader success.");
 
-
-            shader->SetConfig(ser::JsonSerializer::Deserialize<ShaderPassConfig>(config));
-            shader->ResetShaderSource(serDatas);
-            if (shader->GetRenderingType() == shader->GetConfig()->RenderingType)
-            {
-                shader->m_isAvailable = true;
-
-            }
+            shader->ResetShaderSource(std::move(serDatas));
 
             AssetDatabase::MarkDirty(shader);
         }

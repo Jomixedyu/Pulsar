@@ -1,9 +1,11 @@
 #pragma once
 
-#include <Pulsar/World.h>
 #include "Assembly.h"
+#include "SelectionSet.h"
 #include <Pulsar/Components/CameraComponent.h>
 #include <Pulsar/Node.h>
+#include <Pulsar/World.h>
+#include "EdTools/EdTool.h"
 
 namespace pulsared
 {
@@ -33,10 +35,20 @@ namespace pulsared
         virtual void OnUnloadingResidentScene(ObjectPtr<Scene> scene) override;
         virtual void OnSceneLoading(ObjectPtr<Scene> scene) override;
         virtual void OnSceneUnloading(ObjectPtr<Scene> scene) override;
+        virtual const char* GetWorldTypeName() const { return StaticWorldTypeName(); }
+        static const char* StaticWorldTypeName() { return "EditorWorld"; }
+    public:
+        SelectionSet<Node>& GetSelection() { return m_selection; }
+        const SelectionSet<Node>& GetSelection() const { return m_selection; }
+        EdTool* GetTool() const { return m_tool.get(); }
+        void SetTool(std::unique_ptr<EdTool>&& tool);
     private:
         Node_ref m_camNode;
         Node_ref m_camCtrlNode;
         CameraComponent_ref m_cam;
+
+        SelectionSet<Node> m_selection;
+        std::unique_ptr<EdTool> m_tool = nullptr;
     };
 }
 

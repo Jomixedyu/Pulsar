@@ -1,4 +1,7 @@
 #include "SelectorEdTool.h"
+
+#include "EditorWorld.h"
+
 #include <imgui/imgui.h>
 
 namespace pulsared
@@ -28,7 +31,7 @@ namespace pulsared
         {
             m_frameSelector = true;
             auto startpos = ImGui::GetMousePos();
-            m_frameSelectorStartPos = { startpos.x, startpos.y };
+            m_frameSelectorStartPos = {startpos.x, startpos.y};
         }
         if (ImGui::IsMouseReleased(ImGuiMouseButton_Left))
         {
@@ -40,10 +43,14 @@ namespace pulsared
             ImDrawList* drawList = ImGui::GetWindowDrawList();
             auto curpos = ImGui::GetMousePos();
             auto startpos = ImVec2{m_frameSelectorStartPos.x, m_frameSelectorStartPos.y};
-            auto fillColor = IM_COL32(255,255,255,46);
-            auto boraderColor = IM_COL32(128,128,128,255);
+            auto fillColor = IM_COL32(255, 255, 255, 46);
+            auto boraderColor = IM_COL32(128, 128, 128, 255);
             drawList->AddRectFilled(startpos, curpos, fillColor);
             drawList->AddRect(startpos, curpos, fillColor, 0.0f, 0, 1);
         }
+    }
+    SelectionSet<Node>& SelectorEdTool::GetSelection()
+    {
+        return m_world->GetSelection();
     }
 } // namespace pulsared

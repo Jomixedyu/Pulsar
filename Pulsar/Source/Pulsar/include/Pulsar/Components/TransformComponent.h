@@ -21,18 +21,18 @@ namespace pulsar
         ObjectPtr<TransformComponent> GetParent() const { return m_parent; }
         void SetParent(ObjectPtr<TransformComponent> parent);
 
-        const List_sp<ObjectPtr<TransformComponent>>& GetChildren() const { return m_children; }
-        size_t GetChildCount() const { return m_children->size(); }
-        ObjectPtr<TransformComponent> GetChild(int32_t index) const { return m_children->at(index); }
+        const List_sp<ObjectPtr<TransformComponent>>& GetChildren() const noexcept { return m_children; }
+        size_t GetChildCount() const noexcept { return m_children->size(); }
+        ObjectPtr<TransformComponent> GetChild(int32_t index) const noexcept { return m_children->at(index); }
 
         void SetPosition(Vector3f value) { m_position = value; MakeTransformChanged(); }
-        Vector3f GetPosition() const { return m_position; }
+        Vector3f GetPosition() const noexcept { return m_position; }
         Vector3f GetWorldPosition();
         void SetWorldPosition(Vector3f value);
         void Translate(Vector3f value);
 
         void SetScale(Vector3f value) { m_scale = value; MakeTransformChanged(); }
-        Vector3f GetScale() const { return m_scale; }
+        Vector3f GetScale() const noexcept { return m_scale; }
         Vector3f GetWorldScale();
 
         void SetRotation(Quat4f rotation);

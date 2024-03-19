@@ -14,7 +14,7 @@ namespace pulsared
 
     void AssetPreviewEditorWindow::OnDrawAssetPropertiesUI(float dt)
     {
-        if (PImGui::PropertyGroup("Asset Info"))
+        if (PImGui::PropertyGroup("Asset Object"))
         {
             if (PImGui::BeginPropertyLine())
             {

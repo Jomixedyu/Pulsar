@@ -51,9 +51,10 @@ namespace pulsar
         int32_t GetRenderQueuePriority() const { return m_renderQueuePriority; }
         void SetRenderQueuePriority(int32_t value) { m_renderQueuePriority = value; }
     protected:
+        void OnDependencyMessage(ObjectHandle inDependency, DependencyObjectState msg) override;
         void ResizeMaterials(size_t size);
-        void BeginListenMaterialStateChanged(size_t index);
-        void EndListenMaterialStateChanged(size_t index);
+        // void BeginListenMaterialStateChanged(size_t index);
+        // void EndListenMaterialStateChanged(size_t index);
         void OnMaterialStateChanged();
         void OnMsg_TransformChanged() override;
         void OnMeshChanged();
@@ -61,8 +62,8 @@ namespace pulsar
     protected:
         CORELIB_REFL_DECL_FIELD(m_materials, new ListItemAttribute(cltypeof<Material>()));
         List_sp<RCPtr<Material>> m_materials;
+        //array_list<RCPtr<Material>> m_gpuMaterials;
         size_t m_materialsSize = 0;
-        array_list<uint32_t> m_materialStateChangedCallbacks;
 
         CORELIB_REFL_DECL_FIELD(m_staticMesh);
         RCPtr<StaticMesh> m_staticMesh;

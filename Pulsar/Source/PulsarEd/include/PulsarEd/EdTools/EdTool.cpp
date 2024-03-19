@@ -3,7 +3,7 @@
 namespace pulsared
 {
 
-    void EdTool::Initialize(World* world)
+    void EdTool::Initialize(EditorWorld* world)
     {
         m_world = world;
     }

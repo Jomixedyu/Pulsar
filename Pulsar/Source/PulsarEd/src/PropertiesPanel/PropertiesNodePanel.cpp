@@ -1,9 +1,10 @@
 #include "PropertiesPanel/PropertiesNodePanel.h"
 
+#include "EditorWorld.h"
 #include "Menus/Menu.h"
 #include "Menus/MenuRenderer.h"
 
-#include <PulsarEd/EditorSelection.h>
+
 #include <PulsarEd/PropertyControls/PropertyControl.h>
 
 namespace pulsared
@@ -29,7 +30,10 @@ namespace pulsared
 
     void PropertiesNodePanel::OnDrawImGui()
     {
-        auto selectedObj = EditorSelection::Selection.GetSelected();
+        auto world = dynamic_cast<EditorWorld*>(EditorWorld::GetPreviewWorld());
+        assert(world);
+
+        auto selectedObj = world->GetSelection().GetSelected();
         if (!selectedObj)
         {
             return;
@@ -93,7 +97,7 @@ namespace pulsared
         auto componentArr = selected->GetAllComponentArray();
         for (auto& comp : componentArr)
         {
-            if(!IsValid(comp)) continue;
+            if(!comp) continue;
 
             bool opened = true;
             const bool dontDestroy = comp->GetType()->IsSubclassOf(cltypeof<TransformComponent>());
@@ -114,6 +118,15 @@ namespace pulsared
                     comp->GetType(),
                     comp.GetPtr(),
                     comp.GetPtr(), m_debugMode);
+
+                if (m_debugMode)
+                {
+                    if (PImGui::BeginPropertyLine())
+                    {
+                        PImGui::PropertyLineText("Handle", comp.GetHandle().to_string());
+                        PImGui::EndPropertyLine();
+                    }
+                }
             }
             ImGui::PopID();
 

@@ -44,6 +44,8 @@ namespace pulsar
         virtual void OnWorldEnd();
         virtual void OnSceneLoading(ObjectPtr<Scene> scene);
         virtual void OnSceneUnloading(ObjectPtr<Scene> scene);
+        virtual const char* GetWorldTypeName() const { return StaticWorldTypeName(); }
+        static const char* StaticWorldTypeName() { return "World"; }
 
         const string& GetWorldName() const { return m_name; }
 

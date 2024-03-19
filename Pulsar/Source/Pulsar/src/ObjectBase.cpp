@@ -1,6 +1,7 @@
 #include <CoreLib/Guid.h>
 #include <Pulsar/ObjectBase.h>
 #include <map>
+#include <ranges>
 
 namespace pulsar
 {
@@ -10,11 +11,17 @@ namespace pulsar
         struct RuntimeObjectPointerValue
         {
             SPtr<ObjectBase> OriginalObject;
-            [[not_null]] SPtr<ManagedPointer> PointerRef;
+            [[not_null]] SPtr<ManagedPointer> ManagedPtr;
 
             [[always_inline]] bool IsValid() const
             {
                 return OriginalObject != nullptr;
+            }
+
+            void Destroy()
+            {
+                OriginalObject.reset();
+                ManagedPtr->SetEmptyPtr();
             }
         };
     }
@@ -26,7 +33,7 @@ namespace pulsar
         return table;
     }
 
-    Action<ObjectBase*> RuntimeObjectWrapper::OnPostEditChanged{};
+    Action<ObjectBase*> RuntimeObjectManager::OnPostEditChanged{};
 
     static inline ObjectHandle _NewId()
     {
@@ -34,7 +41,7 @@ namespace pulsar
     }
 
 
-    ObjectBase* RuntimeObjectWrapper::GetObject(const ObjectHandle& id) noexcept
+    ObjectBase* RuntimeObjectManager::GetObject(const ObjectHandle& id) noexcept
     {
         if (id.is_empty())
             return nullptr;
@@ -46,7 +53,7 @@ namespace pulsar
         return nullptr;
     }
 
-    SPtr<ObjectBase> RuntimeObjectWrapper::GetSharedObject(const ObjectHandle& id) noexcept
+    SPtr<ObjectBase> RuntimeObjectManager::GetSharedObject(const ObjectHandle& id) noexcept
     {
         if (id.is_empty())
             return nullptr;
@@ -57,25 +64,25 @@ namespace pulsar
         }
         return nullptr;
     }
-    SPtr<ManagedPointer> RuntimeObjectWrapper::GetPointer(const ObjectHandle& id) noexcept
+    SPtr<ManagedPointer> RuntimeObjectManager::GetPointer(const ObjectHandle& id) noexcept
     {
         auto it = _object_table().find(id);
         if (it != _object_table().end())
         {
-            return it->second.PointerRef;
+            return it->second.ManagedPtr;
         }
         return nullptr;
     }
 
-    SPtr<ManagedPointer> RuntimeObjectWrapper::AddWaitPointer(const ObjectHandle& id)
+    SPtr<ManagedPointer> RuntimeObjectManager::AddWaitPointer(const ObjectHandle& id)
     {
         RuntimeObjectPointerValue value{};
-        value.PointerRef = mksptr(new ManagedPointer{});
+        value.ManagedPtr = mksptr(new ManagedPointer{});
         _object_table().insert({id, value});
-        return value.PointerRef;
+        return value.ManagedPtr;
     }
 
-    bool RuntimeObjectWrapper::IsValid(const ObjectHandle& id) noexcept
+    bool RuntimeObjectManager::IsValid(const ObjectHandle& id) noexcept
     {
         if (id.is_empty())
             return false;
@@ -87,7 +94,7 @@ namespace pulsar
         return it->second.IsValid();
     }
 
-    void RuntimeObjectWrapper::NewInstance(SPtr<ObjectBase>&& managedObj, const ObjectHandle& handle) noexcept
+    void RuntimeObjectManager::NewInstance(SPtr<ObjectBase>&& managedObj, const ObjectHandle& handle) noexcept
     {
         const auto id = handle.is_empty() ? _NewId() : handle;
         managedObj->m_objectHandle = id;
@@ -97,21 +104,21 @@ namespace pulsar
         {
             assert(!it->second.IsValid());
             it->second.OriginalObject = std::move(managedObj);
-            it->second.PointerRef->Pointer = it->second.OriginalObject.get();
+            it->second.ManagedPtr->Pointer = it->second.OriginalObject.get();
         }
         else
         {
             RuntimeObjectPointerValue value;
             value.OriginalObject = std::move(managedObj);
-            value.PointerRef = mksptr(new ManagedPointer{});
-            value.PointerRef->Pointer = value.OriginalObject.get();
+            value.ManagedPtr = mksptr(new ManagedPointer{});
+            value.ManagedPtr->Pointer = value.OriginalObject.get();
 
             _object_table().emplace(id, value);
         }
 
     }
 
-    bool RuntimeObjectWrapper::DestroyObject(const ObjectHandle& id, bool isForce) noexcept
+    bool RuntimeObjectManager::DestroyObject(const ObjectHandle& id, bool isForce) noexcept
     {
         if (id.is_empty())
             return false;
@@ -126,31 +133,65 @@ namespace pulsar
                 if (!dontDestory || (dontDestory && isForce))
                 {
                     obj->Destroy();
-                    // set null pointer
-                    it->second.PointerRef->SetEmptyPtr();
-                    _object_table().erase(id);
+                    it->second.OriginalObject.reset();
+                    it->second.ManagedPtr->SetEmptyPtr();
+                    if (it->second.ManagedPtr.use_count() == 1)
+                    {
+                        it->second.ManagedPtr.reset();
+                        _object_table().erase(id);
+                    }
+
                     return true;
                 }
             }
-
+            else
+            {
+                if (it->second.ManagedPtr.use_count() == 1)
+                {
+                    it->second.ManagedPtr.reset();
+                    _object_table().erase(id);
+                }
+                return true;
+            }
         }
         return false;
     }
-    void RuntimeObjectWrapper::Terminate()
+    void RuntimeObjectManager::GetData(size_t* total, size_t* place, size_t* alive)
+    {
+        size_t t = _object_table().size(), p = 0, a = 0;
+        for (auto& [k, v] : _object_table())
+        {
+            if (v.OriginalObject)
+            {
+                ++a;
+            }
+            else
+            {
+                if (v.ManagedPtr)
+                {
+                    ++p;
+                }
+            }
+        }
+        *total = t;
+        *place = p;
+        *alive = a;
+    }
+    void RuntimeObjectManager::Terminate()
     {
         array_list<ObjectHandle> destroyList;
         for (const auto& [id, ptr] : _object_table())
         {
             if (ptr.IsValid())
             {
-                if (!ptr.OriginalObject->HasObjectFlags(OF_LifecycleManaged))
+                if (ptr.OriginalObject->HasObjectFlags(OF_LifecycleManaged))
                 {
                     continue;
                 }
                 destroyList.push_back(id);
             }
         }
-        for(auto& id : destroyList)
+        for (auto& id : destroyList)
         {
             DestroyObject(id);
         }
@@ -158,11 +199,17 @@ namespace pulsar
         // release memory
         _object_table_t{}.swap(_object_table());
     }
-    void RuntimeObjectWrapper::ForEachObject(const std::function<void(ObjectHandle, ObjectBase*)>& func)
+
+    void RuntimeObjectManager::TickGCollect()
+    {
+
+    }
+
+    void RuntimeObjectManager::ForEachObject(const std::function<void(ObjectHandle, ObjectBase*, int)>& func)
     {
         for (auto& item : _object_table())
         {
-            func(item.first, item.second.OriginalObject.get());
+            func(item.first, item.second.OriginalObject.get(), item.second.ManagedPtr.use_count());
         }
     }
 
@@ -172,19 +219,32 @@ namespace pulsar
         return map;
     }
 
-    void RuntimeObjectWrapper::AddDependList(ObjectHandle src, ObjectHandle dest)
+    void RuntimeObjectManager::AddDependList(ObjectHandle src, ObjectHandle dest)
     {
         _depends()[dest].emplace_back(src);
     }
-    void RuntimeObjectWrapper::NotifyDependObjects(ObjectHandle dest, int id)
+    void RuntimeObjectManager::RemoveDependList(ObjectHandle src, ObjectHandle dest)
     {
-        for (auto srcId : _depends()[dest])
+        std::erase(_depends()[dest], src);
+        if (_depends()[dest].empty())
         {
-            if (ObjectPtr<ObjectBase> src{srcId})
+            _depends().erase(dest);
+        }
+    }
+    void RuntimeObjectManager::NotifyDependObjects(ObjectHandle dest, DependencyObjectState id)
+    {
+        auto it = _depends().find(dest);
+        if (it != _depends().end())
+        {
+            for (const auto& srcId : it->second)
             {
-                src->OnDependencyMessage(dest, id);
+                if (auto src = ObjectPtr<ObjectBase>(srcId).GetPtr())
+                {
+                    src->OnDependencyMessage(dest, id);
+                }
             }
         }
+
     }
 
     ObjectBase::ObjectBase()
@@ -194,13 +254,13 @@ namespace pulsar
     {
         assert(this);
         assert(!this->m_objectHandle);
-        RuntimeObjectWrapper::NewInstance(self(), handle);
+        RuntimeObjectManager::NewInstance(self(), handle);
         this->OnConstruct();
     }
 
     void ObjectBase::PostEditChange(FieldInfo* info)
     {
-        RuntimeObjectWrapper::OnPostEditChanged.Invoke(this);
+        RuntimeObjectManager::OnPostEditChanged.Invoke(this);
     }
     void ObjectBase::SetIndexName(index_string name) noexcept
     {
@@ -211,52 +271,9 @@ namespace pulsar
         SetIndexName(name);
     }
 
-    void ObjectBase::OnDependencyMessage(ObjectHandle inDependency, int msg)
+    void ObjectBase::OnDependencyMessage(ObjectHandle inDependency, DependencyObjectState msg)
     {
 
-    }
-    void ObjectBase::AddOutDependency(ObjectHandle obj)
-    {
-        if (!m_outDependency)
-        {
-            m_outDependency = std::make_unique<array_list<ObjectHandle>>();
-        }
-        if (!std::ranges::contains(*m_outDependency, obj))
-        {
-            m_outDependency->push_back(obj);
-        }
-    }
-    bool ObjectBase::HasOutDependency(ObjectHandle obj) const
-    {
-        if (m_outDependency)
-        {
-            return std::ranges::contains(*m_outDependency, obj);
-        }
-        return false;
-    }
-    void ObjectBase::RemoveOutDependency(ObjectHandle obj)
-    {
-        if (m_outDependency)
-        {
-            auto it = std::remove(m_outDependency->begin(), m_outDependency->end(), obj);
-            if (it != m_outDependency->end())
-            {
-                m_outDependency->pop_back();
-            }
-        }
-    }
-    void ObjectBase::SendMsgToOutDependency(int msg) const
-    {
-        if (m_outDependency)
-        {
-            for (auto& element : *m_outDependency)
-            {
-                if (auto obj = ObjectPtr<ObjectBase>{element})
-                {
-                    obj->OnDependencyMessage(m_objectHandle, msg);
-                }
-            }
-        }
     }
 
     void ObjectBase::OnConstruct()
@@ -279,31 +296,43 @@ namespace pulsar
 
     void ObjectBase::OnDestroy()
     {
-        SendMsgToOutDependency(DependMsg_OnDestroy);
+
+    }
+    void ObjectBase::SendOuterDependencyMsg(DependencyObjectState msg) const
+    {
+        RuntimeObjectManager::NotifyDependObjects(GetObjectHandle(), msg);
     }
 
     std::iostream& ReadWriteStream(std::iostream& stream, bool isWrite, ObjectPtrBase& obj)
     {
+        ObjectHandle handle = obj.Handle;
+
+        sser::ReadWriteStream(stream, isWrite, handle.x);
+        sser::ReadWriteStream(stream, isWrite, handle.y);
+        sser::ReadWriteStream(stream, isWrite, handle.z);
+        sser::ReadWriteStream(stream, isWrite, handle.w);
+
         if (!isWrite)
         {
-            obj.Pointer->SetEmptyPtr();
+            obj = handle;
         }
-        sser::ReadWriteStream(stream, isWrite, obj.GetHandle().x);
-        sser::ReadWriteStream(stream, isWrite, obj.GetHandle().y);
-        sser::ReadWriteStream(stream, isWrite, obj.GetHandle().z);
-        sser::ReadWriteStream(stream, isWrite, obj.GetHandle().w);
+
         return stream;
     }
     std::iostream& ReadWriteStream(std::iostream& stream, bool isWrite, RCPtrBase& obj)
     {
+        ObjectHandle handle = obj.Handle;
+
+        sser::ReadWriteStream(stream, isWrite, handle.x);
+        sser::ReadWriteStream(stream, isWrite, handle.y);
+        sser::ReadWriteStream(stream, isWrite, handle.z);
+        sser::ReadWriteStream(stream, isWrite, handle.w);
+
         if (!isWrite)
         {
-            obj.Pointer->SetEmptyPtr();
+            obj = handle;
         }
-        sser::ReadWriteStream(stream, isWrite, obj.GetHandle().x);
-        sser::ReadWriteStream(stream, isWrite, obj.GetHandle().y);
-        sser::ReadWriteStream(stream, isWrite, obj.GetHandle().z);
-        sser::ReadWriteStream(stream, isWrite, obj.GetHandle().w);
+
         return stream;
     }
 } // namespace pulsar

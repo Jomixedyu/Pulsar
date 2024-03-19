@@ -3,6 +3,8 @@
 #include "Pulsar/Components/DirectionalLightComponent.h"
 #include "Pulsar/EngineAppInstance.h"
 
+#include "EdTools/EdTool.h"
+#include "EdTools/SelectorEdTool.h"
 #include <Pulsar/Scene.h>
 #include <PulsarEd/Components/Grid3DComponent.h>
 #include <PulsarEd/Components/StdEditCameraControllerComponent.h>
@@ -42,7 +44,6 @@ namespace pulsared
     }
     void EditorWorld::Tick(float dt)
     {
-
         base::Tick(dt);
     }
     void EditorWorld::AddGrid3d()
@@ -65,10 +66,12 @@ namespace pulsared
     void EditorWorld::OnWorldBegin()
     {
         base::OnWorldBegin();
+        SetTool(std::make_unique<SelectorEdTool>());
     }
     void EditorWorld::OnWorldEnd()
     {
         base::OnWorldEnd();
+        SetTool(nullptr);
     }
 
     void EditorWorld::OnLoadingResidentScene(ObjectPtr<Scene> scene)
@@ -107,5 +110,18 @@ namespace pulsared
     void EditorWorld::OnSceneUnloading(ObjectPtr<Scene> scene)
     {
         base::OnSceneUnloading(scene);
+    }
+    void EditorWorld::SetTool(std::unique_ptr<EdTool>&& tool)
+    {
+        if (m_tool)
+        {
+            m_tool->End();
+        }
+        m_tool = std::move(tool);
+        if (m_tool)
+        {
+            m_tool->Initialize(this);
+            m_tool->Begin();
+        }
     }
 } // namespace pulsared

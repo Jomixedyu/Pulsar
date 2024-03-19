@@ -3,12 +3,11 @@
 #include <Pulsar/Scene.h>
 #include <Pulsar/World.h>
 #include <PulsarEd/EditorNode.h>
-#include <PulsarEd/EditorSelection.h>
 #include <PulsarEd/Windows/OutlinerWindow.h>
 
 namespace pulsared
 {
-    static void _Show(List_sp<Node_ref> nodes)
+    static void _Show(EditorWorld* world, List_sp<Node_ref> nodes)
     {
         for (auto& node : *nodes)
         {
@@ -24,7 +23,7 @@ namespace pulsared
             {
                 base_flags |= ImGuiTreeNodeFlags_Leaf;
             }
-            if (EditorSelection::Selection.GetSelected() == node)
+            if (world->GetSelection().GetSelected() == node)
             {
                 base_flags |= ImGuiTreeNodeFlags_Selected;
             }
@@ -43,8 +42,8 @@ namespace pulsared
 
             if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen())
             {
-                EditorSelection::Selection.Clear();
-                EditorSelection::Selection.Select(node);
+                world->GetSelection().Clear();
+                world->GetSelection().Select(node);
             }
 
             if (isOpened)
@@ -55,7 +54,7 @@ namespace pulsared
                 {
                     childNodes->push_back(child->GetAttachedNode());
                 }
-                _Show(childNodes);
+                _Show(world, childNodes);
                 ImGui::TreePop();
             }
             ImGui::PopID();
@@ -67,7 +66,7 @@ namespace pulsared
     }
     void OutlinerWindow::OnDrawImGui(float dt)
     {
-        World* world = EditorWorld::GetPreviewWorld();
+        auto world = dynamic_cast<EditorWorld*>(EditorWorld::GetPreviewWorld());
         if (!world)
         {
             return;
@@ -83,7 +82,7 @@ namespace pulsared
             ImGui::PopStyleColor();
             if (opened)
             {
-                _Show(currentScene->GetRootNodes());
+                _Show(world, currentScene->GetRootNodes());
                 ImGui::TreePop();
             }
         }

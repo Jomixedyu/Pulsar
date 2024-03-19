@@ -3,7 +3,7 @@
 
 #include "Common.inc.hlsl"
 
-struct PerCBufferStruct
+struct PerObjectCBufferStruct
 {
     float4x4 LocalToWorldMatrix;
     float4x4 WorldToLocalMatrix;
@@ -16,20 +16,24 @@ struct PerCBufferStruct
     float4   _Padding3;
 };
 
-ConstantBuffer<PerCBufferStruct>    PerBuffer    : register(b0, space2);
+ConstantBuffer<PerObjectCBufferStruct> PerObjectBuffer : register(b0, space2);
 
 
 inline float4 ObjectToWorld(float3 position)
 {
-    return mul(PerBuffer.LocalToWorldMatrix, float4(position, 1.0));
+    return mul(PerObjectBuffer.LocalToWorldMatrix, float4(position, 1.0));
 }
-inline float4 ObjectToProjection(float3 position)
+inline float4 ObjectToClip(float3 position)
 {
     return mul(TargetBuffer.MatrixVP, ObjectToWorld(position));
 }
+inline float4 WorldToClip(float3 position)
+{
+    return mul(TargetBuffer.MatrixVP, float4(position, 1.f));
+}
 inline float3 ObjectNormalToWorld(float3 normal)
 {
-    return mul((float3x3)PerBuffer.NormalLocalToWorldMatrix, normal);
+    return mul((float3x3)PerObjectBuffer.NormalLocalToWorldMatrix, normal);
 }
 
 #define PRIMITIVE_FLAGS_CAST_SHADOWS 0x1
