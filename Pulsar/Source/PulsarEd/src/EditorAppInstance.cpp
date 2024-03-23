@@ -18,7 +18,6 @@
 #include <CoreLib.Serialization/JsonSerializer.h>
 #include <CoreLib/File.h>
 #include <Pulsar/Application.h>
-#include <Pulsar/AssetRegistry.h>
 #include <Pulsar/ImGuiImpl.h>
 #include <Pulsar/Logger.h>
 #include <Pulsar/Scene.h>
