@@ -14,4 +14,12 @@
             </Item>
         </Expand>
     </Type>
+    <Type Name="pulsar::RCPtr&lt;*&gt;">
+        <DisplayString>{{ptr = {GetPtr() ? GetPtr()->GetName().c_str() : GetHandle().is_empty() ? "/*NULL*/" : "/*UNLOAD*/"}}}</DisplayString>
+        <Expand>
+            <Item Name="[Ptr]">
+                GetPtr()
+            </Item>
+        </Expand>
+    </Type>
 </AutoVisualizer>

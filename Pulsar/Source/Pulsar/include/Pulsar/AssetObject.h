@@ -12,11 +12,18 @@
 
 namespace pulsar
 {
-    class MenuItemCreateAssetAttribute : public Attribute
+    class CreateAssetAttribute : public Attribute
     {
-        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::MenuItemCreateAssetAttribute, Attribute);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::CreateAssetAttribute, Attribute);
     public:
+        CreateAssetAttribute() = default;
+        explicit CreateAssetAttribute(const char* instantiatePath) : m_instantiatePath(instantiatePath)
+        {
 
+        }
+        auto GetInstantiatePath() const noexcept { return m_instantiatePath; }
+    private:
+        const char* m_instantiatePath = nullptr;
     };
 
     struct AssetSerializer

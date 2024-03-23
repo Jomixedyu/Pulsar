@@ -25,7 +25,7 @@ namespace pulsar
     class Material final : public AssetObject, public IGPUResource
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::Material, AssetObject);
-        CORELIB_CLASS_ATTR(new MenuItemCreateAssetAttribute);
+        CORELIB_CLASS_ATTR(new CreateAssetAttribute(BuiltinAsset::Material_Missing));
 
     public:
         static RCPtr<Material> StaticCreate(string_view name);
@@ -39,6 +39,8 @@ namespace pulsar
 
     protected:
         void OnDependencyMessage(ObjectHandle inDependency, DependencyObjectState msg) override;
+        void ActiveShader();
+        void InactiveShader();
     public:
         void OnConstruct() override;
 
@@ -76,6 +78,8 @@ namespace pulsar
     private:
         CORELIB_REFL_DECL_FIELD(m_shader);
         RCPtr<Shader> m_shader;
+
+        RCPtr<Shader> m_submitShader;
 
         gfx::GFXShaderPass_sp m_gfxShaderPasses;
 

@@ -15,7 +15,7 @@ namespace pulsar
     class RenderTexture : public Texture
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::RenderTexture, Texture);
-        CORELIB_CLASS_ATTR(new MenuItemCreateAssetAttribute);
+        CORELIB_CLASS_ATTR(new CreateAssetAttribute);
     public:
         RenderTexture();
         ~RenderTexture() override;

@@ -286,21 +286,21 @@ namespace pulsared
 
         if (PImGui::PropertyGroup("Info"))
         {
-            if (PImGui::BeginPropertyLine())
+            if (PImGui::BeginPropertyLines())
             {
                 PImGui::PropertyLineText("Size", std::format("{} x {}", texSize.x, texSize.y) );
-                PImGui::EndPropertyLine();
+                PImGui::EndPropertyLines();
             }
         }
         if (PImGui::PropertyGroup("Formats (Win64)"))
         {
-            if (PImGui::BeginPropertyLine())
+            if (PImGui::BeginPropertyLines())
             {
                 for (auto item : *Texture2D::StaticGetFormatMapping(OSPlatform::Windows64))
                 {
                     PImGui::PropertyLineText(mkbox(item.first)->GetName(), to_string(item.second));
                 }
-                PImGui::EndPropertyLine();
+                PImGui::EndPropertyLines();
             }
 
         }

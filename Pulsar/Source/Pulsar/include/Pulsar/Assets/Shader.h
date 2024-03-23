@@ -1,5 +1,8 @@
 #pragma once
 
+#include "Pulsar/BuiltinAsset.h"
+
+#include "Pulsar/MaterialParameterValue.h"
 #include <Pulsar/AssetObject.h>
 #include <Pulsar/Assets/Texture.h>
 #include <Pulsar/IGPUResource.h>
@@ -10,8 +13,6 @@
 #include <gfx/GFXApi.h>
 #include <gfx/GFXShaderPass.h>
 #include <mutex>
-#include "Pulsar/MaterialParameterValue.h"
-
 
 namespace pulsar
 {
@@ -42,6 +43,7 @@ namespace pulsar
 
         CORELIB_REFL_DECL_FIELD(Value);
         string Value;
+
     };
     CORELIB_DECL_SHORTSPTR(ShaderPassConfigProperty);
 
@@ -74,10 +76,14 @@ namespace pulsar
         CORELIB_REFL_DECL_FIELD(Properties, new ListItemAttribute(cltypeof<ShaderPassConfigProperty>()));
         List_sp<ShaderPassConfigProperty_sp> Properties;
 
+        CORELIB_REFL_DECL_FIELD(FeatureDeclare);
+        List_sp<string> FeatureDeclare;
+
         ShaderPassConfig()
         {
             init_sptr_member(ConstantProperties);
             init_sptr_member(Properties);
+            init_sptr_member(FeatureDeclare);
         }
     };
     CORELIB_DECL_SHORTSPTR(ShaderPassConfig);
@@ -103,11 +109,13 @@ namespace pulsar
     class Shader final : public AssetObject
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::Shader, AssetObject);
-        CORELIB_CLASS_ATTR(new MenuItemCreateAssetAttribute);
+        CORELIB_CLASS_ATTR(new CreateAssetAttribute(BuiltinAsset::Shader_Missing));
     public:
         virtual void Serialize(AssetSerializer* s) override;
 
         static RCPtr<Shader> StaticCreate(string_view name, ShaderSourceData&& pass);
+
+        void OnInstantiateAsset(AssetObject* obj) override;
 
     public:
         Shader();
@@ -127,22 +135,31 @@ namespace pulsar
         const MaterialParameterInfo* GetPropertyInfo(index_string name) const;
 
         size_t GetConstantBufferSize() const noexcept { return m_constantBufferSize; }
+        auto& GetFeatureOptions() noexcept { return m_featureOptions; }
+
+        bool IsReady() const { return m_isReady; }
+        void SetReady(bool b);
     protected:
         void Initialize();
     private:
         ShaderSourceData m_shaderSource;
 
+        CORELIB_REFL_DECL_FIELD(m_passName);
         String_sp m_passName;
 
+        CORELIB_REFL_DECL_FIELD(m_preDefines, new ListItemAttribute(cltypeof<String>()));
         List_sp<String_sp> m_preDefines;
+
+        array_list<string> m_featureOptions;
 
         size_t m_compiledHash{};
 
-        ShaderPassConfig_sp m_shaderConfig;
-
+        // runtime data
         hash_map<index_string, MaterialParameterInfo> m_propertyInfo;
-
+        ShaderPassConfig_sp m_shaderConfig;
         size_t m_constantBufferSize{};
+
+        bool m_isReady{};
     };
     DECL_PTR(Shader);
 

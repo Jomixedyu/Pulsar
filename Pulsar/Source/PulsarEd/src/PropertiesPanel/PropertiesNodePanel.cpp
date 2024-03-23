@@ -121,10 +121,10 @@ namespace pulsared
 
                 if (m_debugMode)
                 {
-                    if (PImGui::BeginPropertyLine())
+                    if (PImGui::BeginPropertyLines())
                     {
                         PImGui::PropertyLineText("Handle", comp.GetHandle().to_string());
-                        PImGui::EndPropertyLine();
+                        PImGui::EndPropertyLines();
                     }
                 }
             }
@@ -138,10 +138,10 @@ namespace pulsared
 
         if (PImGui::PropertyGroup("Node MetaInfo"))
         {
-            if (PImGui::BeginPropertyLine())
+            if (PImGui::BeginPropertyLines())
             {
                 PImGui::PropertyLineText("Handle", selected->GetObjectHandle().to_string().c_str());
-                PImGui::EndPropertyLine();
+                PImGui::EndPropertyLines();
             }
         }
 

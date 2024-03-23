@@ -62,7 +62,11 @@ namespace gfx
         vkFreeMemory(app->GetVkDevice(), stagingBufferMemory, nullptr);
 
         m_textureImageView = BufferHelper::CreateImageView(m_app, m_textureImage, m_imageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
-        m_textureSampler = BufferHelper::CreateTextureSampler(m_app);
+
+        auto filter = BufferHelper::GetVkFilter(samplerCfg.Filter);
+        auto addressMode = BufferHelper::GetVkAddressMode(samplerCfg.AddressMode);
+
+        m_textureSampler = BufferHelper::CreateTextureSampler(m_app, filter, addressMode);
 
         m_inited = true;
     }
@@ -96,7 +100,11 @@ namespace gfx
         BufferHelper::TransitionImageLayout(app, m_textureImage, m_imageFormat, VK_IMAGE_LAYOUT_UNDEFINED, layout);
 
         m_textureImageView = BufferHelper::CreateImageView(m_app, m_textureImage, m_imageFormat, aspect);
-        m_textureSampler = BufferHelper::CreateTextureSampler(m_app);
+
+        auto filter = BufferHelper::GetVkFilter(samplerCfg.Filter);
+        auto addressMode = BufferHelper::GetVkAddressMode(samplerCfg.AddressMode);
+
+        m_textureSampler = BufferHelper::CreateTextureSampler(m_app, filter, addressMode);
 
         m_inited = true;
     }

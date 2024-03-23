@@ -27,12 +27,10 @@ namespace pulsar
 
         void PostEditChange(FieldInfo* info) override;
 
-        StaticMeshRendererComponent() : CORELIB_INIT_INTERFACE(IRendererComponent)
-        {
-            m_materials = mksptr(new List<RCPtr<Material>>);
-        }
+        StaticMeshRendererComponent();
 
-        Box3f CalcBoudingBox() const override;
+        bool HasBounds() const override { return true; }
+        Bounds3f GetBounds() override;
 
         RCPtr<StaticMesh> GetStaticMesh() const { return m_staticMesh; }
         void SetStaticMesh(RCPtr<StaticMesh> staticMesh);

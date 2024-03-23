@@ -19,6 +19,14 @@ namespace pulsared
     {
         base::OnDrawAssetPropertiesUI(dt);
 
+        if (PImGui::PropertyGroup("Mesh Info"))
+        {
+            if (PImGui::BeginPropertyLines())
+            {
+                PImGui::PropertyLineText("Boudning Box", to_string(m_staticmesh->GetBounds().Extent));
+                PImGui::EndPropertyLines();
+            }
+        }
     }
     void StaticMeshEditorWindow::OnOpen()
     {

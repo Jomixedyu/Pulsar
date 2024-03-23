@@ -321,7 +321,7 @@ namespace pulsared
 
             for (Type* type : AssemblyManager::GlobalSearchType(cltypeof<AssetObject>()))
             {
-                if (!type->IsDefinedAttribute(cltypeof<MenuItemCreateAssetAttribute>()))
+                if (!type->IsDefinedAttribute(cltypeof<CreateAssetAttribute>()))
                 {
                     continue;
                     ;

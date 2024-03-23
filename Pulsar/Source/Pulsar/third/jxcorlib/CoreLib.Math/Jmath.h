@@ -954,6 +954,34 @@ namespace jmath
     using Box3f = Box3<float>;
     using Box3d = Box3<double>;
 
+    template <typename T>
+    struct Bounds3
+    {
+        Vector3<T> Origin{};
+        Vector3<T> Extent{};
+        T          Sphere{};
+
+        Bounds3() = default;
+
+        Bounds3(const Vector3<T>& origin, const Vector3<T>& extent, T sphere) :
+            Origin(origin), Extent(extent), Sphere(sphere)
+        {
+        }
+
+        explicit Bounds3(const Box3<T>& box) :
+            Origin(box.GetCenter()), Extent(box.GetExtend()), Sphere(box.GetSize().Magnitude() * 0.5f)
+        {
+        }
+
+        Box3<T> GetBox() const
+        {
+            return {Origin - Extent, Origin + Extent};
+        }
+    };
+
+    using Bounds3f = Bounds3<float>;
+    using Bounds3d = Bounds3<float>;
+
     template<typename B, typename L>
     Color4<B> FloatColorToBitColor(const Color4<L>& l)
     {

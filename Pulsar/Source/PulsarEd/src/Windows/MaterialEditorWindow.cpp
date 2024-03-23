@@ -38,7 +38,7 @@ namespace pulsared
         }
         if (PImGui::PropertyGroup("Parameters"))
         {
-            if (PImGui::BeginPropertyLine())
+            if (PImGui::BeginPropertyLines())
             {
                 for (auto& name : material->GetShader()->GetPropertyNames())
                 {
@@ -98,7 +98,7 @@ namespace pulsared
                         material->SubmitParameters();
                     }
                 }
-                PImGui::EndPropertyLine();
+                PImGui::EndPropertyLines();
             }
         }
     }

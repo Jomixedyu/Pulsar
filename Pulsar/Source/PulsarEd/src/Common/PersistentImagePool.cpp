@@ -7,6 +7,7 @@ namespace pulsared
     void PersistentImagePool::Register(const index_string& id, const uint8_t* iconBuf, size_t length)
     {
         gfx::GFXSamplerConfig config{};
+        config.Filter = gfx::GFXSamplerFilter::Linear;
 
         int32_t width, height, channel;
         auto iconData = gfx::LoadImageFromMemory(iconBuf, length, &width, &height, &channel, 4, true);

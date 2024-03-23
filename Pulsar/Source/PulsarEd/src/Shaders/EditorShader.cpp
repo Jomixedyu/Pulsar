@@ -103,21 +103,6 @@ namespace pulsared
         return pscCompiler->CompilePSH(pshPath, info, { pscApi });
     }
 
-    // class ShaderCompilingExclusiveTask : public pulsared::ExclusiveTask
-    // {
-    //     CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::ShaderCompilingExclusiveTask, pulsared::ExclusiveTask);
-    // public:
-    //     virtual ExclusiveTaskState OnProcess(ExclusiveTaskProcessInfo& info) override
-    //     {
-    //         info.Description = "processing";
-    //         return ExclusiveTaskState::Continue;
-    //     }
-    //     virtual bool                CanCancel() const override { return false; }
-    //     virtual void                OnComplete() override {}
-    //
-    // };
-    // CORELIB_DECL_SHORTSPTR(ExclusiveTask);
-
     void ShaderCompiler::CompileShader(
         Shader* shader,
         const array_list<gfx::GFXApi>& api,
@@ -159,8 +144,6 @@ namespace pulsared
                     {
                         auto stage = _GetGFXStage(smodule.Partial);;
                         apiSerData.Sources[stage] = std::get<std::vector<char>>(smodule.Data);
-
-                        FileUtil::WriteAllBytes(to_string(stage), apiSerData.Sources[stage].data(), apiSerData.Sources[stage].size());
                     }
                 }
             }

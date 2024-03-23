@@ -240,7 +240,7 @@ namespace pulsared
         return isChanged;
     }
     constexpr auto _TableBorderFlags = ImGuiTableFlags_BordersV;
-    bool PImGui::BeginPropertyLine()
+    bool PImGui::BeginPropertyLines()
     {
         bool b = ImGui::BeginTable("_lines", 2, _TableBorderFlags);
         if (b)
@@ -290,7 +290,7 @@ namespace pulsared
             ImGui::TreePop();
         }
     }
-    void PImGui::EndPropertyLine()
+    void PImGui::EndPropertyLines()
     {
         ImGui::EndTable();
     }

@@ -9,6 +9,7 @@
 #include <gfx/GFXImage.h>
 #include <ranges>
 #include <unordered_set>
+#include <utility>
 
 namespace pulsared
 {
@@ -174,7 +175,7 @@ namespace pulsared
 
         return {};
     }
-    string AssetDatabase::GetPathByAsset(RCPtr<AssetObject> asset)
+    string AssetDatabase::GetPathByAsset(const RCPtr<AssetObject>& asset)
     {
         return GetPathById(asset.GetHandle());
     }
@@ -202,7 +203,7 @@ namespace pulsared
     }
 
 
-    void AssetDatabase::ResolveDirty(RCPtr<AssetObject> asset) noexcept
+    void AssetDatabase::ResolveDirty(const RCPtr<AssetObject>& asset) noexcept
     {
         auto it = _DirtyObjects.find(asset.GetHandle());
         if (it != _DirtyObjects.end())
@@ -211,7 +212,7 @@ namespace pulsared
         }
     }
 
-    bool AssetDatabase::ExistsAsset(RCPtr<AssetObject> asset)
+    bool AssetDatabase::ExistsAsset(const RCPtr<AssetObject>& asset)
     {
         return !GetPathByAsset(asset).empty();
     }
@@ -223,7 +224,7 @@ namespace pulsared
         ResolveDirty(id);
     }
 
-    void AssetDatabase::Save(RCPtr<AssetObject> asset)
+    void AssetDatabase::Save(const RCPtr<AssetObject>& asset)
     {
         if (!asset)
             return;
@@ -280,9 +281,22 @@ namespace pulsared
     void AssetDatabase::NewAsset(string_view folderPath, string_view assetName, Type* assetType)
     {
         Logger::Log("new asset : " + string{folderPath} + " ; " + string{assetName});
-        const auto asset = sptr_cast<AssetObject>(assetType->CreateSharedInstance({}));
-        asset->Construct();
-        CreateAsset(asset.get(), GetUniquePath(string{folderPath} + "/" + string{assetName}));
+
+        auto attr = assetType->GetAttribute<CreateAssetAttribute>(false);
+
+        RCPtr<AssetObject> asset;
+        if (attr && attr->GetInstantiatePath())
+        {
+            auto _asset = LoadAssetAtPath(attr->GetInstantiatePath());
+            asset = _asset->InstantiateAsset();
+        }
+        else
+        {
+            asset = sptr_cast<AssetObject>(assetType->CreateSharedInstance({}));
+            asset->Construct();
+        }
+
+        CreateAsset(asset, GetUniquePath(string{folderPath} + "/" + string{assetName}));
     }
 
     static void _WriteAssetToDisk(
@@ -302,7 +316,7 @@ namespace pulsared
         // FileUtil::WriteAllText(newAsset->PhysicsPath, json);
     }
 
-    bool AssetDatabase::CreateAsset(RCPtr<AssetObject> asset, string_view path)
+    bool AssetDatabase::CreateAsset(const RCPtr<AssetObject>& asset, string_view path)
     {
         if (ExistsAsset(asset))
         {
@@ -350,7 +364,7 @@ namespace pulsared
             nodes.push_back(node);
         }
 
-        for (auto node : nodes)
+        for (const auto& node : nodes)
         {
             string packageName = node->GetPackageName();
             string assetPath = node->AssetPath;
@@ -446,7 +460,7 @@ namespace pulsared
     array_list<string> AssetDatabase::FindAssets(const AssetFilter& filter)
     {
         array_list<string> ret;
-        for (auto package : FileTree->GetChildren())
+        for (const auto& package : FileTree->GetChildren())
         {
             _FindAssets(ret, package.get(), filter);
         }
@@ -460,14 +474,14 @@ namespace pulsared
         filter.FolderPath = folderPath;
         return FindAssets(filter);
     }
-    static bool _IsEmptyFolder(AssetFileNodePtr folderNode)
+    static bool _IsEmptyFolder(const AssetFileNodePtr& folderNode)
     {
         if (folderNode == nullptr)
         {
             return false;
         }
 
-        for (auto child : folderNode->GetChildren())
+        for (const auto& child : folderNode->GetChildren())
         {
             if (!child->IsFolder || !_IsEmptyFolder(child))
             {
@@ -547,12 +561,12 @@ namespace pulsared
         return _RenameAsset(srcAsset, dstAsset);
     }
 
-    void AssetDatabase::MarkDirty(RCPtr<AssetObject> asset) noexcept
+    void AssetDatabase::MarkDirty(const RCPtr<AssetObject>& asset) noexcept
     {
         _DirtyObjects.insert(asset);
     }
 
-    bool AssetDatabase::IsDirty(RCPtr<AssetObject> asset) noexcept
+    bool AssetDatabase::IsDirty(const RCPtr<AssetObject>& asset) noexcept
     {
         return _DirtyObjects.contains(asset);
     }

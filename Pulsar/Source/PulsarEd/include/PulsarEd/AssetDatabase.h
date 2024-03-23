@@ -84,16 +84,16 @@ namespace pulsared
         static RCPtr<AssetObject> LoadAssetById(ObjectHandle id);
         static bool ExistsAssetPath(string_view path);
         static string GetPathById(ObjectHandle id);
-        static string GetPathByAsset(RCPtr<AssetObject> asset);
+        static string GetPathByAsset(const RCPtr<AssetObject>& asset);
         static ObjectHandle GetIdByPath(string_view path);
         static string GetUniquePath(string_view path);
 
-        static bool ExistsAsset(RCPtr<AssetObject> asset);
+        static bool ExistsAsset(const RCPtr<AssetObject>& asset);
         static void ReloadAsset(ObjectHandle id);
-        static void Save(RCPtr<AssetObject> asset);
+        static void Save(const RCPtr<AssetObject>& asset);
         static void SaveAll();
         static void NewAsset(string_view folderPath, string_view assetName, Type* assetType);
-        static bool CreateAsset(RCPtr<AssetObject> asset, string_view path);
+        static bool CreateAsset(const RCPtr<AssetObject>& asset, string_view path);
         // Delete assets without folder
         static bool DeleteAssets(const array_list<string>& assetPaths, array_list<string>* errinfo = nullptr);
         // Only empty folders can be deleted
@@ -106,9 +106,9 @@ namespace pulsared
 
         static bool Rename(string_view srcAsset, string_view dstAsset);
 
-        static void MarkDirty(RCPtr<AssetObject> asset) noexcept;
-        static bool IsDirty(RCPtr<AssetObject> asset) noexcept;
-        static void ResolveDirty(RCPtr<AssetObject> asset) noexcept;
+        static void MarkDirty(const RCPtr<AssetObject>& asset) noexcept;
+        static bool IsDirty(const RCPtr<AssetObject>& asset) noexcept;
+        static void ResolveDirty(const RCPtr<AssetObject>& asset) noexcept;
 
 
         static inline const char* FileTreeRootPath = "Packages";

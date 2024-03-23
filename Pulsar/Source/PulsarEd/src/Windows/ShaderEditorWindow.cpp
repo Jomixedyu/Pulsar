@@ -113,6 +113,56 @@ namespace pulsared
                 m_assetObject.GetPtr());
         }
 
+        if (PImGui::PropertyGroup("Shader Features"))
+        {
+            array_list<uint8_t> bools;
+            array_list<size_t> changedIndex;
+            bools.reserve(shader->GetConfig()->FeatureDeclare->size());
+            for (auto& feature : *shader->GetConfig()->FeatureDeclare)
+            {
+                if (std::ranges::contains(shader->GetFeatureOptions(), feature))
+                {
+                    bools.push_back(true);
+                }
+                else
+                {
+                    bools.push_back(false);
+                }
+            }
+
+            if (PImGui::BeginPropertyLines())
+            {
+                for (int i = 0; i < shader->GetConfig()->FeatureDeclare->size(); ++i)
+                {
+                    auto& item = shader->GetConfig()->FeatureDeclare->at(i);
+                    auto boolObj = mkbox((bool)bools.at(i));
+                    if (PImGui::PropertyLine(item, cltypeof<Boolean>(), boolObj.get()))
+                    {
+                        bools.at(i) = boolObj->get_unboxing_value();
+                        changedIndex.push_back(i);
+                    }
+                }
+                PImGui::EndPropertyLines();
+            }
+
+            for (size_t index : changedIndex)
+            {
+                auto& name = shader->GetConfig()->FeatureDeclare->at(index);
+                if (bools.at(index))
+                {
+                    shader->GetFeatureOptions().push_back(name);
+                }
+                else
+                {
+                    std::erase(shader->GetFeatureOptions(), name);
+                }
+            }
+            if (!changedIndex.empty())
+            {
+                AssetDatabase::MarkDirty(shader);
+            }
+        }
+
         if (PImGui::PropertyGroup("Compiled"))
         {
             string apis;
@@ -121,10 +171,10 @@ namespace pulsared
                 apis += gfx::to_string(api);
                 apis += ";";
             }
-            if (PImGui::BeginPropertyLine())
+            if (PImGui::BeginPropertyLines())
             {
                 PImGui::PropertyLineText("Platforms", apis);
-                PImGui::EndPropertyLine();
+                PImGui::EndPropertyLines();
             }
         }
     }

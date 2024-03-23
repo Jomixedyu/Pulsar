@@ -104,6 +104,7 @@ namespace pulsar
             }
         }
     }
+
     void StaticMeshRenderObject::OnCreateResource()
     {
         if (MeshDescriptorSetLayout.expired())
@@ -127,6 +128,10 @@ namespace pulsar
 
         SubmitChange();
     }
+
+
+
+
 
     SPtr<rendering::RenderObject> StaticMeshRendererComponent::CreateRenderObject()
     {
@@ -165,14 +170,20 @@ namespace pulsar
             OnMaterialChanged();
         }
     }
-    Box3f StaticMeshRendererComponent::CalcBoudingBox() const
+    StaticMeshRendererComponent::StaticMeshRendererComponent() :
+        CORELIB_INIT_INTERFACE(IRendererComponent)
     {
-        if (!m_staticMesh)
-            return {};
-        Box3f box;
-        box.Min = GetTransform()->GetLocalToWorldMatrix() * m_staticMesh->GetBounds().Min;
-        box.Max = GetTransform()->GetLocalToWorldMatrix() * m_staticMesh->GetBounds().Max;
-        return box;
+        init_sptr_member(m_materials);
+    }
+
+    Bounds3f StaticMeshRendererComponent::GetBounds()
+    {
+        auto box = m_staticMesh->GetBounds().GetBox();
+        auto mat = GetTransform()->GetLocalToWorldMatrix();
+        box.Min = mat * box.Min;
+        box.Max = mat * box.Max;
+
+        return Bounds3f{ box };
     }
 
     void StaticMeshRendererComponent::SetStaticMesh(RCPtr<StaticMesh> staticMesh)

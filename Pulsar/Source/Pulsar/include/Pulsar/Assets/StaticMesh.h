@@ -49,6 +49,8 @@ namespace pulsar
             string_view name,
             array_list<StaticMeshSection>&& vertData,
             array_list<string>&& materialNames);
+
+        void CalcBounds();
     protected:
         virtual void OnInstantiateAsset(AssetObject* obj) override;
     public:
@@ -60,7 +62,7 @@ namespace pulsar
         const array_list<string>& GetMaterialNames() const { return m_materialNames; }
         size_t GetMaterialCount() const { return m_materialNames.size(); }
 
-        Box3f GetBounds() const { return m_bounds; }
+        Bounds3f GetBounds() const { return m_bounds; }
     public:
         bool CreateGPUResource() override;
         void DestroyGPUResource() override;
@@ -75,7 +77,7 @@ namespace pulsar
         array_list<gfx::GFXBuffer_sp> m_vertexBuffers;
         array_list<gfx::GFXBuffer_sp> m_indicesBuffers;
 
-        Box3f m_bounds{};
+        Bounds3f m_bounds{};
     };
     DECL_PTR(StaticMesh);
 

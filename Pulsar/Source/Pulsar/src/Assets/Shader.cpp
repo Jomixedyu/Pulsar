@@ -24,22 +24,24 @@ namespace pulsar
         self->SetName(name);
         self->m_shaderSource = std::move(pass);
 
+        self->SetReady(true);
+
         return self.get();
     }
 
-    // static size_t BeginBinaryField(std::iostream& stream, bool write, string& name)
-    // {
-    //     auto pos = stream.tellp();
-    //     sser::ReadWriteStream(stream, write, name);
-    //     return pos;
-    // }
-    // static void EndBinaryField(std::iostream& stream, bool write, std::streampos start)
-    // {
-    //     auto pos = stream.tellp();
-    //     stream.seekp(start);
-    //     size_t size = pos - start;
-    //     sser::ReadWriteStream(stream, write, size);
-    // }
+
+    void Shader::OnInstantiateAsset(AssetObject* obj)
+    {
+        base::OnInstantiateAsset(obj);
+        Shader* self = static_cast<Shader*>(obj);
+
+        self->m_shaderSource = m_shaderSource;
+        self->m_featureOptions = m_featureOptions;
+        *self->m_passName = *m_passName;
+        *self->m_preDefines = *m_preDefines;
+        self->Initialize();
+    }
+
     Shader::Shader()
     {
         init_sptr_member(m_passName);
@@ -49,14 +51,20 @@ namespace pulsar
     void Shader::Serialize(AssetSerializer* s)
     {
         base::Serialize(s);
+
+        if (s->ExistStream)
+        {
+            ReadWriteStream(s->Stream, s->IsWrite, m_shaderSource);
+        }
+
         if (!s->IsWrite) // read
         {
             m_preDefines->clear();
+            m_featureOptions.clear();
 
             auto passes = s->Object->At("Passes");
             *m_passName = passes->AsString();
 
-            m_shaderConfig = ser::JsonSerializer::Deserialize<ShaderPassConfig>(s->Object->At("Config")->ToString());
             Initialize();
         }
         else
@@ -66,17 +74,9 @@ namespace pulsar
 
             s->Object->Add("Passes", passNameString);
 
-            auto config = s->Object->New(ser::VarientType::Object);
-            config->AssignParse(ser::JsonSerializer::Serialize(m_shaderConfig.get(), {}));
-            s->Object->Add("Config", config);
-
-
         }
 
-        if (s->ExistStream)
-        {
-            ReadWriteStream(s->Stream, s->IsWrite, m_shaderSource);
-        }
+
     }
 
     void Shader::OnDestroy()
@@ -111,12 +111,7 @@ namespace pulsar
     }
     bool Shader::HasSupportedApiData(gfx::GFXApi api) const
     {
-        for (auto& [k, v] : m_shaderSource.ApiMaps)
-        {
-            if (k == api)
-                return true;
-        }
-        return false;
+        return std::ranges::any_of(m_shaderSource.ApiMaps, [=](auto& p){ return p.first == api; });
     }
     array_list<index_string> Shader::GetPropertyNames() const
     {
@@ -192,8 +187,46 @@ namespace pulsar
         return ret;
     }
 
+    void Shader::SetReady(bool b)
+    {
+        if (m_isReady == b) return;
+        m_isReady = b;
+        if (b)
+        {
+            RuntimeObjectManager::NotifyDependObjects(GetObjectHandle(), DependencyObjectState::Reload);
+        }
+        else
+        {
+            RuntimeObjectManager::NotifyDependObjects(GetObjectHandle(), DependencyObjectState::Unload);
+        }
+    }
     void Shader::Initialize()
     {
+        const auto currentApi = Application::GetGfxApp()->GetApiType();
+        if (!m_shaderSource.ApiMaps.contains(currentApi))
+        {
+            SetReady(false);
+            return;
+        }
+
+        auto configJson = m_shaderSource.ApiMaps.at(currentApi).Config;
+        if (configJson.empty())
+        {
+            SetReady(false);
+            return;
+        }
+        try
+        {
+            m_shaderConfig = ser::JsonSerializer::Deserialize<ShaderPassConfig>(configJson);
+        }
+        catch(const std::exception&)
+        {
+            SetReady(false);
+            return;
+        }
+
+        SetReady(true);
+
         auto config = GetConfig();
 
         if (config->ConstantProperties)
@@ -236,6 +269,7 @@ namespace pulsar
                 m_propertyInfo.insert({index_string{item->Name}, prop});
             }
         }
+
 
 
     }

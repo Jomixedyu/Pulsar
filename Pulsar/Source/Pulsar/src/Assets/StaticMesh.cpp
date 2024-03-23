@@ -88,11 +88,48 @@ namespace pulsar
         return layout.lock();
     }
 
+    static ser::VarientRef NewVectorObject(const ser::VarientRef& ctx, Vector3f vec)
+    {
+        auto obj = ctx->New(ser::VarientType::Object);
+        obj->Add("x", vec.x);
+        obj->Add("y", vec.y);
+        obj->Add("z", vec.z);
+        return obj;
+    }
+    static Vector3f GetVectorObject(const ser::VarientRef& var)
+    {
+        float x = var->At("x")->AsFloat();
+        float y = var->At("y")->AsFloat();
+        float z = var->At("z")->AsFloat();
+        return {x, y, z};
+    }
+
     void StaticMesh::Serialize(AssetSerializer* s)
     {
         base::Serialize(s);
         sser::ReadWriteStream(s->Stream, s->IsWrite, m_sections);
-        sser::ReadWriteStream(s->Stream, s->IsWrite, m_materialNames);
+        if (s->IsWrite)
+        {
+            auto materialNames = s->Object->New(ser::VarientType::Array);
+            for (auto& name : m_materialNames)
+            {
+                materialNames->Push(name);
+            }
+            s->Object->Add("MaterialNames", materialNames);
+
+        }
+        else
+        {
+            m_sections.clear();
+            m_materialNames.clear();
+
+            auto materialNames = s->Object->At("MaterialNames");
+            for (int i = 0; i < materialNames->GetCount(); ++i)
+            {
+                m_materialNames.push_back(materialNames->At(i)->AsString());
+            }
+
+        }
     }
 
 
@@ -107,37 +144,38 @@ namespace pulsar
         self->m_sections = std::move(vertData);
         self->m_materialNames = std::move(materialNames);
 
-        Box3f box{};
-        bool init = false;
-        for (auto& data : vertData)
-        {
-            for (uint32_t index : data.Indices)
-            {
-                //min max
-                auto& v = data.Vertex[index].Position;
-                if (!init)
-                {
-                    box.Min = v;
-                    box.Max = v;
-                    init = true;
-                    continue;
-                }
-                if (v.x <= box.Min.x && v.y <= box.Min.y && v.z <= box.Min.z)
-                {
-                    box.Min = v;
-                }
-                else if (v.x >= box.Max.x && v.y >= box.Max.y && v.z >= box.Max.z)
-                {
-                    box.Max = v;
-                }
-            }
-        }
-
-        self->m_bounds = box;
+        self->CalcBounds();
 
         return self;
     }
+    void StaticMesh::CalcBounds()
+    {
+        Box3f box{};
+        bool init = false;
+        for (auto& section : m_sections)
+        {
+            for (uint32_t index : section.Indices)
+            {
+                // min max
+                auto& pos = section.Vertex[index].Position;
+                if (!init)
+                {
+                    box.Min = pos;
+                    box.Max = pos;
+                    init = true;
+                    continue;
+                }
+                if (pos.x < box.Min.x) box.Min.x = pos.x;
+                if (pos.y < box.Min.y) box.Min.y = pos.y;
+                if (pos.z < box.Min.z) box.Min.z = pos.z;
+                if (pos.x > box.Min.x) box.Max.x = pos.x;
+                if (pos.y > box.Min.y) box.Max.y = pos.y;
+                if (pos.z > box.Min.z) box.Max.z = pos.z;
+            }
+        }
 
+        m_bounds = Bounds3f{box};
+    }
 
     std::iostream& ReadWriteStream(std::iostream& stream, bool isWrite, StaticMeshVertex& data)
     {

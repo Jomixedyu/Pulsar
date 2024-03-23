@@ -323,6 +323,9 @@ namespace jxcorlib
         bool IsSharedInstanceOfType(const SPtr<Object>& ptr) const;
         bool IsSubclassOf(const Type* type) const;
 
+        template <typename T>
+        SPtr<T> GetAttribute(bool inherit = true) { return sptr_static_cast<T>(GetAttribute(T::StaticType(), inherit)); }
+
         SPtr<Attribute>             GetAttribute(Type* type, bool inherit = true);
         array_list<SPtr<Attribute>> GetAttributes(Type* type, bool inherit = true);
         bool                        IsDefinedAttribute(Type* type, bool inherit = true);

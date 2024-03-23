@@ -23,6 +23,12 @@
             "type":"string",
             "enum": ["OpaqueForward", "OpaqueDeferred", "Transparency", "PostProcessing"]
         },
+        "FeatureDeclare": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
         "ConstantProperties": {
             "type":"array",
             "items": {
@@ -52,20 +58,6 @@
                     "Type": {
                         "type":"string",
                         "enum": ["Texture2D"]
-                    }
-                }
-            }
-        },
-        "Features" : {
-            "type":"array",
-            "items": {
-                "type":"object",
-                "properties": {
-                    "Name": {
-                        "type":"string"
-                    },
-                    "Default" : {
-                        "type":"boolean"
                     }
                 }
             }

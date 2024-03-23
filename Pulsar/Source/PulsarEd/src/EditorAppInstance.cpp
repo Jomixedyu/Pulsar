@@ -380,6 +380,26 @@ namespace pulsared
         return curPath / p;
     }
 
+    static void PreCompileShaders()
+    {
+        array_list<string_view> PreCompileShaderPaths = {
+            "Engine/Shaders/Missing"
+        };
+        if (PreCompileShaderPaths.empty())
+        {
+            return;
+        }
+        for (auto& element : AssetDatabase::FindAssets(cltypeof<Shader>()))
+        {
+            if (std::ranges::contains(PreCompileShaderPaths, element))
+            {
+                auto asset = cref_cast<Shader>(AssetDatabase::LoadAssetAtPath(element));
+                assert(asset);
+                ShaderCompiler::CompileShader(asset.GetPtr(), {gfx::GFXApi::Vulkan}, {}, {});
+            }
+        }
+    }
+
     void EditorAppInstance::OnInitialized()
     {
         m_assetManager = new EditorAssetManager;
@@ -393,11 +413,7 @@ namespace pulsared
         AssetDatabase::AddPackage("Editor");
 
         // recompile obsolete shaders
-        // for (auto element : AssetDatabase::FindAssets(cltypeof<Shader>()))
-        // {
-        //     auto asset = AssetDatabase::LoadAssetAtPath(element);
-        //     ShaderCompiler::CompileShader(asset, {gfx::GFXApi::Vulkan}, {}, {});
-        // }
+        PreCompileShaders();
 
         // world
         Logger::Log("initialize world");
@@ -424,7 +440,6 @@ namespace pulsared
         _RegisterIcon(cltypeof<Shader>(), "Editor/Icons/shader.png");
         _RegisterIcon(cltypeof<Material>(), "Editor/Icons/material.png");
         _RegisterIcon(cltypeof<StaticMesh>(), "Editor/Icons/staticmesh.png");
-        _RegisterIcon(cltypeof<AssetObject>(), "Editor/Icons/PreviewFrame.png");
         _RegisterIcon(cltypeof<Texture2D>(), "Editor/Icons/texture.png");
         _RegisterIcon(cltypeof<Prefab>(), "Editor/Icons/prefab.png");
         _RegisterIcon("WorkspaceWindow.Dirty", "Editor/Icons/Star.png");

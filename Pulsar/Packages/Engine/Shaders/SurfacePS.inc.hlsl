@@ -33,11 +33,17 @@ struct PointLight
 
 MaterialAttributes SurfacePixelMain(InPixelAssembly s);
 
+#include "SMLit.inc.hlsl"
 
 float4 CalcLighting(MaterialAttributes attr)
 {
     float4 color = float4(0,1,1,1);
+    [branch]
     if (attr.ShadingModel & SHADING_MODEL_UNLIT)
+    {
+        color = float4(attr.EmissiveColor, 1);
+    }
+    else if(attr.ShadingModel & SHADING_MODEL_LIT)
     {
         color = float4(attr.EmissiveColor, 1);
     }

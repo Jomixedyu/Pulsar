@@ -239,7 +239,7 @@ namespace pulsared
         {
             if (PImGui::PropertyGroup("AttrType"))
             {
-                if (PImGui::BeginPropertyLine())
+                if (PImGui::BeginPropertyLines())
                 {
                     for (int i = 0; i < m_selected->AttributeType.size(); ++i)
                     {
@@ -247,7 +247,7 @@ namespace pulsared
                         PImGui::PropertyLineText(std::to_string(i).c_str(), item.c_str());
                     }
 
-                    PImGui::EndPropertyLine();
+                    PImGui::EndPropertyLines();
                 }
             }
 

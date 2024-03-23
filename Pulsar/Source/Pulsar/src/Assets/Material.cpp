@@ -42,13 +42,8 @@ namespace pulsar
             return true;
         }
 
-        RCPtr<Shader> shader = m_shader;
+        RCPtr<Shader> shader = m_submitShader;
         TryLoadAssetRCPtr(shader);
-        assert(shader);
-        // if (!m_shader)
-        // {
-        //     shader = GetAssetManager()->LoadAsset<Shader>(BuiltinAsset::Shader_Missing);
-        // }
 
         m_createdGpuResource = true;
 
@@ -77,7 +72,7 @@ namespace pulsar
         // create constant layouts and constant buffer
         array_list<gfx::GFXDescriptorSetLayoutInfo> descLayoutInfos;
 
-        const auto cbufferSize = m_shader->GetConstantBufferSize();
+        const auto cbufferSize = m_submitShader->GetConstantBufferSize();
 
         // create constant buffer
         if (cbufferSize)
@@ -158,12 +153,20 @@ namespace pulsar
         base::OnDependencyMessage(inDependency, msg);
         if (EnumHasFlag(msg, DependencyObjectState::Reload))
         {
-            SetShader(inDependency);
+            ActiveShader();
         }
         else if (EnumHasFlag(msg, DependencyObjectState::Unload))
         {
-            SetShader(nullptr);
+            InactiveShader();
         }
+    }
+    void Material::ActiveShader()
+    {
+        m_submitShader = m_shader;
+    }
+    void Material::InactiveShader()
+    {
+        m_submitShader = GetAssetManager()->LoadAsset<Shader>(BuiltinAsset::Shader_Missing);
     }
 
     static ser::VarientRef NewVectorObject(const ser::VarientRef& ctx, Vector4f vec)
@@ -274,6 +277,7 @@ namespace pulsar
         base::OnInstantiateAsset(obj);
         auto self = static_cast<Material*>(obj);
         self->m_parameterValues = m_parameterValues;
+        self->m_renderQueue = m_renderQueue;
         self->SetShader(m_shader);
     }
 
@@ -361,6 +365,11 @@ namespace pulsar
 
     void Material::SubmitParameters(bool force)
     {
+        if (m_submitShader != m_shader)
+        {
+            return;
+        }
+
         if (!m_isDirtyParameter && !force)
         {
             return;
@@ -458,17 +467,26 @@ namespace pulsar
 
     void Material::SetShader(RCPtr<Shader> value)
     {
+        TryLoadAssetRCPtr(value);
         if (m_shader)
         {
             RuntimeObjectManager::RemoveDependList(GetObjectHandle(), m_shader->GetObjectHandle());
         }
 
         m_shader = std::move(value);
-        if (m_shader == nullptr)
+        if (m_shader)
         {
-            m_shader = GetAssetManager()->LoadAsset<Shader>(BuiltinAsset::Shader_Missing);
+            RuntimeObjectManager::AddDependList(GetObjectHandle(), m_shader->GetObjectHandle());
         }
-        RuntimeObjectManager::AddDependList(GetObjectHandle(), m_shader->GetObjectHandle());
+
+        if (m_shader == nullptr || !m_shader->IsReady())
+        {
+            InactiveShader();
+        }
+        else
+        {
+            ActiveShader();
+        }
 
         if (m_createdGpuResource)
         {

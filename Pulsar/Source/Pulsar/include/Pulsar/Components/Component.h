@@ -57,7 +57,8 @@ namespace pulsar
         array_list<ObjectHandle> GetReferenceHandles() const;
         virtual bool get_is_tickable() const { return true; }
         void SendMessage(MessageId msgid);
-        virtual Box3f CalcBoudingBox() const { return {}; }
+        virtual Bounds3f GetBounds() { return {}; }
+        virtual bool HasBounds() const { return false; }
     protected:
         virtual void OnReceiveMessage(MessageId id);
     public:
