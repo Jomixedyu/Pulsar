@@ -24,6 +24,10 @@ namespace pulsared
         }
 
         // todo
+        auto traceStart = ray.Origin;
+        auto traceEnd = ray.Origin + ray.Direction * 1000000.0f;
+
+
 
         return false;
     }
