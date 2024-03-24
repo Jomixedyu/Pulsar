@@ -5,7 +5,7 @@
 #include <Pulsar/Application.h>
 #include <Pulsar/Assets/Material.h>
 #include <Pulsar/Assets/StaticMesh.h>
-#include <Pulsar/Components/MeshContainerComponent.h>
+#include <Pulsar/Components/MeshRendererComponent.h>
 #include <Pulsar/Components/StaticMeshRendererComponent.h>
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>

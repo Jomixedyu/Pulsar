@@ -3,6 +3,7 @@
 #include "Pulsar/Application.h"
 
 #include "Component.h"
+#include "MeshRendererComponent.h"
 #include "RendererComponent.h"
 #include <Pulsar/Assets/Material.h>
 #include <Pulsar/Assets/StaticMesh.h>
@@ -16,9 +17,9 @@ namespace pulsar
     class ShaderPass;
     class StaticMeshRenderObject;
 
-    class StaticMeshRendererComponent : public Component, public IRendererComponent
+    class StaticMeshRendererComponent : public MeshRendererComponent, public IRendererComponent
     {
-        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::StaticMeshRendererComponent, Component);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::StaticMeshRendererComponent, MeshRendererComponent);
         CORELIB_IMPL_INTERFACES(IRendererComponent);
     public:
         SPtr<rendering::RenderObject> CreateRenderObject() override;

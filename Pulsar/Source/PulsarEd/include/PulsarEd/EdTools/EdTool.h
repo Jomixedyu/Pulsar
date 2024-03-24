@@ -12,6 +12,7 @@ namespace pulsared
         virtual void Begin() {}
         virtual void Tick(float dt) {}
         virtual void End(){}
+        [[always_inline]] EditorWorld* GetWorld() const noexcept { return m_world; }
     protected:
         EditorWorld* m_world{};
     };

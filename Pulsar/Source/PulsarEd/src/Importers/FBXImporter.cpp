@@ -3,11 +3,11 @@
 #include "Pulsar/Prefab.h"
 #include "Pulsar/Scene.h"
 
+#include <Pulsar/Assets/NodeCollection.h>
 #include <Pulsar/Assets/StaticMesh.h>
-#include <Pulsar/Components/MeshContainerComponent.h>
+#include <Pulsar/Components/MeshRendererComponent.h>
 #include <Pulsar/Components/StaticMeshRendererComponent.h>
 #include <PulsarEd/AssetDatabase.h>
-#include <Pulsar/Assets/NodeCollection.h>
 #include <fbxsdk.h>
 
 #ifdef IOS_REF

@@ -1,7 +1,7 @@
 #include "Components/StaticMeshRendererComponent.h"
 
 #include "AssetManager.h"
-#include "Components/MeshContainerComponent.h"
+#include "Components/MeshRendererComponent.h"
 #include <Pulsar/Application.h>
 #include <Pulsar/Logger.h>
 #include <Pulsar/Rendering/RenderContext.h>

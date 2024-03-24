@@ -99,10 +99,31 @@ namespace pulsar
         ObjectPtr<T>         GetComponent() { return this->GetComponent(cltypeof<T>()); }
         ObjectPtr<Component> GetComponent(Type* type) const;
 
-
         void                                    GetAllComponents(array_list<ObjectPtr<Component>>& list);
         const array_list<ObjectPtr<Component>>& GetAllComponentArray() const;
         size_t                                  GetComponentCount() const { return this->m_components->size(); }
+
+        template <baseof_component_concept T>
+        void GetComponents(array_list<ObjectPtr<T>>& array) const
+        {
+            for (const auto& item : *this->m_components)
+            {
+                if (cltypeof<T>()->IsInstanceOfType(item.GetPtr()))
+                {
+                   array.push_back(item);
+                }
+            }
+        }
+
+        template<baseof_component_concept T>
+        void GetComponentsInChildren(array_list<ObjectPtr<T>>& array) const
+        {
+            GetComponents(array);
+            for (const auto& item : *GetTransform()->GetChildren())
+            {
+                item->GetAttachedNode()->GetComponentsInChildren(array);
+            }
+        }
 
     protected:
         void BeginComponent(Component_ref component);
