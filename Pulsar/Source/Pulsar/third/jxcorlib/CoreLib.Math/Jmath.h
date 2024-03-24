@@ -131,6 +131,7 @@ namespace jmath
         T x, y, z;
 
         constexpr Vector3() = default;
+        constexpr Vector3(T t) : x(t), y(t), z(t) {}
         constexpr Vector3(T _x, T _y, T _z) : x(_x), y(_y), z(_z) {}
 
         const T* get_value_ptr() const { return &this->x; }

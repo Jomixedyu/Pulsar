@@ -1,5 +1,6 @@
 #include "Assets/Material.h"
 #include "Application.h"
+#include "AssetSerializerUtil.h"
 #include "Assets/StaticMesh.h"
 #include "Assets/Texture2D.h"
 #include "BuiltinAsset.h"
@@ -127,7 +128,6 @@ namespace pulsar
             }
         }
 
-
         SubmitParameters(true);
         return true;
     }
@@ -169,24 +169,6 @@ namespace pulsar
         m_submitShader = GetAssetManager()->LoadAsset<Shader>(BuiltinAsset::Shader_Missing);
     }
 
-    static ser::VarientRef NewVectorObject(const ser::VarientRef& ctx, Vector4f vec)
-    {
-        auto obj = ctx->New(ser::VarientType::Object);
-        obj->Add("x", vec.x);
-        obj->Add("y", vec.y);
-        obj->Add("z", vec.z);
-        obj->Add("w", vec.w);
-        return obj;
-    }
-    static Vector4f GetVectorObject(const ser::VarientRef& var)
-    {
-        float x = var->At("x")->AsFloat();
-        float y = var->At("y")->AsFloat();
-        float z = var->At("z")->AsFloat();
-        float w = var->At("w")->AsFloat();
-        return {x, y, z, w};
-    }
-
     void Material::Serialize(AssetSerializer* s)
     {
         if (s->IsWrite)
@@ -212,7 +194,7 @@ namespace pulsar
                     break;
                 case ShaderParameterType::Vector:
                     paramValue = parameter->New(ser::VarientType::Object);
-                    paramValue->Assign(NewVectorObject(parameter, value.AsVector()));
+                    paramValue->Assign(AssetSerializerUtil::NewObject(parameter, value.AsVector()));
                     break;
                 case ShaderParameterType::Texture2D:
                     paramValue = parameter->New(ser::VarientType::String);
@@ -225,46 +207,48 @@ namespace pulsar
             }
             s->Object->Add("Parameters", parametersArray);
         }
-        else //read
+        else // read
         {
             // parameters
-            auto parameterObject = s->Object->At("Parameters");
-            auto parametersCount = parameterObject->GetCount();
-            for (int i = 0; i < parametersCount; ++i)
+            if (auto parameterObject = s->Object->At("Parameters"))
             {
-                auto parameter = parameterObject->At(i);
-                auto name = parameter->At("Name")->AsString();
-                auto typestr = parameter->At("Type")->AsString();
-                auto valueObject = parameter->At("Value");
 
-                uint32_t typenum{};
-
-                Enum::StaticTryParse(cltypeof<BoxingShaderParameterType>(), typestr, &typenum);
-                ShaderParameterType type = static_cast<ShaderParameterType>(typenum);
-
-                MaterialParameterValue paramValue{};
-                switch (type)
+                auto parametersCount = parameterObject->GetCount();
+                for (int i = 0; i < parametersCount; ++i)
                 {
-                case ShaderParameterType::IntScalar:
-                    paramValue.SetValue(valueObject->AsInt());
-                    break;
-                case ShaderParameterType::Scalar:
-                    paramValue.SetValue(valueObject->AsFloat());
-                    break;
-                case ShaderParameterType::Vector:
-                    paramValue.SetValue(GetVectorObject(valueObject));
-                    break;
-                case ShaderParameterType::Texture2D: {
-                    RCPtr<Texture2D> tex = ObjectHandle::parse(valueObject->AsString());
-                    // RCPtr<Texture2D> tex = GetAssetManager()->LoadAssetById(handle);
-                    paramValue.SetValue(tex);
-                    break;
-                }
-                default:;
-                }
-                m_parameterValues.insert({index_string{name}, paramValue});
-            }
+                    auto parameter = parameterObject->At(i);
+                    auto name = parameter->At("Name")->AsString();
+                    auto typestr = parameter->At("Type")->AsString();
+                    auto valueObject = parameter->At("Value");
 
+                    uint32_t typenum{};
+
+                    Enum::StaticTryParse(cltypeof<BoxingShaderParameterType>(), typestr, &typenum);
+                    ShaderParameterType type = static_cast<ShaderParameterType>(typenum);
+
+                    MaterialParameterValue paramValue{};
+                    switch (type)
+                    {
+                    case ShaderParameterType::IntScalar:
+                        paramValue.SetValue(valueObject->AsInt());
+                        break;
+                    case ShaderParameterType::Scalar:
+                        paramValue.SetValue(valueObject->AsFloat());
+                        break;
+                    case ShaderParameterType::Vector:
+                        paramValue.SetValue(AssetSerializerUtil::GetVector4Object(valueObject));
+                        break;
+                    case ShaderParameterType::Texture2D: {
+                        RCPtr<Texture2D> tex = ObjectHandle::parse(valueObject->AsString());
+                        // RCPtr<Texture2D> tex = GetAssetManager()->LoadAssetById(handle);
+                        paramValue.SetValue(tex);
+                        break;
+                    }
+                    default:;
+                    }
+                    m_parameterValues.insert({index_string{name}, paramValue});
+                }
+            }
             // shader
             auto shaderObject = ObjectHandle::parse(s->Object->At("Shader")->AsString());
             auto shader = GetAssetManager()->LoadAssetById(shaderObject);
@@ -281,8 +265,7 @@ namespace pulsar
         self->SetShader(m_shader);
     }
 
-
-    #pragma region MaterialParameters
+#pragma region MaterialParameters
     void Material::SetIntScalar(const index_string& name, int value)
     {
         m_parameterValues[name].SetValue(value);
@@ -360,8 +343,7 @@ namespace pulsar
         }
         return it->second.AsTexture();
     }
-    #pragma endregion
-
+#pragma endregion
 
     void Material::SubmitParameters(bool force)
     {
@@ -382,7 +364,7 @@ namespace pulsar
 
         m_bufferData.resize(cbufferSize);
 
-        //assign buffer and descriptor
+        // assign buffer and descriptor
         for (auto& name : m_shader->GetPropertyNames())
         {
             auto& prop = *m_shader->GetPropertyInfo(name);
@@ -444,7 +426,6 @@ namespace pulsar
             m_materialConstantBuffer->Fill(m_bufferData.data());
             m_descriptorSet->Find("ConstantProperties")->SetConstantBuffer(m_materialConstantBuffer.get());
         }
-
 
         m_isDirtyParameter = false;
         m_descriptorSet->Submit();

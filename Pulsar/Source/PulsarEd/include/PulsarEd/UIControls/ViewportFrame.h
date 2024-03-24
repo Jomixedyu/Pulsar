@@ -26,7 +26,6 @@ namespace pulsared
         Vector2f m_viewportSize{};
         gfx::GFXDescriptorSetLayout_sp m_descriptorLayout;
         gfx::GFXDescriptorSet_sp m_descriptorSet;
-        std::unique_ptr<EdTool> m_tool = nullptr;
     };
 
     class SceneEditorViewportFrame : public ViewportFrame

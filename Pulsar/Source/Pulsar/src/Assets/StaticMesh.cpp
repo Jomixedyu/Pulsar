@@ -1,6 +1,7 @@
 ﻿#include "Assets/StaticMesh.h"
 
 #include "Application.h"
+#include "AssetSerializerUtil.h"
 
 #include "EngineMath.h"
 #include <Pulsar/Assets/Shader.h>
@@ -37,19 +38,18 @@ namespace pulsar
 
     bool StaticMesh::CreateGPUResource()
     {
-        if(m_isCreatedResource)
+        if (m_isCreatedResource)
         {
             return true;
         }
         m_isCreatedResource = true;
-        for(auto& section : m_sections)
+        for (auto& section : m_sections)
         {
             auto vertSize = section.Vertex.size() * kSizeofStaticMeshVertex;
             auto vertBuffer = Application::GetGfxApp()->CreateBuffer(gfx::GFXBufferUsage::Vertex, vertSize);
             vertBuffer->Fill(section.Vertex.data());
             vertBuffer->SetElementCount(section.Vertex.size());
             m_vertexBuffers.push_back(vertBuffer);
-
 
             auto indicesSize = section.Indices.size() * sizeof(decltype(section.Indices)::value_type);
             auto indicesBuffer = Application::GetGfxApp()->CreateBuffer(gfx::GFXBufferUsage::Index, indicesSize);
@@ -61,7 +61,7 @@ namespace pulsar
     }
     void StaticMesh::DestroyGPUResource()
     {
-        if(!m_isCreatedResource)
+        if (!m_isCreatedResource)
             return;
         m_isCreatedResource = false;
 
@@ -75,7 +75,6 @@ namespace pulsar
 
     StaticMesh::~StaticMesh() = default;
 
-
     gfx::GFXVertexLayoutDescription_sp StaticMesh::StaticGetVertexLayout()
     {
         static gfx::GFXVertexLayoutDescription_wp layout;
@@ -88,25 +87,15 @@ namespace pulsar
         return layout.lock();
     }
 
-    static ser::VarientRef NewVectorObject(const ser::VarientRef& ctx, Vector3f vec)
-    {
-        auto obj = ctx->New(ser::VarientType::Object);
-        obj->Add("x", vec.x);
-        obj->Add("y", vec.y);
-        obj->Add("z", vec.z);
-        return obj;
-    }
-    static Vector3f GetVectorObject(const ser::VarientRef& var)
-    {
-        float x = var->At("x")->AsFloat();
-        float y = var->At("y")->AsFloat();
-        float z = var->At("z")->AsFloat();
-        return {x, y, z};
-    }
-
     void StaticMesh::Serialize(AssetSerializer* s)
     {
         base::Serialize(s);
+        if (!s->IsWrite)
+        {
+            m_sections.clear();
+            m_materialNames.clear();
+        }
+
         sser::ReadWriteStream(s->Stream, s->IsWrite, m_sections);
         if (s->IsWrite)
         {
@@ -117,21 +106,24 @@ namespace pulsar
             }
             s->Object->Add("MaterialNames", materialNames);
 
+            s->Object->Add("Bounds", AssetSerializerUtil::NewObject(s->Object, m_bounds));
         }
         else
         {
-            m_sections.clear();
-            m_materialNames.clear();
-
-            auto materialNames = s->Object->At("MaterialNames");
-            for (int i = 0; i < materialNames->GetCount(); ++i)
+            if (auto materialNames = s->Object->At("MaterialNames"))
             {
-                m_materialNames.push_back(materialNames->At(i)->AsString());
+                for (int i = 0; i < materialNames->GetCount(); ++i)
+                {
+                    m_materialNames.push_back(materialNames->At(i)->AsString());
+                }
             }
 
+            if (auto bound = s->Object->At("Bounds"))
+            {
+                m_bounds = AssetSerializerUtil::GetBounds3Object(bound);
+            }
         }
     }
-
 
     RCPtr<StaticMesh> StaticMesh::StaticCreate(
         string_view name,
@@ -150,7 +142,8 @@ namespace pulsar
     }
     void StaticMesh::CalcBounds()
     {
-        Box3f box{};
+        Box3f box;
+
         bool init = false;
         for (auto& section : m_sections)
         {
@@ -165,14 +158,28 @@ namespace pulsar
                     init = true;
                     continue;
                 }
-                if (pos.x < box.Min.x) box.Min.x = pos.x;
-                if (pos.y < box.Min.y) box.Min.y = pos.y;
-                if (pos.z < box.Min.z) box.Min.z = pos.z;
-                if (pos.x > box.Min.x) box.Max.x = pos.x;
-                if (pos.y > box.Min.y) box.Max.y = pos.y;
-                if (pos.z > box.Min.z) box.Max.z = pos.z;
+                if (pos.x < box.Min.x)
+                    box.Min.x = pos.x;
+                if (pos.y < box.Min.y)
+                    box.Min.y = pos.y;
+                if (pos.z < box.Min.z)
+                    box.Min.z = pos.z;
+                if (pos.x > box.Max.x)
+                    box.Max.x = pos.x;
+                if (pos.y > box.Max.y)
+                    box.Max.y = pos.y;
+                if (pos.z > box.Max.z)
+                    box.Max.z = pos.z;
             }
         }
+
+        constexpr auto minFloat = 0.00001f;
+        if (box.Min.x == box.Max.x)
+            box.Max.x = minFloat;;
+        if (box.Min.y == box.Max.y)
+            box.Max.y = minFloat;
+        if (box.Min.z == box.Max.z)
+            box.Max.z = minFloat;
 
         m_bounds = Bounds3f{box};
     }
@@ -196,4 +203,4 @@ namespace pulsar
         return stream;
     }
 
-}
+} // namespace pulsar

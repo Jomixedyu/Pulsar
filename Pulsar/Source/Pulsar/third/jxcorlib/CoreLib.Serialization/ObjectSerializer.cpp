@@ -196,6 +196,10 @@ namespace jxcorlib::ser
 
         virtual std::shared_ptr<Varient> At(const std::string& key) override
         {
+            if (!js.contains(key))
+            {
+                return nullptr;
+            }
             auto n = JSON_CAST(New());
             n->js = js[key];
             return n;

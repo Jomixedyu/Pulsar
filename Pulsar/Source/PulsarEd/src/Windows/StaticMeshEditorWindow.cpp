@@ -24,6 +24,11 @@ namespace pulsared
             if (PImGui::BeginPropertyLines())
             {
                 PImGui::PropertyLineText("Boudning Box", to_string(m_staticmesh->GetBounds().Extent));
+                if (ImGui::Button("CalcBounds"))
+                {
+                    m_staticmesh->CalcBounds();
+                    AssetDatabase::MarkDirty(m_assetObject);
+                }
                 PImGui::EndPropertyLines();
             }
         }

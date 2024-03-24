@@ -1,6 +1,7 @@
 #include "Windows/AssetPreviewEditorWindow.h"
 
 #include "Components/StdEditCameraControllerComponent.h"
+#include "EdTools/ViewEdTool.h"
 #include "EditorWorld.h"
 #include "PropertyControls/PropertyControl.h"
 #include "Pulsar/Components/DirectionalLightComponent.h"
@@ -53,6 +54,7 @@ namespace pulsared
 
         m_viewportFrame.Initialize();
         m_viewportFrame.SetWorld(m_world);
+        dynamic_cast<EditorWorld*>(m_world)->SetTool(std::make_unique<ViewEdTool>());
     }
     void AssetPreviewEditorWindow::OnClose()
     {

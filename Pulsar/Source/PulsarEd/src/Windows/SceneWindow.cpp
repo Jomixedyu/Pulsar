@@ -186,7 +186,7 @@ namespace pulsared
 
         if (m_sceneEditor)
         {
-            m_sceneEditor->Render(0);
+            m_sceneEditor->Render(dt);
         }
 
         if (ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_Q, false))
@@ -216,10 +216,6 @@ namespace pulsared
                     item->GetRuntimeOwnerScene()->RemoveNode(item);
                 }
             }
-        }
-        if (auto tool = world->GetTool())
-        {
-            tool->Tick(dt);
         }
     }
 

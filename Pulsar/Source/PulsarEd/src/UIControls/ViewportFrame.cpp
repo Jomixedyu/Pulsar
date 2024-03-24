@@ -2,7 +2,7 @@
 
 #include <Pulsar/ImGuiImpl.h>
 #include <Pulsar/Node.h>
-#include <Pulsar/World.h>
+#include "EditorWorld.h"
 #include <PulsarEd/UIControls/ViewportFrame.h>
 
 namespace pulsared
@@ -85,9 +85,9 @@ namespace pulsared
     {
         PreviewFrame(m_world, true, &m_viewportSize, m_descriptorSet.get(), m_newWorld);
         m_newWorld = false;
-        if (m_tool)
+        if (auto world = dynamic_cast<EditorWorld*>(m_world))
         {
-            m_tool->Tick(dt);
+            $$(world->GetTool())->Tick(dt);
         }
     }
 
