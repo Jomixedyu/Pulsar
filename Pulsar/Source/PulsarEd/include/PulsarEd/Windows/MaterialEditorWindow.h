@@ -18,6 +18,6 @@ namespace pulsared
         void OnRefreshMenuContexts() override;
 
     protected:
-        Shader_ref m_shader;
+        RCPtr<Shader> m_shader;
     };
 }

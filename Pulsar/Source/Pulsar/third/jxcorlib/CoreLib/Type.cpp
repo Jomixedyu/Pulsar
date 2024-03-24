@@ -93,7 +93,7 @@ namespace jxcorlib
         if(object == nullptr) return false;
         return object->GetType()->IsSubclassOf(this);
     }
-    bool Type::IsSharedInstanceOfType(const sptr<Object>& ptr) const
+    bool Type::IsSharedInstanceOfType(const SPtr<Object>& ptr) const
     {
         return this->IsInstanceOfType(ptr.get());
     }
@@ -122,7 +122,7 @@ namespace jxcorlib
         return (*this->m_createInstanceFunc)(v);
     }
 
-    sptr<Object> Type::CreateSharedInstance(const ParameterPackage& v)
+    SPtr<Object> Type::CreateSharedInstance(const ParameterPackage& v)
     {
         if (this->m_createInstanceFunc == nullptr) {
             throw NotImplementException(this->GetName() + ": the creation method is not implemented");
@@ -305,7 +305,7 @@ namespace jxcorlib
         return nullptr;
     }
 
-    sptr<Attribute> Type::GetAttribute(Type* type, bool inherit)
+    SPtr<Attribute> Type::GetAttribute(Type* type, bool inherit)
     {
         Type* target = this;
         do
@@ -330,9 +330,9 @@ namespace jxcorlib
 
         return nullptr;
     }
-    array_list<sptr<Attribute>> Type::GetAttributes(Type* type, bool inherit)
+    array_list<SPtr<Attribute>> Type::GetAttributes(Type* type, bool inherit)
     {
-        array_list<sptr<Attribute>> ret;
+        array_list<SPtr<Attribute>> ret;
         Type* target = this;
         do
         {

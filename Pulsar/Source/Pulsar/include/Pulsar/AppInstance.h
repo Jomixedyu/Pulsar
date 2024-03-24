@@ -37,7 +37,7 @@ namespace pulsar
         virtual array_list<Subsystem*> GetSubsystemsByType(Type* type, bool include = true);
 
         template<typename T>
-        sptr<T> GetSubsystem()
+        SPtr<T> GetSubsystem()
         {
             return sptr_cast<T>(GetSubsystemByType(cltypeof<T>()));
         }

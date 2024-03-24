@@ -1,6 +1,10 @@
 #ifndef _DEFERRED_SHADING_INC
 #define _DEFERRED_SHADING_INC
 
+//#define RENDERING_PATH_DEFERRED
+
+
+
 struct OutPixelDeferred
 {
     // rgb:basecolor a:materialId
@@ -14,8 +18,9 @@ struct OutPixelDeferred
     // rgb:worldTangent a:anisotropy
     float4 GBufferE : SV_TARGET4;
     // rgb:customData  a:selectiveMask
-    float4 GBufferF : SV_TARGET5;
+    //float4 GBufferF : SV_TARGET5;
 };
+
 
 
 #endif

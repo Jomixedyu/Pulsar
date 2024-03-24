@@ -49,13 +49,13 @@ namespace pulsared
         void OnDrawBar();
         void OnDrawFolderTree();
         void OnDrawContent();
-        void RenderFolderTree(sptr<AssetFileNode> node);
+        void RenderFolderTree(SPtr<AssetFileNode> node);
         void RenderFileContent();
         MenuContextBase_sp MakeMenuContext();
     private:
         void OnClick_Import();
     private:
-        sptr<OnGetContext> m_onGetContextCallback;
+        SPtr<OnGetContext> m_onGetContextCallback;
         string m_currentFolder;
 
         array_list< std::weak_ptr<AssetFileNode> > m_selectedFiles;

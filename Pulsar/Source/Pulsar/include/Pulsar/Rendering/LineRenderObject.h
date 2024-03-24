@@ -28,6 +28,7 @@ namespace pulsar
         {
             base::OnDestroyResource();
             m_vertBuffer.reset();
+
         }
         void OnChangedTransform() override
         {

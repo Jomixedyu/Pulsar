@@ -8,19 +8,22 @@
 #include <iostream>
 #include <utility>
 
+
+
 namespace pulsar
 {
-    template <typename T>
-    void new_init_sptr(sptr<T>& ptr)
+    class CreateAssetAttribute : public Attribute
     {
-        ptr = mksptr(new T);
-    }
-
-    class MenuItemCreateAssetAttribute : public Attribute
-    {
-        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::MenuItemCreateAssetAttribute, Attribute);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::CreateAssetAttribute, Attribute);
     public:
+        CreateAssetAttribute() = default;
+        explicit CreateAssetAttribute(const char* instantiatePath) : m_instantiatePath(instantiatePath)
+        {
 
+        }
+        auto GetInstantiatePath() const noexcept { return m_instantiatePath; }
+    private:
+        const char* m_instantiatePath = nullptr;
     };
 
     struct AssetSerializer
@@ -40,6 +43,8 @@ namespace pulsar
     public:
         ser::VarientRef Object;
         std::iostream& Stream;
+        OSPlatform Platform;
+        bool CookedOnly;
         bool ExistStream;
         const bool IsWrite;
         const bool HasEditorData;
@@ -58,9 +63,9 @@ namespace pulsar
 
         ImportedFileInfo()
         {
-            new_init_sptr(m_filename);
-            new_init_sptr(m_latestModification);
-            new_init_sptr(m_hash);
+            init_sptr_member(m_filename);
+            init_sptr_member(m_latestModification);
+            init_sptr_member(m_hash);
         }
     };
     CORELIB_DECL_SHORTSPTR(ImportedFileInfo);
@@ -72,7 +77,7 @@ namespace pulsar
     public:
         virtual void Serialize(AssetSerializer* s);
         virtual bool CanInstantiateAsset() const { return true; }
-        ObjectPtr<AssetObject> InstantiateAsset();
+        RCPtr<AssetObject> InstantiateAsset();
 
     public:
         AssetObject();
@@ -95,6 +100,8 @@ namespace pulsar
 
         CORELIB_REFL_DECL_FIELD(m_tags);
         List_sp<String_sp> m_tags;
+
+        uint32_t m_cref{};
     };
 
     DECL_PTR(AssetObject);

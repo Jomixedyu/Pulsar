@@ -22,17 +22,16 @@ namespace jxcorlib
     };
     CORELIB_DECL_SHORTSPTR(Attribute);
 
-
-    class SerializableAttribtue : public Attribute
+    class NoSerializableAttribtue : public Attribute
     {
-        CORELIB_DEF_TYPE(AssemblyObject_jxcorlib, jxcorlib::SerializableAttribtue, Attribute);
+        CORELIB_DEF_TYPE(AssemblyObject_jxcorlib, jxcorlib::NoSerializableAttribtue, Attribute);
     public:
 
     };
 
     class ListItemAttribute final : public Attribute
     {
-        CORELIB_DEF_TYPE(AssemblyObject_jxcorlib, jxcorlib::SerializableAttribtue, Attribute);
+        CORELIB_DEF_TYPE(AssemblyObject_jxcorlib, jxcorlib::ListItemAttribute, Attribute);
     public:
         explicit ListItemAttribute(Type* itemType) : m_itemType(itemType) {}
 

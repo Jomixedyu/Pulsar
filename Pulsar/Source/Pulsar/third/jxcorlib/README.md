@@ -69,12 +69,12 @@
 类型系统体系中，所有类型都应该单继承基于Object的类型，Object在绝大多数下应使用`sptr`来管理生命周期，`sptr`目前为`std::shared_ptr`的别名，可使用mksptr来新建一个对象，如：
 
 ```c++
-sptr<Object> obj = mksptr(new Object());
+SPtr<Object> obj = mksptr(new Object());
 ```
 如果在类型声明后使用`CORELIB_DECL_SHORTSPTR(Class)`宏，将会自动新增两个别名:
 
 ```c++
-using Object_sp = sptr<Object>;
+using Object_sp = SPtr<Object>;
 using Object_rsp = const Object_sp&;
 ```
 这两个别名可以很好的在一些地方省去手敲sptr模板的时间，另外，模板应使用`CORELIB_DECL_TEMP_SHORTSPTR(Class)`宏来新增别名。
@@ -101,9 +101,9 @@ template<> get_boxing_type<Value> { using type = BoxingValue; }
 类库提供了显式装拆箱的工具：
 ```c++
 Value v;
-sptr<BoxingValue> bvalue = static_pointer_cast<BoxingValue>( BoxUtil::Box(v) ); //boxing
+SPtr<BoxingValue> bvalue = static_pointer_cast<BoxingValue>( BoxUtil::Box(v) ); //boxing
 //or
-/* sptr<BoxingValue> bvalue = mkbox(v) ); */ //boxing
+/* SPtr<BoxingValue> bvalue = mkbox(v) ); */ //boxing
 
 Value ubvalue = UnboxUtil::Unbox<Value>(bvalue); //unboxing
 ```
@@ -256,12 +256,12 @@ class IList : public IInterface
 {
     CORELIB_DEF_INTERFACE(AssemblyObject_jxcorlib, jxcorlib::IList, IInterface);
 
-    virtual void Add(const sptr<Object>& value) = 0;
-    virtual sptr<Object> At(int32_t index) = 0;
+    virtual void Add(const SPtr<Object>& value) = 0;
+    virtual SPtr<Object> At(int32_t index) = 0;
     virtual void Clear() = 0;
     virtual void RemoveAt(int32_t index) = 0;
-    virtual int32_t IndexOf(const sptr<Object>& value) = 0;
-    virtual bool Contains(const sptr<Object>& value) = 0;
+    virtual int32_t IndexOf(const SPtr<Object>& value) = 0;
+    virtual bool Contains(const SPtr<Object>& value) = 0;
     virtual int32_t GetCount() const = 0;
     virtual Type* GetIListElementType() const = 0;
 };
@@ -283,11 +283,11 @@ class List : public Object, public array_list<T>, public IList, public ICopy
 当需要将实例转换为接口实例时，使用`interface_cast<T>(Object*)`或`interface_shared_cast<T>(Object_rsp)`来转换，如：
 
 ```c++
-sptr<List<int>> list = mksptr(new List<int>);
+SPtr<List<int>> list = mksptr(new List<int>);
 
 IList* ilist = interface_cast<IList>(list.get()); //ok
 
-sptr<IList> silist = interface_shared_cast<IList>(list); //ok
+SPtr<IList> silist = interface_shared_cast<IList>(list); //ok
 ```
 
 如转换为裸指针则需要注意尽量不要保存等操作，以免指针悬垂。
@@ -378,7 +378,7 @@ public:
     bool is_human = true;
 
     COERLIB_REFL_DECL_FIELD(name);
-    sptr<Object> name;
+    SPtr<Object> name;
 };
 ```
 
@@ -412,12 +412,12 @@ json库来自于`nlohmann`，序列化使用`CoreLib.Extension`中的`JsonSerial
 首先引入头文件`CoreLib.Extension`，在`JsonSerializer`中主要有两个静态方法：
 ```c++
 static string Serialize(Object* obj);
-static sptr<Object> Deserialize(const string& jstr, Type* type);
+static SPtr<Object> Deserialize(const string& jstr, Type* type);
 ```
 另外Deserialize还有一个模板版本
 ```c++
 template<typename T>
-static sptr<T> Deserialize(const string& str);
+static SPtr<T> Deserialize(const string& str);
 ```
 先声明两个可反射的类型
 ```c++
@@ -445,7 +445,7 @@ public:
     CORELIB_REFL_DECL_FIELD(president);
     bool president;
     CORELIB_REFL_DECL_FIELD(person_info);
-    sptr<PersonInfo> person_info;
+    SPtr<PersonInfo> person_info;
     CORELIB_REFL_DECL_FIELD(score);
     List_sp<int> score;
 
@@ -474,7 +474,7 @@ string json_str = JsonSerializer::Serialize(student)
 ```
 或者反序列化
 ```c++
-sptr<StudentInfo> newstudent = JsonSerializer::Deserialize<StudentInfo>(json_str);
+SPtr<StudentInfo> newstudent = JsonSerializer::Deserialize<StudentInfo>(json_str);
 ```
 
 ## 强类型枚举位运算的支持

@@ -15,8 +15,7 @@ namespace pulsared
         }
         virtual void BeginComponent() override;
 
-        virtual sptr<rendering::RenderObject> CreateRenderObject() override;
-        void OnTick(Ticker ticker) override;
+        virtual SPtr<rendering::RenderObject> CreateRenderObject() override;
         virtual void EndComponent() override;
 
         void OnMsg_TransformChanged() override;
@@ -24,7 +23,7 @@ namespace pulsared
         array_list<Vector3f> m_vert;
         array_list<Color4f> m_colors;
 
-        sptr<rendering::RenderObject> m_renderObject;
+        SPtr<rendering::RenderObject> m_renderObject;
     };
     DECL_PTR(Grid3DComponent);
 }

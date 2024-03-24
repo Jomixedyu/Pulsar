@@ -1,17 +1,24 @@
-#include <PulsarEd/Windows/SceneWindow.h>
+#include "EdTools/MoveEdTool.h"
+#include "EdTools/RotationEdTool.h"
+#include "EdTools/ScaleEdTool.h"
+#include "EdTools/SelectorEdTool.h"
+#include "EditorAppInstance.h"
+#include "EditorWorld.h"
+
 #include <Pulsar/Assets/Shader.h>
+#include <Pulsar/Components/CameraComponent.h>
+#include <Pulsar/Rendering/RenderContext.h>
 #include <Pulsar/Scene.h>
 #include <PulsarEd/Assembly.h>
-#include <PulsarEd/EditorNode.h>
-#include <Pulsar/Components/CameraComponent.h>
-#include <PulsarEd/Importers/FBXImporter.h>
-#include <PulsarEd/Components/StdEditCameraControllerComponent.h>
 #include <PulsarEd/Components/Grid3DComponent.h>
-#include <Pulsar/Rendering/RenderContext.h>
+#include <PulsarEd/Components/StdEditCameraControllerComponent.h>
+#include <PulsarEd/EditorNode.h>
+#include <PulsarEd/Importers/FBXImporter.h>
+#include <PulsarEd/Windows/SceneWindow.h>
+#include <gfx-vk/GFXVulkanRenderTarget.h>
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_vulkan.h>
-#include <gfx-vk/GFXVulkanRenderTarget.h>
-#include "EditorAppInstance.h"
+
 #include <PulsarEd/ExclusiveTask.h>
 #include <PulsarEd/Workspace.h>
 
@@ -20,16 +27,13 @@ namespace pulsared
 
     SceneWindow::SceneWindow()
     {
-
     }
-
 
     void SceneWindow::OnOpenWorkspace()
     {
         m_sceneEditor = new SceneEditorViewportFrame;
         m_sceneEditor->Initialize();
         m_sceneEditor->SetWorld(GetEdApp()->GetEditorWorld());
-        m_sceneEditor->m_scaleSpeed = 0.1f;
     }
     void SceneWindow::OnCloseWorkspace()
     {
@@ -49,8 +53,6 @@ namespace pulsared
         {
             this->OnOpenWorkspace();
         }
-
-
     }
 
     void SceneWindow::OnClose()
@@ -64,17 +66,30 @@ namespace pulsared
         {
             this->OnCloseWorkspace();
         }
-
-
     }
 
     void SceneWindow::OnDrawImGui(float dt)
     {
-        // ImGui::ShowDemoWindow();
+        static bool b = true;
+        // ImGui::ShowDemoWindow(&b);
+
+        auto world = dynamic_cast<EditorWorld*>(EditorWorld::GetPreviewWorld());
+
+        m_sceneEditor->SetWorld(world);
 
         if (ImGui::BeginMenuBar())
         {
-            const char* items[] = { "Shade" };
+            if (!EditorWorld::PreviewWorldStackEmpty())
+            {
+                if (ImGui::Button("Pop"))
+                {
+                    EditorWorld::PopPreviewWorld();
+                    world = dynamic_cast<EditorWorld*>(EditorWorld::GetPreviewWorld());
+                    m_sceneEditor->SetWorld(world);
+                }
+            }
+
+            const char* items[] = {"Shade"};
 
             ImGui::Text("Draw Mode");
 
@@ -93,7 +108,7 @@ namespace pulsared
                 ImGui::EndCombo();
             }
 
-            const char* editMode[] = { "SceneEditor" };
+            const char* editMode[] = {"SceneEditor"};
             ImGui::Text("Edit Mode");
             ImGui::SetNextItemWidth(150);
             if (ImGui::BeginCombo("##Edit Mode", editMode[this->m_editModeIndex]))
@@ -111,16 +126,18 @@ namespace pulsared
             }
 
             ImGui::Button(ICON_FK_ARROWS " Gizmos###Gizmos");
+
             if (ImGui::Button(ICON_FK_CUBE " 2D###2D"))
             {
-                auto cam = GetEdApp()->GetEditorWorld()->GetPreviewCamera();
+                auto cam = world->GetPreviewCamera();
                 auto ctrl = cam->GetAttachedNode()->GetParent()->GetComponent<StdEditCameraControllerComponent>().GetPtr();
                 ctrl->m_enable2DMode = !ctrl->m_enable2DMode;
 
-                auto* storeData = &ctrl->m_saved3d;;
+                auto* storeData = &ctrl->m_saved3d;
+
                 if (ctrl->m_enable2DMode)
                 {
-                    storeData = &ctrl->m_saved3d;;
+                    storeData = &ctrl->m_saved3d;
                 }
                 else
                 {
@@ -149,13 +166,15 @@ namespace pulsared
                 camTransform->SetEuler(loadData->CamEuler);
                 cam->SetProjectionMode(loadData->ProjectionMode);
 
-                m_sceneEditor->m_enabledRotate = !m_sceneEditor->m_enabledRotate;
-
+                if (auto tool = dynamic_cast<ViewEdTool*>(world->GetTool()))
+                {
+                    tool->m_enabledRotate = !tool->m_enabledRotate;
+                }
             }
             if (ImGui::Button(ICON_FK_TABLE " Grid###Grid"))
             {
-                static index_string name = "__ReferenceGrid3d"_idxstr;
-                auto node = GetEdApp()->GetEditorWorld()->GetPersistentScene()->FindNodeByName(name);
+                static index_string name = "__ReferenceGrid3d";
+                auto node = world->GetResidentScene()->FindNodeByName(name);
                 if (node)
                 {
                     node->SetIsActiveSelf(!node->GetIsActiveSelf());
@@ -167,7 +186,36 @@ namespace pulsared
 
         if (m_sceneEditor)
         {
-            m_sceneEditor->Render(0);
+            m_sceneEditor->Render(dt);
+        }
+
+        if (ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_Q, false))
+        {
+            world->SetTool(std::make_unique<SelectorEdTool>());
+        }
+        else if (ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_W, false))
+        {
+            world->SetTool(std::make_unique<MoveEdTool>());
+        }
+        else if (ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_E, false))
+        {
+            world->SetTool(std::make_unique<RotationEdTool>());
+        }
+        else if (ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_R, false))
+        {
+            world->SetTool(std::make_unique<ScaleEdTool>());
+        }
+        if (ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_Delete, false))
+        {
+            auto selection = world->GetSelection().GetSelection();
+
+            for (auto& item : selection)
+            {
+                if (item)
+                {
+                    item->GetRuntimeOwnerScene()->RemoveNode(item);
+                }
+            }
         }
     }
 
@@ -177,7 +225,5 @@ namespace pulsared
         {
             return;
         }
-
     }
-
-}
+} // namespace pulsared

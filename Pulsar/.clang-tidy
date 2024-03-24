@@ -4,5 +4,5 @@ CheckOptions:
   modernize-use-emplace.IgnoreImplicitConstructors: true
   modernize-use-nodiscard: false
 
-Checks: '-modernize-use-nodiscard,-modernize-use-override'
+Checks: '-modernize-use-nodiscard,-modernize-use-override,-bugprone-reserved-identifier'
 

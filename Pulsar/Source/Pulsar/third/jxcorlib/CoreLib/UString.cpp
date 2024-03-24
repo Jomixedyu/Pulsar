@@ -393,7 +393,7 @@ namespace jxcorlib
         throw std::invalid_argument("string is invalid");
     }
 
-    string StringUtil::Replace(string_view src, string_view oldstr, string_view newstr)
+    string StringUtil::Replace(string&& src, string_view oldstr, string_view newstr)
     {
         size_t src_len = src.length();
         size_t oldstr_len = oldstr.length();
@@ -403,15 +403,15 @@ namespace jxcorlib
         {
             return string{};
         }
-        if (oldstr_len == 0 || newstr_len == 0)
+        if (oldstr_len == 0)
         {
-            return string{src};
+            return std::move(src);
         }
 
         string nstr;
-        if (newstr_len <= oldstr_len)
+        if (src.capacity() >= newstr_len)
         {
-            nstr.reserve(src_len + 1);
+            nstr = std::move(src);
         }
         else
         {
@@ -427,8 +427,10 @@ namespace jxcorlib
             size_t len = base + app;
 
             nstr.reserve(len);
+
+            nstr = src; //copy
         }
-        nstr = src;
+
         size_t pos = 0;
         while ((pos <= nstr.size()) && ((pos = nstr.find(oldstr, pos)) != nstr.npos))
         {
@@ -436,6 +438,11 @@ namespace jxcorlib
             pos += newstr_len;
         }
         return nstr;
+    }
+
+    string StringUtil::Replace(string_view src, string_view oldstr, string_view newstr)
+    {
+        return Replace(string{src}, oldstr, newstr);
     }
 
     inline static u8char _StringUtil_At(
@@ -864,6 +871,19 @@ namespace jxcorlib
     bool StringUtil::ContainsChar(string_view name, u8char c)
     {
         return IndexOf(name, c) != -1;
+    }
+
+    bool StringUtil::IsSpaceOrEmpty(string_view name)
+    {
+        if (name.empty()) return true;
+        for (const auto& c : name)
+        {
+            if (c == ' ')
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     void StringUtil::strcpy(char* dest, size_t size, string_view source)

@@ -1,27 +1,28 @@
 #include "Common.inc.hlsl"
-#include "DeferredShading.inc.hlsl"
+#include "SurfacePS.inc.hlsl"
 
 
-Texture2D _BaseColor : register(t1, space3);
-Texture2D _MRA       : register(t2, space3);
+Texture2D _BaseColorMap : register(t0, space3);
+Texture2D _NormalMap    : register(t1, space3);
+Texture2D _MRAMap       : register(t2, space3);
 
-SamplerState DefaultSampler
+SamplerState _BaseColorMapSampler  : register(s0, space3);
+SamplerState _NormamlMapSampler    : register(s1, space3);
+SamplerState _MRAMapSampler        : register(s2, space3);
+
+
+MaterialAttributes SurfacePixelMain(InPixelAssembly surf)
 {
-    Filter = MIN_MAG_MIP_LINEAR;
-    AddressU = Wrap;
-    AddressV = Wrap;
-};
+    MaterialAttributes attr = (MaterialAttributes)0;
+    attr.BaseColor = _BaseColorMap.Sample(_BaseColorMapSampler, surf.TexCoord0);
+    float4 MRA = _MRAMap.Sample(_MRAMapSampler, surf.TexCoord0);
+    attr.Metallic = MRA.r;
+    attr.Roughness = MRA.g;
+    attr.AmbientOcclusion = MRA.b;
+    
+    attr.EmissiveColor = _BaseColorMap.Sample(_BaseColorMapSampler, surf.TexCoord0);
 
-OutPixelDeferred main(InPixelAssembly v2f)
-{
-    OutPixelDeferred o;
+    attr.ShadingModel = SHADING_MODEL_UNLIT;
 
-    o.GBufferA = _BaseColor.Sample(DefaultSampler, v2f.TexCoord0);
-    o.GBufferB = float4(v2f.WorldNormal, 1);
-    o.GBufferC = _MRA.Sample(DefaultSampler, v2f.TexCoord0);
-    float NdotL = dot(v2f.WorldNormal, -WorldBuffer.WorldSpaceLightVector.xyz);
-    o.GBufferD = float4(0,0,0, NdotL);
-
-    return o;
+    return attr;
 }
-

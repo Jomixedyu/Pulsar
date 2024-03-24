@@ -132,15 +132,19 @@ namespace jxcorlib
         return !this->is_empty();
     }
 
-    std::string guid_t::to_string() const
+    std::string guid_t::to_string(bool sep) const
     {
         std::string str;
-        str.reserve(16);
+        str.reserve(sep ? 20 : 16);
         char hex[3];
         for (size_t i = 0; i < 16; i++)
         {
             bytetohex(*((uint8_t*)this + i), hex);
             str.append(hex);
+            if (sep && (i == 3 || i == 5 || i == 7 || i == 9))
+            {
+                str.append("-");
+            }
         }
         return str;
     }

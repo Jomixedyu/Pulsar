@@ -30,33 +30,53 @@ namespace pulsar
 
     class Scene;
     class World;
+    class NodeCollection;
 
-    class Node : public ObjectBase, public ITickable
+    struct NodeSerializer
+    {
+        NodeSerializer(ser::VarientRef obj, bool isWrite, bool editorData)
+            : Object(std::move(obj)),
+              IsWrite(isWrite),
+              HasEditorData(editorData)
+        {
+        }
+
+        NodeSerializer(const NodeSerializer&) = delete;
+        NodeSerializer(NodeSerializer&&) = delete;
+    public:
+        ser::VarientRef Object;
+        const bool IsWrite;
+        const bool HasEditorData;
+    };
+
+    class Component;
+    class TransformComponent;
+
+    class Node final : public ObjectBase, public ITickable
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::Node, ObjectBase);
         ObjectPtr<Node> self_ref() const { return GetObjectHandle(); }
     public:
+        void Serialize(NodeSerializer* s);
         bool GetIsActive() const;
         bool GetIsActiveSelf() const { return m_active; }
         void SetIsActiveSelf(bool value);
 
         ObjectPtr<Node> GetParent() const;
+        void SetParent(ObjectPtr<Node> parent);
 
-        virtual void OnActive();
-        virtual void OnInactive();
+        void OnActive();
+        void OnInactive();
         void OnParentActiveChanged();
 
-        TransformComponent_ref GetTransform() const { return m_components->at(0); }
+        TransformComponent* GetTransform() const;
     public:
         Node(const Node& r) = delete;
         Node(Node&& r) = delete;
         Node& operator=(const Node& r) = delete;
     public:
         Node();
-        virtual ~Node() override
-        {
-            int a = 3;
-        }
+        ~Node() override;
         void SendMessage(MessageId id);
 
         //ITickable 
@@ -72,17 +92,39 @@ namespace pulsar
         template<typename T>
         ObjectPtr<T>         AddComponent() { return this->AddComponent(cltypeof<T>()); }
         ObjectPtr<Component> AddComponent(Type* type);
+        void                 DestroyComponent(ObjectPtr<Component> component);
+        int                  IndexOf(ObjectPtr<Component> component) const;
 
         template<baseof_component_concept T>
         ObjectPtr<T>         GetComponent() { return this->GetComponent(cltypeof<T>()); }
         ObjectPtr<Component> GetComponent(Type* type) const;
 
-        void                             GetAllComponents(List_sp<ObjectPtr<Component>>& list);
-        array_list<ObjectPtr<Component>> GetAllComponentArray() const;
-        size_t                           GetComponentCount() const { return this->m_components->size(); }
+        void                                    GetAllComponents(array_list<ObjectPtr<Component>>& list);
+        const array_list<ObjectPtr<Component>>& GetAllComponentArray() const;
+        size_t                                  GetComponentCount() const { return this->m_components->size(); }
 
-    public:
-        static ObjectPtr<Node> StaticCreate(string_view name, TransformComponent_ref parent = nullptr, ObjectFlags flags = OF_NoFlag);
+        template <baseof_component_concept T>
+        void GetComponents(array_list<ObjectPtr<T>>& array) const
+        {
+            for (const auto& item : *this->m_components)
+            {
+                if (cltypeof<T>()->IsInstanceOfType(item.GetPtr()))
+                {
+                   array.push_back(item);
+                }
+            }
+        }
+
+        template<baseof_component_concept T>
+        void GetComponentsInChildren(array_list<ObjectPtr<T>>& array) const
+        {
+            GetComponents(array);
+            for (const auto& item : *GetTransform()->GetChildren())
+            {
+                item->GetAttachedNode()->GetComponentsInChildren(array);
+            }
+        }
+
     protected:
         void BeginComponent(Component_ref component);
         void EndComponent(Component_ref component);
@@ -96,10 +138,13 @@ namespace pulsar
 
         CORELIB_REFL_DECL_FIELD(m_components);
         List_sp<ObjectPtr<Component>> m_components;
+        TransformComponent* m_transform = nullptr;
 
         bool m_isInitialized = false;
 
         ObjectPtr<Scene> m_runtimeScene = nullptr;
+
+        ObjectPtr<NodeCollection> m_owner;
     };
     DECL_PTR(Node);
 

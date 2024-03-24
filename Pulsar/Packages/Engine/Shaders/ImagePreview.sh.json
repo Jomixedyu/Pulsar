@@ -1,7 +1,7 @@
 {
-  "CullMode": "None",
-  "DepthTestEnable": true,
-  "DepthWriteEnable": true,
+  "CullMode": "Back",
+  "DepthTestEnable": false,
+  "DepthWriteEnable": false,
   "DepthCompareOp": "Less",
   "StencilTestEnable": false,
   "RenderingType": "PostProcessing",
@@ -24,7 +24,7 @@
     {
       "Name": "_Flags",
       "Type": "IntScalar",
-      "Value": "ALL_FLAGS"
+      "Value": "-1"
     }
   ],
   "Properties" : [

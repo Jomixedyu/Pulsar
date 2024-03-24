@@ -36,7 +36,7 @@ namespace gfx
         virtual void CmdBeginFrameBuffer() override;
         virtual void CmdEndFrameBuffer() override;
         virtual void CmdSetViewport(float x, float y, float width, float height) override;
-
+        virtual void CmdSetCullMode(GFXCullMode mode) override;
         virtual void CmdBlit(GFXTexture* src, GFXTexture* dest) override;
         virtual void CmdImageTransitionBarrier(GFXRenderTarget* rt, GFXResourceLayout layout) override;
     public:

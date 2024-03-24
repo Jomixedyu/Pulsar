@@ -111,6 +111,7 @@ namespace jxcorlib
     {
         bool IsLittleEndian() noexcept;
         size_t U8Length(string_view str, size_t byte_pos = 0) noexcept(false);
+        string Replace(string&& src, string_view oldstr, string_view newstr);
         string Replace(string_view src, string_view oldstr, string_view newstr);
         /* @return u8char size*/
         size_t PosAt(const string_view& src, const size_t& bytepos, u8char* out_char);
@@ -134,6 +135,7 @@ namespace jxcorlib
         string FriendlyName(string_view name);
         int32_t IndexOf(string_view name, u8char c);
         bool ContainsChar(string_view name, u8char c);
+        bool IsSpaceOrEmpty(string_view name);
 
         inline size_t Size(const char* str) { return ::strlen(str); }
         template<int N>

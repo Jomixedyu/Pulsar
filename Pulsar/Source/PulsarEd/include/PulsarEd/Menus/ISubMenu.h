@@ -13,9 +13,9 @@ namespace pulsared
         virtual void AddEntry(MenuEntry_rsp entry) = 0;
         virtual MenuEntry_sp FindEntry(string_view name) = 0;
         virtual void RemoveEntry(string_view name) = 0;
-        sptr<class MenuEntrySubMenu> FindSubMenuEntry(string_view name);
-        sptr<class MenuEntrySubMenu> FindOrNewMenuEntry(string_view name);
-        sptr<class MenuEntryCheck> FindCheckEntry(string_view name);
-        sptr<class MenuEntryButton> FindButtonEntry(string_view name);
+        SPtr<class MenuEntrySubMenu> FindSubMenuEntry(string_view name);
+        SPtr<class MenuEntrySubMenu> FindOrNewMenuEntry(string_view name);
+        SPtr<class MenuEntryCheck> FindCheckEntry(string_view name);
+        SPtr<class MenuEntryButton> FindButtonEntry(string_view name);
     };
 }

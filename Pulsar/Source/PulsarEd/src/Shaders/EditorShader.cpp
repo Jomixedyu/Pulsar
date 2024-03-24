@@ -103,30 +103,15 @@ namespace pulsared
         return pscCompiler->CompilePSH(pshPath, info, { pscApi });
     }
 
-    // class ShaderCompilingExclusiveTask : public pulsared::ExclusiveTask
-    // {
-    //     CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::ShaderCompilingExclusiveTask, pulsared::ExclusiveTask);
-    // public:
-    //     virtual ExclusiveTaskState OnProcess(ExclusiveTaskProcessInfo& info) override
-    //     {
-    //         info.Description = "processing";
-    //         return ExclusiveTaskState::Continue;
-    //     }
-    //     virtual bool                CanCancel() const override { return false; }
-    //     virtual void                OnComplete() override {}
-    //
-    // };
-    // CORELIB_DECL_SHORTSPTR(ExclusiveTask);
-
     void ShaderCompiler::CompileShader(
-        Shader_ref shader,
+        Shader* shader,
         const array_list<gfx::GFXApi>& api,
         const std::vector<std::filesystem::path>& includes,
         const std::vector<string>& defines)
     {
-        ShaderSourceData serDatas;
         try
         {
+            ShaderSourceData serDatas;
             auto passName = shader->GetPassName();
 
             if (passName->empty())
@@ -135,8 +120,13 @@ namespace pulsared
                 return;
             }
 
-            string config;
             auto shaderPath = AssetDatabase::PackagePathToPhysicsPath(*passName);
+            if (!exists(shaderPath))
+            {
+                auto assetPath = AssetDatabase::GetPathByAsset(shader);
+                string errinfo = std::format("file not found: {}, asset: {}", passName->get_unboxing_value(), assetPath);
+                throw std::ios_base::failure{ errinfo };
+            }
 
             for (auto& apiItem : api)
             {
@@ -148,26 +138,19 @@ namespace pulsared
                 {
                     if (smodule.Partial == psc::FilePartialType::Sh)
                     {
-                        config = std::get<string>(smodule.Data);
+                        apiSerData.Config = std::get<string>(smodule.Data);
                     }
                     else
                     {
-                        apiSerData.Sources[_GetGFXStage(smodule.Partial)] = std::get<std::vector<char>>(smodule.Data);
+                        auto stage = _GetGFXStage(smodule.Partial);;
+                        apiSerData.Sources[stage] = std::get<std::vector<char>>(smodule.Data);
                     }
                 }
             }
 
             Logger::Log("compile shader success.");
 
-
-            std::lock_guard lock {shader->m_isAvailableMutex};
-            shader->SetConfig(ser::JsonSerializer::Deserialize<ShaderPassConfig>(config));
-            shader->ResetShaderSource(serDatas);
-            if (shader->GetRenderingType() == shader->GetConfig()->RenderingType)
-            {
-                shader->m_isAvailable = true;
-                shader->OnAvailableChanged.Invoke();
-            }
+            shader->ResetShaderSource(std::move(serDatas));
 
             AssetDatabase::MarkDirty(shader);
         }
@@ -176,7 +159,7 @@ namespace pulsared
             Logger::Log(e.what(), LogLevel::Error);
         }
     }
-    void ShaderCompiler::CompileShader(Shader_ref shader)
+    void ShaderCompiler::CompileShader(Shader* shader)
     {
         //GetEdApp()->GetTaskQueue().AddTask();
         CompileShader(shader, Application::inst()->GetSupportedApis(), {}, {});

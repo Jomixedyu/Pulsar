@@ -15,7 +15,7 @@ namespace pulsared
         | std::views::join_with(string{"|"})
         | std::ranges::to<string>();
     }
-    sptr<AssetImporterSettings> AssetImporterFactory::CreateImporterSettings()
+    SPtr<AssetImporterSettings> AssetImporterFactory::CreateImporterSettings()
     {
         return mksptr(new AssetImporterSettings);
     }

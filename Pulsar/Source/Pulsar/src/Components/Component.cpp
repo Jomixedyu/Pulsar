@@ -1,12 +1,28 @@
 #include "Components/Component.h"
+
+#include "CoreLib.Serialization/JsonSerializer.h"
+
 #include <Pulsar/Components/Component.h>
-#include <Pulsar/Rendering/RenderObject.h>
 #include <Pulsar/Components/RendererComponent.h>
-#include <Pulsar/World.h>
 #include <Pulsar/Node.h>
+#include <Pulsar/Rendering/RenderObject.h>
+#include <Pulsar/World.h>
 
 namespace pulsar
 {
+
+    void Component::Serialize(ComponentSerializer* s)
+    {
+        if (s->IsWrite)
+        {
+            auto json = ser::JsonSerializer::Serialize(this, {});
+            s->Object->AssignParse(json);
+        }
+        else // read
+        {
+            ser::JsonSerializer::Deserialize(s->Object->ToString(false), GetType(), self());
+        }
+    }
 
     ObjectPtr<Node> Component::GetAttachedNode() const
     {
@@ -28,12 +44,30 @@ namespace pulsar
     {
         return GetAttachedNode()->GetTransform();
     }
+    array_list<ObjectHandle> Component::GetReferenceHandles() const
+    {
+        array_list<ObjectHandle> handles;
+        for (auto fieldInfo : this->GetType()->GetFieldInfos(TypeBinding::NonPublic))
+        {
+            if(fieldInfo->GetWrapType() == cltypeof<BoxingObjectPtrBase>())
+            {
+                auto value = fieldInfo->GetValue(this);
+                auto id = UnboxUtil::Unbox<ObjectPtrBase>(value);
+                handles.push_back(id.GetHandle());
+            }
+        }
+        return handles;
+    }
     void Component::OnReceiveMessage(MessageId id)
     {
-        if(id == MessageId_OnChangedTransform())
+        if (id == MessageId_OnChangedTransform())
         {
             OnMsg_TransformChanged();
         }
+    }
+    void Component::SendMessage(MessageId msgid)
+    {
+        OnReceiveMessage(msgid);
     }
     bool Component::EqualsComponentType(Type* type)
     {
@@ -42,6 +76,10 @@ namespace pulsar
 
     void Component::OnTick(Ticker ticker)
     {
+    }
+    Component::Component()
+    {
+        m_flags |= OF_LifecycleManaged;
     }
     string ComponentInfoManager::GetFriendlyComponentName(Type* type)
     {

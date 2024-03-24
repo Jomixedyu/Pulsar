@@ -18,17 +18,17 @@
     {  const char* name() { return #NAME; } } AssemblyObject_##NAME;
 
 #define CORELIB_DECL_SHORTSPTR(CLASS) static_assert(sizeof(CLASS)); \
-    using CLASS##_sp = ::jxcorlib::sptr<class CLASS>; \
-    using CLASS##_rsp = const ::jxcorlib::sptr<class CLASS>&; \
-    using CLASS##_wp = ::jxcorlib::wptr<class CLASS>;
+    using CLASS##_sp = ::jxcorlib::SPtr<class CLASS>; \
+    using CLASS##_rsp = const ::jxcorlib::SPtr<class CLASS>&; \
+    using CLASS##_wp = ::jxcorlib::WPtr<class CLASS>;
 
 #define CORELIB_DECL_TEMP_SHORTSPTR(NAME) \
     template<typename T> \
-    using NAME##_sp = ::jxcorlib::sptr<NAME<T>>; \
+    using NAME##_sp = ::jxcorlib::SPtr<NAME<T>>; \
     template<typename T> \
     using NAME##_rsp = const NAME##_sp<T>&; \
     template<typename T> \
-    using NAME##_wp = ::jxcorlib::wptr<NAME<T>>;
+    using NAME##_wp = ::jxcorlib::WPtr<NAME<T>>;
 
 #ifdef WIN32
     #if defined(JXCORELIB_BUILD_SHARED) && defined(JXCORELIB_EXPORT_API)
@@ -42,7 +42,17 @@
     #define JXCORELIB_API
 #endif
 
-
+#ifndef always_inline
+    #if   defined(_MSC_VER)
+        #define always_inline msvc::forceinline
+    #elif defined(__GNUC__)
+        #define always_inline gnu::always_inline
+    #elif defined(__clang__)
+        #define always_inline clang::always_inline
+    #else
+        #define always_inline always_inline
+    #endif
+#endif
 
 namespace jxcorlib
 {
@@ -58,21 +68,21 @@ namespace jxcorlib
     CORELIB_DECL_ASSEMBLY(jxcorlib);
 
     template<typename T>
-    using sptr = std::shared_ptr<T>;
+    using SPtr = std::shared_ptr<T>;
 
     template<typename Tout, typename Tin>
-    sptr<Tout> sptr_static_cast(const sptr<Tin>& other)
+    SPtr<Tout> sptr_static_cast(const SPtr<Tin>& other)
     {
         return std::static_pointer_cast<Tout, Tin>(other);
     }
     template<typename Tout, typename Tin>
-    sptr<Tout> sptr_static_cast(sptr<Tin>&& other)
+    SPtr<Tout> sptr_static_cast(SPtr<Tin>&& other)
     {
         return std::static_pointer_cast<Tout, Tin>(std::move(other));
     }
 
     template<typename Tout, typename Tin>
-    sptr<Tout> sptr_cast(const sptr<Tin>& other)
+    SPtr<Tout> sptr_cast(const SPtr<Tin>& other)
     {
         if (other == nullptr) return nullptr;
         if (Tout::StaticType()->IsInstanceOfType(other.get()))
@@ -80,7 +90,7 @@ namespace jxcorlib
         return nullptr;
     }
     template<typename Tout, typename Tin>
-    sptr<Tout> sptr_cast(sptr<Tin>&& other)
+    SPtr<Tout> sptr_cast(SPtr<Tin>&& other)
     {
         if (other == nullptr) return nullptr;
         if (Tout::StaticType()->IsInstanceOfType(other.get()))
@@ -89,13 +99,13 @@ namespace jxcorlib
     }
 
     template<typename T>
-    sptr<T> mksptr(T* t) { return sptr<T>(t); }
+    SPtr<T> mksptr(T* t) { return SPtr<T>(t); }
 
     template<typename T>
-    using wptr = std::weak_ptr<T>;
+    using WPtr = std::weak_ptr<T>;
 
     template<typename T>
-    wptr<T> mkwptr(const sptr<T>& ptr) { return wptr<T>(ptr); }
+    WPtr<T> mkwptr(const SPtr<T>& ptr) { return WPtr<T>(ptr); }
 
     template<typename T, typename = void>
     struct is_shared_ptr
@@ -119,6 +129,12 @@ namespace jxcorlib
         using type = typename T::element_type;
     };
 
+    template <typename T>
+    void init_sptr_member(SPtr<T>& ptr)
+    {
+        ptr = mksptr(new T);
+    }
+
     class Object : public std::enable_shared_from_this<Object>
     {
     public:
@@ -138,8 +154,8 @@ namespace jxcorlib
         virtual string ToString() const;
         virtual bool Equals(Object* object) const;
         //hidden in derived
-        bool Equals(const sptr<Object>& object) const { return this->Equals(object.get()); }
-        bool EqualsSptr(const sptr<Object>& object) const { return this->Equals(object.get()); }
+        bool Equals(const SPtr<Object>& object) const { return this->Equals(object.get()); }
+        bool EqualsSptr(const SPtr<Object>& object) const { return this->Equals(object.get()); }
 
         template<typename T, typename U>
         static bool StaticEquals(const T& a, const U& b)
@@ -150,6 +166,7 @@ namespace jxcorlib
         }
     };
 
+    constexpr int kSizeObject = sizeof(Object);
 
     CORELIB_DECL_SHORTSPTR(Object);
 
@@ -167,5 +184,5 @@ namespace jxcorlib
 namespace std
 {
     string to_string(jxcorlib::Object* obj);
-    string to_string(const jxcorlib::sptr<jxcorlib::Object>& obj);
+    string to_string(const jxcorlib::SPtr<jxcorlib::Object>& obj);
 }

@@ -1,11 +1,13 @@
 #pragma once
 
-#include <vector>
-#include <Pulsar/ObjectBase.h>
-#include <Pulsar/Node.h>
+#include "Prefab.h"
+
 #include <Pulsar/AssetObject.h>
 #include <Pulsar/Assets/CubeMap.h>
 #include <Pulsar/Assets/NodeCollection.h>
+#include <Pulsar/Node.h>
+#include <Pulsar/ObjectBase.h>
+#include <vector>
 
 namespace pulsar
 {
@@ -105,6 +107,10 @@ namespace pulsar
 
         SceneRuntimeEnvironment& GetRuntimeEnvironment() { return m_runtimeEnvironment; }
 
+#ifdef WITH_EDITOR
+        void AddPrefab(RCPtr<Prefab> prefab);
+#endif
+
     protected:
         void OnDestroy() override;
     private:
@@ -118,6 +124,8 @@ namespace pulsar
 
         array_list<DirectionalLightSceneInfo*> m_directionalLights;
         array_list<SkyLightSceneInfo*> m_skyLights;
+
+        //hash_map<Prefab_ref, Prefab_ref> m_prefabInstances; // <instance, asset>
     };
     DECL_PTR(Scene);
 }

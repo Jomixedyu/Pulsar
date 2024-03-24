@@ -15,10 +15,10 @@ namespace pulsar
     class RenderTexture : public Texture
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::RenderTexture, Texture);
-        CORELIB_CLASS_ATTR(new MenuItemCreateAssetAttribute);
+        CORELIB_CLASS_ATTR(new CreateAssetAttribute);
     public:
         RenderTexture();
-        ~RenderTexture();
+        ~RenderTexture() override;
         void OnDestroy() override;
     public:
         //Texture
@@ -28,7 +28,7 @@ namespace pulsar
         
         void PostInitializeData(int32_t width, int32_t height);
 
-        static ObjectPtr<RenderTexture> StaticCreate(index_string name, int width, int height, int colorRTCount = 1, bool hasDepthStencil = true);
+        static RCPtr<RenderTexture> StaticCreate(index_string name, int width, int height, int colorRTCount = 1, bool hasDepthStencil = true);
     public:
         //IGPUResource
         bool CreateGPUResource() override;

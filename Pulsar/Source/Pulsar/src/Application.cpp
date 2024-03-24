@@ -22,7 +22,7 @@ namespace pulsar
 
         g_currentInst = instance;
 
-        gfx::GFXGlobalConfig gfxConfig;
+        gfx::GFXGlobalConfig gfxConfig{};
         instance->OnPreInitialize(&gfxConfig);
 
         if (gfxConfig.WindowWidth < 0 || gfxConfig.WindowHeight < 0)

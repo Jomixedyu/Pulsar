@@ -1,11 +1,13 @@
 #include "Components/StaticMeshRendererComponent.h"
 
 #include "AssetManager.h"
-#include "Components/MeshContainerComponent.h"
+#include "Components/MeshRendererComponent.h"
 #include <Pulsar/Application.h>
 #include <Pulsar/Logger.h>
 #include <Pulsar/Rendering/RenderContext.h>
 #include <gfx/GFXBuffer.h>
+
+#include <utility>
 
 namespace pulsar
 {
@@ -15,24 +17,24 @@ namespace pulsar
     {
     public:
         array_list<rendering::MeshBatch> m_batchs;
-        StaticMesh_ref m_staticMesh;
-        array_list<Material_ref> m_materials;
+        RCPtr<StaticMesh> m_staticMesh;
+        array_list<RCPtr<Material>> m_materials;
 
         gfx::GFXBuffer_sp m_meshConstantBuffer;
         gfx::GFXDescriptorSet_sp m_meshObjDescriptorSet;
         gfx::GFXDescriptorSetLayout_sp m_meshDescriptorSetLayout;
 
-        explicit StaticMeshRenderObject(StaticMesh_ref staticMesh, const array_list<Material_ref>& materials)
-            : m_staticMesh(staticMesh), m_materials(materials)
+        explicit StaticMeshRenderObject(RCPtr<StaticMesh> staticMesh, const array_list<RCPtr<Material>>& materials)
+            : m_staticMesh(std::move(staticMesh)), m_materials(materials)
         {
         }
         StaticMeshRenderObject() = default;
-        StaticMeshRenderObject* SetStaticMesh(StaticMesh_ref mesh)
+        StaticMeshRenderObject* SetStaticMesh(RCPtr<StaticMesh> mesh)
         {
-            m_staticMesh = mesh;
+            m_staticMesh = std::move(mesh);
             return this;
         }
-        StaticMeshRenderObject* SetMaterials(const array_list<Material_ref>& materials)
+        StaticMeshRenderObject* SetMaterials(const array_list<RCPtr<Material>>& materials)
         {
             m_materials = materials;
             return this;
@@ -48,6 +50,10 @@ namespace pulsar
 
         void OnChangedTransform() override
         {
+            for (auto& batch : m_batchs)
+            {
+                batch.IsReverseCulling = IsDetermiantNegative();
+            }
             m_meshConstantBuffer->Fill(&m_perModelData);
         }
 
@@ -67,7 +73,8 @@ namespace pulsar
         {
             auto& batch = m_batchs.emplace_back();
             batch.State.Topology = gfx::GFXPrimitiveTopology::TriangleList;
-            batch.State.IsReverseCulling = IsDetermiantNegative();
+
+            batch.State.VertexLayouts = {StaticMesh::StaticGetVertexLayout()};
             batch.IsUsedIndices = true;
             batch.IsCastShadow = true;
             batch.IsUsedIndices = true;
@@ -77,6 +84,7 @@ namespace pulsar
                 batch.Material = GetAssetManager()->LoadAsset<Material>("Engine/Materials/Missing");
                 batch.Material->CreateGPUResource();
             }
+            batch.CullMode = batch.Material->GetShader()->GetConfig()->CullMode;
 
             batch.DescriptorSetLayout = m_meshDescriptorSetLayout;
 
@@ -96,6 +104,7 @@ namespace pulsar
             }
         }
     }
+
     void StaticMeshRenderObject::OnCreateResource()
     {
         if (MeshDescriptorSetLayout.expired())
@@ -120,14 +129,18 @@ namespace pulsar
         SubmitChange();
     }
 
-    sptr<rendering::RenderObject> StaticMeshRendererComponent::CreateRenderObject()
+
+
+
+
+    SPtr<rendering::RenderObject> StaticMeshRendererComponent::CreateRenderObject()
     {
         auto ro = mksptr(new StaticMeshRenderObject());
         // m_staticMesh->CreateGPUResource();
         if (m_staticMesh)
         {
             m_staticMesh->CreateGPUResource();
-            for (auto mat : *m_materials)
+            for (const auto& mat : *m_materials)
             {
                 if (mat)
                 {
@@ -157,18 +170,42 @@ namespace pulsar
             OnMaterialChanged();
         }
     }
-
-    void StaticMeshRendererComponent::SetStaticMesh(StaticMesh_ref staticMesh)
+    StaticMeshRendererComponent::StaticMeshRendererComponent() :
+        CORELIB_INIT_INTERFACE(IRendererComponent)
     {
-        m_staticMesh = staticMesh;
+        init_sptr_member(m_materials);
+    }
+
+    Bounds3f StaticMeshRendererComponent::GetBounds()
+    {
+        auto box = m_staticMesh->GetBounds().GetBox();
+        auto mat = GetTransform()->GetLocalToWorldMatrix();
+        box.Min = mat * box.Min;
+        box.Max = mat * box.Max;
+
+        return Bounds3f{ box };
+    }
+
+    void StaticMeshRendererComponent::SetStaticMesh(RCPtr<StaticMesh> staticMesh)
+    {
+        if (m_staticMesh)
+        {
+            RuntimeObjectManager::RemoveDependList(GetObjectHandle(), m_staticMesh.GetHandle());
+        }
+        m_staticMesh = std::move(staticMesh);
+        if (m_staticMesh)
+        {
+            RuntimeObjectManager::AddDependList(GetObjectHandle(), m_staticMesh.GetHandle());
+        }
+
         OnMeshChanged();
     }
-    Material_ref StaticMeshRendererComponent::GetMaterial(int index) const
+    RCPtr<StaticMesh> StaticMeshRendererComponent::GetMaterial(int index) const
     {
         return m_materials->at(index);
     }
 
-    void StaticMeshRendererComponent::SetMaterial(int index, Material_ref material)
+    void StaticMeshRendererComponent::SetMaterial(int index, RCPtr<Material> material)
     {
         if (index >= m_materials->size())
         {
@@ -176,19 +213,26 @@ namespace pulsar
             return;
         }
 
+
         if (m_beginning)
         {
-            auto mat = m_materials->at(index);
-            if (mat)
+            if (auto& mat = m_materials->at(index))
             {
-                EndListenMaterialStateChanged(mat);
+                RuntimeObjectManager::RemoveDependList(GetObjectHandle(), mat.GetHandle());
             }
         }
+
         m_materials->at(index) = material;
-        if (m_beginning && material)
+
+        if (m_beginning)
         {
-            BeginListenMaterialStateChanged(index);
+            if (material)
+            {
+                RuntimeObjectManager::AddDependList(GetObjectHandle(), material.GetHandle());
+            }
         }
+
+
         OnMaterialChanged();
     }
     size_t StaticMeshRendererComponent::AddMaterial()
@@ -198,7 +242,7 @@ namespace pulsar
     }
     void StaticMeshRendererComponent::RemoveMaterial(size_t index)
     {
-        //todo
+        // todo
     }
 
     void StaticMeshRendererComponent::BeginComponent()
@@ -206,43 +250,53 @@ namespace pulsar
         base::BeginComponent();
         m_renderObject = sptr_static_cast<StaticMeshRenderObject>(CreateRenderObject());
         GetWorld()->AddRenderObject(m_renderObject);
+        ResizeMaterials(m_materials->size());
+
         for (size_t i = 0; i < m_materials->GetCount(); ++i)
         {
-            BeginListenMaterialStateChanged(i);
+            if (auto& mat = m_materials->at(i))
+            {
+                RuntimeObjectManager::AddDependList(GetObjectHandle(), mat.GetHandle());
+            }
         }
+        OnMsg_TransformChanged();
     }
     void StaticMeshRendererComponent::EndComponent()
     {
         base::EndComponent();
+
         for (size_t i = 0; i < m_materials->GetCount(); ++i)
         {
-            EndListenMaterialStateChanged(i);
+            if (auto& mat = m_materials->at(i))
+            {
+                RuntimeObjectManager::RemoveDependList(GetObjectHandle(), mat.GetHandle());
+            }
         }
 
         GetWorld()->RemoveRenderObject(m_renderObject);
         m_renderObject.reset();
     }
-    void StaticMeshRendererComponent::BeginListenMaterialStateChanged(size_t index)
-    {
-        if (auto mat = m_materials->at(index))
-        {
-            auto handle = mat->OnShaderChanged.AddListener(this, &ThisClass::OnMaterialStateChanged);
-            m_materialStateChangedCallbacks[index] = handle;
-        }
-        else
-        {
-            m_materialStateChangedCallbacks[index] = 0;
-        }
-    }
-    void StaticMeshRendererComponent::EndListenMaterialStateChanged(size_t index)
-    {
-        auto handle = m_materialStateChangedCallbacks[index];
-        m_materialStateChangedCallbacks[index] = 0;
-        if(auto mat = m_materials->at(index))
-        {
-            mat->OnShaderChanged.RemoveListenerByIndex(handle);
-        }
-    }
+    // void StaticMeshRendererComponent::BeginListenMaterialStateChanged(size_t index)
+    // {
+    //     if (auto mat = m_materials->at(index))
+    //     {
+    //         auto handle = mat->OnShaderChanged.AddListener(this, &ThisClass::OnMaterialStateChanged);
+    //         m_materialStateChangedCallbacks[index] = handle;
+    //     }
+    //     else
+    //     {
+    //         m_materialStateChangedCallbacks[index] = 0;
+    //     }
+    // }
+    // void StaticMeshRendererComponent::EndListenMaterialStateChanged(size_t index)
+    // {
+    //     auto handle = m_materialStateChangedCallbacks[index];
+    //     m_materialStateChangedCallbacks[index] = 0;
+    //     if (auto mat = m_materials->at(index))
+    //     {
+    //         mat->OnShaderChanged.RemoveListenerByIndex(handle);
+    //     }
+    // }
     void StaticMeshRendererComponent::OnMaterialStateChanged()
     {
         this->OnMaterialChanged();
@@ -253,23 +307,44 @@ namespace pulsar
         base::OnReceiveMessage(id);
     }
 
+    void StaticMeshRendererComponent::OnDependencyMessage(ObjectHandle inDependency, DependencyObjectState msg)
+    {
+        base::OnDependencyMessage(inDependency, msg);
+        if (EnumHasFlag(msg, DependencyObjectState::Reload))
+        {
+            ObjectPtr<ObjectBase> obj = inDependency;
+            if (!obj) return;
+            if (obj->GetType() == cltypeof<Material>())
+            {
+
+            }
+            else if(obj->GetType() == cltypeof<StaticMesh>())
+            {
+
+            }
+        }
+        else if(EnumHasFlag(msg, DependencyObjectState::Unload))
+        {
+
+        }
+
+    }
     void StaticMeshRendererComponent::ResizeMaterials(size_t size)
     {
         m_materialsSize = size;
 
         if (size < m_materials->size())
         {
-            for (size_t i = 0; i < size; ++i)
+            for (size_t i = size; i < m_materialsSize; ++i)
             {
-                if (auto mat = m_materials->at(size + i))
+                if (auto& mat = m_materials->at(i))
                 {
-                    EndListenMaterialStateChanged(mat);
+                    RuntimeObjectManager::RemoveDependList(GetObjectHandle(), mat.GetHandle());
                 }
             }
         }
 
         m_materials->resize(size);
-        m_materialStateChangedCallbacks.resize(m_materials->size());
     }
 
     void StaticMeshRendererComponent::OnMsg_TransformChanged()
@@ -281,7 +356,7 @@ namespace pulsar
     {
         if (m_staticMesh)
         {
-            TryFindOrLoadObject(m_staticMesh);
+            TryLoadAssetRCPtr(m_staticMesh);
             if (m_staticMesh->GetMaterialCount() > m_materials->size())
             {
                 ResizeMaterials(m_staticMesh->GetMaterialCount());
@@ -302,7 +377,7 @@ namespace pulsar
             {
                 if (!mat.GetPtr())
                 {
-                    TryFindOrLoadObject(mat);
+                    TryLoadAssetRCPtr(mat);
                 }
             }
             m_renderObject->SetMaterials(*m_materials)->SubmitChange();

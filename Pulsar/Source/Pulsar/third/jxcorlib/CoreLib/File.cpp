@@ -27,6 +27,12 @@ namespace jxcorlib
         }
         void WriteAllText(std::filesystem::path path, std::string_view content)
         {
+            auto folder = path.parent_path();
+            if (!exists(folder))
+            {
+                std::filesystem::create_directories(folder);
+            }
+
             ofstream outfile(path, ios::ate | ios::out | ios::binary);
             outfile << content;
             outfile.close();
@@ -46,6 +52,12 @@ namespace jxcorlib
             file.read(reinterpret_cast<char*>(data.data()), data.size());
             file.close();
             return data;
+        }
+        void WriteAllBytes(std::filesystem::path path, char* data, size_t len)
+        {
+            ofstream outfile(path, ios::ate | ios::out | ios::binary);
+            outfile.write((char*)data, len);
+            outfile.close();
         }
     }
 

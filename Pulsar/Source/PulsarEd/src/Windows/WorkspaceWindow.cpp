@@ -36,6 +36,7 @@ namespace pulsared
             ImVec2 uv0 = ImVec2(0, 0);
             ImVec2 uv1 = ImVec2(1, 1);
             bool is_input_mode;
+            bool is_folder;
         };
 
         static bool FileButton(FileButtonContext* ctx)
@@ -131,7 +132,7 @@ namespace pulsared
         }
     } // namespace PImGui
 
-    void WorkspaceWindow::RenderFolderTree(sptr<AssetFileNode> node)
+    void WorkspaceWindow::RenderFolderTree(SPtr<AssetFileNode> node)
     {
         ImGuiTreeNodeFlags base_flags =
             ImGuiTreeNodeFlags_OpenOnArrow |
@@ -169,6 +170,37 @@ namespace pulsared
                     RenderFolderTree(i);
                 }
             }
+        }
+
+        if (ImGui::BeginDragDropTarget())
+        {
+            const ImGuiPayload* payload = ImGui::GetDragDropPayload();
+            string dragType;
+
+            if(node->IsFolder && !std::strcmp(payload->DataType, "PULSARED_DRAG"))
+            {
+                const auto str = string_view(static_cast<char*>(payload->Data), payload->DataSize);
+
+                auto strs = StringUtil::Split(str, ";");
+                auto& intype = strs[0];
+                auto& id = strs[1];
+
+                if (payload = ImGui::AcceptDragDropPayload("PULSARED_DRAG"))
+                {
+                    if (intype == cltypeof<FolderAsset>()->GetName())
+                    {
+                    }
+                    else
+                    {
+                        auto assetPath = AssetDatabase::GetPathById(ObjectHandle::parse(id));
+                        auto assetName = AssetDatabase::AssetPathToAssetName(assetPath);
+                        auto dstPath = StringUtil::Concat(node->AssetPath, "/", assetName);
+                        AssetDatabase::Rename(assetPath, dstPath);
+                    }
+                }
+            }
+
+            ImGui::EndDragDropTarget();
         }
 
         if (isOpened)
@@ -289,7 +321,7 @@ namespace pulsared
 
             for (Type* type : AssemblyManager::GlobalSearchType(cltypeof<AssetObject>()))
             {
-                if (!type->IsDefinedAttribute(cltypeof<MenuItemCreateAssetAttribute>()))
+                if (!type->IsDefinedAttribute(cltypeof<CreateAssetAttribute>()))
                 {
                     continue;
                     ;
@@ -381,7 +413,14 @@ namespace pulsared
                 {
                     for (const auto& selectedFile : ctx->SelectedFiles)
                     {
-                        AssetDatabase::DeleteAsset(selectedFile.lock()->AssetPath);
+                        if (selectedFile.lock()->IsFolder)
+                        {
+                            AssetDatabase::DeleteFolder(selectedFile.lock()->AssetPath);
+                        }
+                        else
+                        {
+                            AssetDatabase::DeleteAssets({selectedFile.lock()->AssetPath});
+                        }
                     }
                 }
             });
@@ -415,7 +454,7 @@ namespace pulsared
         {
             auto entry = mksptr(new MenuEntryButton("ShowExplorer", "Show In Explorer"));
             entry->CanOperate = hasPathLambda;
-            entry->Action = MenuAction::FromLambda([](sptr<MenuContexts>) {
+            entry->Action = MenuAction::FromLambda([](SPtr<MenuContexts>) {
                 if (auto win = EditorWindowManager::GetPanelWindow(cltypeof<WorkspaceWindow>()))
                 {
                     static_cast<WorkspaceWindow*>(win.get())->OpenExplorer();
@@ -445,6 +484,51 @@ namespace pulsared
     std::filesystem::path WorkspaceWindow::GetCurrentPhysicsFolder() const
     {
         return AssetDatabase::AssetPathToPhysicsPath(m_currentFolder);
+    }
+
+
+
+    static bool _DropAssetTarget(const string& currentAssetPath)
+    {
+        bool result = false;
+        if (ImGui::BeginDragDropTarget())
+        {
+            const ImGuiPayload* payload = ImGui::GetDragDropPayload();
+
+            if (!std::strcmp(payload->DataType, "PULSARED_DRAG"))
+            {
+                const auto str = string_view(static_cast<char*>(payload->Data), payload->DataSize);
+                auto strs = StringUtil::Split(str, ";");
+                auto& inTypeName = strs[0];
+                auto& id = strs[1];
+                auto srcType = AssemblyManager::GlobalFindType(inTypeName);
+
+                if (srcType->IsSubclassOf(cltypeof<AssetObject>()) || srcType == cltypeof<FolderAsset>())
+                {
+                    if (payload = ImGui::AcceptDragDropPayload("PULSARED_DRAG"))
+                    {
+                        if (srcType == cltypeof<FolderAsset>())
+                        {
+                            auto srcPath = id;
+                            auto dstPath = currentAssetPath + "/" + AssetDatabase::AssetPathToAssetName(id);
+                            AssetDatabase::Rename(id, dstPath);
+                            result = true;
+                        }
+                        else
+                        {
+                            auto srcPath = AssetDatabase::GetPathById(ObjectHandle::parse(id));
+                            auto dstPath = currentAssetPath + "/" + AssetDatabase::AssetPathToAssetName(srcPath);
+                            AssetDatabase::Rename(srcPath, dstPath);
+                            result = true;
+                        }
+                    }
+                }
+            }
+
+            ImGui::EndDragDropTarget();
+
+        }
+        return result;
     }
 
     void WorkspaceWindow::OnDrawBar()
@@ -497,14 +581,23 @@ namespace pulsared
             ImGui::Text("Path:  ");
             auto paths = StringUtil::Split(m_currentFolder, u8char("/"));
             ImGui::PushStyleColor(ImGuiCol_Button, {});
-            array_list<string> trackPath;
+            string trackPathString;
             for (size_t i = 0; i < paths.size(); i++)
             {
-                trackPath.push_back(paths[i]);
+                if (i != 0)
+                {
+                    trackPathString.push_back('/');
+                }
+                trackPathString.append(paths[i]);
+
                 ImGui::PushID((int)i);
                 if (ImGui::Button(paths[i].c_str()))
                 {
-                    SetCurrentFolder(StringUtil::Join(trackPath, "/"));
+                    SetCurrentFolder(trackPathString);
+                }
+                if (_DropAssetTarget(trackPathString))
+                {
+
                 }
                 ImGui::Text("/");
                 ImGui::PopID();
@@ -586,7 +679,7 @@ namespace pulsared
 
             Type* assetType = child->GetAssetType();
             gfx::GFXDescriptorSet_wp descSet = AssetDatabase::IconPool->GetDescriptorSet({assetType->GetName()});
-            gfx::GFXDescriptorSet_wp dirtySet = AssetDatabase::IconPool->GetDescriptorSet("WorkspaceWindow.Dirty"_idxstr);
+            gfx::GFXDescriptorSet_wp dirtySet = AssetDatabase::IconPool->GetDescriptorSet("WorkspaceWindow.Dirty");
 
             const bool isFolder = child->IsFolder;
             const auto isSelected = weaks_find(m_selectedFiles.begin(), m_selectedFiles.end(), std::weak_ptr{child}) != m_selectedFiles.end();
@@ -611,6 +704,7 @@ namespace pulsared
             uictx.dirty_texid = dirtyDesc;
             uictx.user_data = child.get();
             uictx.tootip = &_RenderFileToolTips;
+            uictx.is_folder = isFolder;
 
             if (PImGui::DragFileButton(&uictx, dragType, dragData))
             {
@@ -647,6 +741,48 @@ namespace pulsared
                     }
                 }
             }
+            if (isFolder)
+            {
+                if (_DropAssetTarget(child->AssetPath))
+                {
+
+                }
+            }
+            // if (isFolder && ImGui::BeginDragDropTarget())
+            // {
+            //     const ImGuiPayload* payload = ImGui::GetDragDropPayload();
+            //
+            //     if (!std::strcmp(payload->DataType, "PULSARED_DRAG"))
+            //     {
+            //         const auto str = string_view(static_cast<char*>(payload->Data), payload->DataSize);
+            //
+            //         auto strs = StringUtil::Split(str, ";");
+            //         auto& inTypeName = strs[0];
+            //         auto& id = strs[1];
+            //         auto srcType = AssemblyManager::GlobalFindType(inTypeName);
+            //
+            //         if (srcType->IsSubclassOf(cltypeof<AssetObject>()) || srcType == cltypeof<FolderAsset>())
+            //         {
+            //             if (payload = ImGui::AcceptDragDropPayload("PULSARED_DRAG"))
+            //             {
+            //                 if (srcType == cltypeof<FolderAsset>())
+            //                 {
+            //                     auto srcPath = id;
+            //                     auto dstPath = child->AssetPath + "/" + AssetDatabase::AssetPathToAssetName(id);
+            //                     AssetDatabase::Rename(id, dstPath);
+            //                 }
+            //                 else
+            //                 {
+            //                     auto srcPath = AssetDatabase::GetPathById(ObjectHandle::parse(id));
+            //                     auto dstPath = child->AssetPath + "/" + AssetDatabase::AssetPathToAssetName(srcPath);
+            //                     AssetDatabase::Rename(srcPath, dstPath);
+            //                 }
+            //             }
+            //         }
+            //     }
+            //
+            //     ImGui::EndDragDropTarget();
+            // }
 
             ImGui::PopStyleColor();
 
@@ -661,10 +797,8 @@ namespace pulsared
         }
         if (ImGui::BeginPopup("WorkspaceWindow.AssetContext"))
         {
-            // auto menu = MenuManager::GetMenu("WorkspaceWindow.AssetsContext");
-            auto menu = MenuManager::GetMainMenu()->FindSubMenuEntry("Assets");
-
-            auto ctxs = mksptr(new MenuContexts());
+            const auto menu = MenuManager::GetMainMenu()->FindSubMenuEntry("Assets");
+            const auto ctxs = mksptr(new MenuContexts());
             ctxs->Contexts.push_back(MakeMenuContext());
             MenuRenderer::RenderMenu(menu.get(), ctxs);
 

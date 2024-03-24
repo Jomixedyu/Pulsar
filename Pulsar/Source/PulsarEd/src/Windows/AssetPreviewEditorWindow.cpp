@@ -1,6 +1,7 @@
 #include "Windows/AssetPreviewEditorWindow.h"
 
 #include "Components/StdEditCameraControllerComponent.h"
+#include "EdTools/ViewEdTool.h"
 #include "EditorWorld.h"
 #include "PropertyControls/PropertyControl.h"
 #include "Pulsar/Components/DirectionalLightComponent.h"
@@ -14,14 +15,14 @@ namespace pulsared
 
     void AssetPreviewEditorWindow::OnDrawAssetPropertiesUI(float dt)
     {
-        if (PImGui::PropertyGroup("Asset Info"))
+        if (PImGui::PropertyGroup("Asset Object"))
         {
-            if (PImGui::BeginPropertyLine())
+            if (PImGui::BeginPropertyLines())
             {
                 PImGui::PropertyLineText("Asset Path", AssetDatabase::GetPathByAsset(m_assetObject));
-                PImGui::PropertyLineText("Asset Path", m_assetObject.handle.to_string());
+                PImGui::PropertyLineText("Asset Id", m_assetObject.GetHandle().to_string());
 
-                PImGui::EndPropertyLine();
+                PImGui::EndPropertyLines();
             }
         }
     }
@@ -40,7 +41,7 @@ namespace pulsared
         m_world = new EditorWorld(worldName);
         m_world->OnWorldBegin();
 
-        m_world->GetPersistentScene()
+        m_world->GetResidentScene()
             ->NewNode("Light")
             ->AddComponent<DirectionalLightComponent>()
             ->GetAttachedNode()->GetTransform()
@@ -53,6 +54,7 @@ namespace pulsared
 
         m_viewportFrame.Initialize();
         m_viewportFrame.SetWorld(m_world);
+        dynamic_cast<EditorWorld*>(m_world)->SetTool(std::make_unique<ViewEdTool>());
     }
     void AssetPreviewEditorWindow::OnClose()
     {

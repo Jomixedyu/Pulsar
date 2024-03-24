@@ -55,7 +55,7 @@ public:
     StudentLevel level{};
 
     CORELIB_REFL_DECL_FIELD(person_info);
-    sptr<PersonInfo> person_info{};
+    SPtr<PersonInfo> person_info{};
 
     CORELIB_REFL_DECL_FIELD(score);
     List_sp<int> score{};
@@ -102,13 +102,13 @@ void TestJsonSerializer()
     string aa = JsonSerializer::Serialize(student, { 4, true, true });
     cout << aa << endl;
 
-    sptr<StudentInfo> bb = JsonSerializer::Deserialize<StudentInfo>(aa);;
+    SPtr<StudentInfo> bb = JsonSerializer::Deserialize<StudentInfo>(aa);;
     cout << bb->ToString() << endl;
 
     string json_str = JsonSerializer::Serialize(student, { 4, false });
     cout << json_str << endl;
 
-    sptr<StudentInfo> newstudent = JsonSerializer::Deserialize<StudentInfo>(json_str);
+    SPtr<StudentInfo> newstudent = JsonSerializer::Deserialize<StudentInfo>(json_str);
     cout << newstudent->ToString() << endl;
 
 

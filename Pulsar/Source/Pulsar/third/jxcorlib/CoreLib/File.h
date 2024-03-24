@@ -26,6 +26,7 @@ namespace jxcorlib
         std::string ReadAllText(std::filesystem::path path);
         void WriteAllText(std::filesystem::path path, std::string_view content);
         std::vector<uint8_t> ReadAllBytes(std::filesystem::path path);
+        void WriteAllBytes(std::filesystem::path path, char* data, size_t len);
     }
 
     namespace PathUtil

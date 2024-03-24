@@ -1,0 +1,15 @@
+{
+	"$schema": "ShaderSchema.json",
+	"CullMode": "None",
+	"DepthTestEnable": true,
+	"DepthWriteEnable": true,
+	"DepthCompareOp": "Less",
+	"StencilTestEnable": false,
+	"RenderingType": "OpaqueDeferred",
+	"Properties": [
+		{
+			"Name": "_BaseColorMap",
+			"Type": "Texture2D"
+		}
+	]
+}

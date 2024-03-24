@@ -29,7 +29,8 @@ namespace pulsar
 
     CameraComponent::CameraComponent()
     {
-        new_init_sptr(m_postProcessMaterials);
+        m_renderingPath = RenderingPathMode::Deferred;
+        init_sptr_member(m_postProcessMaterials);
     }
     void CameraComponent::Render()
     {
@@ -73,6 +74,13 @@ namespace pulsar
         {
             UpdateRTBackgroundColor();
         }
+        else if(name == NAMEOF(m_renderingPath))
+        {
+            auto width = GetRenderTexture()->GetWidth();
+            auto height = GetRenderTexture()->GetHeight();
+            ResizeManagedRenderTexture(width, height);
+        }
+        UpdateCBuffer();
     }
     void CameraComponent::ResizeManagedRenderTexture(int width, int height)
     {
@@ -80,33 +88,80 @@ namespace pulsar
             return;
         if (!m_managedRT)
             return;
+
         if (m_renderTarget)
         {
             DestroyObject(m_renderTarget);
         }
+        DestroyObject(m_postprocessRtA);
+        DestroyObject(m_postprocessRtB);
 
         auto rtname = GetAttachedNode()->GetName() + "_CamRT";
-        m_renderTarget = RenderTexture::StaticCreate(index_string{rtname}, width, height);
 
-        m_postprocessRtA = RenderTexture::StaticCreate(index_string{rtname}, width, height);
-        m_postprocessRtB = RenderTexture::StaticCreate(index_string{rtname}, width, height);
+        int renderTargetCount = 1;
+        if (m_renderingPath == RenderingPathMode::Deferred)
+        {
+            renderTargetCount = 5;
+        }
+        m_renderTarget = RenderTexture::StaticCreate(index_string{rtname}, width, height, renderTargetCount, true);
+
+        m_postprocessRtA = RenderTexture::StaticCreate(index_string{rtname}, width, height, 1, false);
+        m_postprocessRtB = RenderTexture::StaticCreate(index_string{rtname}, width, height, 1, false);
+
+        gfx::GFXDescriptorSetLayoutInfo ppDescLayouts[2]{
+            {gfx::GFXDescriptorType::CombinedImageSampler,
+             gfx::GFXShaderStageFlags::VertexFragment,
+             0, 2},
+            {gfx::GFXDescriptorType::CombinedImageSampler,
+             gfx::GFXShaderStageFlags::VertexFragment,
+             1, 2},
+        };
+
+        auto layout = Application::GetGfxApp()->CreateDescriptorSetLayout(ppDescLayouts, 2);
+        m_postprocessDescA = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(layout);
+        m_postprocessDescA->AddDescriptor("Color", 0)->SetTextureSampler2D(m_postprocessRtB->GetGfxRenderTarget0().get());
+        m_postprocessDescA->Submit();
+        m_postprocessDescB = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(layout);
+        m_postprocessDescB->AddDescriptor("Color", 0)->SetTextureSampler2D(m_postprocessRtA->GetGfxRenderTarget0().get());
+        m_postprocessDescB->Submit();
+
         UpdateRT();
         BeginRT();
+    }
+    void CameraComponent::OnMsg_TransformChanged()
+    {
+        base::OnMsg_TransformChanged();
+        UpdateCBuffer();
     }
     void CameraComponent::OnTick(Ticker ticker)
     {
         base::OnTick(ticker);
-        m_debugViewMat = GetViewMat();
+    }
+    void CameraComponent::SetFOV(float value)
+    {
+        m_fov = value;
+        UpdateCBuffer();
+    }
+    void CameraComponent::SetNear(float value)
+    {
+        m_near = value;
+        UpdateCBuffer();
+    }
+    void CameraComponent::SetFar(float value)
+    {
+        m_far = value;
         UpdateCBuffer();
     }
     void CameraComponent::SetBackgroundColor(const Color4f& value)
     {
         m_backgroundColor = value;
         UpdateRTBackgroundColor();
+        UpdateCBuffer();
     }
     void CameraComponent::SetProjectionMode(CameraProjectionMode mode)
     {
         m_projectionMode = mode;
+        UpdateCBuffer();
     }
 
     void CameraComponent::UpdateRTBackgroundColor()
@@ -121,12 +176,16 @@ namespace pulsar
         rt0->ClearColor[2] = m_backgroundColor.b;
         rt0->ClearColor[3] = m_backgroundColor.a;
     }
+
     void CameraComponent::UpdateRT()
     {
         UpdateRTBackgroundColor();
     }
+
     void CameraComponent::UpdateCBuffer()
     {
+        m_debugViewMat = GetViewMat();
+
         CBuffer_Target target{};
         target.MatrixV = GetViewMat();
         target.MatrixP = GetProjectionMat();
@@ -141,12 +200,13 @@ namespace pulsar
         target.Resolution = m_renderTarget->GetSize2df();
         m_cameraDataBuffer->Fill(&target);
     }
-    void CameraComponent::AddPostProcess(Material_ref material)
+
+    void CameraComponent::AddPostProcess(RCPtr<Material> material)
     {
         m_postProcessMaterials->push_back(material);
     }
 
-    void CameraComponent::SetRenderTexture(const RenderTexture_ref& value, bool managed)
+    void CameraComponent::SetRenderTexture(const RCPtr<RenderTexture>& value, bool managed)
     {
         if (value)
         {
@@ -170,6 +230,13 @@ namespace pulsar
         UpdateRT();
         BeginRT();
     }
+
+    void CameraComponent::SetOrthoSize(float value)
+    {
+        m_orthoSize = value;
+        UpdateCBuffer();
+    }
+
     void CameraComponent::BeginRT()
     {
         if (m_beginning && m_renderTarget)
@@ -177,6 +244,8 @@ namespace pulsar
             auto& refData = m_renderTarget->GetGfxFrameBufferObject()->RefData;
             refData.clear();
             refData.push_back(m_cameraDescriptorSet);
+
+            UpdateCBuffer();
         }
     }
 
@@ -185,14 +254,6 @@ namespace pulsar
     void CameraComponent::BeginComponent()
     {
         base::BeginComponent();
-
-        if (!m_renderTarget)
-        {
-            m_managedRT = true;
-            ResizeManagedRenderTexture(1, 1);
-        }
-
-        GetAttachedNode()->GetRuntimeOwnerScene()->GetWorld()->GetCameraManager().AddCamera(THIS_REF);
 
         if (_CameraDescriptorLayout.expired())
         {
@@ -214,20 +275,13 @@ namespace pulsar
         m_cameraDescriptorSet->Submit();
 
 
-        gfx::GFXDescriptorSetLayoutInfo ppDescLayouts[2]{
-            {gfx::GFXDescriptorType::Texture2D,
-             gfx::GFXShaderStageFlags::Fragment,
-             0, 2},
-            {gfx::GFXDescriptorType::Texture2D,
-             gfx::GFXShaderStageFlags::Fragment,
-             1, 2},
-        };
+        if (!m_renderTarget)
+        {
+            m_managedRT = true;
+            ResizeManagedRenderTexture(1, 1);
+        }
 
-        auto layout = Application::GetGfxApp()->CreateDescriptorSetLayout(ppDescLayouts);
-        m_postprocessDescA = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(layout);
-        m_postprocessDescA->AddDescriptor("Color", 0)->SetTextureSampler2D(m_postprocessRtB->GetGfxRenderTarget0().get());
-        m_postprocessDescB = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(layout);
-        m_postprocessDescB->AddDescriptor("Color", 0)->SetTextureSampler2D(m_postprocessRtA->GetGfxRenderTarget0().get());
+        GetAttachedNode()->GetRuntimeOwnerScene()->GetWorld()->GetCameraManager().AddCamera(THIS_REF);
 
         BeginRT();
     }
@@ -239,6 +293,10 @@ namespace pulsar
         if (m_managedRT && m_renderTarget)
         {
             DestroyObject(m_renderTarget);
+        }
+        if (m_managedRT)
+        {
+
         }
         m_camDescriptorLayout.reset();
         m_cameraDescriptorSet.reset();

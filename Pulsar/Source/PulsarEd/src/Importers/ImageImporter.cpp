@@ -7,9 +7,9 @@
 namespace pulsared
 {
 
-    array_list<AssetObject_ref> ImageImporter::Import(AssetImporterSettings* settings)
+    array_list<RCPtr<AssetObject>> ImageImporter::Import(AssetImporterSettings* settings)
     {
-        array_list<AssetObject_ref> importAssets;
+        array_list<RCPtr<AssetObject>> importAssets;
         for (auto& file : *settings->ImportFiles)
         {
             auto asset = mksptr(new Texture2D);
@@ -18,15 +18,16 @@ namespace pulsared
             std::u8string u8str = (char8_t*)file.c_str();
             auto fileBytes = FileUtil::ReadAllBytes(u8str);
 
-            asset->LoadFromNativeData(fileBytes.data(), fileBytes.size());
+            int32_t width{0}, height{0}, channel{0};
+            gfx::LoadImageFromMemory(fileBytes.data(), fileBytes.size(), &width, &height, &channel, 0, true);
+            asset->FromNativeData(fileBytes.data(), fileBytes.size(), true, width, height, channel);
 
             asset->SetIsSRGB(true);
 
-            auto assetRef = AssetObject_ref(asset.get());
             auto assetPath = settings->TargetPath + "/" + PathUtil::GetFilenameWithoutExt(file);
             assetPath = AssetDatabase::GetUniquePath(assetPath);
-            AssetDatabase::CreateAsset(assetRef, assetPath);
-            importAssets.push_back(assetRef);
+            AssetDatabase::CreateAsset(asset.get(), assetPath);
+            importAssets.push_back(asset.get());
         }
 
         return importAssets;

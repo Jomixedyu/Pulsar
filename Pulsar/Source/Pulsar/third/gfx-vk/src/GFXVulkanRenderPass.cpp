@@ -67,6 +67,7 @@ namespace gfx
             }
 
         }
+        m_colorAttachmentCount = colorAttachmentRef.size();
 
         VkSubpassDescription subpass{};
         {

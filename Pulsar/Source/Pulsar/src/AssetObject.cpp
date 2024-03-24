@@ -9,10 +9,10 @@ namespace pulsar
     }
     AssetObject::AssetObject()
     {
-        new_init_sptr(m_importFiles);
-        new_init_sptr(m_tags);
+        init_sptr_member(m_importFiles);
+        init_sptr_member(m_tags);
     }
-    AssetObject_ref AssetObject::InstantiateAsset()
+    RCPtr<AssetObject> AssetObject::InstantiateAsset()
     {
         if (!CanInstantiateAsset())
         {
@@ -20,11 +20,13 @@ namespace pulsar
         }
         AssetObject_sp obj = sptr_cast<AssetObject>(this->GetType()->CreateSharedInstance({}));
         obj->Construct();
+        obj->SetIndexName(this->GetIndexName());
 
         this->OnInstantiateAsset(obj.get());
 
         return obj;
     }
+
     void AssetObject::OnInstantiateAsset(AssetObject* obj)
     {
         obj->SetIndexName(this->GetIndexName());

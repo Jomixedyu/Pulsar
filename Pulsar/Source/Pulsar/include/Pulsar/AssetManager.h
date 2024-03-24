@@ -7,19 +7,19 @@ namespace pulsar
     class AssetManager
     {
     public:
-        virtual AssetObject_ref LoadAssetAtPath(string_view path) = 0;
+        virtual RCPtr<AssetObject> LoadAssetAtPath(string_view path) = 0;
         
-        virtual AssetObject_ref LoadAssetById(ObjectHandle id) = 0;
+        virtual RCPtr<AssetObject> LoadAssetById(ObjectHandle id) = 0;
 
         template<baseof_assetobject T>
-        inline ObjectPtr<T> LoadAsset(string_view path, bool allowException = false)
+        inline RCPtr<T> LoadAsset(string_view path, bool allowException = false)
         {
-            auto ptr = LoadAssetAtPath(path).GetPtr();
+            RCPtr<AssetObject> ptr = LoadAssetAtPath(path);
             if (allowException && ptr == nullptr)
             {
                throw NullPointerException{};
             }
-            return ObjectPtr<T>(object_cast<T>(ptr));
+            return RCPtr<T>(cref_cast<T>(ptr));
         }
 
 
@@ -29,28 +29,12 @@ namespace pulsar
 
     AssetManager* GetAssetManager();
 
-    static void TryFindOrLoadObject(ObjectHandle handle)
-    {
-        if (auto ptr = RuntimeObjectWrapper::GetObject(handle))
-        {
-        }
-        else if(auto asset = GetAssetManager()->LoadAssetById(handle))
-        {
-        }
-    }
     template <typename T>
-    static void TryFindOrLoadObject(ObjectPtr<T>& obj)
+    void TryLoadAssetRCPtr(RCPtr<T>& ptr)
     {
-        if (auto ptr = RuntimeObjectWrapper::GetObject(obj.handle))
+        if (ptr == nullptr)
         {
-            obj.Ptr = (T*)ptr;
-        }
-        else
-        {
-            if(auto asset = GetAssetManager()->LoadAssetById(obj.handle))
-            {
-                obj.Ptr = (T*)asset.Ptr;
-            }
+            ptr = GetAssetManager()->LoadAssetById(ptr.GetHandle());
         }
     }
 

@@ -46,8 +46,6 @@ namespace gfx
     public:
         virtual ~GFXShaderPass() = default;
 
-        //virtual array_list<GFXDescriptorSetLayout_sp> GetDescriptorSetLayout() const = 0;
-        virtual array_list<GFXVertexLayoutDescription_sp> GetVertexLayout() const = 0;
         virtual GFXShaderPassConfig GetStateConfig() const = 0;
     };
     GFX_DECL_SPTR(GFXShaderPass);

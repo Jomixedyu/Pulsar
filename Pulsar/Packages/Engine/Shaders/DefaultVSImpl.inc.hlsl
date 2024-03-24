@@ -13,7 +13,7 @@ InPixelAssembly main(InVertexAssembly a2v)
     v2f.TexCoord2 = a2v.TexCoord2;
     v2f.TexCoord3 = a2v.TexCoord3;
     v2f.Color = a2v.Color;
-    v2f.Position = ObjectToProjection(a2v.Position);
+    v2f.Position = ObjectToClip(a2v.Position);
     return v2f;
 }
 

@@ -1,6 +1,6 @@
 {
   "PassName": "Engine/Shaders/Lambert.sh.json",
-  "CullMode": "None",
+  "CullMode": "Back",
   "DepthTestEnable": true,
   "DepthWriteEnable": true,
   "DepthCompareOp": "Less",

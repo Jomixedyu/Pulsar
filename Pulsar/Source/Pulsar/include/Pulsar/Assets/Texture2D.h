@@ -10,18 +10,15 @@ namespace pulsar
 {
     CORELIB_DEF_ENUM(AssemblyObject_pulsar, pulsar,
         TextureCompressionFormat,
-        None,
-        ASTC
+        ColorSRGB_Compressed,
+        BitmapRGBA,
+        Gray,
+        NormalMap_Compressed,
+        HDR_Compressed
         );
-    CORELIB_DEF_ENUM(AssemblyObject_pulsar, pulsar,
-        TextureCompressionLevel,
-        Higher,
-        Medium,
-        Lower
-    );
+
 }
 CORELIB_DECL_BOXING(pulsar::TextureCompressionFormat, pulsar::BoxingTextureCompressionFormat);
-CORELIB_DECL_BOXING(pulsar::TextureCompressionLevel, pulsar::BoxingTextureCompressionLevel);
 
 namespace pulsar
 {
@@ -49,22 +46,17 @@ namespace pulsar
         ~Texture2D() override;
     public:
         void Serialize(AssetSerializer* s) override;
-        virtual int32_t GetWidth() const override { return m_init ? m_tex->GetWidth() : 0; }
-        virtual int32_t GetHeight() const override { return m_init ? m_tex->GetHeight() : 0; }
-        int32_t GetChannelCount() const { return m_init ? m_tex->GetChannelCount() : 0; }
-
+        virtual int32_t GetWidth() const override { return m_textureSize.x; }
+        virtual int32_t GetHeight() const override { return m_textureSize.y; }
+        static hash_map<TextureCompressionFormat, gfx::GFXTextureFormat>* StaticGetFormatMapping(OSPlatform platform);
     public:
         void OnDestroy() override;
     protected:
         virtual void OnInstantiateAsset(AssetObject* obj) override;
 
     public:
-        void LoadFromNativeData(const uint8_t* data, int32_t length);
-        void UnloadNativeData();
-        // host memory
-        void LoadHostResource();
-        void UnloadHostResource();
-        array_list<uint8_t>& GetHostResource() { return m_bakedDataMemory; }
+        void FromNativeData(const uint8_t* data, size_t length, bool compressed, int width, int height, int channel);
+        void PostEditChange(FieldInfo* info) override;
     public:
         //IGPUResource
         bool CreateGPUResource() override;
@@ -74,16 +66,17 @@ namespace pulsar
         std::shared_ptr<gfx::GFXTexture2D> GetGFXTexture() const { return m_tex; }
 
     public:
-        bool IsSRGB() const { return m_isSrgb; }
-        void SetIsSRGB(bool value) { m_isSrgb = value; }
+        bool IsSRGB() const { return m_isSRGB; }
+        void SetIsSRGB(bool value) { m_isSRGB = value; }
+        auto GetCompressedFormat() const { return m_compressionFormat; }
     protected:
 
-        CORELIB_REFL_DECL_FIELD(m_isSrgb);
-        bool m_isSrgb;
+        CORELIB_REFL_DECL_FIELD(m_isSRGB);
+        bool m_isSRGB;
 
-        array_list<uint8_t> m_nativeOriginalMemory;
-        array_list<uint8_t> m_bakedDataMemory;
-        bool m_loadedHostMemory = false;
+        array_list<uint8_t> m_nativeMemory;
+        bool m_compressedNativeImage = false;
+        bool m_loadedNativeMemory = false;
 
         gfx::GFXSamplerConfig m_samplerConfig{};
         bool m_enableReadWrite{};
@@ -94,15 +87,11 @@ namespace pulsar
 
         bool m_isCreatedGPUResource = false;
 
-#ifdef WITH_EDITOR
-        BinaryData m_originalImageData;
-#endif // WITH_EDITOR
-
         CORELIB_REFL_DECL_FIELD(m_compressionFormat);
-        TextureCompressionFormat m_compressionFormat;
+        TextureCompressionFormat m_compressionFormat{};
 
-        CORELIB_REFL_DECL_FIELD(m_compressionQuality);
-        TextureCompressionLevel m_compressionQuality;
+        Vector2i m_textureSize{};
+        int m_channelCount{};
 
     };
     DECL_PTR(Texture2D);

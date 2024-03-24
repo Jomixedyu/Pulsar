@@ -41,12 +41,16 @@ namespace pulsar
         StaticMesh() = default;
         ~StaticMesh() override;
     public:
+        static gfx::GFXVertexLayoutDescription_sp StaticGetVertexLayout();
+
         virtual void Serialize(AssetSerializer* s) override;
 
-        static ObjectPtr<StaticMesh> StaticCreate(
+        static RCPtr<StaticMesh> StaticCreate(
             string_view name,
             array_list<StaticMeshSection>&& vertData,
             array_list<string>&& materialNames);
+
+        void CalcBounds();
     protected:
         virtual void OnInstantiateAsset(AssetObject* obj) override;
     public:
@@ -57,6 +61,8 @@ namespace pulsar
         size_t GetMeshSectionCount() const { return m_sections.size(); }
         const array_list<string>& GetMaterialNames() const { return m_materialNames; }
         size_t GetMaterialCount() const { return m_materialNames.size(); }
+
+        Bounds3f GetBounds() const { return m_bounds; }
     public:
         bool CreateGPUResource() override;
         void DestroyGPUResource() override;
@@ -70,6 +76,8 @@ namespace pulsar
         bool m_isCreatedResource = false;
         array_list<gfx::GFXBuffer_sp> m_vertexBuffers;
         array_list<gfx::GFXBuffer_sp> m_indicesBuffers;
+
+        Bounds3f m_bounds{};
     };
     DECL_PTR(StaticMesh);
 

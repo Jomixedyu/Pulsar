@@ -56,23 +56,6 @@ namespace pulsared
         return ImGui::CollapsingHeader(label, ImGuiTreeNodeFlags_DefaultOpen);
     }
 
-    // bool PImGui::BeginPropertyItem(const char* name)
-    // {
-    //     ImGui::Columns(2);
-    //     ImGui::SetColumnWidth(0, 120);
-    //     ImGui::AlignTextToFramePadding();
-    //
-    //     ImGui::Text(name);
-    //     ImGui::NextColumn();
-    //     return true;
-    // }
-    //
-    // void PImGui::EndPropertyItem()
-    // {
-    //     ImGui::NextColumn();
-    //     ImGui::Columns(1);
-    // }
-
     // type 禁止BoxingObjectPtrBase
     static bool _ObjectFieldPropertyLine(
         const string& name, Type* type, Type* innerType,
@@ -192,10 +175,10 @@ namespace pulsared
                     Object* parentObj = obj;
                     if (type == BoxingObjectPtrBase::StaticType())
                     {
-                        const auto objptr = static_cast<BoxingObjectPtrBase*>(obj);
-                        if (objptr->handle)
+                        const auto objptr = dynamic_cast<BoxingObjectPtrBase*>(obj);
+                        if (objptr->GetHandle())
                         {
-                            parentObj = objptr->get_unboxing_value().GetTPtr<ObjectBase>();
+                            parentObj = objptr->get_unboxing_value().GetObjectPointer();
                             fieldInstSptr = field->GetValue(parentObj);
                         }
                         else
@@ -256,9 +239,10 @@ namespace pulsared
         }
         return isChanged;
     }
-    bool PImGui::BeginPropertyLine()
+    constexpr auto _TableBorderFlags = ImGuiTableFlags_BordersV;
+    bool PImGui::BeginPropertyLines()
     {
-        bool b = ImGui::BeginTable("_lines", 2, ImGuiTableFlags_BordersV);
+        bool b = ImGui::BeginTable("_lines", 2, _TableBorderFlags);
         if (b)
         {
             const float width = (float)ImGui::GetWindowWidth() * 0.38f;
@@ -306,20 +290,22 @@ namespace pulsared
             ImGui::TreePop();
         }
     }
-    void PImGui::EndPropertyLine()
+    void PImGui::EndPropertyLines()
     {
         ImGui::EndTable();
     }
 
-    void PImGui::ObjectFieldProperties(Type* type, Type* inner, Object* obj, ObjectBase* receiver, bool showDebug)
+    bool PImGui::ObjectFieldProperties(Type* type, Type* inner, Object* obj, ObjectBase* receiver, bool showDebug)
     {
-        if (ImGui::BeginTable("ss", 2, ImGuiTableFlags_BordersV))
+        bool changed = false;
+        if (ImGui::BeginTable("ss", 2, _TableBorderFlags))
         {
             const float width = (float)ImGui::GetWindowWidth() * 0.38f;
             ImGui::TableSetupColumn("name", ImGuiTableColumnFlags_WidthFixed, width);
             ImGui::TableSetupColumn("value");
-            _ObjectFieldPropertyLine("pp", type, inner, obj, receiver, nullptr, true, showDebug);
+            changed = _ObjectFieldPropertyLine("pp", type, inner, obj, receiver, nullptr, true, showDebug);
             ImGui::EndTable();
         }
+        return changed;
     }
 }

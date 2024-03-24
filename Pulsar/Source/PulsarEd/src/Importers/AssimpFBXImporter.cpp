@@ -1,12 +1,15 @@
 #include "Importers/AssimpFBXImporter.h"
-#include <Pulsar/Assets/StaticMesh.h>
-#include <Pulsar/Assets/Material.h>
-#include <Pulsar/Components/MeshContainerComponent.h>
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
-#include <Pulsar/Components/StaticMeshRendererComponent.h>
+
+#include "Pulsar/Scene.h"
+
 #include <Pulsar/Application.h>
+#include <Pulsar/Assets/Material.h>
+#include <Pulsar/Assets/StaticMesh.h>
+#include <Pulsar/Components/MeshRendererComponent.h>
+#include <Pulsar/Components/StaticMeshRendererComponent.h>
+#include <assimp/Importer.hpp>
+#include <assimp/postprocess.h>
+#include <assimp/scene.h>
 
 namespace pulsared
 {
@@ -35,15 +38,15 @@ namespace pulsared
 //    }
 //    return textures;
 //}
-    static inline Color4f _Color4f(const aiColor4D& v)
+    static inline Color4f ToColor4f(const aiColor4D& v)
     {
         return Color4f(v.r, v.g, v.b, v.a);
     }
-    static inline Vector3f _Vec3(const aiVector3D& v3)
+    static inline Vector3f ToVector3f(const aiVector3D& v3)
     {
         return { v3.x, v3.y, v3.z };
     }
-    static inline Vector2f _Vec2(aiVector2D v2)
+    static inline Vector2f ToVector2f(aiVector2D v2)
     {
         return { v2.x, v2.y };
     }
@@ -54,15 +57,15 @@ namespace pulsared
         for (unsigned int vertnum = 0; vertnum < mesh->mNumVertices; ++vertnum)
         {
             StaticMeshVertex& vert = section->Vertex[vertnum];
-            vert.Position = _Vec3(mesh->mVertices[vertnum]);
-            vert.Normal = _Vec3(mesh->mNormals[vertnum]);
+            vert.Position = ToVector3f(mesh->mVertices[vertnum]);
+            vert.Normal = ToVector3f(mesh->mNormals[vertnum]);
             if (mesh->mTangents)
             {
-                vert.Tangent = _Vec3(mesh->mTangents[vertnum]);
+                vert.Tangent = ToVector3f(mesh->mTangents[vertnum]);
             }
             if (mesh->mBitangents)
             {
-                vert.Bitangent = _Vec3(mesh->mBitangents[vertnum]);
+                vert.Bitangent = ToVector3f(mesh->mBitangents[vertnum]);
             }
 
             for (size_t i = 0; i < STATICMESH_MAX_TEXTURE_COORDS; i++)
@@ -76,7 +79,7 @@ namespace pulsared
 
             if (mesh->HasVertexColors(0))
             {
-                vert.Color = _Color4f(mesh->mColors[0][vertnum]);
+                vert.Color = ToColor4f(mesh->mColors[0][vertnum]);
             }
 
         }
@@ -93,12 +96,12 @@ namespace pulsared
 
     }
 
-    static void _ProcessNode(aiNode* node, const aiScene* scene, Node_ref pnode, const string& dir, float scale_factor)
+    static void _ProcessNode(aiNode* node, const aiScene* scene, Node_ref pnode, Scene_ref pscene, const string& dir, float scale_factor)
     {
         array_list<StaticMeshSection> sections;
         sections.resize(node->mNumMeshes);
 
-        array_list<Material_ref> materials;
+        array_list<RCPtr<Material>> materials;
         for (unsigned int i = 0; i < node->mNumMeshes; i++)
         {
             aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
@@ -111,7 +114,7 @@ namespace pulsared
         }
         
         
-        auto newNode = Node::StaticCreate(node->mName.C_Str(), pnode->GetTransform());
+        auto newNode = pscene->NewNode(node->mName.C_Str(), pnode);
 
         array_list<string> materialNames;
         for (auto& mat : materials)
@@ -123,8 +126,6 @@ namespace pulsared
         {
             auto staticMesh = StaticMesh::StaticCreate(node->mName.C_Str(), std::move(sections), std::move(materialNames));
 
-            newNode->AddComponent<MeshContainerComponent>()->SetMesh(staticMesh);
-
             auto renderer = newNode->AddComponent<StaticMeshRendererComponent>();
             for (auto& mat : materials)
             {
@@ -135,31 +136,32 @@ namespace pulsared
         // process children
         for (unsigned int i = 0; i < node->mNumChildren; i++)
         {
-            _ProcessNode(node->mChildren[i], scene, newNode, dir, scale_factor);
+            _ProcessNode(node->mChildren[i], scene, newNode, pscene, dir, scale_factor);
         }
     }
 
     Node_ref AssimpFBXImporter::Import(string_view path, string& error)
     {
-        float scale_factor = 1;
-
-        auto node = Node::StaticCreate(PathUtil::GetFilenameWithoutExt(path));
-
-        Assimp::Importer importer;
-        const aiScene* scene = importer.ReadFile(path.data(), aiProcess_Triangulate | aiProcess_FlipUVs);
-
-        if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
-        {
-            error = importer.GetErrorString();
-            return nullptr;
-        }
-        string directory = string{ path.substr(0, path.find_last_of('/')) };
-
-        for (unsigned int i = 0; i < scene->mRootNode->mNumChildren; i++)
-        {
-            _ProcessNode(scene->mRootNode->mChildren[i], scene, node, directory, scale_factor);
-        }
-
-        return node;
+        // float scale_factor = 1;
+        //
+        // auto node = Node::StaticCreate(PathUtil::GetFilenameWithoutExt(path));
+        //
+        // Assimp::Importer importer;
+        // const aiScene* scene = importer.ReadFile(path.data(), aiProcess_Triangulate | aiProcess_FlipUVs);
+        //
+        // if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
+        // {
+        //     error = importer.GetErrorString();
+        //     return nullptr;
+        // }
+        // string directory = string{ path.substr(0, path.find_last_of('/')) };
+        //
+        // for (unsigned int i = 0; i < scene->mRootNode->mNumChildren; i++)
+        // {
+        //     _ProcessNode(scene->mRootNode->mChildren[i], scene, node, directory, scale_factor);
+        // }
+        //
+        // return node;
+        return {};
     }
 }

@@ -1,36 +1,31 @@
 #pragma once
 
+#include "Pulsar/BuiltinAsset.h"
+
+#include "Pulsar/MaterialParameterValue.h"
 #include <Pulsar/AssetObject.h>
 #include <Pulsar/Assets/Texture.h>
 #include <Pulsar/IGPUResource.h>
 #include <Pulsar/ObjectBase.h>
 #include <Pulsar/Rendering/ShaderPass.h>
 #include <Pulsar/Rendering/Types.h>
+#include <functional>
 #include <gfx/GFXApi.h>
 #include <gfx/GFXShaderPass.h>
 #include <mutex>
 
 namespace pulsar
 {
-    CORELIB_DEF_ENUM(AssemblyObject_pulsar, pulsar,
-        ShaderPassRenderingType,
-        OpaqueForward,
-        OpaqueDeferred,
-        Transparency,
-        PostProcessing,
-        );
-
-    CORELIB_DEF_ENUM(AssemblyObject_pulsar, pulsar,
-        ShaderParameterType,
-        IntScalar,
-        Scalar,
-        Vector,
-        Texture2D,
-    )
+    struct ShaderSourceData
+    {
+        struct ApiPlatform
+        {
+            string Config;
+            hash_map<gfx::GFXShaderStageFlags, array_list<char>> Sources;
+        };
+        hash_map<gfx::GFXApi, ApiPlatform> ApiMaps;
+    };
 }
-
-CORELIB_DECL_BOXING(pulsar::ShaderPassRenderingType, pulsar::BoxingShaderPassRenderingType);
-CORELIB_DECL_BOXING(pulsar::ShaderParameterType, pulsar::BoxingShaderParameterType);
 
 namespace pulsar
 {
@@ -48,6 +43,7 @@ namespace pulsar
 
         CORELIB_REFL_DECL_FIELD(Value);
         string Value;
+
     };
     CORELIB_DECL_SHORTSPTR(ShaderPassConfigProperty);
 
@@ -80,23 +76,19 @@ namespace pulsar
         CORELIB_REFL_DECL_FIELD(Properties, new ListItemAttribute(cltypeof<ShaderPassConfigProperty>()));
         List_sp<ShaderPassConfigProperty_sp> Properties;
 
+        CORELIB_REFL_DECL_FIELD(FeatureDeclare);
+        List_sp<string> FeatureDeclare;
+
         ShaderPassConfig()
         {
-            new_init_sptr(ConstantProperties);
-            new_init_sptr(Properties);
+            init_sptr_member(ConstantProperties);
+            init_sptr_member(Properties);
+            init_sptr_member(FeatureDeclare);
         }
     };
     CORELIB_DECL_SHORTSPTR(ShaderPassConfig);
 
-    struct ShaderSourceData
-    {
-        struct ApiPlatform
-        {
-            string Config;
-            hash_map<gfx::GFXShaderStageFlags, array_list<char>> Sources;
-        };
-        hash_map<gfx::GFXApi, ApiPlatform> ApiMaps;
-    };
+
 
     std::iostream& ReadWriteStream(std::iostream& stream, bool write, ShaderSourceData& data);
 
@@ -117,51 +109,57 @@ namespace pulsar
     class Shader final : public AssetObject
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::Shader, AssetObject);
-        CORELIB_CLASS_ATTR(new MenuItemCreateAssetAttribute);
+        CORELIB_CLASS_ATTR(new CreateAssetAttribute(BuiltinAsset::Shader_Missing));
     public:
         virtual void Serialize(AssetSerializer* s) override;
 
-        static sptr<Shader> StaticCreate(string_view name, ShaderSourceData&& pass);
+        static RCPtr<Shader> StaticCreate(string_view name, ShaderSourceData&& pass);
+
+        void OnInstantiateAsset(AssetObject* obj) override;
 
     public:
         Shader();
 
         virtual void OnDestroy() override;
 
-        void ResetShaderSource(const ShaderSourceData& serData);
+        void ResetShaderSource(ShaderSourceData&& serData);
         const ShaderSourceData& GetSourceData() const { return m_shaderSource; }
         String_sp GetPassName() const { return m_passName; }
 
         ShaderPassConfig* GetConfig() const;
-        void SetConfig(ShaderPassConfig_rsp value) { m_shaderConfig = value; }
 
         array_list<gfx::GFXApi> GetSupportedApi() const;
         bool HasSupportedApiData(gfx::GFXApi api) const;
 
-        ShaderPassRenderingType GetRenderingType() const { return m_renderingType; }
+        array_list<index_string> GetPropertyNames() const;
+        const MaterialParameterInfo* GetPropertyInfo(index_string name) const;
+
+        size_t GetConstantBufferSize() const noexcept { return m_constantBufferSize; }
+        auto& GetFeatureOptions() noexcept { return m_featureOptions; }
+
+        bool IsReady() const { return m_isReady; }
+        void SetReady(bool b);
+    protected:
+        void Initialize();
     private:
         ShaderSourceData m_shaderSource;
 
         CORELIB_REFL_DECL_FIELD(m_passName);
         String_sp m_passName;
 
-        CORELIB_REFL_DECL_FIELD(m_preDefines);
+        CORELIB_REFL_DECL_FIELD(m_preDefines, new ListItemAttribute(cltypeof<String>()));
         List_sp<String_sp> m_preDefines;
 
-        // CORELIB_REFL_DECL_FIELD(m_shaderConfig);
+        array_list<string> m_featureOptions;
+
+        size_t m_compiledHash{};
+
+        // runtime data
+        hash_map<index_string, MaterialParameterInfo> m_propertyInfo;
         ShaderPassConfig_sp m_shaderConfig;
+        size_t m_constantBufferSize{};
 
-        CORELIB_REFL_DECL_FIELD(m_renderingType);
-        ShaderPassRenderingType m_renderingType{};
-    public:
-
-        #ifdef WITH_EDITOR
-
-        Action<> OnAvailableChanged;
-        std::mutex m_isAvailableMutex;
-        bool m_isAvailable = false;
-
-        #endif
+        bool m_isReady{};
     };
     DECL_PTR(Shader);
 

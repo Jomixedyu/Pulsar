@@ -7,7 +7,7 @@
 namespace jxcorlib
 {
 
-    void ObjectUtil::DeepCopyObject(const sptr<Object>& from, sptr<Object>& to)
+    void ObjectUtil::DeepCopyObject(const SPtr<Object>& from, SPtr<Object>& to)
     {
         using namespace ::jxcorlib;
 
@@ -58,7 +58,7 @@ namespace jxcorlib
         }
     }
 
-    sptr<Object> ObjectUtil::DeepCopyObject(const sptr<Object>& from)
+    SPtr<Object> ObjectUtil::DeepCopyObject(const SPtr<Object>& from)
     {
         auto obj = from->GetType()->CreateSharedInstance({});
         DeepCopyObject(from, obj);

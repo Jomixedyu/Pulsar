@@ -256,15 +256,15 @@ namespace jxcorlib
         {
         public:
             enum { kStrong, kWeak } m_mode;
-            sptr<TObj> m_instance;
-            wptr<TObj> m_weakInst;
+            SPtr<TObj> m_instance;
+            WPtr<TObj> m_weakInst;
             TReturn(TObj::* ptr_)(TArgs...);
 
-            MemberFunctionInfo(const sptr<TObj>& instance, TReturn(TObj::* ptr)(TArgs...))
+            MemberFunctionInfo(const SPtr<TObj>& instance, TReturn(TObj::* ptr)(TArgs...))
                 : FunctionInfo(FunctionInfoType::Member), m_instance(instance), ptr_(ptr), m_mode(kStrong)
             {
             }
-            MemberFunctionInfo(const wptr<TObj>& instance, TReturn(TObj::* ptr)(TArgs...))
+            MemberFunctionInfo(const WPtr<TObj>& instance, TReturn(TObj::* ptr)(TArgs...))
                 : FunctionInfo(FunctionInfoType::Member), m_weakInst(instance), ptr_(ptr), m_mode(kWeak)
             {
             }
@@ -298,31 +298,31 @@ namespace jxcorlib
         FunctionDelegate(const FunctionType& func) : func_ptr_(new LambdaFunctionInfo(func)) {}
 
         template<typename TObject>
-        FunctionDelegate(const sptr<TObject>& obj, TReturn(TObject::* ptr)(TArgs...))
+        FunctionDelegate(const SPtr<TObject>& obj, TReturn(TObject::* ptr)(TArgs...))
             : func_ptr_(new MemberFunctionInfo<TObject>(obj, ptr))
         {}
         template<typename TObject>
-        FunctionDelegate(const wptr<TObject>& obj, TReturn(TObject::* ptr)(TArgs...))
+        FunctionDelegate(const WPtr<TObject>& obj, TReturn(TObject::* ptr)(TArgs...))
             : func_ptr_(new MemberFunctionInfo<TObject>(obj, ptr))
         {}
     public:
-        static sptr<FunctionDelegate> FromRaw(FunctionPointer funcptr)
+        static SPtr<FunctionDelegate> FromRaw(FunctionPointer funcptr)
         {
             return mksptr(new FunctionDelegate(funcptr));
         }
-        static sptr<FunctionDelegate> FromLambda(const FunctionType& func)
+        static SPtr<FunctionDelegate> FromLambda(const FunctionType& func)
         {
             return mksptr(new FunctionDelegate(func));
         }
 
         template<typename TObject>
-        static sptr<FunctionDelegate> FromMember(const sptr<TObject>& obj, TReturn(TObject::* ptr)(TArgs...))
+        static SPtr<FunctionDelegate> FromMember(const SPtr<TObject>& obj, TReturn(TObject::* ptr)(TArgs...))
         {
             return mksptr(new FunctionDelegate(obj, ptr));
         }
 
         template<typename TObject>
-        static sptr<FunctionDelegate> FromWeakMember(const wptr<TObject>& obj, TReturn(TObject::* ptr)(TArgs...))
+        static SPtr<FunctionDelegate> FromWeakMember(const WPtr<TObject>& obj, TReturn(TObject::* ptr)(TArgs...))
         {
             return mksptr(new FunctionDelegate(obj, ptr));
         }

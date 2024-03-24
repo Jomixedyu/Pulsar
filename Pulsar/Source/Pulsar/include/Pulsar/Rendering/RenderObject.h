@@ -20,19 +20,37 @@ namespace pulsar::rendering
     {
         array_list<MeshBatchElement> Elements;
         gfx::GFXDescriptorSetLayout_sp DescriptorSetLayout;
-        Material_ref Material;
+        RCPtr<Material> Material;
 
         gfx::GFXGraphicsPipelineState State{};
-        bool IsUsedIndices;
-        bool IsWireframe;
-        bool IsCastShadow;
+        bool IsUsedIndices{};
+        bool IsWireframe{};
+        bool IsCastShadow{};
+        gfx::GFXCullMode CullMode{};
+        bool IsReverseCulling{false};
 
         size_t GetRenderState() const
         {
             constexpr size_t prime = 16777619;
             return (2166136261 * prime
-                ^ std::hash<ObjectPtrBase>()(Material)) * prime
+                ^ std::hash<RCPtrBase>()(Material)) * prime
                 ^ State.GetHashCode() * prime;
+        }
+
+        gfx::GFXCullMode GetCullMode() const
+        {
+            if (IsReverseCulling)
+            {
+                if (CullMode == gfx::GFXCullMode::Front)
+                {
+                    return gfx::GFXCullMode::Back;
+                }
+                if (CullMode == gfx::GFXCullMode::Back)
+                {
+                    return gfx::GFXCullMode::Front;
+                }
+            }
+            return CullMode;
         }
 
         void Append(const MeshBatch& batch)

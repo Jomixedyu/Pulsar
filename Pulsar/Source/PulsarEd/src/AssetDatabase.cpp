@@ -9,11 +9,12 @@
 #include <gfx/GFXImage.h>
 #include <ranges>
 #include <unordered_set>
+#include <utility>
 
 namespace pulsared
 {
 
-    static std::unordered_set<ObjectHandle> _DirtyObjects;
+    static std::unordered_set<RCPtr<AssetObject>> _DirtyObjects;
 
     class PackageAssetRegistry
     {
@@ -31,7 +32,7 @@ namespace pulsared
 
             newNode->IsFolder = i.is_directory();
             newNode->PhysicsPath = i.path();
-            newNode->AssetName = i.path().stem().string();
+            newNode->AssetName = StringUtil::StringCast(i.path().stem().u8string());
             newNode->AssetPath = node->AssetPath + '/' + newNode->AssetName;
             newNode->IsCreated = true;
 
@@ -60,15 +61,32 @@ namespace pulsared
 
     }
 
-    AssetObject_ref AssetDatabase::LoadAssetAtPath(string_view path)
+    static std::array<std::filesystem::path, 3> _GetClusterPhysicPath(const std::filesystem::path path)
+    {
+        auto physic = path;
+        physic.replace_extension();
+
+        auto physicMeta = physic;
+        physicMeta.replace_extension(".pmeta");
+
+        auto physicAsset = physic;
+        physicAsset.replace_extension(".pa");
+
+        auto physicBinary = physic;
+        physicBinary.replace_extension(".pba");
+
+        return { physicMeta, physicAsset, physicBinary };
+    }
+
+    RCPtr<AssetObject> AssetDatabase::LoadAssetAtPath(string_view path)
     {
         // string pathStr{path};
 
         if(auto id = GetIdByPath(path))
         {
-            if(auto obj = RuntimeObjectWrapper::GetObject(id))
+            if(auto obj = RuntimeObjectManager::GetObject(id))
             {
-                return id;
+                return obj;
             }
         }
 
@@ -82,12 +100,12 @@ namespace pulsared
             return GetIdByPath(path);
         }
 
-        sptr<AssetObject> assetObj;
+        SPtr<AssetObject> assetObj;
 
         auto json = FileUtil::ReadAllText(node->GetPhysicsPath());
         auto meta = ser::JsonSerializer::Deserialize<AssetMetaData>(json);
 
-        if (auto existObj = RuntimeObjectWrapper::GetObject(meta->Handle))
+        if (auto existObj = RuntimeObjectManager::GetObject(meta->Handle))
         {
             return static_cast<AssetObject*>(existObj);
         }
@@ -124,7 +142,7 @@ namespace pulsared
         return assetObj;
     }
 
-    AssetObject_ref AssetDatabase::LoadAssetById(ObjectHandle id)
+    RCPtr<AssetObject> AssetDatabase::LoadAssetById(ObjectHandle id)
     {
         for (auto& [packageName, registry] : _AssetRegistry)
         {
@@ -157,9 +175,9 @@ namespace pulsared
 
         return {};
     }
-    string AssetDatabase::GetPathByAsset(AssetObject_ref asset)
+    string AssetDatabase::GetPathByAsset(const RCPtr<AssetObject>& asset)
     {
-        return GetPathById(asset.handle);
+        return GetPathById(asset.GetHandle());
     }
 
     ObjectHandle AssetDatabase::GetIdByPath(string_view path)
@@ -184,13 +202,8 @@ namespace pulsared
         return p;
     }
 
-    array_list<string> AssetDatabase::GetFoldersByPath(string_view path)
-    {
-        return {};
-    }
 
-
-    void AssetDatabase::ResolveDirty(AssetObject_ref asset)
+    void AssetDatabase::ResolveDirty(const RCPtr<AssetObject>& asset) noexcept
     {
         auto it = _DirtyObjects.find(asset.GetHandle());
         if (it != _DirtyObjects.end())
@@ -199,19 +212,19 @@ namespace pulsared
         }
     }
 
-    bool AssetDatabase::ExistsAsset(AssetObject_ref asset)
+    bool AssetDatabase::ExistsAsset(const RCPtr<AssetObject>& asset)
     {
         return !GetPathByAsset(asset).empty();
     }
 
     void AssetDatabase::ReloadAsset(ObjectHandle id)
     {
-        RuntimeObjectWrapper::DestroyObject(id, true);
+        RuntimeObjectManager::DestroyObject(id, true);
         LoadAssetById(id);
         ResolveDirty(id);
     }
 
-    void AssetDatabase::Save(AssetObject_ref asset)
+    void AssetDatabase::Save(const RCPtr<AssetObject>& asset)
     {
         if (!asset)
             return;
@@ -246,6 +259,7 @@ namespace pulsared
             asset->Serialize(&ser);
 
             FileUtil::WriteAllText(assetPhyicsPath, textAssetObject->ToString());
+            node->IsPhysicsFile = true;
 
             ResolveDirty(asset);
             asset->SetObjectFlags(asset->GetObjectFlags() | OF_Persistent);
@@ -260,32 +274,49 @@ namespace pulsared
 
         for (auto& item : copy)
         {
-            Save(item);
+            Save(item.GetPtr());
         }
     }
 
     void AssetDatabase::NewAsset(string_view folderPath, string_view assetName, Type* assetType)
     {
         Logger::Log("new asset : " + string{folderPath} + " ; " + string{assetName});
-        const auto asset = sptr_cast<AssetObject>(assetType->CreateSharedInstance({}));
-        asset->Construct();
+
+        auto attr = assetType->GetAttribute<CreateAssetAttribute>(false);
+
+        RCPtr<AssetObject> asset;
+        if (attr && attr->GetInstantiatePath())
+        {
+            auto _asset = LoadAssetAtPath(attr->GetInstantiatePath());
+            asset = _asset->InstantiateAsset();
+        }
+        else
+        {
+            asset = sptr_cast<AssetObject>(assetType->CreateSharedInstance({}));
+            asset->Construct();
+        }
+
         CreateAsset(asset, GetUniquePath(string{folderPath} + "/" + string{assetName}));
     }
 
-    static void _WriteAssetToDisk(std::shared_ptr<AssetFileNode> root, string_view path, AssetObject_ref asset)
+    static void _WriteAssetToDisk(
+        const std::shared_ptr<AssetFileNode>& root,
+        string_view path,
+        RCPtr<AssetObject> asset)
     {
         const auto newAsset = root->PrepareChildFile(path, ".pmeta");
         newAsset->AssetMeta = mksptr(new AssetMetaData);
         newAsset->AssetMeta->Type = asset->GetType()->GetName();
-        newAsset->AssetMeta->Handle = asset.handle;
-
+        newAsset->AssetMeta->Handle = asset.GetHandle();
+        newAsset->IsPhysicsFile = false;
+        //newAsset->PhysicsPath = phypath;
         // ser::JsonSerializerSettings settings;
         // settings.IndentSpace = 2;
         // const auto json = ser::JsonSerializer::Serialize(newAsset->AssetMeta.get(), settings);
         // FileUtil::WriteAllText(newAsset->PhysicsPath, json);
     }
 
-    bool AssetDatabase::CreateAsset(AssetObject_ref asset, string_view path)
+    bool AssetDatabase::CreateAsset(const RCPtr<AssetObject>& asset, string_view path)
     {
         if (ExistsAsset(asset))
         {
@@ -297,7 +328,7 @@ namespace pulsared
         }
 
         _WriteAssetToDisk(FileTree, path, asset);
-        _AssetRegistry[GetPackageName(path)].AssetPathMapping[asset.handle] = path;
+        _AssetRegistry[GetPackageName(path)].AssetPathMapping[asset->GetObjectHandle()] = path;
 
         MarkDirty(asset);
 
@@ -305,75 +336,248 @@ namespace pulsared
         return true;
     }
 
-    bool AssetDatabase::DeleteAsset(string_view assetPath)
+    bool AssetDatabase::DeleteAssets(const array_list<string>& assetPaths, array_list<string>* errinfo)
     {
-        if (!ExistsAssetPath(assetPath))
-        {
-            return false;
-        }
-        if (!OnRequestDeleteAsset.IsValidReturnInvoke(assetPath))
-        {
-            return false;
-        }
-        OnDeletedAsset.Invoke(assetPath);
+        namespace fs = std::filesystem;
 
-        // delete asset
-        auto physicPath = AssetPathToPhysicsPath(assetPath);
+        array_list<AssetFileNodePtr> nodes;
+        nodes.reserve(assetPaths.size());
 
+        // check
+        for (auto path : assetPaths)
         {
-            auto node = FileTree->Find(assetPath);
+            auto node = FileTree->Find(path);
+            if (node == nullptr)
+            {
+                nulable$(errinfo)->push_back("not found:" + string{path});
+                return false;
+            }
+            if (node->IsFolder)
+            {
+                nulable$(errinfo)->push_back("existing folder:" + string{path});
+                return false;
+            }
+            if (!OnRequestDeleteAsset.IsValidReturnInvoke(path, errinfo))
+            {
+                return false;
+            }
+            nodes.push_back(node);
+        }
+
+        for (const auto& node : nodes)
+        {
+            string packageName = node->GetPackageName();
+            string assetPath = node->AssetPath;
+
+            OnDeletedAsset.Invoke(assetPath);
+            auto physicPath = AssetPathToPhysicsPath(assetPath);
+
+            // remove virtual file tree
             auto parentNode = node->Parent.lock();
             parentNode->RemoveChild(node);
+
+            // destroy memory object
+            auto handle = GetIdByPath(assetPath);
+            if (RuntimeObjectManager::IsValid(handle))
+            {
+                ObjectPtr<AssetObject> asset = RuntimeObjectManager::GetObject(handle)->GetObjectHandle();
+                DestroyObject(asset, true);
+            }
+
+            // unregister registry
+            auto assetId = GetIdByPath(assetPath);
+            _AssetRegistry.at(packageName).AssetPathMapping.erase(assetId);
+
+            // delete physic file
+            for (auto& removePath : _GetClusterPhysicPath(physicPath))
+            {
+                if (std::filesystem::exists(removePath))
+                {
+                    std::filesystem::remove(removePath);
+                }
+            }
+
         }
-        auto handle = GetIdByPath(assetPath);
-        if (RuntimeObjectWrapper::IsValid(handle))
-        {
-            ObjectPtr<AssetObject> asset = RuntimeObjectWrapper::GetObject(handle)->GetObjectHandle();
-            DestroyObject(asset, true);
-        }
-        // todo: remove registry mapping
-        if (std::filesystem::exists(physicPath))
-        {
-            std::filesystem::remove(physicPath);
-        }
+
+
         return true;
     }
 
-    static void _FindAssets(array_list<string>& paths, AssetFileNode* node, Type* type)
+    void AssetDatabase::DeleteEmptyFolder(string_view path)
     {
-        if(node->GetAssetType() == type)
+        auto node = FileTree->Find(path);
+        if (node)
         {
-            paths.push_back(node->AssetPath);
+            node->Parent.lock()->RemoveChild(node);
+            if (std::filesystem::exists(node->PhysicsPath))
+            {
+                std::filesystem::remove(node->PhysicsPath);
+            }
         }
+    }
+
+    void AssetDatabase::DeleteFolder(string_view path, array_list<string>* errinfo)
+    {
+        AssetFilter filter;
+        filter.BlackList.push_back(cltypeof<FolderAsset>());
+        filter.FolderPath = path;
+
+        if (DeleteAssets(FindAssets(filter), errinfo))
+        {
+            DeleteEmptyFolder(path);
+        }
+    }
+
+    static void _FindAssets(array_list<string>& paths, AssetFileNode* node, const AssetFilter& filter)
+    {
+        if (filter.FolderPath.empty() || node->Parent.lock()->AssetPath == filter.FolderPath)
+        {
+            if (!filter.WhiteList.empty())
+            {
+                if (std::ranges::contains(filter.WhiteList, node->GetAssetType()))
+                {
+                    paths.push_back(node->AssetPath);
+                }
+            }
+            else if(!filter.BlackList.empty())
+            {
+                if (!std::ranges::contains(filter.BlackList, node->GetAssetType()))
+                {
+                    paths.push_back(node->AssetPath);
+                }
+            }
+            else
+            {
+                paths.push_back(node->AssetPath);
+            }
+        }
+
         for (auto child : node->GetChildren())
         {
-            _FindAssets(paths, child.get(), type);
+            _FindAssets(paths, child.get(), filter);
         }
     }
-    array_list<string> AssetDatabase::FindAssets(Type* type)
+    array_list<string> AssetDatabase::FindAssets(const AssetFilter& filter)
     {
         array_list<string> ret;
-        _FindAssets(ret, FileTree.get(), type);
+        for (const auto& package : FileTree->GetChildren())
+        {
+            _FindAssets(ret, package.get(), filter);
+        }
         return ret;
     }
-
-    void AssetDatabase::MarkDirty(AssetObject_ref asset)
+    array_list<string> AssetDatabase::FindAssets(Type* type, string_view folderPath)
     {
-        _DirtyObjects.insert(asset.GetHandle());
+        AssetFilter filter;
+        filter.WhiteList.push_back(type);
+        filter.WhiteList.push_back(type);
+        filter.FolderPath = folderPath;
+        return FindAssets(filter);
+    }
+    static bool _IsEmptyFolder(const AssetFileNodePtr& folderNode)
+    {
+        if (folderNode == nullptr)
+        {
+            return false;
+        }
+
+        for (const auto& child : folderNode->GetChildren())
+        {
+            if (!child->IsFolder || !_IsEmptyFolder(child))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
-    bool AssetDatabase::IsDirty(AssetObject_ref asset)
+    bool AssetDatabase::IsEmptyFolder(string_view path) noexcept
     {
-        return _DirtyObjects.contains(asset.GetHandle());
+        if (auto node = FileTree->Find(path))
+        {
+            return _IsEmptyFolder(node);
+        }
+        return false;
+    }
+
+    static bool _RenameAsset(string_view srcAsset, string_view dstAsset)
+    {
+        auto destNode = AssetDatabase::FileTree->Find(dstAsset);
+        auto node = AssetDatabase::FileTree->Find(srcAsset);
+
+        if (destNode || !node)
+        {
+            return false;
+        }
+
+
+        auto srcFiles = _GetClusterPhysicPath(node->PhysicsPath);
+
+        auto dstFile = AssetDatabase::AssetPathToPhysicsPath(dstAsset);
+
+        if (node->IsPhysicsFile)
+        {
+            for (int i = 0; i < srcFiles.size(); ++i)
+            {
+                auto target = dstFile;
+                target.replace_extension(srcFiles[i].extension());
+                std::filesystem::rename(srcFiles[i], target);
+            }
+        }
+
+        auto dstFolder = AssetDatabase::AssetPathToParentPath(dstAsset);
+        auto dstFolderNode = AssetDatabase::FileTree->Find(dstFolder);
+
+        node->Parent.lock()->RemoveChild(node);
+        node->PhysicsPath = AssetDatabase::AssetPathToPhysicsPath(dstAsset).replace_extension(".pmeta");
+        node-> SetAssetPath(dstAsset);
+        dstFolderNode->AddChild(node);
+
+        auto packageName = AssetDatabase::GetPackageName(srcAsset);
+        _AssetRegistry.at(packageName).AssetPathMapping.at(node->AssetMeta->Handle) = dstAsset;
+
+
+        return true;
+    }
+
+    bool AssetDatabase::Rename(string_view srcAsset, string_view dstAsset)
+    {
+        auto destNode = FileTree->Find(dstAsset);
+        auto node = FileTree->Find(srcAsset);
+
+        if (destNode || !node)
+        {
+            return false;
+        }
+
+        // todo : if srcAsset is folder
+        if (IsFolderPath(srcAsset))
+        {
+
+            return false;
+        }
+
+        return _RenameAsset(srcAsset, dstAsset);
+    }
+
+    void AssetDatabase::MarkDirty(const RCPtr<AssetObject>& asset) noexcept
+    {
+        _DirtyObjects.insert(asset);
+    }
+
+    bool AssetDatabase::IsDirty(const RCPtr<AssetObject>& asset) noexcept
+    {
+        return _DirtyObjects.contains(asset);
     }
 
     Type* AssetFileNode::GetAssetType() const
     {
-        if(IsFolder)
+        if (IsFolder)
         {
             return cltypeof<FolderAsset>();
         }
-        if(AssetMeta)
+        if (AssetMeta)
         {
             return AssemblyManager::GlobalFindType(AssetMeta->Type);
         }
@@ -398,13 +602,13 @@ namespace pulsared
         FileTree->IsCollapsed = true;
 
         Workspace::OnWorkspaceOpened += _OnWorkspaceOpened;
-        RuntimeObjectWrapper::OnPostEditChanged += _OnPostEditChanged;
+        RuntimeObjectManager::OnPostEditChanged += _OnPostEditChanged;
     }
 
     void AssetDatabase::Terminate()
     {
         Workspace::OnWorkspaceOpened -= _OnWorkspaceOpened;
-        RuntimeObjectWrapper::OnPostEditChanged -= _OnPostEditChanged;
+        RuntimeObjectManager::OnPostEditChanged -= _OnPostEditChanged;
         IconPool.reset();
         decltype(_DirtyObjects){}.swap(_DirtyObjects);
         decltype(_AssetRegistry){}.swap(_AssetRegistry);
@@ -417,7 +621,7 @@ namespace pulsared
 
     static array_list<std::filesystem::path> _PackageSearchPaths;
 
-    void AssetDatabase::AddProgramPackageSearchPath(std::filesystem::path path)
+    void AssetDatabase::AddProgramPackageSearchPath(const std::filesystem::path& path)
     {
         auto absPath = std::filesystem::absolute(path);
         _PackageSearchPaths.push_back(absPath);
@@ -486,6 +690,33 @@ namespace pulsared
     std::filesystem::path AssetDatabase::AssetPathToPhysicsPath(string_view assetPath)
     {
         return PackagePathToPhysicsPath(AssetPathToPackagePath(assetPath));
+    }
+    string AssetDatabase::AssetPathToAssetName(string_view assetPath)
+    {
+        auto index = assetPath.rfind('/');
+        if (index != string_view::npos)
+        {
+            return string{assetPath.substr(index + 1)};
+        }
+        return string{assetPath};
+    }
+    string AssetDatabase::AssetPathToParentPath(string_view path)
+    {
+        auto index = path.rfind('/');
+        if (index != string_view::npos)
+        {
+            return string{path.substr(0, index)};
+        }
+        return string{path};
+    }
+    bool AssetDatabase::IsFolderPath(string_view assetPath)
+    {
+        auto node = FileTree->Find(assetPath);
+        if (node && node->IsFolder)
+        {
+            return true;
+        }
+        return false;
     }
 
     array_list<ProgramPackage> AssetDatabase::GetPackageInfos()

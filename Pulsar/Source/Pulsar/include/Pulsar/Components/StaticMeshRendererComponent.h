@@ -3,6 +3,7 @@
 #include "Pulsar/Application.h"
 
 #include "Component.h"
+#include "MeshRendererComponent.h"
 #include "RendererComponent.h"
 #include <Pulsar/Assets/Material.h>
 #include <Pulsar/Assets/StaticMesh.h>
@@ -16,27 +17,27 @@ namespace pulsar
     class ShaderPass;
     class StaticMeshRenderObject;
 
-    class StaticMeshRendererComponent : public Component, public IRendererComponent
+    class StaticMeshRendererComponent : public MeshRendererComponent, public IRendererComponent
     {
-        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::StaticMeshRendererComponent, Component);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::StaticMeshRendererComponent, MeshRendererComponent);
         CORELIB_IMPL_INTERFACES(IRendererComponent);
     public:
-        sptr<rendering::RenderObject> CreateRenderObject() override;
+        SPtr<rendering::RenderObject> CreateRenderObject() override;
     public:
-        List_sp<Material_ref> GetMaterials() const { return this->m_materials; }
+        List_sp<RCPtr<Material>> GetMaterials() const { return this->m_materials; }
 
         void PostEditChange(FieldInfo* info) override;
 
-        StaticMeshRendererComponent() : CORELIB_INIT_INTERFACE(IRendererComponent)
-        {
-            m_materials = mksptr(new List<Material_ref>);
-        }
+        StaticMeshRendererComponent();
 
-        StaticMesh_ref GetStaticMesh() const { return m_staticMesh; }
-        void SetStaticMesh(StaticMesh_ref staticMesh);
+        bool HasBounds() const override { return true; }
+        Bounds3f GetBounds() override;
 
-        Material_ref GetMaterial(int index) const;
-        void SetMaterial(int index, Material_ref material);
+        RCPtr<StaticMesh> GetStaticMesh() const { return m_staticMesh; }
+        void SetStaticMesh(RCPtr<StaticMesh> staticMesh);
+
+        RCPtr<StaticMesh> GetMaterial(int index) const;
+        void SetMaterial(int index, RCPtr<Material> material);
         size_t AddMaterial();
         void RemoveMaterial(size_t index);
         size_t GetMaterialCount() const { return m_materialsSize; }
@@ -49,21 +50,22 @@ namespace pulsar
         int32_t GetRenderQueuePriority() const { return m_renderQueuePriority; }
         void SetRenderQueuePriority(int32_t value) { m_renderQueuePriority = value; }
     protected:
+        void OnDependencyMessage(ObjectHandle inDependency, DependencyObjectState msg) override;
         void ResizeMaterials(size_t size);
-        void BeginListenMaterialStateChanged(size_t index);
-        void EndListenMaterialStateChanged(size_t index);
+        // void BeginListenMaterialStateChanged(size_t index);
+        // void EndListenMaterialStateChanged(size_t index);
         void OnMaterialStateChanged();
         void OnMsg_TransformChanged() override;
         void OnMeshChanged();
         void OnMaterialChanged();
     protected:
         CORELIB_REFL_DECL_FIELD(m_materials, new ListItemAttribute(cltypeof<Material>()));
-        List_sp<Material_ref> m_materials;
+        List_sp<RCPtr<Material>> m_materials;
+        //array_list<RCPtr<Material>> m_gpuMaterials;
         size_t m_materialsSize = 0;
-        array_list<uint32_t> m_materialStateChangedCallbacks;
 
         CORELIB_REFL_DECL_FIELD(m_staticMesh);
-        StaticMesh_ref m_staticMesh;
+        RCPtr<StaticMesh> m_staticMesh;
 
         CORELIB_REFL_DECL_FIELD(m_isCastShadow);
         bool m_isCastShadow = true;
@@ -71,7 +73,7 @@ namespace pulsar
         CORELIB_REFL_DECL_FIELD(m_renderQueuePriority);
         int32_t m_renderQueuePriority{1000};
 
-        sptr<StaticMeshRenderObject> m_renderObject;
+        SPtr<StaticMeshRenderObject> m_renderObject;
 
     private:
 

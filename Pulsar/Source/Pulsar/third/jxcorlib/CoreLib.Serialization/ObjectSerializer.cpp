@@ -196,6 +196,10 @@ namespace jxcorlib::ser
 
         virtual std::shared_ptr<Varient> At(const std::string& key) override
         {
+            if (!js.contains(key))
+            {
+                return nullptr;
+            }
             auto n = JSON_CAST(New());
             n->js = js[key];
             return n;
@@ -217,6 +221,10 @@ namespace jxcorlib::ser
     void Varient::Add(std::string_view key, std::shared_ptr<Varient> value)
     {
         Add(key.data(), std::move(value));
+    }
+    void Varient::Add(std::string_view key, bool value)
+    {
+        Add(key.data(), New(VarientType::Bool)->Assign(value));
     }
     void Varient::Add(std::string_view key, int value)
     {

@@ -13,15 +13,12 @@ namespace gfx
     GFXVulkanShaderPass::GFXVulkanShaderPass(
         GFXVulkanApplication* app,
         const GFXShaderPassConfig& config,
-        const std::shared_ptr<GFXVulkanGpuProgram>& gpuProgram,
-        //const array_list<GFXDescriptorSetLayout_sp>& descriptorSetLayout,
-        const array_list<GFXVertexLayoutDescription_sp>& vertexLayout
+        const std::shared_ptr<GFXVulkanGpuProgram>& gpuProgram
     ) :
         m_app(app),
         m_passConfig(config),
-        m_gpuProgram(gpuProgram),
+        m_gpuProgram(gpuProgram)
         //m_descriptorSetLayout(descriptorSetLayout),
-        m_vertexLayoutDescription(vertexLayout)
     {
 
         VkPipelineShaderStageCreateInfo vertShaderStageInfo{};

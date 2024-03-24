@@ -19,12 +19,12 @@ namespace pulsared
             const std::vector<std::filesystem::path>& includes, const std::vector<string>& defines);
 
         static void CompileShader(
-            Shader_ref shader,
+            Shader* shader,
             const array_list<gfx::GFXApi>& api,
             const std::vector<std::filesystem::path>& includes,
             const std::vector<string>& defines);
 
-        static void CompileShader(Shader_ref shader);
+        static void CompileShader(Shader* shader);
 
 
     };

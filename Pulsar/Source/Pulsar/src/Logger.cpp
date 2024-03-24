@@ -31,7 +31,10 @@ namespace pulsar
     {
         LogRecord record;
         record.level = level;
-        record.stacktrace = std::stacktrace::current(1);
+        if (level != LogLevel::Info)
+        {
+            record.stacktrace = std::stacktrace::current(1);
+        }
         _GetTime(record.time);
         record.text.reserve(str.size() + 16);
 

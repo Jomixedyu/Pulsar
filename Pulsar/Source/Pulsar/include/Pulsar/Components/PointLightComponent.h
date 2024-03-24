@@ -12,6 +12,6 @@ namespace pulsar
         void EndComponent() override;
 
         void OnMsg_TransformChanged() override;
-        sptr<rendering::RenderObject> m_gizmos;
+        SPtr<rendering::RenderObject> m_gizmos;
     };
 }

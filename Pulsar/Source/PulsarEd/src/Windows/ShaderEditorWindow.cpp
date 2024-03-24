@@ -20,7 +20,7 @@ namespace pulsared
         CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::ShaderEditorMenuContext, AssetEditorMenuContext);
 
     public:
-        ShaderEditorMenuContext(AssetObject_ref asset)
+        ShaderEditorMenuContext(RCPtr<AssetObject> asset)
             : base(asset)
         {
         }
@@ -38,13 +38,13 @@ namespace pulsared
 
                 {
                     const auto entry = mksptr(new MenuEntryButton("Compile Shader"));
-                    entry->Action = MenuAction::FromLambda([](const sptr<MenuContexts>& ctxs) {
+                    entry->Action = MenuAction::FromLambda([](const SPtr<MenuContexts>& ctxs) {
                         const auto ctx = ctxs->FindContext<AssetEditorMenuContext>();
                         if (!ctx)
                             return;
-                        if (const Shader_ref shader = ref_cast<Shader>(ctx->Asset))
+                        if (const RCPtr<Shader> shader = cref_cast<Shader>(ctx->Asset))
                         {
-                            ShaderCompiler::CompileShader(shader);
+                            ShaderCompiler::CompileShader(shader.GetPtr());
                         }
                     });
                     menu->AddEntry(entry);
@@ -64,28 +64,27 @@ namespace pulsared
     void ShaderEditorWindow::OnOpen()
     {
         base::OnOpen();
-        Shader_ref shader = m_assetObject;
+        RCPtr<Shader> shader = cref_cast<Shader>(m_assetObject);
 
-        // m_previewMaterial = Material::StaticCreate("PreviewMaterial");
-        // m_previewMaterial->SetShader(m_assetObject);
-        // m_previewMaterial->CreateGPUResource();
-        //
-        // auto previewMesh = Node::StaticCreate("PreviewMesh");
-        // auto renderer = previewMesh->AddComponent<StaticMeshRendererComponent>();
-        //
-        // renderer->SetStaticMesh(GetAssetManager()->LoadAsset<StaticMesh>(BuiltinAsset::Shapes_Sphere));
-        //
-        // m_world->GetPersistentScene()->AddNode(previewMesh);
-        //
-        // if (m_previewMaterial->GetShader()->GetRenderingType() == ShaderPassRenderingType::PostProcessing)
-        // {
-        //     renderer->SetMaterial(0, GetAssetManager()->LoadAsset<Material>(BuiltinAsset::Material_Lambert));
-        //     m_world->GetPreviewCamera()->m_postProcessMaterials->push_back(m_previewMaterial);
-        // }
-        // else
-        // {
-        //     renderer->SetMaterial(0, m_previewMaterial);
-        // }
+        m_previewMaterial = Material::StaticCreate("PreviewMaterial");
+        m_previewMaterial->SetShader(shader);
+        m_previewMaterial->CreateGPUResource();
+
+        auto previewMesh = m_world->GetResidentScene()->NewNode("PreviewMesh");
+        auto renderer = previewMesh->AddComponent<StaticMeshRendererComponent>();
+
+        renderer->SetStaticMesh(GetAssetManager()->LoadAsset<StaticMesh>(BuiltinAsset::Shapes_Sphere));
+
+        auto renderingType = m_previewMaterial->GetShader()->GetConfig()->RenderingType;
+        if (renderingType == ShaderPassRenderingType::PostProcessing)
+        {
+            renderer->SetMaterial(0, GetAssetManager()->LoadAsset<Material>(BuiltinAsset::Material_Lambert));
+            m_world->GetPreviewCamera()->m_postProcessMaterials->push_back(m_previewMaterial);
+        }
+        else
+        {
+            renderer->SetMaterial(0, m_previewMaterial);
+        }
 
     }
     void ShaderEditorWindow::OnClose()
@@ -104,14 +103,64 @@ namespace pulsared
     void ShaderEditorWindow::OnDrawAssetPropertiesUI(float dt)
     {
         base::OnDrawAssetPropertiesUI(dt);
-        Shader_ref shader = m_assetObject;
+        RCPtr<Shader> shader = cref_cast<Shader>(m_assetObject);
         if (PImGui::PropertyGroup("Shader"))
         {
             PImGui::ObjectFieldProperties(
                 BoxingObjectPtrBase::StaticType(),
                 m_assetObject->GetType(),
-                mkbox((ObjectPtrBase)m_assetObject).get(),
+                mkbox(ObjectPtrBase(m_assetObject.GetHandle())).get(),
                 m_assetObject.GetPtr());
+        }
+
+        if (PImGui::PropertyGroup("Shader Features"))
+        {
+            array_list<uint8_t> bools;
+            array_list<size_t> changedIndex;
+            bools.reserve(shader->GetConfig()->FeatureDeclare->size());
+            for (auto& feature : *shader->GetConfig()->FeatureDeclare)
+            {
+                if (std::ranges::contains(shader->GetFeatureOptions(), feature))
+                {
+                    bools.push_back(true);
+                }
+                else
+                {
+                    bools.push_back(false);
+                }
+            }
+
+            if (PImGui::BeginPropertyLines())
+            {
+                for (int i = 0; i < shader->GetConfig()->FeatureDeclare->size(); ++i)
+                {
+                    auto& item = shader->GetConfig()->FeatureDeclare->at(i);
+                    auto boolObj = mkbox((bool)bools.at(i));
+                    if (PImGui::PropertyLine(item, cltypeof<Boolean>(), boolObj.get()))
+                    {
+                        bools.at(i) = boolObj->get_unboxing_value();
+                        changedIndex.push_back(i);
+                    }
+                }
+                PImGui::EndPropertyLines();
+            }
+
+            for (size_t index : changedIndex)
+            {
+                auto& name = shader->GetConfig()->FeatureDeclare->at(index);
+                if (bools.at(index))
+                {
+                    shader->GetFeatureOptions().push_back(name);
+                }
+                else
+                {
+                    std::erase(shader->GetFeatureOptions(), name);
+                }
+            }
+            if (!changedIndex.empty())
+            {
+                AssetDatabase::MarkDirty(shader);
+            }
         }
 
         if (PImGui::PropertyGroup("Compiled"))
@@ -122,10 +171,10 @@ namespace pulsared
                 apis += gfx::to_string(api);
                 apis += ";";
             }
-            if (PImGui::BeginPropertyLine())
+            if (PImGui::BeginPropertyLines())
             {
                 PImGui::PropertyLineText("Platforms", apis);
-                PImGui::EndPropertyLine();
+                PImGui::EndPropertyLines();
             }
         }
     }

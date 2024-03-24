@@ -8,7 +8,7 @@ namespace gfx
     {
         GFXPrimitiveTopology Topology{};
         float LineWidth{1.0};
-        bool IsReverseCulling{false};
+        array_list<GFXVertexLayoutDescription_sp> VertexLayouts;
 
         size_t GetHashCode() const
         {
@@ -16,7 +16,6 @@ namespace gfx
             size_t hash = 2166136261;
             hash = (hash ^ std::hash<GFXPrimitiveTopology>()(Topology)) * prime;
             hash = (hash ^ std::hash<float>()(LineWidth)) * prime;
-            hash = (hash ^ std::hash<bool>()(IsReverseCulling)) * prime;
             return hash;
         }
     };

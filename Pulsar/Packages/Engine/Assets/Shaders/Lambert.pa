@@ -1,26 +1,3 @@
 {
-    "Available": true,
-    "Config": {
-        "ConstantProperties": [
-            {
-                "Name": "Tint",
-                "Type": 2,
-                "Value": "1,1,1,1"
-            }
-        ],
-        "CullMode": 0,
-        "DepthCompareOp": 1,
-        "DepthTestEnable": true,
-        "DepthWriteEnable": true,
-        "Properties": [
-            {
-                "Name": "DiffuseTex",
-                "Type": 3,
-                "Value": ""
-            }
-        ],
-        "StencilTestEnable": false
-    },
-    "Passes": "Engine/Shaders/Lambert.sh.json",
-    "RenderingType": 1
+    "Passes": "Engine/Shaders/Lambert.sh.json"
 }

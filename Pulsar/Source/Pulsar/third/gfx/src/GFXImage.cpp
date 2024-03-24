@@ -43,7 +43,7 @@ namespace gfx
             ret.resize(bufSize);
             size_t num = width * height;
 
-//#pragma omp parallel for
+            #pragma omp parallel for
             for (size_t i = 0; i < num; i++)
             {
                 for (size_t c = 0; c < rChannel; c++)
@@ -56,9 +56,12 @@ namespace gfx
             stbi_image_free(pic);
         }
 
-        *outWidth = width;
-        *outHeight = height;
-        *outChannel = channel;
+        if (outWidth)
+            *outWidth = width;
+        if (outHeight)
+            *outHeight = height;
+        if (outChannel)
+            *outChannel = channel;
 
         return ret;
     }

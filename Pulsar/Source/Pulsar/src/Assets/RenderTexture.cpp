@@ -46,7 +46,7 @@ namespace pulsar
     {
     }
 
-    RenderTexture_ref RenderTexture::StaticCreate(index_string name, int width, int height, int colorRTCount, bool hasDepthStencil)
+    RCPtr<RenderTexture> RenderTexture::StaticCreate(index_string name, int width, int height, int colorRTCount, bool hasDepthStencil)
     {
         auto self = mksptr(new RenderTexture);
         self->Construct();
@@ -57,11 +57,12 @@ namespace pulsar
         auto depthFormats = gfx->GetSupportedDepthFormats();
         assert(depthFormats.size() != 0);
 
-        if (colorRTCount != 0)
+        for (int i = 0; i < colorRTCount; ++i)
         {
-            auto colorRt = gfx->CreateRenderTarget(width, height, gfx::GFXRenderTargetType::Color, gfx::GFXTextureFormat::R8G8B8A8_SRGB, {});
+            auto colorRt = gfx->CreateRenderTarget(width, height, gfx::GFXRenderTargetType::Color, gfx::GFXTextureFormat::R8G8B8A8_UNorm, {});
             self->m_renderTargets.push_back(colorRt);
         }
+
         if (hasDepthStencil)
         {
             auto depth = gfx->CreateRenderTarget(width, height, gfx::GFXRenderTargetType::DepthStencil, depthFormats[0], {});;
@@ -80,7 +81,7 @@ namespace pulsar
         self->m_width = width;
         self->m_height = height;
 
-        return self;
+        return self.get();
     }
 
     void RenderTexture::PostInitializeData(int32_t width, int32_t height)

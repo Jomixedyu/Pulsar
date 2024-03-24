@@ -68,14 +68,14 @@ namespace pulsared
 
     static auto& contexts()
     {
-        static hash_map<string, array_list<sptr<OnGetContext>>> values;
+        static hash_map<string, array_list<SPtr<OnGetContext>>> values;
         return values;
     }
-    void MenuManager::RegisterContextProvider(string_view name, const sptr<OnGetContext>& callback)
+    void MenuManager::RegisterContextProvider(string_view name, const SPtr<OnGetContext>& callback)
     {
         contexts()[string(name)].push_back(callback);
     }
-    void MenuManager::UnregisterContextProvider(string_view name, const sptr<OnGetContext>& callback)
+    void MenuManager::UnregisterContextProvider(string_view name, const SPtr<OnGetContext>& callback)
     {
         auto& values = contexts()[string(name)];
         const auto it = std::ranges::find(values, callback);

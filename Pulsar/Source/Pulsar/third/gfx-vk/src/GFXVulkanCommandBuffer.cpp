@@ -49,10 +49,10 @@ namespace gfx
         viewport.width = width;
         viewport.height = -height;
 #else
-        viewport.x = x;
-        viewport.y = y;
-        viewport.width = width;
-        viewport.height = height;
+         viewport.x = x;
+         viewport.y = y;
+         viewport.width = width;
+         viewport.height = height;
 #endif
         viewport.minDepth = 0.0f;
         viewport.maxDepth = 1.0f;
@@ -60,9 +60,13 @@ namespace gfx
         vkCmdSetViewport(m_cmdBuffer, 0, 1, &viewport);
 
         VkRect2D scissor{};
-        scissor.offset = { 0, 0 };
-        scissor.extent = { (uint32_t)width, (uint32_t)height };
+        scissor.offset = {0, 0};
+        scissor.extent = {(uint32_t)width, (uint32_t)height};
         vkCmdSetScissor(m_cmdBuffer, 0, 1, &scissor);
+    }
+    void GFXVulkanCommandBuffer::CmdSetCullMode(GFXCullMode mode)
+    {
+        vkCmdSetCullMode(m_cmdBuffer, (VkCullModeFlags)mode);
     }
 
     void GFXVulkanCommandBuffer::CmdBlit(GFXTexture* src, GFXTexture* dest)
@@ -70,13 +74,17 @@ namespace gfx
         auto _src = static_cast<GFXVulkanRenderTarget*>(src);
         auto _dest = static_cast<GFXVulkanRenderTarget*>(dest);
 
+        _src->CmdLayoutTransition(m_cmdBuffer, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+        _dest->CmdLayoutTransition(m_cmdBuffer, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
         VkBlitImageInfo2 info{};
         info.sType = VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2;
         info.srcImage = _src->GetVkImage();
-        info.srcImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        info.srcImageLayout = _src->GetVkImageLayout();
         info.dstImage = _dest->GetVkImage();
-        info.dstImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        info.dstImageLayout = _dest->GetVkImageLayout();
         info.regionCount = 1;
+
         VkImageBlit2 regions{};
         regions.sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2;
         regions.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;

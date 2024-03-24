@@ -6,11 +6,27 @@
 
 namespace pulsar
 {
+    void TransformComponent::Serialize(ComponentSerializer* s)
+    {
+        base::Serialize(s);
+        if (!s->IsWrite)
+        {
+            if (m_parent)
+            {
+                m_parent = s->MovingTable->at(m_parent.GetHandle());
+            }
+            for (auto& child : *m_children)
+            {
+                child = s->MovingTable->at(child.GetHandle());
+            }
+
+        }
+    }
     ObjectPtr<TransformComponent> TransformComponent::FindByName(string_view name) const
     {
         for (auto& comp : *m_children)
         {
-            if (IsValid(comp))
+            if (comp)
             {
                 if (comp->GetAttachedNode()->GetName() == name)
                 {
@@ -131,13 +147,15 @@ namespace pulsar
         : m_localToWorldMatrix{1.f}, m_worldToLocalMatrix{1.f},
           m_scale(1.f, 1.f, 1.f)
     {
-        m_flags |= OF_DontDestroy;
         m_children = mksptr(new List<ObjectPtr<TransformComponent>>);
+    }
+    void TransformComponent::BeginComponent()
+    {
+        base::BeginComponent();
     }
     void TransformComponent::OnTick(Ticker ticker)
     {
         base::OnTick(ticker);
-        RebuildLocalToWorldMatrix();
     }
 
     static Matrix4f RootIdentMat{1};
@@ -174,6 +192,14 @@ namespace pulsar
         if (m_isDirtyMatrix)
             RebuildLocalToWorldMatrix();
         return m_worldToLocalMatrix;
+    }
+    void TransformComponent::OnMsg_TransformChanged()
+    {
+        base::OnMsg_TransformChanged();
+        for (auto childTransform : *this->m_children)
+        {
+            childTransform->MakeTransformChanged();
+        }
     }
 
     void TransformComponent::RebuildLocalToWorldMatrix()
@@ -213,7 +239,10 @@ namespace pulsar
     void TransformComponent::MakeTransformChanged()
     {
         m_isDirtyMatrix = true;
-        GetAttachedNode()->SendMessage(MessageId_OnChangedTransform());
+        if (m_beginning)
+        {
+            GetAttachedNode()->SendMessage(MessageId_OnChangedTransform());
+        }
     }
 
     void TransformComponent::SetParent(ObjectPtr<TransformComponent> parent)

@@ -1,16 +1,26 @@
-#include <PulsarEd/Utils/AssetUtil.h>
+#include "EditorWorld.h"
+#include "Pulsar/Prefab.h"
+
 #include <PulsarEd/EditorAssetManager.h>
+#include <PulsarEd/Utils/AssetUtil.h>
 #include <PulsarEd/Windows/AssetEditorWindow.h>
 #include <PulsarEd/Windows/EditorWindowManager.h>
+#include "Utils/PrefabUtil.h"
 
 namespace pulsared
 {
-    void AssetUtil::OpenAssetEditor(AssetObject_ref asset)
+
+    void AssetUtil::OpenAssetEditor(RCPtr<AssetObject> asset)
     {
+        if (auto prefab = cref_cast<Prefab>(asset))
+        {
+            PrefabUtil::OpenPrefab(prefab);
+            return;
+        }
+
         auto windowType = AssetEditorManager::GetValue(asset->GetType());
         if (!windowType)
             return;
-
         
         for (auto& win : EditorWindowManager::GetOpeningWindows(windowType))
         {

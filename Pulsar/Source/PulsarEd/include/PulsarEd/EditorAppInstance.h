@@ -77,10 +77,10 @@ namespace pulsared
             return m_exclusiveTaskQueue;
         }
 
-        void ShowModalDialog(sptr<ModalDialog> dialog);
+        void ShowModalDialog(SPtr<ModalDialog> dialog);
 
     protected:
-        sptr<ModalDialog> m_modalDialog;
+        SPtr<ModalDialog> m_modalDialog;
         std::shared_ptr<ImGuiObject> m_gui = nullptr;
 
         AssetManager* m_assetManager{};

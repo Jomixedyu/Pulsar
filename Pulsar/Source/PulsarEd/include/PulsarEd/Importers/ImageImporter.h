@@ -19,7 +19,7 @@ namespace pulsared
     public:
         //static Node_ref Import(string_view path, FBXImporterSettings* settings);
         string GetImporterType() const override { return "ImageImporter"; }
-        array_list<AssetObject_ref> Import(AssetImporterSettings* settings) override;
+        array_list<RCPtr<AssetObject>> Import(AssetImporterSettings* settings) override;
     };
 
     class PULSARED_API ImageImporterFactory final : public AssetImporterFactory
@@ -39,7 +39,7 @@ namespace pulsared
         {
             return std::make_shared<ImageImporter>();
         }
-        sptr<AssetImporterSettings> CreateImporterSettings() override
+        SPtr<AssetImporterSettings> CreateImporterSettings() override
         {
             return mksptr(new ImageImporterSettings);
         }

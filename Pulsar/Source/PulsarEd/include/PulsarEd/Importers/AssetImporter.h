@@ -23,7 +23,7 @@ namespace pulsared
     {
     public:
         virtual ~AssetImporter() = default;
-        virtual array_list<AssetObject_ref> Import(AssetImporterSettings* settings) = 0;
+        virtual array_list<RCPtr<AssetObject>> Import(AssetImporterSettings* settings) = 0;
         virtual string GetImporterType() const = 0;
     };
 
@@ -37,7 +37,7 @@ namespace pulsared
 
         virtual string_view GetDescription() const = 0;
         virtual std::shared_ptr<AssetImporter> CreateImporter() = 0;
-        virtual sptr<AssetImporterSettings> CreateImporterSettings();
+        virtual SPtr<AssetImporterSettings> CreateImporterSettings();
     protected:
         array_list<string> m_supportedFormats;
     };

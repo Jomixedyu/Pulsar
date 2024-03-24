@@ -1,1 +1,18 @@
-null
+{
+    "Bounds": {
+        "Extent": {
+            "x": 0.5,
+            "y": 0.5,
+            "z": 0.5
+        },
+        "Origin": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+        },
+        "Sphere": 0.8660253882408142
+    },
+    "MaterialNames": [
+        "lambert1"
+    ]
+}

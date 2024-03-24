@@ -45,23 +45,24 @@ namespace pulsar
 
         void ResizeManagedRenderTexture(int width, int height);
 
+        void OnMsg_TransformChanged() override;
         void OnTick(Ticker ticker) override;
     public:
         float GetFOV() const { return m_fov; }
-        void  SetFOV(float value) { m_fov = value; }
+        void  SetFOV(float value);
         float GetNear() const { return m_near; }
-        void  SetNear(float value) { m_near = value; }
+        void  SetNear(float value);
         float GetFar() const { return m_far; }
-        void  SetFar(float value) { m_far = value; }
+        void  SetFar(float value);
         Color4f  GetBackgroundColor() const { return m_backgroundColor; }
         void     SetBackgroundColor(const Color4f& value);
         CameraProjectionMode  GetProjectionMode() const { return m_projectionMode; }
         void                  SetProjectionMode(CameraProjectionMode mode);
-        const RenderTexture_ref&  GetRenderTexture() const { return m_renderTarget; }
-        void                      SetRenderTexture(const RenderTexture_ref& value, bool managed = false);
+        const RCPtr<RenderTexture>&  GetRenderTexture() const { return m_renderTarget; }
+        void                         SetRenderTexture(const RCPtr<RenderTexture>& value, bool managed = false);
 
         float GetOrthoSize() const { return m_orthoSize; }
-        void SetOrthoSize(float value) { m_orthoSize = value; }
+        void SetOrthoSize(float value);
 
 
     protected:
@@ -91,7 +92,7 @@ namespace pulsar
         Color4f m_backgroundColor{};
 
         CORELIB_REFL_DECL_FIELD(m_renderTarget);
-        RenderTexture_ref m_renderTarget;
+        RCPtr<RenderTexture> m_renderTarget;
 
         CORELIB_REFL_DECL_FIELD(m_orthoSize);
         float m_orthoSize = 1;
@@ -107,18 +108,18 @@ namespace pulsar
 
     public:
 
-        Material_ref GetPostprocess(size_t index) { return m_postProcessMaterials->at(index); }
-        void AddPostProcess(Material_ref material);
+        RCPtr<Material> GetPostprocess(size_t index) { return m_postProcessMaterials->at(index); }
+        void AddPostProcess(RCPtr<Material> material);
 
     public:
-        RenderTexture_ref m_postprocessRtA;
+        RCPtr<RenderTexture> m_postprocessRtA;
         gfx::GFXDescriptorSet_sp m_postprocessDescA;
 
-        RenderTexture_ref m_postprocessRtB;
+        RCPtr<RenderTexture> m_postprocessRtB;
         gfx::GFXDescriptorSet_sp m_postprocessDescB;
 
         CORELIB_REFL_DECL_FIELD(m_postProcessMaterials, new ListItemAttribute(cltypeof<Material>()));
-        List_sp<Material_ref> m_postProcessMaterials;
+        List_sp<RCPtr<Material>> m_postProcessMaterials;
 
     };
     DECL_PTR(CameraComponent);

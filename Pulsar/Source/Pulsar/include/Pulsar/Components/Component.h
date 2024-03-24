@@ -1,5 +1,7 @@
 #pragma once
 
+#include "CoreLib.Serialization/ObjectSerializer.h"
+
 #include <CoreLib/CoreLib.h>
 #include <Pulsar/EngineMath.h>
 #include <Pulsar/ObjectBase.h>
@@ -22,18 +24,42 @@ namespace pulsar
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::AbstractComponentAttribute, Attribute);
     };
 
+    struct ComponentSerializer
+    {
+        ComponentSerializer(ser::VarientRef obj, bool isWrite, bool editorData)
+            : Object(std::move(obj)),
+              IsWrite(isWrite),
+              HasEditorData(editorData)
+        {
+        }
+
+        ComponentSerializer(const ComponentSerializer&) = delete;
+        ComponentSerializer(ComponentSerializer&&) = delete;
+    public:
+        ser::VarientRef Object;
+        hash_map<ObjectHandle, ObjectHandle>* MovingTable = nullptr;
+        bool IsWrite;
+        const bool HasEditorData;
+    };
+
     class Component : public ObjectBase, public ITickable
     {
         friend class Node;
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::Component, ObjectBase);
         CORELIB_CLASS_ATTR(new AbstractComponentAttribute);
     public:
+        virtual void Serialize(ComponentSerializer* s);
         ObjectPtr<Node> GetAttachedNode() const;
         ObjectPtr<Node> GetOwnerNode() const;
         World* GetWorld() const;
         ObjectPtr<Scene> GetRuntimeScene() const;
         ObjectPtr<TransformComponent> GetTransform() const;
+        array_list<ObjectHandle> GetReferenceHandles() const;
         virtual bool get_is_tickable() const { return true; }
+        void SendMessage(MessageId msgid);
+        virtual Bounds3f GetBounds() { return {}; }
+        virtual bool HasBounds() const { return false; }
+    protected:
         virtual void OnReceiveMessage(MessageId id);
     public:
 		virtual bool EqualsComponentType(Type* type);
@@ -48,11 +74,11 @@ namespace pulsar
         virtual void EndPlay() {}
 
         virtual void OnMsg_TransformChanged() {}
-    public:        
+    public:
         // ITickable interface
         void OnTick(Ticker ticker) override;
     public:
-        Component() = default;
+        Component();
     private:
         ObjectPtr<Node> m_ownerNode;
         ObjectPtr<Node> m_attachedNode;

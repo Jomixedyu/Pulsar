@@ -33,20 +33,14 @@ namespace pulsared
 
     namespace PImGui
     {
-        // collasping header
         bool PropertyGroup(const char* label);
-
-        // bool BeginPropertyItem(const char* name);
-        //
-        // void EndPropertyItem();
-
-        bool BeginPropertyLine();
+        bool BeginPropertyLines();
         bool PropertyLine(const string& name, Type* type, Object* obj);
         void PropertyLineText(const string& name, string_view str);
-        void EndPropertyLine();
+        void EndPropertyLines();
 
         // object field properties
-        void ObjectFieldProperties(Type* type, Type* inner, Object* obj, ObjectBase* receiver, bool showDebug = false);
+        bool ObjectFieldProperties(Type* type, Type* inner, Object* obj, ObjectBase* receiver, bool showDebug = false);
     }
 
 }

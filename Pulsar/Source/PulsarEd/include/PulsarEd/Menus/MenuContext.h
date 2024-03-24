@@ -19,7 +19,7 @@ namespace pulsared
         string EntryName;
 
         template<typename T>
-        sptr<T> FindContext()
+        SPtr<T> FindContext()
         {
             Type* type = cltypeof<T>();
             for (auto& context : this->Contexts)
@@ -33,7 +33,7 @@ namespace pulsared
         }
 
 
-        static sptr<MenuContexts> StaticMakeContext(string_view entryName, const sptr<MenuContextBase>& ctx)
+        static SPtr<MenuContexts> StaticMakeContext(string_view entryName, const SPtr<MenuContextBase>& ctx)
         {
             auto ret = mksptr(new MenuContexts);
             ret->EntryName = entryName;

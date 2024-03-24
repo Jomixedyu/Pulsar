@@ -10,7 +10,7 @@ namespace pulsared
         auto value = static_cast<String*>(prop);
         ImGui::PushItemWidth(-1);
         char buf[1024]{};
-        strcpy(buf, value->c_str());
+        StringUtil::strcpy(buf, value->c_str());
         ImGui::PushID(prop);
         bool changed = ImGui::InputText("input", buf, 1024);
         ImGui::PopID();

@@ -11,16 +11,8 @@ namespace gfx
         using base = GFXTexture2D;
     public:
         using DataDeleter = void(*)(uint8_t*);
-        static inline size_t StaticTexutreType() { return 1; }
+        static size_t StaticTexutreType();
         virtual size_t GetTextureType() const override { return StaticTexutreType(); }
-    public:
-        static std::shared_ptr<GFXVulkanTexture2D> CreateFromImageData(
-            GFXVulkanApplication* app, const uint8_t* imageData, int32_t width, int32_t height, int32_t channel,
-            bool enableReadWrite, GFXTextureFormat format, const GFXSamplerConfig& samplerCfg);
-
-        static std::shared_ptr<GFXVulkanTexture2D> CreateFromMemory(
-            GFXVulkanApplication* app, const uint8_t* fileData, size_t length, bool enableReadWrite,
-            bool isSrgb, const GFXSamplerConfig& samplerCfg);
 
     public:
         virtual ~GFXVulkanTexture2D() override;
@@ -28,8 +20,8 @@ namespace gfx
         //create by pic data
         GFXVulkanTexture2D(
             GFXVulkanApplication* app,
-            const uint8_t* imageData,
-            int32_t width, int32_t height, int32_t channel,
+            const uint8_t* imageData, size_t dataLength,
+            int32_t width, int32_t height,
             VkFormat format,
             bool enableReadWrite,
             const GFXSamplerConfig& samplerCfg);

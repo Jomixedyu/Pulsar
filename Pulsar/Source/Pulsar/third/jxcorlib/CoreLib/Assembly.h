@@ -41,7 +41,7 @@ namespace jxcorlib
         void RegisterType(Type* type);
 
     private:
-        array_list<sptr<Type>> types;
+        array_list<SPtr<Type>> types;
     };
 
 

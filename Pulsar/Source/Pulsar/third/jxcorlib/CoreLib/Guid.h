@@ -21,7 +21,7 @@ namespace jxcorlib
         static guid_t create_new();
         static guid_t parse(std::string_view str);
     public:
-        std::string to_string() const;
+        std::string to_string(bool sep = false) const;
         bool is_empty() const;
         bool operator==(guid_t right) const;
         operator bool() const;
@@ -53,3 +53,20 @@ namespace jxcorlib
 #ifndef PRE_CORELIB_NO_GUID_TYPE
 CORELIB_DECL_BOXING(jxcorlib::guid_t, jxcorlib::Guid);
 #endif
+
+namespace std
+{
+    template<>
+    struct hash<jxcorlib::guid_t>
+    {
+        size_t operator()(const jxcorlib::guid_t& handle) const noexcept
+        {
+            constexpr size_t prime = 16777619;
+            size_t hash = 2166136261;
+            hash = (hash ^ std::hash<uint64_t>()(*reinterpret_cast<const uint64_t*>(&handle))) * prime;
+            hash = (hash ^ std::hash<uint64_t>()(*(reinterpret_cast<const uint64_t*>(&handle) + 1))) * prime;
+            return hash;
+
+        }
+    };
+}

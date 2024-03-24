@@ -8,9 +8,10 @@ namespace pulsared
 
     void EditorWindow::DrawImGui(float dt)
     {
-        bool isOpened;
+        bool isOpened = true;
         ImGui::SetNextWindowSize(ImVec2{m_winSize.x, m_winSize.y});
-        bool isDrawable = ImGui::Begin(StringUtil::Concat(GetWindowDisplayName(), "###", GetWindowName()).data(), &isOpened, GetGuiWindowFlags());
+        const auto winName = StringUtil::Concat(GetWindowDisplayName(), "###", GetWindowName());
+        const bool isDrawable = ImGui::Begin(winName.c_str(), &isOpened, GetGuiWindowFlags());
         if (isOpened)
         {
             m_isOpened = isOpened;
@@ -20,14 +21,13 @@ namespace pulsared
             }
             if (m_allowResize)
             {
-                auto size = ImGui::GetWindowSize();
+                const auto size = ImGui::GetWindowSize();
                 m_winSize.x = size.x;
                 m_winSize.y = size.y;
             }
         }
         else
         {
-            //close
             this->Close();
         }
 

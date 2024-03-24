@@ -67,29 +67,25 @@ namespace gfx
         virtual GFXGpuProgram_sp CreateGpuProgram(const std::unordered_map<gfx::GFXShaderStageFlags, array_list<char>>& codes) = 0;
         virtual GFXShaderPass_sp CreateShaderPass(
             const GFXShaderPassConfig& config,
-            const GFXGpuProgram_sp& gpuProgram,
-            //const array_list<GFXDescriptorSetLayout_sp>& descSetLayout,
-            const array_list<GFXVertexLayoutDescription_sp>& vertexLayout) = 0;
+            const GFXGpuProgram_sp& gpuProgram) = 0;
 
         virtual GFXDescriptorManager* GetDescriptorManager() = 0;
 
         virtual GFXDescriptorSetLayout_sp CreateDescriptorSetLayout(
             const GFXDescriptorSetLayoutInfo* layouts,
-            size_t layoutCount = 1) = 0;
+            size_t layoutCount) = 0;
         virtual GFXDescriptorSetLayout_sp CreateDescriptorSetLayout(
             std::initializer_list<GFXDescriptorSetLayoutInfo> layouts);
 
         virtual GFXGraphicsPipelineManager* GetGraphicsPipelineManager() const = 0;
 
-        virtual GFXTexture2D_sp CreateFromImageData(
-            const uint8_t* imageData, int32_t width, int32_t height, int32_t channel,
-            bool enableReadWrite, GFXTextureFormat format, const GFXSamplerConfig& samplerCfg) = 0;
 
         virtual GFXTexture2D_sp CreateTexture2DFromMemory(
-            const uint8_t* originalData, size_t length,
-            const GFXSamplerConfig& samplerConfig,
-            bool enableReadWrite,
-            bool isSrgb) = 0;
+            const uint8_t* imageData, size_t length,
+            int width, int height,
+            GFXTextureFormat format,
+            const GFXSamplerConfig& samplerConfig
+            ) = 0;
 
         virtual GFXRenderTarget_sp CreateRenderTarget(
             int32_t width, int32_t height, GFXRenderTargetType type,

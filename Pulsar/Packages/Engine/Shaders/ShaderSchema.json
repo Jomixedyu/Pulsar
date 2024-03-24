@@ -1,0 +1,66 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type":"object",
+    "properties": {
+        "CullMode" : {
+            "type":"string",
+            "enum": ["None",  "Front", "Back", "FrontAndBack"]
+        },
+        "DepthTestEnable" : {
+            "type":"boolean"
+        },
+        "DepthWriteEnable": {
+            "type":"boolean"
+        },
+        "DepthCompareOp": {
+            "type":"string",
+            "enum": ["Never", "Less", "Equal", "LessOrEqual", "Greater", "NotEqual", "GreaterOrEqual", "Always"]
+        },
+        "StencilTestEnable": {
+            "type":"boolean"
+        },
+        "RenderingType": {
+            "type":"string",
+            "enum": ["OpaqueForward", "OpaqueDeferred", "Transparency", "PostProcessing"]
+        },
+        "FeatureDeclare": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "ConstantProperties": {
+            "type":"array",
+            "items": {
+                "type":"object",
+                "properties": {
+                    "Name": {
+                        "type":"string"
+                    },
+                    "Type": {
+                        "type":"string",
+                        "enum": ["IntScalar", "Scalar", "Vector"]
+                    },
+                    "Value": {
+                        "type":"string"
+                    }
+                }
+            }
+        },
+        "Properties": {
+            "type":"array",
+            "items": {
+                "type":"object",
+                "properties": {
+                    "Name": {
+                        "type":"string"
+                    },
+                    "Type": {
+                        "type":"string",
+                        "enum": ["Texture2D"]
+                    }
+                }
+            }
+        }
+    }
+}

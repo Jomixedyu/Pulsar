@@ -1,12 +1,13 @@
-#include <PulsarEd/Windows/OutlinerWindow.h>
-#include <Pulsar/World.h>
+#include "EditorWorld.h"
+
 #include <Pulsar/Scene.h>
+#include <Pulsar/World.h>
 #include <PulsarEd/EditorNode.h>
-#include <PulsarEd/EditorSelection.h>
+#include <PulsarEd/Windows/OutlinerWindow.h>
 
 namespace pulsared
 {
-    static void _Show(List_sp<Node_ref> nodes)
+    static void _Show(EditorWorld* world, List_sp<Node_ref> nodes)
     {
         for (auto& node : *nodes)
         {
@@ -22,7 +23,7 @@ namespace pulsared
             {
                 base_flags |= ImGuiTreeNodeFlags_Leaf;
             }
-            if (EditorSelection::Selection.GetSelected() == node)
+            if (world->GetSelection().GetSelected() == node)
             {
                 base_flags |= ImGuiTreeNodeFlags_Selected;
             }
@@ -41,8 +42,8 @@ namespace pulsared
 
             if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen())
             {
-                EditorSelection::Selection.Clear();
-                EditorSelection::Selection.Select(node);
+                world->GetSelection().Clear();
+                world->GetSelection().Select(node);
             }
 
             if (isOpened)
@@ -53,7 +54,7 @@ namespace pulsared
                 {
                     childNodes->push_back(child->GetAttachedNode());
                 }
-                _Show(childNodes);
+                _Show(world, childNodes);
                 ImGui::TreePop();
             }
             ImGui::PopID();
@@ -65,20 +66,23 @@ namespace pulsared
     }
     void OutlinerWindow::OnDrawImGui(float dt)
     {
-        auto world = World::Current();
+        auto world = dynamic_cast<EditorWorld*>(EditorWorld::GetPreviewWorld());
         if (!world)
         {
             return;
         }
 
         ImGuiTreeNodeFlags base_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_DefaultOpen;
-        for (size_t i = 0; i < World::Current()->GetSceneCount(); i++)
-        {
-            auto currentScene = World::Current()->GetScene(i);
-            if (ImGui::TreeNodeEx(currentScene->GetName().c_str(), base_flags))
-            {
-                _Show(currentScene->GetRootNodes());
 
+        for (int i = 0; i < world->GetSceneCount(); i++)
+        {
+            auto currentScene = world->GetScene(i);
+            ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4{0,0,0,1});
+            bool opened = ImGui::TreeNodeEx(currentScene->GetName().c_str(), base_flags);
+            ImGui::PopStyleColor();
+            if (opened)
+            {
+                _Show(world, currentScene->GetRootNodes());
                 ImGui::TreePop();
             }
         }

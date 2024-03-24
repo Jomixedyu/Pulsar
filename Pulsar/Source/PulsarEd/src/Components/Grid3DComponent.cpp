@@ -80,6 +80,7 @@ namespace pulsared
 
         m_renderObject = CreateRenderObject();
         GetAttachedNode()->GetRuntimeWorld()->AddRenderObject(m_renderObject);
+        OnMsg_TransformChanged();
     }
     void Grid3DComponent::EndComponent()
     {
@@ -93,17 +94,12 @@ namespace pulsared
         m_renderObject->SetTransform(GetAttachedNode()->GetTransform()->GetLocalToWorldMatrix());
     }
 
-    sptr<rendering::RenderObject> Grid3DComponent::CreateRenderObject()
+    SPtr<rendering::RenderObject> Grid3DComponent::CreateRenderObject()
     {
         auto ro = new LineRenderObject();
         ro->SetPoints(m_vert, m_colors);
 
         return mksptr(ro);
-    }
-    void Grid3DComponent::OnTick(Ticker ticker)
-    {
-        base::OnTick(ticker);
-
     }
 
 } // namespace pulsared

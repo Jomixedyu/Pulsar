@@ -3,7 +3,7 @@
 
 namespace jxcorlib
 {
-    sptr<Attribute> TypeInfo::GetAttribute(Type* type)
+    SPtr<Attribute> TypeInfo::GetAttribute(Type* type)
     {
         for (auto& attr : this->m_attributes)
         {
@@ -15,9 +15,9 @@ namespace jxcorlib
         return nullptr;
     }
 
-    array_list<sptr<Attribute>> TypeInfo::GetAttributes(Type* type)
+    array_list<SPtr<Attribute>> TypeInfo::GetAttributes(Type* type)
     {
-        array_list<sptr<Attribute>> ret;
+        array_list<SPtr<Attribute>> ret;
         for (auto& attr : this->m_attributes)
         {
             if (type->IsInstanceOfType(attr.get()))
@@ -47,13 +47,13 @@ namespace jxcorlib
     }
 
 
-    void FieldInfo::SetValue(Object* instance, sptr<Object> value)
+    void FieldInfo::SetValue(Object* instance, SPtr<Object> value)
     {
         assert(instance->GetType()->IsSubclassOf(m_parentType));
         this->m_setter(instance, std::move(value));
     }
 
-    sptr<Object> FieldInfo::GetValue(Object* instance) const
+    SPtr<Object> FieldInfo::GetValue(const Object* instance) const
     {
         if(!GetParentType()->IsInstanceOfType(instance))
         {

@@ -18,8 +18,10 @@ namespace gfx
         virtual ~GFXVulkanRenderPass() override;
     public:
         const VkRenderPass& GetVkRenderPass() const { return m_renderPass; }
+        size_t GetColorAttachmentCount() const { return m_colorAttachmentCount; }
     protected:
         GFXVulkanApplication* m_app;
         VkRenderPass m_renderPass = VK_NULL_HANDLE;
+        size_t m_colorAttachmentCount{};
     };
 }

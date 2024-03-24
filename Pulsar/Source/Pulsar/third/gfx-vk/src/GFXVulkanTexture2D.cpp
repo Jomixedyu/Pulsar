@@ -25,17 +25,17 @@ namespace gfx
 
     GFXVulkanTexture2D::GFXVulkanTexture2D(
         GFXVulkanApplication* app,
-        const uint8_t* imageData,
-        int32_t width, int32_t height, int32_t channel,
+        const uint8_t* imageData, size_t dataLength,
+        int32_t width, int32_t height,
         VkFormat format,
         bool enableReadWrite, const GFXSamplerConfig& samplerCfg)
         :
-        base(width, height, channel, samplerCfg, enableReadWrite),
+        base(width, height, samplerCfg, enableReadWrite),
         m_app(app), m_imageFormat(format)
     {
         VkBuffer stagingBuffer;
         VkDeviceMemory stagingBufferMemory;
-        VkDeviceSize imageSize = width * height * channel;
+        VkDeviceSize imageSize = dataLength;
 
         gfx::BufferHelper::CreateBuffer(app, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
@@ -62,7 +62,11 @@ namespace gfx
         vkFreeMemory(app->GetVkDevice(), stagingBufferMemory, nullptr);
 
         m_textureImageView = BufferHelper::CreateImageView(m_app, m_textureImage, m_imageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
-        m_textureSampler = BufferHelper::CreateTextureSampler(m_app);
+
+        auto filter = BufferHelper::GetVkFilter(samplerCfg.Filter);
+        auto addressMode = BufferHelper::GetVkAddressMode(samplerCfg.AddressMode);
+
+        m_textureSampler = BufferHelper::CreateTextureSampler(m_app, filter, addressMode);
 
         m_inited = true;
     }
@@ -70,7 +74,7 @@ namespace gfx
     GFXVulkanTexture2D::GFXVulkanTexture2D(
         GFXVulkanApplication* app, int32_t width, int32_t height,
         bool enableReadWrite, VkImageLayout layout, VkFormat format, const GFXSamplerConfig& samplerCfg)
-        : base(width, height, 0, samplerCfg, enableReadWrite),
+        : base(width, height, samplerCfg, enableReadWrite),
         m_app(app), m_imageLayout(layout), m_imageFormat(format)
     {
 
@@ -96,7 +100,11 @@ namespace gfx
         BufferHelper::TransitionImageLayout(app, m_textureImage, m_imageFormat, VK_IMAGE_LAYOUT_UNDEFINED, layout);
 
         m_textureImageView = BufferHelper::CreateImageView(m_app, m_textureImage, m_imageFormat, aspect);
-        m_textureSampler = BufferHelper::CreateTextureSampler(m_app);
+
+        auto filter = BufferHelper::GetVkFilter(samplerCfg.Filter);
+        auto addressMode = BufferHelper::GetVkAddressMode(samplerCfg.AddressMode);
+
+        m_textureSampler = BufferHelper::CreateTextureSampler(m_app, filter, addressMode);
 
         m_inited = true;
     }
@@ -107,7 +115,7 @@ namespace gfx
         VkFormat format, VkImage image, VkDeviceMemory memory, VkImageView imageView,
         bool enableReadWrite, VkImageLayout layout, const GFXSamplerConfig& samplerCfg)
         :
-        base(width, height, channel, samplerCfg, enableReadWrite),
+        base(width, height, samplerCfg, enableReadWrite),
         m_app(app), m_textureImage(image), m_textureImageMemory(memory), m_textureImageView(imageView),
         m_imageLayout(layout), m_imageFormat(format), m_isManaged(true)
     {
@@ -122,7 +130,7 @@ namespace gfx
         GFXVulkanApplication* app, int32_t width, int32_t height, int32_t channel,
         VkFormat format, VkImage image, VkImageView imageView, VkImageLayout layout)
         :
-        base(width, height, channel, {}, false),
+        base(width, height, {}, false),
         m_app(app), m_textureImage(image), m_textureImageMemory(VK_NULL_HANDLE), m_imageFormat(format),
         m_textureImageView(imageView), m_imageLayout(layout), m_isView(true)
     {
@@ -135,39 +143,11 @@ namespace gfx
         return nullptr;
     }
 
-    std::shared_ptr<GFXVulkanTexture2D> GFXVulkanTexture2D::CreateFromImageData(GFXVulkanApplication* app, 
-        const uint8_t* imageData, int32_t width, int32_t height, int32_t channel,
-        bool enableReadWrite, GFXTextureFormat format, const GFXSamplerConfig& samplerCfg)
+    size_t GFXVulkanTexture2D::StaticTexutreType()
     {
-        auto tex = new GFXVulkanTexture2D(app, imageData, width, height, channel, BufferHelper::GetVkFormat(format), enableReadWrite, samplerCfg);
-
-        return std::shared_ptr<GFXVulkanTexture2D>(tex);
+        static bool b;
+        return reinterpret_cast<size_t>(&b);
     }
 
-    std::shared_ptr<GFXVulkanTexture2D> GFXVulkanTexture2D::CreateFromMemory(
-        GFXVulkanApplication* app, const uint8_t* fileData, size_t length, bool enableReadWrite,
-        bool isSrgb, const GFXSamplerConfig& samplerCfg)
-    {
-        int x, y, channel;
-        std::vector<uint8_t> buffer;
-
-
-        buffer = gfx::LoadImageFromMemory(fileData, length, &x, &y, &channel, 4, isSrgb);
-
-        GFXTextureFormat format;
-
-        if(channel == 1)
-        {
-            format = GFXTextureFormat::R8;
-        }
-        else if(channel == 3 || channel == 4)
-        {
-            format = isSrgb ? GFXTextureFormat::R8G8B8A8_SRGB : GFXTextureFormat::R8G8B8A8;
-        }
-
-        auto tex = new GFXVulkanTexture2D(app, buffer.data(), x, y, channel, BufferHelper::GetVkFormat(format), enableReadWrite, samplerCfg);
-
-        return std::shared_ptr<GFXVulkanTexture2D>(tex);
-    }
 
 }

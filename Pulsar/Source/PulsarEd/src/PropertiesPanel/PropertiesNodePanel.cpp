@@ -1,9 +1,10 @@
 #include "PropertiesPanel/PropertiesNodePanel.h"
 
+#include "EditorWorld.h"
 #include "Menus/Menu.h"
 #include "Menus/MenuRenderer.h"
 
-#include <PulsarEd/EditorSelection.h>
+
 #include <PulsarEd/PropertyControls/PropertyControl.h>
 
 namespace pulsared
@@ -29,8 +30,14 @@ namespace pulsared
 
     void PropertiesNodePanel::OnDrawImGui()
     {
-        auto selectedObj = EditorSelection::Selection.GetSelected();
+        auto world = dynamic_cast<EditorWorld*>(EditorWorld::GetPreviewWorld());
+        assert(world);
 
+        auto selectedObj = world->GetSelection().GetSelected();
+        if (!selectedObj)
+        {
+            return;
+        }
         Node_ref selected;
         if (cltypeof<Node>()->IsInstanceOfType(selectedObj.GetPtr()))
         {
@@ -42,7 +49,7 @@ namespace pulsared
         }
 
         static char name[255];
-        strcpy_s(name, 255, selected->GetName().c_str());
+        StringUtil::strcpy(name, selected->GetName());
 
         ImGui::Spacing();
         {
@@ -90,10 +97,10 @@ namespace pulsared
         auto componentArr = selected->GetAllComponentArray();
         for (auto& comp : componentArr)
         {
-            if(!IsValid(comp)) continue;
+            if(!comp) continue;
 
             bool opened = true;
-            const bool dontDestroy = comp->HasObjectFlags(OF_DontDestroy);
+            const bool dontDestroy = comp->GetType()->IsSubclassOf(cltypeof<TransformComponent>());
             string componentFriendlyName = ComponentInfoManager::GetFriendlyComponentName(comp->GetType());
 
             ImGui::PushID(comp.GetPtr());
@@ -111,32 +118,31 @@ namespace pulsared
                     comp->GetType(),
                     comp.GetPtr(),
                     comp.GetPtr(), m_debugMode);
+
+                if (m_debugMode)
+                {
+                    if (PImGui::BeginPropertyLines())
+                    {
+                        PImGui::PropertyLineText("Handle", comp.GetHandle().to_string());
+                        PImGui::EndPropertyLines();
+                    }
+                }
             }
             ImGui::PopID();
 
             if(!opened)
             {
-                DestroyObject(comp);
+                selected->DestroyComponent(comp);
             }
         }
 
-        if (ImGui::CollapsingHeader("__Node Infomation", nullptr, ImGuiTreeNodeFlags_::ImGuiTreeNodeFlags_DefaultOpen))
+        if (PImGui::PropertyGroup("Node MetaInfo"))
         {
-            ImGui::BeginDisabled();
-
-            _Property2Name();
-            ImGui::Text("Type");
-            _Property2Value();
-            ImGui::Text(selected->GetType()->GetName().c_str());
-            _Property2End();
-
-            _Property2Name();
-            ImGui::Text("Handle");
-            _Property2Value();
-            ImGui::Text(selected->GetObjectHandle().to_string().c_str());
-            _Property2End();
-
-            ImGui::EndDisabled();
+            if (PImGui::BeginPropertyLines())
+            {
+                PImGui::PropertyLineText("Handle", selected->GetObjectHandle().to_string().c_str());
+                PImGui::EndPropertyLines();
+            }
         }
 
         ImGui::Spacing();

@@ -1,6 +1,11 @@
 #include "Importers/FBXImporter.h"
+
+#include "Pulsar/Prefab.h"
+#include "Pulsar/Scene.h"
+
+#include <Pulsar/Assets/NodeCollection.h>
 #include <Pulsar/Assets/StaticMesh.h>
-#include <Pulsar/Components/MeshContainerComponent.h>
+#include <Pulsar/Components/MeshRendererComponent.h>
 #include <Pulsar/Components/StaticMeshRendererComponent.h>
 #include <PulsarEd/AssetDatabase.h>
 #include <fbxsdk.h>
@@ -193,16 +198,29 @@ namespace pulsared
             FBXSDK_printf("Program Success!\n");
     }
 
-    static inline Vector3f _Vec3(const FbxVector4& vec)
+    static inline Vector3f ToVector3f(const FbxVector4& vec)
     {
         return {static_cast<float>(vec[0]), static_cast<float>(vec[1]), static_cast<float>(vec[2])};
     }
-    static inline Color4f _Color4f(const FbxColor& color)
+    static inline Vector3f ToVector3f(const FbxDouble3& vec)
     {
-        return Color4f(color.mRed, color.mGreen, color.mBlue, color.mAlpha);
+        return {static_cast<float>(vec[0]), static_cast<float>(vec[1]), static_cast<float>(vec[2])};
+    }
+    static inline Vector2f ToVector2f(const FbxVector2& vec)
+    {
+        return {(float)vec[0], (float)vec[1]};
+    }
+    static inline Color4f ToColor4f(const FbxColor& color)
+    {
+        return {(float)color.mRed, (float)color.mGreen, (float)color.mBlue, (float)color.mAlpha};
+    }
+    static inline Quat4f ToQuat(const FbxQuaternion& q)
+    {
+        return {(float)q[0], (float)q[1], (float)q[2], (float)q[3]};
     }
 
-    static StaticMesh_ref ProcessMesh(FbxNode* fbxNode)
+
+    static RCPtr<StaticMesh> ProcessMesh(FbxNode* fbxNode, bool inverseCoordsystem)
     {
         const auto name = fbxNode->GetName();
 
@@ -210,83 +228,119 @@ namespace pulsared
         array_list<string> materialNames;
 
         materialNames.reserve(fbxNode->GetMaterialCount());
-        for (size_t i = 0; i < fbxNode->GetMaterialCount(); i++)
+        for (int i = 0; i < fbxNode->GetMaterialCount(); i++)
         {
             materialNames.push_back(fbxNode->GetMaterial(i)->GetName());
         }
 
         const auto attrCount = fbxNode->GetNodeAttributeCount();
-
         for (int attrIndex = 0; attrIndex < attrCount; attrIndex++)
         {
-            const auto attr = fbxNode->GetNodeAttributeByIndex(attrIndex);
+            auto attr = fbxNode->GetNodeAttributeByIndex(attrIndex);
             if (attr->GetAttributeType() == FbxNodeAttribute::eMesh)
             {
                 StaticMeshSection section;
-                // make section
 
                 auto fbxMesh = static_cast<FbxMesh*>(attr);
-                auto pointCount = fbxMesh->GetControlPointsCount();
+                assert(fbxMesh);
 
-                // section.Position.resize(pointCount);
-
-                // auto controlPoints = fbxMesh->GetControlPoints();
-                // for (size_t i = 0; i < pointCount; i++)
-                //{
-                //     section.Position[i] = _Vec3(controlPoints[i]);
-                // }
-                // StaticMeshVertex vert;
-                // section.Vertex.resize();
-                // fbxMesh.get
                 constexpr int kPolygonCount = 3;
-
-                auto vertexCount = fbxMesh->GetPolygonVertexCount();
-                auto polygonCount = fbxMesh->GetPolygonCount();
+                const auto vertexCount = fbxMesh->GetPolygonVertexCount();
+                const auto polygonCount = fbxMesh->GetPolygonCount();
                 assert(vertexCount == polygonCount * kPolygonCount);
                 section.Indices.resize(vertexCount);
                 section.Vertex.resize(vertexCount);
 
-//#pragma omp parallel for
+                // #pragma omp parallel for
                 for (int polyIndex = 0; polyIndex < polygonCount; polyIndex++)
                 {
-                    for (int vertIndex = 0; vertIndex < kPolygonCount; vertIndex++)
+                    for (int vertIndexInFace = 0; vertIndexInFace < kPolygonCount; vertIndexInFace++)
                     {
-                        auto index = fbxMesh->GetPolygonVertex(polyIndex, vertIndex);
+                        const auto vertexIndex = polyIndex * kPolygonCount + vertIndexInFace;
+                        const auto controlPointIndex = fbxMesh->GetPolygonVertex(polyIndex, vertIndexInFace);
 
                         StaticMeshVertex vertex{};
                         // position
-                        auto pp = fbxMesh->GetControlPointAt(index);
-                        auto ppp = fbxMesh->GetControlPoints()[index];
-                        vertex.Position = _Vec3(fbxMesh->GetControlPointAt(index));
+                        auto controlPoint = fbxMesh->GetControlPointAt(controlPointIndex);
+                        vertex.Position = ToVector3f(controlPoint);
                         // normal
                         FbxVector4 normal;
-                        fbxMesh->GetPolygonVertexNormal(polyIndex, vertIndex, normal);
-                        vertex.Normal = _Vec3(normal);
+                        fbxMesh->GetPolygonVertexNormal(polyIndex, vertIndexInFace, normal);
+                        vertex.Normal = ToVector3f(normal);
+                        // UVs
+                        for (int i = 0; i < fbxMesh->GetUVLayerCount(); ++i)
+                        {
+                            if (i >= STATICMESH_MAX_TEXTURE_COORDS)
+                            {
+                                continue;
+                            }
+
+                            auto uvElement = fbxMesh->GetElementUV(i);
+                            auto uv = uvElement->GetDirectArray().GetAt(controlPointIndex);
+                            vertex.TexCoords[i] = ToVector2f(uv);
+                        }
+
                         // color
                         if (auto fbxColors = fbxMesh->GetLayer(0)->GetVertexColors())
                         {
-                            //fbxMesh->GetElementVertexColor()
-                            auto map = fbxColors->GetMappingMode();
-                            uint32_t colorIndex;
-                            switch (fbxColors->GetReferenceMode())
+                            const auto mappingMode = fbxColors->GetMappingMode();
+                            const auto referenceMode = fbxColors->GetReferenceMode();
+                            int index{};
+                            switch (mappingMode)
                             {
-                            case fbxsdk::FbxLayerElement::eDirect:
-                                colorIndex = index;
-                                break;
-                            case fbxsdk::FbxLayerElement::eIndexToDirect:
-                                colorIndex = fbxColors->GetIndexArray().GetAt(index);
-                                break;
-                            default:
-                                assert(0);
+                            case FbxGeometryElement::EMappingMode::eByControlPoint: {
+                                switch (referenceMode)
+                                {
+                                case FbxGeometryElement::EReferenceMode::eDirect: {
+                                    index = controlPointIndex;
+                                    vertex.Color = ToColor4f(fbxColors->GetDirectArray().GetAt(index));
+                                    break;
+                                }
+                                case FbxGeometryElement::EReferenceMode::eIndexToDirect: {
+                                    index = fbxColors->GetIndexArray().GetAt(controlPointIndex);
+                                    vertex.Color = ToColor4f(fbxColors->GetDirectArray().GetAt(index));
+                                    break;
+                                }
+                                default:
+                                    assert(false);
+                                    break;
+                                }
+
                                 break;
                             }
-                            auto x = fbxColors->GetDirectArray().GetCount();
-                            auto fbxColor = fbxColors->GetDirectArray().GetAt(index);
-                            vertex.Color = _Color4f(fbxColor);
+                            case FbxGeometryElement::EMappingMode::eByPolygonVertex: {
+                                switch (referenceMode)
+                                {
+                                case FbxGeometryElement::EReferenceMode::eDirect: {
+                                    index = vertexIndex;
+                                    vertex.Color = ToColor4f(fbxColors->GetDirectArray().GetAt(index));
+                                    break;
+                                }
+                                case FbxGeometryElement::EReferenceMode::eIndexToDirect:
+                                    index = fbxColors->GetIndexArray().GetAt(vertexIndex);
+                                    vertex.Color = ToColor4f(fbxColors->GetDirectArray().GetAt(index));
+                                    break;
+                                default:
+                                    assert(false);
+                                }
+
+                                break;
+                            }
+                            default:
+                                assert(false);
+                            }
                         }
 
-                        section.Vertex[polyIndex * kPolygonCount + vertIndex] = vertex;
-                        section.Indices[polyIndex * kPolygonCount + vertIndex] = polyIndex * kPolygonCount + vertIndex;
+                        section.Vertex[vertexIndex] = vertex;
+                        auto indicesValue = vertexIndex;
+                        if (inverseCoordsystem)
+                        {
+                            if (vertIndexInFace == 1)
+                                indicesValue += 1;
+                            if (vertIndexInFace == 2)
+                                indicesValue -= 1;
+                        }
+                        section.Indices[vertexIndex] = indicesValue;
                     }
                 }
 
@@ -295,32 +349,54 @@ namespace pulsared
                 sections.push_back(std::move(section));
             }
         }
-        if (sections.size() == 0)
+        if (sections.empty())
         {
             return nullptr;
         }
         return StaticMesh::StaticCreate(name, std::move(sections), std::move(materialNames));
     }
 
-    static void ProcessNode(FbxNode* fbxNode, Node_ref pnode, FBXImporterSettings* settings)
+    static void ProcessNode(
+        FbxNode* fbxNode,
+        Node_ref parentNode,
+        NodeCollection_ref pscene,
+        FBXImporterSettings* settings,
+        bool inverseCoordsystem,
+        const string& meshFolder)
     {
+        auto newNodeName = fbxNode->GetName();
+        const auto newNode = pscene->NewNode(newNodeName, parentNode);
+
+        if (auto staticMesh = ProcessMesh(fbxNode, inverseCoordsystem))
+        {
+            const auto meshPath = meshFolder + "/" + staticMesh->GetName();
+            AssetDatabase::CreateAsset(staticMesh.GetPtr(), meshPath);
+            newNode->AddComponent<StaticMeshRendererComponent>()->SetStaticMesh(staticMesh);
+            auto translation = ToVector3f(fbxNode->LclTranslation.Get());
+            auto scaling = ToVector3f(fbxNode->LclScaling.Get());
+
+            FbxEuler::EOrder order{};
+            fbxNode->GetRotationOrder(FbxNode::EPivotSet::eSourcePivot, order);
+            assert(order == FbxEuler::EOrder::eOrderXYZ);
+            FbxQuaternion q;
+            q.ComposeSphericalXYZ(FbxVector4(fbxNode->LclRotation.Get()));
+            auto rotation = ToQuat(q);
+
+            auto transform = newNode->GetTransform();
+            transform->SetPosition(translation);
+            transform->SetRotation(rotation);
+            transform->SetScale(scaling);
+        }
+
         const auto childCount = fbxNode->GetChildCount();
-        for (size_t childIndex = 0; childIndex < childCount; childIndex++)
+        for (int childIndex = 0; childIndex < childCount; childIndex++)
         {
             const auto childFbxNode = fbxNode->GetChild(childIndex);
-            const auto npNode = Node::StaticCreate(childFbxNode->GetName(), pnode->GetTransform());
-
-            if (auto staticMesh = ProcessMesh(childFbxNode))
-            {
-                AssetDatabase::CreateAsset(staticMesh,  settings->TargetPath + "/" + staticMesh->GetName());
-                npNode->AddComponent<StaticMeshRendererComponent>()->SetStaticMesh(staticMesh);
-            }
-
-            ProcessNode(childFbxNode, npNode, settings);
+            ProcessNode(childFbxNode, newNode, pscene, settings, inverseCoordsystem, meshFolder);
         }
     }
 
-    array_list<AssetObject_ref> FBXImporter::Import(AssetImporterSettings* settings)
+    array_list<RCPtr<AssetObject>> FBXImporter::Import(AssetImporterSettings* settings)
     {
         FBXImporterSettings* fbxsetting = static_cast<FBXImporterSettings*>(settings);
 
@@ -333,38 +409,46 @@ namespace pulsared
         for (auto& importFile : *settings->ImportFiles)
         {
             LoadScene(fbxManager, fbxScene, importFile.c_str());
-            auto trsx1 = fbxScene->GetRootNode()->GetChild(0)->EvaluateGlobalTransform();
+
+            bool inverseCoordSystem = false;
             if (fbxsetting->ConvertAxisSystem)
             {
                 const auto axisSystem = fbxScene->GetGlobalSettings().GetAxisSystem();
+                if (axisSystem.GetCoorSystem() == FbxAxisSystem::eRightHanded)
+                {
+                    inverseCoordSystem = true;
+                }
                 const auto ourAxisSystem = FbxAxisSystem(FbxAxisSystem::eYAxis, FbxAxisSystem::eParityOdd, FbxAxisSystem::eLeftHanded);
                 if (axisSystem != ourAxisSystem)
                 {
                     ourAxisSystem.ConvertScene(fbxScene);
                 }
             }
-            auto mm = FbxSystemUnit::m;
-            auto cmm = FbxSystemUnit::cm;
 
             auto originUnit = fbxScene->GetGlobalSettings().GetOriginalSystemUnit();
-            auto unit = fbxScene->GetGlobalSettings().GetSystemUnit();;
-            auto trsx2 = fbxScene->GetRootNode()->GetChild(0)->EvaluateGlobalTransform();
-            if(unit != FbxSystemUnit::m)
+            auto unit = fbxScene->GetGlobalSettings().GetSystemUnit();
+
+            if (unit != FbxSystemUnit::m)
             {
                 FbxSystemUnit::m.ConvertScene(fbxScene);
             }
-            auto trsx3 = fbxScene->GetRootNode()->GetChild(0)->EvaluateGlobalTransform();
 
             FbxGeometryConverter geomConverter(fbxManager);
             geomConverter.Triangulate(fbxScene, true);
             geomConverter.SplitMeshesPerMaterial(fbxScene, true);
 
-            const auto rootNode = fbxScene->GetRootNode();
+            const auto fbxRootNode = fbxScene->GetRootNode();
+            const auto filename = PathUtil::GetFilenameWithoutExt(importFile);
+            auto prefab = Prefab::StaticCreate(filename);
+            const auto targetMeshFolder = settings->TargetPath + "/" + filename + "_Items";
+            const auto rootCount = fbxRootNode->GetChildCount();
+            for (int i = 0; i < rootCount; ++i)
+            {
+                auto sceneRootNode = fbxRootNode->GetChild(i);
+                ProcessNode(sceneRootNode, nullptr, prefab, fbxsetting, inverseCoordSystem, targetMeshFolder);
+            }
 
-            const auto rootpNode = Node::StaticCreate(PathUtil::GetFilenameWithoutExt(importFile));
-
-            ProcessNode(rootNode, rootpNode, fbxsetting);
-
+            AssetDatabase::CreateAsset(prefab.GetPtr(), settings->TargetPath + "/" + filename);
             DestroySdkObjects(fbxManager, 0);
         }
         return {};

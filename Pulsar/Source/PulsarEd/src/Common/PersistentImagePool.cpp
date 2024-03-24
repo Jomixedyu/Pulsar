@@ -6,12 +6,13 @@ namespace pulsared
 {
     void PersistentImagePool::Register(const index_string& id, const uint8_t* iconBuf, size_t length)
     {
-        gfx::GFXSamplerConfig config;
+        gfx::GFXSamplerConfig config{};
+        config.Filter = gfx::GFXSamplerFilter::Linear;
 
         int32_t width, height, channel;
         auto iconData = gfx::LoadImageFromMemory(iconBuf, length, &width, &height, &channel, 4, true);
 
-        auto tex2d = m_app->CreateFromImageData(iconData.data(), width, height, channel, false, gfx::GFXTextureFormat::R8G8B8A8, config);
+        auto tex2d = m_app->CreateTexture2DFromMemory(iconData.data(), iconData.size(), width, height, gfx::GFXTextureFormat::R8G8B8A8_UNorm, config);
         m_textures.emplace(id, tex2d);
     }
 

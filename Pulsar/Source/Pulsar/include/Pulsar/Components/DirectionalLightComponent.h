@@ -21,7 +21,7 @@ namespace pulsar
         void OnLightColorChanged() override;
 
         void OnMsg_TransformChanged() override;
-        sptr<rendering::RenderObject> m_gizmos;
+        SPtr<rendering::RenderObject> m_gizmos;
 
         std::unique_ptr<DirectionalLightSceneInfo> m_sceneInfo;
     };

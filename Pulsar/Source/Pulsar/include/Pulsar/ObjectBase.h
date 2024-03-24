@@ -43,90 +43,149 @@ namespace pulsar
     template<typename T>
     using hash_set = std::unordered_set<T>;
 
-    using ObjectFlags = uint16_t;
-    enum ObjectFlags_ : uint16_t
+    using ObjectFlags = uint64_t;
+    enum ObjectFlags_ : uint64_t
     {
-        OF_NoFlag       = 0,
-        OF_Persistent   = 1 << 0,
-        OF_Instantiable = 1 << 1,
-        OF_Instance     = 1 << 2,
-        OF_NoPack       = 1 << 3,
-        OF_DontDestroy  = 1 << 4,
+        OF_NoFlag           = 0,
+        OF_Persistent       = 1 << 0,
+        OF_Instantiable     = 1 << 1,
+        OF_Instance         = 1 << 2,
+        OF_NoPack           = 1 << 3,
+        OF_LifecycleManaged = 1 << 4,
     };
+
+    enum class DependencyObjectState
+    {
+        Unload = 0x01,
+        Reload = 0x02,
+    };
+    ENUM_CLASS_FLAGS(DependencyObjectState);
+
 
     class ObjectBase : public Object
     {
-        friend class RuntimeObjectWrapper;
+        friend class RuntimeObjectManager;
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::ObjectBase, Object);
     public:
         ObjectBase();
-        ~ObjectBase() override;
+        ~ObjectBase() noexcept override;
     public:
-        ObjectHandle GetObjectHandle() const { return this->m_objectHandle; }
+        [[always_inline]] ObjectHandle GetObjectHandle() const noexcept { return this->m_objectHandle; }
     public:
         void Construct(ObjectHandle handle = {});
         virtual void PostEditChange(FieldInfo* info);
     public:
-        index_string GetIndexName() const { return m_name; }
-        void         SetIndexName(index_string name);
-        string       GetName() const { return m_name.to_string(); }
-        void         SetName(string_view name);
-        uint16_t     GetObjectFlags() const { return m_flags; }
-        bool         HasObjectFlags(ObjectFlags flags) const { return m_flags & flags;}
-        void         SetObjectFlags(uint16_t flags) { m_flags = flags; }
-        bool         IsPersistentObject() const { return m_flags & OF_Persistent; }
+        index_string GetIndexName() const noexcept { return m_name; }
+        void         SetIndexName(index_string name) noexcept;
+        string       GetName() const noexcept { return m_name.to_string(); }
+        void         SetName(string_view name) noexcept;
+        ObjectFlags  GetObjectFlags() const noexcept { return m_flags; }
+        bool         HasObjectFlags(ObjectFlags flags) const noexcept { return m_flags & flags;}
+        void         SetObjectFlags(uint16_t flags) noexcept { m_flags = flags; }
+        bool         IsPersistentObject() const noexcept { return m_flags & OF_Persistent; }
+
+        virtual void OnDependencyMessage(ObjectHandle inDependency, DependencyObjectState msg);
+
     protected:
         virtual void OnConstruct();
         virtual void OnDestroy();
+    protected:
+        void SendOuterDependencyMsg(DependencyObjectState msg) const;
     private:
         void Destroy();
-        // base 24
+        // base class 24
         index_string m_name;         // 8
         ObjectHandle m_objectHandle; // 16
     protected:
-        ObjectFlags  m_flags{};      // 16
-
-        #ifdef WITH_EDITOR
-        string m_objectName;
-        #endif
+        ObjectFlags  m_flags{};      // 8
     public:
     };
 
     inline constexpr int kSizeObjectBase = sizeof(ObjectBase);
 
-    class RuntimeObjectWrapper final
+    struct ManagedPointer
+    {
+        friend class RuntimeObjectManager;
+    private:
+        ObjectBase* Pointer{};
+        int Counter{};
+    public:
+        int RefCount() const noexcept { return Counter; }
+        void Incref() { ++Counter; }
+        int Decref() { --Counter; return Counter; }
+        [[always_inline]] ObjectBase* Get() const
+        {
+            return Pointer;
+        }
+        void SetEmptyPtr()
+        {
+            Pointer = nullptr;
+        }
+    };
+
+    class RuntimeObjectManager final
     {
     public:
-        static ObjectBase* GetObject(ObjectHandle id);
-        static sptr<ObjectBase> GetSharedObject(ObjectHandle id);
-        static bool IsValid(ObjectHandle id);
-        static void NewInstance(sptr<ObjectBase>&& managedObj, ObjectHandle handle);
-        static void DestroyObject(ObjectHandle id, bool isForce = false);
+        static ObjectBase* GetObject(const ObjectHandle& id) noexcept;
+        static SPtr<ObjectBase> GetSharedObject(const ObjectHandle& id) noexcept;
+        static SPtr<ManagedPointer> GetPointer(const ObjectHandle& id) noexcept;
+        static SPtr<ManagedPointer> AddWaitPointer(const ObjectHandle& id);
+        static bool IsValid(const ObjectHandle& id) noexcept;
+        static void NewInstance(SPtr<ObjectBase>&& managedObj, const ObjectHandle& handle) noexcept;
+        static bool DestroyObject(const ObjectHandle& id, bool isForce = false) noexcept;
+        static void GetData(size_t* total, size_t* place, size_t* alive);
         static void Terminate();
-
-        static void ForEachObject(const std::function<void(ObjectHandle, ObjectBase*)>& func);
+        static void TickGCollect();
+        static void ForEachObject(const std::function<void(ObjectHandle, ObjectBase*, int)>& func);
 
         //<id, type, is_create>
         static Action<ObjectHandle, Type*, bool> ObjectHook;
         static Action<ObjectBase*> OnPostEditChanged;
+
+        static void AddDependList(ObjectHandle src, ObjectHandle dest);
+        static void RemoveDependList(ObjectHandle src, ObjectHandle dest);
+        static void NotifyDependObjects(ObjectHandle dest, DependencyObjectState id);
     };
+
+
 
     struct ObjectPtrBase
     {
-        ObjectHandle handle{};
+        ObjectHandle Handle;
+        SPtr<ManagedPointer> ManagedPtr;
 
-        bool operator==(const ObjectPtrBase& b) const
+        ObjectPtrBase() = default;
+        ObjectPtrBase(const ObjectPtrBase&) = default;
+        ObjectPtrBase(ObjectPtrBase&&) = default;
+        ObjectPtrBase(const ObjectHandle& handle) : Handle(handle)
         {
-            return handle == b.handle;
+            if (!handle.is_empty())
+            {
+                ManagedPtr = RuntimeObjectManager::GetPointer(handle);
+                if (ManagedPtr == nullptr)
+                {
+                    ManagedPtr = RuntimeObjectManager::AddWaitPointer(handle);
+                }
+            }
         }
-        ObjectHandle GetHandle() const
+        ObjectPtrBase& operator=(const ObjectPtrBase&) = default;
+        ObjectPtrBase& operator=(ObjectPtrBase&&) = default;
+
+        [[always_inline]] const ObjectHandle& GetHandle() const
         {
-            return handle;
+            return Handle;
         }
-        template<typename T>
-        T* GetTPtr() const
+        [[always_inline]] ObjectHandle& GetHandle()
         {
-            return static_cast<T*>(RuntimeObjectWrapper::GetObject(handle));
+            return Handle;
+        }
+        [[always_inline]] ObjectBase* GetObjectPointer() const
+        {
+            if (ManagedPtr)
+            {
+                return ManagedPtr->Get();
+            }
+            return nullptr;
         }
     };
 
@@ -136,22 +195,31 @@ namespace pulsar
         CORELIB_IMPL_INTERFACES(IStringify)
     public:
         using unboxing_type = ObjectPtrBase;
-        ObjectPtrBase get_unboxing_value() { return { handle }; }
+        ObjectPtrBase get_unboxing_value() { return ptr; }
         BoxingObjectPtrBase() : CORELIB_INIT_INTERFACE(IStringify) {}
-        explicit BoxingObjectPtrBase(ObjectPtrBase invalue) : handle(invalue.handle),
+        explicit BoxingObjectPtrBase(const ObjectPtrBase& invalue) : ptr(invalue),
             CORELIB_INIT_INTERFACE(IStringify) {}
 
         void IStringify_Parse(const string& value) override
         {
-            handle = ObjectHandle::parse(value);
+            ptr = ObjectHandle::parse(value);
         }
 
         string IStringify_Stringify() override
         {
-            return handle.to_string();
+            return ptr.GetHandle().to_string();
         }
 
-        ObjectHandle handle;
+        [[always_inline]] ObjectHandle GetHandle() const noexcept
+        {
+            return ptr.Handle;
+        }
+        [[always_inline]] void SetHandle(const ObjectHandle& handle) noexcept
+        {
+            ptr.Handle = handle;
+        }
+
+        ObjectPtrBase ptr;
     };
 }
 CORELIB_DECL_BOXING(pulsar::ObjectPtrBase, pulsar::BoxingObjectPtrBase);
@@ -163,67 +231,45 @@ namespace pulsar
     concept baseof_objectbase = std::is_base_of<ObjectBase, T>::value;
 
 
-    inline bool IsValid(const ObjectPtrBase& object)
-    {
-        return RuntimeObjectWrapper::IsValid(object.handle);
-    }
-
-    inline void DestroyObject(const ObjectPtrBase& object, bool isForce = false)
-    {
-        RuntimeObjectWrapper::DestroyObject(object.handle, isForce);
-    }
-    
     template<typename T>
     struct ObjectPtr : public ObjectPtrBase
     {
+        using base = ObjectPtrBase;
         using element_type = T;
-        T* Ptr;
 
-        ObjectPtr(ObjectHandle inHandle)
+        using base::base;
+        ObjectPtr(T* ptr) noexcept : base(ptr ? ptr->GetObjectHandle() : ObjectHandle{})
         {
-            handle = inHandle;
-            Ptr = GetPtr();
-        }
-        ObjectPtr(ObjectPtrBase ptr)
-        {
-            handle = ptr.handle;
-            Ptr = GetPtr();
-        }
-        ObjectPtr(T* ptr)
-        {
-            if (Ptr = ptr)
-            {
-                handle = ptr->GetObjectHandle();
-            }
         }
 
-
-        template<typename U>
-        ObjectPtr(const ObjectPtr<U>& other)
+        ObjectPtr(const ObjectPtrBase& ptr)
         {
-            handle = other.handle;
-            Ptr = GetPtr();
-        }
-        ObjectPtr() : Ptr(nullptr) {}
-        ObjectPtr(std::nullptr_t) {}
-        ObjectPtr(const sptr<T>& object)
-        {
-            if (object != nullptr)
-            {
-                handle = object->GetObjectHandle();
-            }
-            Ptr = GetPtr();
+            Handle = ptr.Handle;
+            ManagedPtr = ptr.ManagedPtr;
         }
 
-        sptr<T> GetShared() const
+        ObjectPtr(const SPtr<T>& ptr) : ObjectPtr(ptr.get())
         {
-            return sptr_cast<T>(RuntimeObjectWrapper::GetSharedObject(handle));
         }
-        T* GetPtr() const
+
+        template<typename U> requires std::is_base_of_v<T, U>
+        ObjectPtr(const ObjectPtr<U>& derived) noexcept
         {
-            return GetTPtr<T>();
+            Handle = derived.Handle;
+            ManagedPtr = derived.ManagedPtr;
         }
-        T* operator->() const
+
+        ObjectPtr() = default;
+
+        [[always_inline]] SPtr<T> GetShared() const noexcept
+        {
+            return sptr_cast<T>(RuntimeObjectManager::GetSharedObject(Handle));
+        }
+        [[always_inline]] T* GetPtr() const noexcept
+        {
+            return static_cast<T*>(GetObjectPointer());
+        }
+        T* operator->() const noexcept(false)
         {
             auto ptr = GetPtr();
             if(ptr == nullptr)
@@ -232,24 +278,24 @@ namespace pulsar
             }
             return ptr;
         }
-        bool operator==(const ObjectPtrBase& r) const { return handle == r.handle; }
-        bool operator==(std::nullptr_t) const { return !IsValid(); }
-
-        bool operator!=(const ObjectPtrBase& r) const { return handle != r.handle; }
+        [[always_inline]] bool operator==(const ObjectPtrBase& r) const noexcept { return Handle == r.Handle; }
+        [[always_inline]] bool operator==(std::nullptr_t) const noexcept { return !IsValid(); }
         template<typename U>
-        bool operator==(const ObjectPtr<U>& r) const { return handle == r.handle; }
+        bool operator==(const ObjectPtr<U>& r) const noexcept { return Handle == r.Handle; }
 
-        bool IsValid() const
+        [[always_inline]] bool IsValid() const noexcept
         {
-            return RuntimeObjectWrapper::IsValid(handle);
+            return GetObjectPointer() != nullptr;
         }
-        operator bool() const noexcept
+        [[always_inline]] explicit operator bool() const noexcept
         {
             return IsValid();
         }
-        void Reset()
+
+        void Reset() noexcept
         {
-            handle = {};
+            Handle = {};
+            ManagedPtr = nullptr;
         }
     };
 
@@ -260,25 +306,232 @@ namespace pulsar
         return ptr_cast<T>(o.GetPtr());
     }
 
-    std::iostream& ReadWriteStream(std::iostream& stream, bool isWrite, ObjectPtrBase& obj);
 
-    class NotifyFieldValueChangedAttribute : public Attribute
+    class RCPtrBase
     {
-        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::NotifyFieldValueChangedAttribute, Attribute);
     public:
-        NotifyFieldValueChangedAttribute(const char* name)
-            : m_name(name)
+        ObjectHandle Handle;
+        SPtr<ManagedPointer> ManagedPtr;
+    protected:
+        [[always_inline]] void Incref() const noexcept
         {
+            if (GetPointer())
+            {
+                ManagedPtr->Incref();
+            }
+        }
+        [[always_inline]] void Decref()
+        {
+            if (ManagedPtr->Decref() == 0)
+            {
+                if (ManagedPtr.use_count() == 2)
+                    ManagedPtr.reset();
+                RuntimeObjectManager::DestroyObject(Handle);
+            }
         }
     public:
-        const char* GetPostMethodName() const
+        [[always_inline]] ObjectHandle& GetHandle() noexcept
         {
-            return m_name;
+            return Handle;
         }
-    private:
-        const char* m_name;
+        [[always_inline]] const ObjectHandle& GetHandle() const noexcept
+        {
+            return Handle;
+        }
+        [[always_inline]] ObjectBase* GetPointer() const noexcept
+        {
+            if (ManagedPtr)
+            {
+                return ManagedPtr->Get();
+            }
+            return nullptr;
+        }
+        RCPtrBase(const ObjectHandle& handle)
+        {
+            if (!handle.is_empty())
+            {
+                Handle = handle;
+                ManagedPtr = RuntimeObjectManager::GetPointer(handle);
+                if (!ManagedPtr)
+                {
+                    ManagedPtr = RuntimeObjectManager::AddWaitPointer(handle);
+                }
+                ManagedPtr->Incref();
+            }
+        }
+        RCPtrBase() : Handle({}) {}
+        RCPtrBase(const ObjectBase* ptr) : RCPtrBase(ptr ? ptr->GetObjectHandle() : ObjectHandle{})
+        {
+        }
+        RCPtrBase(const RCPtrBase& ptr) noexcept : Handle(ptr.Handle), ManagedPtr(ptr.ManagedPtr)
+        {
+            if (ManagedPtr) ManagedPtr->Incref();
+        }
+        RCPtrBase(RCPtrBase&& ptr) noexcept : Handle(ptr.Handle), ManagedPtr(std::move(ptr.ManagedPtr))
+        {
+            ptr.ManagedPtr = nullptr;
+        }
+        RCPtrBase& operator=(const RCPtrBase& ptr) noexcept
+        {
+            if (this == &ptr) return *this;
+            if (ManagedPtr) Decref();
+            Handle = ptr.Handle;
+            ManagedPtr = ptr.ManagedPtr;
+            if (ManagedPtr) Incref();
+            return *this;
+        }
+        RCPtrBase& operator=(RCPtrBase&& ptr) noexcept
+        {
+            if (ManagedPtr) Decref();
+            Handle = ptr.Handle;
+            ManagedPtr = std::move(ptr.ManagedPtr);
+            return *this;
+        }
+        ~RCPtrBase() noexcept
+        {
+            if (ManagedPtr)
+            {
+                Decref();
+            }
+        }
+
+        [[always_inline]] bool IsValid() const noexcept
+        {
+            if (ManagedPtr == nullptr)
+            {
+                return false;
+            }
+            return ManagedPtr->Get() != nullptr;
+        }
+
+        [[always_inline]] explicit operator bool() const noexcept
+        {
+            return IsValid();
+        }
+
+        bool operator==(const RCPtrBase& ptr) const noexcept
+        {
+            return Handle == ptr.Handle;
+        }
+
+        bool operator==(std::nullptr_t) const noexcept
+        {
+            return !IsValid();
+        }
+
+        void Reset()
+        {
+            Handle = {};
+            ManagedPtr.reset();
+        }
     };
+
+    template <typename T>
+    struct RCPtr : public RCPtrBase
+    {
+        using base = RCPtrBase;
+
+        T* operator->() const
+        {
+            auto ptr = GetPtr();
+            if (!ptr)
+            {
+                throw NullPointerException();
+            }
+            return ptr;
+        }
+        RCPtr() : base() {}
+        RCPtr(const ObjectHandle& handle) : base(handle) {}
+        RCPtr(const ObjectBase* ptr) : base(ptr ? ptr->GetObjectHandle() : ObjectHandle{}) {}
+        RCPtr(const SPtr<T>& t) : base(t.get()) {}
+
+        RCPtr(const RCPtrBase& ptr) : base(ptr) {}
+
+        // RCPtr(const RCPtr& ptr) : base(ptr) {}
+        // RCPtr(RCPtr&& ptr) noexcept : base(std::move(ptr))
+        // {
+        // }
+        // RCPtr& operator=(const RCPtr& ptr) noexcept
+        // {
+        //     if (this == &ptr) return *this;
+        //     if (ManagedPtr) Decref();
+        //     Handle = ptr.Handle;
+        //     ManagedPtr = ptr.ManagedPtr;
+        //     if (ManagedPtr) Incref();
+        //     return *this;
+        // }
+        // RCPtr& operator=(RCPtr&& ptr) noexcept
+        // {
+        //     if (ManagedPtr) Decref();
+        //     Handle = ptr.Handle;
+        //     ManagedPtr = std::move(ptr.ManagedPtr);
+        //     ptr.Handle = {};
+        //     ptr.ManagedPtr = nullptr;
+        //     return *this;
+        // }
+
+        [[always_inline]] T* GetPtr() const noexcept
+        {
+            return static_cast<T*>(GetPointer());
+        }
+
+    };
+
+    template<typename T, typename U>
+    RCPtr<T> cref_cast(RCPtr<U> o)
+    {
+        if (!o) return {};
+        return ptr_cast<T>(o.GetPtr());
+    }
+
+    class BoxingRCPtrBase : public BoxingObject, public IStringify
+    {
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::BoxingRCPtrBase, BoxingObject);
+        CORELIB_IMPL_INTERFACES(IStringify)
+    public:
+        using unboxing_type = RCPtrBase;
+        RCPtrBase get_unboxing_value() { return ptr; }
+        BoxingRCPtrBase() : CORELIB_INIT_INTERFACE(IStringify), ptr({}) {}
+        explicit BoxingRCPtrBase(const RCPtrBase& invalue) :
+            CORELIB_INIT_INTERFACE(IStringify), ptr(invalue) {}
+
+        void IStringify_Parse(const string& value) override
+        {
+            ptr = ObjectHandle::parse(value);
+        }
+
+        string IStringify_Stringify() override
+        {
+            return ptr.GetHandle().to_string();
+        }
+
+        [[always_inline]] ObjectHandle GetHandle() const noexcept
+        {
+            return ptr.GetHandle();
+        }
+        [[always_inline]] void SetHandle(const ObjectHandle& handle) noexcept
+        {
+            ptr = handle;
+        }
+
+        RCPtrBase ptr;
+    };
+
+    inline void DestroyObject(const ObjectPtrBase& object, bool isForce = false) noexcept
+    {
+        RuntimeObjectManager::DestroyObject(object.GetHandle(), isForce);
+    }
+    inline void DestroyObject(const RCPtrBase& object, bool isForce = false) noexcept
+    {
+        RuntimeObjectManager::DestroyObject(object.GetHandle(), isForce);
+    }
+
+    std::iostream& ReadWriteStream(std::iostream& stream, bool isWrite, ObjectPtrBase& obj);
+    std::iostream& ReadWriteStream(std::iostream& stream, bool isWrite, RCPtrBase& obj);
+
 }
+CORELIB_DECL_BOXING(pulsar::RCPtrBase, pulsar::BoxingRCPtrBase);
+
 namespace jxcorlib
 {
     template<typename T>
@@ -292,6 +545,18 @@ namespace jxcorlib
     {
         using type = T;
     };
+
+    template<typename T>
+    struct type_redirect<pulsar::RCPtr<T>>
+    {
+        using type = pulsar::RCPtrBase;
+    };
+
+    template<typename T>
+    struct type_wrapper<pulsar::RCPtr<T>>
+    {
+        using type = T;
+    };;
 }
 
 namespace pulsar
@@ -300,14 +565,6 @@ namespace pulsar
 }
 namespace std
 {
-    template<>
-    struct hash<pulsar::ObjectHandle>
-    {
-        size_t operator()(const pulsar::ObjectHandle& handle) const noexcept
-        {
-            return *reinterpret_cast<const uint64_t*>(&handle) ^ *((reinterpret_cast<const uint64_t*>(&handle) + 1));
-        }
-    };
 
     template<>
     struct hash<pulsar::ObjectPtrBase>
@@ -322,6 +579,24 @@ namespace std
     struct hash<pulsar::ObjectPtr<T>>
     {
         size_t operator()(const pulsar::ObjectPtr<T>& ptr) const noexcept
+        {
+            return std::hash<pulsar::ObjectHandle>()(ptr.GetHandle());
+        }
+    };
+
+    template<>
+    struct hash<pulsar::RCPtrBase>
+    {
+        size_t operator()(const pulsar::RCPtrBase& ptr) const noexcept
+        {
+            return std::hash<pulsar::ObjectHandle>()(ptr.GetHandle());
+        }
+    };
+
+    template<typename T>
+    struct hash<pulsar::RCPtr<T>>
+    {
+        size_t operator()(const pulsar::RCPtr<T>& ptr) const noexcept
         {
             return std::hash<pulsar::ObjectHandle>()(ptr.GetHandle());
         }

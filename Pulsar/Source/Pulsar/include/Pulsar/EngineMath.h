@@ -95,4 +95,6 @@ namespace pulsar
     using math::Color4b;
     using math::Color4f;
     using math::Transform3Df;
+    using math::Box3f;
+    using math::Bounds3f;
 }

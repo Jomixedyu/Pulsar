@@ -11,8 +11,8 @@ namespace pulsar
     public:
         virtual void OnInstantiateAsset(AssetObject* obj) override;
     public:
-        static ObjectPtr<TextAsset> StaticCreate(const string& str);
-        static ObjectPtr<TextAsset> StaticCreate(string&& str);
+        static RCPtr<TextAsset> StaticCreate(string_view str);
+        static RCPtr<TextAsset> StaticCreate(string&& str);
     public:
         const string& get_text() const { return this->text_; }
 

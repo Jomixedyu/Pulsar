@@ -21,6 +21,14 @@ namespace pulsared
         void OnDrawAssetPropertiesUI(float dt) override;
         void OnDrawAssetPreviewUI(float dt) override;
 
+        float m_imageScale{1};
+        bool m_enableGamma{};
+        bool m_enableTransparency{};
+        bool m_enableChannelR{true};
+        bool m_enableChannelG{true};
+        bool m_enableChannelB{true};
+        bool m_enableChannelA{true};
 
+        RCPtr<Material> m_ppMat;
     };
 }

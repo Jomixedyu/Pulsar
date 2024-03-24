@@ -111,6 +111,10 @@ namespace jxcorlib::ser
 
         for (FieldInfo* info : obj->GetType()->GetFieldInfos(TypeBinding::NonPublic))
         {
+            if (info->IsDefinedAttribute(cltypeof<NoSerializableAttribtue>()))
+            {
+                continue;
+            }
             Object_sp field_inst = info->GetValue(obj);
             obj_js[info->GetName()] = _SerializeObject(field_inst.get(), settings);
         }
@@ -173,7 +177,7 @@ namespace jxcorlib::ser
     }
 
 
-    static Object_sp _DeserializeObject(const json& js, Type* type, FieldInfo* fieldInfo = nullptr);
+    static Object_sp _DeserializeObject(const json& js, Type* type, FieldInfo* fieldInfo = nullptr, Object_sp defaultObj = nullptr);
 
     static Object_sp _DeserializeArray(const json& js, Type* type, FieldInfo* fieldInfo = nullptr)
     {
@@ -218,7 +222,7 @@ namespace jxcorlib::ser
         return list_sp;
     }
     
-    static Object_sp _DeserializeClassObject(const json& js, Type* type)
+    static Object_sp _DeserializeClassObject(const json& js, Type* type, Object_sp defaultObj = nullptr)
     {
         Type* realtype = type;
         if (js.contains("$type"))
@@ -226,7 +230,7 @@ namespace jxcorlib::ser
             realtype = util::GetSerializableType(js["$type"]);
         }
 
-        Object_sp obj = realtype->CreateSharedInstance({});
+        Object_sp obj = defaultObj ? defaultObj : realtype->CreateSharedInstance({});
 
         for (auto fieldInfo : realtype->GetFieldInfos())
         {
@@ -263,7 +267,7 @@ namespace jxcorlib::ser
         return ptr;
     }
 
-    static Object_sp _DeserializeObject(const json& js, Type* type, FieldInfo* fieldInfo)
+    static Object_sp _DeserializeObject(const json& js, Type* type, FieldInfo* fieldInfo, Object_sp defaultObj)
     {
         if (type->IsPrimitiveType())
         {
@@ -278,7 +282,7 @@ namespace jxcorlib::ser
         if (type->IsImplementedInterface(cltypeof<IStringify>()))
         {
             if (!js.is_string()) return nullptr;
-            sptr<Object> obj = type->CreateSharedInstance({});
+            SPtr<Object> obj = type->CreateSharedInstance({});
 
             interface_cast<IStringify>(obj.get())->IStringify_Parse(js.get<string>());
             return obj;
@@ -291,13 +295,13 @@ namespace jxcorlib::ser
         }
 
         //other
-        return _DeserializeClassObject(js, type);
+        return _DeserializeClassObject(js, type, std::move(defaultObj));
     }
 
 
-    sptr<Object> JsonSerializer::Deserialize(const string& jstr, Type* type)
+    SPtr<Object> JsonSerializer::Deserialize(const string& jstr, Type* type, Object_sp defaultObject)
     {
-        return _DeserializeObject(nlohmann::json::parse(jstr), type);
+        return _DeserializeObject(nlohmann::json::parse(jstr), type, nullptr, std::move(defaultObject));
     }
 
 }

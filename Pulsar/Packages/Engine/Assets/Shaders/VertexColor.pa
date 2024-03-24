@@ -1,6 +1,3 @@
 {
-    "Passes": "Engine/Shaders/VertexColor.sh.json",
-    "Available": true,
-    "RenderingType": 0,
-    "Config": {}
+    "Passes": "Engine/Shaders/VertexColor.sh.json"
 }

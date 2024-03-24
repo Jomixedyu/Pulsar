@@ -1,5 +1,5 @@
 {
-	"PassName": "Engine/Shaders/Lit.sh.json",
+	"$schema": "ShaderSchema.json",
 	"CullMode": "None",
 	"DepthTestEnable": true,
 	"DepthWriteEnable": true,
@@ -8,11 +8,15 @@
 	"RenderingType": "OpaqueDeferred",
 	"Properties": [
 		{
-			"Name": "BaseColor",
+			"Name": "_BaseColorMap",
 			"Type": "Texture2D"
 		},
 		{
-			"Name": "MRA",
+			"Name": "_NormalMap",
+			"Type": "Texture2D"
+		},
+		{
+			"Name": "_MRAMap",
 			"Type": "Texture2D"
 		}
 	]
