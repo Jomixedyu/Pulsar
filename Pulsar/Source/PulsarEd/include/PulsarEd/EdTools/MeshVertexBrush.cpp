@@ -41,7 +41,7 @@ namespace pulsared
         }
 
         auto traceStart = ray.Origin;
-        auto traceEnd = ray.Origin + ray.Direction * 10000.f;
+        auto traceEnd = ray.Origin + ray.Direction * 1000000000.f;
 
         auto evec = traceEnd - traceStart;
         auto lengthSqr = Dot(evec, evec);

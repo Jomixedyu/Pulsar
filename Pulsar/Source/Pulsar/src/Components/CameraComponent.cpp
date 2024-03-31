@@ -244,16 +244,16 @@ namespace pulsar
 
         // convert to NDC
         auto x = 2.f * mousePosition.x / width - 1.f;
-        auto y = -(2.f * mousePosition.y / height - 1.f);
+        auto y = -2.f * mousePosition.y / height + 1.f;
         auto z = 1.f;
 
-        auto vNDC = Vector3f {x, y, z};
+        auto vNDC = Vector3f {x, y, 1};
 
         auto vWorld = Inverse(GetViewMat()) * Inverse(GetProjectionMat()) * vNDC;
 
         Ray ray{};
         ray.Origin = GetTransform()->GetWorldPosition();
-        ray.Direction = Normalize(vWorld - ray.Origin);
+        ray.Direction = Normalize(vWorld);
         return ray;
     }
 
