@@ -20,14 +20,14 @@ namespace pulsared
             ImGui::SetNextItemWidth(100);
 
             static const char* log_levels[] = { "All", "Info", "Warning", "Error" };
-            if (ImGui::BeginCombo("Log Level", log_levels[this->log_level_filter]))
+            if (ImGui::BeginCombo("Log Level", log_levels[this->m_logLevelFilter]))
             {
                 for (size_t i = 0; i < 4; i++)
                 {
-                    bool selected = this->log_level_filter == i;
+                    bool selected = this->m_logLevelFilter == i;
                     if (ImGui::Selectable(log_levels[i], selected))
                     {
-                        this->log_level_filter = i;
+                        this->m_logLevelFilter = i;
                         this->UnSelectLog();
                     }
                 }
@@ -47,9 +47,9 @@ namespace pulsared
 
 
         ImGui::BeginChild("##console detail", ImVec2{ -FLT_MIN, ImGui::GetContentRegionAvail().y * 0.5f }, false, ImGuiWindowFlags_::ImGuiWindowFlags_HorizontalScrollbar);
-        if (this->log_selected_index >= 0)
+        if (this->m_logSelectedIndex >= 0)
         {
-            ImGui::Text(loglist[this->log_selected_index].stacktrace_info.c_str());
+            ImGui::Text(loglist[this->m_logSelectedIndex].stacktrace_info.c_str());
         }
         ImGui::EndChild();
         ImGui::Separator();
@@ -59,11 +59,11 @@ namespace pulsared
             for (int32_t i = loglist.size() - 1; i >= 0; --i)
             {
                 constexpr int kAllLevel = 0;
-                if (this->log_level_filter != kAllLevel && this->log_level_filter != (int32_t)loglist[i].level)
+                if (this->m_logLevelFilter != kAllLevel && this->m_logLevelFilter != (int32_t)loglist[i].level)
                 {
                     continue;
                 }
-                bool selected = this->log_selected_index == i;
+                bool selected = this->m_logSelectedIndex == i;
 
                 bool modify_color = false;
                 if (loglist[i].level == LogLevel::Info)
@@ -82,10 +82,17 @@ namespace pulsared
                     modify_color = true;
                 }
 
+                bool grid = i % 2 == 0 && !selected;
+
+                if (grid)
+                {
+
+                }
+
                 ImGui::PushID(i);
                 if (ImGui::Selectable(loglist[i].record_info.c_str(), selected))
                 {
-                    this->log_selected_index = i;
+                    this->m_logSelectedIndex = i;
                 }
                 ImGui::PopID();
 
@@ -93,6 +100,12 @@ namespace pulsared
                 {
                     ImGui::PopStyleColor();
                 }
+
+                if (grid)
+                {
+
+                }
+
 
                 if (selected)
                 {
