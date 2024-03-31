@@ -53,7 +53,7 @@ namespace pulsared
         {
             if (m_leftMousePressed && m_enabledRotate)
             {
-                auto trans = m_world->GetPreviewCamera()->GetAttachedNode()->GetTransform()->GetParent();
+                auto trans = m_world->GetCurrentCamera()->GetNode()->GetTransform()->GetParent();
                 auto euler = trans->GetEuler();
                 Vector3f mouseDt{newpos.y - m_latestMousePos.y, newpos.x - m_latestMousePos.x, 0};
                 if (euler.x + mouseDt.x < -85.f ||
@@ -65,8 +65,8 @@ namespace pulsared
             }
             else if (m_rightMousePressed)
             {
-                auto cam = m_world->GetPreviewCamera();
-                auto tr = cam->GetAttachedNode()->GetTransform();
+                auto cam = m_world->GetCurrentCamera();
+                auto tr = cam->GetNode()->GetTransform();
                 auto dtDistance = (newpos.x - m_latestMousePos.x) * m_scaleSpeed;
                 if (cam->GetProjectionMode() == CameraProjectionMode::Perspective)
                 {
@@ -90,7 +90,7 @@ namespace pulsared
             }
             else if (m_middleMousePressed)
             {
-                auto tr = m_world->GetPreviewCamera()->GetAttachedNode()->GetTransform()->GetParent();
+                auto tr = m_world->GetCurrentCamera()->GetNode()->GetTransform()->GetParent();
                 auto dtX = newpos.x - m_latestMousePos.x;
                 auto dtY = newpos.y - m_latestMousePos.y;
 
@@ -104,8 +104,8 @@ namespace pulsared
         {
             if (io.MouseWheel != 0)
             {
-                auto cam = m_world->GetPreviewCamera();
-                auto tr = cam->GetAttachedNode()->GetTransform();
+                auto cam = m_world->GetCurrentCamera();
+                auto tr = cam->GetNode()->GetTransform();
                 auto dtDistance = io.MouseWheel * m_scaleSpeed * 10;
                 if (cam->GetProjectionMode() == CameraProjectionMode::Perspective)
                 {

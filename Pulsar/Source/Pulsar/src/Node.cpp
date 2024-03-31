@@ -41,7 +41,7 @@ namespace pulsar
             }
             if (auto parent = node->GetTransform()->GetParent())
             {
-                node = parent->GetAttachedNode();
+                node = parent->GetNode();
             }
             else
             {
@@ -60,9 +60,9 @@ namespace pulsar
 
         for (auto child : *GetTransform()->GetChildren())
         {
-            if (child->GetAttachedNode()->GetIsActiveSelf())
+            if (child->GetNode()->GetIsActiveSelf())
             {
-                child->GetAttachedNode()->OnParentActiveChanged();
+                child->GetNode()->OnParentActiveChanged();
             }
         }
         if (value)
@@ -74,7 +74,7 @@ namespace pulsar
     {
         if (auto p = GetTransform()->GetParent())
         {
-            return p->GetAttachedNode();
+            return p->GetNode();
         }
         return {};
     }
@@ -137,7 +137,7 @@ namespace pulsar
 
         for (auto& child : *GetTransform()->GetChildren())
         {
-            DestroyObject(child->GetAttachedNode());
+            DestroyObject(child->GetNode());
         }
 
         for (auto& comp : *m_components)
@@ -171,8 +171,8 @@ namespace pulsar
         component->Construct();
 
         // init
-        component->m_attachedNode = self_ref();
         component->m_ownerNode = self_ref();
+        component->m_masterComponent = self_ref();
 
         bool isTransform = type->IsSubclassOf(cltypeof<TransformComponent>());
         if (!m_components->empty() && isTransform)

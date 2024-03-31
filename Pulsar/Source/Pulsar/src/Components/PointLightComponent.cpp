@@ -61,6 +61,6 @@ namespace pulsar
     void PointLightComponent::OnMsg_TransformChanged()
     {
         base::OnMsg_TransformChanged();
-        m_gizmos->SetTransform(GetAttachedNode()->GetTransform()->GetLocalToWorldMatrix());
+        m_gizmos->SetTransform(GetNode()->GetTransform()->GetLocalToWorldMatrix());
     }
 } // namespace pulsar

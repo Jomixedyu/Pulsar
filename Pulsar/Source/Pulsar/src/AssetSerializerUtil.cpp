@@ -26,7 +26,7 @@ namespace pulsar
         auto bound = ctx->New(ser::VarientType::Object);
         bound->Add("Extent", NewObject(ctx, vec.Extent));
         bound->Add("Origin", NewObject(ctx, vec.Origin));
-        bound->Add("Sphere", vec.Sphere);
+        bound->Add("Sphere", vec.Radius);
         return bound;
     }
     Vector3f AssetSerializerUtil::GetVector3Object(const ser::VarientRef& var)
@@ -53,7 +53,7 @@ namespace pulsar
         Bounds3f bound;
         bound.Extent = GetVector3Object(extent);
         bound.Origin = GetVector3Object(origin);
-        bound.Sphere = sphere;
+        bound.Radius = sphere;
 
         return bound;
     }

@@ -52,7 +52,7 @@ namespace pulsared
                 childNodes->reserve(children->size());
                 for (auto& child : *children)
                 {
-                    childNodes->push_back(child->GetAttachedNode());
+                    childNodes->push_back(child->GetNode());
                 }
                 _Show(world, childNodes);
                 ImGui::TreePop();

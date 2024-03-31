@@ -142,7 +142,7 @@ namespace pulsar
     }
     void StaticMesh::CalcBounds()
     {
-        Box3f box;
+        Box3f box{};
 
         bool init = false;
         for (auto& section : m_sections)
@@ -181,7 +181,21 @@ namespace pulsar
         if (box.Min.z == box.Max.z)
             box.Max.z = minFloat;
 
-        m_bounds = Bounds3f{box};
+        float radius = 0;
+        auto center = box.GetCenter();
+        for (auto& section : m_sections)
+        {
+            for (uint32_t index : section.Indices)
+            {
+                auto& pos = section.Vertex[index].Position;
+                auto distance = jmath::Distance(center, pos);
+                if (distance > radius)
+                {
+                    radius = distance;
+                }
+            }
+        }
+        m_bounds = Bounds3f{ box, radius };
     }
 
     std::iostream& ReadWriteStream(std::iostream& stream, bool isWrite, StaticMeshVertex& data)

@@ -38,7 +38,7 @@ namespace pulsar
 
     Matrix4f CameraComponent::GetViewMat() const
     {
-        return GetAttachedNode()->GetTransform()->GetWorldToLocalMatrix();
+        return GetNode()->GetTransform()->GetWorldToLocalMatrix();
     }
 
     Matrix4f CameraComponent::GetProjectionMat() const
@@ -96,7 +96,7 @@ namespace pulsar
         DestroyObject(m_postprocessRtA);
         DestroyObject(m_postprocessRtB);
 
-        auto rtname = GetAttachedNode()->GetName() + "_CamRT";
+        auto rtname = GetNode()->GetName() + "_CamRT";
 
         int renderTargetCount = 1;
         if (m_renderingPath == RenderingPathMode::Deferred)
@@ -194,7 +194,7 @@ namespace pulsar
         target.InvMatrixV = jmath::Inverse(target.MatrixV);
         target.InvMatrixP = jmath::Inverse(target.MatrixP);
         target.InvMatrixVP = jmath::Inverse(target.MatrixVP);
-        target.CamPosition = GetAttachedNode()->GetTransform()->GetWorldPosition();
+        target.CamPosition = GetNode()->GetTransform()->GetWorldPosition();
         target.CamNear = m_near;
         target.CamFar = m_far;
         target.Resolution = m_renderTarget->GetSize2df();
@@ -235,6 +235,26 @@ namespace pulsar
     {
         m_orthoSize = value;
         UpdateCBuffer();
+    }
+
+
+    Ray CameraComponent::ScreenPointToRay(Vector2f mousePosition) const
+    {
+        auto [width, height] = GetRenderTexture()->GetSize2df();
+
+        // convert to NDC
+        auto x = 2.f * mousePosition.x / width - 1.f;
+        auto y = -(2.f * mousePosition.y / height - 1.f);
+        auto z = 1.f;
+
+        auto vNDC = Vector3f {x, y, z};
+
+        auto vWorld = Inverse(GetViewMat()) * Inverse(GetProjectionMat()) * vNDC;
+
+        Ray ray{};
+        ray.Origin = GetTransform()->GetWorldPosition();
+        ray.Direction = Normalize(vWorld - ray.Origin);
+        return ray;
     }
 
     void CameraComponent::BeginRT()
@@ -281,7 +301,7 @@ namespace pulsar
             ResizeManagedRenderTexture(1, 1);
         }
 
-        GetAttachedNode()->GetRuntimeOwnerScene()->GetWorld()->GetCameraManager().AddCamera(THIS_REF);
+        GetNode()->GetRuntimeOwnerScene()->GetWorld()->GetCameraManager().AddCamera(THIS_REF);
 
         BeginRT();
     }
@@ -289,7 +309,7 @@ namespace pulsar
     void CameraComponent::EndComponent()
     {
         base::EndComponent();
-        GetAttachedNode()->GetRuntimeOwnerScene()->GetWorld()->GetCameraManager().RemoveCamera(THIS_REF);
+        GetNode()->GetRuntimeOwnerScene()->GetWorld()->GetCameraManager().RemoveCamera(THIS_REF);
         if (m_managedRT && m_renderTarget)
         {
             DestroyObject(m_renderTarget);

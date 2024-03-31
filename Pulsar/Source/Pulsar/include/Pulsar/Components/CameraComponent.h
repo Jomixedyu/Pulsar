@@ -1,8 +1,9 @@
 #pragma once
-#include <Pulsar/Assets/Material.h>
 #include "Component.h"
+#include "Pulsar/HitResult.h"
 #include "gfx/GFXBuffer.h"
 #include "gfx/GFXDescriptorSet.h"
+#include <Pulsar/Assets/Material.h>
 
 #include <Pulsar/Assets/RenderTexture.h>
 
@@ -64,7 +65,7 @@ namespace pulsar
         float GetOrthoSize() const { return m_orthoSize; }
         void SetOrthoSize(float value);
 
-
+        Ray ScreenPointToRay(Vector2f mousePosition) const;
     protected:
         void BeginRT();
     private:

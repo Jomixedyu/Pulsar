@@ -57,7 +57,7 @@ namespace pulsar
             }
         }
     }
-    ObjectPtr<CameraComponent> World::GetPreviewCamera()
+    ObjectPtr<CameraComponent> World::GetCurrentCamera()
     {
         return GetCameraManager().GetMainCamera();
     }

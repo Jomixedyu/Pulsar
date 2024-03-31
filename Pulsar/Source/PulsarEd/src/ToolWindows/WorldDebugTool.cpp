@@ -17,7 +17,7 @@ namespace pulsared
         {
             for (auto element : *node->GetTransform()->GetChildren())
             {
-                RenderNodes(element->GetAttachedNode());
+                RenderNodes(element->GetNode());
             }
             ImGui::TreePop();
         }

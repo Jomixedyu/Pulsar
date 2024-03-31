@@ -24,25 +24,21 @@ namespace pulsar
         }
     }
 
-    ObjectPtr<Node> Component::GetAttachedNode() const
+    ObjectPtr<Node> Component::GetMasterComponent() const
     {
-        return m_attachedNode;
-    }
-    ObjectPtr<Node> Component::GetOwnerNode() const
-    {
-        return m_ownerNode;
+        return m_masterComponent;
     }
     World* Component::GetWorld() const
     {
-        return GetAttachedNode()->GetRuntimeWorld();
+        return GetNode()->GetRuntimeWorld();
     }
     ObjectPtr<Scene> Component::GetRuntimeScene() const
     {
         return m_runtimeScene;
     }
-    ObjectPtr<TransformComponent> Component::GetTransform() const
+    TransformComponent* Component::GetTransform() const
     {
-        return GetAttachedNode()->GetTransform();
+        return m_ownerNode->GetTransform();
     }
     array_list<ObjectHandle> Component::GetReferenceHandles() const
     {
@@ -96,7 +92,7 @@ namespace pulsar
     void Component::BeginComponent()
     {
         m_beginning = true;
-        m_runtimeScene = GetAttachedNode()->GetRuntimeOwnerScene();
+        m_runtimeScene = GetNode()->GetRuntimeOwnerScene();
     }
     void Component::EndComponent()
     {

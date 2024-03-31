@@ -31,7 +31,7 @@ namespace pulsar
         StaticMeshRendererComponent();
 
         bool HasBounds() const override { return true; }
-        Bounds3f GetBounds() override;
+        Bounds3f GetLocalBounds() override;
 
         RCPtr<StaticMesh> GetStaticMesh() const { return m_staticMesh; }
         void SetStaticMesh(RCPtr<StaticMesh> staticMesh);

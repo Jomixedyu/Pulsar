@@ -49,15 +49,16 @@ namespace pulsar
         CORELIB_CLASS_ATTR(new AbstractComponentAttribute);
     public:
         virtual void Serialize(ComponentSerializer* s);
-        ObjectPtr<Node> GetAttachedNode() const;
-        ObjectPtr<Node> GetOwnerNode() const;
+        [[always_inline]] const ObjectPtr<Node>& GetNode() const noexcept { return m_ownerNode; }
+        ObjectPtr<Node> GetMasterComponent() const;
         World* GetWorld() const;
         ObjectPtr<Scene> GetRuntimeScene() const;
-        ObjectPtr<TransformComponent> GetTransform() const;
+        TransformComponent* GetTransform() const;
         array_list<ObjectHandle> GetReferenceHandles() const;
         virtual bool get_is_tickable() const { return true; }
         void SendMessage(MessageId msgid);
-        virtual Bounds3f GetBounds() { return {}; }
+        virtual Bounds3f GetLocalBounds() { return {}; }
+        virtual Bounds3f GetWorldBounds() { return {}; }
         virtual bool HasBounds() const { return false; }
     protected:
         virtual void OnReceiveMessage(MessageId id);
@@ -80,8 +81,8 @@ namespace pulsar
     public:
         Component();
     private:
+        ObjectPtr<Component> m_masterComponent;
         ObjectPtr<Node> m_ownerNode;
-        ObjectPtr<Node> m_attachedNode;
         ObjectPtr<Scene> m_runtimeScene;
     protected:
         bool m_beginning = false;

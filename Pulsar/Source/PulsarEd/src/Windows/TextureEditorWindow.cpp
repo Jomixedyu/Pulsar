@@ -41,7 +41,7 @@ namespace pulsared
         m_ppMat->SetIntScalar("_Flags", flags);
         m_ppMat->CreateGPUResource();
 
-        auto camera = m_viewportFrame.GetWorld()->GetPreviewCamera();
+        auto camera = m_viewportFrame.GetWorld()->GetCurrentCamera();
         camera->m_postProcessMaterials->push_back(m_ppMat);
 
         m_enableGamma = true;

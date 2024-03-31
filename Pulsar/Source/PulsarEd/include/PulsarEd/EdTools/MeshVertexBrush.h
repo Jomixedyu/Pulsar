@@ -20,6 +20,7 @@ namespace pulsared
         using base = BrushEdTool;
     public:
         virtual bool HitTest(const Ray& ray, HitResult& result);
+        void Tick(float dt) override;
     };
 
 } // namespace pulsared

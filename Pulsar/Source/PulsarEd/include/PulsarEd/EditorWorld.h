@@ -26,7 +26,7 @@ namespace pulsared
 
         void AddGrid3d();
         void AddDirectionalLight();
-        virtual CameraComponent_ref GetPreviewCamera() override;
+        virtual CameraComponent_ref GetCurrentCamera() override;
     public:
         virtual void OnWorldBegin() override; // NOLINT(*-use-override)
         virtual void OnWorldEnd() override;

@@ -77,8 +77,8 @@ namespace pulsar
     {
         base::OnMsg_TransformChanged();
 
-        m_sceneInfo->Vector = GetAttachedNode()->GetTransform()->GetForward();
-        m_gizmos->SetTransform(GetAttachedNode()->GetTransform()->GetLocalToWorldMatrix());
+        m_sceneInfo->Vector = GetNode()->GetTransform()->GetForward();
+        m_gizmos->SetTransform(GetNode()->GetTransform()->GetLocalToWorldMatrix());
     }
 
 } // namespace pulsar

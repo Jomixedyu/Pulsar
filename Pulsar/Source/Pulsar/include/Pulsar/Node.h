@@ -121,7 +121,7 @@ namespace pulsar
             GetComponents(array);
             for (const auto& item : *GetTransform()->GetChildren())
             {
-                item->GetAttachedNode()->GetComponentsInChildren(array);
+                item->GetNode()->GetComponentsInChildren(array);
             }
         }
 

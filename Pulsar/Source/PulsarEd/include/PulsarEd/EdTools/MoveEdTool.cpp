@@ -32,8 +32,8 @@ namespace pulsared
         auto windowHeight = (float)ImGui::GetWindowHeight();
         ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, windowWidth, windowHeight);
 
-        auto viewMat = m_world->GetPreviewCamera()->GetViewMat();
-        auto projMat = m_world->GetPreviewCamera()->GetProjectionMat();
+        auto viewMat = m_world->GetCurrentCamera()->GetViewMat();
+        auto projMat = m_world->GetCurrentCamera()->GetProjectionMat();
         auto node = GetSelection().GetSelected();
         auto matrix = node->GetTransform()->GetLocalToWorldMatrix();
 

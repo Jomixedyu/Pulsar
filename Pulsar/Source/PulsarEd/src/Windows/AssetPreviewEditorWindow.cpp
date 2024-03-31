@@ -44,7 +44,7 @@ namespace pulsared
         m_world->GetResidentScene()
             ->NewNode("Light")
             ->AddComponent<DirectionalLightComponent>()
-            ->GetAttachedNode()->GetTransform()
+            ->GetNode()->GetTransform()
             ->TranslateRotateEuler({3,3,-3}, {45,45,0});
 
         //m_world->GetPreviewCamera()->GetAttachedNode()->GetTransform()->GetParent()->RotateEuler({20,0,0});

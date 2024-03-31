@@ -5,10 +5,6 @@
 
 namespace pulsared
 {
-    namespace PImGui
-    {
-        extern Vector2f GetContentSize();
-    }
 
     class ViewportFrame
     {

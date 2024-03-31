@@ -79,7 +79,7 @@ namespace pulsared
         if (renderingType == ShaderPassRenderingType::PostProcessing)
         {
             renderer->SetMaterial(0, GetAssetManager()->LoadAsset<Material>(BuiltinAsset::Material_Lambert));
-            m_world->GetPreviewCamera()->m_postProcessMaterials->push_back(m_previewMaterial);
+            m_world->GetCurrentCamera()->m_postProcessMaterials->push_back(m_previewMaterial);
         }
         else
         {

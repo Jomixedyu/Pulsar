@@ -1,26 +1,13 @@
-#include "Pulsar/Components/CameraComponent.h"
+#include <PulsarEd/UIControls/ViewportFrame.h>
 
+#include "Pulsar/Components/CameraComponent.h"
 #include <Pulsar/ImGuiImpl.h>
 #include <Pulsar/Node.h>
 #include "EditorWorld.h"
-#include <PulsarEd/UIControls/ViewportFrame.h>
+#include <ImGuiExt.h>
 
 namespace pulsared
 {
-    namespace PImGui
-    {
-        Vector2f GetContentSize()
-        {
-            ImVec2 vMin = ImGui::GetWindowContentRegionMin();
-            ImVec2 vMax = ImGui::GetWindowContentRegionMax();
-            vMin.x += ImGui::GetWindowPos().x;
-            vMin.y += ImGui::GetWindowPos().y;
-            vMax.x += ImGui::GetWindowPos().x;
-            vMax.y += ImGui::GetWindowPos().y;
-            return {vMax.x - vMin.x, vMax.y - vMin.y};
-        }
-    } // namespace PImGui
-
     // ret: viewport Size Changed
     static bool PreviewFrame(World* world, bool isPreviewCam, Vector2f* viewportSize, gfx::GFXDescriptorSet* descriptorSet, bool forceResize = false)
     {
@@ -32,7 +19,7 @@ namespace pulsared
 
         CameraComponent_ref cam;
         if (isPreviewCam)
-            cam = world->GetPreviewCamera();
+            cam = world->GetCurrentCamera();
         else
             cam = world->GetCameraManager().GetMainCamera();
 
@@ -44,7 +31,7 @@ namespace pulsared
 
         bool isResize = false;
 
-        const auto contentSize = PImGui::GetContentSize();
+        const auto contentSize = Vector2f { ImGuiExt::GetContentSize() };
         if (*viewportSize != contentSize || forceResize)
         {
             isResize = true;

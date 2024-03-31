@@ -20,7 +20,7 @@ namespace pulsared
         EditorWorld::PushPreviewWorld(std::unique_ptr<EditorWorld>{world});
         world->AddGrid3d();
         world->AddDirectionalLight();
-        world->GetPreviewCamera()->SetBackgroundColor({0.17, 0.22,0.4});
+        world->GetCurrentCamera()->SetBackgroundColor({0.17, 0.22,0.4});
 
         auto scene = NewSceneFromPrefab(prefab);
         world->LoadScene(scene);

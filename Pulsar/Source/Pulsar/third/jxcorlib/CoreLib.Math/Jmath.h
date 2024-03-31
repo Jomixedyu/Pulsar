@@ -61,11 +61,6 @@ namespace jmath
         T& operator[](int index) { return *(&x + index); }
         const T& operator[](int index) const { return *(&x + index); }
 
-        static Vector2 StaticZero() { return Vector2{ T(0), T(0) }; }
-        static Vector2 StaticOne() { return Vector2{ T(1), T(1) }; }
-        static Vector2 StaticUp() { return Vector2{ T(0), T(1) }; }
-        static Vector2 StaticRight() { return Vector2{ T(1), T(0) }; }
-
         Vector2 operator-() { return Vector2(-x, -y); }
         Vector2 operator+=(Vector2 r) { x += r.x; y += r.y; return *this; }
         Vector2 operator+=(T r) { x += r; y += r; return *this; }
@@ -74,12 +69,7 @@ namespace jmath
         Vector2 operator*=(T r) { x *= r; y *= r; return *this; }
         Vector2 operator/=(T r) { x /= r; y /= r; return *this; }
 
-        static inline T Dot(const Vector2<T>& a, const Vector2<T>& b)
-        {
-            return a.x * b.x + a.y * b.y;
-        }
-        static Vector2<T> Normalize(const Vector2<T>& input);
-        static void Normalized() { *this = Normalize(*this); }
+
         inline Vector2 Reflect(const Vector2& input, const Vector2& normal)
         {
             return -input + 2.0f * Dot(Normalize(input), normal) * normal;
@@ -100,10 +90,22 @@ namespace jmath
     template<typename T> inline Vector2<T> operator-(Vector2<T> a, Vector2<T> b) { return Vector2<T>(a.x - b.x, a.y - b.y); }
     template<typename T> inline bool operator==(Vector2<T> a, Vector2<T> b) { return a.x == b.x && a.y == b.y; }
 
-    template<typename T>
-    inline Vector2<T> Vector2<T>::Normalize(const Vector2<T>& input)
+    template <typename T>
+    T Dot(const Vector2<T>& a, const Vector2<T>& b)
+    {
+        return a.x * b.x + a.y * b.y;
+    }
+    template <typename T>
+    Vector2<T> Normalize(const Vector2<T>& input)
     {
         return input / sqrt(Dot(input, input));
+    }
+
+    template <typename T>
+    Vector2<T>& Normalized(Vector2<T>& input)
+    {
+        input = Normalize(input);
+        return input;
     }
 
     template<typename T> std::string to_string(Vector2<T> v)
@@ -115,12 +117,18 @@ namespace jmath
         return s;
     }
 
+    template<typename T>
+    T SumComponents(const Vector2<T>& v) { return v.x + v.y; }
+
     using Vector2f = Vector2<float>;
     using Vector2d = Vector2<double>;
     using Vector2i = Vector2<int>;
 
-    template<typename T>
-    T SumComponents(const Vector2<T>& v) { return v.x + v.y; }
+
+
+
+
+
 
 
     template<typename T>
@@ -131,7 +139,7 @@ namespace jmath
         T x, y, z;
 
         constexpr Vector3() = default;
-        constexpr Vector3(T t) : x(t), y(t), z(t) {}
+        constexpr explicit Vector3(T t) : x(t), y(t), z(t) {}
         constexpr Vector3(T _x, T _y, T _z) : x(_x), y(_y), z(_z) {}
 
         const T* get_value_ptr() const { return &this->x; }
@@ -143,13 +151,6 @@ namespace jmath
         T& operator[](int index) { return *(&x + index); }
         const T& operator[](int index) const { return *(&x + index); }
 
-        static Vector3 StaticUp() { return Vector3{ T(0), T(1), T(0) }; }
-        static Vector3 StaticRight() { return Vector3{ T(1), T(0), T(0) }; }
-        //right handle?
-        static Vector3 StaticForward() { return Vector3{ T(0), T(0), T(1) }; }
-        static Vector3 StaticZero() { return Vector3{ T(0), T(0), T(0) }; }
-        static Vector3 StaticOne() { return Vector3{ T(1), T(1), T(1) }; }
-
         Vector3& operator +=(Vector3 v) { x += v.x; y += v.y; z += v.z; return *this; }
         Vector3& operator +=(T v) { x += v; y += v; z += v; return *this; }
         Vector3& operator -=(Vector3 v) { x -= v.x; y -= v.y; z -= v.z; return *this; }
@@ -157,39 +158,6 @@ namespace jmath
         Vector3& operator *=(T v) { x *= v; y *= v; z *= v; return *this; }
         Vector3& operator /=(T v) { x /= v; y /= v; z /= v; return *this; }
         Vector3 operator-() { return Vector3(-x, -y, -z); }
-
-        static inline T Distance(const Vector3& l, const Vector3& r)
-        {
-            T x = l.x - r.x;
-            T z = l.z - r.z;
-            T y = l.y - r.y;
-            return sqrt(x * x + y * y * z * z);
-        }
-        static inline T Dot(const Vector3<T>& l, const Vector3<T>& r)
-        {
-            return l.x * r.x + l.y * r.y + l.z * r.z;
-        }
-        static inline Vector3 Mul(const Vector3<T>& l, const Vector3<T>& r)
-        {
-            return { l.x * r.x, l.y * r.y, l.z * r.z };
-        }
-        static Vector3<T> Normalize(const Vector3<T>& target);
-        void Normalized() { *this = Normalize(*this); }
-        Vector3<T> GetNormalized() const { return Normalize(*this); }
-        static inline Vector3<T> Cross(const Vector3<T>& target1, const Vector3<T>& target2)
-        {
-            return Vector3<T>(
-                target1.y * target2.z - target1.z * target2.y,
-                target1.z * target2.x - target1.x * target2.z,
-                target1.x * target2.y - target1.y * target2.x
-                );
-        }
-        T Magnitude() const
-        {
-            return sqrtf(Dot(*this, *this));
-        }
-
-        static Vector3 Identity() { return { T(1), T(1), T(1) }; }
     };
     template<typename T> inline Vector3<T> operator+(Vector3<T> l, T r) { return Vector3<T>(l.x + r, l.y + r, l.z + r); }
     template<typename T> inline Vector3<T> operator+(T l, Vector3<T> r) { return Vector3<T>(l + r.x, l + r.y, l + r.z); }
@@ -205,12 +173,14 @@ namespace jmath
     template<typename T> inline bool operator==(Vector3<T> l, Vector3<T> r) { return l.x == r.x && l.y && r.y && l.z && r.z; }
 
     template<typename T>
-    inline Vector3<T> Vector3<T>::Normalize(const Vector3<T>& target)
+    Vector3<T> Normalize(const Vector3<T>& target)
     {
         return target / sqrtf(Dot(target, target));
     }
 
-    template<typename T> std::string to_string(const Vector3<T>& v)
+
+    template<typename T>
+    std::string to_string(const Vector3<T>& v)
     {
         std::string s;
         s.reserve(64);
@@ -218,6 +188,58 @@ namespace jmath
         s.append("y: "); s.append(std::to_string(v.y)); s.append(", ");
         s.append("z: "); s.append(std::to_string(v.z)); s.append("}");
         return s;
+    }
+    template <typename T>
+    T Dot(const Vector3<T>& l, const Vector3<T>& r)
+    {
+        return l.x * r.x + l.y * r.y + l.z * r.z;
+    }
+    template <typename T>
+    Vector3<T> Cross(const Vector3<T>& target1, const Vector3<T>& target2)
+    {
+        return Vector3<T>(
+            target1.y * target2.z - target1.z * target2.y,
+            target1.z * target2.x - target1.x * target2.z,
+            target1.x * target2.y - target1.y * target2.x
+            );
+    }
+
+    template <typename T>
+    T Magnitude(const Vector3<T>& v)
+    {
+        return sqrtf(Dot(v, v));
+    }
+
+    template <typename T>
+    Vector3<T> Square(const Vector3<T>& v)
+    {
+        return Dot(v, v);
+    }
+
+    template <typename T>
+    T Distance(const Vector3<T>& a, const Vector3<T>& b)
+    {
+        auto d = a - b;
+        return sqrt(Dot(d, d));
+    }
+
+    template <typename T>
+    Vector3<T> Abs(const Vector3<T>& v)
+    {
+        return { std::abs(v.x), std::abs(v.y), std::abs(v.z) };
+    }
+    template <typename T>
+    T MaxComponent(const Vector3<T>& v)
+    {
+        return std::max(v.x, std::max(v.y, v.z));
+    }
+    template<typename T>
+    T SumComponents(const Vector3<T>& v) { return v.x + v.y + v.z; }
+
+    template<typename T>
+    Vector3<T> Chgsign(const Vector3<T>& a, const Vector3<T>& b)
+    {
+        return Vector3<T>{ Chgsign(a.x, b.x), Chgsign(a.y, b.y), Chgsign(a.z, b.z) };
     }
 
     using Vector3f = Vector3<float>;
@@ -227,14 +249,7 @@ namespace jmath
     using Vector3i = Vector3<int>;
     constexpr int kSizeVector3i = sizeof(Vector3i);
 
-    template<typename T>
-    T SumComponents(const Vector3<T>& v) { return v.x + v.y + v.z; }
 
-    template<typename T>
-    Vector3<T> Chgsign(const Vector3<T>& a, const Vector3<T>& b)
-    {
-        return Vector3<T>{ Chgsign(a.x, b.x), Chgsign(a.y, b.y), Chgsign(a.z, b.z) };
-    }
 
 
 
@@ -960,17 +975,17 @@ namespace jmath
     {
         Vector3<T> Origin{};
         Vector3<T> Extent{};
-        T          Sphere{};
+        T          Radius{};
 
         Bounds3() = default;
 
         Bounds3(const Vector3<T>& origin, const Vector3<T>& extent, T sphere) :
-            Origin(origin), Extent(extent), Sphere(sphere)
+            Origin(origin), Extent(extent), Radius(sphere)
         {
         }
 
-        explicit Bounds3(const Box3<T>& box) :
-            Origin(box.GetCenter()), Extent(box.GetExtend()), Sphere(box.GetSize().Magnitude() * 0.5f)
+        explicit Bounds3(const Box3<T>& box, T radius) :
+            Origin(box.GetCenter()), Extent(box.GetExtend()), Radius(radius)
         {
         }
 
