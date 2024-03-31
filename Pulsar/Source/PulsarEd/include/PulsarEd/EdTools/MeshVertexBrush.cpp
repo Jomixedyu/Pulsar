@@ -54,6 +54,7 @@ namespace pulsared
             if (isHitBounds)
             {
                 result.HitComponent = component;
+                return true;
             }
         }
 
