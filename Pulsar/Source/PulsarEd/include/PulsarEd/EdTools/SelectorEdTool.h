@@ -13,11 +13,14 @@ namespace pulsared
         void Tick(float dt) override;
 
     protected:
+        void OnMouseDown(const MouseEventData& e) override;
+        void OnMouseUp(const MouseEventData& e) override;
+
         SelectionSet<Node>& GetSelection();
 
         bool m_frameSelector{};
         Vector2f m_frameSelectorStartPos{};
-    protected:
+
         bool m_enableSelect = true;
     };
 

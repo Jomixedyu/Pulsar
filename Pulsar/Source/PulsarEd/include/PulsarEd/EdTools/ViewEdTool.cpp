@@ -2,12 +2,24 @@
 #include "ViewEdTool.h"
 
 #include "EditorWorld.h"
+#include "ImGuiExt.h"
 #include "Pulsar/Components/CameraComponent.h"
 #include "Pulsar/Node.h"
 #include "imgui/imgui.h"
 
 namespace pulsared
 {
+    static bool IsModifilerKeysDown()
+    {
+        return
+        ImGui::IsKeyDown(ImGuiKey_LeftAlt)
+        || ImGui::IsKeyDown(ImGuiKey_RightAlt)
+        || ImGui::IsKeyDown(ImGuiKey_LeftShift)
+        || ImGui::IsKeyDown(ImGuiKey_RightShift)
+        || ImGui::IsKeyDown(ImGuiKey_LeftCtrl)
+        || ImGui::IsKeyDown(ImGuiKey_RightCtrl);
+    }
+
     void ViewEdTool::Tick(float dt)
     {
         base::Tick(dt);
@@ -47,6 +59,28 @@ namespace pulsared
         if (ImGui::IsMouseReleased(ImGuiMouseButton_Right))
         {
             m_rightMousePressed = false;
+        }
+
+        if (!IsModifilerKeysDown())
+        {
+            MouseEventData e{};
+            e.Position = newpos;
+            ImVec2 inRegionPos{};
+            e.InRegion = ImGuiExt::GetMousePosOnContentRegion(inRegionPos);
+            e.InRegionPosition = inRegionPos;
+
+            for (int i = 0; i < ImGuiMouseButton_COUNT; ++i)
+            {
+                e.ButtonId = i;
+                if (ImGui::IsMouseClicked(i))
+                {
+                    this->OnMouseDown(e);
+                }
+                if (ImGui::IsMouseReleased(i))
+                {
+                    this->OnMouseUp(e);
+                }
+            }
         }
 
         if (m_altPressed)
@@ -131,10 +165,17 @@ namespace pulsared
         }
 
         m_latestMousePos = newpos;
+
+
     }
     void ViewEdTool::Begin()
     {
         base::Begin();
-
+    }
+    void ViewEdTool::OnMouseDown(const MouseEventData& e)
+    {
+    }
+    void ViewEdTool::OnMouseUp(const MouseEventData& e)
+    {
     }
 } // namespace pulsared

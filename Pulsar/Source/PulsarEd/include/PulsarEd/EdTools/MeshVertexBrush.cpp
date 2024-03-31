@@ -60,24 +60,25 @@ namespace pulsared
         return false;
     }
 
-    void MeshVertexBrush::Tick(float dt)
+    void MeshVertexBrush::OnMouseDown(const MouseEventData& e)
     {
-        base::Tick(dt);
-        if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+        base::OnMouseDown(e);
+
+        if (e.InRegion && e.ButtonId == ImGuiMouseButton_Left)
         {
-            ImVec2 mpos;
-            if (ImGuiExt::GetMousePosOnContentRegion(mpos))
+            const Ray ray = GetWorld()->GetCurrentCamera()->ScreenPointToRay(e.InRegionPosition);
+
+            HitResult result;
+            if (this->HitTest(ray, result))
             {
-                Ray ray = GetWorld()->GetCurrentCamera()->ScreenPointToRay(mpos);
-
-                HitResult result;
-                if (this->HitTest(ray, result))
-                {
-
-
-                }
 
             }
         }
+
+    }
+
+    void MeshVertexBrush::Tick(float dt)
+    {
+        base::Tick(dt);
     }
 } // namespace pulsared
