@@ -32,7 +32,7 @@ namespace pulsared
     void SelectorEdTool::OnMouseDown(const MouseEventData& e)
     {
         base::OnMouseDown(e);
-        if (e.ButtonId == ImGuiMouseButton_Left)
+        if (ImGui::IsWindowHovered() && e.ButtonId == ImGuiMouseButton_Left)
         {
             m_frameSelector = true;
             auto startpos = ImGui::GetMousePos();

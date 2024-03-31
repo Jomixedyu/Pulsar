@@ -53,7 +53,7 @@ namespace pulsared
             bool isHitBounds = LineSphereIntersection(traceStart, ray.Direction, lengthSqr, compBounds.Origin, compBounds.Radius);
             if (isHitBounds)
             {
-                Logger::Log("hit: " + component->GetNode()->GetName());
+                result.HitComponent = component;
             }
         }
 
@@ -71,7 +71,7 @@ namespace pulsared
             HitResult result;
             if (this->HitTest(ray, result))
             {
-
+                Logger::Log("Hit: " + result.HitComponent->GetNode()->GetName());
             }
         }
 
