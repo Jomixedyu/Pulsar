@@ -277,10 +277,13 @@ namespace pulsar
 
         if (_CameraDescriptorLayout.expired())
         {
-            gfx::GFXDescriptorSetLayoutInfo info{
+            gfx::GFXDescriptorSetLayoutInfo info
+            {
                 gfx::GFXDescriptorType::ConstantBuffer,
                 gfx::GFXShaderStageFlags::VertexFragment,
-                0, kRenderingDescriptorSpace_Camera};
+                0,
+                kRenderingDescriptorSpace_Camera
+            };
             m_camDescriptorLayout = Application::GetGfxApp()->CreateDescriptorSetLayout(&info, 1);
             _CameraDescriptorLayout = m_camDescriptorLayout;
         }
