@@ -280,6 +280,17 @@ namespace jmath
 
         T& operator[](int index) { return *(&x + index); }
         const T& operator[](int index) const { return *(&x + index); }
+
+        Vector4& operator/=(const Vector4& v)
+        {
+            x /= v.x; y /= v.y; z /= v.z; w /= v.w;
+            return *this;
+        }
+        Vector4& operator/=(T v)
+        {
+            x /= v; y /= v; z /= v; w /= v;
+            return *this;
+        }
     };
 
     template<typename T> std::string to_string(const Vector4<T>& v)

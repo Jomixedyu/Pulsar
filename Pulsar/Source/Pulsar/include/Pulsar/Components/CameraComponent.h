@@ -38,6 +38,7 @@ namespace pulsar
     public:
         Matrix4f GetViewMat() const;
         Matrix4f GetProjectionMat() const;
+        Matrix4f GetInvViewProjectionMat() const;
 
         void BeginComponent() override;
         void EndComponent() override;
@@ -66,13 +67,16 @@ namespace pulsar
         void SetOrthoSize(float value);
 
         Ray ScreenPointToRay(Vector2f mousePosition) const;
+
     protected:
         void BeginRT();
+        void MarkDirtyMatrix();
     private:
         void UpdateRTBackgroundColor();
         void UpdateRT();
         void UpdateCBuffer();
     protected:
+
         gfx::GFXDescriptorSetLayout_sp m_camDescriptorLayout;
         gfx::GFXDescriptorSet_sp m_cameraDescriptorSet;
         gfx::GFXBuffer_sp m_cameraDataBuffer;

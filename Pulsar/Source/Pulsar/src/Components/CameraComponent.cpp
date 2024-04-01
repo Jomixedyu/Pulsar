@@ -66,6 +66,11 @@ namespace pulsar
         return ret;
     }
 
+    Matrix4f CameraComponent::GetInvViewProjectionMat() const
+    {
+        return Inverse(GetViewMat()) * Inverse(GetProjectionMat());
+    }
+
     void CameraComponent::PostEditChange(FieldInfo* info)
     {
         base::PostEditChange(info);
@@ -127,6 +132,8 @@ namespace pulsar
 
         UpdateRT();
         BeginRT();
+
+
     }
     void CameraComponent::OnMsg_TransformChanged()
     {
@@ -245,15 +252,17 @@ namespace pulsar
         // convert to NDC
         auto x = 2.f * mousePosition.x / width - 1.f;
         auto y = -2.f * mousePosition.y / height + 1.f;
-        auto z = 1.f;
 
-        auto vNDC = Vector3f {x, y, 1};
+        auto invMat = GetInvViewProjectionMat();
 
-        auto vWorld = Inverse(GetViewMat()) * Inverse(GetProjectionMat()) * vNDC;
+        auto near = invMat * Vector4f {x, y, 0.f, 1.f};
+        auto far  = invMat * Vector4f {x, y, 1.f, 1.f};
+
+        far /= far.w;
 
         Ray ray{};
-        ray.Origin = GetTransform()->GetWorldPosition();
-        ray.Direction = Normalize(vWorld);
+        ray.Origin = near.xyz();
+        ray.Direction = Normalize(far.xyz());
         return ray;
     }
 
@@ -267,6 +276,10 @@ namespace pulsar
 
             UpdateCBuffer();
         }
+    }
+    void CameraComponent::MarkDirtyMatrix()
+    {
+
     }
 
     static gfx::GFXDescriptorSetLayout_wp _CameraDescriptorLayout;

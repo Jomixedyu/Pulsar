@@ -9,6 +9,8 @@ namespace pulsar
         Vector3f Origin;
         Vector3f Direction;
 
+
+
         string to_string() const noexcept
         {
             return std::format("origin: {}, dir: {}", jmath::to_string(Origin), jmath::to_string(Direction));
