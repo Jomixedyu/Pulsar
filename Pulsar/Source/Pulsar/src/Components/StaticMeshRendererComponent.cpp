@@ -131,8 +131,6 @@ namespace pulsar
 
 
 
-
-
     SPtr<rendering::RenderObject> StaticMeshRendererComponent::CreateRenderObject()
     {
         auto ro = mksptr(new StaticMeshRenderObject());
@@ -176,16 +174,18 @@ namespace pulsar
         init_sptr_member(m_materials);
     }
 
-    Bounds3f StaticMeshRendererComponent::GetLocalBounds()
+    BoxSphereBounds3f StaticMeshRendererComponent::GetBoundsWS()
     {
-        auto box = m_staticMesh->GetBounds().GetBox();
+        auto srcBounds = m_staticMesh->GetBounds();
+        auto box = srcBounds.GetBox();
+        auto sphere = srcBounds.GetSphere();
+
         auto mat = GetTransform()->GetLocalToWorldMatrix();
         box.Min = mat * box.Min;
         box.Max = mat * box.Max;
 
-        auto radius = jmath::MaxComponent(jmath::Abs(GetTransform()->GetWorldScale())) * m_staticMesh->GetBounds().Radius;
-
-        return Bounds3f{ box, radius};
+        sphere.Radius = jmath::MaxComponent(jmath::Abs(GetTransform()->GetWorldScale())) * srcBounds.Radius;
+        return BoxSphereBounds3f{box, sphere};
     }
 
     void StaticMeshRendererComponent::SetStaticMesh(RCPtr<StaticMesh> staticMesh)

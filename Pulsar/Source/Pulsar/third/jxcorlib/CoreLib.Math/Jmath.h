@@ -157,7 +157,7 @@ namespace jmath
         Vector3& operator -=(T v) { x -= v; y -= v; z -= v; return *this; }
         Vector3& operator *=(T v) { x *= v; y *= v; z *= v; return *this; }
         Vector3& operator /=(T v) { x /= v; y /= v; z /= v; return *this; }
-        Vector3 operator-() { return Vector3(-x, -y, -z); }
+        Vector3 operator-() const { return Vector3(-x, -y, -z); }
     };
     template<typename T> inline Vector3<T> operator+(Vector3<T> l, T r) { return Vector3<T>(l.x + r, l.y + r, l.z + r); }
     template<typename T> inline Vector3<T> operator+(T l, Vector3<T> r) { return Vector3<T>(l + r.x, l + r.y, l + r.z); }
@@ -222,7 +222,16 @@ namespace jmath
         auto d = a - b;
         return sqrt(Dot(d, d));
     }
-
+    template <typename T>
+    Vector3<T> Max(const Vector3<T>& a, const Vector3<T>& b)
+    {
+        return { std::max(a.x, b.x), std::max(a.y, b.y), std::max(a.z, b.z) };
+    }
+    template <typename T>
+    Vector3<T> Min(const Vector3<T>& a, const Vector3<T>& b)
+    {
+        return { std::min(a.x, b.x), std::min(a.y, b.y), std::min(a.z, b.z) };
+    }
     template <typename T>
     Vector3<T> Abs(const Vector3<T>& v)
     {
@@ -957,7 +966,7 @@ namespace jmath
 
 
     template <typename T>
-    struct Box3
+    struct BoxBounds3
     {
         Vector3<T> Min;
         Vector3<T> Max;
@@ -967,7 +976,7 @@ namespace jmath
             return (Min + Max) * T(0.5);
         }
 
-        Vector3<T> GetExtend() const
+        Vector3<T> GetExtent() const
         {
             return (Max - Min) * T(0.5);
         }
@@ -976,38 +985,236 @@ namespace jmath
         {
             return Max - Min;
         }
-    };
 
-    using Box3f = Box3<float>;
-    using Box3d = Box3<double>;
+        static BoxBounds3 CreateFromPoints(const Vector3<T>* points, size_t size)
+        {
+            BoxBounds3 box{};
+
+            for (int i = 0; i < size; ++i)
+            {
+                auto& pos = points[i];
+
+                if (pos.x < box.Min.x) box.Min.x = pos.x;
+                if (pos.y < box.Min.y) box.Min.y = pos.y;
+                if (pos.z < box.Min.z) box.Min.z = pos.z;
+                if (pos.x > box.Max.x) box.Max.x = pos.x;
+                if (pos.y > box.Max.y) box.Max.y = pos.y;
+                if (pos.z > box.Max.z) box.Max.z = pos.z;
+
+            }
+            return box;
+        }
+    };
+    using BoxBounds3f = BoxBounds3<float>;
+    using BoxBounds3d = BoxBounds3<double>;
+
+
 
     template <typename T>
-    struct Bounds3
+    struct SphereBounds3
+    {
+        Vector3<T> Center;
+        T Radius;
+
+        static SphereBounds3 CreateFromPoints(const Vector3<T>* points, size_t size)
+        {
+            Vector3<T> pointSum{};
+            for (int i = 0; i < size; ++i)
+            {
+                pointSum += points[i];
+            }
+            return CreateFromPoints(pointSum / size, points, size);
+        }
+        static SphereBounds3 CreateFromPoints(const Vector3<T>& center, const Vector3<T>* points, size_t size)
+        {
+            SphereBounds3 sphere{};
+            sphere.Center = center;
+
+            for (int i = 0; i < size; ++i)
+            {
+                auto& pos = points[i];
+                auto distance = jmath::Distance(center, pos);
+                if (distance > sphere.Radius)
+                {
+                    sphere.Radius = distance;
+                }
+            }
+
+            return sphere;
+        }
+    };
+    using SphereBounds3f = SphereBounds3<float>;
+    using SphereBounds3d = SphereBounds3<double>;
+
+
+    template <typename T>
+    struct BoxSphereBounds3
     {
         Vector3<T> Origin{};
         Vector3<T> Extent{};
         T          Radius{};
 
-        Bounds3() = default;
+        BoxSphereBounds3() = default;
 
-        Bounds3(const Vector3<T>& origin, const Vector3<T>& extent, T sphere) :
-            Origin(origin), Extent(extent), Radius(sphere)
+        explicit BoxSphereBounds3(const BoxBounds3<T>& box)
+        {
+            auto extent = box.GetExtent();
+            Origin = box.Min + extent;
+            Extent = extent;
+            Radius = Magnitude(extent);
+        }
+
+        explicit BoxSphereBounds3(const SphereBounds3<T>& sphere)
+            : Origin(sphere.Origin), Extent(Vector3<T>(sphere.Radius)), Radius(sphere.Radius)
         {
         }
 
-        explicit Bounds3(const Box3<T>& box, T radius) :
-            Origin(box.GetCenter()), Extent(box.GetExtend()), Radius(radius)
+        BoxSphereBounds3(const BoxBounds3<T>& box, const SphereBounds3<T>& sphere)
+        {
+            Origin = box.GetCenter();
+            Extent = box.GetExtent();
+            Radius = T(std::min(Magnitude(Extent), Magnitude(sphere.Center - Origin) + sphere.Radius));
+        }
+
+        BoxSphereBounds3(const Vector3<T>& origin, const Vector3<T>& extent, T radius)
+            : Origin(origin), Extent(extent), Radius(radius)
         {
         }
 
-        Box3<T> GetBox() const
+        static BoxSphereBounds3 CreateFromPoints(const Vector3<T>* points, size_t size)
+        {
+            BoxSphereBounds3 self{};
+            auto box = BoxBounds3<T>::CreateFromPoints(points, size);
+            self.Origin = box.GetCenter();
+            self.Extent = box.GetExtent();
+            self.Radius = SphereBounds3<T>::CreateFromPoints(self.Origin, points, size).Radius;
+            return self;
+        }
+
+
+        BoxBounds3<T> GetBox() const
         {
             return {Origin - Extent, Origin + Extent};
         }
+
+        SphereBounds3<T> GetSphere() const
+        {
+            return {Origin, Radius};
+        }
+
     };
 
-    using Bounds3f = Bounds3<float>;
-    using Bounds3d = Bounds3<float>;
+    template <typename T>
+    std::string to_string(const BoxSphereBounds3<T>& bounds)
+    {
+        std::string str;
+        str.reserve(64);
+        str += "origin: ";
+        str += to_string(bounds.Origin);
+        str += ", extent: ";
+        str += to_string(bounds.Extent);
+        str += ", radius: ";
+        str += std::to_string(bounds.Radius);
+        return str;
+    }
+
+    using BoxSphereBounds3f = BoxSphereBounds3<float>;
+    using BoxSphereBounds3d = BoxSphereBounds3<float>;
+
+
+    template <typename T>
+    struct Edge3
+    {
+        Vector3<T> Start;
+        Vector3<T> End;
+        Vector3<T> GetDirection() const
+        {
+            return Normalize(End - Start);
+        }
+    };
+
+    template <typename T>
+    struct Plane3
+    {
+        Vector3<T> P0;
+        Vector3<T> Normal;
+    };
+
+    /*
+     * plane: n(p-p0)=0
+     * ray: R(t) = r0 + vt;
+     * t = -(R0 dot n + d) / (v dot n)
+     * d = -P0 dot n
+     */
+    template <typename T>
+    bool Intersect(const Plane3<T>& p, const Edge3<T>& e, Vector3<T>& out)
+    {
+        auto dir = e.GetDirection();
+        auto vn = Dot(p.Normal, dir);
+        if (vn == 0)
+        {
+            return false;
+        }
+        T d = Dot(-p.P0, p.Normal);
+        T t = -((Dot(e.Start, p.Normal) + d) / vn);
+        out = e.Start + dir * t;
+        return true;
+    }
+
+    template<typename T>
+    struct Triangle3
+    {
+        Vector3<T> Points[3]{};
+        Triangle3() : Points{} {}
+        Triangle3(const Vector3<T>& a, const Vector3<T>& b, const Vector3<T>& c)
+            : Points{a,b,c}
+        {}
+
+        Vector3<T> GetNormal() const
+        {
+            auto a = jmath::Normalize(Points[1] - Points[0]);
+            auto b = jmath::Normalize(Points[2] - Points[0]);
+            return Normalize(jmath::Cross(b, a));
+        }
+
+        Plane3<T> GetPlane() const
+        {
+            return {Points[0], GetNormal()};
+        }
+
+        Vector3<T> BarycentricCoordinates(const Vector3<T>& p) const
+        {
+            auto& a = Points[0];
+            auto& b = Points[1];
+            auto& c = Points[2];
+
+            T i = (-(p.x - b.x) * (c.y - b.y) + (p.y - b.y) * (c.x - b.x))
+                / (-(a.x - b.x) * (c.y - b.y) + (a.y - b.y) * (c.x - b.x));
+            T j = (-(p.x - c.x) * (a.y - c.y) + (p.y - c.y) * (a.x - c.x))
+                / (-(b.x - c.x) * (a.y - c.y) + (b.y - c.y) * (a.x - c.x));
+            T k = 1 - i - j;
+            return {i, j, k};
+        }
+
+        bool IsPointIn(const Vector3<T>& p) const
+        {
+            auto n = GetNormal();
+            return Dot(Cross((Points[0]-Points[1]), p-Points[1]), n) > 0 &&
+                    Dot(Cross(Points[2]-Points[0], p-Points[0]), n) > 0 &&
+                    Dot(Cross(Points[1]-Points[2], p-Points[2]), n) > 0;
+        }
+    };
+
+    using Triangle3f = Triangle3<float>;
+
+
+    template <typename T>
+    T Square(T a)
+    {
+        return a * a;
+    }
+
+
 
     template<typename B, typename L>
     Color4<B> FloatColorToBitColor(const Color4<L>& l)

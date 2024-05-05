@@ -178,4 +178,8 @@ namespace pulsared
     void ViewEdTool::OnMouseUp(const MouseEventData& e)
     {
     }
+
+    void ViewEdTool::OnDragUpdate(const MouseEventData &e)
+    {
+    }
 } // namespace pulsared

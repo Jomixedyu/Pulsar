@@ -19,7 +19,7 @@ namespace pulsared
     {
         using base = BrushEdTool;
     public:
-        virtual bool HitTest(const Ray& ray, HitResult& result);
+        virtual bool HitTest(const Ray& ray, HitResult& result, const RaycastFilter& filter = {});
         void OnMouseDown(const MouseEventData& e) override;
         void Tick(float dt) override;
     };

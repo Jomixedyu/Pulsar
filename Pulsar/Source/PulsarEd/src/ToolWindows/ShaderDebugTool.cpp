@@ -74,4 +74,9 @@ namespace pulsared
         base::OnOpen();
         RefreshAssets();
     }
+    void ShaderDebugTool::OnClose()
+    {
+        ToolWindow::OnClose();
+        m_shaders.clear();
+    }
 } // namespace pulsared

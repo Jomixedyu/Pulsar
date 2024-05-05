@@ -24,7 +24,24 @@ namespace pulsared
         return false;
     }
 
-    bool MeshVertexBrush::HitTest(const Ray& ray, HitResult& result)
+    static float ComputeSquaredDistanceFromBoxToPoint(const BoxBounds3f& box, const Vector3f& point)
+    {
+        auto distance = Max(Abs(point - box.GetCenter()) - box.GetExtent(), Vector3f{});
+        return Dot(distance, distance);
+    }
+
+    static bool RayIntersectTri(const Ray& ray, float length, const Triangle3f& p)
+    {
+
+    }
+
+    static bool RayIntersect(const Vector3f& start, const Vector3f& end, Vector3i& hitTri, Vector3f& hitPos)
+    {
+
+        return false;
+    }
+
+    bool MeshVertexBrush::HitTest(const Ray& ray, HitResult& result, const RaycastFilter& filter)
     {
         auto selected = GetWorld()->GetSelection().GetSelected();
         if (!selected)
@@ -40,21 +57,61 @@ namespace pulsared
             return false;
         }
 
-        auto traceStart = ray.Origin;
-        auto traceEnd = ray.Origin + ray.Direction * 1000000000.f;
+        const auto traceStart = ray.Origin;
+        const auto traceEnd = ray.Origin + ray.Direction * 10000.f;
 
-        auto evec = traceEnd - traceStart;
-        auto lengthSqr = Dot(evec, evec);
+        const auto lengthVec = traceEnd - traceStart;
+        const auto lengthSqr = Dot(lengthVec, lengthVec);
 
-        for (auto& component : components)
+        array_list<HitResult> Results;
+        for (const auto& component : components)
         {
-            auto compBounds = component->GetLocalBounds();
+            const auto compBounds = component->GetBoundsWS();
+            const auto boxBounds = compBounds.GetBox();
+            const auto sqrRadius = jmath::Square(compBounds.Radius);
 
-            bool isHitBounds = LineSphereIntersection(traceStart, ray.Direction, lengthSqr, compBounds.Origin, compBounds.Radius);
-            if (isHitBounds)
+            const bool isHitSphereBounds = LineSphereIntersection(traceStart, ray.Direction, lengthSqr, compBounds.Origin, compBounds.Radius);
+            const bool isPointsInsideBounds =
+                (ComputeSquaredDistanceFromBoxToPoint(boxBounds, traceStart) <= sqrRadius) ||
+                (ComputeSquaredDistanceFromBoxToPoint(boxBounds, traceEnd) <= sqrRadius);
+
+            if (isHitSphereBounds)
             {
-                result.HitComponent = component;
-                return true;
+                const auto localStart = component->GetNode()->GetTransform()->GetWorldToLocalMatrix() * traceStart;
+                const auto localEnd = component->GetNode()->GetTransform()->GetWorldToLocalMatrix() * traceEnd;
+
+                if (auto smc = ref_cast<StaticMeshRendererComponent>(component))
+                {
+                    if (auto sm = smc->GetStaticMesh())
+                    {
+                        for (int sectionIndex = 0; sectionIndex < sm->GetMeshSectionCount(); ++sectionIndex)
+                        {
+                            auto& section = sm->GetMeshSection(sectionIndex);
+                            for (int i = 0; i < section.Indices.size(); i+=3)
+                            {
+                                auto p0 = section.Vertex[section.Indices[i]];
+                                auto p1 = section.Vertex[section.Indices[i+1]];
+                                auto p2 = section.Vertex[section.Indices[i+2]];
+                                Triangle3f tri {p0.Position, p1.Position, p2.Position};
+                                Vector3f intersection{};
+                                if (Intersect(tri.GetPlane(), {localStart, localEnd}, intersection) && tri.IsPointIn(intersection))
+                                {
+                                    result.HitComponent = component;
+                                    result.HitNode = component->GetNode();
+                                    result.Position = component->GetTransform()->GetLocalToWorldMatrix() * intersection;
+
+                                    return true;
+
+                                    auto bary = tri.BarycentricCoordinates(intersection);
+                                    if (bary.x >= 0 && bary.x <= 1 && bary.y >= 0 && bary.y <= 1 && bary.z >= 0 && bary.z <= 1)
+                                    {
+
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -72,7 +129,8 @@ namespace pulsared
             HitResult result;
             if (this->HitTest(ray, result))
             {
-                Logger::Log("Hit: " + result.HitComponent->GetNode()->GetName());
+                auto log = std::format("]Hit] name: {}, pos: {}", result.HitComponent->GetNode()->GetName(), to_string(result.Position));
+                Logger::Log(log);
             }
         }
 

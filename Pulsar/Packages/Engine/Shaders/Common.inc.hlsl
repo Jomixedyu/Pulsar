@@ -60,7 +60,7 @@ struct TargetCBufferStruct //512
     float4x4 InvMatrixP;
     //128
     float4x4 MatrixVP;
-    float4x4 InvMatrixVP; 
+    float4x4 InvMatrixVP;
     //128
     float4   CamPosition;
     float    CamNear;

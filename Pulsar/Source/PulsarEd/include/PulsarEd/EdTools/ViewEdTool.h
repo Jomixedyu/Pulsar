@@ -13,7 +13,7 @@ namespace pulsared
         bool ShiftFunction;
         Vector2f InRegionPosition;
         Vector2f Position;
-        bool NoFunction() const
+        bool FunctionKey() const
         {
             return AltFunction || CtrlFunction || ShiftFunction;
         }

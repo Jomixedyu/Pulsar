@@ -142,60 +142,25 @@ namespace pulsar
     }
     void StaticMesh::CalcBounds()
     {
-        Box3f box{};
+        array_list<Vector3f> verties;
+        size_t pointArrSize = 0;
 
-        bool init = false;
         for (auto& section : m_sections)
         {
-            for (uint32_t index : section.Indices)
-            {
-                // min max
-                auto& pos = section.Vertex[index].Position;
-                if (!init)
-                {
-                    box.Min = pos;
-                    box.Max = pos;
-                    init = true;
-                    continue;
-                }
-                if (pos.x < box.Min.x)
-                    box.Min.x = pos.x;
-                if (pos.y < box.Min.y)
-                    box.Min.y = pos.y;
-                if (pos.z < box.Min.z)
-                    box.Min.z = pos.z;
-                if (pos.x > box.Max.x)
-                    box.Max.x = pos.x;
-                if (pos.y > box.Max.y)
-                    box.Max.y = pos.y;
-                if (pos.z > box.Max.z)
-                    box.Max.z = pos.z;
-            }
+            pointArrSize += section.Indices.size();
         }
+        verties.reserve(pointArrSize);
 
-        constexpr auto minFloat = 0.00001f;
-        if (box.Min.x == box.Max.x)
-            box.Max.x = minFloat;;
-        if (box.Min.y == box.Max.y)
-            box.Max.y = minFloat;
-        if (box.Min.z == box.Max.z)
-            box.Max.z = minFloat;
-
-        float radius = 0;
-        auto center = box.GetCenter();
         for (auto& section : m_sections)
         {
             for (uint32_t index : section.Indices)
             {
                 auto& pos = section.Vertex[index].Position;
-                auto distance = jmath::Distance(center, pos);
-                if (distance > radius)
-                {
-                    radius = distance;
-                }
+                verties.push_back(pos);
             }
         }
-        m_bounds = Bounds3f{ box, radius };
+
+        m_bounds = BoxSphereBounds3f::CreateFromPoints(verties.data(), verties.size());
     }
 
     std::iostream& ReadWriteStream(std::iostream& stream, bool isWrite, StaticMeshVertex& data)
