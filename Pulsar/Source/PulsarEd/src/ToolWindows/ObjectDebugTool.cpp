@@ -24,29 +24,29 @@ namespace pulsared
         ImGui::TableSetupColumn("Object Handle");
         ImGui::TableSetupColumn("Persistent Path");
         ImGui::TableSetupColumn("RCCounter");
-        ImGui::TableSetupColumn("ManagedPtrUse");
+        ImGui::TableSetupColumn("PtrUseCounter");
         ImGui::TableHeadersRow();
 
-        RuntimeObjectManager::ForEachObject([](ObjectHandle handle, ObjectBase* obj, size_t mptrc) {
+        RuntimeObjectManager::ForEachObject([](auto& info) {
             ImGui::TableNextRow();
 
             ImGui::TableSetColumnIndex(0);
-            ImGui::Text(obj ? obj->GetName().c_str() : "/* PENDING KILL */");
+            ImGui::Text(info.Pointer ? info.Pointer->GetName().c_str() : "/* PENDING KILL */");
 
             ImGui::TableSetColumnIndex(1);
-            ImGui::Text(obj ? obj->GetType()->GetName().c_str() : "");
+            ImGui::Text(info.Pointer ? info.Pointer->GetType()->GetName().c_str() : "");
 
             ImGui::TableSetColumnIndex(2);
-            ImGui::Text(handle.to_string().c_str());
+            ImGui::Text(info.Handle.to_string().c_str());
 
             ImGui::TableSetColumnIndex(3);
-            ImGui::Text(AssetDatabase::GetPathById(handle).c_str());
+            ImGui::Text(AssetDatabase::GetPathById(info.Handle).c_str());
 
             ImGui::TableSetColumnIndex(4);
-            ImGui::Text(std::to_string(RuntimeObjectManager::GetPointer(handle)->RefCount()).c_str());
+            ImGui::Text(std::to_string(RuntimeObjectManager::GetPointer(info.Handle)->RefCount()).c_str());
 
             ImGui::TableSetColumnIndex(5);
-            ImGui::Text(std::to_string(mptrc).c_str());
+            ImGui::Text(std::to_string(info.ManagedCounter).c_str());
         });
         ImGui::EndTable();
     }

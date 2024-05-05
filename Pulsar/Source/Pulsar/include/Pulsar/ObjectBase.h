@@ -112,7 +112,11 @@ namespace pulsar
     public:
         int RefCount() const noexcept { return Counter; }
         void Incref() { ++Counter; }
-        int Decref() { --Counter; return Counter; }
+        int Decref()
+        {
+            --Counter;
+            return Counter;
+        }
         [[always_inline]] ObjectBase* Get() const
         {
             return Pointer;
@@ -121,6 +125,13 @@ namespace pulsar
         {
             Pointer = nullptr;
         }
+    };
+
+    struct RuntimeObjectInfo
+    {
+        ObjectHandle Handle;
+        ObjectBase* Pointer{};
+        int ManagedCounter{};
     };
 
     class RuntimeObjectManager final
@@ -136,7 +147,7 @@ namespace pulsar
         static void GetData(size_t* total, size_t* place, size_t* alive);
         static void Terminate();
         static void TickGCollect();
-        static void ForEachObject(const std::function<void(ObjectHandle, ObjectBase*, int)>& func);
+        static void ForEachObject(const std::function<void(const RuntimeObjectInfo&)>& func);
 
         //<id, type, is_create>
         static Action<ObjectHandle, Type*, bool> ObjectHook;
@@ -315,7 +326,7 @@ namespace pulsar
     protected:
         [[always_inline]] void Incref() const noexcept
         {
-            if (GetPointer())
+            if (ManagedPtr)
             {
                 ManagedPtr->Incref();
             }
@@ -346,7 +357,7 @@ namespace pulsar
             }
             return nullptr;
         }
-        RCPtrBase(const ObjectHandle& handle)
+        RCPtrBase(const ObjectHandle& handle) : Handle(), ManagedPtr()
         {
             if (!handle.is_empty())
             {
@@ -356,8 +367,8 @@ namespace pulsar
                 {
                     ManagedPtr = RuntimeObjectManager::AddWaitPointer(handle);
                 }
-                ManagedPtr->Incref();
             }
+            Incref();
         }
         RCPtrBase() : Handle({}) {}
         RCPtrBase(const ObjectBase* ptr) : RCPtrBase(ptr ? ptr->GetObjectHandle() : ObjectHandle{})
@@ -365,7 +376,7 @@ namespace pulsar
         }
         RCPtrBase(const RCPtrBase& ptr) noexcept : Handle(ptr.Handle), ManagedPtr(ptr.ManagedPtr)
         {
-            if (ManagedPtr) ManagedPtr->Incref();
+            Incref();
         }
         RCPtrBase(RCPtrBase&& ptr) noexcept : Handle(ptr.Handle), ManagedPtr(std::move(ptr.ManagedPtr))
         {

@@ -205,11 +205,15 @@ namespace pulsar
 
     }
 
-    void RuntimeObjectManager::ForEachObject(const std::function<void(ObjectHandle, ObjectBase*, int)>& func)
+    void RuntimeObjectManager::ForEachObject(const std::function<void(const RuntimeObjectInfo&)>& func)
     {
         for (auto& item : _object_table())
         {
-            func(item.first, item.second.OriginalObject.get(), item.second.ManagedPtr.use_count());
+            RuntimeObjectInfo info;
+            info.Handle = item.first;
+            info.Pointer = item.second.OriginalObject.get();
+            info.ManagedCounter = item.second.ManagedPtr.use_count();
+            func(info);
         }
     }
 
