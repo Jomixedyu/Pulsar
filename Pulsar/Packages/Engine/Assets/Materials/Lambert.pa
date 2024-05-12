@@ -1,5 +1,10 @@
 {
     "Parameters": [
+        {
+            "Name": "DiffuseTex",
+            "Type": "Texture2D",
+            "Value": "21087b111160aa48a1dcf6ca211d50da"
+        }
     ],
     "Shader": "d0bcbdb69f3a7f4c9fbcf4244ce26e9c"
 }

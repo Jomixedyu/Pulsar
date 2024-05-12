@@ -32,6 +32,10 @@ namespace pulsar
         m_renderingPath = RenderingPathMode::Deferred;
         init_sptr_member(m_postProcessMaterials);
     }
+    CameraComponent::~CameraComponent()
+    {
+
+    }
     void CameraComponent::Render()
     {
     }
@@ -135,9 +139,9 @@ namespace pulsar
 
 
     }
-    void CameraComponent::OnMsg_TransformChanged()
+    void CameraComponent::OnTransformChanged()
     {
-        base::OnMsg_TransformChanged();
+        base::OnTransformChanged();
         UpdateCBuffer();
     }
     void CameraComponent::OnTick(Ticker ticker)

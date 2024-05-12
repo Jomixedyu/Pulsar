@@ -128,7 +128,10 @@ namespace pulsared
                 ImGui::EndCombo();
             }
 
-            ImGui::Button(ICON_FK_ARROWS " Gizmos###Gizmos");
+            if (ImGui::Button(ICON_FK_ARROWS " Gizmos###Gizmos"))
+            {
+                world->GetGizmosManager().SetEnabled(!world->GetGizmosManager().GetEnabled());
+            }
 
             if (ImGui::Button(ICON_FK_CUBE " 2D###2D"))
             {

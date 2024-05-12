@@ -1,0 +1,10 @@
+{
+    "ChannelCount": 3,
+    "CompressedFormat": "NormalMap_Compressed",
+    "IsCompressedNativeData": true,
+    "IsSRGB": false,
+    "Size": {
+        "x": 2048,
+        "y": 2048
+    }
+}

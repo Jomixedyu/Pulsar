@@ -920,9 +920,9 @@ namespace jmath
 
         const T* get_value_ptr() const { return &r; }
 
-        Color4() : r(0), g(0), b(0), a(0) {}
-        Color4(T _r, T _g, T _b) : r(_r), g(_g), b(_b), a(1) {}
-        Color4(T _r, T _g, T _b, T _a) : r(_r), g(_g), b(_b), a(_a) {}
+        constexpr Color4() = default;
+        constexpr Color4(T _r, T _g, T _b) : r(_r), g(_g), b(_b), a(1) {}
+        constexpr Color4(T _r, T _g, T _b, T _a) : r(_r), g(_g), b(_b), a(_a) {}
 
         Color4& operator+=(const Color4& c) { r += c.r; g += c.g; b += c.b; a += c.a;  return *this; }
         Color4& operator-=(const Color4& c) { r -= c.r; g -= c.g; b -= c.b; a -= c.a; return *this; }
@@ -1065,7 +1065,7 @@ namespace jmath
         }
 
         explicit BoxSphereBounds3(const SphereBounds3<T>& sphere)
-            : Origin(sphere.Origin), Extent(Vector3<T>(sphere.Radius)), Radius(sphere.Radius)
+            : Origin(sphere.Center), Extent(Vector3<T>(sphere.Radius)), Radius(sphere.Radius)
         {
         }
 

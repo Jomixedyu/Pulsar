@@ -55,7 +55,7 @@ namespace pulsar
         // void BeginListenMaterialStateChanged(size_t index);
         // void EndListenMaterialStateChanged(size_t index);
         void OnMaterialStateChanged();
-        void OnMsg_TransformChanged() override;
+        void OnTransformChanged() override;
         void OnMeshChanged();
         void OnMaterialChanged();
     protected:

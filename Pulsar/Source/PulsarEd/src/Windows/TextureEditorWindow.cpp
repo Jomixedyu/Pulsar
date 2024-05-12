@@ -21,6 +21,11 @@ namespace pulsared
     #define FLAGS_CHANNEL_A 0x20
     #define FLAGS_NORMALMAP 0x40
 
+    TextureEditorWindow::~TextureEditorWindow()
+    {
+
+    }
+
     void TextureEditorWindow::OnOpen()
     {
         m_createDirectionalLight = false;

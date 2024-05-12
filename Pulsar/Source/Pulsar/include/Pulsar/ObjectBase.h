@@ -335,8 +335,6 @@ namespace pulsar
         {
             if (ManagedPtr->Decref() == 0)
             {
-                if (ManagedPtr.use_count() == 2)
-                    ManagedPtr.reset();
                 RuntimeObjectManager::DestroyObject(Handle);
             }
         }
@@ -432,6 +430,7 @@ namespace pulsar
 
         void Reset()
         {
+            Decref();
             Handle = {};
             ManagedPtr.reset();
         }

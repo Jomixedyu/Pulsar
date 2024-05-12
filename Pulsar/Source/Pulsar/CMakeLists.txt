@@ -14,6 +14,7 @@ set(PUBLIC_MODULE
 set(PRIVATE_MODULE
         DirectXTex
         astc
+        box2d
 )
 
 set(CMAKE_CXX_STANDARD 23)
@@ -44,6 +45,7 @@ endforeach ()
 
 target_include_directories(${PROJECT_NAME} PUBLIC "./include")
 target_include_directories(${PROJECT_NAME} PRIVATE "./include/${PROJECT_NAME}")
+
 
 foreach (module ${PUBLIC_MODULE})
     target_link_libraries(${PROJECT_NAME} PUBLIC ${module})

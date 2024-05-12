@@ -1,29 +1,3 @@
 {
-    "Config": {
-        "ConstantProperties": [],
-        "CullMode": 0,
-        "DepthCompareOp": 1,
-        "DepthTestEnable": true,
-        "DepthWriteEnable": true,
-        "Properties": [
-            {
-                "Name": "_BaseColorMap",
-                "Type": 3,
-                "Value": ""
-            },
-            {
-                "Name": "_NormalMap",
-                "Type": 3,
-                "Value": ""
-            },
-            {
-                "Name": "_MRAMap",
-                "Type": 3,
-                "Value": ""
-            }
-        ],
-        "RenderingType": 1,
-        "StencilTestEnable": false
-    },
     "Passes": "Engine/Shaders/Lit.sh.json"
 }

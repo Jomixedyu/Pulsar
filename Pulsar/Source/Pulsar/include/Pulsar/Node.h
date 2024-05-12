@@ -68,7 +68,7 @@ namespace pulsar
         void OnActive();
         void OnInactive();
         void OnParentActiveChanged();
-
+        void OnTransformChanged();
         TransformComponent* GetTransform() const;
     public:
         Node(const Node& r) = delete;

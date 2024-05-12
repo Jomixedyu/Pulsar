@@ -111,6 +111,14 @@ namespace pulsar
             }
         }
     }
+
+    void Node::OnTransformChanged()
+    {
+        for (auto& comp : *this->m_components)
+        {
+            comp->OnTransformChanged();
+        }
+    }
     TransformComponent* Node::GetTransform() const
     {
         return m_transform;
@@ -192,7 +200,7 @@ namespace pulsar
         if (m_runtimeScene && m_runtimeScene->GetWorld())
         {
             BeginComponent(component);
-            component->SendMessage(MessageId_OnChangedTransform());
+            component->OnTransformChanged();
         }
 
         return component;
@@ -255,10 +263,7 @@ namespace pulsar
         {
             return;
         }
-        for (auto& comp : *this->m_components)
-        {
-            comp->SendMessage(id);
-        }
+
 
     }
 

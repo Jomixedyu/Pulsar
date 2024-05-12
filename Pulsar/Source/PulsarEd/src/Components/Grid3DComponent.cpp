@@ -80,7 +80,7 @@ namespace pulsared
 
         m_renderObject = CreateRenderObject();
         GetNode()->GetRuntimeWorld()->AddRenderObject(m_renderObject);
-        OnMsg_TransformChanged();
+        OnTransformChanged();
     }
     void Grid3DComponent::EndComponent()
     {
@@ -88,9 +88,9 @@ namespace pulsared
         GetNode()->GetRuntimeWorld()->RemoveRenderObject(m_renderObject);
         m_renderObject.reset();
     }
-    void Grid3DComponent::OnMsg_TransformChanged()
+    void Grid3DComponent::OnTransformChanged()
     {
-        base::OnMsg_TransformChanged();
+        base::OnTransformChanged();
         m_renderObject->SetTransform(GetNode()->GetTransform()->GetLocalToWorldMatrix());
     }
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Pulsar/Gizmos.h"
 #include "CoreLib.Serialization/ObjectSerializer.h"
 
 #include <CoreLib/CoreLib.h>
@@ -13,11 +14,9 @@ namespace pulsar
     class TransformComponent;
     class World;
     class Scene;
+    class GizmoPainter;
 
     using MessageId = size_t;
-    inline size_t MessageId_OnChangedTransform() { static bool b; return reinterpret_cast<size_t>(&b); };
-    inline size_t MessageId_OnDrawGizmos() { static bool b; return reinterpret_cast<size_t>(&b); };
-    inline size_t MessageId_OnSelectedDrawGizmos() { static bool b; return reinterpret_cast<size_t>(&b); };
 
     class AbstractComponentAttribute : public Attribute
     {
@@ -55,10 +54,14 @@ namespace pulsar
         ObjectPtr<Scene> GetRuntimeScene() const;
         TransformComponent* GetTransform() const;
         array_list<ObjectHandle> GetReferenceHandles() const;
-        virtual bool get_is_tickable() const { return true; }
         void SendMessage(MessageId msgid);
         virtual BoxSphereBounds3f GetBoundsWS() { return {}; }
         virtual bool HasBounds() const { return false; }
+
+        virtual void OnTransformChanged() {}
+
+        bool CanDrawGizmo() const { return m_drawGizmo; }
+        virtual void OnDrawGizmo(GizmoPainter* painter, bool selected) {}
     protected:
         virtual void OnReceiveMessage(MessageId id);
     public:
@@ -73,7 +76,6 @@ namespace pulsar
         virtual void BeginPlay() {}
         virtual void EndPlay() {}
 
-        virtual void OnMsg_TransformChanged() {}
     public:
         // ITickable interface
         void OnTick(Ticker ticker) override;
@@ -85,6 +87,7 @@ namespace pulsar
         ObjectPtr<Scene> m_runtimeScene;
     protected:
         bool m_beginning = false;
+        bool m_drawGizmo = false;
     public:
         bool IsCollapsing = false;
     };

@@ -5,6 +5,15 @@
 
 namespace pulsar
 {
+    struct WorldRenderBufferData
+    {
+        Vector4f WorldSpaceLightVector;
+        Vector4f WorldSpaceLightColor; // w is intensity
+        float TotalTime;
+        float DeltaTime;
+        Vector2f _Padding0;
+        Vector4f SkyLightColor; // w is intensity
+    };
 
     static std::unique_ptr<World> _world_inst = nullptr;
     World* World::Current()
@@ -32,7 +41,7 @@ namespace pulsar
         return gWorlds;
     }
     World::World(string_view name)
-        : m_name(name)
+        : m_name(name), m_gizmosManager(this)
     {
         gWorlds.insert(this);
     }
@@ -42,12 +51,16 @@ namespace pulsar
         gWorlds.erase(this);
     }
 
+
+
     void World::Tick(float dt)
     {
         m_ticker += dt;
         m_totalTime += dt;
 
         UpdateWorldCBuffer();
+
+        m_gizmosManager.Draw();
 
         for (auto& scene : m_scenes)
         {
@@ -57,6 +70,8 @@ namespace pulsar
             }
         }
     }
+
+
     ObjectPtr<CameraComponent> World::GetCurrentCamera()
     {
         return GetCameraManager().GetMainCamera();

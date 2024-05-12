@@ -37,6 +37,7 @@ struct InVertexAssembly
 struct InPixelAssembly
 {
     float4 Position : SV_POSITION;
+    float4 WorldPosition : POSITION;
     float3 WorldNormal : NORMAL0;
     float4 Color : COLOR0;
     float2 TexCoord0 : TEXCOORD0;

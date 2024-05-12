@@ -59,7 +59,7 @@ namespace pulsar
         const Matrix4f& GetLocalToWorldMatrix();
         const Matrix4f& GetWorldToLocalMatrix();
     protected:
-        void OnMsg_TransformChanged() override;
+        void OnTransformChanged() override;
         void RebuildLocalToWorldMatrix();
         void PostEditChange(FieldInfo* info) override;
     public:

@@ -14,9 +14,11 @@ namespace pulsared
     public:
         virtual string_view GetWindowDisplayName() const { return "Texutre Editor"; }
 
+        ~TextureEditorWindow() override;
     protected:
         virtual void OnOpen() override;
         virtual void OnClose() override;
+
         void OnRefreshMenuContexts() override;
         void OnDrawAssetPropertiesUI(float dt) override;
         void OnDrawAssetPreviewUI(float dt) override;

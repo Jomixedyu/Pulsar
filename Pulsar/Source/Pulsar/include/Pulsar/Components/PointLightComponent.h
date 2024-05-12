@@ -11,7 +11,19 @@ namespace pulsar
         void BeginComponent() override;
         void EndComponent() override;
 
-        void OnMsg_TransformChanged() override;
-        SPtr<rendering::RenderObject> m_gizmos;
+    public:
+        BoxSphereBounds3f GetBoundsWS() override;
+    public:
+        float GetRadius() const { return m_radius; }
+        void SetRadius(float value);
+    protected:
+        void OnDrawGizmo(GizmoPainter* painter, bool selected) override;
+        void OnTransformChanged() override;
+
+        void OnRadiusChanged();
+        void PostEditChange(FieldInfo* info) override;
+
+        CORELIB_REFL_DECL_FIELD(m_radius);
+        float m_radius = 1;
     };
 }

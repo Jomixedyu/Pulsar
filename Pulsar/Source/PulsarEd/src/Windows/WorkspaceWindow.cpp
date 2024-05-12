@@ -683,7 +683,7 @@ namespace pulsared
 
             const bool isFolder = child->IsFolder;
             const auto isSelected = weaks_find(m_selectedFiles.begin(), m_selectedFiles.end(), std::weak_ptr{child}) != m_selectedFiles.end();
-            const bool isDirty = isFolder ? false : AssetDatabase::IsDirty(child->AssetMeta->Handle);
+            const bool isDirty = isFolder ? false : AssetDatabase::IsDirtyHandle(child->AssetMeta->Handle);
 
             const auto iconSize = ImVec2(m_iconSize, m_iconSize);
             ImTextureID iconDesc = reinterpret_cast<void*>(descSet.lock()->GetId());

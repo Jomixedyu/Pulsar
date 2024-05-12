@@ -33,7 +33,7 @@ namespace pulsar
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::CameraComponent, Component);
     public:
         CameraComponent();
-        ~CameraComponent() override = default;
+        ~CameraComponent() override;
         void Render();
     public:
         Matrix4f GetViewMat() const;
@@ -47,7 +47,7 @@ namespace pulsar
 
         void ResizeManagedRenderTexture(int width, int height);
 
-        void OnMsg_TransformChanged() override;
+        void OnTransformChanged() override;
         void OnTick(Ticker ticker) override;
     public:
         float GetFOV() const { return m_fov; }

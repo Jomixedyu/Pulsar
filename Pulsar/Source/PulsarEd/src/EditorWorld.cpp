@@ -62,6 +62,10 @@ namespace pulsared
     {
         return base::GetCurrentCamera();
     }
+    bool EditorWorld::IsSelectedNode(const ObjectPtr<Node>& node) const
+    {
+        return std::ranges::any_of(m_selection.GetSelection(), [&](auto& i){ return i == node; });
+    }
 
     void EditorWorld::OnWorldBegin()
     {

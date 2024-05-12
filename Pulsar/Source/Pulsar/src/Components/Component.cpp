@@ -56,10 +56,7 @@ namespace pulsar
     }
     void Component::OnReceiveMessage(MessageId id)
     {
-        if (id == MessageId_OnChangedTransform())
-        {
-            OnMsg_TransformChanged();
-        }
+
     }
     void Component::SendMessage(MessageId msgid)
     {
@@ -93,9 +90,19 @@ namespace pulsar
     {
         m_beginning = true;
         m_runtimeScene = GetNode()->GetRuntimeOwnerScene();
+
+        if (m_drawGizmo)
+        {
+            GetWorld()->GetGizmosManager().AddGizmoComponent(this);
+        }
     }
     void Component::EndComponent()
     {
         m_beginning = false;
+
+        if (m_drawGizmo)
+        {
+            GetWorld()->GetGizmosManager().RemoveGizmoComponent(this);
+        }
     }
 } // namespace pulsar

@@ -79,7 +79,10 @@ namespace pulsar
             batch.IsCastShadow = true;
             batch.IsUsedIndices = true;
             batch.Material = mat;
-            if (batch.Material == nullptr || !batch.Material->CreateGPUResource())
+            bool isInvalidMaterial = false;
+            isInvalidMaterial = batch.Material == nullptr || !batch.Material->CreateGPUResource();
+            isInvalidMaterial = isInvalidMaterial || (batch.Material && batch.Material->GetShader()->GetConfig()->RenderingType == ShaderPassRenderingType::PostProcessing);
+            if (isInvalidMaterial)
             {
                 batch.Material = GetAssetManager()->LoadAsset<Material>("Engine/Materials/Missing");
                 batch.Material->CreateGPUResource();
@@ -261,7 +264,7 @@ namespace pulsar
                 RuntimeObjectManager::AddDependList(GetObjectHandle(), mat.GetHandle());
             }
         }
-        OnMsg_TransformChanged();
+        OnTransformChanged();
     }
     void StaticMeshRendererComponent::EndComponent()
     {
@@ -349,9 +352,9 @@ namespace pulsar
         m_materials->resize(size);
     }
 
-    void StaticMeshRendererComponent::OnMsg_TransformChanged()
+    void StaticMeshRendererComponent::OnTransformChanged()
     {
-        base::OnMsg_TransformChanged();
+        base::OnTransformChanged();
         m_renderObject->SetTransform(GetNode()->GetTransform()->GetLocalToWorldMatrix());
     }
     void StaticMeshRendererComponent::OnMeshChanged()

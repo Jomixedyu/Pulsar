@@ -23,28 +23,14 @@ namespace pulsar
 
         void SetPoints(const array_list<Vector3f>& pointPairs, const array_list<Color4f>& pointColors);
         void SetVerties(const array_list<StaticMeshVertex>& verties);
-        void OnCreateResource() override;
-        void OnDestroyResource() override
-        {
-            base::OnDestroyResource();
-            m_vertBuffer.reset();
+        size_t GetPointCount() const { return m_verties.size(); }
+        void Fill();
 
-        }
-        void OnChangedTransform() override
-        {
-            m_meshConstantBuffer->Fill(&m_perModelData);
-        }
-        array_list<rendering::MeshBatch> GetMeshBatchs() override
-        {
-            for (const auto& batch : m_batchs)
-            {
-                if (batch.Material && !batch.Material->IsCreatedGPUResource())
-                {
-                    batch.Material->CreateGPUResource();
-                }
-            }
-            return m_batchs;
-        }
+        void OnCreateResource() override;
+        void OnDestroyResource() override;
+
+        void OnChangedTransform() override;
+        array_list<rendering::MeshBatch> GetMeshBatchs() override;
     };
 
 }

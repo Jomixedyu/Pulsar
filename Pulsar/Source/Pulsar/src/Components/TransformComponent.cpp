@@ -193,10 +193,10 @@ namespace pulsar
             RebuildLocalToWorldMatrix();
         return m_worldToLocalMatrix;
     }
-    void TransformComponent::OnMsg_TransformChanged()
+    void TransformComponent::OnTransformChanged()
     {
-        base::OnMsg_TransformChanged();
-        for (auto childTransform : *this->m_children)
+        base::OnTransformChanged();
+        for (auto& childTransform : *this->m_children)
         {
             childTransform->MakeTransformChanged();
         }
@@ -241,7 +241,7 @@ namespace pulsar
         m_isDirtyMatrix = true;
         if (m_beginning)
         {
-            GetNode()->SendMessage(MessageId_OnChangedTransform());
+            GetNode()->OnTransformChanged();
         }
     }
 

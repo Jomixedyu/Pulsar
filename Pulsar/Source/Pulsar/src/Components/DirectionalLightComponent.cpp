@@ -50,6 +50,7 @@ namespace pulsar
         OnIntensityChanged();
         OnLightColorChanged();
     }
+
     void DirectionalLightComponent::EndComponent()
     {
         base::EndComponent();
@@ -58,24 +59,27 @@ namespace pulsar
         m_sceneInfo.reset();
         m_gizmos.reset();
     }
+
     void DirectionalLightComponent::PostEditChange(FieldInfo* info)
     {
         base::PostEditChange(info);
-
     }
+
     void DirectionalLightComponent::OnIntensityChanged()
     {
         base::OnIntensityChanged();
         m_sceneInfo->Intensity = m_intensity;
     }
+
     void DirectionalLightComponent::OnLightColorChanged()
     {
         base::OnLightColorChanged();
         m_sceneInfo->Color = m_lightColor;
     }
-    void DirectionalLightComponent::OnMsg_TransformChanged()
+
+    void DirectionalLightComponent::OnTransformChanged()
     {
-        base::OnMsg_TransformChanged();
+        base::OnTransformChanged();
 
         m_sceneInfo->Vector = GetNode()->GetTransform()->GetForward();
         m_gizmos->SetTransform(GetNode()->GetTransform()->GetLocalToWorldMatrix());
