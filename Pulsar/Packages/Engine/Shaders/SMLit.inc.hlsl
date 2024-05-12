@@ -39,7 +39,7 @@ float GeometrySmith(float3 N, float3 V, float3 L, float roughness)
     return ggx1 * ggx2;
 }
 
-float3 fresnelSchlick(float cosTheta, float3 F0)
+float3 FresnelSchlick(float cosTheta, float3 F0)
 {
     return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
@@ -85,7 +85,7 @@ float4 ShadingModel_Lit(
         // Cook-Torrance BRDF
         float NDF = DistributionGGX(N, H, attr.Roughness);   
         float G   = GeometrySmith(N, V, L, attr.Roughness);      
-        float3 F    = fresnelSchlick(clamp(dot(H, V), 0.0, 1.0), F0);
+        float3 F    = FresnelSchlick(clamp(dot(H, V), 0.0, 1.0), F0);
            
         float3 numerator    = NDF * G * F; 
         float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001; // + 0.0001 to prevent divide by zero
