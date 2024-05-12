@@ -79,7 +79,7 @@ namespace pulsar
         static array_list<StaticMeshVertex> verts;
         verts.clear();
 
-        CreateSphereVolumeLines(verts, 36, m_radius, GetTransform()->GetLocalToWorldMatrix(), lineColor);
+        CreateSphereVolumeLines(verts, 36, m_radius, math::Translate(GetTransform()->GetWorldPosition()), lineColor);
         painter->DrawLineArray(verts);
     }
 
