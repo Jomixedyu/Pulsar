@@ -37,6 +37,7 @@ struct InVertexAssembly
 struct InPixelAssembly
 {
     float4 Position : SV_POSITION;
+    float4 WorldPosition : POSITION;
     float3 WorldNormal : NORMAL0;
     float4 Color : COLOR0;
     float2 TexCoord0 : TEXCOORD0;
@@ -60,7 +61,7 @@ struct TargetCBufferStruct //512
     float4x4 InvMatrixP;
     //128
     float4x4 MatrixVP;
-    float4x4 InvMatrixVP; 
+    float4x4 InvMatrixVP;
     //128
     float4   CamPosition;
     float    CamNear;

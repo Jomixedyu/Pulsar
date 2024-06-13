@@ -1,8 +1,9 @@
 #pragma once
-#include <Pulsar/Assets/Material.h>
 #include "Component.h"
+#include "Pulsar/HitResult.h"
 #include "gfx/GFXBuffer.h"
 #include "gfx/GFXDescriptorSet.h"
+#include <Pulsar/Assets/Material.h>
 
 #include <Pulsar/Assets/RenderTexture.h>
 
@@ -32,11 +33,12 @@ namespace pulsar
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::CameraComponent, Component);
     public:
         CameraComponent();
-        ~CameraComponent() override = default;
+        ~CameraComponent() override;
         void Render();
     public:
         Matrix4f GetViewMat() const;
         Matrix4f GetProjectionMat() const;
+        Matrix4f GetInvViewProjectionMat() const;
 
         void BeginComponent() override;
         void EndComponent() override;
@@ -45,7 +47,7 @@ namespace pulsar
 
         void ResizeManagedRenderTexture(int width, int height);
 
-        void OnMsg_TransformChanged() override;
+        void OnTransformChanged() override;
         void OnTick(Ticker ticker) override;
     public:
         float GetFOV() const { return m_fov; }
@@ -64,14 +66,17 @@ namespace pulsar
         float GetOrthoSize() const { return m_orthoSize; }
         void SetOrthoSize(float value);
 
+        Ray ScreenPointToRay(Vector2f mousePosition) const;
 
     protected:
         void BeginRT();
+        void MarkDirtyMatrix();
     private:
         void UpdateRTBackgroundColor();
         void UpdateRT();
         void UpdateCBuffer();
     protected:
+
         gfx::GFXDescriptorSetLayout_sp m_camDescriptorLayout;
         gfx::GFXDescriptorSet_sp m_cameraDescriptorSet;
         gfx::GFXBuffer_sp m_cameraDataBuffer;

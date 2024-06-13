@@ -23,8 +23,12 @@ namespace pulsared
         {
             if (PImGui::BeginPropertyLines())
             {
-                PImGui::PropertyLineText("Boudning Box", to_string(m_staticmesh->GetBounds().Extent));
-                if (ImGui::Button("CalcBounds"))
+                auto info = std::format("extent: {}, radius: {}",
+                    to_string(m_staticmesh->GetBounds().Extent),
+                    to_string(m_staticmesh->GetBounds().Radius));
+
+                PImGui::PropertyLineText("Boudning Box", info);
+                if (ImGui::Button("Calc"))
                 {
                     m_staticmesh->CalcBounds();
                     AssetDatabase::MarkDirty(m_assetObject);

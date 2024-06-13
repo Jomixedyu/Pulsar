@@ -79,19 +79,19 @@ namespace pulsared
         m_colors.push_back({0, 1, 0, 1});
 
         m_renderObject = CreateRenderObject();
-        GetAttachedNode()->GetRuntimeWorld()->AddRenderObject(m_renderObject);
-        OnMsg_TransformChanged();
+        GetNode()->GetRuntimeWorld()->AddRenderObject(m_renderObject);
+        OnTransformChanged();
     }
     void Grid3DComponent::EndComponent()
     {
         base::EndComponent();
-        GetAttachedNode()->GetRuntimeWorld()->RemoveRenderObject(m_renderObject);
+        GetNode()->GetRuntimeWorld()->RemoveRenderObject(m_renderObject);
         m_renderObject.reset();
     }
-    void Grid3DComponent::OnMsg_TransformChanged()
+    void Grid3DComponent::OnTransformChanged()
     {
-        base::OnMsg_TransformChanged();
-        m_renderObject->SetTransform(GetAttachedNode()->GetTransform()->GetLocalToWorldMatrix());
+        base::OnTransformChanged();
+        m_renderObject->SetTransform(GetNode()->GetTransform()->GetLocalToWorldMatrix());
     }
 
     SPtr<rendering::RenderObject> Grid3DComponent::CreateRenderObject()

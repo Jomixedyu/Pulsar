@@ -10,6 +10,7 @@ namespace pulsar
 
     void LineRenderObject::SetPoints(const array_list<Vector3f>& pointPairs, const array_list<Color4f>& pointColors)
     {
+        m_verties.clear();
         for (size_t i = 0; i < pointPairs.size(); i++)
         {
             StaticMeshVertex vert{};
@@ -18,10 +19,25 @@ namespace pulsar
 
             m_verties.push_back(vert);
         }
+        Fill();
     }
+
     void LineRenderObject::SetVerties(const array_list<StaticMeshVertex>& verties)
     {
         m_verties = verties;
+        Fill();
+    }
+    void LineRenderObject::Fill()
+    {
+        if (m_vertBuffer)
+        {
+            if (sizeof(StaticMeshVertex) * m_verties.size() > m_vertBuffer->GetSize())
+            {
+                m_vertBuffer = Application::GetGfxApp()->CreateBuffer(gfx::GFXBufferUsage::Vertex, m_verties.size() * sizeof(StaticMeshVertex));
+            }
+            m_vertBuffer->SetElementCount(m_verties.size());
+            m_vertBuffer->Fill(m_verties.data());
+        }
     }
 
     void LineRenderObject::OnCreateResource()
@@ -61,5 +77,28 @@ namespace pulsar
         batch.State.VertexLayouts = {StaticMesh::StaticGetVertexLayout()};
         batch.IsUsedIndices = false;
         batch.Material = GetAssetManager()->LoadAsset<Material>("Engine/Materials/VertexColor");
+    }
+
+    void LineRenderObject::OnDestroyResource()
+    {
+        base::OnDestroyResource();
+        m_vertBuffer.reset();
+    }
+
+    void LineRenderObject::OnChangedTransform()
+    {
+        m_meshConstantBuffer->Fill(&m_perModelData);
+    }
+
+    array_list<rendering::MeshBatch> LineRenderObject::GetMeshBatchs()
+    {
+        for (const auto& batch : m_batchs)
+        {
+            if (batch.Material && !batch.Material->IsCreatedGPUResource())
+            {
+                batch.Material->CreateGPUResource();
+            }
+        }
+        return m_batchs;
     }
 } // namespace pulsar

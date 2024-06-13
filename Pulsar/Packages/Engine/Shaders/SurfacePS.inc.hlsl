@@ -3,39 +3,19 @@
 
 #include "DeferredShading.inc.hlsl"
 #include "Common.inc.hlsl"
+#include "MaterialAttributes.inc.hlsl"
 
 #define SHADING_MODEL_UNLIT      0x01
 #define SHADING_MODEL_LIT        0x02
 
-struct MaterialAttributes
-{
-    float3 BaseColor;
-    float  Metallic;
-    float  Specular;
-    float  Roughness;
-    float  Anisotropy;
-    float3 EmissiveColor;
-    float  Opacity;
-    float  OpacityMask;
-    float3 Normal;
-    float3 Tangent;
-    float3 SubsurfaceColor;
-    float  AmbientOcclusion;
-    uint   ShadingModel;
-};
 
-struct PointLight
-{
-    float4 Position;
-    float4 Color; // w intensity
-};
 
 
 MaterialAttributes SurfacePixelMain(InPixelAssembly s);
 
 #include "SMLit.inc.hlsl"
 
-float4 CalcLighting(MaterialAttributes attr)
+float4 CalcLighting(MaterialAttributes attr, InPixelAssembly v2f)
 {
     float4 color = float4(0,1,1,1);
     [branch]
@@ -45,7 +25,7 @@ float4 CalcLighting(MaterialAttributes attr)
     }
     else if(attr.ShadingModel & SHADING_MODEL_LIT)
     {
-        color = float4(attr.EmissiveColor, 1);
+        color = ShadingModel_Lit(attr, v2f);
     }
     return color;
 }
@@ -55,8 +35,11 @@ OutPixelDeferred main(InPixelAssembly v2f)
 #else
 float4 main(InPixelAssembly v2f) : SV_TARGET0
 #endif
+
 {
+    //calc user pixel shader
     MaterialAttributes attr = SurfacePixelMain(v2f);
+
 #ifdef RENDERING_PATH_DEFERRED
     OutPixelDeferred o;
     
@@ -67,7 +50,7 @@ float4 main(InPixelAssembly v2f) : SV_TARGET0
     o.GBufferE = float4(attr.Tangent, 1);
     return o;
 #else
-    return CalcLighting(attr);
+    return CalcLighting(attr, v2f);
 #endif
 }
 

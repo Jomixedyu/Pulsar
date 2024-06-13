@@ -79,7 +79,10 @@ namespace pulsar
             batch.IsCastShadow = true;
             batch.IsUsedIndices = true;
             batch.Material = mat;
-            if (batch.Material == nullptr || !batch.Material->CreateGPUResource())
+            bool isInvalidMaterial = false;
+            isInvalidMaterial = batch.Material == nullptr || !batch.Material->CreateGPUResource();
+            isInvalidMaterial = isInvalidMaterial || (batch.Material && batch.Material->GetShader()->GetConfig()->RenderingType == ShaderPassRenderingType::PostProcessing);
+            if (isInvalidMaterial)
             {
                 batch.Material = GetAssetManager()->LoadAsset<Material>("Engine/Materials/Missing");
                 batch.Material->CreateGPUResource();
@@ -131,8 +134,6 @@ namespace pulsar
 
 
 
-
-
     SPtr<rendering::RenderObject> StaticMeshRendererComponent::CreateRenderObject()
     {
         auto ro = mksptr(new StaticMeshRenderObject());
@@ -176,14 +177,18 @@ namespace pulsar
         init_sptr_member(m_materials);
     }
 
-    Bounds3f StaticMeshRendererComponent::GetBounds()
+    BoxSphereBounds3f StaticMeshRendererComponent::GetBoundsWS()
     {
-        auto box = m_staticMesh->GetBounds().GetBox();
+        auto srcBounds = m_staticMesh->GetBounds();
+        auto box = srcBounds.GetBox();
+        auto sphere = srcBounds.GetSphere();
+
         auto mat = GetTransform()->GetLocalToWorldMatrix();
         box.Min = mat * box.Min;
         box.Max = mat * box.Max;
 
-        return Bounds3f{ box };
+        sphere.Radius = jmath::MaxComponent(jmath::Abs(GetTransform()->GetWorldScale())) * srcBounds.Radius;
+        return BoxSphereBounds3f{box, sphere};
     }
 
     void StaticMeshRendererComponent::SetStaticMesh(RCPtr<StaticMesh> staticMesh)
@@ -259,7 +264,7 @@ namespace pulsar
                 RuntimeObjectManager::AddDependList(GetObjectHandle(), mat.GetHandle());
             }
         }
-        OnMsg_TransformChanged();
+        OnTransformChanged();
     }
     void StaticMeshRendererComponent::EndComponent()
     {
@@ -347,10 +352,10 @@ namespace pulsar
         m_materials->resize(size);
     }
 
-    void StaticMeshRendererComponent::OnMsg_TransformChanged()
+    void StaticMeshRendererComponent::OnTransformChanged()
     {
-        base::OnMsg_TransformChanged();
-        m_renderObject->SetTransform(GetAttachedNode()->GetTransform()->GetLocalToWorldMatrix());
+        base::OnTransformChanged();
+        m_renderObject->SetTransform(GetNode()->GetTransform()->GetLocalToWorldMatrix());
     }
     void StaticMeshRendererComponent::OnMeshChanged()
     {

@@ -108,6 +108,7 @@ namespace pulsared
 
         static void MarkDirty(const RCPtr<AssetObject>& asset) noexcept;
         static bool IsDirty(const RCPtr<AssetObject>& asset) noexcept;
+        static bool IsDirtyHandle(const ObjectHandle& asset) noexcept;
         static void ResolveDirty(const RCPtr<AssetObject>& asset) noexcept;
 
 

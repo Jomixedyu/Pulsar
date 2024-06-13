@@ -14,6 +14,7 @@ namespace pulsared
 
         void RefreshAssets();
         void OnOpen() override;
+        void OnClose() override;
     private:
         array_list<RCPtr<Shader>> m_shaders;
         array_list<string> m_shaderPaths;

@@ -1,9 +1,11 @@
+#include "EdTools/MeshVertexBrush.h"
 #include "EdTools/MoveEdTool.h"
 #include "EdTools/RotationEdTool.h"
 #include "EdTools/ScaleEdTool.h"
 #include "EdTools/SelectorEdTool.h"
 #include "EditorAppInstance.h"
 #include "EditorWorld.h"
+#include "ImGuiExt.h"
 
 #include <Pulsar/Assets/Shader.h>
 #include <Pulsar/Components/CameraComponent.h>
@@ -68,6 +70,7 @@ namespace pulsared
         }
     }
 
+
     void SceneWindow::OnDrawImGui(float dt)
     {
         static bool b = true;
@@ -89,7 +92,7 @@ namespace pulsared
                 }
             }
 
-            const char* items[] = {"Shade"};
+            const char* items[] = { "Shade" };
 
             ImGui::Text("Draw Mode");
 
@@ -125,12 +128,15 @@ namespace pulsared
                 ImGui::EndCombo();
             }
 
-            ImGui::Button(ICON_FK_ARROWS " Gizmos###Gizmos");
+            if (ImGui::Button(ICON_FK_ARROWS " Gizmos###Gizmos"))
+            {
+                world->GetGizmosManager().SetEnabled(!world->GetGizmosManager().GetEnabled());
+            }
 
             if (ImGui::Button(ICON_FK_CUBE " 2D###2D"))
             {
-                auto cam = world->GetPreviewCamera();
-                auto ctrl = cam->GetAttachedNode()->GetParent()->GetComponent<StdEditCameraControllerComponent>().GetPtr();
+                auto cam = world->GetCurrentCamera();
+                auto ctrl = cam->GetNode()->GetParent()->GetComponent<StdEditCameraControllerComponent>().GetPtr();
                 ctrl->m_enable2DMode = !ctrl->m_enable2DMode;
 
                 auto* storeData = &ctrl->m_saved3d;
@@ -204,6 +210,10 @@ namespace pulsared
         else if (ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_R, false))
         {
             world->SetTool(std::make_unique<ScaleEdTool>());
+        }
+        else if (ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_B, false))
+        {
+            world->SetTool(std::make_unique<MeshVertexBrush>());
         }
         if (ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_Delete, false))
         {

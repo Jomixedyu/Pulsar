@@ -18,7 +18,7 @@ namespace pulsared
         virtual SPtr<rendering::RenderObject> CreateRenderObject() override;
         virtual void EndComponent() override;
 
-        void OnMsg_TransformChanged() override;
+        void OnTransformChanged() override;
     private:
         array_list<Vector3f> m_vert;
         array_list<Color4f> m_colors;

@@ -8,6 +8,7 @@ list(APPEND LIST_SRC
         "Window.h"
         "FolderWatch.h"
         "System.h"
+        "Defined.h"
 )
 
 if (CMAKE_SYSTEM_NAME MATCHES "Windows")
@@ -19,6 +20,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
 endif ()
 
 
-add_library(${PROJECT_NAME} OBJECT ${LIST_SRC})
+add_library(${PROJECT_NAME} OBJECT ${LIST_SRC}
+        Defined.h)
 
 target_include_directories(${PROJECT_NAME} PRIVATE "./")

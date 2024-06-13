@@ -58,10 +58,10 @@ namespace pulsar::math
     }
     inline Matrix4f LookAt(const Vector3f& eye, const Vector3f& center, const Vector3f& up)
     {
-        Vector3f f(Vector3f::Normalize(center - eye));
+        Vector3f f(Normalize(center - eye));
         
-        Vector3f s(Vector3f::Normalize(Vector3f::Cross(f, up)));
-        Vector3f u(Vector3f::Cross(s, f));
+        Vector3f s(Normalize(Cross(f, up)));
+        Vector3f u(Cross(s, f));
 
         Matrix4f Result{1};
         Result[0][0] = s.x;
@@ -73,9 +73,9 @@ namespace pulsar::math
         Result[0][2] = -f.x;
         Result[1][2] = -f.y;
         Result[2][2] = -f.z;
-        Result[3][0] = -Vector3f::Dot(s, eye);
-        Result[3][1] = -Vector3f::Dot(u, eye);
-        Result[3][2] = Vector3f::Dot(f, eye);
+        Result[3][0] = -Dot(s, eye);
+        Result[3][1] = -Dot(u, eye);
+        Result[3][2] = Dot(f, eye);
         return Result;
     }
 
@@ -95,6 +95,8 @@ namespace pulsar
     using math::Color4b;
     using math::Color4f;
     using math::Transform3Df;
-    using math::Box3f;
-    using math::Bounds3f;
+    using math::BoxBounds3f;
+    using math::BoxSphereBounds3f;
+    using math::SphereBounds3f;
+    using math::Triangle3f;
 }

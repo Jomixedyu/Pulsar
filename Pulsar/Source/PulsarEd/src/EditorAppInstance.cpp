@@ -417,6 +417,7 @@ namespace pulsared
         // world
         Logger::Log("initialize world");
         auto edWorld = World::Reset<EditorWorld>("MainWorld");
+        edWorld->GetCurrentCamera()->GetTransform()->GetParent()->SetEuler({45.f,-45,0});
         edWorld->AddGrid3d();
         m_world = edWorld;
 

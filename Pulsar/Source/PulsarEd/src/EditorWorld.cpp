@@ -58,9 +58,13 @@ namespace pulsared
         dlight->GetTransform()->TranslateRotateEuler({-3, 3, -3}, {45, 45, 0});
     }
 
-    CameraComponent_ref EditorWorld::GetPreviewCamera()
+    CameraComponent_ref EditorWorld::GetCurrentCamera()
     {
-        return base::GetPreviewCamera();
+        return base::GetCurrentCamera();
+    }
+    bool EditorWorld::IsSelectedNode(const ObjectPtr<Node>& node) const
+    {
+        return std::ranges::any_of(m_selection.GetSelection(), [&](auto& i){ return i == node; });
     }
 
     void EditorWorld::OnWorldBegin()

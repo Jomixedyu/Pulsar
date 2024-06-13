@@ -12,16 +12,6 @@ namespace pulsar
 
     constexpr uint32_t kRenderingDescriptorSpace_World = 1;
 
-    struct WorldRenderBufferData
-    {
-        Vector4f WorldSpaceLightVector;
-        Vector4f WorldSpaceLightColor; // w is intensity
-        float TotalTime;
-        float DeltaTime;
-        Vector2f _Padding0;
-        Vector4f SkyLightColor; // w is intensity
-    };
-
     class World
     {
     public: //static functions
@@ -49,9 +39,11 @@ namespace pulsar
 
         const string& GetWorldName() const { return m_name; }
 
+        virtual bool IsSelectedNode(const ObjectPtr<Node>& node) const { return false; }
+
     public: // properties
         Ticker                      GetTicker() const { return m_ticker; }
-        virtual ObjectPtr<CameraComponent> GetPreviewCamera();
+        virtual ObjectPtr<CameraComponent> GetCurrentCamera();
         const ObjectPtr<Scene>&     GetScene(int index) const { return m_scenes[index]; }
         ObjectPtr<Scene>            GetFocusScene() const { return m_focusScene; }
         void                        SetFocusScene(ObjectPtr<Scene> scene);
@@ -78,6 +70,7 @@ namespace pulsar
         void            AddRenderObject(const rendering::RenderObject_sp renderObject);
         void            RemoveRenderObject(rendering::RenderObject_rsp renderObject);
         CameraManager&  GetCameraManager() { return m_cameraManager; }
+        GizmosManager& GetGizmosManager() { return m_gizmosManager; }
     protected:
         void UpdateWorldCBuffer();
     public:
@@ -96,6 +89,8 @@ namespace pulsar
         gfx::GFXDescriptorSetLayout_sp m_worldDescriptorLayout;
         gfx::GFXBuffer_sp              m_worldDescriptorBuffer;
         gfx::GFXDescriptorSet_sp       m_worldDescriptors;
+
+        GizmosManager m_gizmosManager;
 
         Ticker m_ticker{};
         float  m_totalTime = 0;

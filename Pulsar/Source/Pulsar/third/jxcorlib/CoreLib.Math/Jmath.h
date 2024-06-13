@@ -61,11 +61,6 @@ namespace jmath
         T& operator[](int index) { return *(&x + index); }
         const T& operator[](int index) const { return *(&x + index); }
 
-        static Vector2 StaticZero() { return Vector2{ T(0), T(0) }; }
-        static Vector2 StaticOne() { return Vector2{ T(1), T(1) }; }
-        static Vector2 StaticUp() { return Vector2{ T(0), T(1) }; }
-        static Vector2 StaticRight() { return Vector2{ T(1), T(0) }; }
-
         Vector2 operator-() { return Vector2(-x, -y); }
         Vector2 operator+=(Vector2 r) { x += r.x; y += r.y; return *this; }
         Vector2 operator+=(T r) { x += r; y += r; return *this; }
@@ -74,12 +69,7 @@ namespace jmath
         Vector2 operator*=(T r) { x *= r; y *= r; return *this; }
         Vector2 operator/=(T r) { x /= r; y /= r; return *this; }
 
-        static inline T Dot(const Vector2<T>& a, const Vector2<T>& b)
-        {
-            return a.x * b.x + a.y * b.y;
-        }
-        static Vector2<T> Normalize(const Vector2<T>& input);
-        static void Normalized() { *this = Normalize(*this); }
+
         inline Vector2 Reflect(const Vector2& input, const Vector2& normal)
         {
             return -input + 2.0f * Dot(Normalize(input), normal) * normal;
@@ -100,10 +90,22 @@ namespace jmath
     template<typename T> inline Vector2<T> operator-(Vector2<T> a, Vector2<T> b) { return Vector2<T>(a.x - b.x, a.y - b.y); }
     template<typename T> inline bool operator==(Vector2<T> a, Vector2<T> b) { return a.x == b.x && a.y == b.y; }
 
-    template<typename T>
-    inline Vector2<T> Vector2<T>::Normalize(const Vector2<T>& input)
+    template <typename T>
+    T Dot(const Vector2<T>& a, const Vector2<T>& b)
+    {
+        return a.x * b.x + a.y * b.y;
+    }
+    template <typename T>
+    Vector2<T> Normalize(const Vector2<T>& input)
     {
         return input / sqrt(Dot(input, input));
+    }
+
+    template <typename T>
+    Vector2<T>& Normalized(Vector2<T>& input)
+    {
+        input = Normalize(input);
+        return input;
     }
 
     template<typename T> std::string to_string(Vector2<T> v)
@@ -115,12 +117,18 @@ namespace jmath
         return s;
     }
 
+    template<typename T>
+    T SumComponents(const Vector2<T>& v) { return v.x + v.y; }
+
     using Vector2f = Vector2<float>;
     using Vector2d = Vector2<double>;
     using Vector2i = Vector2<int>;
 
-    template<typename T>
-    T SumComponents(const Vector2<T>& v) { return v.x + v.y; }
+
+
+
+
+
 
 
     template<typename T>
@@ -131,7 +139,7 @@ namespace jmath
         T x, y, z;
 
         constexpr Vector3() = default;
-        constexpr Vector3(T t) : x(t), y(t), z(t) {}
+        constexpr explicit Vector3(T t) : x(t), y(t), z(t) {}
         constexpr Vector3(T _x, T _y, T _z) : x(_x), y(_y), z(_z) {}
 
         const T* get_value_ptr() const { return &this->x; }
@@ -143,53 +151,13 @@ namespace jmath
         T& operator[](int index) { return *(&x + index); }
         const T& operator[](int index) const { return *(&x + index); }
 
-        static Vector3 StaticUp() { return Vector3{ T(0), T(1), T(0) }; }
-        static Vector3 StaticRight() { return Vector3{ T(1), T(0), T(0) }; }
-        //right handle?
-        static Vector3 StaticForward() { return Vector3{ T(0), T(0), T(1) }; }
-        static Vector3 StaticZero() { return Vector3{ T(0), T(0), T(0) }; }
-        static Vector3 StaticOne() { return Vector3{ T(1), T(1), T(1) }; }
-
         Vector3& operator +=(Vector3 v) { x += v.x; y += v.y; z += v.z; return *this; }
         Vector3& operator +=(T v) { x += v; y += v; z += v; return *this; }
         Vector3& operator -=(Vector3 v) { x -= v.x; y -= v.y; z -= v.z; return *this; }
         Vector3& operator -=(T v) { x -= v; y -= v; z -= v; return *this; }
         Vector3& operator *=(T v) { x *= v; y *= v; z *= v; return *this; }
         Vector3& operator /=(T v) { x /= v; y /= v; z /= v; return *this; }
-        Vector3 operator-() { return Vector3(-x, -y, -z); }
-
-        static inline T Distance(const Vector3& l, const Vector3& r)
-        {
-            T x = l.x - r.x;
-            T z = l.z - r.z;
-            T y = l.y - r.y;
-            return sqrt(x * x + y * y * z * z);
-        }
-        static inline T Dot(const Vector3<T>& l, const Vector3<T>& r)
-        {
-            return l.x * r.x + l.y * r.y + l.z * r.z;
-        }
-        static inline Vector3 Mul(const Vector3<T>& l, const Vector3<T>& r)
-        {
-            return { l.x * r.x, l.y * r.y, l.z * r.z };
-        }
-        static Vector3<T> Normalize(const Vector3<T>& target);
-        void Normalized() { *this = Normalize(*this); }
-        Vector3<T> GetNormalized() const { return Normalize(*this); }
-        static inline Vector3<T> Cross(const Vector3<T>& target1, const Vector3<T>& target2)
-        {
-            return Vector3<T>(
-                target1.y * target2.z - target1.z * target2.y,
-                target1.z * target2.x - target1.x * target2.z,
-                target1.x * target2.y - target1.y * target2.x
-                );
-        }
-        T Magnitude() const
-        {
-            return sqrtf(Dot(*this, *this));
-        }
-
-        static Vector3 Identity() { return { T(1), T(1), T(1) }; }
+        Vector3 operator-() const { return Vector3(-x, -y, -z); }
     };
     template<typename T> inline Vector3<T> operator+(Vector3<T> l, T r) { return Vector3<T>(l.x + r, l.y + r, l.z + r); }
     template<typename T> inline Vector3<T> operator+(T l, Vector3<T> r) { return Vector3<T>(l + r.x, l + r.y, l + r.z); }
@@ -205,12 +173,14 @@ namespace jmath
     template<typename T> inline bool operator==(Vector3<T> l, Vector3<T> r) { return l.x == r.x && l.y && r.y && l.z && r.z; }
 
     template<typename T>
-    inline Vector3<T> Vector3<T>::Normalize(const Vector3<T>& target)
+    Vector3<T> Normalize(const Vector3<T>& target)
     {
         return target / sqrtf(Dot(target, target));
     }
 
-    template<typename T> std::string to_string(const Vector3<T>& v)
+
+    template<typename T>
+    std::string to_string(const Vector3<T>& v)
     {
         std::string s;
         s.reserve(64);
@@ -218,6 +188,67 @@ namespace jmath
         s.append("y: "); s.append(std::to_string(v.y)); s.append(", ");
         s.append("z: "); s.append(std::to_string(v.z)); s.append("}");
         return s;
+    }
+    template <typename T>
+    T Dot(const Vector3<T>& l, const Vector3<T>& r)
+    {
+        return l.x * r.x + l.y * r.y + l.z * r.z;
+    }
+    template <typename T>
+    Vector3<T> Cross(const Vector3<T>& target1, const Vector3<T>& target2)
+    {
+        return Vector3<T>(
+            target1.y * target2.z - target1.z * target2.y,
+            target1.z * target2.x - target1.x * target2.z,
+            target1.x * target2.y - target1.y * target2.x
+            );
+    }
+
+    template <typename T>
+    T Magnitude(const Vector3<T>& v)
+    {
+        return sqrtf(Dot(v, v));
+    }
+
+    template <typename T>
+    Vector3<T> Square(const Vector3<T>& v)
+    {
+        return Dot(v, v);
+    }
+
+    template <typename T>
+    T Distance(const Vector3<T>& a, const Vector3<T>& b)
+    {
+        auto d = a - b;
+        return sqrt(Dot(d, d));
+    }
+    template <typename T>
+    Vector3<T> Max(const Vector3<T>& a, const Vector3<T>& b)
+    {
+        return { std::max(a.x, b.x), std::max(a.y, b.y), std::max(a.z, b.z) };
+    }
+    template <typename T>
+    Vector3<T> Min(const Vector3<T>& a, const Vector3<T>& b)
+    {
+        return { std::min(a.x, b.x), std::min(a.y, b.y), std::min(a.z, b.z) };
+    }
+    template <typename T>
+    Vector3<T> Abs(const Vector3<T>& v)
+    {
+        return { std::abs(v.x), std::abs(v.y), std::abs(v.z) };
+    }
+    template <typename T>
+    T MaxComponent(const Vector3<T>& v)
+    {
+        return std::max(v.x, std::max(v.y, v.z));
+    }
+    template<typename T>
+    T SumComponents(const Vector3<T>& v) { return v.x + v.y + v.z; }
+
+    template<typename T>
+    Vector3<T> Chgsign(const Vector3<T>& a, const Vector3<T>& b)
+    {
+        return Vector3<T>{ Chgsign(a.x, b.x), Chgsign(a.y, b.y), Chgsign(a.z, b.z) };
     }
 
     using Vector3f = Vector3<float>;
@@ -227,14 +258,7 @@ namespace jmath
     using Vector3i = Vector3<int>;
     constexpr int kSizeVector3i = sizeof(Vector3i);
 
-    template<typename T>
-    T SumComponents(const Vector3<T>& v) { return v.x + v.y + v.z; }
 
-    template<typename T>
-    Vector3<T> Chgsign(const Vector3<T>& a, const Vector3<T>& b)
-    {
-        return Vector3<T>{ Chgsign(a.x, b.x), Chgsign(a.y, b.y), Chgsign(a.z, b.z) };
-    }
 
 
 
@@ -265,6 +289,17 @@ namespace jmath
 
         T& operator[](int index) { return *(&x + index); }
         const T& operator[](int index) const { return *(&x + index); }
+
+        Vector4& operator/=(const Vector4& v)
+        {
+            x /= v.x; y /= v.y; z /= v.z; w /= v.w;
+            return *this;
+        }
+        Vector4& operator/=(T v)
+        {
+            x /= v; y /= v; z /= v; w /= v;
+            return *this;
+        }
     };
 
     template<typename T> std::string to_string(const Vector4<T>& v)
@@ -885,9 +920,9 @@ namespace jmath
 
         const T* get_value_ptr() const { return &r; }
 
-        Color4() : r(0), g(0), b(0), a(0) {}
-        Color4(T _r, T _g, T _b) : r(_r), g(_g), b(_b), a(1) {}
-        Color4(T _r, T _g, T _b, T _a) : r(_r), g(_g), b(_b), a(_a) {}
+        constexpr Color4() = default;
+        constexpr Color4(T _r, T _g, T _b) : r(_r), g(_g), b(_b), a(1) {}
+        constexpr Color4(T _r, T _g, T _b, T _a) : r(_r), g(_g), b(_b), a(_a) {}
 
         Color4& operator+=(const Color4& c) { r += c.r; g += c.g; b += c.b; a += c.a;  return *this; }
         Color4& operator-=(const Color4& c) { r -= c.r; g -= c.g; b -= c.b; a -= c.a; return *this; }
@@ -931,7 +966,7 @@ namespace jmath
 
 
     template <typename T>
-    struct Box3
+    struct BoxBounds3
     {
         Vector3<T> Min;
         Vector3<T> Max;
@@ -941,7 +976,7 @@ namespace jmath
             return (Min + Max) * T(0.5);
         }
 
-        Vector3<T> GetExtend() const
+        Vector3<T> GetExtent() const
         {
             return (Max - Min) * T(0.5);
         }
@@ -950,38 +985,236 @@ namespace jmath
         {
             return Max - Min;
         }
-    };
 
-    using Box3f = Box3<float>;
-    using Box3d = Box3<double>;
+        static BoxBounds3 CreateFromPoints(const Vector3<T>* points, size_t size)
+        {
+            BoxBounds3 box{};
+
+            for (int i = 0; i < size; ++i)
+            {
+                auto& pos = points[i];
+
+                if (pos.x < box.Min.x) box.Min.x = pos.x;
+                if (pos.y < box.Min.y) box.Min.y = pos.y;
+                if (pos.z < box.Min.z) box.Min.z = pos.z;
+                if (pos.x > box.Max.x) box.Max.x = pos.x;
+                if (pos.y > box.Max.y) box.Max.y = pos.y;
+                if (pos.z > box.Max.z) box.Max.z = pos.z;
+
+            }
+            return box;
+        }
+    };
+    using BoxBounds3f = BoxBounds3<float>;
+    using BoxBounds3d = BoxBounds3<double>;
+
+
 
     template <typename T>
-    struct Bounds3
+    struct SphereBounds3
+    {
+        Vector3<T> Center;
+        T Radius;
+
+        static SphereBounds3 CreateFromPoints(const Vector3<T>* points, size_t size)
+        {
+            Vector3<T> pointSum{};
+            for (int i = 0; i < size; ++i)
+            {
+                pointSum += points[i];
+            }
+            return CreateFromPoints(pointSum / size, points, size);
+        }
+        static SphereBounds3 CreateFromPoints(const Vector3<T>& center, const Vector3<T>* points, size_t size)
+        {
+            SphereBounds3 sphere{};
+            sphere.Center = center;
+
+            for (int i = 0; i < size; ++i)
+            {
+                auto& pos = points[i];
+                auto distance = jmath::Distance(center, pos);
+                if (distance > sphere.Radius)
+                {
+                    sphere.Radius = distance;
+                }
+            }
+
+            return sphere;
+        }
+    };
+    using SphereBounds3f = SphereBounds3<float>;
+    using SphereBounds3d = SphereBounds3<double>;
+
+
+    template <typename T>
+    struct BoxSphereBounds3
     {
         Vector3<T> Origin{};
         Vector3<T> Extent{};
-        T          Sphere{};
+        T          Radius{};
 
-        Bounds3() = default;
+        BoxSphereBounds3() = default;
 
-        Bounds3(const Vector3<T>& origin, const Vector3<T>& extent, T sphere) :
-            Origin(origin), Extent(extent), Sphere(sphere)
+        explicit BoxSphereBounds3(const BoxBounds3<T>& box)
+        {
+            auto extent = box.GetExtent();
+            Origin = box.Min + extent;
+            Extent = extent;
+            Radius = Magnitude(extent);
+        }
+
+        explicit BoxSphereBounds3(const SphereBounds3<T>& sphere)
+            : Origin(sphere.Center), Extent(Vector3<T>(sphere.Radius)), Radius(sphere.Radius)
         {
         }
 
-        explicit Bounds3(const Box3<T>& box) :
-            Origin(box.GetCenter()), Extent(box.GetExtend()), Sphere(box.GetSize().Magnitude() * 0.5f)
+        BoxSphereBounds3(const BoxBounds3<T>& box, const SphereBounds3<T>& sphere)
+        {
+            Origin = box.GetCenter();
+            Extent = box.GetExtent();
+            Radius = T(std::min(Magnitude(Extent), Magnitude(sphere.Center - Origin) + sphere.Radius));
+        }
+
+        BoxSphereBounds3(const Vector3<T>& origin, const Vector3<T>& extent, T radius)
+            : Origin(origin), Extent(extent), Radius(radius)
         {
         }
 
-        Box3<T> GetBox() const
+        static BoxSphereBounds3 CreateFromPoints(const Vector3<T>* points, size_t size)
+        {
+            BoxSphereBounds3 self{};
+            auto box = BoxBounds3<T>::CreateFromPoints(points, size);
+            self.Origin = box.GetCenter();
+            self.Extent = box.GetExtent();
+            self.Radius = SphereBounds3<T>::CreateFromPoints(self.Origin, points, size).Radius;
+            return self;
+        }
+
+
+        BoxBounds3<T> GetBox() const
         {
             return {Origin - Extent, Origin + Extent};
         }
+
+        SphereBounds3<T> GetSphere() const
+        {
+            return {Origin, Radius};
+        }
+
     };
 
-    using Bounds3f = Bounds3<float>;
-    using Bounds3d = Bounds3<float>;
+    template <typename T>
+    std::string to_string(const BoxSphereBounds3<T>& bounds)
+    {
+        std::string str;
+        str.reserve(64);
+        str += "origin: ";
+        str += to_string(bounds.Origin);
+        str += ", extent: ";
+        str += to_string(bounds.Extent);
+        str += ", radius: ";
+        str += std::to_string(bounds.Radius);
+        return str;
+    }
+
+    using BoxSphereBounds3f = BoxSphereBounds3<float>;
+    using BoxSphereBounds3d = BoxSphereBounds3<float>;
+
+
+    template <typename T>
+    struct Edge3
+    {
+        Vector3<T> Start;
+        Vector3<T> End;
+        Vector3<T> GetDirection() const
+        {
+            return Normalize(End - Start);
+        }
+    };
+
+    template <typename T>
+    struct Plane3
+    {
+        Vector3<T> P0;
+        Vector3<T> Normal;
+    };
+
+    /*
+     * plane: n(p-p0)=0
+     * ray: R(t) = r0 + vt;
+     * t = -(R0 dot n + d) / (v dot n)
+     * d = -P0 dot n
+     */
+    template <typename T>
+    bool Intersect(const Plane3<T>& p, const Edge3<T>& e, Vector3<T>& out)
+    {
+        auto dir = e.GetDirection();
+        auto vn = Dot(p.Normal, dir);
+        if (vn == 0)
+        {
+            return false;
+        }
+        T d = Dot(-p.P0, p.Normal);
+        T t = -((Dot(e.Start, p.Normal) + d) / vn);
+        out = e.Start + dir * t;
+        return true;
+    }
+
+    template<typename T>
+    struct Triangle3
+    {
+        Vector3<T> Points[3]{};
+        Triangle3() : Points{} {}
+        Triangle3(const Vector3<T>& a, const Vector3<T>& b, const Vector3<T>& c)
+            : Points{a,b,c}
+        {}
+
+        Vector3<T> GetNormal() const
+        {
+            auto a = jmath::Normalize(Points[1] - Points[0]);
+            auto b = jmath::Normalize(Points[2] - Points[0]);
+            return Normalize(jmath::Cross(b, a));
+        }
+
+        Plane3<T> GetPlane() const
+        {
+            return {Points[0], GetNormal()};
+        }
+
+        Vector3<T> BarycentricCoordinates(const Vector3<T>& p) const
+        {
+            auto& a = Points[0];
+            auto& b = Points[1];
+            auto& c = Points[2];
+
+            T i = (-(p.x - b.x) * (c.y - b.y) + (p.y - b.y) * (c.x - b.x))
+                / (-(a.x - b.x) * (c.y - b.y) + (a.y - b.y) * (c.x - b.x));
+            T j = (-(p.x - c.x) * (a.y - c.y) + (p.y - c.y) * (a.x - c.x))
+                / (-(b.x - c.x) * (a.y - c.y) + (b.y - c.y) * (a.x - c.x));
+            T k = 1 - i - j;
+            return {i, j, k};
+        }
+
+        bool IsPointIn(const Vector3<T>& p) const
+        {
+            auto n = GetNormal();
+            return Dot(Cross((Points[0]-Points[1]), p-Points[1]), n) > 0 &&
+                    Dot(Cross(Points[2]-Points[0], p-Points[0]), n) > 0 &&
+                    Dot(Cross(Points[1]-Points[2], p-Points[2]), n) > 0;
+        }
+    };
+
+    using Triangle3f = Triangle3<float>;
+
+
+    template <typename T>
+    T Square(T a)
+    {
+        return a * a;
+    }
+
+
 
     template<typename B, typename L>
     Color4<B> FloatColorToBitColor(const Color4<L>& l)

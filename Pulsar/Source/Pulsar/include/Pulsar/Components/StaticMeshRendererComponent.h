@@ -31,15 +31,15 @@ namespace pulsar
         StaticMeshRendererComponent();
 
         bool HasBounds() const override { return true; }
-        Bounds3f GetBounds() override;
+        BoxSphereBounds3f GetBoundsWS() override;
 
         RCPtr<StaticMesh> GetStaticMesh() const { return m_staticMesh; }
         void SetStaticMesh(RCPtr<StaticMesh> staticMesh);
 
         RCPtr<StaticMesh> GetMaterial(int index) const;
-        void SetMaterial(int index, RCPtr<Material> material);
+        void   SetMaterial(int index, RCPtr<Material> material);
         size_t AddMaterial();
-        void RemoveMaterial(size_t index);
+        void   RemoveMaterial(size_t index);
         size_t GetMaterialCount() const { return m_materialsSize; }
 
         void BeginComponent() override;
@@ -55,13 +55,13 @@ namespace pulsar
         // void BeginListenMaterialStateChanged(size_t index);
         // void EndListenMaterialStateChanged(size_t index);
         void OnMaterialStateChanged();
-        void OnMsg_TransformChanged() override;
+        void OnTransformChanged() override;
         void OnMeshChanged();
         void OnMaterialChanged();
     protected:
         CORELIB_REFL_DECL_FIELD(m_materials, new ListItemAttribute(cltypeof<Material>()));
         List_sp<RCPtr<Material>> m_materials;
-        //array_list<RCPtr<Material>> m_gpuMaterials;
+
         size_t m_materialsSize = 0;
 
         CORELIB_REFL_DECL_FIELD(m_staticMesh);
@@ -72,6 +72,9 @@ namespace pulsar
 
         CORELIB_REFL_DECL_FIELD(m_renderQueuePriority);
         int32_t m_renderQueuePriority{1000};
+
+        CORELIB_REFL_DECL_FIELD(m_boundsScale, new RangePropertyAttribute(0.1f, 10.f));
+        float m_boundsScale = 1;
 
         SPtr<StaticMeshRenderObject> m_renderObject;
 

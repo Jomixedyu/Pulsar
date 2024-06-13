@@ -70,7 +70,7 @@ namespace pulsar
         const auto count = (int)transform->GetChildCount();
         for (int i = count - 1; i >= 0; --i)
         {
-            const auto child = transform->GetChildren()->at(i)->GetAttachedNode();
+            const auto child = transform->GetChildren()->at(i)->GetNode();
             RemoveNode(child);
             transform->GetChildren()->RemoveAt(i);
         }

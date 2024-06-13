@@ -62,7 +62,7 @@ namespace pulsar
         const array_list<string>& GetMaterialNames() const { return m_materialNames; }
         size_t GetMaterialCount() const { return m_materialNames.size(); }
 
-        Bounds3f GetBounds() const { return m_bounds; }
+        BoxSphereBounds3f GetBounds() const { return m_bounds; }
     public:
         bool CreateGPUResource() override;
         void DestroyGPUResource() override;
@@ -77,7 +77,7 @@ namespace pulsar
         array_list<gfx::GFXBuffer_sp> m_vertexBuffers;
         array_list<gfx::GFXBuffer_sp> m_indicesBuffers;
 
-        Bounds3f m_bounds{};
+        BoxSphereBounds3f m_bounds{};
     };
     DECL_PTR(StaticMesh);
 

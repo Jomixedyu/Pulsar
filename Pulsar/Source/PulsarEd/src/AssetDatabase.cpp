@@ -570,6 +570,10 @@ namespace pulsared
     {
         return _DirtyObjects.contains(asset);
     }
+    bool AssetDatabase::IsDirtyHandle(const ObjectHandle& asset) noexcept
+    {
+        return std::ranges::any_of(_DirtyObjects, [asset](auto& obj) { return obj.Handle == asset; });
+    }
 
     Type* AssetFileNode::GetAssetType() const
     {

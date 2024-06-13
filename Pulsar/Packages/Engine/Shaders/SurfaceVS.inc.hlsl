@@ -16,10 +16,10 @@ InPixelAssembly main(InVertexAssembly a2v)
     v2f.TexCoord2 = a2v.TexCoord2;
     v2f.TexCoord3 = a2v.TexCoord3;
     v2f.Color = a2v.Color;
-    v2f.Position = ObjectToWorld(a2v.Position);
+    v2f.WorldPosition = ObjectToWorld(a2v.Position);
 
     SurfaceVertexMain(v2f);
-    v2f.Position = WorldToClip(v2f.Position.xyz);
+    v2f.Position = WorldToClip(v2f.WorldPosition.xyz);
     return v2f;
 }
 

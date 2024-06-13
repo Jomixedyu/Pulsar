@@ -7,7 +7,7 @@
         <DisplayString>{{value = {to_string(true).c_str()}}}</DisplayString>
     </Type>
     <Type Name="pulsar::ObjectPtr&lt;*&gt;">
-        <DisplayString>{{ptr = {operator->()->GetName().c_str()}}}</DisplayString>
+        <DisplayString>{{ptr = {GetPtr() ? GetPtr()->GetName().c_str() : GetHandle().is_empty() ? "/*NULL*/" : "/*UNLOAD*/"}}}</DisplayString>
         <Expand>
             <Item Name="[Ptr]">
                 operator->()

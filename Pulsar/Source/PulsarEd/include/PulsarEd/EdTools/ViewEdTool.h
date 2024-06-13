@@ -4,6 +4,21 @@
 namespace pulsared
 {
 
+    struct MouseEventData
+    {
+        int ButtonId;
+        bool InRegion;
+        bool AltFunction;
+        bool CtrlFunction;
+        bool ShiftFunction;
+        Vector2f InRegionPosition;
+        Vector2f Position;
+        bool FunctionKey() const
+        {
+            return AltFunction || CtrlFunction || ShiftFunction;
+        }
+    };
+
     class ViewEdTool : public EdTool
     {
         using base = EdTool;
@@ -11,6 +26,11 @@ namespace pulsared
         void Tick(float dt) override;
 
         void Begin() override;
+
+    protected:
+        virtual void OnMouseDown(const MouseEventData& e);
+        virtual void OnMouseUp(const MouseEventData& e);
+        virtual void OnDragUpdate(const MouseEventData& e);
     public:
         bool m_altPressed{};
         bool m_leftMousePressed{};

@@ -97,10 +97,14 @@ namespace jxcorlib::platform::window
 
     intptr_t GetMainWindowHandle()
     {
-        DWORD id = GetCurrentProcessId();
+        return GetWindowHandlleByPID(GetCurrentProcessId());
+    }
+
+    intptr_t GetWindowHandlleByPID(intptr_t pid)
+    {
         WNDINFO wi;
-        wi.dwProcessId = id;
-        wi.hWnd = NULL;
+        wi.dwProcessId = pid;
+        wi.hWnd = nullptr;
         EnumWindows(EnumProc, (LPARAM)&wi);
         return (intptr_t)wi.hWnd;
     }
@@ -110,7 +114,7 @@ namespace jxcorlib::platform::window
         return _MessageBoxImpl(owner, text, title, mode);
     }
 
-    bool OpenFileDialog(intptr_t owner, std::string_view _filter, std::filesystem::path default_path, std::filesystem::path* out_select)
+    bool OpenFileDialog(intptr_t owner, std::string_view _filter, const std::filesystem::path& default_path, std::filesystem::path* out_select)
     {
         OPENFILENAME ofn = { 0 };
         ofn.lStructSize = sizeof(ofn);
@@ -163,9 +167,9 @@ namespace jxcorlib::platform::window
 
     float GetUIScaling()
     {
-        const HDC hDC = ::GetDC(NULL);
+        const HDC hDC = ::GetDC(nullptr);
         const UINT dpix = ::GetDeviceCaps(hDC, LOGPIXELSX);
-        ::ReleaseDC(NULL, hDC);
-        return  dpix / 96.f;
+        ::ReleaseDC(nullptr, hDC);
+        return (float)dpix / 96.f;
     }
 }

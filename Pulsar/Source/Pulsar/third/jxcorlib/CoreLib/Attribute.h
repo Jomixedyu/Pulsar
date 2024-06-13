@@ -54,6 +54,18 @@ namespace jxcorlib
 
     };
 
+    class RangePropertyAttribute final : public Attribute
+    {
+        CORELIB_DEF_TYPE(AssemblyObject_jxcorlib, jxcorlib::RangePropertyAttribute, Attribute);
+    public:
+        RangePropertyAttribute(float min, float max) : m_min(min), m_max(max)
+        {
+        }
+
+        float m_min;
+        float m_max;
+    };
+
     class DebugPropertyAttribute final : public Attribute
     {
         CORELIB_DEF_TYPE(AssemblyObject_jxcorlib, jxcorlib::DebugPropertyAttribute, Attribute);

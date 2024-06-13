@@ -68,7 +68,7 @@ namespace pulsar
         void OnActive();
         void OnInactive();
         void OnParentActiveChanged();
-
+        void OnTransformChanged();
         TransformComponent* GetTransform() const;
     public:
         Node(const Node& r) = delete;
@@ -121,7 +121,7 @@ namespace pulsar
             GetComponents(array);
             for (const auto& item : *GetTransform()->GetChildren())
             {
-                item->GetAttachedNode()->GetComponentsInChildren(array);
+                item->GetNode()->GetComponentsInChildren(array);
             }
         }
 

@@ -21,12 +21,12 @@ namespace pulsar
         obj->Add("w", vec.w);
         return obj;
     }
-    ser::VarientRef AssetSerializerUtil::NewObject(const ser::VarientRef& ctx, const Bounds3f& vec)
+    ser::VarientRef AssetSerializerUtil::NewObject(const ser::VarientRef& ctx, const BoxSphereBounds3f& vec)
     {
         auto bound = ctx->New(ser::VarientType::Object);
         bound->Add("Extent", NewObject(ctx, vec.Extent));
         bound->Add("Origin", NewObject(ctx, vec.Origin));
-        bound->Add("Sphere", vec.Sphere);
+        bound->Add("Sphere", vec.Radius);
         return bound;
     }
     Vector3f AssetSerializerUtil::GetVector3Object(const ser::VarientRef& var)
@@ -44,16 +44,16 @@ namespace pulsar
         float w = var->At("w")->AsFloat();
         return {x, y, z, w};
     }
-    Bounds3f AssetSerializerUtil::GetBounds3Object(const ser::VarientRef& var)
+    BoxSphereBounds3f AssetSerializerUtil::GetBounds3Object(const ser::VarientRef& var)
     {
         auto extent = var->At("Extent");
         auto origin = var->At("Origin");
         auto sphere = var->At("Sphere")->AsFloat();
 
-        Bounds3f bound;
+        BoxSphereBounds3f bound;
         bound.Extent = GetVector3Object(extent);
         bound.Origin = GetVector3Object(origin);
-        bound.Sphere = sphere;
+        bound.Radius = sphere;
 
         return bound;
     }

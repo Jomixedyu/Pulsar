@@ -4,7 +4,7 @@
     "IsCompressedNativeData": true,
     "IsSRGB": true,
     "Size": {
-        "x": 4,
-        "y": 4
+        "x": 16,
+        "y": 16
     }
 }

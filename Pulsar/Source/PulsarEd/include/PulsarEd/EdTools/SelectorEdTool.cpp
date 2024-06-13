@@ -13,30 +13,10 @@ namespace pulsared
         m_frameSelector = false;
         Logger::Log("SelectorTool");
     }
-    static bool IsModifilerKeysDown()
-    {
-        return
-        ImGui::IsKeyDown(ImGuiKey_LeftAlt)
-        || ImGui::IsKeyDown(ImGuiKey_RightAlt)
-        || ImGui::IsKeyDown(ImGuiKey_LeftShift)
-        || ImGui::IsKeyDown(ImGuiKey_RightShift)
-        || ImGui::IsKeyDown(ImGuiKey_LeftCtrl)
-        || ImGui::IsKeyDown(ImGuiKey_RightCtrl);
-    }
 
     void SelectorEdTool::Tick(float dt)
     {
         base::Tick(dt);
-        if (m_enableSelect && ImGui::IsWindowHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !IsModifilerKeysDown())
-        {
-            m_frameSelector = true;
-            auto startpos = ImGui::GetMousePos();
-            m_frameSelectorStartPos = {startpos.x, startpos.y};
-        }
-        if (ImGui::IsMouseReleased(ImGuiMouseButton_Left))
-        {
-            m_frameSelector = false;
-        }
 
         if (m_frameSelector)
         {
@@ -47,6 +27,24 @@ namespace pulsared
             auto boraderColor = IM_COL32(128, 128, 128, 255);
             drawList->AddRectFilled(startpos, curpos, fillColor);
             drawList->AddRect(startpos, curpos, fillColor, 0.0f, 0, 1);
+        }
+    }
+    void SelectorEdTool::OnMouseDown(const MouseEventData& e)
+    {
+        base::OnMouseDown(e);
+        if (ImGui::IsWindowHovered() && e.ButtonId == ImGuiMouseButton_Left && m_enableSelect)
+        {
+            m_frameSelector = true;
+            auto startpos = ImGui::GetMousePos();
+            m_frameSelectorStartPos = {startpos.x, startpos.y};
+        }
+    }
+    void SelectorEdTool::OnMouseUp(const MouseEventData& e)
+    {
+        base::OnMouseUp(e);
+        if (e.ButtonId == ImGuiMouseButton_Left)
+        {
+            m_frameSelector = false;
         }
     }
     SelectionSet<Node>& SelectorEdTool::GetSelection()

@@ -20,9 +20,9 @@ MaterialAttributes SurfacePixelMain(InPixelAssembly surf)
     attr.Roughness = MRA.g;
     attr.AmbientOcclusion = MRA.b;
     
-    attr.EmissiveColor = _BaseColorMap.Sample(_BaseColorMapSampler, surf.TexCoord0);
+    //attr.EmissiveColor = _BaseColorMap.Sample(_BaseColorMapSampler, surf.TexCoord0);
 
-    attr.ShadingModel = SHADING_MODEL_UNLIT;
+    attr.ShadingModel = SHADING_MODEL_LIT;
 
     return attr;
 }

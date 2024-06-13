@@ -28,7 +28,7 @@ namespace pulsar
         {
             if (comp)
             {
-                if (comp->GetAttachedNode()->GetName() == name)
+                if (comp->GetNode()->GetName() == name)
                 {
                     return comp;
                 }
@@ -126,20 +126,20 @@ namespace pulsar
     {
         Matrix4f mat = GetLocalToWorldMatrix();
         mat[3] = Vector4f{0, 0, 0, 1};
-        return (mat * Vector3f{0, 0, 1}).GetNormalized();
+        return Normalize(mat * Vector3f{0, 0, 1});
     }
     Vector3f TransformComponent::GetUp()
     {
         Matrix4f mat = GetLocalToWorldMatrix();
         mat[3] = Vector4f{0, 0, 0, 1};
-        return (mat * Vector3f{0, 1, 0}).GetNormalized();
+        return Normalize(mat * Vector3f{0, 1, 0});
     }
     Vector3f TransformComponent::GetRight()
     {
         Matrix4f mat = GetLocalToWorldMatrix();
         mat[3] = Vector4f{0, 0, 0, 1};
-        auto right = mat * Vector3f{1, 0, 0};
-        right.Normalized();
+        auto right = Normalize( mat * Vector3f{1, 0, 0} );
+
         return right;
     }
 
@@ -193,10 +193,10 @@ namespace pulsar
             RebuildLocalToWorldMatrix();
         return m_worldToLocalMatrix;
     }
-    void TransformComponent::OnMsg_TransformChanged()
+    void TransformComponent::OnTransformChanged()
     {
-        base::OnMsg_TransformChanged();
-        for (auto childTransform : *this->m_children)
+        base::OnTransformChanged();
+        for (auto& childTransform : *this->m_children)
         {
             childTransform->MakeTransformChanged();
         }
@@ -241,7 +241,7 @@ namespace pulsar
         m_isDirtyMatrix = true;
         if (m_beginning)
         {
-            GetAttachedNode()->SendMessage(MessageId_OnChangedTransform());
+            GetNode()->OnTransformChanged();
         }
     }
 

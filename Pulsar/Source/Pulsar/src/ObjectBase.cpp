@@ -10,6 +10,7 @@ namespace pulsar
     {
         struct RuntimeObjectPointerValue
         {
+            ObjectHandle Handle{};
             SPtr<ObjectBase> OriginalObject;
             [[not_null]] SPtr<ManagedPointer> ManagedPtr;
 
@@ -20,17 +21,84 @@ namespace pulsar
 
             void Destroy()
             {
+                Handle = {};
                 OriginalObject.reset();
                 ManagedPtr->SetEmptyPtr();
             }
         };
+
+        struct ObjectManager
+        {
+            array_list<RuntimeObjectPointerValue> Array;
+            hash_map<ObjectHandle, size_t> Map;
+
+            RuntimeObjectPointerValue& Emplace(const ObjectHandle& handle)
+            {
+                auto& value = Array.emplace_back();
+                value.Handle = handle;
+                Map.emplace(handle, Array.size() - 1);
+                return value;
+            }
+
+            static constexpr size_t npos = std::numeric_limits<size_t>::max();
+
+            size_t Find(const ObjectHandle& handle) const
+            {
+                auto it = Map.find(handle);
+                if (it != Map.end())
+                    return it->second;
+                return npos;
+            }
+
+            RuntimeObjectPointerValue& At(size_t index)
+            {
+                return Array[index];
+            }
+
+            RuntimeObjectPointerValue* Get(const ObjectHandle& handle)
+            {
+                auto index = Find(handle);
+                if (index == npos) return nullptr;
+                return &At(index);
+            }
+
+            void Remove(const ObjectHandle& handle)
+            {
+                auto it = Map.find(handle);
+                if (it == Map.end())
+                    return;
+
+                auto index = it->second;
+
+                auto lastHandle = Array[Array.size() - 1].Handle;
+
+                Array[index] = Array[Array.size() - 1];
+                Map[lastHandle] = index;
+
+                Map.erase(handle);
+                Array.pop_back();
+            }
+
+            void Clear()
+            {
+                decltype(Array){}.swap(Array);
+                decltype(Map){}.swap(Map);
+            }
+        };
     }
 
-    using _object_table_t = hash_map<ObjectHandle, RuntimeObjectPointerValue>;
-    static auto& _object_table()
+
+    // using _object_table_t = hash_map<ObjectHandle, RuntimeObjectPointerValue>;
+    // static auto& _object_table()
+    // {
+    //     static _object_table_t table;
+    //     return table;
+    // }
+
+    static ObjectManager& GetObjectManager()
     {
-        static _object_table_t table;
-        return table;
+        static ObjectManager Mgr;
+        return Mgr;
     }
 
     Action<ObjectBase*> RuntimeObjectManager::OnPostEditChanged{};
@@ -45,10 +113,9 @@ namespace pulsar
     {
         if (id.is_empty())
             return nullptr;
-        auto it = _object_table().find(id);
-        if (it != _object_table().end())
+        if (auto ptr = GetObjectManager().Get(id))
         {
-            return it->second.OriginalObject.get();
+            return ptr->OriginalObject.get();
         }
         return nullptr;
     }
@@ -57,41 +124,37 @@ namespace pulsar
     {
         if (id.is_empty())
             return nullptr;
-        auto it = _object_table().find(id);
-        if (it != _object_table().end())
+        if (auto ptr = GetObjectManager().Get(id))
         {
-            return it->second.OriginalObject;
+            return ptr->OriginalObject;
         }
         return nullptr;
     }
     SPtr<ManagedPointer> RuntimeObjectManager::GetPointer(const ObjectHandle& id) noexcept
     {
-        auto it = _object_table().find(id);
-        if (it != _object_table().end())
+        if (auto ptr = GetObjectManager().Get(id))
         {
-            return it->second.ManagedPtr;
+            return ptr->ManagedPtr;
         }
         return nullptr;
     }
 
     SPtr<ManagedPointer> RuntimeObjectManager::AddWaitPointer(const ObjectHandle& id)
     {
-        RuntimeObjectPointerValue value{};
-        value.ManagedPtr = mksptr(new ManagedPointer{});
-        _object_table().insert({id, value});
-        return value.ManagedPtr;
+        auto& ptr = GetObjectManager().Emplace(id);
+        ptr.ManagedPtr = mksptr(new ManagedPointer{});
+        return ptr.ManagedPtr;
     }
 
     bool RuntimeObjectManager::IsValid(const ObjectHandle& id) noexcept
     {
         if (id.is_empty())
             return false;
-        auto it = _object_table().find(id);
-        if (it == _object_table().end())
+        if (auto ptr = GetObjectManager().Get(id))
         {
-            return false;
+            return ptr->ManagedPtr->Pointer != nullptr;
         }
-        return it->second.IsValid();
+        return false;
     }
 
     void RuntimeObjectManager::NewInstance(SPtr<ObjectBase>&& managedObj, const ObjectHandle& handle) noexcept
@@ -99,21 +162,17 @@ namespace pulsar
         const auto id = handle.is_empty() ? _NewId() : handle;
         managedObj->m_objectHandle = id;
 
-        auto it = _object_table().find(handle);
-        if (it != _object_table().end())
+        if (auto ptr = GetObjectManager().Get(id))
         {
-            assert(!it->second.IsValid());
-            it->second.OriginalObject = std::move(managedObj);
-            it->second.ManagedPtr->Pointer = it->second.OriginalObject.get();
+            ptr->OriginalObject = std::move(managedObj);
+            ptr->ManagedPtr->Pointer = ptr->OriginalObject.get();
         }
         else
         {
-            RuntimeObjectPointerValue value;
-            value.OriginalObject = std::move(managedObj);
-            value.ManagedPtr = mksptr(new ManagedPointer{});
-            value.ManagedPtr->Pointer = value.OriginalObject.get();
-
-            _object_table().emplace(id, value);
+            auto& newPtr = GetObjectManager().Emplace(id);
+            newPtr.OriginalObject = std::move(managedObj);;
+            newPtr.ManagedPtr = mksptr(new ManagedPointer{});
+            newPtr.ManagedPtr->Pointer = newPtr.OriginalObject.get();
         }
 
     }
@@ -122,73 +181,72 @@ namespace pulsar
     {
         if (id.is_empty())
             return false;
+        auto ptr = GetObjectManager().Get(id);
+        if (ptr == nullptr) return true;
 
-        auto it = _object_table().find(id);
-
-        if (it != _object_table().end())
+        if (const auto obj = ptr->OriginalObject.get())
         {
-            if (const auto obj = it->second.OriginalObject.get())
+            const bool dontDestory = obj->HasObjectFlags(OF_LifecycleManaged);
+            if (!dontDestory || (dontDestory && isForce))
             {
-                const bool dontDestory = obj->HasObjectFlags(OF_LifecycleManaged);
-                if (!dontDestory || (dontDestory && isForce))
+                obj->Destroy();
+                ptr->OriginalObject.reset();
+                ptr->ManagedPtr->SetEmptyPtr();
+                if (ptr->ManagedPtr.use_count() == 1)
                 {
-                    obj->Destroy();
-                    it->second.OriginalObject.reset();
-                    it->second.ManagedPtr->SetEmptyPtr();
-                    if (it->second.ManagedPtr.use_count() == 1)
-                    {
-                        it->second.ManagedPtr.reset();
-                        _object_table().erase(id);
-                    }
+                    ptr->ManagedPtr.reset();
+                    GetObjectManager().Remove(id);
+                }
 
-                    return true;
-                }
-            }
-            else
-            {
-                if (it->second.ManagedPtr.use_count() == 1)
-                {
-                    it->second.ManagedPtr.reset();
-                    _object_table().erase(id);
-                }
                 return true;
             }
         }
+        else
+        {
+            if (ptr->ManagedPtr.use_count() == 1)
+            {
+                ptr->ManagedPtr.reset();
+                GetObjectManager().Remove(id);
+            }
+            return true;
+        }
+
         return false;
     }
+
     void RuntimeObjectManager::GetData(size_t* total, size_t* place, size_t* alive)
     {
-        size_t t = _object_table().size(), p = 0, a = 0;
-        for (auto& [k, v] : _object_table())
+        size_t p = 0, a = 0;
+        for (auto& item : GetObjectManager().Array)
         {
-            if (v.OriginalObject)
+            if (item.OriginalObject)
             {
                 ++a;
             }
             else
             {
-                if (v.ManagedPtr)
+                if (item.ManagedPtr)
                 {
                     ++p;
                 }
             }
         }
-        *total = t;
+        *total = GetObjectManager().Array.size();
         *place = p;
         *alive = a;
     }
     void RuntimeObjectManager::Terminate()
     {
         array_list<ObjectHandle> destroyList;
-        for (const auto& [id, ptr] : _object_table())
+        for (const auto& item : GetObjectManager().Array)
         {
-            if (ptr.IsValid())
+            if (item.IsValid())
             {
-                if (ptr.OriginalObject->HasObjectFlags(OF_LifecycleManaged))
+                if (item.OriginalObject->HasObjectFlags(OF_LifecycleManaged))
                 {
                     continue;
                 }
-                destroyList.push_back(id);
+                destroyList.push_back(item.Handle);
             }
         }
         for (auto& id : destroyList)
@@ -197,19 +255,53 @@ namespace pulsar
         }
 
         // release memory
-        _object_table_t{}.swap(_object_table());
+        GetObjectManager().Clear();
     }
 
     void RuntimeObjectManager::TickGCollect()
     {
+        constexpr size_t kProcessPerFrame = 2;
+
+        static ObjectHandle list[kProcessPerFrame];
+        size_t listCount = 0;
+
+        static size_t itIndex = -1;
+        if (GetObjectManager().Array.empty())
+        {
+            return;
+        }
+
+        for (size_t i = 0; i < kProcessPerFrame; ++i)
+        {
+            ++itIndex;
+            if (itIndex >= GetObjectManager().Array.size())
+            {
+                itIndex = 0;
+            }
+            auto& it = GetObjectManager().At(itIndex);
+            if (!it.IsValid() && it.ManagedPtr.use_count() == 1)
+            {
+                list[listCount] = it.Handle;
+                listCount++;
+            }
+        }
+
+        for (auto i = 0; i < listCount; ++i)
+        {
+            GetObjectManager().Remove(list[i]);
+        }
 
     }
 
-    void RuntimeObjectManager::ForEachObject(const std::function<void(ObjectHandle, ObjectBase*, int)>& func)
+    void RuntimeObjectManager::ForEachObject(const std::function<void(const RuntimeObjectInfo&)>& func)
     {
-        for (auto& item : _object_table())
+        for (auto& item : GetObjectManager().Array)
         {
-            func(item.first, item.second.OriginalObject.get(), item.second.ManagedPtr.use_count());
+            RuntimeObjectInfo info;
+            info.Handle = item.Handle;
+            info.Pointer = item.OriginalObject.get();
+            info.ManagedCounter = item.ManagedPtr.use_count();
+            func(info);
         }
     }
 

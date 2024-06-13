@@ -32,13 +32,17 @@ namespace pulsar
         m_renderingPath = RenderingPathMode::Deferred;
         init_sptr_member(m_postProcessMaterials);
     }
+    CameraComponent::~CameraComponent()
+    {
+
+    }
     void CameraComponent::Render()
     {
     }
 
     Matrix4f CameraComponent::GetViewMat() const
     {
-        return GetAttachedNode()->GetTransform()->GetWorldToLocalMatrix();
+        return GetNode()->GetTransform()->GetWorldToLocalMatrix();
     }
 
     Matrix4f CameraComponent::GetProjectionMat() const
@@ -64,6 +68,11 @@ namespace pulsar
                              this->m_far);
         }
         return ret;
+    }
+
+    Matrix4f CameraComponent::GetInvViewProjectionMat() const
+    {
+        return Inverse(GetViewMat()) * Inverse(GetProjectionMat());
     }
 
     void CameraComponent::PostEditChange(FieldInfo* info)
@@ -96,7 +105,7 @@ namespace pulsar
         DestroyObject(m_postprocessRtA);
         DestroyObject(m_postprocessRtB);
 
-        auto rtname = GetAttachedNode()->GetName() + "_CamRT";
+        auto rtname = GetNode()->GetName() + "_CamRT";
 
         int renderTargetCount = 1;
         if (m_renderingPath == RenderingPathMode::Deferred)
@@ -127,10 +136,12 @@ namespace pulsar
 
         UpdateRT();
         BeginRT();
+
+
     }
-    void CameraComponent::OnMsg_TransformChanged()
+    void CameraComponent::OnTransformChanged()
     {
-        base::OnMsg_TransformChanged();
+        base::OnTransformChanged();
         UpdateCBuffer();
     }
     void CameraComponent::OnTick(Ticker ticker)
@@ -194,7 +205,7 @@ namespace pulsar
         target.InvMatrixV = jmath::Inverse(target.MatrixV);
         target.InvMatrixP = jmath::Inverse(target.MatrixP);
         target.InvMatrixVP = jmath::Inverse(target.MatrixVP);
-        target.CamPosition = GetAttachedNode()->GetTransform()->GetWorldPosition();
+        target.CamPosition = GetNode()->GetTransform()->GetWorldPosition();
         target.CamNear = m_near;
         target.CamFar = m_far;
         target.Resolution = m_renderTarget->GetSize2df();
@@ -237,6 +248,28 @@ namespace pulsar
         UpdateCBuffer();
     }
 
+
+    Ray CameraComponent::ScreenPointToRay(Vector2f mousePosition) const
+    {
+        auto [width, height] = GetRenderTexture()->GetSize2df();
+
+        // convert to NDC
+        auto x = 2.f * mousePosition.x / width - 1.f;
+        auto y = -2.f * mousePosition.y / height + 1.f;
+
+        auto invMat = GetInvViewProjectionMat();
+
+        auto near = invMat * Vector4f {x, y, 0.f, 1.f};
+        auto far  = invMat * Vector4f {x, y, 1.f, 1.f};
+
+        far /= far.w;
+
+        Ray ray{};
+        ray.Origin = near.xyz();
+        ray.Direction = Normalize(far.xyz());
+        return ray;
+    }
+
     void CameraComponent::BeginRT()
     {
         if (m_beginning && m_renderTarget)
@@ -248,6 +281,10 @@ namespace pulsar
             UpdateCBuffer();
         }
     }
+    void CameraComponent::MarkDirtyMatrix()
+    {
+
+    }
 
     static gfx::GFXDescriptorSetLayout_wp _CameraDescriptorLayout;
 
@@ -257,10 +294,13 @@ namespace pulsar
 
         if (_CameraDescriptorLayout.expired())
         {
-            gfx::GFXDescriptorSetLayoutInfo info{
+            gfx::GFXDescriptorSetLayoutInfo info
+            {
                 gfx::GFXDescriptorType::ConstantBuffer,
                 gfx::GFXShaderStageFlags::VertexFragment,
-                0, kRenderingDescriptorSpace_Camera};
+                0,
+                kRenderingDescriptorSpace_Camera
+            };
             m_camDescriptorLayout = Application::GetGfxApp()->CreateDescriptorSetLayout(&info, 1);
             _CameraDescriptorLayout = m_camDescriptorLayout;
         }
@@ -281,7 +321,7 @@ namespace pulsar
             ResizeManagedRenderTexture(1, 1);
         }
 
-        GetAttachedNode()->GetRuntimeOwnerScene()->GetWorld()->GetCameraManager().AddCamera(THIS_REF);
+        GetNode()->GetRuntimeOwnerScene()->GetWorld()->GetCameraManager().AddCamera(THIS_REF);
 
         BeginRT();
     }
@@ -289,7 +329,7 @@ namespace pulsar
     void CameraComponent::EndComponent()
     {
         base::EndComponent();
-        GetAttachedNode()->GetRuntimeOwnerScene()->GetWorld()->GetCameraManager().RemoveCamera(THIS_REF);
+        GetNode()->GetRuntimeOwnerScene()->GetWorld()->GetCameraManager().RemoveCamera(THIS_REF);
         if (m_managedRT && m_renderTarget)
         {
             DestroyObject(m_renderTarget);
