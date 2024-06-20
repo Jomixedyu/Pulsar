@@ -16,7 +16,6 @@ Engine:
 - glfw
 - openAL
 - dear-imgui (docking)
-- NVIDIA physX
 
 Editor:
 - glslang
