@@ -21,17 +21,17 @@ namespace pulsared
         float total_width = detail_distance * line_count;
 
         Color4f detailLineColor = {0.2f, 0.2f, 0.2f, 1};
-
+        float zOffset = 0.01f;
         for (int x = -line_count / 2; x <= line_count / 2; x++)
         {
             if (x == 0)
             {
                 Color4f color = detailLineColor;
                 color.r = 0.9f;
-                m_vert.emplace_back(total_width / 2, detail_distance * x, 0);
+                m_vert.emplace_back(total_width / 2, detail_distance * x, zOffset);
                 m_vert.emplace_back(0, detail_distance * x, 0);
                 m_vert.emplace_back(0, detail_distance * x, 0);
-                m_vert.emplace_back(-total_width / 2, detail_distance * x, 0);
+                m_vert.emplace_back(-total_width / 2, detail_distance * x, zOffset);
                 m_colors.push_back(color);
                 m_colors.push_back(color);
                 m_colors.push_back(color);
@@ -39,8 +39,8 @@ namespace pulsared
             }
             else
             {
-                m_vert.emplace_back(total_width / 2, detail_distance * x, 0);
-                m_vert.emplace_back(-total_width / 2, detail_distance * x, 0);
+                m_vert.emplace_back(total_width / 2, detail_distance * x, zOffset);
+                m_vert.emplace_back(-total_width / 2, detail_distance * x, zOffset);
                 m_colors.push_back(detailLineColor);
                 m_colors.push_back(detailLineColor);
             }
@@ -53,19 +53,19 @@ namespace pulsared
                 color.r = 0.0f;
                 color.g = 1.f;
                 color.b = 0.f;
-                m_vert.emplace_back(detail_distance * z, total_width / 2, 0);
+                m_vert.emplace_back(detail_distance * z, total_width / 2, zOffset);
                 m_colors.push_back(color);
-                m_vert.emplace_back(detail_distance * z, 0, 0);
+                m_vert.emplace_back(detail_distance * z, 0, zOffset);
                 m_colors.push_back(color);
-                m_vert.emplace_back(detail_distance * z, 0, 0);
+                m_vert.emplace_back(detail_distance * z, 0, zOffset);
                 m_colors.push_back(color);
-                m_vert.emplace_back(detail_distance * z, -total_width / 2, 0);
+                m_vert.emplace_back(detail_distance * z, -total_width / 2, zOffset);
                 m_colors.push_back(color);
             }
             else
             {
-                m_vert.emplace_back(detail_distance * z, total_width / 2, 0);
-                m_vert.emplace_back(detail_distance * z, -total_width / 2, 0);
+                m_vert.emplace_back(detail_distance * z, total_width / 2, zOffset);
+                m_vert.emplace_back(detail_distance * z, -total_width / 2, zOffset);
                 m_colors.push_back(detailLineColor);
                 m_colors.push_back(detailLineColor);
             }
