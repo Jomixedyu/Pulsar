@@ -9,8 +9,9 @@ namespace pulsared
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::AssetPreviewEditorWindow, AssetEditorWindow);
     public:
-        void OnDrawAssetPropertiesUI(float dt) override;
-        void OnDrawAssetPreviewUI(float dt) override;
+        virtual void OnDrawAssetPropertiesUI(float dt);
+        virtual void OnDrawAssetPreviewUI(float dt);
+        void OnDrawAssetEditor(float dt) override;
         void OnOpen() override;
         void OnClose() override;
     protected:

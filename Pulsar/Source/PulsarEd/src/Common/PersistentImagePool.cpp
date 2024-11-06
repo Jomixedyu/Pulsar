@@ -38,7 +38,7 @@ namespace pulsared
         if (!desc)
             desc = descSet->AddDescriptor("p", 0);
 
-        desc->SetTextureSampler2D(tex.get());
+        desc->SetTextureSampler2D(tex->Get2DView().get());
 
         descSet->Submit();
 

@@ -12,7 +12,7 @@ namespace pulsar
     Texture2D::~Texture2D() = default;
 
     template <typename T>
-    void AssignEnum(T& e, string_view name)
+    void AssignEnum(T& e, const string& name)
     {
         uint32_t value{};
         Enum::StaticTryParse(cltypeof<get_boxing_type_t<T>>(), name, &value);
@@ -24,10 +24,10 @@ namespace pulsar
         base::Serialize(s);
         if (s->IsWrite)
         {
-            assert(m_loadedNativeMemory);
-            sser::ReadWriteStream(s->Stream, s->IsWrite, m_nativeMemory);
+            assert(m_loadedOriginMemory);
+            sser::ReadWriteStream(s->Stream, s->IsWrite, m_originMemory);
 
-            s->Object->Add("IsCompressedNativeData", m_compressedNativeImage);
+            s->Object->Add("IsCompressedNativeData", m_compressedOriginImage);
 
             auto size = s->Object->New(ser::VarientType::Object);
             size->Add("x", m_textureSize.x);
@@ -41,9 +41,9 @@ namespace pulsar
         }
         else // read
         {
-            m_nativeMemory.clear();
-            sser::ReadWriteStream(s->Stream, s->IsWrite, m_nativeMemory);
-            m_compressedNativeImage = s->Object->At("IsCompressedNativeData")->AsBool();
+            m_originMemory.clear();
+            sser::ReadWriteStream(s->Stream, s->IsWrite, m_originMemory);
+            m_compressedOriginImage = s->Object->At("IsCompressedNativeData")->AsBool();
 
             auto size = s->Object->At("Size");
             m_textureSize.x = size->At("x")->AsInt();
@@ -55,7 +55,7 @@ namespace pulsar
             auto compressedFormat = s->Object->At("CompressedFormat")->AsString();
             AssignEnum(m_compressionFormat, compressedFormat);
 
-            m_loadedNativeMemory = true;
+            m_loadedOriginMemory = true;
         }
     }
 
@@ -66,7 +66,8 @@ namespace pulsar
                 {TextureCompressionFormat::BitmapRGBA, gfx::GFXTextureFormat::R8G8B8A8_UNorm},
                 {TextureCompressionFormat::Gray, gfx::GFXTextureFormat::R8_UNorm},
                 {TextureCompressionFormat::NormalMap_Compressed, gfx::GFXTextureFormat::BC5_UNorm},
-                {TextureCompressionFormat::HDR_Compressed, gfx::GFXTextureFormat::BC6H_RGB_SFloat}};
+                {TextureCompressionFormat::HDR_Compressed, gfx::GFXTextureFormat::R32G32B32A32_SFloat}};
+                // {TextureCompressionFormat::HDR_Compressed, gfx::GFXTextureFormat::BC6H_RGB_SFloat}};
         return &map;
     }
     void Texture2D::OnDestroy()
@@ -80,14 +81,14 @@ namespace pulsar
 
     void Texture2D::FromNativeData(const uint8_t* data, size_t length, bool compressed, int width, int height, int channel)
     {
-        m_nativeMemory.resize(length);
-        std::memcpy(m_nativeMemory.data(), data, length);
+        m_originMemory.resize(length);
+        std::memcpy(m_originMemory.data(), data, length);
         m_isSRGB = true;
-        m_compressedNativeImage = compressed;
+        m_compressedOriginImage = compressed;
         m_textureSize.x = width;
         m_textureSize.y = height;
         m_channelCount = channel;
-        m_loadedNativeMemory = true;
+        m_loadedOriginMemory = true;
     }
     void Texture2D::PostEditChange(FieldInfo* info)
     {
@@ -123,15 +124,16 @@ namespace pulsar
 #ifdef WITH_EDITOR
         {
             array_list<uint8_t> uncompressedData;
-            if (m_compressedNativeImage)
+            if (m_compressedOriginImage)
             {
-                uncompressedData = gfx::LoadImageFromMemory(m_nativeMemory.data(), m_nativeMemory.size(),
+                uncompressedData = gfx::LoadImageFromMemory(m_originMemory.data(), m_originMemory.size(),
                                                                nullptr, nullptr, nullptr, m_channelCount, m_isSRGB);
             }
             else
             {
-                uncompressedData = m_nativeMemory;
+                uncompressedData = m_originMemory;
             }
+            m_cachedUncompressedRawSize = uncompressedData.size();
 
             auto compressedData = TextureCompressionUtil::Compress(
                 std::move(uncompressedData),
@@ -144,6 +146,8 @@ namespace pulsar
 #else
         data = m_nativeMemory;
 #endif
+
+        m_cachedNativeSize = data.size();
 
         m_isCreatedGPUResource = true;
 

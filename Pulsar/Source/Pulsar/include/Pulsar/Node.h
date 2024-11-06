@@ -52,9 +52,9 @@ namespace pulsar
     class Component;
     class TransformComponent;
 
-    class Node final : public ObjectBase, public ITickable
+    class Node final : public SceneObject, public ITickable
     {
-        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::Node, ObjectBase);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::Node, SceneObject);
         ObjectPtr<Node> self_ref() const { return GetObjectHandle(); }
     public:
         void Serialize(NodeSerializer* s);
@@ -87,6 +87,9 @@ namespace pulsar
 
         void BeginNode(ObjectPtr<Scene> scene);
         void EndNode();
+
+        void BeginPlay();
+        void EndPlay();
 
     public: //components
         template<typename T>
@@ -131,6 +134,7 @@ namespace pulsar
     public:
         ObjectPtr<Scene> GetRuntimeOwnerScene() const { return m_runtimeScene; }
         World* GetRuntimeWorld() const;
+        int64_t GetNodeId() const { return m_nodeId; }
     private:
 
         CORELIB_REFL_DECL_FIELD(m_active);
@@ -145,6 +149,7 @@ namespace pulsar
         ObjectPtr<Scene> m_runtimeScene = nullptr;
 
         ObjectPtr<NodeCollection> m_owner;
+        int64_t m_nodeId = 0;
     };
     DECL_PTR(Node);
 

@@ -1,30 +1,35 @@
 #pragma once
 #include <gfx/GFXApplication.h>
 
+#include <gfx/GFXSurface.h>
 #include "VulkanInclude.h"
+// #define GLFW_INCLUDE_VULKAN
+// #define GLFW_EXPOSE_NATIVE_WIN32
+// #include <glfw/include/GLFW/glfw3.h>
+// #include <glfw/include/GLFW/glfw3native.h>
 
-#define GLFW_INCLUDE_VULKAN
-#define GLFW_EXPOSE_NATIVE_WIN32
-#include <glfw/include/GLFW/glfw3.h>
-#include <glfw/include/GLFW/glfw3native.h>
-
-#include <chrono>
 #include "GFXVulkanCommandBuffer.h"
-#include "GFXVulkanViewport.h"
 #include "GFXVulkanRenderPass.h"
+#include "GFXVulkanViewport.h"
+#include "gfx/GFXTextureView.h"
+#include <chrono>
 
 namespace gfx
 {
+
     class GFXVulkanApplication : public GFXApplication
     {
     public:
-        GFXVulkanApplication(GFXGlobalConfig config)
+        explicit GFXVulkanApplication(GFXGlobalConfig config)
         {
             m_config = config;
         }
-
+        ~GFXVulkanApplication() override = default;
 
     public:
+
+        virtual GFXRenderer* GetRenderer() override;
+
         virtual void Initialize() override;
         virtual void ExecLoop() override;
         virtual void RequestStop() override;
@@ -47,7 +52,7 @@ namespace gfx
             return m_graphicsPipelineManager;
         }
 
-        virtual GFXTexture2D_sp CreateTexture2DFromMemory(
+        virtual GFXTexture_sp CreateTexture2DFromMemory(
             const uint8_t* imageData, size_t length,
             int width, int height,
             GFXTextureFormat format,
@@ -56,13 +61,15 @@ namespace gfx
 
 
         virtual GFXFrameBufferObject_sp CreateFrameBufferObject(
-            const array_list<GFXRenderTarget*>& renderTargets,
+            const array_list<GFXTexture2DView_sp>& renderTargets,
             const GFXRenderPassLayout_sp& renderPassLayout) override;
 
-        virtual GFXRenderPassLayout_sp CreateRenderPassLayout(const std::vector<GFXRenderTarget*>& renderTargets) override;
+        virtual GFXRenderPassLayout_sp CreateRenderPassLayout(const std::vector<GFXTexture2DView*>& renderTargets) override;
 
-        virtual GFXRenderTarget_sp CreateRenderTarget(
-            int32_t width, int32_t height, GFXRenderTargetType type,
+        virtual GFXTexture_sp CreateTextureCube(int32_t size) override;
+
+        virtual GFXTexture_sp CreateRenderTarget(
+            int32_t width, int32_t height, GFXTextureTargetType type,
             GFXTextureFormat format, const GFXSamplerConfig& samplerCfg) override;
 
         virtual GFXDescriptorManager* GetDescriptorManager() override;
@@ -77,7 +84,7 @@ namespace gfx
         virtual GFXExtensions GetExtensionNames() override;
         virtual intptr_t GetWindowHandle() override;
 
-        GLFWwindow* GetWindow() const { return m_window; }
+        GFXSurface* GetWindow() const { return m_window; }
     public:
         const VkDevice& GetVkDevice() const { return m_device; }
         const VkPhysicalDevice& GetVkPhysicalDevice() const { return m_physicalDevice; }
@@ -102,8 +109,6 @@ namespace gfx
         {
             return m_cmdPool;
         }
-    protected:
-        static void FramebufferResizeCallback(GLFWwindow* window, int width, int height);
     private:
         void InitVkInstance();
 
@@ -116,8 +121,8 @@ namespace gfx
 
         static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 
-        GLFWwindow* m_window = nullptr;
-        bool m_framebufferResized = false;
+        GFXSurface* m_window = nullptr;
+        // bool m_framebufferResized = false;
 
         VkInstance m_instance = VK_NULL_HANDLE;
         VkSurfaceKHR m_surface = VK_NULL_HANDLE;
@@ -127,7 +132,7 @@ namespace gfx
         VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
         VkDevice m_device = VK_NULL_HANDLE;
 
-        GFXVulkanViewport* m_viewport;
+        GFXVulkanViewport* m_viewport = nullptr;
 
         GFXRenderPipeline* m_renderPipeline = nullptr;
 
@@ -141,7 +146,7 @@ namespace gfx
 
         GFXGraphicsPipelineManager* m_graphicsPipelineManager = nullptr;
 
-        array_list<char*> m_extensions;
+        array_list<const char*> m_extensions;
         size_t m_count = 0;
 
         bool m_isAppEnding = false;
@@ -155,10 +160,5 @@ namespace gfx
         std::vector<GFXTextureFormat> m_depthFormatCache;
     };
 
-    class IGFXVulkanDevice
-    {
-        GFXVulkanApplication* m_vkapp;
 
-        virtual void OnDeviceDestroy() = 0;
-    };
 }

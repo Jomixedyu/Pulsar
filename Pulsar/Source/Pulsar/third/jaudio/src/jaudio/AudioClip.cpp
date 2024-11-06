@@ -24,14 +24,14 @@ namespace jaudio
         m_buffer = 0;
     }
 
-    void AudioClip::ResetData(AudioClipData&& data)
+    void AudioClip::ResetData(AudioWaveBuffer&& data)
     {
         m_data = std::move(data);
     }
 
-    AudioClipData AudioClipHelper::Load(std::filesystem::path path)
+    AudioWaveBuffer AudioClipHelper::Load(std::filesystem::path path)
     {
-        AudioClipData clip;
+        AudioWaveBuffer clip;
 
         int err;
         auto vorb = stb_vorbis_open_filename("mu.ogg", &err, nullptr);

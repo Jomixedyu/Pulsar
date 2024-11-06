@@ -29,13 +29,15 @@ namespace pulsared
         }
 
         RCPtr<Material> material = cref_cast<Material>(m_assetObject);
-        if (m_shader != material->GetShader())
+        if (material)
         {
-            // m_world->GetResidentScene()
-            //     ->FindNodeByName("PreviewMesh")
-            //     ->GetComponent<StaticMeshRendererComponent>()
-            //     ->SetMaterial()
+            if (m_shader != material->GetShader())
+            {
+                OnShaderChanged(material->GetShader());
+            }
+            m_shader = material->GetShader();
         }
+
         if (PImGui::PropertyGroup("Parameters"))
         {
             if (PImGui::BeginPropertyLines())
@@ -110,24 +112,9 @@ namespace pulsared
         material->CreateGPUResource();
 
         auto previewMesh =m_world->GetResidentScene()->NewNode("PreviewMesh");
-        auto renderer = previewMesh->AddComponent<StaticMeshRendererComponent>();
-        renderer->SetStaticMesh(GetAssetManager()->LoadAsset<StaticMesh>(BuiltinAsset::Shapes_Sphere));
+        m_previewMeshRenderer = previewMesh->AddComponent<StaticMeshRendererComponent>();
+        m_previewMeshRenderer->SetStaticMesh(GetAssetManager()->LoadAsset<StaticMesh>(BuiltinAsset::Shapes_Sphere));
 
-        if (material->GetShader() == nullptr)
-        {
-
-        }
-        else if (material->GetShader()->GetConfig()->RenderingType == ShaderPassRenderingType::PostProcessing)
-        {
-            m_world->GetCurrentCamera()->m_postProcessMaterials->push_back(material);
-            renderer->SetMaterial(0, GetAssetManager()->LoadAsset<Material>(BuiltinAsset::Material_Lambert));
-        }
-        else
-        {
-            renderer->SetMaterial(0, m_assetObject);
-        }
-
-        m_shader = material->GetShader();
     }
     void MaterialEditorWindow::OnClose()
     {
@@ -138,6 +125,32 @@ namespace pulsared
     {
         base::OnRefreshMenuContexts();
         // m_menuBarCtxs->Contexts.push_back();
+    }
+    void MaterialEditorWindow::OnShaderChanged(const RCPtr<Shader>& newShader)
+    {
+        if (newShader == nullptr)
+        {
+            m_world->GetCurrentCamera()->ClearPostProcess();
+            m_previewMeshRenderer->SetMaterial(0, m_assetObject);
+        }
+        else if (newShader->GetConfig()->RenderingType == ShaderPassRenderingType::PostProcessing)
+        {
+            if (m_world->GetCurrentCamera()->GetPostProcessCount() == 0)
+            {
+                m_world->GetCurrentCamera()->AddPostProcess(m_assetObject);
+            }
+            else
+            {
+                m_world->GetCurrentCamera()->SetPostProcess(0, m_assetObject);
+            }
+            m_previewMeshRenderer->SetMaterial(0, GetAssetManager()->LoadAsset<Material>(BuiltinAsset::Material_Lambert));
+        }
+        else
+        {
+            m_world->GetCurrentCamera()->ClearPostProcess();
+            m_previewMeshRenderer->SetMaterial(0, m_assetObject);
+        }
+
     }
 
 } // namespace pulsared

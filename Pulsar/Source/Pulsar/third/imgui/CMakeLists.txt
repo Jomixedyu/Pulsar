@@ -15,10 +15,10 @@ set(_imgui_Sources
         include/imgui/imstb_truetype.h
         include/imgui/imgui_impl_vulkan.h
         src/imgui_impl_vulkan.cpp
-        include/imgui/imgui_impl_glfw.h
-        src/imgui_impl_glfw.cpp
         include/imgui/imgui_impl_win32.h
         src/imgui_impl_win32.cpp
+        include/imgui/imgui_impl_sdl2.h
+        src/imgui_impl_sdl2.cpp
         LICENSE.txt
 )
 include_directories("../glfw/include")
@@ -31,6 +31,8 @@ target_include_directories(${PROJECT_NAME} PRIVATE "./include/imgui")
 include_directories("./include/imgui")
 
 target_include_directories(${PROJECT_NAME} PUBLIC "../glfw/glfw/include")
+target_include_directories(${PROJECT_NAME} PRIVATE "../SDL2lib/SDL/include")
+target_link_libraries(${PROJECT_NAME} PRIVATE SDL2::SDL2-static)
 
 find_package(Vulkan REQUIRED)
 target_include_directories(${PROJECT_NAME} PUBLIC ${Vulkan_INCLUDE_DIRS})

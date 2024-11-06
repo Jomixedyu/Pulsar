@@ -42,15 +42,22 @@ namespace pulsared
         }
         return base::Current();
     }
+
+    EditorWorld* EditorWorld::DuplicateAndBeginPlay()
+    {
+        return {};
+    }
+
+    void EditorWorld::EndPlayAndRestore()
+    {
+    }
+
+
     void EditorWorld::Tick(float dt)
     {
         base::Tick(dt);
     }
-    void EditorWorld::AddGrid3d()
-    {
-        auto grid3d = GetResidentScene()->NewNode("__ReferenceGrid3d", nullptr, OF_NoPack);
-        grid3d->AddComponent<Grid3DComponent>();
-    }
+
     void EditorWorld::AddDirectionalLight()
     {
         auto dlight = GetResidentScene()->NewNode("Directional Light");
@@ -78,7 +85,7 @@ namespace pulsared
         SetTool(nullptr);
     }
 
-    void EditorWorld::OnLoadingResidentScene(ObjectPtr<Scene> scene)
+    void EditorWorld::OnLoadingResidentScene(RCPtr<Scene> scene)
     {
         base::OnLoadingResidentScene(scene);
 
@@ -90,7 +97,7 @@ namespace pulsared
 
         m_cam = camNode->AddComponent<CameraComponent>();
 
-        m_cam->SetProjectionMode(CameraProjectionMode::Perspective);
+        m_cam->SetProjectionMode(CaptureProjectionMode::Perspective);
         m_cam->SetBackgroundColor(Color4f{0.3f, 0.3f, 0.3f, 1.0f});
         m_cam->SetFOV(45.f);
         m_cam->SetNear(0.01f);
@@ -99,19 +106,19 @@ namespace pulsared
         camCtrlNode->AddComponent<StdEditCameraControllerComponent>();
     }
 
-    void EditorWorld::OnUnloadingResidentScene(ObjectPtr<Scene> scene)
+    void EditorWorld::OnUnloadingResidentScene(RCPtr<Scene> scene)
     {
         base::OnUnloadingResidentScene(scene);
         DestroyObject(m_cam->GetRenderTexture());
         m_cam->SetRenderTexture(nullptr);
     }
 
-    void EditorWorld::OnSceneLoading(ObjectPtr<Scene> scene)
+    void EditorWorld::OnSceneLoading(RCPtr<Scene> scene)
     {
         base::OnSceneLoading(scene);
     }
 
-    void EditorWorld::OnSceneUnloading(ObjectPtr<Scene> scene)
+    void EditorWorld::OnSceneUnloading(RCPtr<Scene> scene)
     {
         base::OnSceneUnloading(scene);
     }

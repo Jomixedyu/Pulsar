@@ -1,4 +1,6 @@
-﻿#include <PulsarEd/Windows/WorkspaceWindow.h>
+﻿#include "DragInfo.h"
+
+#include <PulsarEd/Windows/WorkspaceWindow.h>
 
 #include "CoreLib.Platform/FolderWatch.h"
 #include "CoreLib.Platform/System.h"
@@ -115,7 +117,7 @@ namespace pulsared
             return pressed;
         }
 
-        static bool DragFileButton(FileButtonContext* ctx, const char* drag_type, string_view drag_data)
+        static bool DragFileButton(FileButtonContext* ctx, const char* drag_type, void* drag_data, size_t drag_data_size)
         {
             bool b = FileButton(ctx);
             if (drag_type)
@@ -123,7 +125,7 @@ namespace pulsared
                 if (ImGui::BeginDragDropSource())
                 {
                     ImGui::Image(ctx->texture_id, ctx->size, ctx->uv0, ctx->uv1);
-                    ImGui::SetDragDropPayload(drag_type, drag_data.data(), drag_data.size());
+                    ImGui::SetDragDropPayload(drag_type, drag_data, drag_data_size);
                     ImGui::EndDragDropSource();
                 }
             }
@@ -177,22 +179,19 @@ namespace pulsared
             const ImGuiPayload* payload = ImGui::GetDragDropPayload();
             string dragType;
 
-            if(node->IsFolder && !std::strcmp(payload->DataType, "PULSARED_DRAG"))
+            if(node->IsFolder && payload->DataType == ObjectPtrDragInfo::Name)
             {
-                const auto str = string_view(static_cast<char*>(payload->Data), payload->DataSize);
+                const auto dragData = static_cast<ObjectPtrDragInfo*>(payload->Data);
 
-                auto strs = StringUtil::Split(str, ";");
-                auto& intype = strs[0];
-                auto& id = strs[1];
 
-                if (payload = ImGui::AcceptDragDropPayload("PULSARED_DRAG"))
+                if ((payload = ImGui::AcceptDragDropPayload(ObjectPtrDragInfo::Name.data())))
                 {
-                    if (intype == cltypeof<FolderAsset>()->GetName())
+                    if (dragData->Type == cltypeof<FolderAsset>())
                     {
                     }
                     else
                     {
-                        auto assetPath = AssetDatabase::GetPathById(ObjectHandle::parse(id));
+                        auto assetPath = AssetDatabase::GetPathById(dragData->ObjectHandle);
                         auto assetName = AssetDatabase::AssetPathToAssetName(assetPath);
                         auto dstPath = StringUtil::Concat(node->AssetPath, "/", assetName);
                         AssetDatabase::Rename(assetPath, dstPath);
@@ -233,14 +232,9 @@ namespace pulsared
 
         ImGui::Columns(2);
 
-        if (!m_layoutColumnOffset.has_value())
-        {
-            m_layoutColumnOffset = ImGui::GetWindowWidth() * 0.3f;
-        }
-        else
-        {
-            m_layoutColumnOffset = ImGui::GetColumnOffset(1);
-        }
+        auto minTreeWidth = m_winSize.x * 0.15f;
+
+        m_layoutColumnOffset = m_layoutColumnOffset < 150 ? 150 : ImGui::GetColumnOffset(1);
 
         ImGui::SetColumnOffset(1, m_layoutColumnOffset.value());
 
@@ -495,28 +489,23 @@ namespace pulsared
         {
             const ImGuiPayload* payload = ImGui::GetDragDropPayload();
 
-            if (!std::strcmp(payload->DataType, "PULSARED_DRAG"))
+            if (payload->DataType == ObjectPtrDragInfo::Name)
             {
-                const auto str = string_view(static_cast<char*>(payload->Data), payload->DataSize);
-                auto strs = StringUtil::Split(str, ";");
-                auto& inTypeName = strs[0];
-                auto& id = strs[1];
-                auto srcType = AssemblyManager::GlobalFindType(inTypeName);
+                const auto dragData = static_cast<ObjectPtrDragInfo*>(payload->Data);
 
-                if (srcType->IsSubclassOf(cltypeof<AssetObject>()) || srcType == cltypeof<FolderAsset>())
+                if (dragData->Type->IsSubclassOf(cltypeof<AssetObject>()) || dragData->Type == cltypeof<FolderAsset>())
                 {
-                    if (payload = ImGui::AcceptDragDropPayload("PULSARED_DRAG"))
+                    if ((payload = ImGui::AcceptDragDropPayload(ObjectPtrDragInfo::Name.data())))
                     {
-                        if (srcType == cltypeof<FolderAsset>())
+                        if (dragData->Type == cltypeof<FolderAsset>())
                         {
-                            auto srcPath = id;
-                            auto dstPath = currentAssetPath + "/" + AssetDatabase::AssetPathToAssetName(id);
-                            AssetDatabase::Rename(id, dstPath);
+                            auto dstPath = currentAssetPath + "/" + AssetDatabase::AssetPathToAssetName(dragData->AssetPath);
+                            AssetDatabase::Rename(dragData->AssetPath, dstPath);
                             result = true;
                         }
                         else
                         {
-                            auto srcPath = AssetDatabase::GetPathById(ObjectHandle::parse(id));
+                            auto srcPath = AssetDatabase::GetPathById(dragData->ObjectHandle);
                             auto dstPath = currentAssetPath + "/" + AssetDatabase::AssetPathToAssetName(srcPath);
                             AssetDatabase::Rename(srcPath, dstPath);
                             result = true;
@@ -611,7 +600,7 @@ namespace pulsared
 
     void WorkspaceWindow::OnDrawFolderTree()
     {
-        if (ImGui::BeginChild("FolderTree"))
+        if (ImGui::BeginChild("FolderTree", {}, {}, ImGuiWindowFlags_NoCollapse))
         {
             RenderFolderTree(AssetDatabase::FileTree);
         }
@@ -679,6 +668,10 @@ namespace pulsared
 
             Type* assetType = child->GetAssetType();
             gfx::GFXDescriptorSet_wp descSet = AssetDatabase::IconPool->GetDescriptorSet({assetType->GetName()});
+            if (descSet.expired())
+            {
+                descSet = AssetDatabase::IconPool->GetDescriptorSet(cltypeof<ObjectBase>()->GetName());
+            }
             gfx::GFXDescriptorSet_wp dirtySet = AssetDatabase::IconPool->GetDescriptorSet("WorkspaceWindow.Dirty");
 
             const bool isFolder = child->IsFolder;
@@ -688,11 +681,22 @@ namespace pulsared
             const auto iconSize = ImVec2(m_iconSize, m_iconSize);
             ImTextureID iconDesc = reinterpret_cast<void*>(descSet.lock()->GetId());
             ImTextureID dirtyDesc = reinterpret_cast<void*>(dirtySet.lock()->GetId());
-            const auto dragType = "PULSARED_DRAG";
-            const string dragData = StringUtil::Concat(
-                child->GetAssetType()->GetName(),
-                ";",
-                isFolder ? child->AssetPath : child->AssetMeta->Handle.to_string());
+
+            // const string dragData = StringUtil::Concat(
+            //     child->GetAssetType()->GetName(),
+            //     ";",
+            //     isFolder ? child->AssetPath : child->AssetMeta->Handle.to_string());
+
+            ObjectPtrDragInfo dragData;
+            dragData.Type = child->GetAssetType();
+            if (isFolder)
+            {
+                dragData.AssetPath = child->AssetPath;
+            }
+            else
+            {
+                dragData.ObjectHandle = child->AssetMeta->Handle;
+            }
 
             PImGui::FileButtonContext uictx{};
             uictx.str = child->AssetName.c_str();
@@ -706,7 +710,7 @@ namespace pulsared
             uictx.tootip = &_RenderFileToolTips;
             uictx.is_folder = isFolder;
 
-            if (PImGui::DragFileButton(&uictx, dragType, dragData))
+            if (PImGui::DragFileButton(&uictx, ObjectPtrDragInfo::Name.data(), &dragData, sizeof(dragData)))
             {
                 if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
                 {
@@ -748,41 +752,6 @@ namespace pulsared
 
                 }
             }
-            // if (isFolder && ImGui::BeginDragDropTarget())
-            // {
-            //     const ImGuiPayload* payload = ImGui::GetDragDropPayload();
-            //
-            //     if (!std::strcmp(payload->DataType, "PULSARED_DRAG"))
-            //     {
-            //         const auto str = string_view(static_cast<char*>(payload->Data), payload->DataSize);
-            //
-            //         auto strs = StringUtil::Split(str, ";");
-            //         auto& inTypeName = strs[0];
-            //         auto& id = strs[1];
-            //         auto srcType = AssemblyManager::GlobalFindType(inTypeName);
-            //
-            //         if (srcType->IsSubclassOf(cltypeof<AssetObject>()) || srcType == cltypeof<FolderAsset>())
-            //         {
-            //             if (payload = ImGui::AcceptDragDropPayload("PULSARED_DRAG"))
-            //             {
-            //                 if (srcType == cltypeof<FolderAsset>())
-            //                 {
-            //                     auto srcPath = id;
-            //                     auto dstPath = child->AssetPath + "/" + AssetDatabase::AssetPathToAssetName(id);
-            //                     AssetDatabase::Rename(id, dstPath);
-            //                 }
-            //                 else
-            //                 {
-            //                     auto srcPath = AssetDatabase::GetPathById(ObjectHandle::parse(id));
-            //                     auto dstPath = child->AssetPath + "/" + AssetDatabase::AssetPathToAssetName(srcPath);
-            //                     AssetDatabase::Rename(srcPath, dstPath);
-            //                 }
-            //             }
-            //         }
-            //     }
-            //
-            //     ImGui::EndDragDropTarget();
-            // }
 
             ImGui::PopStyleColor();
 

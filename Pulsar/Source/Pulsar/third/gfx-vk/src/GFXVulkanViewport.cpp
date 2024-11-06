@@ -4,8 +4,10 @@
 #include "GFXVulkanViewport.h"
 #include "PhysicalDeviceHelper.h"
 
+#include <SDL_vulkan.h>
 #include <algorithm>
 #include <array>
+#include <memory>
 
 
 #ifdef max
@@ -83,8 +85,8 @@ namespace gfx
             else
             {
                 int width, height;
-                glfwGetFramebufferSize(reinterpret_cast<GLFWwindow*>(app->GetWindowHandle()), &width, &height);
-
+                // glfwGetFramebufferSize(reinterpret_cast<GLFWwindow*>(app->GetWindowHandle()), &width, &height);
+                SDL_Vulkan_GetDrawableSize((SDL_Window*)app->GetWindow()->GetUserPoint(), &width, &height);
                 VkExtent2D actualExtent = {
                     static_cast<uint32_t>(width),
                     static_cast<uint32_t>(height)
@@ -97,7 +99,7 @@ namespace gfx
             }
         }
     }
-    GFXVulkanViewport::GFXVulkanViewport(GFXVulkanApplication* app, GLFWwindow* window)
+    GFXVulkanViewport::GFXVulkanViewport(GFXVulkanApplication* app, GFXSurface* window)
         : m_app(app), m_window(window)
     {
         this->InitSwapChain();
@@ -213,15 +215,19 @@ namespace gfx
 
         //create depth image
         {
-            auto extent = m_swapChainExtent;
+            const auto extent = m_swapChainExtent;
 
-            // expensive ~= 800ms
-            auto depthRtPtr = new GFXVulkanRenderTarget(m_app,
-                extent.width, extent.height,
-                gfx::GFXRenderTargetType::DepthStencil,
-                m_app->GetSupportedDepthFormats()[0], {});
+            GFXTextureCreateInfo info{};
+            info.format = m_app->GetSupportedDepthFormats()[0];
+            info.targetType = GFXTextureTargetType::DepthStencilTarget;
+            info.width = extent.width;
+            info.height = extent.height;
+            info.depth = 1;
+            info.dataType = GFXTextureDataType::Texture2D;
 
-            m_depthRenderTarget = std::unique_ptr<GFXVulkanRenderTarget>(depthRtPtr);
+            auto depthRtPtr = new GFXVulkanTexture(m_app, info);
+
+            m_depthRenderTarget = std::unique_ptr<GFXVulkanTexture>(depthRtPtr);
         }
 
 
@@ -249,24 +255,41 @@ namespace gfx
             {
                 throw std::runtime_error("failed to create image views!");
             }
+            GFXVulkanTextureProxyCreateInfo info{};
+            info.width = extent.width;
+            info.height = extent.height;
+            info.format = m_swapChainImageFormat;
+            info.image = m_swapChainImages[i];
+            info.view = m_swapChainImageViews[i];
+            info.layout = VK_IMAGE_LAYOUT_UNDEFINED;
+            // info.layout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+            info.usage = GFXTextureTargetType::ColorTarget;
+            info.finalTargetLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+            info.dataType = GFXTextureDataType::Texture2D;
 
-            auto texRt = new GFXVulkanRenderTarget(
-                extent.width, extent.height,
-                m_swapChainImages[i],
-                m_swapChainImageViews[i],
-                m_swapChainImageFormat,
-                VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-                gfx::GFXRenderTargetType::Color);
+            auto texRt = new GFXVulkanTexture(m_app, info);
 
-            m_swapRenderTarget.push_back(std::unique_ptr<GFXVulkanRenderTarget>(texRt));
+            m_swapRenderTarget.push_back(std::unique_ptr<GFXVulkanTexture>(texRt));
 
         }
 
-        m_renderPass = std::shared_ptr<GFXVulkanRenderPass>{ new GFXVulkanRenderPass(m_app, { m_swapRenderTarget[0].get(), m_depthRenderTarget.get() }) };
+        std::vector<GFXVulkanTexture2DView*> layoutArray = {
+            dynamic_cast<GFXVulkanTexture2DView*>( m_swapRenderTarget[0]->Get2DView(0).get() ),
+            dynamic_cast<GFXVulkanTexture2DView*>( m_depthRenderTarget->Get2DView(0).get() ),
+        };
+
+        m_renderPass = std::make_shared<GFXVulkanRenderPass>( m_app, layoutArray);
+
+
 
         for (size_t i = 0; i < m_swapChainImages.size(); i++)
         {
-            auto fbo = new GFXVulkanFrameBufferObject(m_app, { m_swapRenderTarget[i].get() , m_depthRenderTarget.get() }, m_renderPass);
+            std::vector rtViews = {
+                m_swapRenderTarget[i]->Get2DView(0),
+                m_depthRenderTarget->Get2DView(0)
+            };
+
+            auto fbo = new GFXVulkanFrameBufferObject(m_app, rtViews, m_renderPass);
             m_framebuffer.push_back(std::unique_ptr<GFXVulkanFrameBufferObject>{fbo});
         }
     }
@@ -289,12 +312,13 @@ namespace gfx
     void GFXVulkanViewport::ReInitSwapChain()
     {
         int width = 0, height = 0;
-        glfwGetFramebufferSize(m_window, &width, &height);
-        while (width == 0 || height == 0)
-        {
-            glfwGetFramebufferSize(m_window, &width, &height);
-            glfwWaitEvents();
-        }
+        // SDL_Vulkan_GetDrawableSize((SDL_Window*)m_app->GetWindow()->GetUserPoint(), &width, &height);
+        //
+        // glfwGetFramebufferSize(m_window, &width, &height);
+        // while (width == 0 || height == 0)
+        // {
+        //     glfwWaitEvents();
+        // }
 
         vkDeviceWaitIdle(m_app->GetVkDevice());
 
@@ -305,7 +329,8 @@ namespace gfx
 
     void GFXVulkanViewport::SetSize(int width, int height)
     {
-        glfwSetWindowSize(m_window, width, height);
+        // glfwSetWindowSize(m_window, width, height);
+
     }
 
     void GFXVulkanViewport::GetSize(int* width, int* height) const

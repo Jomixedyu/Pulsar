@@ -27,8 +27,7 @@ namespace pulsared
         virtual bool IsDirtyAsset() const;
         virtual string GetWindowName() const override;
     public:
-        virtual void OnDrawAssetPropertiesUI(float dt);
-        virtual void OnDrawAssetPreviewUI(float dt);
+        virtual void OnDrawAssetEditor(float dt);
 
         RCPtr<AssetObject> GetAssetObject() const { return m_assetObject; }
         void SetAssetObject(RCPtr<AssetObject> asset) { m_assetObject = asset; }

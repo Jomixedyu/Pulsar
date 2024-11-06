@@ -37,6 +37,8 @@ float4 main(InPixelAssembly v2f) : SV_TARGET0
 #endif
 
 {
+    v2f.WorldNormal = normalize(v2f.WorldNormal);
+    
     //calc user pixel shader
     MaterialAttributes attr = SurfacePixelMain(v2f);
 

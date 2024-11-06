@@ -1,10 +1,11 @@
 #pragma once
-#include <memory>
-#include "GFXShaderPass.h"
 #include "GFXDescriptorSet.h"
 #include "GFXFrameBufferObject.h"
 #include "GFXGraphicsPipeline.h"
 #include "GFXInclude.h"
+#include "GFXShaderPass.h"
+#include "GFXTextureView.h"
+#include <memory>
 
 namespace gfx
 {
@@ -34,16 +35,16 @@ namespace gfx
 
         virtual void CmdDraw(size_t vertexCount) = 0;
         virtual void CmdDrawIndexed(size_t indicesCount) = 0;
-        virtual void CmdClearColor(GFXRenderTarget* rt, float r, float g, float b, float a) = 0;
-        virtual void CmdClearColor(GFXRenderTarget* rt) = 0;
+        virtual void CmdClearColor(GFXTexture* rt, float r, float g, float b, float a) = 0;
+        virtual void CmdClearColor(GFXTexture* rt) = 0;
 
         virtual void CmdBeginFrameBuffer() = 0;
         virtual void CmdEndFrameBuffer() = 0;
         virtual void CmdSetViewport(float x, float y, float width, float height) = 0;
         virtual void CmdSetCullMode(GFXCullMode mode) = 0;
-        virtual void CmdBlit(GFXTexture* src, GFXTexture* dest) = 0;
+        virtual void CmdBlit(GFXTextureView* src, GFXTextureView* dest) = 0;
 
-        virtual void CmdImageTransitionBarrier(GFXRenderTarget* rt, GFXResourceLayout layout) = 0;
+        virtual void CmdImageTransitionBarrier(GFXTextureView* rt, GFXResourceLayout layout) = 0;
     public:
         virtual GFXApplication* GetApplication() const = 0;
 

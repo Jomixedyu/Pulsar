@@ -1,4 +1,6 @@
 #include "Components/CameraComponent.h"
+
+#include "AssetManager.h"
 #include "Logger.h"
 #include "Scene.h"
 #include <Pulsar/AppInstance.h>
@@ -8,71 +10,21 @@
 
 namespace pulsar
 {
-    struct CBuffer_Target
-    {
-        Matrix4f MatrixV;
-        Matrix4f InvMatrixV;
-        Matrix4f MatrixP;
-        Matrix4f InvMatrixP;
-        Matrix4f MatrixVP;
-        Matrix4f InvMatrixVP;
-        Vector4f CamPosition;
-        float CamNear;
-        float CamFar;
-        Vector2f Resolution;
-        Vector4f _Padding1;
-        Vector4f _Padding2;
-        Matrix4f _Padding3;
-    };
 
-    static_assert(sizeof(CBuffer_Target) == 512);
+    CameraComponent::CameraComponent() = default;
+    CameraComponent::~CameraComponent() = default;
 
-    CameraComponent::CameraComponent()
-    {
-        m_renderingPath = RenderingPathMode::Deferred;
-        init_sptr_member(m_postProcessMaterials);
-    }
-    CameraComponent::~CameraComponent()
-    {
 
-    }
     void CameraComponent::Render()
     {
     }
 
-    Matrix4f CameraComponent::GetViewMat() const
-    {
-        return GetNode()->GetTransform()->GetWorldToLocalMatrix();
-    }
 
-    Matrix4f CameraComponent::GetProjectionMat() const
+    void CameraComponent::Render(array_list<RenderCapturePassInfo*>& passes)
     {
-        const Vector2f& size = this->m_renderTarget->GetSize2df();
-        Matrix4f ret{1};
-        if (this->m_projectionMode == CameraProjectionMode::Perspective)
-        {
-            math::Perspective_LHZO(ret,
-                                   math::Radians(this->m_fov),
-                                   size.x / size.y,
-                                   this->m_near,
-                                   this->m_far);
-        }
-        else
-        {
-            math::Ortho_LHZO(ret,
-                             -size.x / 2 * m_orthoSize / 100,
-                             size.x / 2 * m_orthoSize / 100,
-                             -size.y / 2 * m_orthoSize / 100,
-                             size.y / 2 * m_orthoSize / 100,
-                             this->m_near,
-                             this->m_far);
-        }
-        return ret;
-    }
+        base::Render(passes);
 
-    Matrix4f CameraComponent::GetInvViewProjectionMat() const
-    {
-        return Inverse(GetViewMat()) * Inverse(GetProjectionMat());
+
     }
 
     void CameraComponent::PostEditChange(FieldInfo* info)
@@ -89,8 +41,20 @@ namespace pulsar
             auto height = GetRenderTexture()->GetHeight();
             ResizeManagedRenderTexture(width, height);
         }
+        else if(name == NAMEOF(m_postProcessMaterials))
+        {
+            for (auto& item : *m_postProcessMaterials)
+            {
+                TryLoadAssetRCPtr(item);
+                if (item)
+                {
+                    item->CreateGPUResource();
+                }
+            }
+        }
         UpdateCBuffer();
     }
+
     void CameraComponent::ResizeManagedRenderTexture(int width, int height)
     {
         if (!m_beginning)
@@ -107,15 +71,43 @@ namespace pulsar
 
         auto rtname = GetNode()->GetName() + "_CamRT";
 
-        int renderTargetCount = 1;
+        array_list<RenderTargetInfo> formats;
+
         if (m_renderingPath == RenderingPathMode::Deferred)
         {
-            renderTargetCount = 5;
+            // GBUFFER_0: Albedo(rgb), genericAO(a)
+            formats.push_back({ gfx::GFXTextureTargetType::ColorTarget, gfx::GFXTextureFormat::R8G8B8A8_UNorm});
+            // GBUFFER_1: WorldNormal(rgb), ShadingModel(a)
+            formats.push_back({ gfx::GFXTextureTargetType::ColorTarget, gfx::GFXTextureFormat::R8G8B8A8_UNorm});
+            // GBUFFER_2: M/R(rg), Specular(b), _(a)
+            formats.push_back({ gfx::GFXTextureTargetType::ColorTarget, gfx::GFXTextureFormat::R8G8B8A8_UNorm});
+            // GBUFFER_3: WorldTangent(rgb), Aniso(a)
+            formats.push_back({ gfx::GFXTextureTargetType::ColorTarget, gfx::GFXTextureFormat::R8G8B8A8_UNorm});
+            // GBUFFER_4: ShadowColor(rgb), NdotL(a)
+            formats.push_back({ gfx::GFXTextureTargetType::ColorTarget, gfx::GFXTextureFormat::R8G8B8A8_UNorm});
         }
-        m_renderTarget = RenderTexture::StaticCreate(index_string{rtname}, width, height, renderTargetCount, true);
+        else if (m_renderingPath == RenderingPathMode::Forward)
+        {
+            assert((false, "not impl"));
+        }
+        else
+        {
+            assert((false, "not impl"));
+        }
+        formats.push_back({
+            .TargetType = gfx::GFXTextureTargetType::DepthStencilTarget, .Format = gfx::GFXTextureFormat::D32_SFloat_S8_UInt});
 
-        m_postprocessRtA = RenderTexture::StaticCreate(index_string{rtname}, width, height, 1, false);
-        m_postprocessRtB = RenderTexture::StaticCreate(index_string{rtname}, width, height, 1, false);
+        m_renderTarget = RenderTexture::StaticCreate(index_string{rtname}, width, height, formats);
+
+
+        array_list<RenderTargetInfo> ppTargetInfo;
+        ppTargetInfo.push_back({gfx::GFXTextureTargetType::ColorTarget, gfx::GFXTextureFormat::R16G16B16A16_SFloat});
+        m_postprocessRtA = RenderTexture::StaticCreate(index_string{rtname}, width, height, ppTargetInfo);
+        m_postprocessRtB = RenderTexture::StaticCreate(index_string{rtname}, width, height, ppTargetInfo);
+
+        array_list<RenderTargetInfo> sceneTargetInfo;
+        sceneTargetInfo.push_back({gfx::GFXTextureTargetType::ColorTarget, gfx::GFXTextureFormat::R16G16B16A16_SFloat});
+        m_sceneColor = RenderTexture::StaticCreate(index_string{rtname}, width, height, ppTargetInfo);
 
         gfx::GFXDescriptorSetLayoutInfo ppDescLayouts[2]{
             {gfx::GFXDescriptorType::CombinedImageSampler,
@@ -139,82 +131,15 @@ namespace pulsar
 
 
     }
-    void CameraComponent::OnTransformChanged()
-    {
-        base::OnTransformChanged();
-        UpdateCBuffer();
-    }
-    void CameraComponent::OnTick(Ticker ticker)
-    {
-        base::OnTick(ticker);
-    }
-    void CameraComponent::SetFOV(float value)
-    {
-        m_fov = value;
-        UpdateCBuffer();
-    }
-    void CameraComponent::SetNear(float value)
-    {
-        m_near = value;
-        UpdateCBuffer();
-    }
-    void CameraComponent::SetFar(float value)
-    {
-        m_far = value;
-        UpdateCBuffer();
-    }
-    void CameraComponent::SetBackgroundColor(const Color4f& value)
-    {
-        m_backgroundColor = value;
-        UpdateRTBackgroundColor();
-        UpdateCBuffer();
-    }
-    void CameraComponent::SetProjectionMode(CameraProjectionMode mode)
-    {
-        m_projectionMode = mode;
-        UpdateCBuffer();
-    }
 
-    void CameraComponent::UpdateRTBackgroundColor()
-    {
-        if (!m_renderTarget)
-        {
-            return;
-        }
-        auto rt0 = m_renderTarget->GetGfxRenderTarget0().get();
-        rt0->ClearColor[0] = m_backgroundColor.r;
-        rt0->ClearColor[1] = m_backgroundColor.g;
-        rt0->ClearColor[2] = m_backgroundColor.b;
-        rt0->ClearColor[3] = m_backgroundColor.a;
-    }
+
+
+
+
 
     void CameraComponent::UpdateRT()
     {
         UpdateRTBackgroundColor();
-    }
-
-    void CameraComponent::UpdateCBuffer()
-    {
-        m_debugViewMat = GetViewMat();
-
-        CBuffer_Target target{};
-        target.MatrixV = GetViewMat();
-        target.MatrixP = GetProjectionMat();
-        target.MatrixVP = target.MatrixP * target.MatrixV;
-
-        target.InvMatrixV = jmath::Inverse(target.MatrixV);
-        target.InvMatrixP = jmath::Inverse(target.MatrixP);
-        target.InvMatrixVP = jmath::Inverse(target.MatrixVP);
-        target.CamPosition = GetNode()->GetTransform()->GetWorldPosition();
-        target.CamNear = m_near;
-        target.CamFar = m_far;
-        target.Resolution = m_renderTarget->GetSize2df();
-        m_cameraDataBuffer->Fill(&target);
-    }
-
-    void CameraComponent::AddPostProcess(RCPtr<Material> material)
-    {
-        m_postProcessMaterials->push_back(material);
     }
 
     void CameraComponent::SetRenderTexture(const RCPtr<RenderTexture>& value, bool managed)
@@ -242,11 +167,6 @@ namespace pulsar
         BeginRT();
     }
 
-    void CameraComponent::SetOrthoSize(float value)
-    {
-        m_orthoSize = value;
-        UpdateCBuffer();
-    }
 
 
     Ray CameraComponent::ScreenPointToRay(Vector2f mousePosition) const
@@ -281,39 +201,10 @@ namespace pulsar
             UpdateCBuffer();
         }
     }
-    void CameraComponent::MarkDirtyMatrix()
-    {
-
-    }
-
-    static gfx::GFXDescriptorSetLayout_wp _CameraDescriptorLayout;
 
     void CameraComponent::BeginComponent()
     {
         base::BeginComponent();
-
-        if (_CameraDescriptorLayout.expired())
-        {
-            gfx::GFXDescriptorSetLayoutInfo info
-            {
-                gfx::GFXDescriptorType::ConstantBuffer,
-                gfx::GFXShaderStageFlags::VertexFragment,
-                0,
-                kRenderingDescriptorSpace_Camera
-            };
-            m_camDescriptorLayout = Application::GetGfxApp()->CreateDescriptorSetLayout(&info, 1);
-            _CameraDescriptorLayout = m_camDescriptorLayout;
-        }
-        else
-        {
-            m_camDescriptorLayout = _CameraDescriptorLayout.lock();
-        }
-
-        m_cameraDataBuffer = Application::GetGfxApp()->CreateBuffer(gfx::GFXBufferUsage::ConstantBuffer, sizeof(CBuffer_Target));
-        m_cameraDescriptorSet = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_camDescriptorLayout);
-        m_cameraDescriptorSet->AddDescriptor("Target", 0)->SetConstantBuffer(m_cameraDataBuffer.get());
-        m_cameraDescriptorSet->Submit();
-
 
         if (!m_renderTarget)
         {

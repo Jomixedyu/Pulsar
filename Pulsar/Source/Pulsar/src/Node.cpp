@@ -88,6 +88,7 @@ namespace pulsar
         {
             BeginComponent(comp);
         }
+        m_nodeId = GetRuntimeWorld()->AllocElementId(GetObjectHandle());
     }
     void Node::OnInactive()
     {
@@ -95,6 +96,8 @@ namespace pulsar
         {
             EndComponent(comp);
         }
+        GetRuntimeWorld()->FreeElementId(m_nodeId);
+        m_nodeId = 0;
     }
 
     void Node::OnParentActiveChanged()
@@ -161,8 +164,8 @@ namespace pulsar
         {
             OnActive();
         }
-
     }
+
     void Node::EndNode()
     {
         if (GetIsActive())
@@ -170,6 +173,26 @@ namespace pulsar
             OnInactive();
         }
         m_runtimeScene = nullptr;
+    }
+    void Node::BeginPlay()
+    {
+        for (auto& comp : *this->m_components)
+        {
+            if (comp)
+            {
+                comp->BeginPlay();
+            }
+        }
+    }
+    void Node::EndPlay()
+    {
+        for (auto& comp : *this->m_components)
+        {
+            if (comp)
+            {
+                comp->EndPlay();
+            }
+        }
     }
 
     ObjectPtr<Component> Node::AddComponent(Type* type)
@@ -180,7 +203,7 @@ namespace pulsar
 
         // init
         component->m_ownerNode = self_ref();
-        component->m_masterComponent = self_ref();
+        component->m_ownerNodePtr = this;
 
         bool isTransform = type->IsSubclassOf(cltypeof<TransformComponent>());
         if (!m_components->empty() && isTransform)

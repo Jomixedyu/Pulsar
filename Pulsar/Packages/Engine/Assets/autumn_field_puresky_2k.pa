@@ -1,0 +1,10 @@
+{
+    "ChannelCount": 3,
+    "CompressedFormat": "HDR_Compressed",
+    "IsCompressedNativeData": true,
+    "IsSRGB": true,
+    "Size": {
+        "x": 2048,
+        "y": 1024
+    }
+}

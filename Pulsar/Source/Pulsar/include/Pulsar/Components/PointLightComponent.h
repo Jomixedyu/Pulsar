@@ -7,6 +7,7 @@ namespace pulsar
     class PointLightComponent : public LightComponent
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::PointLightComponent, LightComponent);
+        CORELIB_CLASS_ATTR(new CategoryAttribute("Light"));
     public:
         void BeginComponent() override;
         void EndComponent() override;

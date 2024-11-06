@@ -412,7 +412,7 @@ namespace pulsar
                 auto tex = paramValue->AsTexture();
                 TryLoadAssetRCPtr(tex);
                 tex->CreateGPUResource();
-                m_descriptorSet->Find(name.to_string())->SetTextureSampler2D(tex->GetGFXTexture().get());
+                m_descriptorSet->Find(name.to_string())->SetTextureSampler2D(tex->GetGFXTexture()->Get2DView().get());
                 break;
             }
             default:

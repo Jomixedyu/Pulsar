@@ -19,12 +19,14 @@ namespace pulsared
         static void PopPreviewWorld();
         static World* GetPreviewWorld();
 
+        static EditorWorld* DuplicateAndBeginPlay();
+        static void EndPlayAndRestore();
+
     public:
         using World::World;
 
         virtual void Tick(float dt) override;
 
-        void AddGrid3d();
         void AddDirectionalLight();
         virtual CameraComponent_ref GetCurrentCamera() override;
         bool IsSelectedNode(const ObjectPtr<Node>& node) const override;
@@ -32,10 +34,10 @@ namespace pulsared
         virtual void OnWorldBegin() override;
         virtual void OnWorldEnd() override;
     protected:
-        virtual void OnLoadingResidentScene(ObjectPtr<Scene> scene) override;
-        virtual void OnUnloadingResidentScene(ObjectPtr<Scene> scene) override;
-        virtual void OnSceneLoading(ObjectPtr<Scene> scene) override;
-        virtual void OnSceneUnloading(ObjectPtr<Scene> scene) override;
+        virtual void OnLoadingResidentScene(RCPtr<Scene> scene) override;
+        virtual void OnUnloadingResidentScene(RCPtr<Scene> scene) override;
+        virtual void OnSceneLoading(RCPtr<Scene> scene) override;
+        virtual void OnSceneUnloading(RCPtr<Scene> scene) override;
         virtual const char* GetWorldTypeName() const { return StaticWorldTypeName(); }
         static const char* StaticWorldTypeName() { return "EditorWorld"; }
     public:

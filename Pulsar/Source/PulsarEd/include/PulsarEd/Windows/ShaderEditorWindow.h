@@ -8,7 +8,7 @@ namespace pulsared
     class ShaderEditorWindow : public AssetPreviewEditorWindow
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::ShaderEditorWindow, AssetPreviewEditorWindow);
-        DEFINE_ASSET_EDITOR(Shader);
+        DEFINE_ASSET_EDITOR(Shader, false);
     public:
         virtual string_view GetWindowDisplayName() const { return "Shader Editor"; }
 

@@ -34,6 +34,9 @@ namespace pulsar
         void DrawLine(const StaticMeshVertex& a, const StaticMeshVertex& b);
 
         GizmoContext Context;
+
+        inline static constexpr Color4f DefaultSelectedLineColor {0.3f, 1.f, 0.3f} ;
+        inline static constexpr Color4f DefaultLineColor {0, 0.1f, 0.4f};
     };
 
     class Component;

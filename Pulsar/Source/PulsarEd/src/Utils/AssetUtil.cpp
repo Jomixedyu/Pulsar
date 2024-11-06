@@ -18,7 +18,7 @@ namespace pulsared
             return;
         }
 
-        auto windowType = AssetEditorManager::GetValue(asset->GetType());
+        auto windowType = EditorAssetManager::GetValue(asset->GetType());
         if (!windowType)
             return;
         

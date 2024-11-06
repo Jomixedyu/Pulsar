@@ -31,7 +31,7 @@ namespace pulsared
             if (node->HasObjectFlags(OF_NoPack))
             {
                 is_editor_node = true;
-                ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Text, ImVec4(0.2, 0.8, 0.8, 1));
+                ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Text, ImVec4(0.2f, 0.8f, 0.8f, 1.f));
             }
             string name = node->GetName();
             if (is_editor_node)
@@ -84,6 +84,21 @@ namespace pulsared
             {
                 _Show(world, currentScene->GetRootNodes());
                 ImGui::TreePop();
+            }
+        }
+        if (ImGui::IsWindowFocused())
+        {
+            if (ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_Delete, false))
+            {
+                auto selection = world->GetSelection().GetSelection();
+
+                for (auto& item : selection)
+                {
+                    if (item)
+                    {
+                        item->GetRuntimeOwnerScene()->RemoveNode(item);
+                    }
+                }
             }
         }
 

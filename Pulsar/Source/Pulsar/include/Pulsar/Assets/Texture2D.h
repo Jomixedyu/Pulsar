@@ -3,7 +3,7 @@
 #include "Texture.h"
 #include <Pulsar/IGPUResource.h>
 #include <Pulsar/AssetObject.h>
-#include <gfx/GFXTexture2D.h>
+#include <gfx/GFXTexture.h>
 
 
 namespace pulsar
@@ -63,26 +63,31 @@ namespace pulsar
         void DestroyGPUResource() override;
         bool IsCreatedGPUResource() const override;
 
-        std::shared_ptr<gfx::GFXTexture2D> GetGFXTexture() const { return m_tex; }
+        std::shared_ptr<gfx::GFXTexture> GetGFXTexture() const { return m_tex; }
 
     public:
         bool IsSRGB() const { return m_isSRGB; }
         void SetIsSRGB(bool value) { m_isSRGB = value; }
         auto GetCompressedFormat() const { return m_compressionFormat; }
+        size_t GetOriginCompressedBinarySize() const { return m_originMemory.size(); }
+        size_t GetRawBinarySize() const { return m_cachedUncompressedRawSize; }
+        size_t GetNativeBinarySize() const { return m_cachedNativeSize; }
     protected:
 
         CORELIB_REFL_DECL_FIELD(m_isSRGB);
         bool m_isSRGB;
 
-        array_list<uint8_t> m_nativeMemory;
-        bool m_compressedNativeImage = false;
-        bool m_loadedNativeMemory = false;
+        array_list<uint8_t> m_originMemory;
+        bool m_compressedOriginImage = false;
+        bool m_loadedOriginMemory = false;
+        size_t m_cachedUncompressedRawSize{};
+        size_t m_cachedNativeSize{};
 
         gfx::GFXSamplerConfig m_samplerConfig{};
         bool m_enableReadWrite{};
         gfx::GFXTextureFormat m_format{};
 
-        std::shared_ptr<gfx::GFXTexture2D> m_tex;
+        std::shared_ptr<gfx::GFXTexture> m_tex;
         bool m_init = false;
 
         bool m_isCreatedGPUResource = false;

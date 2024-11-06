@@ -28,9 +28,33 @@ namespace pulsared
     }
     void AssetPreviewEditorWindow::OnDrawAssetPreviewUI(float dt)
     {
-        base::OnDrawAssetPreviewUI(dt);
         m_world->Tick(dt);
         m_viewportFrame.Render(dt);
+    }
+    void AssetPreviewEditorWindow::OnDrawAssetEditor(float dt)
+    {
+        base::OnDrawAssetEditor(dt);
+
+        if (!m_assetObject)
+        {
+            ImGui::Text("no asset");
+            return;
+        }
+        ImGui::Columns(2);
+        if (ImGui::BeginChild("#Preview"))
+        {
+            OnDrawAssetPreviewUI(dt);
+        }
+        ImGui::EndChild();
+
+        ImGui::NextColumn();
+        if (ImGui::BeginChild("Properties"))
+        {
+            OnDrawAssetPropertiesUI(dt);
+        }
+        ImGui::EndChild();
+
+        ImGui::Columns(1);
     }
 
     void AssetPreviewEditorWindow::OnOpen()

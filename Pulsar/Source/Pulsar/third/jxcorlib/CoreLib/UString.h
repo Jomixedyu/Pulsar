@@ -9,12 +9,14 @@
 #ifndef _CORELIB_STRING_H
 #define _CORELIB_STRING_H
 
-#include <vector>
+#include <algorithm>
+#include <cstdint>
+#include <cstring>
+#include <functional>
+#include <ranges>
 #include <string>
 #include <string_view>
-#include <cstring>
-#include <cstdint>
-#include <functional>
+#include <vector>
 
 //Encoding: UTF-8
 
@@ -168,6 +170,28 @@ namespace jxcorlib
             str.reserve(size + 1);
             Append(str, std::forward<T>(args)...);
             return str;
+        }
+
+        template <std::ranges::input_range _Rng> requires
+        requires (_Rng&& r) { *std::begin(r) == string_view(); }
+        string GetUniqueName(string_view name, _Rng&& list)
+        {
+            int max = 0;
+            string newName = string{name};
+
+            bool exists = false;
+            do
+            {
+                if (std::ranges::contains(list, newName))
+                {
+                    exists = true;
+                    ++max;
+                    newName = Concat(name, " (", std::to_string(max), ")");
+                    continue;
+                }
+                exists = false;
+            } while (exists);
+            return newName;
         }
 
         void strcpy(char* dest, size_t size, string_view source);

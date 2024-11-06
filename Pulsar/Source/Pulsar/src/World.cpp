@@ -1,7 +1,12 @@
 #include "World.h"
 #include "Application.h"
+
 #include <Pulsar/Logger.h>
 #include <Pulsar/Scene.h>
+
+#include "Physics2D/PhysicsWorld2D.h"
+#include "Subsystems/Subsystem.h"
+#include "Subsystems/WorldSubsystem.h"
 
 namespace pulsar
 {
@@ -51,7 +56,62 @@ namespace pulsar
         gWorlds.erase(this);
     }
 
+    void World::OnDuplicated(World* target)
+    {
+        target->m_name = m_name + "_copy";
+        for (auto& scene : m_scenes)
+        {
+            target->m_scenes.push_back(scene->InstantiateAsset());
+        }
+    }
 
+    void World::BeginPlay()
+    {
+        if (m_isPlaying)
+            return;
+        m_isPlaying = true;
+        for (auto& scene : m_scenes)
+        {
+            if (scene)
+            {
+                scene->BeginPlay();
+            }
+        }
+
+        BeginSimulate();
+    }
+
+    void World::EndPlay()
+    {
+        if (!m_isPlaying)
+            return;
+        m_isPlaying = false;
+        for (auto& scene : m_scenes)
+        {
+            if (scene)
+            {
+                scene->EndPlay();
+            }
+        }
+        EndSimulate();
+    }
+
+    void World::BeginSimulate()
+    {
+        for (auto& simulate : m_simulateManager.GetSimulates())
+        {
+            simulate->BeginSimulate();
+        }
+        physicsWorld2D->BeginSimulate();
+    }
+    void World::EndSimulate()
+    {
+        for (auto& simulate : m_simulateManager.GetSimulates())
+        {
+            simulate->EndSimulate();
+        }
+        physicsWorld2D->EndSimulate();
+    }
 
     void World::Tick(float dt)
     {
@@ -62,26 +122,67 @@ namespace pulsar
 
         m_gizmosManager.Draw();
 
-        for (auto& scene : m_scenes)
+        if (m_isPlaying)
         {
-            if (scene)
+            for (auto& scene : m_scenes)
             {
-                scene->Tick(m_ticker);
+                if (scene)
+                {
+                    scene->Tick(m_ticker);
+                }
             }
+            physicsWorld2D->Tick(dt);
         }
     }
 
+    ObjectPtr<Node> World::FindNodeByName(string_view name, bool includeInactive) const
+    {
+        for (auto& scene : m_scenes)
+        {
+            if (auto node = scene->FindNodeByName(name))
+            {
+                return node;
+            }
+        }
+        return {};
+    }
+    WorldSubsystem* World::GetSubsystem(Type* type) const
+    {
+        for (auto& subsystem : m_subsystems)
+        {
+            if (subsystem->GetType() == type)
+            {
+                return subsystem.get();
+            }
+        }
+        return {};
+    }
+    int64_t World::AllocElementId(guid_t obj)
+    {
+        static int64_t i = 0;
+        ++i;
+        m_elementIdMap[i] = obj;
+        return i;
+    }
+    void World::FreeElementId(int64_t id)
+    {
+        m_elementIdMap.erase(id);
+    }
+    guid_t World::FindElementId(int64_t id)
+    {
+        return m_elementIdMap[id];
+    }
 
     ObjectPtr<CameraComponent> World::GetCurrentCamera()
     {
         return GetCameraManager().GetMainCamera();
     }
-    void World::SetFocusScene(ObjectPtr<Scene> scene)
+    void World::SetFocusScene(RCPtr<Scene> scene)
     {
         m_focusScene = scene;
     }
 
-    void World::ChangeScene(ObjectPtr<Scene> scene, bool clearResidentScene)
+    void World::ChangeScene(RCPtr<Scene> scene, bool clearResidentScene)
     {
         if (clearResidentScene)
         {
@@ -95,13 +196,14 @@ namespace pulsar
         LoadScene(scene);
     }
 
-    void World::LoadScene(ObjectPtr<Scene> scene)
+    void World::LoadScene(RCPtr<Scene> scene)
     {
         m_scenes.push_back(scene);
         this->OnSceneLoading(scene);
         scene->BeginScene(this);
     }
-    void World::UnloadScene(ObjectPtr<Scene> scene)
+
+    void World::UnloadScene(RCPtr<Scene> scene)
     {
         const auto it = std::ranges::find(m_scenes, scene);
         if (it == m_scenes.end())
@@ -114,7 +216,7 @@ namespace pulsar
         }
         else
         {
-            if (m_focusScene == scene)
+            if (m_focusScene.Handle == scene.Handle)
             {
                 m_focusScene = GetResidentScene();
             }
@@ -133,6 +235,7 @@ namespace pulsar
         LoadScene(scene);
         OnLoadingResidentScene(scene);
     }
+
     void World::UnloadAllScene(bool unloadResidentScene)
     {
         auto scenes = m_scenes;
@@ -143,10 +246,10 @@ namespace pulsar
         }
     }
 
-    void World::OnLoadingResidentScene(ObjectPtr<Scene> scene)
+    void World::OnLoadingResidentScene(RCPtr<Scene> scene)
     {
     }
-    void World::OnUnloadingResidentScene(ObjectPtr<Scene> scene)
+    void World::OnUnloadingResidentScene(RCPtr<Scene> scene)
     {
     }
     void World::UpdateWorldCBuffer()
@@ -174,7 +277,7 @@ namespace pulsar
         m_worldDescriptorBuffer->Fill(&buffer);
     }
 
-    void World::AddRenderObject(const rendering::RenderObject_sp renderObject)
+    void World::AddRenderObject(const rendering::RenderObject_sp& renderObject)
     {
         renderObject->OnCreateResource();
         m_renderObjects.insert(renderObject);
@@ -211,27 +314,55 @@ namespace pulsar
         m_worldDescriptors = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_worldDescriptorLayout);
         m_worldDescriptors->AddDescriptor("World", 0)->SetConstantBuffer(m_worldDescriptorBuffer.get());
         m_worldDescriptors->Submit();
+
+        physicsWorld2D = new PhysicsWorld2D();
+
+        for (auto& item : SubsystemManager::GetAllSubsystems())
+        {
+            if (item->IsSubclassOf(cltypeof<WorldSubsystem>()))
+            {
+                auto subsystem = sptr_cast<WorldSubsystem>(item->CreateSharedInstance({}));
+                assert(subsystem);
+
+                subsystem->m_world = this;
+                subsystem->OnInitializing();
+                m_subsystems.push_back(subsystem);
+            }
+        }
+        for (auto& subsystem : m_subsystems)
+        {
+            subsystem->OnInitialized();
+        }
     }
 
     void World::OnWorldEnd()
     {
-        UnloadAllScene();
-        for (size_t i = 0; i < m_deferredDestroyedQueue.size(); i++)
+        for (auto& subsystem : m_subsystems)
         {
-            DestroyObject(m_deferredDestroyedQueue[i]);
+            subsystem->OnTerminate();
+        }
+        m_subsystems.clear();
+
+        UnloadAllScene();
+        for (const auto& i : m_deferredDestroyedQueue)
+        {
+            DestroyObject(i);
         }
         m_deferredDestroyedQueue.clear();
 
         m_worldDescriptorLayout.reset();
         m_worldDescriptorBuffer.reset();
         m_worldDescriptors.reset();
+
+        delete physicsWorld2D;
+        physicsWorld2D = nullptr;
     }
 
-    void World::OnSceneLoading(ObjectPtr<Scene> scene)
+    void World::OnSceneLoading(RCPtr<Scene> scene)
     {
     }
 
-    void World::OnSceneUnloading(ObjectPtr<Scene> scene)
+    void World::OnSceneUnloading(RCPtr<Scene> scene)
     {
     }
 

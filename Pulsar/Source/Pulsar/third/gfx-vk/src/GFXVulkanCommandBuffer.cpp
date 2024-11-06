@@ -31,11 +31,10 @@ namespace gfx
 
     void GFXVulkanCommandBuffer::CmdEndFrameBuffer()
     {
-        for (auto rt : m_fbo->GetRenderTargets())
+        for (auto& rt : m_fbo->GetRenderTargets())
         {
-            auto vkrt = static_cast<GFXVulkanRenderTarget*>(rt);
-
-            vkrt->m_imageLayout = vkrt->m_imageFinalLayout;
+            auto vkrt = dynamic_cast<GFXVulkanTexture2DView*>(rt.get());
+            vkrt->GetVkTexture()->SetImageLayout(vkrt->GetVkTexture()->GetVkTargetFinalLayout());
         }
         vkCmdEndRenderPass(m_cmdBuffer);
     }
@@ -69,20 +68,20 @@ namespace gfx
         vkCmdSetCullMode(m_cmdBuffer, (VkCullModeFlags)mode);
     }
 
-    void GFXVulkanCommandBuffer::CmdBlit(GFXTexture* src, GFXTexture* dest)
+    void GFXVulkanCommandBuffer::CmdBlit(GFXTextureView* src, GFXTextureView* dest)
     {
-        auto _src = static_cast<GFXVulkanRenderTarget*>(src);
-        auto _dest = static_cast<GFXVulkanRenderTarget*>(dest);
+        auto _src = static_cast<GFXVulkanTexture2DView*>(src);
+        auto _dest = static_cast<GFXVulkanTexture2DView*>(dest);
 
-        _src->CmdLayoutTransition(m_cmdBuffer, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-        _dest->CmdLayoutTransition(m_cmdBuffer, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        _src->GetVkTexture()->TransitionLayout(m_cmdBuffer, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+        _dest->GetVkTexture()->TransitionLayout(m_cmdBuffer, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
         VkBlitImageInfo2 info{};
         info.sType = VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2;
         info.srcImage = _src->GetVkImage();
-        info.srcImageLayout = _src->GetVkImageLayout();
+        info.srcImageLayout = _src->GetVkTexture()->GetVkImageLayout();
         info.dstImage = _dest->GetVkImage();
-        info.dstImageLayout = _dest->GetVkImageLayout();
+        info.dstImageLayout = _dest->GetVkTexture()->GetVkImageLayout();
         info.regionCount = 1;
 
         VkImageBlit2 regions{};
@@ -104,11 +103,11 @@ namespace gfx
         vkCmdBlitImage2(m_cmdBuffer, &info);
     }
 
-    void GFXVulkanCommandBuffer::CmdImageTransitionBarrier(GFXRenderTarget* rt, GFXResourceLayout layout)
+    void GFXVulkanCommandBuffer::CmdImageTransitionBarrier(GFXTextureView* rt, GFXResourceLayout layout)
     {
-        auto vkrt = static_cast<GFXVulkanRenderTarget*>(rt);
+        auto vkrt = static_cast<GFXVulkanTexture2DView*>(rt);
         VkImageLayout newLayout{};
-        if (rt->GetRenderTargetType() == GFXRenderTargetType::Color)
+        if (rt->GetTargetType() == GFXTextureTargetType::ColorTarget)
         {
             switch (layout)
             {
@@ -118,9 +117,11 @@ namespace gfx
             case GFXResourceLayout::ShaderReadOnly:
                 newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
                 break;
+            default:
+                assert(false);
             }
         }
-        else
+        else if (rt->GetTargetType() == GFXTextureTargetType::DepthStencilTarget)
         {
             switch (layout)
             {
@@ -130,10 +131,30 @@ namespace gfx
             case GFXResourceLayout::ShaderReadOnly:
                 newLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
                 break;
+            default:
+                assert(false);
             }
         }
+        else if (rt->GetTargetType() == GFXTextureTargetType::DepthTarget)
+        {
+            switch (layout)
+            {
+            case GFXResourceLayout::RenderTarget:
+                newLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+                break;
+            case GFXResourceLayout::ShaderReadOnly:
+                newLayout = VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL;
+                break;
+            default:
+                assert(false);
+            }
+        }
+        else
+        {
+            assert(false);
+        }
 
-        vkrt->CmdLayoutTransition(m_cmdBuffer, newLayout);
+        vkrt->GetVkTexture()->TransitionLayout(m_cmdBuffer, newLayout);
     }
 
     GFXApplication* GFXVulkanCommandBuffer::GetApplication() const
@@ -230,17 +251,17 @@ namespace gfx
         vkCmdDraw(m_cmdBuffer, vertexCount, 1, 0, 0);
     }
 
-    void GFXVulkanCommandBuffer::CmdClearColor(GFXRenderTarget* _rt, float r, float g, float b, float a)
+    void GFXVulkanCommandBuffer::CmdClearColor(GFXTexture* _rt, float r, float g, float b, float a)
     {
-        auto rt = static_cast<GFXVulkanRenderTarget*>(_rt);
+        auto rtv = dynamic_cast<GFXVulkanTexture*>(_rt);
 
-        auto type = rt->GetRenderTargetType();
-        auto image = rt->GetVkImage();
+        auto type = rtv->GetTargetType();
+        auto image = rtv->GetVkImage();
         VkImageLayout clearLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 
         switch (type)
         {
-        case gfx::GFXRenderTargetType::Color:
+        case gfx::GFXTextureTargetType::ColorTarget:
         {
             VkClearColorValue color{ r,g,b,a };
             VkImageSubresourceRange srRange{};
@@ -248,26 +269,26 @@ namespace gfx
             srRange.baseMipLevel = 0;
             srRange.levelCount = 1;
             srRange.baseArrayLayer = 0;
-            srRange.layerCount = 1;
+            srRange.layerCount = rtv->GetArrayCount();
 
-            auto oldlayout = rt->GetVkImageLayout();
-            rt->CmdLayoutTransition(m_cmdBuffer, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+            auto oldlayout = rtv->GetVkImageLayout();
+            rtv->TransitionLayout(m_cmdBuffer, clearLayout);
             vkCmdClearColorImage(m_cmdBuffer, image, clearLayout, &color, 1, &srRange);
             if (oldlayout == VK_IMAGE_LAYOUT_UNDEFINED)
             {
-                rt->CmdLayoutTransition(m_cmdBuffer, rt->GetVkImageFinalLayout());
+                rtv->TransitionLayout(m_cmdBuffer, rtv->GetVkTargetFinalLayout());
             }
             else
             {
-                rt->CmdLayoutTransition(m_cmdBuffer, oldlayout);
+                rtv->TransitionLayout(m_cmdBuffer, oldlayout);
             }
 
             break;
         }
-        case gfx::GFXRenderTargetType::DepthStencil:
-        case gfx::GFXRenderTargetType::Depth:
+        case gfx::GFXTextureTargetType::DepthTarget:
+        case gfx::GFXTextureTargetType::DepthStencilTarget:
         {
-            VkImageAspectFlagBits aspectMask = (VkImageAspectFlagBits)rt->GetAspectFlags();
+            auto aspectMask = rtv->GetVkAspectFlags();
             {
                 VkImageMemoryBarrier barrier{};
                 barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -280,7 +301,7 @@ namespace gfx
                 barrier.subresourceRange.baseMipLevel = 0;
                 barrier.subresourceRange.levelCount = 1;
                 barrier.subresourceRange.baseArrayLayer = 0;
-                barrier.subresourceRange.layerCount = 1;
+                barrier.subresourceRange.layerCount = rtv->GetArrayCount();
 
                 vkCmdPipelineBarrier(
                     m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -296,7 +317,7 @@ namespace gfx
             srRange2.baseMipLevel = 0;
             srRange2.levelCount = 1;
             srRange2.baseArrayLayer = 0;
-            srRange2.layerCount = 1;
+            srRange2.layerCount = rtv->GetArrayCount();
 
             vkCmdClearDepthStencilImage(
                 m_cmdBuffer, image,
@@ -329,9 +350,10 @@ namespace gfx
         }
 
     }
-    void GFXVulkanCommandBuffer::CmdClearColor(GFXRenderTarget* rt)
+    void GFXVulkanCommandBuffer::CmdClearColor(GFXTexture* rt)
     {
-        CmdClearColor(rt, rt->ClearColor[0], rt->ClearColor[1], rt->ClearColor[2], rt->ClearColor[3]);
+        auto color = rt->TargetClearColor;
+        CmdClearColor(rt, color[0], color[1], color[2], color[3]);
     }
 
     void GFXVulkanCommandBuffer::CmdBeginFrameBuffer()

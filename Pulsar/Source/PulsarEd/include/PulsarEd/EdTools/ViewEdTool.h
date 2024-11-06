@@ -31,12 +31,13 @@ namespace pulsared
         virtual void OnMouseDown(const MouseEventData& e);
         virtual void OnMouseUp(const MouseEventData& e);
         virtual void OnDragUpdate(const MouseEventData& e);
+
+        void GetViewportSize(Vector2f& pos, Vector2f& size) const;
     public:
         bool m_altPressed{};
         bool m_leftMousePressed{};
         bool m_middleMousePressed{};
         bool m_rightMousePressed{};
-        bool m_enabledRotate{true};
         Vector2f m_latestMousePos{};
         float m_scaleSpeed = 0.1f;
     };

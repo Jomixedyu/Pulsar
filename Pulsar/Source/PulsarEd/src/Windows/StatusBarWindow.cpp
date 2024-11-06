@@ -48,7 +48,7 @@ namespace pulsared
 
     void StatusBarWindow::OnDrawImGui(float dt)
     {
-        ImGui::PushStyleColor(ImGuiCol_MenuBarBg, { 0.08, 0.08, 0.08, 1 });
+        ImGui::PushStyleColor(ImGuiCol_MenuBarBg, { 0.08f, 0.08f, 0.08f, 1.f });
         if (BeginMainStatusBar())
         {
             if (EditorLogRecorder::loglist.size() != 0)

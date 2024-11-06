@@ -6,7 +6,7 @@
 namespace pulsared
 {
 
-    Scene_ref PrefabUtil::NewSceneFromPrefab(RCPtr<Prefab> prefab)
+    RCPtr<Scene> PrefabUtil::NewSceneFromPrefab(RCPtr<Prefab> prefab)
     {
         auto scene = Scene::StaticCreate(prefab->GetName());
         //scene->CopyFrom(prefab);
@@ -18,9 +18,8 @@ namespace pulsared
     {
         auto world = new EditorWorld(prefab->GetName());
         EditorWorld::PushPreviewWorld(std::unique_ptr<EditorWorld>{world});
-        world->AddGrid3d();
         world->AddDirectionalLight();
-        world->GetCurrentCamera()->SetBackgroundColor({0.17, 0.22,0.4});
+        world->GetCurrentCamera()->SetBackgroundColor({0.17f, 0.22f,0.4f});
 
         auto scene = NewSceneFromPrefab(prefab);
         world->LoadScene(scene);

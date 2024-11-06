@@ -4,16 +4,12 @@
 #include <memory>
 #include "GFXVulkanCommandBuffer.h"
 
-#define GLFW_INCLUDE_VULKAN
-#define GLFW_EXPOSE_NATIVE_WIN32
-#include <glfw/include/GLFW/glfw3.h>
-#include <glfw/include/GLFW/glfw3native.h>
-
-#include <gfx/GFXViewport.h>
 #include "GFXVulkanFrameBufferObject.h"
-#include "GFXVulkanTexture2D.h"
 #include "GFXVulkanQueue.h"
 #include "GFXVulkanRenderPass.h"
+#include "GFXVulkanTexture.h"
+#include <gfx/GFXViewport.h>
+#include <gfx/GFXSurface.h>
 
 namespace gfx
 {
@@ -24,7 +20,7 @@ namespace gfx
 
     public:
 
-        GFXVulkanViewport(GFXVulkanApplication* app, GLFWwindow* window);
+        GFXVulkanViewport(GFXVulkanApplication* app, GFXSurface* window);
         virtual ~GFXVulkanViewport() override;
 
         void InitSwapChain();
@@ -62,9 +58,9 @@ namespace gfx
 
         std::vector< std::unique_ptr<GFXVulkanQueue> > m_queues;
 
-        std::vector<std::unique_ptr<GFXVulkanRenderTarget>> m_swapRenderTarget;
+        std::vector<std::unique_ptr<GFXVulkanTexture>> m_swapRenderTarget;
 
-        std::unique_ptr<GFXVulkanRenderTarget> m_depthRenderTarget = nullptr;
+        std::unique_ptr<GFXVulkanTexture> m_depthRenderTarget = nullptr;
 
         std::shared_ptr<GFXVulkanRenderPass> m_renderPass;
 
@@ -76,6 +72,6 @@ namespace gfx
         int32_t m_currentFrame = 0;
 
         GFXVulkanApplication* m_app;
-        GLFWwindow* m_window = nullptr;
+        GFXSurface* m_window = nullptr;
     };
 }

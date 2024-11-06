@@ -1,0 +1,17 @@
+{
+  "CullMode": "Back",
+  "DepthTestEnable": false,
+  "DepthWriteEnable": false,
+  "DepthCompareOp": "Less",
+  "StencilTestEnable": false,
+  "RenderingType": "PostProcessing",
+  "ConstantProperties": [
+  ],
+  "Properties" : [
+    {
+      "Name": "_Image",
+      "Type": "TextureCube",
+      "Value": "WHITE"
+    }
+  ]
+}

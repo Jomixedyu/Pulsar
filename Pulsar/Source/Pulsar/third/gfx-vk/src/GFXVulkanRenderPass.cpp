@@ -5,25 +5,25 @@
 
 namespace gfx
 {
-    static VkImageLayout _GetRefLayout(GFXRenderTargetType type)
+    static VkImageLayout _GetRefLayout(GFXTextureTargetType type)
     {
-        switch (type)
+        if (type == GFXTextureTargetType::DepthTarget)
         {
-        case gfx::GFXRenderTargetType::Color:
-            return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-            break;
-        case gfx::GFXRenderTargetType::DepthStencil:
-        case gfx::GFXRenderTargetType::Depth:
-            return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-            break;
-        default:
-            assert(false);
-            break;
+            return VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
         }
+        if (type == GFXTextureTargetType::DepthStencilTarget)
+        {
+            return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        }
+        if (type == GFXTextureTargetType::ColorTarget)
+        {
+            return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        }
+        assert(false);
         return {};
     }
 
-    GFXVulkanRenderPass::GFXVulkanRenderPass(GFXVulkanApplication* app, const std::vector<GFXVulkanRenderTarget*>& createFromlayout)
+    GFXVulkanRenderPass::GFXVulkanRenderPass(GFXVulkanApplication* app, const std::vector<GFXVulkanTexture2DView*>& createFromlayout)
         : m_app(app)
     {
         std::vector<VkAttachmentDescription> attachmentDesc;
@@ -33,7 +33,7 @@ namespace gfx
         for (size_t i = 0; i < createFromlayout.size(); i++)
         {
             auto& rt = createFromlayout[i];
-            auto imageFormat = rt->GetVkFormat();
+            auto imageFormat = rt->GetVkTexture()->GetVkImageFormat();
 
             VkAttachmentDescription attachment{};
             {
@@ -45,23 +45,23 @@ namespace gfx
                 attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
                 attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
                 attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-                attachment.finalLayout = rt->GetVkImageFinalLayout();
+                attachment.finalLayout = rt->GetVkTexture()->GetVkTargetFinalLayout();
             }
 
             VkAttachmentReference ref{};
             ref.attachment = static_cast<uint32_t>(i);
-            ref.layout = _GetRefLayout(rt->GetRenderTargetType());
+            ref.layout = _GetRefLayout(rt->GetTargetType());
 
             attachmentDesc.push_back(attachment);
 
-            auto rtType = rt->GetRenderTargetType();
+            auto rtType = rt->GetTargetType();
 
-            if (rtType == GFXRenderTargetType::Color)
+            if (rtType == GFXTextureTargetType::ColorTarget)
             {
                 colorAttachmentRef.push_back(ref);
             }
-            if (HasFlag(rtType, GFXRenderTargetType::Depth) ||
-                HasFlag(rtType, GFXRenderTargetType::Stencil))
+            if (rtType == GFXTextureTargetType::DepthTarget ||
+                rtType == GFXTextureTargetType::DepthStencilTarget)
             {
                 depthAttachmentRef.push_back(ref);
             }

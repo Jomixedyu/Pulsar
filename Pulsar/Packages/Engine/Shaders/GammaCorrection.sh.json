@@ -1,6 +1,6 @@
 {
   "$schema": "ShaderSchema.json",
-  "CullMode": "None",
+  "CullMode": "Back",
   "DepthTestEnable": true,
   "DepthWriteEnable": true,
   "DepthCompareOp": "Less",

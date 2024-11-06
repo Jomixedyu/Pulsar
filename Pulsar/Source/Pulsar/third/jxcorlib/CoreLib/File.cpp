@@ -13,7 +13,7 @@ namespace jxcorlib
     namespace FileUtil
     {
         using namespace std;
-        std::string ReadAllText(std::filesystem::path path)
+        std::string ReadAllText(const std::filesystem::path& path)
         {
             std::ifstream ifs;
             std::stringstream ss;
@@ -25,7 +25,7 @@ namespace jxcorlib
             ifs.close();
             return ss.str();
         }
-        void WriteAllText(std::filesystem::path path, std::string_view content)
+        void WriteAllText(const std::filesystem::path& path, std::string_view content)
         {
             auto folder = path.parent_path();
             if (!exists(folder))
@@ -37,7 +37,7 @@ namespace jxcorlib
             outfile << content;
             outfile.close();
         }
-        std::vector<uint8_t> ReadAllBytes(std::filesystem::path path)
+        std::vector<uint8_t> ReadAllBytes(const std::filesystem::path& path)
         {
             std::vector<unsigned char> data;
             auto a = path.u8string();
@@ -53,7 +53,7 @@ namespace jxcorlib
             file.close();
             return data;
         }
-        void WriteAllBytes(std::filesystem::path path, char* data, size_t len)
+        void WriteAllBytes(const std::filesystem::path& path, char* data, size_t len)
         {
             ofstream outfile(path, ios::ate | ios::out | ios::binary);
             outfile.write((char*)data, len);

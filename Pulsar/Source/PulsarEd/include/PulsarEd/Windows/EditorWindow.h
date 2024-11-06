@@ -9,7 +9,7 @@ namespace pulsared
         CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::EditorWindow, Object);
 
     public:
-        virtual string_view GetWindowDisplayName() const { return "EditorWindow"; }
+        virtual string_view GetWindowDisplayName() const { return m_windowDisplayName; }
         virtual string GetWindowName() const { return GetType()->GetName(); }
 
         virtual void DrawImGui(float dt);
@@ -31,6 +31,7 @@ namespace pulsared
         bool m_isOpened = false;
         bool m_allowResize;
         Vector2f m_winSize;
+        string m_windowDisplayName = "EditorWindow";
     private:
         int32_t m_windowId;
     };

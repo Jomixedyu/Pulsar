@@ -55,9 +55,9 @@ namespace pulsar
 
         m_runtimeWorld = nullptr;
     }
+
     void Scene::Tick(Ticker ticker)
     {
-        return;
         for (auto& node : *GetNodes())
         {
             if (node && node->GetIsActive())
@@ -66,13 +66,38 @@ namespace pulsar
             }
         }
     }
+    void Scene::BeginPlay()
+    {
+        for (auto& node : *GetNodes())
+        {
+            if (node && node->GetIsActive())
+            {
+                node->BeginPlay();
+            }
+        }
+    }
+    void Scene::EndPlay()
+    {
+        for (auto& node : *GetNodes())
+        {
+            if (node && node->GetIsActive())
+            {
+                node->EndPlay();
+            }
+        }
+    }
+    void Scene::Serialize(AssetSerializer* s)
+    {
+        base::Serialize(s);
+
+    }
 
     Scene::Scene()
     {
 
     }
 
-    ObjectPtr<Scene> Scene::StaticCreate(string_view name)
+    RCPtr<Scene> Scene::StaticCreate(string_view name)
     {
         auto self = mksptr(new Scene);
         self->Construct();
@@ -111,10 +136,10 @@ namespace pulsar
 
         for (auto& addedNode : addedNodes)
         {
-            auto finded = newOldMapping.find(addedNode);
-            if (finded != newOldMapping.end())
+            auto found = newOldMapping.find(addedNode);
+            if (found != newOldMapping.end())
             {
-                auto oldNode = finded->second;
+                auto oldNode = found->second;
                 for (size_t i = 0; i < oldNode->GetComponentCount(); ++i)
                 {
                     auto oldComponent = oldNode->GetAllComponentArray()[i];

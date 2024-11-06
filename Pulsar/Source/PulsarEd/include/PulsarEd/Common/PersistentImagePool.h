@@ -17,7 +17,7 @@ namespace pulsared
 
     private:
         std::unordered_map<index_string, gfx::GFXDescriptorSet_sp> m_cacheDescSets;
-        std::unordered_map<index_string, gfx::GFXTexture2D_sp> m_textures;
+        std::unordered_map<index_string, gfx::GFXTexture_sp> m_textures;
         gfx::GFXDescriptorSetLayout_sp m_descriptorLayout;
         gfx::GFXApplication* m_app;
     };

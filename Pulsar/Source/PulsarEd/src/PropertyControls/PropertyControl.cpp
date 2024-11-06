@@ -131,6 +131,23 @@ namespace pulsared
                         isChanged |= _ObjectFieldPropertyLine(std::to_string(i), itemType, innerType,
                                                               list->At(i).get(), receiver, receiverField, false, showDebug);
                     }
+                    ImGui::SameLine();
+                    if (ImGui::Button(ICON_FK_ARROW_UP) && i != 0)
+                    {
+                        auto temp = list->At(i);
+                        list->SetAt(i, list->At(i - 1));
+                        list->SetAt(i - 1, temp);
+                        isChanged |= true;
+                    }
+                    ImGui::SameLine();
+                    if (ImGui::Button(ICON_FK_ARROW_DOWN) && i != list->GetCount() - 1)
+                    {
+                        auto temp = list->At(i);
+                        list->SetAt(i, list->At(i + 1));
+                        list->SetAt(i + 1, temp);
+                        isChanged |= true;
+                    }
+
                     ImGui::PopID();
                 }
                 ImGui::TreePop();

@@ -8,7 +8,7 @@
 
 namespace jaudio
 {
-    struct AudioClipData
+    struct AudioWaveBuffer
     {
         std::vector<uint8_t> Data;
         int SampleRate;
@@ -18,7 +18,7 @@ namespace jaudio
     class JAUDIO_API AudioClip : public IAudioResource
     {
     public:
-        virtual void ResetData(AudioClipData&& data);
+        virtual void ResetData(AudioWaveBuffer&& data);
 
         virtual bool IsCreatedAudioResource() const override;
         virtual void CreateAudioResource() override;
@@ -30,7 +30,7 @@ namespace jaudio
         size_t m_sampleCount;
         bool m_createdResource;
         uint32_t m_buffer;
-        AudioClipData m_data;
+        AudioWaveBuffer m_data;
     };
 
 
@@ -38,6 +38,6 @@ namespace jaudio
     class JAUDIO_API AudioClipHelper
     {
     public:
-        static AudioClipData Load(std::filesystem::path path);
+        static AudioWaveBuffer Load(std::filesystem::path path);
     };
 };

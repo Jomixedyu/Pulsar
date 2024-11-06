@@ -1,8 +1,8 @@
 # Pulsar Engine
 
-![](doc/main.png)
-![](doc/mat.png)
-
+![](doc/shed.png)
+![](doc/ui.png)
+![](doc/ui2.png)
 
 ## 编译环境
 - FBXSDK
@@ -10,17 +10,23 @@
 - 最新版VS与MSVC（C++23）
 - CMAKE
 
+
 ## thirdparty
+
 Engine:
 - vulkan
-- glfw
+- SDL2
 - openAL
 - dear-imgui (docking)
-- NVIDIA physX
+- box2d
+- jolt
+- stbimage
+- DirectXTex
+- astc-encoder
 
 Editor:
 - glslang
 - spirv-cross
 - fbxsdk
 - assimp
-- stbimage
+

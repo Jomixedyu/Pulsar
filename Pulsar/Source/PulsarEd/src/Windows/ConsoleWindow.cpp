@@ -22,7 +22,7 @@ namespace pulsared
             static const char* log_levels[] = { "All", "Info", "Warning", "Error" };
             if (ImGui::BeginCombo("Log Level", log_levels[this->m_logLevelFilter]))
             {
-                for (size_t i = 0; i < 4; i++)
+                for (int32_t i = 0; i < 4; i++)
                 {
                     bool selected = this->m_logLevelFilter == i;
                     if (ImGui::Selectable(log_levels[i], selected))
@@ -56,7 +56,7 @@ namespace pulsared
 
         if (ImGui::BeginListBox("##console", ImVec2(-FLT_MIN, -FLT_MIN)))
         {
-            for (int32_t i = loglist.size() - 1; i >= 0; --i)
+            for (int32_t i = (int32_t)loglist.size() - 1; i >= 0; --i)
             {
                 constexpr int kAllLevel = 0;
                 if (this->m_logLevelFilter != kAllLevel && this->m_logLevelFilter != (int32_t)loglist[i].level)
@@ -68,17 +68,17 @@ namespace pulsared
                 bool modify_color = false;
                 if (loglist[i].level == LogLevel::Info)
                 {
-                    ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Text, ImVec4{ 0.9,0.9,0.9,1 });
+                    ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Text, ImVec4{ 0.9f, 0.9f,0.9f,1.f });
                     modify_color = true;
                 }
                 else if (loglist[i].level == LogLevel::Warning)
                 {
-                    ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Text, ImVec4{ 1,1,0.3,1 });
+                    ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Text, ImVec4{ 1.f, 1.f, 0.3f, 1.f });
                     modify_color = true;
                 }
                 else if (loglist[i].level == LogLevel::Error)
                 {
-                    ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Text, ImVec4{ 1,0.2,0.2,1 });
+                    ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Text, ImVec4{ 1.f,0.2f,0.2f,1.f });
                     modify_color = true;
                 }
 

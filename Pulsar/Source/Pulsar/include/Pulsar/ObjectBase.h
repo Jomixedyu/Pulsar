@@ -81,7 +81,7 @@ namespace pulsar
         void         SetName(string_view name) noexcept;
         ObjectFlags  GetObjectFlags() const noexcept { return m_flags; }
         bool         HasObjectFlags(ObjectFlags flags) const noexcept { return m_flags & flags;}
-        void         SetObjectFlags(uint16_t flags) noexcept { m_flags = flags; }
+        void         SetObjectFlags(ObjectFlags flags) noexcept { m_flags = flags; }
         bool         IsPersistentObject() const noexcept { return m_flags & OF_Persistent; }
 
         virtual void OnDependencyMessage(ObjectHandle inDependency, DependencyObjectState msg);

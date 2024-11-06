@@ -39,16 +39,8 @@ namespace jxcorlib
             (*defs)->push_back({m_name, value_});
         }
     }
-    bool Enum::StaticTryParse(Type* type, string_view name, uint32_t* out_value)
+    bool Enum::StaticTryParse(Type* type, const string& name, uint32_t* out_value)
     {
-        for (const auto& [_name, _value] : *type->GetEnumDefinitions())
-        {
-            if (_name == name)
-            {
-                *out_value = _value;
-                return true;
-            }
-        }
-        return false;
+        return type->GetEnumAccessors()->GetIndex(name, out_value);
     }
 } // namespace jxcorlib

@@ -1,11 +1,8 @@
 #pragma once
-#include <gfx/GFXRenderTarget.h>
-#include "VulkanInclude.h"
-#include "GFXVulkanTexture2D.h"
-#include <cassert>
 #include "GFXVulkanRenderPass.h"
+#include "GFXVulkanTexture.h"
+#include "VulkanInclude.h"
 #include <gfx/GFXFrameBufferObject.h>
-#include "GFXVulkanRenderTarget.h"
 
 namespace gfx
 {
@@ -19,7 +16,7 @@ namespace gfx
 		* render target view
 		*/
 		GFXVulkanFrameBufferObject(GFXVulkanApplication* app, 
-			const std::vector<GFXRenderTarget*>& renderTargets, 
+			const std::vector<GFXTexture2DView_sp>& renderTargets,
 			const std::shared_ptr<GFXVulkanRenderPass>& renderPass);
 
 		GFXVulkanFrameBufferObject(const GFXVulkanFrameBufferObject&) = delete;
@@ -34,7 +31,7 @@ namespace gfx
 		//VkImageView GetVkDepthImageView() const { return m_depthTex ? m_depthTex->GetVkImageView() : VK_NULL_HANDLE; }
 
 		VkFramebuffer GetVkFrameBuffer() const { return m_frameBuffer; }
-		virtual const array_list<GFXRenderTarget*>& GetRenderTargets() const override { return m_renderTargets; }
+		virtual const array_list<GFXTexture2DView_sp>& GetRenderTargets() const override { return m_renderTargets; }
 
 		VkExtent2D GetVkExtent() const { return { (uint32_t)m_width, (uint32_t)m_height }; }
 
@@ -53,7 +50,7 @@ namespace gfx
 		std::shared_ptr<GFXVulkanRenderPass> m_renderPass;
 		VkFramebuffer m_frameBuffer = VK_NULL_HANDLE;
 
-		std::vector<GFXRenderTarget*> m_renderTargets;
+		std::vector<GFXTexture2DView_sp> m_renderTargets;
 
 		GFXVulkanApplication* m_app;
 

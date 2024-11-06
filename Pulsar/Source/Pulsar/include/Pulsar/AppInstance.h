@@ -2,10 +2,9 @@
 #include <CoreLib/Events.hpp>
 #include <Pulsar/ObjectBase.h>
 #include <Pulsar/World.h>
-#include "Subsystem.h"
 #include <Pulsar/Rendering/Pipelines/Pipeline.h>
 #include <gfx/GFXApplication.h>
-
+#include <uinput/InputManager.h>
 
 namespace pulsar
 {
@@ -30,11 +29,8 @@ namespace pulsar
 
         virtual array_list<gfx::GFXApi> GetSupportedApis();
 
-        jxcorlib::Action<> QuittingEvents;
-        jxcorlib::Function<bool> RequestQuitEvents;
-
-        virtual Subsystem* GetSubsystemByType(Type* type);
-        virtual array_list<Subsystem*> GetSubsystemsByType(Type* type, bool include = true);
+        Action<> QuittingEvents;
+        Function<bool> RequestQuitEvents;
 
         template<typename T>
         SPtr<T> GetSubsystem()
@@ -43,6 +39,7 @@ namespace pulsar
         }
 
         virtual AssetManager* GetAssetManager() = 0;
+        std::shared_ptr<uinput::InputManager> GetInputManager() const { return m_inputManager; }
 
         virtual void OnPreInitialize(gfx::GFXGlobalConfig* cfg) = 0;
         virtual void OnInitialized() = 0;
@@ -52,9 +49,8 @@ namespace pulsar
         virtual bool IsQuit() = 0;
 
         Action<float> OnRenderTick;
-    protected:
-        array_list<Subsystem_sp> subsystems;
-    protected:
 
+    protected:
+        std::shared_ptr<uinput::InputManager> m_inputManager;
     };
 }

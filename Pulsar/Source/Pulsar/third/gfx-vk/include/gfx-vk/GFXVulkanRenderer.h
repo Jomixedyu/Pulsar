@@ -2,15 +2,15 @@
 #include "VulkanInclude.h"
 #include <vector>
 #include <gfx/GFXCommandBuffer.h>
-#include <gfx/GFXRenderTarget.h>
 #include "GFXVulkanFrameBufferObject.h"
 #include "GFXVulkanRenderContext.h"
+#include <gfx/GFXRenderer.h>
 
 namespace gfx
 {
     class GFXVulkanApplication;
 
-    class GFXVulkanRenderer
+    class GFXVulkanRenderer : public GFXRenderer
     {
     public:
         GFXVulkanRenderer(GFXVulkanApplication* app);
@@ -18,7 +18,8 @@ namespace gfx
     public:
         void Render(float deltaTime);
 
-    protected:
+        void WaitExecuteRender(const std::function<void(GFXRenderContext*)>& func) override;
+
     protected:
         GFXVulkanApplication* m_app;
 

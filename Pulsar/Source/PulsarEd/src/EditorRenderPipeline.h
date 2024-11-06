@@ -36,7 +36,7 @@ namespace pulsared
             cmd.SetFrameBuffer(backbuffer);
             for (auto& rt : backbuffer->GetRenderTargets())
             {
-                cmd.CmdClearColor(rt, 0.0, 0.0, 0.0, 1);
+                cmd.CmdClearColor(rt->GetTexture(), 0.0, 0.0, 0.0, 1);
             }
             cmd.CmdBeginFrameBuffer();
             cmd.CmdSetViewport(0, 0, (float)backbuffer->GetWidth(), (float)backbuffer->GetHeight());

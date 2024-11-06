@@ -8,7 +8,7 @@ namespace pulsared
     class StaticMeshEditorWindow : public AssetPreviewEditorWindow
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::StaticMeshEditorWindow, AssetPreviewEditorWindow);
-        DEFINE_ASSET_EDITOR(StaticMesh);
+        DEFINE_ASSET_EDITOR(StaticMesh, false);
     public:
         virtual string_view GetWindowDisplayName() const override { return "StaticMesh Editor"; }
     protected:

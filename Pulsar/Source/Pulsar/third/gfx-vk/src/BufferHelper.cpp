@@ -1,7 +1,7 @@
 #include "GFXVulkanCommandBufferPool.h"
 #include <gfx-vk/BufferHelper.h>
 #include <gfx-vk/GFXVulkanCommandBuffer.h>
-
+#include <cassert>
 #include <stdexcept>
 
 namespace gfx
@@ -94,63 +94,21 @@ namespace gfx
         vkFreeMemory(app->GetVkDevice(), mem, nullptr);
     }
 
-    void BufferHelper::CreateImage(GFXVulkanApplication* app, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory)
-    {
-        VkImageCreateInfo imageInfo{};
-        imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-        imageInfo.imageType = VK_IMAGE_TYPE_2D;
-        imageInfo.extent.width = width;
-        imageInfo.extent.height = height;
-        imageInfo.extent.depth = 1;
-        imageInfo.mipLevels = 1;
-        imageInfo.arrayLayers = 1;
-        imageInfo.format = format;
-        imageInfo.tiling = tiling;
-        imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        imageInfo.usage = usage;
-        imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-        imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-        if (vkCreateImage(app->GetVkDevice(), &imageInfo, nullptr, &image) != VK_SUCCESS)
-        {
-            throw std::runtime_error("failed to create image!");
-        }
-
-        VkMemoryRequirements memRequirements;
-        vkGetImageMemoryRequirements(app->GetVkDevice(), image, &memRequirements);
-
-        VkMemoryAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-        allocInfo.allocationSize = memRequirements.size;
-        allocInfo.memoryTypeIndex = gfx::BufferHelper::FindMemoryType(app, memRequirements.memoryTypeBits, properties);
-
-        if (vkAllocateMemory(app->GetVkDevice(), &allocInfo, nullptr, &imageMemory) != VK_SUCCESS)
-        {
-            throw std::runtime_error("failed to allocate image memory!");
-        }
-
-        vkBindImageMemory(app->GetVkDevice(), image, imageMemory, 0);
-    }
 
     static VkCommandBuffer _GetVkCommandBuffer(const gfx::GFXVulkanCommandBufferScope& scope)
     {
         return static_cast<gfx::GFXVulkanCommandBuffer*>(scope.operator->())->GetVkCommandBuffer();
     }
-
-    void BufferHelper::TransitionImageLayout(GFXVulkanApplication* app, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
-    {
-        GFXVulkanCommandBufferScope commandBuffer(app);
-        TransitionImageLayout(_GetVkCommandBuffer(commandBuffer), image, format, oldLayout, newLayout);
-    }
-
     static bool _HasStencilComponent(VkFormat format)
     {
         return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
     }
 
-    void BufferHelper::TransitionImageLayout(
-        VkCommandBuffer cmd, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
+    void BufferHelper::TransitionImageLayout(GFXVulkanApplication* app,
+        VkImage image, VkFormat format, VkImageAspectFlags aspect
+        , VkImageLayout oldLayout, VkImageLayout newLayout)
     {
+        GFXVulkanCommandBufferScope commandBuffer(app);
 
         VkImageMemoryBarrier barrier{};
         barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -161,11 +119,50 @@ namespace gfx
         barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         barrier.image = image;
 
+        barrier.subresourceRange.aspectMask = aspect;
+        barrier.subresourceRange.baseMipLevel = 0;
+        barrier.subresourceRange.levelCount = 1;
+        barrier.subresourceRange.baseArrayLayer = 0;
+        barrier.subresourceRange.layerCount = 1;
+
+        VkPipelineStageFlags sourceStage = GetStageFlagsForLayout(oldLayout);
+        VkPipelineStageFlags destinationStage = GetStageFlagsForLayout(newLayout);
+        barrier.srcAccessMask = GetAccessMaskForLayout(oldLayout);
+        barrier.dstAccessMask = GetAccessMaskForLayout(newLayout);
+
+        vkCmdPipelineBarrier(
+            _GetVkCommandBuffer(commandBuffer),
+            sourceStage, destinationStage,
+            0,
+            0, nullptr,
+            0, nullptr,
+            1, &barrier);
+
+    }
+
+
+
+    void BufferHelper::TransitionImageLayout(
+        VkCommandBuffer cmd, GFXVulkanTexture* tex, VkImageLayout newLayout)
+    {
+        VkImageLayout oldLayout = tex->GetVkImageLayout();
+
+        VkImageMemoryBarrier barrier{};
+        barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        barrier.oldLayout = tex->GetVkImageLayout();
+        barrier.newLayout = newLayout;
+
+        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.image = tex->GetVkImage();
+
+
+
         if (newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
         {
             barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
 
-            if (_HasStencilComponent(format))
+            if (_HasStencilComponent(tex->GetVkImageFormat()))
             {
                 barrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
             }
@@ -176,9 +173,9 @@ namespace gfx
         }
 
         barrier.subresourceRange.baseMipLevel = 0;
-        barrier.subresourceRange.levelCount = 1;
+        barrier.subresourceRange.levelCount = tex->GetMipLevels();
         barrier.subresourceRange.baseArrayLayer = 0;
-        barrier.subresourceRange.layerCount = 1;
+        barrier.subresourceRange.layerCount = tex->GetArrayCount();
 
         VkPipelineStageFlags sourceStage = GetStageFlagsForLayout(oldLayout);
         VkPipelineStageFlags destinationStage = GetStageFlagsForLayout(newLayout);
@@ -304,28 +301,6 @@ namespace gfx
             &region);
     }
 
-    VkImageView BufferHelper::CreateImageView(GFXVulkanApplication* app, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags)
-    {
-        VkImageViewCreateInfo viewInfo{};
-        viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        viewInfo.image = image;
-        viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        viewInfo.format = format;
-        viewInfo.subresourceRange.aspectMask = aspectFlags;
-        viewInfo.subresourceRange.baseMipLevel = 0;
-        viewInfo.subresourceRange.levelCount = 1;
-        viewInfo.subresourceRange.baseArrayLayer = 0;
-        viewInfo.subresourceRange.layerCount = 1;
-
-        VkImageView imageView;
-        if (vkCreateImageView(app->GetVkDevice(), &viewInfo, nullptr, &imageView) != VK_SUCCESS)
-        {
-            throw std::runtime_error("failed to create texture image view!");
-        }
-
-        return imageView;
-    }
-
     VkSampler BufferHelper::CreateTextureSampler(
         GFXVulkanApplication* app,
         VkFilter filter, VkSamplerAddressMode addressMode)
@@ -446,6 +421,9 @@ namespace gfx
             {gfx::GFXTextureFormat::D32_SFloat, VK_FORMAT_D32_SFLOAT},
             {gfx::GFXTextureFormat::D32_SFloat_S8_UInt, VK_FORMAT_D32_SFLOAT_S8_UINT},
             {gfx::GFXTextureFormat::D24_UNorm_S8_UInt, VK_FORMAT_D24_UNORM_S8_UINT},
+            {gfx::GFXTextureFormat::R16G16B16A16_SFloat, VK_FORMAT_R16G16B16A16_SFLOAT},
+            {gfx::GFXTextureFormat::R32G32B32A32_SFloat, VK_FORMAT_R32G32B32A32_SFLOAT},
+            {gfx::GFXTextureFormat::B10G11R11_UFloat, VK_FORMAT_B10G11R11_UFLOAT_PACK32}
         };
         return ptr;
     }

@@ -1,0 +1,16 @@
+{
+  "$schema": "ShaderSchema.json",
+  "CullMode": "None",
+  "DepthTestEnable": true,
+  "DepthWriteEnable": true,
+  "DepthCompareOp": "Less",
+  "StencilTestEnable": false,
+  "RenderingType": "OpaqueDeferred",
+  "ConstantProperties": [],
+  "Properties": [
+    {
+      "Name": "DiffuseTex",
+      "Type": "Texture2D"
+    }
+  ]
+}

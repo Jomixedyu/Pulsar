@@ -11,7 +11,7 @@ namespace pulsar
         if (s->IsWrite)
         {
             auto nodes = s->Object->New(ser::VarientType::Array);
-            for (auto node : *m_nodes)
+            for (auto& node : *m_nodes)
             {
                 auto nodeObj = s->Object->New(ser::VarientType::Object);
                 NodeSerializer nodeSerializer{nodeObj, s->IsWrite, s->HasEditorData};
@@ -41,7 +41,7 @@ namespace pulsar
     }
     Node_ref NodeCollection::FindNodeByName(index_string name) const
     {
-        for (const auto node : *m_rootNodes)
+        for (const auto& node : *m_rootNodes)
         {
             if (node->GetIndexName() == name)
             {

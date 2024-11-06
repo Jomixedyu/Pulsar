@@ -6,8 +6,8 @@ namespace gfx
     class GFXRenderPassLayout
     {
     public:
-        virtual ~GFXRenderPassLayout() {}
-        GFXRenderPassLayout() {}
+        virtual ~GFXRenderPassLayout() = default;
+        GFXRenderPassLayout() = default;
         GFXRenderPassLayout(const GFXRenderPassLayout&) = delete;
         GFXRenderPassLayout(GFXRenderPassLayout&&) = delete;
     };

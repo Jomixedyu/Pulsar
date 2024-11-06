@@ -72,20 +72,23 @@ namespace pulsared
         {
             ImGui::Separator();
             ImGui::Button(ICON_FK_FLOPPY_O); //save button
-            //
-            // ImGui::BeginDisabled(GetEdApp()->IsInteractiveRendering());
-            // if (ImGui::Button(ICON_FK_PLAY))
-            // {
-            //     GetEdApp()->StartInteractiveRendering();
-            // }
-            // ImGui::EndDisabled();
-            //
-            // ImGui::BeginDisabled(!GetEdApp()->IsInteractiveRendering());
-            // if (ImGui::Button(ICON_FK_STOP))
-            // {
-            //     GetEdApp()->StopInteractiveRendering();
-            // }
-            // ImGui::EndDisabled();
+
+            auto world = GetEdApp()->GetEditorWorld();
+            bool isPlaying = world->GetPlaying();
+
+            ImGui::BeginDisabled(isPlaying);
+            if (ImGui::Button(ICON_FK_PLAY))
+            {
+                world->BeginPlay();
+            }
+            ImGui::EndDisabled();
+
+            ImGui::BeginDisabled(!isPlaying);
+            if (ImGui::Button(ICON_FK_STOP))
+            {
+                world->EndPlay();
+            }
+            ImGui::EndDisabled();
 
             ImGui::EndMenuBar();
         }
