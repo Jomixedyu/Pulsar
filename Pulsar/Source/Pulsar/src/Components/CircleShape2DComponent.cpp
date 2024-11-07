@@ -1,4 +1,4 @@
-#include "Components/Circle2DComponent.h"
+#include "Components/CircleShape2DComponent.h"
 
 #include "Components/TransformComponent.h"
 
@@ -18,7 +18,7 @@ namespace pulsar
         }
     }
 
-    void Circle2DComponent::OnDrawGizmo(GizmoPainter* painter, bool selected)
+    void CircleShape2DComponent::OnDrawGizmo(GizmoPainter* painter, bool selected)
     {
         base::OnDrawGizmo(painter, selected);
         auto pos = GetTransform()->GetWorldPosition();

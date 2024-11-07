@@ -23,7 +23,7 @@ namespace pulsared
             {
                 base_flags |= ImGuiTreeNodeFlags_Leaf;
             }
-            if (world->GetSelection().GetSelected() == node)
+            if (world->GetSelection().IsSelected(node))
             {
                 base_flags |= ImGuiTreeNodeFlags_Selected;
             }
@@ -42,8 +42,20 @@ namespace pulsared
 
             if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen())
             {
-                world->GetSelection().Clear();
-                world->GetSelection().Select(node);
+                if (ImGui::IsKeyDown(ImGuiKey_LeftShift))
+                {
+                    world->GetSelection().Select(node);
+                }
+                else if(ImGui::IsKeyDown(ImGuiKey_LeftCtrl))
+                {
+                    world->GetSelection().UnSelect(node);
+                }
+                else
+                {
+                    world->GetSelection().Clear();
+                    world->GetSelection().Select(node);
+                }
+
             }
 
             if (isOpened)

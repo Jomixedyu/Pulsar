@@ -1,11 +1,11 @@
-#include "Components/Box2DComponent.h"
+#include "Components/BoxShape2DComponent.h"
 
 #include "Components/TransformComponent.h"
 
 namespace pulsar
 {
 
-    void Box2DComponent::OnDrawGizmo(GizmoPainter* painter, bool selected)
+    void BoxShape2DComponent::OnDrawGizmo(GizmoPainter* painter, bool selected)
     {
         base::OnDrawGizmo(painter, selected);
 

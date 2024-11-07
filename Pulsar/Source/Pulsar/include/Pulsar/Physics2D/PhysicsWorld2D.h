@@ -42,6 +42,7 @@ namespace pulsar
         INotifyPhysics2DEvent* m_event{};
         RigidBody2DMode m_rigidMode{};
         Vector2f m_position{};
+        float m_rotation{};
 
         array_list<Shape> m_shapes;
     protected:

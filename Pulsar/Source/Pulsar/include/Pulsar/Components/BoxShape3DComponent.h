@@ -3,9 +3,9 @@
 
 namespace pulsar
 {
-    class Sphere3DComponent : public Shape3DComponent
+    class BoxShape3DComponent : public Shape3DComponent
     {
-        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::Sphere3DComponent, Shape3DComponent);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::BoxShape3DComponent, Shape3DComponent);
         CORELIB_CLASS_ATTR(new CategoryAttribute("3D"));
     public:
 

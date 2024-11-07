@@ -28,7 +28,8 @@ namespace pulsar
         {
             auto event = events.moveEvents[i];
             auto eventCallback = (INotifyPhysics2DEvent*)event.userData;
-            eventCallback->INotifyPhysics2DEvent_OnChangedTransform(event.transform.p, 0);
+
+            eventCallback->INotifyPhysics2DEvent_OnChangedTransform(event.transform.p, b2Rot_GetAngle(event.transform.q));
         }
     }
 
@@ -60,6 +61,7 @@ namespace pulsar
             bodyDef.position = b2Vec2(obj->m_position.x, obj->m_position.y);
             bodyDef.type = GetBodyType(obj->m_rigidMode);
             bodyDef.userData = obj->m_event;
+            bodyDef.rotation = b2MakeRot(obj->m_rotation);
 
             auto bodyId = b2CreateBody(b2world, &bodyDef);
 

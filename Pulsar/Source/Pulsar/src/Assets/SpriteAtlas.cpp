@@ -17,11 +17,20 @@ namespace pulsar
     void SpriteAtlas::PostEditChange(FieldInfo* info)
     {
         base::PostEditChange(info);
+        if (!info)
+        {
+            return;
+        }
+        if (info->GetName() == NAMEOF(m_texture))
+        {
+            SetTexture(m_texture);
+        }
     }
 
     void SpriteAtlas::SetTexture(RCPtr<Texture2D> tex)
     {
         m_texture = std::move(tex);
+
     }
 
 

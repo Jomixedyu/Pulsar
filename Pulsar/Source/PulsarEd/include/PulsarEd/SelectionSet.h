@@ -8,6 +8,11 @@ namespace pulsared
     class SelectionSet
     {
     public:
+        bool IsSelected(const ObjectPtr<T>& item) const
+        {
+            return std::find(this->selection.begin(), this->selection.end(), item) != this->selection.end();
+        }
+
         ObjectPtr<T> GetSelected() const
         {
             for (int i = (int)this->selection.size() - 1; i >= 0; i--)

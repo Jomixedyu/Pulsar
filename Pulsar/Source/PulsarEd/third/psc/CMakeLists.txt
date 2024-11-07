@@ -10,6 +10,7 @@ cmake_policy(SET CMP0079 NEW)
 
 set(ENABLE_OPT OFF)
 set(SPIRV_CROSS_ENABLE_TESTS OFF)
+
 add_subdirectory("src/glslang")
 add_subdirectory("src/psc")
 add_subdirectory("src/spirv-cross")

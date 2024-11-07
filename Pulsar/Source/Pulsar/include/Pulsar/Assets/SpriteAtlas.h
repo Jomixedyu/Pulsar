@@ -16,6 +16,7 @@ namespace pulsar
     class SpriteAtlas : public AssetObject
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::SpriteAtlas, AssetObject);
+        CORELIB_CLASS_ATTR(new CreateAssetAttribute)
     public:
         static RCPtr<SpriteAtlas> StaticCreate(index_string name, RCPtr<Texture2D> tex, Vector2f uv0, Vector2f uv1);
 

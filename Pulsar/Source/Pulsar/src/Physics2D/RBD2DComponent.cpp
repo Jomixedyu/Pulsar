@@ -26,11 +26,14 @@ namespace pulsar
 
     void RBD2DComponent::BeginSimulate()
     {
-        auto pos = GetTransform()->GetWorldPosition();
+        auto transform = GetTransform();
+        auto pos = transform->GetWorldPosition();
+        auto rot = transform->GetEuler();
 
         m_physics = new Physics2DObject;
         m_physics->m_rigidMode = m_mode;
         m_physics->m_position = Vector2f(pos.x, pos.y);
+        m_physics->m_rotation = rot.z * math::deg2rad();
         m_physics->m_event = this;
 
         for (auto& compRef : CollectAttachedShapes())
@@ -70,8 +73,16 @@ namespace pulsar
 
     void RBD2DComponent::INotifyPhysics2DEvent_OnChangedTransform(Vector2f pos, float rot)
     {
-        auto old = GetTransform()->GetPosition();
-        GetTransform()->SetPosition(Vector3f(pos.x, pos.y, old.z));
+        auto transform = GetTransform();
+
+        auto oldPos = transform->GetPosition();
+        transform->SetPosition(Vector3f(pos.x, pos.y, oldPos.z));
+
+
+        auto euler = transform->GetEuler();
+        euler.z = rot * math::rad2deg();
+        transform->SetEuler(euler);
+
     }
 
     void RBD2DComponent::OnAttachedShapeChanged(Shape2DComponent* shape)
