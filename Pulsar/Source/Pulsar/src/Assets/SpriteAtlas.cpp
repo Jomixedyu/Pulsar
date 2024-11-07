@@ -3,6 +3,11 @@
 namespace pulsar
 {
 
+    SpriteAtlas::SpriteAtlas()
+    {
+        init_sptr_member(m_sprites);
+    }
+
     RCPtr<SpriteAtlas> SpriteAtlas::StaticCreate(index_string name, RCPtr<Texture2D> tex, Vector2f uv0, Vector2f uv1)
     {
         auto ptr = mksptr(new SpriteAtlas);

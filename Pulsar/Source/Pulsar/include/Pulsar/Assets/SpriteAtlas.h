@@ -7,6 +7,8 @@ namespace pulsar
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::SpriteInfo, Object);
     public:
+        CORELIB_REFL_DECL_FIELD(m_name);
+        string m_name;
         CORELIB_REFL_DECL_FIELD(m_uv0);
         Vector2f m_uv0{};
         CORELIB_REFL_DECL_FIELD(m_uv1);
@@ -18,6 +20,8 @@ namespace pulsar
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::SpriteAtlas, AssetObject);
         CORELIB_CLASS_ATTR(new CreateAssetAttribute)
     public:
+        SpriteAtlas();
+
         static RCPtr<SpriteAtlas> StaticCreate(index_string name, RCPtr<Texture2D> tex, Vector2f uv0, Vector2f uv1);
 
         void PostEditChange(FieldInfo* info) override;
