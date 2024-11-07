@@ -1,7 +1,7 @@
 #include "ImGuiImpl.h"
 #include <Pulsar/ImGuiImpl.h>
 #include <imgui/imgui.h>
-#include <imgui/imgui_impl_glfw.h>
+#include <imgui/imgui_impl_sdl2.h>
 
 #include "DroidSans.ttf.h"
 #include "forkawesome-webfont.ttf.h"
@@ -12,6 +12,7 @@
 
 #if PULSAR_GFX_BUILD_VULKAN
 #include <imgui/imgui_impl_vulkan.h>
+#include <imgui/imgui_impl_sdl2.h>
 #include <gfx-vk/GFXVulkanApplication.h>
 #include <gfx-vk/GFXVulkanDescriptorManager.h>
 #include <gfx-vk/GFXVulkanCommandBuffer.h>
@@ -149,7 +150,8 @@ namespace pulsar
             //ImGui::StyleColorsDark();
             ImGui_Style_Initialize();
 
-            ImGui_ImplGlfw_InitForVulkan(m_app->GetWindow(), true);
+            ImGui_ImplSDL2_InitForVulkan((SDL_Window*)m_app->GetWindow()->GetUserPoint());
+
             ImGui_ImplVulkan_InitInfo init_info = {};
             init_info.Instance = m_app->GetVkInstance();
             init_info.PhysicalDevice = m_app->GetVkPhysicalDevice();
@@ -191,8 +193,11 @@ namespace pulsar
         }
         virtual void NewFrame() override
         {
+            m_app->GetWindow()->EnumEvents([](void* event) {
+               ImGui_ImplSDL2_ProcessEvent((SDL_Event*)event);
+            });
             ImGui_ImplVulkan_NewFrame();
-            ImGui_ImplGlfw_NewFrame();
+            ImGui_ImplSDL2_NewFrame();
             ImGui::NewFrame();
         }
         virtual void EndFrame() override
@@ -202,7 +207,7 @@ namespace pulsar
         virtual void Terminate() override
         {
             ImGui_ImplVulkan_Shutdown();
-            ImGui_ImplGlfw_Shutdown();
+            ImGui_ImplSDL2_Shutdown();
             ImGui::DestroyContext();
         }
         virtual void Render(gfx::GFXCommandBuffer* cmd) override

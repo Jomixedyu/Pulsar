@@ -1,6 +1,6 @@
 #pragma once
 #include "Assembly.h"
-#include <Pulsar/Subsystem.h>
+#include <Pulsar/Subsystems/Subsystem.h>
 
 namespace pulsared
 {

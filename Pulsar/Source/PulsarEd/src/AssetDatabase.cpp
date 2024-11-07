@@ -260,6 +260,7 @@ namespace pulsared
 
             FileUtil::WriteAllText(assetPhyicsPath, textAssetObject->ToString());
             node->IsPhysicsFile = true;
+            node->IsCreated = true;
 
             ResolveDirty(asset);
             asset->SetObjectFlags(asset->GetObjectFlags() | OF_Persistent);
@@ -289,11 +290,15 @@ namespace pulsared
         {
             auto _asset = LoadAssetAtPath(attr->GetInstantiatePath());
             asset = _asset->InstantiateAsset();
+            asset->SetName(assetName);
         }
         else
         {
-            asset = sptr_cast<AssetObject>(assetType->CreateSharedInstance({}));
-            asset->Construct();
+            auto newAsset = sptr_cast<AssetObject>(assetType->CreateSharedInstance({}));
+            newAsset->SetName(assetName);
+            newAsset->Construct();
+
+            asset = newAsset;
         }
 
         CreateAsset(asset, GetUniquePath(string{folderPath} + "/" + string{assetName}));

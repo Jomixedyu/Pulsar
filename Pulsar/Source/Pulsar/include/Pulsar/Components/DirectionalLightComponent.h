@@ -8,6 +8,7 @@ namespace pulsar
     class DirectionalLightComponent : public LightComponent
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::DirectionalLightComponent, LightComponent);
+        CORELIB_CLASS_ATTR(new CategoryAttribute("Light"));
     public:
         void BeginComponent() override;
         void EndComponent() override;

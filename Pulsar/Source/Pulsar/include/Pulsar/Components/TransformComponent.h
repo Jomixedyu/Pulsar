@@ -52,8 +52,6 @@ namespace pulsar
         TransformComponent();
         void BeginComponent() override;
 
-        void OnTick(Ticker ticker) override;
-
         const Matrix4f& GetParentLocalToWorldMatrix();
         const Matrix4f& GetParentWorldToLocalMatrix();
         const Matrix4f& GetLocalToWorldMatrix();

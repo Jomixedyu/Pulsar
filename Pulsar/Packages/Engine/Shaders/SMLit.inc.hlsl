@@ -59,6 +59,22 @@ const float3 lightColors[3] =
     float3(1, 1, 1),
 };
 
+
+
+float3 kS_CookTorrance(float3 N, float3 V, float3 L, float D, float G, float3 F)
+{
+    float3 numerator  = D * G * F; 
+    float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001; // + 0.0001 to prevent divide by zero
+    float3 specular = numerator / denominator;
+    return specular;
+}
+
+float3 kD_Lambert(float3 kS, float3 albedo, float3 metallic)
+{
+    return ((float3(1.0) - kS) * (1.0 - metallic)) * (albedo / PI);
+}
+
+
 float4 ShadingModel_Lit(
     MaterialAttributes attr, InPixelAssembly v2f
 )
@@ -66,48 +82,53 @@ float4 ShadingModel_Lit(
     float3 N = normalize(v2f.WorldNormal);
     float3 V = normalize(TargetBuffer.CamPosition.xyz - v2f.WorldPosition.xyz);
 
-    // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0 
-    // of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)    
     float3 F0 = float3(0.04); 
     F0 = lerp(F0, attr.BaseColor, attr.Metallic);
     
-    // reflectance equation
     float3 Lo = float3(0.0);
-    for(int i = 0; i < 4; ++i) 
+
+    //direction light
     {
-        // calculate per-light radiance
-        float3 L = normalize(lightPositions[i] - v2f.WorldPosition.xyz);
+        float3 L = -WorldBuffer.WorldSpaceLightVector;
         float3 H = normalize(V + L);
-        float distance = length(lightPositions[i] - v2f.WorldPosition.xyz);
-        float attenuation = 1.0 / (distance * distance);
-        float3 radiance = lightColors[i] * attenuation;
+        float3 dirLightRadiance = WorldBuffer.WorldSpaceLightColor.xyz * WorldBuffer.WorldSpaceLightColor.w;
+
+        float  D = DistributionGGX(N, H, attr.Roughness);   
+        float  G = GeometrySmith(N, V, L, attr.Roughness);      
+        float3 F = FresnelSchlick(clamp(dot(H, V), 0.0, 1.0), F0);
 
         // Cook-Torrance BRDF
-        float NDF = DistributionGGX(N, H, attr.Roughness);   
-        float G   = GeometrySmith(N, V, L, attr.Roughness);      
-        float3 F    = FresnelSchlick(clamp(dot(H, V), 0.0, 1.0), F0);
-           
-        float3 numerator    = NDF * G * F; 
-        float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001; // + 0.0001 to prevent divide by zero
-        float3 specular = numerator / denominator;
-        
-        // kS is equal to Fresnel
-        float3 kS = F;
-        // for energy conservation, the diffuse and specular light can't
-        // be above 1.0 (unless the surface emits light); to preserve this
-        // relationship the diffuse component (kD) should equal 1.0 - kS.
-        float3 kD = float3(1.0) - kS;
-        // multiply kD by the inverse metalness such that only non-metals 
-        // have diffuse lighting, or a linear blend if partly metal (pure metals
-        // have no diffuse light).
-        kD *= 1.0 - attr.Metallic;	  
+        float3 kS_cookTorrance = kS_CookTorrance(N, V, L, D, G, F);
+        float3 kD_lambert = kD_Lambert(F, attr.BaseColor, attr.Metallic); 
+        float3 BRDF = kD_lambert + kS_cookTorrance;
 
-        // scale light by NdotL
         float NdotL = max(dot(N, L), 0.0);        
+        
+        
+        Lo += BRDF * dirLightRadiance * NdotL;
+    }
 
-        // add to outgoing radiance Lo
-        Lo += (kD * attr.BaseColor / PI + specular) * radiance * NdotL;  // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
-    }   
+    for(int i = 0; i < 4; ++i) 
+    {
+        float3 L = normalize(lightPositions[i] - v2f.WorldPosition.xyz);
+        float3 H = normalize(V + L);
+        float  distance = length(lightPositions[i] - v2f.WorldPosition.xyz);
+        float  attenuation = 1.0 / (distance * distance);
+        float3 radiance = lightColors[i] * attenuation;
+
+        float  D = DistributionGGX(N, H, attr.Roughness);   
+        float  G = GeometrySmith(N, V, L, attr.Roughness);      
+        float3 F = FresnelSchlick(clamp(dot(H, V), 0.0, 1.0), F0);
+
+        // Cook-Torrance BRDF
+        float3 kS_cookTorrance = kS_CookTorrance(N, V, L, D, G, F);
+        float3 kD_lambert = kD_Lambert(F, attr.BaseColor, attr.Metallic); 
+        float3 BRDF = kD_lambert + kS_cookTorrance;
+
+        float NdotL = max(dot(N, L), 0.0);        
+        
+        Lo += BRDF * radiance * NdotL;
+    }
     
     // ambient lighting (note that the next IBL tutorial will replace 
     // this ambient lighting with environment lighting).
@@ -116,9 +137,9 @@ float4 ShadingModel_Lit(
     float3 color = ambient + Lo;
 
     // HDR tonemapping
-    color = color / (color + float3(1.0));
+    // color = color / (color + float3(1.0));
     // gamma correct
-    color = pow(color, float3(1.0/2.2)); 
+    // color = pow(color, float3(1.0/2.2)); 
 
     return float4(color, 1.0);
 }

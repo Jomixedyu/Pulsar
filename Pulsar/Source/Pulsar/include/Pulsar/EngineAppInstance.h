@@ -1,5 +1,6 @@
 #pragma once
 #include "AppInstance.h"
+#include "Components/SceneCaptureComponent.h"
 #include "Rendering/RenderObject.h"
 
 #include <ranges>
@@ -13,7 +14,9 @@ namespace pulsar
     public:
         EngineRenderPipeline(const std::initializer_list<World*>& worlds);
 
+        void RenderImmediate(SceneCaptureComponent* capture);
 
+        void OnRenderCamera(ObjectPtr<CameraComponent> camera);
 
         void OnRender(gfx::GFXRenderContext* context, gfx::GFXFrameBufferObject* backbuffer) override;
 

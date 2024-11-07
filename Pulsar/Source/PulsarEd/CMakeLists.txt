@@ -1,5 +1,5 @@
 
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.20)
 project("PulsarEd")
 
 set(PUBLIC_MODULE
@@ -27,6 +27,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE "./include/PulsarEd")
 
 
 #link pulsar
+set(Pulsar_BUILD_EXECUTABLE OFF)
 add_subdirectory("../Pulsar" Pulsar.out)
 target_link_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}/Pulsar.out")
 target_link_libraries(${PROJECT_NAME} PUBLIC Pulsar)

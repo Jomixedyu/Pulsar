@@ -73,9 +73,9 @@ namespace pulsared
         ImGuizmo::SetOrthographic(false);
         ImGuizmo::SetDrawlist();
 
-        auto windowWidth = (float)ImGui::GetWindowWidth();
-        auto windowHeight = (float)ImGui::GetWindowHeight();
-        ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, windowWidth, windowHeight);
+        Vector2f pos, size;
+        GetViewportSize(pos, size);
+        ImGuizmo::SetRect(pos.x, pos.y, size.x, size.y);
 
         auto viewMat = m_world->GetCurrentCamera()->GetViewMat();
         auto projMat = m_world->GetCurrentCamera()->GetProjectionMat();

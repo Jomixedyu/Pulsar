@@ -15,14 +15,6 @@
 namespace pulsar
 {
 
-    class RenderTexturePool
-    {
-    public:
-        gfx::GFXFrameBufferObject_sp Get()
-        {
-            // Application::GetGfxApp()->CreateFrameBufferObject()
-        }
-    };
     EngineRenderPipeline::EngineRenderPipeline(const std::initializer_list<World*>& worlds)
     {
         for (auto world : worlds)
@@ -30,11 +22,8 @@ namespace pulsar
             AddWorld(world);
         }
     }
-    struct RenderData
-    {
-        gfx::GFXFrameBufferObject* SourceFBO;
-        gfx::GFXFrameBufferObject* TargetFBO;
-    };
+
+
     void EngineRenderPipeline::OnRender(
         gfx::GFXRenderContext* context, gfx::GFXFrameBufferObject* backbuffer)
     {
@@ -43,9 +32,10 @@ namespace pulsar
         for (auto world : m_worlds)
         {
             auto& renderObjects = world->GetRenderObjects();
+
             auto pipelineMgr = context->GetApplication()->GetGraphicsPipelineManager();
 
-            for (auto cam : world->GetCameraManager().GetCameras())
+            for (const auto& cam : world->GetCameraManager().GetCameras())
             {
                 auto targetFBO = cam->GetRenderTexture()->GetGfxFrameBufferObject().get();
 
@@ -53,7 +43,7 @@ namespace pulsar
 
                 for (auto& rt : targetFBO->GetRenderTargets())
                 {
-                    cmdBuffer.CmdClearColor(rt);
+                    cmdBuffer.CmdClearColor(rt->GetTexture());
                 }
 
                 cmdBuffer.CmdBeginFrameBuffer();
@@ -81,6 +71,10 @@ namespace pulsar
                 for (auto& [state, batch] : batches)
                 {
                     auto shaderPass = batch.Material->GetGfxShaderPass();
+                    if (batch.Material->GetShader()->GetConfig()->RenderingType == ShaderPassRenderingType::PostProcessing)
+                    {
+                        continue;
+                    }
 
                     // bind render state
                     array_list<gfx::GFXDescriptorSetLayout_sp> descriptorSetLayouts;
@@ -105,16 +99,16 @@ namespace pulsar
                         // bind descriptor sets
                         {
                             array_list<gfx::GFXDescriptorSet*> descriptorSets;
-                            // setup cam
+                            // setup . per cam
                             for (auto& refData : targetFBO->RefData)
                             {
                                 descriptorSets.push_back(refData.lock().get());
                             }
-                            // setup world
+                            // setup . world
                             descriptorSets.push_back(world->GetWorldDescriptorSet().get());
-                            // setup model
+                            // setup . per renderer
                             descriptorSets.push_back(element.ModelDescriptor.get());
-                            // setup matinst
+                            // setup . per material
                             const auto materialDesc = batch.Material->GetGfxDescriptorSet().get();
                             if(materialDesc->GetDescriptorCount() != 0)
                             {
@@ -145,11 +139,11 @@ namespace pulsar
 
                 // post processing
                 RCPtr<RenderTexture> lastPPRt;
-                auto ppcount = cam->m_postProcessMaterials->size();
+                auto ppcount = cam->GetPostProcessCount();
                 size_t ppCount = 0;
                 for (size_t i = 0; i < ppcount; ++i)
                 {
-                    auto ppMat = cam->m_postProcessMaterials->at(i);
+                    auto ppMat = cam->GetPostprocess(i);
                     if (!ppMat)
                     {
                         continue;

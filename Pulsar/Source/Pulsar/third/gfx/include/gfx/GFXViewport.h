@@ -1,5 +1,4 @@
 #pragma once
-#include "GFXRenderTarget.h"
 #include "GFXFrameBufferObject.h"
 
 namespace gfx

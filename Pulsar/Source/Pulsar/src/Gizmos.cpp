@@ -79,12 +79,6 @@ namespace pulsar
             linePoints.append_range(ctx.LinePoints);
         }
 
-        // if (m_lineRenderObject)
-        // {
-        //     if (m_lineRenderObject->GetPointCount())
-        //     m_world->RemoveRenderObject(m_lineRenderObject);
-        //     m_lineRenderObject.reset();
-        // }
         if (!linePoints.empty())
         {
             if (m_lineRenderObject == nullptr)
@@ -95,6 +89,14 @@ namespace pulsar
 
             m_world->AddRenderObject(m_lineRenderObject);
             m_lineRenderObject->SetTransform(Matrix4f{1});
+        }
+        else
+        {
+            if (m_lineRenderObject)
+            {
+                m_world->RemoveRenderObject(m_lineRenderObject);
+                m_lineRenderObject.reset();
+            }
         }
     }
 

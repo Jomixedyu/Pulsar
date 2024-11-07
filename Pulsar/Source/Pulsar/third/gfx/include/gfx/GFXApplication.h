@@ -10,9 +10,9 @@
 #include "GFXInclude.h"
 #include "GFXRenderPass.h"
 #include "GFXRenderPipeline.h"
-#include "GFXRenderTarget.h"
+#include "GFXRenderer.h"
 #include "GFXShaderPass.h"
-#include "GFXTexture2D.h"
+#include "GFXTextureView.h"
 #include "GFXVertexLayoutDescription.h"
 #include "GFXViewport.h"
 #include <functional>
@@ -31,6 +31,7 @@ namespace gfx
     public:
         GFXApplication(const GFXApplication&) = delete;
         GFXApplication(GFXApplication&&) = delete;
+        virtual ~GFXApplication()  = default;
 
         virtual void Initialize()
         {
@@ -61,6 +62,9 @@ namespace gfx
         ExitWindowEvent OnExitWindow = nullptr;
 
     public:
+
+        virtual GFXRenderer* GetRenderer() = 0;
+
         virtual GFXBuffer_sp CreateBuffer(GFXBufferUsage usage, size_t bufferSize) = 0;
         virtual GFXCommandBuffer_sp CreateCommandBuffer() = 0;
         virtual GFXVertexLayoutDescription_sp CreateVertexLayoutDescription() = 0;
@@ -80,22 +84,24 @@ namespace gfx
         virtual GFXGraphicsPipelineManager* GetGraphicsPipelineManager() const = 0;
 
 
-        virtual GFXTexture2D_sp CreateTexture2DFromMemory(
+        virtual GFXTexture_sp CreateTexture2DFromMemory(
             const uint8_t* imageData, size_t length,
             int width, int height,
             GFXTextureFormat format,
             const GFXSamplerConfig& samplerConfig
             ) = 0;
 
-        virtual GFXRenderTarget_sp CreateRenderTarget(
-            int32_t width, int32_t height, GFXRenderTargetType type,
+        virtual GFXTexture_sp CreateTextureCube(int32_t size) = 0;
+
+        virtual GFXTexture_sp CreateRenderTarget(
+            int32_t width, int32_t height, GFXTextureTargetType type,
             GFXTextureFormat format, const GFXSamplerConfig& samplerCfg) = 0;
 
         virtual GFXFrameBufferObject_sp CreateFrameBufferObject(
-            const array_list<GFXRenderTarget*>& renderTargets,
+            const array_list<GFXTexture2DView_sp>& renderTargets,
             const GFXRenderPassLayout_sp& renderPassLayout) = 0;
 
-        virtual GFXRenderPassLayout_sp CreateRenderPassLayout(const array_list<GFXRenderTarget*>& renderTargets) = 0;
+        virtual GFXRenderPassLayout_sp CreateRenderPassLayout(const array_list<GFXTexture2DView*>& renderTargets) = 0;
 
         virtual array_list<GFXTextureFormat> GetSupportedDepthFormats() = 0;
 
@@ -104,9 +110,7 @@ namespace gfx
         virtual GFXViewport* GetViewport() = 0;
 
     protected:
-        GFXApplication()
-        {
-        }
+        GFXApplication() = default;
 
     protected:
         GFXGlobalConfig m_config{};

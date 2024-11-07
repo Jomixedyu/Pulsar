@@ -3,18 +3,22 @@
 
 namespace pulsared
 {
+    static char tempString[1024];
     bool StringPropertyControl::OnDrawImGui(const string& name, Type* type, Object* prop)
     {
         assert(prop && prop->GetType() == GetPropertyType());
 
         auto value = static_cast<String*>(prop);
         ImGui::PushItemWidth(-1);
-        char buf[1024]{};
-        StringUtil::strcpy(buf, value->c_str());
-        ImGui::PushID(prop);
-        bool changed = ImGui::InputText("input", buf, 1024);
+
+        StringUtil::strcpy(tempString, *value);
+        ImGui::PushID(name.c_str());
+        bool changed = ImGui::InputText("input", tempString, sizeof(tempString));
+        if (changed)
+        {
+            *value = tempString;
+        }
         ImGui::PopID();
-        *value = buf;
         ImGui::PopItemWidth();
         return changed;
     }

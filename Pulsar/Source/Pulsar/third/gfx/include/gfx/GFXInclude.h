@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <type_traits>
 #include <vector>
+#include <string>
 
 #define GFX_DECL_SPTR(Class) using Class##_sp = std::shared_ptr<Class>; using Class##_wp = std::weak_ptr<Class>;
 

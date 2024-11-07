@@ -153,10 +153,6 @@ namespace pulsar
     {
         base::BeginComponent();
     }
-    void TransformComponent::OnTick(Ticker ticker)
-    {
-        base::OnTick(ticker);
-    }
 
     static Matrix4f RootIdentMat{1};
     const Matrix4f& TransformComponent::GetParentLocalToWorldMatrix()

@@ -761,7 +761,7 @@ namespace jxcorlib
     }
     static constexpr inline bool is_trimable(char c)
     {
-        return c == ' ' || c == '\r' || c == '\n';
+        return c == ' ' || c == '\r' || c == '\n' || c == '\t';
     }
 
     string& StringUtil::TrimSelf(string& str)
@@ -798,62 +798,89 @@ namespace jxcorlib
 
     string StringUtil::FriendlyName(string_view name)
     {
-        if (name.size() == 0)
-            return string{name};
-        string pname{name};
-        if (pname.starts_with("m_"))
+        if (name.empty())
         {
-            pname = pname.substr(2, pname.size() - 2);
+            return string{name};
         }
 
-        string ret;
-        ret.reserve((size_t)((float)name.size() * 1.5f));
+        if (name.starts_with("m_"))
+        {
+            name = name.substr(2, name.size() - 2);
+        }
 
-        bool is_new = true;
-        bool last_space = false;
-        ForEach(pname, [&](u8char ch, size_t i, size_t bpos) -> bool {
-            auto c = ch;
-            if (c == '_' || c == ' ')
-            {
-                if (!last_space && i != 0 && i != pname.size() - 1)
-                {
-                    ret.push_back(' ');
-                }
-                is_new = true;
-                last_space = true;
-            }
-            else if (c.Size() == 1 && std::isupper(c.value[0]))
-            {
-                if (!last_space && i != 0 && i != pname.size() - 1)
-                {
-                    ret.push_back(' ');
-                }
-                ret.append(c.value);
-                is_new = false;
-                last_space = false;
-            }
-            else if (c.Size() == 1 && std::islower(c.value[0]))
-            {
-                auto new_c = c;
+        string outName;
+        outName.reserve(static_cast<size_t>((double)name.size() * 1.3));
 
-                if (is_new)
+        enum State { eEMPTY, eOTHER, eNUM, eLOWER, eUPPER } state{};
+
+        for (int i = 0; i < name.size(); i++)
+        {
+            auto c = name[i];
+            if ((c & 0b10000000) == 0) // ascii
+            {
+                if (std::islower(c))
                 {
-                    new_c = (char)std::toupper(new_c.value[0]);
-                    is_new = false;
+                    if (state == eLOWER || state == eUPPER || state == eNUM)
+                    {
+                        outName.push_back(c);
+                    }
+                    else
+                    {
+                        if (i != 0) outName.push_back(' ');
+                        outName.push_back((char)std::toupper(c));
+                    }
+                    state = eLOWER;
                 }
-                ret.push_back(new_c.value[0]);
-                last_space = false;
+                else if(std::isupper(c))
+                {
+                    if (state == eUPPER || state == eNUM)
+                    {
+                        outName.push_back(c);
+                    }
+                    else
+                    {
+                        if (i != 0) outName.push_back(' ');
+                        outName.push_back(c);
+                    }
+                    state = eUPPER;
+                }
+                else if (std::isdigit(c))
+                {
+                    if (state != eNUM && i != 0)
+                    {
+                        outName.push_back(' ');
+                    }
+                    outName.push_back(c);
+                    state = eNUM;
+                }
+                else if (c == ' ' || c == '_' || c == '-')
+                {
+                    state = eEMPTY;
+                }
+                else //other symbol
+                {
+                    if (state == eEMPTY && i != 0)
+                    {
+                        outName.push_back(' ');
+                    }
+                    outName.push_back(c);
+                    state = eOTHER;
+                }
             }
             else
             {
-                ret.append(ch.value);
+                if (state == eEMPTY && i != 0)
+                {
+                    outName.push_back(' ');
+                }
+                outName.push_back(c);
+                state = eOTHER;
             }
-            return true;
-        });
+        }
 
-
-        return ret;
+        return outName;
     }
+
     int32_t StringUtil::IndexOf(string_view name, u8char c)
     {
         int32_t pos = -1;
@@ -863,8 +890,9 @@ namespace jxcorlib
                     {
                         pos = int32_t(char_pos);
                         return false;
-                } return true;
-            });
+                    }
+                    return true;
+                });
         return pos;
     }
 

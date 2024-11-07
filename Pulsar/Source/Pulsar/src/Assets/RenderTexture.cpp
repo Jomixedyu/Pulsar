@@ -46,7 +46,11 @@ namespace pulsar
     {
     }
 
-    RCPtr<RenderTexture> RenderTexture::StaticCreate(index_string name, int width, int height, int colorRTCount, bool hasDepthStencil)
+
+
+
+    RCPtr<RenderTexture> RenderTexture::StaticCreate(index_string name, int width, int height,
+        const array_list<RenderTargetInfo>& targetInfo)
     {
         auto self = mksptr(new RenderTexture);
         self->Construct();
@@ -55,37 +59,48 @@ namespace pulsar
         auto gfx = Application::GetGfxApp();
 
         auto depthFormats = gfx->GetSupportedDepthFormats();
-        assert(depthFormats.size() != 0);
+        assert(!depthFormats.empty());
 
-        for (int i = 0; i < colorRTCount; ++i)
+        for (auto& info : targetInfo)
         {
-            auto colorRt = gfx->CreateRenderTarget(width, height, gfx::GFXRenderTargetType::Color, gfx::GFXTextureFormat::R8G8B8A8_UNorm, {});
-            self->m_renderTargets.push_back(colorRt);
+            auto rt = gfx->CreateRenderTarget(width, height, info.TargetType, info.Format, {});
+            self->m_renderTargets.push_back(rt);
         }
 
-        if (hasDepthStencil)
+        std::vector<gfx::GFXTexture2DView_sp> rts;
+        std::vector<gfx::GFXTexture2DView*> rtsPtr;
+        for (auto& rt : self->m_renderTargets)
         {
-            auto depth = gfx->CreateRenderTarget(width, height, gfx::GFXRenderTargetType::DepthStencil, depthFormats[0], {});;
-            self->m_renderTargets.push_back(depth);
+            auto view = rt->Get2DView(0);
+            rts.push_back(view);
+            rtsPtr.push_back(view.get());
         }
 
-        std::vector<gfx::GFXRenderTarget*> rts;
-        for (auto rt : self->m_renderTargets)
-        {
-            rts.push_back(rt.get());
-        }
-
-        auto renderPass = gfx->CreateRenderPassLayout(rts);
+        auto renderPass = gfx->CreateRenderPassLayout(rtsPtr);
         self->m_framebuffer = gfx->CreateFrameBufferObject(rts, renderPass);
 
         self->m_width = width;
         self->m_height = height;
 
-        return self.get();
+        return self;
     }
 
     void RenderTexture::PostInitializeData(int32_t width, int32_t height)
     {
+    }
+    array_list<gfx::GFXTextureFormat> RenderTexture::GetSupportedDepthFormats()
+    {
+        auto gfx = Application::GetGfxApp();
+        return gfx->GetSupportedDepthFormats();
+    }
+    bool RenderTexture::IsSupportedDepthFormat(gfx::GFXTextureFormat format)
+    {
+        for (auto element : GetSupportedDepthFormats())
+        {
+            if (element == format)
+                return true;
+        }
+        return false;
     }
 
 } // namespace pulsar

@@ -68,6 +68,7 @@ namespace pulsared
         m_world = world;
         m_newWorld = true;
     }
+
     void ViewportFrame::Render(float dt)
     {
         PreviewFrame(m_world, true, &m_viewportSize, m_descriptorSet.get(), m_newWorld);

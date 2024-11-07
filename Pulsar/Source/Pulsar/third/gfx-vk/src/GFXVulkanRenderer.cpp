@@ -46,7 +46,7 @@ namespace gfx
         VkPresentInfoKHR presentInfo{};
         presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 
-        VkSwapchainKHR swapChains[] = { m_app->GetVulkanViewport()->GetVkSwapChain() };
+        VkSwapchainKHR swapChains[] = {m_app->GetVulkanViewport()->GetVkSwapChain()};
         presentInfo.swapchainCount = 1;
         presentInfo.pSwapchains = swapChains;
         presentInfo.pWaitSemaphores = &viewport->GetQueue()->GetVkSignalSemaphore();
@@ -65,6 +65,10 @@ namespace gfx
         {
             throw std::runtime_error("failed to present swap chain image!");
         }
+    }
+    void GFXVulkanRenderer::WaitExecuteRender(const std::function<void(GFXRenderContext*)>& func)
+    {
+        const auto viewport = m_app->GetVulkanViewport();
 
     }
 

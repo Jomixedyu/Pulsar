@@ -10,39 +10,32 @@ namespace pulsared
 
         auto b = static_cast<Enum*>(prop);
         ImGui::PushItemWidth(-1);
-        auto value = b->get_unboxing_value();
+        auto enumValue = b->get_unboxing_value();
 
-        auto enumDefines = b->GetType()->GetEnumDefinitions();
+        auto enumAccessor =  b->GetType()->GetEnumAccessors();
 
         string curEnumName;
-        for (auto& v : *enumDefines)
-        {
-            if (v.second == value)
-            {
-                curEnumName = v.first;
-                break;
-            }
-        }
+        enumAccessor->GetName(enumValue, &curEnumName);
 
-        auto selectedIndex = value;
+
+        auto selectedValue = enumValue;
         if (ImGui::BeginCombo(name.c_str(), curEnumName.c_str()))
         {
-            for (int i = 0; auto& v : *enumDefines)
+            for (auto& v : enumAccessor->i2s)
             {
-                if (ImGui::Selectable(v.first.c_str(), value == i))
+                if (ImGui::Selectable(v.second.c_str(), enumValue == v.first))
                 {
-                    selectedIndex = i;
+                    selectedValue = v.first;
                 }
-                ++i;
             }
             ImGui::EndCombo();
         }
 
-        bool changed = selectedIndex != value;
+        bool changed = selectedValue != enumValue;
 
         if (changed)
         {
-            b->SetValue(selectedIndex);
+            b->SetValue(selectedValue);
         }
 
         ImGui::PopItemWidth();

@@ -7,6 +7,7 @@
 #include <Pulsar/Node.h>
 #include <Pulsar/Rendering/RenderObject.h>
 #include <Pulsar/World.h>
+#include "Pulsar/Scene.h"
 
 namespace pulsar
 {
@@ -89,9 +90,9 @@ namespace pulsar
     void Component::BeginComponent()
     {
         m_beginning = true;
-        m_runtimeScene = GetNode()->GetRuntimeOwnerScene();
+        m_runtimeScene = GetNode()->GetRuntimeOwnerScene().GetPtr();
 
-        if (m_drawGizmo)
+        if (m_canDrawGizmo)
         {
             GetWorld()->GetGizmosManager().AddGizmoComponent(this);
         }
@@ -100,7 +101,7 @@ namespace pulsar
     {
         m_beginning = false;
 
-        if (m_drawGizmo)
+        if (m_canDrawGizmo)
         {
             GetWorld()->GetGizmosManager().RemoveGizmoComponent(this);
         }

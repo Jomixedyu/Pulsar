@@ -1,5 +1,6 @@
 #include "Components/SkyLightComponent.h"
 
+#include "AssetManager.h"
 #include "Scene.h"
 
 namespace pulsar
@@ -29,5 +30,22 @@ namespace pulsar
     {
         base::OnLightColorChanged();
         m_sceneInfo->Color = m_lightColor;
+    }
+    void SkyLightComponent::OnEnvironmentChanged()
+    {
+        TryLoadAssetRCPtr(m_environment);
+        if (!m_environment)
+        {
+            return;
+        }
+
+    }
+    void SkyLightComponent::PostEditChange(FieldInfo* info)
+    {
+        base::PostEditChange(info);
+        if (info->GetName() == NAMEOF(m_environment))
+        {
+            OnEnvironmentChanged();
+        }
     }
 } // namespace pulsar

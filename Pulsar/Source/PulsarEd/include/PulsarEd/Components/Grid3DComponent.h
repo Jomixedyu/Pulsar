@@ -1,17 +1,17 @@
 #pragma once
-#include "EditorComponent.h"
+#include "Assembly.h"
 #include <Pulsar/Components/RendererComponent.h>
 
 namespace pulsared
 {
-    class Grid3DComponent : public EditorComponent, public IRendererComponent
+    class Grid3DComponent : public Component, public IRendererComponent
     {
-        CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::Grid3DComponent, EditorComponent);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::Grid3DComponent, Component);
         CORELIB_IMPL_INTERFACES(IRendererComponent);
     public:
         Grid3DComponent() : CORELIB_INIT_INTERFACE(IRendererComponent)
         {
-
+            m_flags |= OF_NoPack;
         }
         virtual void BeginComponent() override;
 

@@ -6,6 +6,7 @@
 #include "EditorAppInstance.h"
 #include "EditorWorld.h"
 #include "ImGuiExt.h"
+#include "Subsystems/EditorGridSubsystem.h"
 
 #include <Pulsar/Assets/Shader.h>
 #include <Pulsar/Components/CameraComponent.h>
@@ -17,7 +18,6 @@
 #include <PulsarEd/EditorNode.h>
 #include <PulsarEd/Importers/FBXImporter.h>
 #include <PulsarEd/Windows/SceneWindow.h>
-#include <gfx-vk/GFXVulkanRenderTarget.h>
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_vulkan.h>
 
@@ -37,6 +37,7 @@ namespace pulsared
         m_sceneEditor->Initialize();
         m_sceneEditor->SetWorld(GetEdApp()->GetEditorWorld());
     }
+
     void SceneWindow::OnCloseWorkspace()
     {
         m_sceneEditor->Terminate();
@@ -137,11 +138,11 @@ namespace pulsared
             {
                 auto cam = world->GetCurrentCamera();
                 auto ctrl = cam->GetNode()->GetParent()->GetComponent<StdEditCameraControllerComponent>().GetPtr();
-                ctrl->m_enable2DMode = !ctrl->m_enable2DMode;
+                ctrl->SetEnable2DMode(!ctrl->GetEnable2DMode());
 
                 auto* storeData = &ctrl->m_saved3d;
 
-                if (ctrl->m_enable2DMode)
+                if (ctrl->GetEnable2DMode())
                 {
                     storeData = &ctrl->m_saved3d;
                 }
@@ -158,7 +159,7 @@ namespace pulsared
                 storeData->ProjectionMode = cam->GetProjectionMode();
 
                 auto* loadData = &ctrl->m_saved3d;
-                if (ctrl->m_enable2DMode)
+                if (ctrl->GetEnable2DMode())
                 {
                     loadData = &ctrl->m_saved2d;
                 }
@@ -172,19 +173,12 @@ namespace pulsared
                 camTransform->SetEuler(loadData->CamEuler);
                 cam->SetProjectionMode(loadData->ProjectionMode);
 
-                if (auto tool = dynamic_cast<ViewEdTool*>(world->GetTool()))
-                {
-                    tool->m_enabledRotate = !tool->m_enabledRotate;
-                }
             }
             if (ImGui::Button(ICON_FK_TABLE " Grid###Grid"))
             {
-                static index_string name = "__ReferenceGrid3d";
-                auto node = world->GetResidentScene()->FindNodeByName(name);
-                if (node)
-                {
-                    node->SetIsActiveSelf(!node->GetIsActiveSelf());
-                }
+                // static index_string name = "__ReferenceGrid3d";
+                auto grid = world->GetSubsystem<EditorGridSubsystem>();
+                grid->SetVisible(!grid->IsVisible());
             }
 
             ImGui::EndMenuBar();
@@ -195,38 +189,44 @@ namespace pulsared
             m_sceneEditor->Render(dt);
         }
 
-        if (ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_Q, false))
+        if (ImGui::IsWindowFocused())
         {
-            world->SetTool(std::make_unique<SelectorEdTool>());
-        }
-        else if (ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_W, false))
-        {
-            world->SetTool(std::make_unique<MoveEdTool>());
-        }
-        else if (ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_E, false))
-        {
-            world->SetTool(std::make_unique<RotationEdTool>());
-        }
-        else if (ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_R, false))
-        {
-            world->SetTool(std::make_unique<ScaleEdTool>());
-        }
-        else if (ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_B, false))
-        {
-            world->SetTool(std::make_unique<MeshVertexBrush>());
-        }
-        if (ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_Delete, false))
-        {
-            auto selection = world->GetSelection().GetSelection();
 
-            for (auto& item : selection)
+            if (ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_Q, false))
             {
-                if (item)
+                world->SetTool(std::make_unique<SelectorEdTool>());
+            }
+            else if (ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_W, false))
+            {
+                world->SetTool(std::make_unique<MoveEdTool>());
+            }
+            else if (ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_E, false))
+            {
+                world->SetTool(std::make_unique<RotationEdTool>());
+            }
+            else if (ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_R, false))
+            {
+                world->SetTool(std::make_unique<ScaleEdTool>());
+            }
+            else if (ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_B, false))
+            {
+                world->SetTool(std::make_unique<MeshVertexBrush>());
+            }
+            if (ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_Delete, false))
+            {
+                auto selection = world->GetSelection().GetSelection();
+
+                for (auto& item : selection)
                 {
-                    item->GetRuntimeOwnerScene()->RemoveNode(item);
+                    if (item)
+                    {
+                        item->GetRuntimeOwnerScene()->RemoveNode(item);
+                    }
                 }
             }
+
         }
+
     }
 
     void SceneWindow::OnWindowResize()

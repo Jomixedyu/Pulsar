@@ -371,10 +371,37 @@ namespace jxcorlib
         IInterface_sp           GetSharedInterface(Object_rsp instance, Type* type);
         IInterface*             GetInterface(Object* instance, Type* type);
 
-        const EnumDatas*        GetEnumDefinitions() const { return this->m_enumGetter(); }
 
+        struct EnumAccessor
+        {
+            std::map<string, uint32_t> s2i;
+            std::map<uint32_t, string> i2s;
+            bool GetName(uint32_t enumValue, string* outName) const
+            {
+                auto it = i2s.find(enumValue);
+                if (it == i2s.end())
+                {
+                    return false;
+                }
+                if (outName) *outName = it->second;
+                return true;
+            }
+            bool GetIndex(const string& name, uint32_t* outEnumValue) const
+            {
+                auto it = s2i.find(name);
+                if (it == s2i.end())
+                {
+                    return false;
+                }
+                if (outEnumValue) *outEnumValue = it->second;
+                return true;
+            }
+        };
+
+        const EnumAccessor*    GetEnumAccessors();
     private:
         void _AddMemberInfo(MemberInfo* info);
+        std::unique_ptr<EnumAccessor> m_enumAccessor;
     public:
 
     };

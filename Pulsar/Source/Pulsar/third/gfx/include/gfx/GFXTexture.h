@@ -1,77 +1,60 @@
 #pragma once
+#include "GFXInclude.h"
+#include "GFXTextureView.h"
+#include "TextureClasses.h"
 #include <cstdint>
+#include <array>
 
 namespace gfx
 {
-
-    enum class GFXTextureFormat
-    {
-        R8_UNorm,
-        R8G8B8A8_UNorm,
-        R8G8B8A8_SRGB,
-        BC3_SRGB,
-        BC5_UNorm,
-        BC6H_RGB_SFloat,
-        D32_SFloat,
-        D32_SFloat_S8_UInt,
-        D24_UNorm_S8_UInt
-    };
-    inline const char* to_string(GFXTextureFormat format)
-    {
-        switch (format)
-        {
-        case GFXTextureFormat::R8_UNorm:
-            return "R8_UNorm";
-        case GFXTextureFormat::R8G8B8A8_UNorm:
-            return "R8G8B8A8_UNorm";
-        case GFXTextureFormat::R8G8B8A8_SRGB:
-            return "R8G8B8A8_SRGB";
-        case GFXTextureFormat::BC3_SRGB:
-            return "BC3_SRGB";
-        case GFXTextureFormat::BC5_UNorm:
-            return "BC5_UNorm";
-        case GFXTextureFormat::BC6H_RGB_SFloat:
-            return "BC6H_RGB_SFloat";
-        case GFXTextureFormat::D32_SFloat:
-            return "D32_SFloat";
-        case GFXTextureFormat::D32_SFloat_S8_UInt:
-            return "D32_SFloat_S8_UInt";
-        case GFXTextureFormat::D24_UNorm_S8_UInt:
-            return "D24_UNorm_S8_UInt";
-        }
-        return nullptr;
-    }
-
-    enum class GFXSamplerFilter
-    {
-        Nearest,
-        Linear,
-        Cubic
-    };
-    enum class GFXSamplerAddressMode
-    {
-        Repeat,
-        MirroredRepeat,
-        ClampToEdge,
-    };
-
     struct GFXSamplerConfig
     {
         GFXSamplerFilter Filter;
         GFXSamplerAddressMode AddressMode;
     };
 
+    struct GFXTextureCreateInfo
+    {
+        const uint8_t* imageData{};
+        size_t dataLength{};
+        int32_t width{};
+        int32_t height{};
+        int32_t depth{1};
+        GFXTextureFormat format{};
+        GFXTextureDataType dataType{};
+        GFXSamplerConfig samplerCfg{};
+        GFXTextureTargetType targetType{};
+        uint32_t mipLevels{1};
+        uint32_t arrayLayers{1};
+    };
+
     class GFXTexture
     {
     public:
-        virtual ~GFXTexture()
+        virtual ~GFXTexture() = default;
+        GFXTexture(int32_t width, int32_t height, int32_t depth, GFXSamplerConfig cfg)
+            : m_width(width), m_height(height), m_depth(depth), m_samplerConfig(cfg)
         {
         }
+    public:
+        virtual int32_t GetWidth() const { return m_width; }
+        virtual int32_t GetHeight() const { return m_height; }
+        virtual int32_t GetDepth() const { return m_depth; }
+        virtual size_t GetArrayCount() const { return m_arrayLayers; }
+        virtual size_t GetMipLevels() const { return m_mipLevels; }
+        virtual const type_info& GetClassId() const = 0;
+        virtual GFXTextureTargetType GetTargetType() const = 0;
+        virtual GFXTextureFormat GetFormat() const = 0;
+        virtual GFXTexture2DView_sp Get2DView(size_t index = 0) = 0;
 
     public:
-        virtual int32_t GetWidth() const = 0;
-        virtual int32_t GetHeight() const = 0;
-        virtual size_t GetTextureType() const = 0;
-        // virtual void* GetTextureId() const = 0;
+        std::array<float, 4> TargetClearColor;
+    protected:
+        GFXSamplerConfig m_samplerConfig{};
+        int32_t m_width, m_height, m_depth;
+        size_t m_mipLevels{1};
+        size_t m_arrayLayers{1};
     };
+    GFX_DECL_SPTR(GFXTexture);
+
 } // namespace gfx

@@ -1,7 +1,8 @@
 #pragma once
-#include <gfx/GFXRenderPass.h>
+#include "GFXVulkanTextureView.h"
+
 #include "VulkanInclude.h"
-#include "GFXVulkanRenderTarget.h"
+#include <gfx/GFXRenderPass.h>
 
 namespace gfx
 {
@@ -12,7 +13,7 @@ namespace gfx
 
     public:
         //GFXVulkanRenderPass(GFXVulkanApplication* app, VkFormat colorFormat);
-        GFXVulkanRenderPass(GFXVulkanApplication* app, const std::vector<GFXVulkanRenderTarget*>& createFromlayout);
+        GFXVulkanRenderPass(GFXVulkanApplication* app, const std::vector<GFXVulkanTexture2DView*>& createFromlayout);
         GFXVulkanRenderPass(const GFXVulkanRenderPass&) = delete;
 
         virtual ~GFXVulkanRenderPass() override;

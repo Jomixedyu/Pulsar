@@ -52,7 +52,7 @@ namespace pulsar
 
     void PointLightComponent::BeginComponent()
     {
-        m_drawGizmo = true;
+        m_canDrawGizmo = true;
         base::BeginComponent();
     }
 

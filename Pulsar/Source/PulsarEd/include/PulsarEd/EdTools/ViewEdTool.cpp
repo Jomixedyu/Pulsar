@@ -1,6 +1,7 @@
 
 #include "ViewEdTool.h"
 
+#include "Components/StdEditCameraControllerComponent.h"
 #include "EditorWorld.h"
 #include "ImGuiExt.h"
 #include "Pulsar/Components/CameraComponent.h"
@@ -23,6 +24,10 @@ namespace pulsared
     void ViewEdTool::Tick(float dt)
     {
         base::Tick(dt);
+        if (!m_world->GetCurrentCamera())
+        {
+            return;
+        }
 
         auto newpos = ImGui::GetMousePos();
         if (ImGui::IsKeyDown(ImGuiKey_LeftAlt) && ImGui::IsWindowHovered())
@@ -85,7 +90,10 @@ namespace pulsared
 
         if (m_altPressed)
         {
-            if (m_leftMousePressed && m_enabledRotate)
+            auto parent = m_world->GetCurrentCamera()->GetTransform()->GetParent()->GetNode();
+            auto camCtrl = parent->GetComponent<StdEditCameraControllerComponent>();
+
+            if (m_leftMousePressed && camCtrl->CanRotate())
             {
                 auto trans = m_world->GetCurrentCamera()->GetNode()->GetTransform()->GetParent();
                 auto euler = trans->GetEuler();
@@ -102,7 +110,7 @@ namespace pulsared
                 auto cam = m_world->GetCurrentCamera();
                 auto tr = cam->GetNode()->GetTransform();
                 auto dtDistance = (newpos.x - m_latestMousePos.x) * m_scaleSpeed;
-                if (cam->GetProjectionMode() == CameraProjectionMode::Perspective)
+                if (cam->GetProjectionMode() == CaptureProjectionMode::Perspective)
                 {
                     if (tr->GetPosition().z + dtDistance > -0.2f)
                     {
@@ -141,7 +149,7 @@ namespace pulsared
                 auto cam = m_world->GetCurrentCamera();
                 auto tr = cam->GetNode()->GetTransform();
                 auto dtDistance = io.MouseWheel * m_scaleSpeed * 10;
-                if (cam->GetProjectionMode() == CameraProjectionMode::Perspective)
+                if (cam->GetProjectionMode() == CaptureProjectionMode::Perspective)
                 {
                     if (tr->GetPosition().z + dtDistance > -0.2f)
                     {
@@ -179,7 +187,21 @@ namespace pulsared
     {
     }
 
-    void ViewEdTool::OnDragUpdate(const MouseEventData &e)
+    void ViewEdTool::OnDragUpdate(const MouseEventData& e)
     {
+    }
+    void ViewEdTool::GetViewportSize(Vector2f& pos, Vector2f& size) const
+    {
+        ImVec2 vMin = ImGui::GetWindowContentRegionMin();
+        ImVec2 vMax = ImGui::GetWindowContentRegionMax();
+        vMin.x += ImGui::GetWindowPos().x;
+        vMin.y += ImGui::GetWindowPos().y;
+        vMax.x += ImGui::GetWindowPos().x;
+        vMax.y += ImGui::GetWindowPos().y;
+
+        ImVec2 vSize = { vMax.x - vMin.x, vMax.y - vMin.y };
+
+        pos = vMin;
+        size = vSize;
     }
 } // namespace pulsared

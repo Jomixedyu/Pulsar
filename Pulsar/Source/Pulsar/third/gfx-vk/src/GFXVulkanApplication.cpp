@@ -1,5 +1,6 @@
 #include "GFXVulkanApplication.h"
 #include "BufferHelper.h"
+#include "GFXSurfaceSDL2.h"
 #include "GFXVulkanBuffer.h"
 #include "GFXVulkanCommandBuffer.h"
 #include "GFXVulkanCommandBufferPool.h"
@@ -10,18 +11,19 @@
 #include "GFXVulkanRenderPass.h"
 #include "GFXVulkanRenderer.h"
 #include "GFXVulkanShaderPass.h"
-#include "GFXVulkanTexture2D.h"
+#include "GFXVulkanTexture.h"
 #include "GFXVulkanVertexLayoutDescription.h"
 #include "GFXVulkanViewport.h"
 #include "PhysicalDeviceHelper.h"
+
+#include <SDL_vulkan.h>
 #include <algorithm>
 #include <array>
+#include <cassert>
 #include <cmath>
-#include <glfw/include/GLFW/glfw3.h>
 #include <iostream>
 #include <set>
 #include <stdexcept>
-#include <stdlib.h>
 
 #undef max
 
@@ -31,21 +33,25 @@ namespace gfx
     {
         if (m_extensions.empty())
         {
-            uint32_t glfwExtensionCount = 0;
-            const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+            uint32_t extensionCount = 0;
+            SDL_Vulkan_GetInstanceExtensions((SDL_Window*)m_window->GetUserPoint(), &extensionCount, nullptr);
+            m_extensions.resize(extensionCount);
+            SDL_Vulkan_GetInstanceExtensions((SDL_Window*)m_window->GetUserPoint(), &extensionCount, m_extensions.data());
 
-            m_count = glfwExtensionCount;
+            // const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
-            for (uint32_t i = 0; i < glfwExtensionCount; i++)
-            {
-                const size_t strlen = ::strlen(glfwExtensions[i]);
-                const size_t bufferSize = strlen + 1;
+            m_count = extensionCount;
 
-                auto str = new char[bufferSize];
-                ::strcpy(str, glfwExtensions[i]);
-
-                m_extensions.push_back(str);
-            }
+            // for (uint32_t i = 0; i < extensionCount; i++)
+            // {
+            //     const size_t strlen = ::strlen(glfwExtensions[i]);
+            //     const size_t bufferSize = strlen + 1;
+            //
+            //     auto str = new char[bufferSize];
+            //     ::strcpy(str, glfwExtensions[i]);
+            //
+            //     m_extensions.push_back(str);
+            // }
 
             if (GetConfig().EnableValid)
             {
@@ -64,14 +70,14 @@ namespace gfx
 
     intptr_t GFXVulkanApplication::GetWindowHandle()
     {
-        return reinterpret_cast<intptr_t>(m_window);
+        return m_window->GetNativeHandle();
     }
 
-    void GFXVulkanApplication::FramebufferResizeCallback(GLFWwindow* window, int width, int height)
-    {
-        auto app = reinterpret_cast<GFXVulkanApplication*>(glfwGetWindowUserPointer(window));
-        app->m_framebufferResized = true;
-    }
+    // void GFXVulkanApplication::FramebufferResizeCallback(GLFWwindow* window, int width, int height)
+    // {
+    //     auto app = reinterpret_cast<GFXVulkanApplication*>(glfwGetWindowUserPointer(window));
+    //     app->m_framebufferResized = true;
+    // }
 
     static const std::vector<const char*> validationLayers =
         {
@@ -341,35 +347,50 @@ namespace gfx
         return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
     }
 
+    GFXRenderer* GFXVulkanApplication::GetRenderer()
+    {
+        return m_renderer;
+    }
     void GFXVulkanApplication::Initialize()
     {
-        glfwInit();
+        // glfwInit();
+        // glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+        // m_window = glfwCreateWindow(m_config.WindowWidth, m_config.WindowHeight, m_config.Title, nullptr, nullptr);
+        // glfwSetWindowUserPointer(m_window, this);
+        // glfwSetFramebufferSizeCallback(m_window, FramebufferResizeCallback);
 
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        // glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+        auto win = new GFXSurfaceSDL2;
+        m_window = win;
 
-        m_window = glfwCreateWindow(m_config.WindowWidth, m_config.WindowHeight, m_config.Title, nullptr, nullptr);
-        glfwSetWindowUserPointer(m_window, this);
-        glfwSetFramebufferSizeCallback(m_window, FramebufferResizeCallback);
+        win->Initialize();
+        win->CreateMainWindow();
 
         this->InitVkInstance();
 
         // setup debuger
-        if (m_config.EnableValid)
-        {
-            VkDebugUtilsMessengerCreateInfoEXT createInfo{};
-            _PopulateDebugMessengerCreateInfo(createInfo);
+        // if (m_config.EnableValid)
+        // {
+        //     VkDebugUtilsMessengerCreateInfoEXT createInfo{};
+        //     _PopulateDebugMessengerCreateInfo(createInfo);
+        //
+        //     // if (_CreateDebugUtilsMessengerEXT(m_instance, &createInfo, nullptr, &m_debugMessenger) != VK_SUCCESS)
+        //     //{
+        //     //     throw std::runtime_error("failed to set up debug messenger!");
+        //     // }
+        // }
 
-            // if (_CreateDebugUtilsMessengerEXT(m_instance, &createInfo, nullptr, &m_debugMessenger) != VK_SUCCESS)
-            //{
-            //     throw std::runtime_error("failed to set up debug messenger!");
-            // }
-        }
-        // create surface
-        if (glfwCreateWindowSurface(m_instance, m_window, nullptr, &m_surface) != VK_SUCCESS)
+
+        if (win->CreateVulkanSurface(m_instance, &m_surface) == 0)
         {
             throw std::runtime_error("failed to create window surface!");
         }
+
+
+        // create surface
+        // if (glfwCreateWindowSurface(m_instance, m_window, nullptr, &m_surface) != VK_SUCCESS)
+        // {
+        //     throw std::runtime_error("failed to create window surface!");
+        // }
 
         this->InitPickPhysicalDevice();
         this->InitLogicalDevice();
@@ -394,7 +415,9 @@ namespace gfx
             auto currentTime = std::chrono::high_resolution_clock::now();
             float deltaTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - m_lastTime).count();
 
-            if (glfwWindowShouldClose(m_window))
+            // bool recivedClose = glfwWindowShouldClose(m_window);
+            bool recivedClose = m_window->WantToClose();
+            if (recivedClose)
             {
                 if (OnExitWindow)
                 {
@@ -408,8 +431,8 @@ namespace gfx
                     m_isAppEnding = true;
                 }
             }
-
-            glfwPollEvents();
+            m_window->PollEvent();
+            // glfwPollEvents();
 
             if (OnPreRender)
             {
@@ -426,6 +449,7 @@ namespace gfx
         }
         vkDeviceWaitIdle(m_device);
     }
+
     void GFXVulkanApplication::TickRender(float deltaTime)
     {
         m_renderer->Render(deltaTime);
@@ -459,8 +483,12 @@ namespace gfx
 
         vkDestroyInstance(m_instance, nullptr);
 
-        glfwDestroyWindow(m_window);
-        glfwTerminate();
+        // glfwDestroyWindow(m_window);
+        // glfwTerminate();
+
+        m_window->DestroySurface();
+        delete m_window;
+        m_window = nullptr;
     }
 
     GFXBuffer_sp GFXVulkanApplication::CreateBuffer(GFXBufferUsage usage, size_t bufferSize)
@@ -477,14 +505,24 @@ namespace gfx
     }
 
 
-    std::shared_ptr<GFXTexture2D> gfx::GFXVulkanApplication::CreateTexture2DFromMemory(
+    std::shared_ptr<GFXTexture> gfx::GFXVulkanApplication::CreateTexture2DFromMemory(
         const uint8_t* imageData, size_t length, int width, int height, GFXTextureFormat format, const GFXSamplerConfig& samplerConfig)
     {
-        return gfxmksptr(new GFXVulkanTexture2D(this, imageData, length, width, height, BufferHelper::GetVkFormat(format), false, samplerConfig));
+        GFXTextureCreateInfo info{};
+        info.imageData = imageData;
+        info.dataLength = length;
+        info.width = width;
+        info.height = height;
+        info.depth = 1;
+        info.format = format;
+        info.samplerCfg = samplerConfig;
+        info.dataType = GFXTextureDataType::Texture2D;
+
+        return gfxmksptr(new GFXVulkanTexture(this, info));
     }
 
     std::shared_ptr<GFXFrameBufferObject> GFXVulkanApplication::CreateFrameBufferObject(
-        const std::vector<GFXRenderTarget*>& renderTargets,
+        const std::vector<GFXTexture2DView_sp>& renderTargets,
         const std::shared_ptr<GFXRenderPassLayout>& renderPassLayout)
     {
         auto buf = new GFXVulkanFrameBufferObject(this, renderTargets, std::static_pointer_cast<GFXVulkanRenderPass>(renderPassLayout));
@@ -505,20 +543,41 @@ namespace gfx
         return gfxmksptr(pass);
     }
 
-    GFXRenderPassLayout_sp GFXVulkanApplication::CreateRenderPassLayout(const std::vector<GFXRenderTarget*>& renderTargets)
+    GFXRenderPassLayout_sp GFXVulkanApplication::CreateRenderPassLayout(const std::vector<GFXTexture2DView*>& renderTargets)
     {
-        array_list<GFXVulkanRenderTarget*> rt;
+        array_list<GFXVulkanTexture2DView*> rt;
         for (auto i : renderTargets)
         {
-            rt.push_back(static_cast<GFXVulkanRenderTarget*>(i));
+            rt.push_back(static_cast<GFXVulkanTexture2DView*>(i));
         }
         return gfxmksptr(new GFXVulkanRenderPass(this, rt));
     }
 
-    GFXRenderTarget_sp GFXVulkanApplication::CreateRenderTarget(
-        int32_t width, int32_t height, GFXRenderTargetType type, GFXTextureFormat format, const GFXSamplerConfig& samplerCfg)
+    GFXTexture_sp GFXVulkanApplication::CreateTextureCube(int32_t size)
     {
-        auto rt = new GFXVulkanRenderTarget(this, width, height, type, format, samplerCfg);
+        GFXTextureCreateInfo info{};
+        info.width = size;
+        info.height = size;
+        info.depth = 1;
+        info.arrayLayers = 6;
+        info.format = GFXTextureFormat::R16G16B16A16_SFloat;
+        info.targetType = GFXTextureTargetType::ColorTarget;
+        info.dataType = GFXTextureDataType::TextureCube;
+        return gfxmksptr(new GFXVulkanTexture(this, info));
+    }
+
+    GFXTexture_sp GFXVulkanApplication::CreateRenderTarget(
+        int32_t width, int32_t height, GFXTextureTargetType type, GFXTextureFormat format, const GFXSamplerConfig& samplerCfg)
+    {
+        GFXTextureCreateInfo info{};
+        info.width = width;
+        info.height = height;
+        info.depth = 1;
+        info.format = format;
+        info.targetType = type;
+        info.dataType = GFXTextureDataType::Texture2D;
+
+        auto rt = new GFXVulkanTexture(this, info);
         return gfxmksptr(rt);
     }
 
@@ -536,7 +595,7 @@ namespace gfx
 
     array_list<GFXTextureFormat> GFXVulkanApplication::GetSupportedDepthFormats()
     {
-        if (m_depthFormatCache.size() == 0)
+        if (m_depthFormatCache.empty())
         {
             for (auto& format : BufferHelper::FindDepthFormats(this))
             {

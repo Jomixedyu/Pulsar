@@ -10,7 +10,7 @@ namespace pulsared
     class TextureEditorWindow : public AssetPreviewEditorWindow
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::TextureEditorWindow, AssetPreviewEditorWindow);
-        DEFINE_ASSET_EDITOR(Texture2D);
+        DEFINE_ASSET_EDITOR(Texture2D, true);
     public:
         virtual string_view GetWindowDisplayName() const { return "Texutre Editor"; }
 

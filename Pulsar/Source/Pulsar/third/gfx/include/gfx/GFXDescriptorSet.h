@@ -1,8 +1,7 @@
 #pragma once
 #include "GFXBuffer.h"
-#include "GFXTexture2D.h"
+#include "GFXTexture.h"
 #include "GFXInclude.h"
-#include "GFXRenderTarget.h"
 #include <string_view>
 
 namespace gfx
@@ -66,7 +65,7 @@ namespace gfx
         GFXDescriptor(const GFXDescriptor&) = delete;
 
         virtual void SetConstantBuffer(GFXBuffer* buffer) = 0;
-        virtual void SetTextureSampler2D(GFXTexture* texture) = 0;
+        virtual void SetTextureSampler2D(GFXTexture2DView* texture) = 0;
         virtual void SetTexture2D(GFXTexture* texture) = 0;
 
         bool IsDirty;

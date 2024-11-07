@@ -30,15 +30,15 @@ namespace gfx
         virtual void CmdBindDescriptorSets(const array_list<GFXDescriptorSet*>& descriptorSet, GFXGraphicsPipeline* pipeline) override;
         virtual void CmdDraw(size_t vertexCount) override;
         virtual void CmdDrawIndexed(size_t indicesCount) override;
-        virtual void CmdClearColor(GFXRenderTarget* rt, float r, float g, float b, float a) override;
-        virtual void CmdClearColor(GFXRenderTarget* rt) override;
+        virtual void CmdClearColor(GFXTexture* rt, float r, float g, float b, float a) override;
+        virtual void CmdClearColor(GFXTexture* rt) override;
 
         virtual void CmdBeginFrameBuffer() override;
         virtual void CmdEndFrameBuffer() override;
         virtual void CmdSetViewport(float x, float y, float width, float height) override;
         virtual void CmdSetCullMode(GFXCullMode mode) override;
-        virtual void CmdBlit(GFXTexture* src, GFXTexture* dest) override;
-        virtual void CmdImageTransitionBarrier(GFXRenderTarget* rt, GFXResourceLayout layout) override;
+        virtual void CmdBlit(GFXTextureView* src, GFXTextureView* dest) override;
+        virtual void CmdImageTransitionBarrier(GFXTextureView* rt, GFXResourceLayout layout) override;
     public:
         virtual GFXApplication* GetApplication() const override;
         const VkCommandBuffer& GetVkCommandBuffer() const { return m_cmdBuffer; }

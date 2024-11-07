@@ -10,7 +10,7 @@ namespace pulsared
     void SelectorEdTool::Begin()
     {
         base::Begin();
-        m_frameSelector = false;
+        m_frameSelectorEnabled = false;
         Logger::Log("SelectorTool");
     }
 
@@ -18,7 +18,7 @@ namespace pulsared
     {
         base::Tick(dt);
 
-        if (m_frameSelector)
+        if (m_frameSelectorEnabled)
         {
             ImDrawList* drawList = ImGui::GetWindowDrawList();
             auto curpos = ImGui::GetMousePos();
@@ -29,12 +29,13 @@ namespace pulsared
             drawList->AddRect(startpos, curpos, fillColor, 0.0f, 0, 1);
         }
     }
+
     void SelectorEdTool::OnMouseDown(const MouseEventData& e)
     {
         base::OnMouseDown(e);
         if (ImGui::IsWindowHovered() && e.ButtonId == ImGuiMouseButton_Left && m_enableSelect)
         {
-            m_frameSelector = true;
+            m_frameSelectorEnabled = true;
             auto startpos = ImGui::GetMousePos();
             m_frameSelectorStartPos = {startpos.x, startpos.y};
         }
@@ -44,7 +45,7 @@ namespace pulsared
         base::OnMouseUp(e);
         if (e.ButtonId == ImGuiMouseButton_Left)
         {
-            m_frameSelector = false;
+            m_frameSelectorEnabled = false;
         }
     }
     SelectionSet<Node>& SelectorEdTool::GetSelection()

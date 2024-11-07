@@ -19,7 +19,7 @@ namespace pulsared
 
         SelectionSet<Node>& GetSelection();
 
-        bool m_frameSelector{};
+        bool m_frameSelectorEnabled{};
         Vector2f m_frameSelectorStartPos{};
 
         bool m_enableSelect = true;

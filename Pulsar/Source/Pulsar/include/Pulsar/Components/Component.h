@@ -22,6 +22,20 @@ namespace pulsar
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::AbstractComponentAttribute, Attribute);
     };
+    class CategoryAttribute : public Attribute
+    {
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::CategoryAttribute, Attribute);
+    public:
+        explicit CategoryAttribute(string_view category) : m_category(category)
+        {
+        }
+        string_view GetCategory() const
+        {
+            return m_category;
+        }
+    private:
+        string_view m_category;
+    };
 
     struct ComponentSerializer
     {
@@ -41,14 +55,41 @@ namespace pulsar
         const bool HasEditorData;
     };
 
-    class Component : public ObjectBase, public ITickable
+
+
+
+    class SceneObject : public ObjectBase
+    {
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::SceneObject, ObjectBase);
+
+        guid_t m_sceneObjectId;
+    };
+
+    class ISceneObjectFinder
+    {
+    public:
+        virtual ObjectHandle Find(guid_t sceneObjId) = 0;
+    };
+
+    template <typename T>
+    struct SceneObjectWeakPtr
+    {
+        ObjectPtr<SceneObject> Load(ISceneObjectFinder* finder)
+        {
+            return finder->Find(m_ref);
+        }
+        guid_t m_ref;
+    };
+
+    class Component : public SceneObject, public ITickable
     {
         friend class Node;
-        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::Component, ObjectBase);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::Component, SceneObject);
         CORELIB_CLASS_ATTR(new AbstractComponentAttribute);
     public:
         virtual void Serialize(ComponentSerializer* s);
-        [[always_inline]] const ObjectPtr<Node>& GetNode() const noexcept { return m_ownerNode; }
+        [[always_inline]] ObjectPtr<Node> GetNode() const noexcept { return m_ownerNode; }
+        [[always_inline]] Node* GetNodePtr() const noexcept { return m_ownerNodePtr; }
         ObjectPtr<Node> GetMasterComponent() const;
         World* GetWorld() const;
         ObjectPtr<Scene> GetRuntimeScene() const;
@@ -60,7 +101,7 @@ namespace pulsar
 
         virtual void OnTransformChanged() {}
 
-        bool CanDrawGizmo() const { return m_drawGizmo; }
+        bool CanDrawGizmo() const { return m_canDrawGizmo; }
         virtual void OnDrawGizmo(GizmoPainter* painter, bool selected) {}
     protected:
         virtual void OnReceiveMessage(MessageId id);
@@ -84,10 +125,11 @@ namespace pulsar
     private:
         ObjectPtr<Component> m_masterComponent;
         ObjectPtr<Node> m_ownerNode;
+        Node* m_ownerNodePtr = nullptr;
         ObjectPtr<Scene> m_runtimeScene;
     protected:
         bool m_beginning = false;
-        bool m_drawGizmo = false;
+        bool m_canDrawGizmo = false;
     public:
         bool IsCollapsing = false;
     };

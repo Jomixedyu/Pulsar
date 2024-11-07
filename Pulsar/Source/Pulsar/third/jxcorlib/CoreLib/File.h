@@ -23,10 +23,10 @@ namespace jxcorlib
 
     namespace FileUtil
     {
-        std::string ReadAllText(std::filesystem::path path);
-        void WriteAllText(std::filesystem::path path, std::string_view content);
-        std::vector<uint8_t> ReadAllBytes(std::filesystem::path path);
-        void WriteAllBytes(std::filesystem::path path, char* data, size_t len);
+        std::string ReadAllText(const std::filesystem::path& path);
+        void WriteAllText(const std::filesystem::path&, std::string_view content);
+        std::vector<uint8_t> ReadAllBytes(const std::filesystem::path& path);
+        void WriteAllBytes(const std::filesystem::path& path, char* data, size_t len);
     }
 
     namespace PathUtil

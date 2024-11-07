@@ -1,4 +1,5 @@
 ﻿#include "EditorAppInstance.h"
+#include "../../Pulsar/third/uinput/include/uinput/InputManager.h"
 #include "EditorAssetManager.h"
 #include "EditorRenderPipeline.h"
 #include "Importers/FBXImporter.h"
@@ -198,15 +199,43 @@ namespace pulsared
             MenuEntrySubMenu_sp menu = mksptr(new MenuEntrySubMenu("Components"));
             menu->Priority = 500;
             mainMenu->AddEntry(menu);
+
+            array_list<Type*> components;
+            array_list<Type*> noCategoryComponents;
             for (auto type : AssemblyManager::GlobalSearchType(cltypeof<Component>()))
             {
                 if (type->IsDefinedAttribute(cltypeof<AbstractComponentAttribute>(), false))
                 {
                     continue;
                 }
+                if (type->IsDefinedAttribute(cltypeof<CategoryAttribute>(), false))
+                {
+                    components.push_back(type);
+                }
+                else
+                {
+                    noCategoryComponents.push_back(type);
+                }
+            }
+
+            components.append_range(noCategoryComponents);
+            for (auto type : components)
+            {
+                auto targetMenu = menu;
+                if (auto category = type->GetAttribute<CategoryAttribute>(false))
+                {
+                    auto categoryEntry = menu->FindSubMenuEntry(category->GetCategory());
+                    if (!categoryEntry)
+                    {
+                        categoryEntry = mksptr(new MenuEntrySubMenu(string{category->GetCategory()}));
+                        menu->AddEntry(categoryEntry);
+                    }
+                    targetMenu = categoryEntry;
+                }
+
                 auto itemEntry = mksptr(new MenuEntryButton(type->GetName(),
                                                             ComponentInfoManager::GetFriendlyComponentName(type)));
-                menu->AddEntry(itemEntry);
+                targetMenu->AddEntry(itemEntry);
                 itemEntry->Action = MenuAction::FromLambda([](MenuContexts_rsp ctxs) {
                     auto edworld = dynamic_cast<EditorWorld*>(EditorWorld::GetPreviewWorld());
 
@@ -285,10 +314,11 @@ namespace pulsared
         EditorWindowManager::GetPanelWindow(cltypeof<OutlinerWindow>())->Open();
         EditorWindowManager::RegisterPanelWindowType(cltypeof<PropertiesWindow>());
         EditorWindowManager::GetPanelWindow(cltypeof<PropertiesWindow>())->Open();
-        EditorWindowManager::RegisterPanelWindowType(cltypeof<WorkspaceWindow>());
-        EditorWindowManager::GetPanelWindow(cltypeof<WorkspaceWindow>())->Open();
         EditorWindowManager::RegisterPanelWindowType(cltypeof<ConsoleWindow>());
         EditorWindowManager::GetPanelWindow(cltypeof<ConsoleWindow>())->Open();
+        EditorWindowManager::RegisterPanelWindowType(cltypeof<WorkspaceWindow>());
+        EditorWindowManager::GetPanelWindow(cltypeof<WorkspaceWindow>())->Open();
+
 
         // mksptr(new ShelfBarWindow)->Open();
     }
@@ -418,8 +448,17 @@ namespace pulsared
         Logger::Log("initialize world");
         auto edWorld = World::Reset<EditorWorld>("MainWorld");
         edWorld->GetCurrentCamera()->GetTransform()->GetParent()->SetEuler({45.f,-45,0});
-        edWorld->AddGrid3d();
+
         m_world = edWorld;
+        {
+            auto skySphere = edWorld->GetResidentScene()->NewNode("Sky Sphere");
+            skySphere->GetTransform()->SetScale({500,500,500});
+            auto sphere = GetAssetManager()->LoadAsset<StaticMesh>(BuiltinAsset::Shapes_Sphere);
+            auto renderer = skySphere->AddComponent<StaticMeshRendererComponent>();
+            renderer->SetStaticMesh(sphere);
+            renderer->SetMaterial(0, GetAssetManager()->LoadAsset<Material>("Engine/Materials/SkySphere"));
+
+        }
 
         auto renderPipeline = new EditorRenderPipeline{m_world};
 
@@ -442,32 +481,12 @@ namespace pulsared
         _RegisterIcon(cltypeof<StaticMesh>(), "Editor/Icons/staticmesh.png");
         _RegisterIcon(cltypeof<Texture2D>(), "Editor/Icons/texture.png");
         _RegisterIcon(cltypeof<Prefab>(), "Editor/Icons/prefab.png");
+        _RegisterIcon(cltypeof<ObjectBase>(), "Editor/Icons/object.png");
         _RegisterIcon("WorkspaceWindow.Dirty", "Editor/Icons/Star.png");
 
         InitBasicMenu();
 
         Logger::Log("initialize subsystems");
-        // collect subsystem
-        for (Type* type : *__PulsarSubsystemRegistry::types())
-        {
-            if (type->IsSubclassOf(cltypeof<EditorSubsystem>()))
-            {
-                SPtr<Subsystem> subsys = sptr_cast<Subsystem>(type->CreateSharedInstance({}));
-                this->subsystems.push_back(subsys);
-            }
-        }
-
-        // initialize subsystem
-        for (auto& subsystem : this->subsystems)
-        {
-            Logger::Log("initializing subsystem: " + subsystem->GetType()->GetName());
-            subsystem->OnInitializing();
-        }
-        for (auto& subsystem : this->subsystems)
-        {
-            Logger::Log("initialized subsystem: " + subsystem->GetType()->GetName());
-            subsystem->OnInitialized();
-        }
 
         // init window ui
         Logger::Log("initialize editor window manager");
@@ -476,18 +495,16 @@ namespace pulsared
 
         Workspace::OpenWorkspace(_SearchUpFolder("Project") / "Project.peproj");
         _Test();
+
+        // m_inputManager = uinput::InputManager::Create();
     }
 
     void EditorAppInstance::OnTerminate()
     {
+        // m_inputManager.reset();
+
         PrefabUtil::ClosePrefabMode();
         World::Reset(nullptr);
-
-        // terminate subsystem
-        for (auto& subsystem : this->subsystems)
-        {
-            subsystem->OnTerminate();
-        }
 
         m_gui->Terminate();
         m_gui.reset();

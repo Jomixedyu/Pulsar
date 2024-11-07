@@ -271,6 +271,20 @@ namespace jxcorlib
         }
         return static_cast<MethodInfo*>(info.get());
     }
+    const Type::EnumAccessor* Type::GetEnumAccessors()
+    {
+        if (m_enumAccessor == nullptr)
+        {
+            m_enumAccessor = std::make_unique<EnumAccessor>();
+            auto arrays = m_enumGetter();
+            for (auto& element : *arrays)
+            {
+                m_enumAccessor->i2s.emplace(element.second, element.first);
+                m_enumAccessor->s2i.emplace(element.first, element.second);
+            }
+        }
+        return m_enumAccessor.get();
+    }
     void Type::_AddMemberInfo(MemberInfo* info)
     {
         this->m_memberInfos.insert({ info->GetName(), mksptr(info) });

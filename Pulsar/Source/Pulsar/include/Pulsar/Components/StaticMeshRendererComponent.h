@@ -20,6 +20,7 @@ namespace pulsar
     class StaticMeshRendererComponent : public MeshRendererComponent, public IRendererComponent
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::StaticMeshRendererComponent, MeshRendererComponent);
+        CORELIB_CLASS_ATTR(new CategoryAttribute("Renderer"));
         CORELIB_IMPL_INTERFACES(IRendererComponent);
     public:
         SPtr<rendering::RenderObject> CreateRenderObject() override;

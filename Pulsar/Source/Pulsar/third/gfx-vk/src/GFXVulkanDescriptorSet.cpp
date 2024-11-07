@@ -3,7 +3,7 @@
 #include <gfx-vk/GFXVulkanBuffer.h>
 #include <gfx-vk/GFXVulkanDescriptorPool.h>
 #include <gfx-vk/GFXVulkanDescriptorSet.h>
-#include <gfx-vk/GFXVulkanTexture2D.h>
+#include <gfx-vk/GFXVulkanTexture.h>
 #include <stdexcept>
 
 namespace gfx
@@ -112,27 +112,13 @@ namespace gfx
 
         IsDirty = true;
     }
-    void GFXVulkanDescriptor::SetTextureSampler2D(GFXTexture* texture)
-    {
-        VkImageView imageView;
-        VkSampler sampler;
 
-        if (texture->GetTextureType() == GFXVulkanTexture2D::StaticTexutreType())
-        {
-            auto tex2d = static_cast<GFXVulkanTexture2D*>(texture);
-            imageView = tex2d->GetVkImageView();
-            sampler = tex2d->GetVkSampler();
-        }
-        else if (texture->GetTextureType() == GFXVulkanRenderTarget::StaticTexutreType())
-        {
-            auto rt = static_cast<GFXVulkanRenderTarget*>(texture);
-            imageView = rt->GetVkImageView();
-            sampler = rt->GetVkSampler();
-        }
-        else
-        {
-            assert(0);
-        }
+    void GFXVulkanDescriptor::SetTextureSampler2D(GFXTexture2DView* texture)
+    {
+        auto vkView = dynamic_cast<GFXVulkanTexture2DView*>(texture);
+
+        VkImageView imageView = vkView->GetVkImageView();
+        VkSampler sampler = vkView->GetVkTexture()->GetVkSampler();
 
         ImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         ImageInfo.imageView = imageView;
@@ -151,15 +137,10 @@ namespace gfx
     void GFXVulkanDescriptor::SetTexture2D(GFXTexture* texture)
     {
         VkImageView imageView{};
-        if (texture->GetTextureType() == GFXVulkanTexture2D::StaticTexutreType())
+        if (texture->GetClassId() == typeid(GFXVulkanTexture))
         {
-            auto tex2d = static_cast<GFXVulkanTexture2D*>(texture);
+            auto tex2d = static_cast<GFXVulkanTexture*>(texture);
             imageView = tex2d->GetVkImageView();
-        }
-        else if (texture->GetTextureType() == GFXVulkanRenderTarget::StaticTexutreType())
-        {
-            auto rt = static_cast<GFXVulkanRenderTarget*>(texture);
-            imageView = rt->GetVkImageView();
         }
         else
         {

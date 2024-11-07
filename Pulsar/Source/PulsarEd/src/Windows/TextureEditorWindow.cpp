@@ -47,7 +47,7 @@ namespace pulsared
         m_ppMat->CreateGPUResource();
 
         auto camera = m_viewportFrame.GetWorld()->GetCurrentCamera();
-        camera->m_postProcessMaterials->push_back(m_ppMat);
+        camera->AddPostProcess(m_ppMat);
 
         m_enableGamma = true;
     }
@@ -73,7 +73,7 @@ namespace pulsared
     static int RGBAButtons(bool* r, bool* g, bool* b, bool* a)
     {
         int changed = 0;
-        ImVec4 normalBtnColor{0.3, 0.3, 0.3, 1};
+        ImVec4 normalBtnColor{0.3f, 0.3f, 0.3f, 1.f};
         ImVec4 rBtnColor = normalBtnColor;
         if (r == nullptr)
         {
@@ -81,7 +81,7 @@ namespace pulsared
         }
         else if (*r)
         {
-            rBtnColor = ImVec4{0.7, 0, 0, 1};
+            rBtnColor = ImVec4{0.7f, 0.f, 0.f, 1.f};
         }
         ImGui::PushStyleColor(ImGuiCol_Button, rBtnColor);
         if (ImGui::Button("R"))
@@ -101,7 +101,7 @@ namespace pulsared
         }
         else if (*g)
         {
-            gBtnColor = ImVec4{0, 0.7, 0, 1};
+            gBtnColor = ImVec4{0.f, 0.7f, 0.f, 1.f};
         }
         ImGui::PushStyleColor(ImGuiCol_Button, gBtnColor);
         if (ImGui::Button("G"))
@@ -121,7 +121,7 @@ namespace pulsared
         }
         else if (*b)
         {
-            bBtnColor = ImVec4{0, 0, 0.8, 1};
+            bBtnColor = ImVec4{0.f, 0.f, 0.8f, 1.f};
         }
         ImGui::PushStyleColor(ImGuiCol_Button, bBtnColor);
         if (ImGui::Button("B"))
@@ -247,7 +247,7 @@ namespace pulsared
         }
 
         ImGui::BeginChild("picframe", size);
-        ImGui::SetNextWindowPos(ImGui::GetWindowPos() + size / 2 - (ImVec2(width, height) / 2) * m_imageScale);
+        ImGui::SetNextWindowPos(ImGui::GetWindowPos() + size / 2 - (ImVec2((float)width, (float)height) / 2) * m_imageScale);
         if (ImGui::BeginChild("pic", {width * m_imageScale, height * m_imageScale}))
         {
             base::OnDrawAssetPreviewUI(dt);
@@ -293,10 +293,14 @@ namespace pulsared
         {
             if (PImGui::BeginPropertyLines())
             {
-                PImGui::PropertyLineText("Size", std::format("{} x {}", texSize.x, texSize.y) );
+                PImGui::PropertyLineText("Image Size", std::format("{} x {}", texSize.x, texSize.y) );
+                PImGui::PropertyLineText("Origin File Size", std::format("{} kb", tex->GetOriginCompressedBinarySize() / 1024) );
+                PImGui::PropertyLineText("Raw Memory Size", std::format("{} kb", tex->GetRawBinarySize() / 1024) );
+                PImGui::PropertyLineText("Compressed Size", std::format("{} kb", tex->GetNativeBinarySize() / 1024));
                 PImGui::EndPropertyLines();
             }
         }
+
         if (PImGui::PropertyGroup("Formats (Win64)"))
         {
             if (PImGui::BeginPropertyLines())

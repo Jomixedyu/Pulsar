@@ -4,49 +4,58 @@
 #include <PulsarEd/AssetDatabase.h>
 
 
-#define DEFINE_ASSET_EDITOR(TYPE) static inline struct __asset_editor { __asset_editor() \
-{ ::pulsared::AssetEditorManager::Register(cltypeof<TYPE>(), ThisClass::StaticType()); } \
+#define DEFINE_ASSET_EDITOR(TYPE, ALLOW_DERIVE) static inline struct __asset_editor { __asset_editor() \
+{ ::pulsared::EditorAssetManager::Register(cltypeof<TYPE>(), ThisClass::StaticType(), ALLOW_DERIVE); } \
 } __asset_editor__;
 
 namespace pulsared
 {
-    template<typename T, typename K, typename V>
-    class KeyValueRegister
-    {
-    private:
-        static hash_map<K, V>& Map()
-        {
-            static hash_map<K, V> map;
-            return map;
-        }
-    public:
-        static void Register(K k, V v)
-        {
-            Map()[k] = v;
-        }
-        static void Unregister(K k)
-        {
-            Map().erase(k);
-        }
-        static V GetValue(K k)
-        {
-            auto it = Map().find(k);
-            if (it != Map().end())
-            {
-                return it->second;
-            }
-            return {};
-        }
-
-    };
-
-    class AssetEditorManager : public KeyValueRegister<AssetEditorManager, Type*, Type*>
-    {
-    };
 
 	class EditorAssetManager : public pulsar::AssetManager
 	{
 	public:
+	    struct Value
+	    {
+	        Type* type;
+	        bool derive;
+	    };
+	    static auto& Map()
+	    {
+	        static hash_map<Type*, Value> map;
+	        return map;
+	    }
+	public:
+	    static void Register(Type* k, Type* v, bool allowDerive)
+	    {
+	        Value type{};
+	        type.type = v;
+	        type.derive = allowDerive;
+	        Map()[k] = type;
+	    }
+	    static void Unregister(Type* k)
+	    {
+	        Map().erase(k);
+	    }
+	    static Type* GetValue(Type* k)
+	    {
+	        auto it = Map().find(k);
+	        if (it != Map().end())
+	        {
+	            return it->second.type;
+	        }
+	        else
+	        {
+	            for (auto& map : Map())
+	            {
+	                if (map.second.derive && k->IsSubclassOf(map.first))
+	                {
+	                    return map.second.type;
+	                }
+	            }
+	        }
+	        return {};
+	    }
+
 		virtual RCPtr<AssetObject> LoadAssetAtPath(string_view path) override
 		{
 			return AssetDatabase::LoadAssetAtPath(path);
@@ -55,6 +64,6 @@ namespace pulsared
 		{
 			return AssetDatabase::LoadAssetById(id);
 		}
-		virtual ~EditorAssetManager() override{}
+		~EditorAssetManager() override = default;
 	};
 }

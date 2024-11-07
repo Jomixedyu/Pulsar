@@ -1,20 +1,22 @@
 
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.20)
 project("Pulsar")
 
 set(PUBLIC_MODULE
         jxcorlib
-        glfw
         gfx
         gfx-vk
         imgui
         imext
         jaudio
+        uinput
 )
 set(PRIVATE_MODULE
         DirectXTex
         astc
         box2d
+        SDL2lib
+        Jolt
 )
 
 set(CMAKE_CXX_STANDARD 23)
@@ -23,7 +25,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     add_compile_options("/utf-8")
 endif ()
 
-option(${PROJECT_NAME}_BUILD_EXECUTABLE "enable executable mode" OFF)
+option(${PROJECT_NAME}_BUILD_EXECUTABLE "enable executable mode" ON)
 
 file(GLOB_RECURSE Pulsar_SRC "src/*.h" "src/*.hpp" "src/*.cpp" "include/*.h" "include/*.hpp" "include/*.natvis")
 
@@ -45,7 +47,6 @@ endforeach ()
 
 target_include_directories(${PROJECT_NAME} PUBLIC "./include")
 target_include_directories(${PROJECT_NAME} PRIVATE "./include/${PROJECT_NAME}")
-
 
 foreach (module ${PUBLIC_MODULE})
     target_link_libraries(${PROJECT_NAME} PUBLIC ${module})

@@ -13,6 +13,5 @@ find_package(Vulkan REQUIRED)
 target_include_directories(${PROJECT_NAME} PUBLIC ${Vulkan_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} PUBLIC ${Vulkan_LIBRARIES})
 
-target_include_directories(${PROJECT_NAME} PUBLIC "GFXThirdParty")
-target_link_directories(${PROJECT_NAME} PUBLIC "GFXThirdParty/glfw")
-target_link_libraries(${PROJECT_NAME} PUBLIC glfw3_mt)
+target_include_directories(${PROJECT_NAME} PRIVATE "../SDL2lib/SDL/include")
+target_link_libraries(${PROJECT_NAME} PRIVATE SDL2::SDL2-static)

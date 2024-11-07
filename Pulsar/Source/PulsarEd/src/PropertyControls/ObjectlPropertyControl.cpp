@@ -1,4 +1,5 @@
 #include "AssetDatabase.h"
+#include "DragInfo.h"
 #include "PropertyControls/ObjectPropertyControl.h"
 #include <Pulsar/AssetManager.h>
 #include <Pulsar/IconsForkAwesome.h>
@@ -12,6 +13,7 @@ namespace PImGui
 
 namespace pulsared
 {
+
 
     bool ObjectPropertyControl::OnDrawImGui(const string& name, Type* type, Object* prop)
     {
@@ -76,19 +78,17 @@ namespace pulsared
             const ImGuiPayload* payload = ImGui::GetDragDropPayload();
             string dragType;
 
-            if (!std::strcmp(payload->DataType, "PULSARED_DRAG"))
+            if (payload->DataType == ObjectPtrDragInfo::Name)
             {
-                const auto str = string_view(static_cast<char*>(payload->Data), payload->DataSize);
+                const auto dragData = static_cast<ObjectPtrDragInfo*>(payload->Data);
 
-                auto strs = StringUtil::Split(str, ";");
-                auto& intype = strs[0];
-                auto& id = strs[1];
-
-                if (intype == type->GetName())
+                if (dragData->Type == type)
                 {
-                    if (payload = ImGui::AcceptDragDropPayload("PULSARED_DRAG"))
+
+                    if ((payload = ImGui::AcceptDragDropPayload(ObjectPtrDragInfo::Name.data())))
                     {
-                        SetHandle(ObjectHandle::parse(id));
+                        (void)payload;
+                        SetHandle(dragData->ObjectHandle);
                         isChanged = true;
                     }
                 }
