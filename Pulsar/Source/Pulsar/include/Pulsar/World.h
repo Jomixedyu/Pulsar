@@ -15,6 +15,7 @@ namespace pulsar
     constexpr uint32_t kRenderingDescriptorSpace_World = 1;
 
     class PhysicsWorld2D;
+    class PhysicsWorld3D;
     class WorldSubsystem;
 
     class World
@@ -108,6 +109,7 @@ namespace pulsar
         RCPtr<Material> GetDefaultMaterial() const { return m_defaultMaterial; }
 
         PhysicsWorld2D* physicsWorld2D = nullptr;
+        PhysicsWorld3D* physicsWorld3D = nullptr;
     protected:
         RCPtr<Material>                       m_defaultMaterial;
         hash_set<rendering::RenderObject_sp>  m_renderObjects;

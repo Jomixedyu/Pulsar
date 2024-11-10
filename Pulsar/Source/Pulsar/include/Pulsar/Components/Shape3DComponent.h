@@ -10,4 +10,5 @@ namespace pulsar
     public:
         Shape3DComponent();
     };
+    DECL_PTR(Shape3DComponent);
 }

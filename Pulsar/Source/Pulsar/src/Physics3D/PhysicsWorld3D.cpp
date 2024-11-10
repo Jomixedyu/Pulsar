@@ -273,4 +273,13 @@ namespace pulsar
         // Step the world
         m_world->m_physicsSystem.Update(dt, cCollisionSteps, &m_world->temp_allocator, &m_world->job_system);
     }
+
+    void PhysicsWorld3D::AddObject(Physics3DObject* object)
+    {
+        m_objects.push_back(object);
+    }
+    void PhysicsWorld3D::RemoveObject(Physics3DObject* object)
+    {
+        std::erase(m_objects, object);
+    }
 } // namespace pulsar

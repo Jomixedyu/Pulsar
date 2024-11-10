@@ -1,4 +1,4 @@
-#include "Physics2D/RBD2DComponent.h"
+#include "Physics2D/RigidBodyDynamics2DComponent.h"
 
 #include "Components/TransformComponent.h"
 #include "Node.h"
@@ -7,24 +7,24 @@
 
 namespace pulsar
 {
-    RBD2DComponent::RBD2DComponent()
+    RigidBodyDynamics2DComponent::RigidBodyDynamics2DComponent()
         : m_physics(nullptr)
     {
     }
 
-    void RBD2DComponent::BeginComponent()
+    void RigidBodyDynamics2DComponent::BeginComponent()
     {
         base::BeginComponent();
         GetWorld()->GetSimulateManager().AddSimulate(this);
     }
 
-    void RBD2DComponent::EndComponent()
+    void RigidBodyDynamics2DComponent::EndComponent()
     {
         base::EndComponent();
         GetWorld()->GetSimulateManager().RemoveSimulate(this);
     }
 
-    void RBD2DComponent::BeginSimulate()
+    void RigidBodyDynamics2DComponent::BeginSimulate()
     {
         auto transform = GetTransform();
         auto pos = transform->GetWorldPosition();
@@ -64,14 +64,14 @@ namespace pulsar
         GetWorld()->physicsWorld2D->AddObject(m_physics);
     }
 
-    void RBD2DComponent::EndSimulate()
+    void RigidBodyDynamics2DComponent::EndSimulate()
     {
         GetWorld()->physicsWorld2D->RemoveObject(m_physics);
         delete m_physics;
         m_physics = nullptr;
     }
 
-    void RBD2DComponent::INotifyPhysics2DEvent_OnChangedTransform(Vector2f pos, float rot)
+    void RigidBodyDynamics2DComponent::INotifyPhysics2DEvent_OnChangedTransform(Vector2f pos, float rot)
     {
         auto transform = GetTransform();
 
@@ -85,11 +85,11 @@ namespace pulsar
 
     }
 
-    void RBD2DComponent::OnAttachedShapeChanged(Shape2DComponent* shape)
+    void RigidBodyDynamics2DComponent::OnAttachedShapeChanged(Shape2DComponent* shape)
     {
     }
 
-    array_list<Shape2DComponent_ref> RBD2DComponent::CollectAttachedShapes() const
+    array_list<Shape2DComponent_ref> RigidBodyDynamics2DComponent::CollectAttachedShapes() const
     {
         array_list<Shape2DComponent_ref> ret;
         GetNode()->GetComponentsInChildren<Shape2DComponent>(ret);

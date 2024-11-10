@@ -14,13 +14,13 @@ namespace pulsar
         ObjectPtr<Node> node;
     };
 
-    class RBD2DComponent : public Component, public ISimulate, public INotifyPhysics2DEvent
+    class RigidBodyDynamics2DComponent : public Component, public ISimulate, public INotifyPhysics2DEvent
     {
-        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::RBD2DComponent, Component);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::RigidBodyDynamics2DComponent, Component);
         CORELIB_CLASS_ATTR(new CategoryAttribute("2D"));
     public:
 
-        RBD2DComponent();
+        RigidBodyDynamics2DComponent();
 
         void BeginComponent() override;
         void EndComponent() override;
@@ -53,6 +53,6 @@ namespace pulsar
 
         class Physics2DObject* m_physics;
     };
-    DECL_PTR(RBD2DComponent);
+    DECL_PTR(RigidBodyDynamics2DComponent);
 
 }

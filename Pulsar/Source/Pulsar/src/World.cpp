@@ -5,6 +5,7 @@
 #include <Pulsar/Scene.h>
 
 #include "Physics2D/PhysicsWorld2D.h"
+#include "Physics3D/PhysicsWorld3D.h"
 #include "Subsystems/Subsystem.h"
 #include "Subsystems/WorldSubsystem.h"
 
@@ -103,6 +104,7 @@ namespace pulsar
             simulate->BeginSimulate();
         }
         physicsWorld2D->BeginSimulate();
+        physicsWorld3D->BeginSimulate();
     }
     void World::EndSimulate()
     {
@@ -111,6 +113,7 @@ namespace pulsar
             simulate->EndSimulate();
         }
         physicsWorld2D->EndSimulate();
+        physicsWorld3D->EndSimulate();
     }
 
     void World::Tick(float dt)
@@ -132,6 +135,7 @@ namespace pulsar
                 }
             }
             physicsWorld2D->Tick(dt);
+            physicsWorld3D->StepSimulate(dt);
         }
     }
 
@@ -316,6 +320,7 @@ namespace pulsar
         m_worldDescriptors->Submit();
 
         physicsWorld2D = new PhysicsWorld2D();
+        physicsWorld3D = new PhysicsWorld3D;
 
         for (auto& item : SubsystemManager::GetAllSubsystems())
         {
@@ -356,6 +361,9 @@ namespace pulsar
 
         delete physicsWorld2D;
         physicsWorld2D = nullptr;
+
+        delete physicsWorld3D;
+        physicsWorld3D = nullptr;
     }
 
     void World::OnSceneLoading(RCPtr<Scene> scene)
