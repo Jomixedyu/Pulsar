@@ -25,7 +25,7 @@ namespace pulsar
         array_list<Shape3DComponent_ref> CollectAttachedShapes() const;
 
     protected:
-        Physics3DObject* m_physics;
+        Physics3DObject* m_physics = nullptr;
     };
     DECL_PTR(RigidBodyDynamics3DComponent);
 }

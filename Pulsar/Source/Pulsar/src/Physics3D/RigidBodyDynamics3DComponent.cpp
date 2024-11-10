@@ -21,7 +21,7 @@ namespace pulsar
     void RigidBodyDynamics3DComponent::BeginSimulate()
     {
         m_physics = new Physics3DObject;
-        
+
         GetWorld()->physicsWorld3D->AddObject(m_physics);
     }
     void RigidBodyDynamics3DComponent::EndSimulate()
