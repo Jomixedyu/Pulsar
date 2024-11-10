@@ -2,4 +2,8 @@
 
 namespace pulsar
 {
-}
+    Shape3DComponent::Shape3DComponent()
+    {
+        m_canDrawGizmo = true;
+    }
+} // namespace pulsar

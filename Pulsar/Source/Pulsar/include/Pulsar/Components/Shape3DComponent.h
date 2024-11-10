@@ -7,6 +7,7 @@ namespace pulsar
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::Shape3DComponent, Component);
         CORELIB_CLASS_ATTR(new AbstractComponentAttribute);
-
+    public:
+        Shape3DComponent();
     };
 }
