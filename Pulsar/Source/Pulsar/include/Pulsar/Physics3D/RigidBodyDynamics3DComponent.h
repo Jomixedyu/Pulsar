@@ -26,6 +26,11 @@ namespace pulsar
 
     protected:
         Physics3DObject* m_physics = nullptr;
+
+        CORELIB_REFL_DECL_FIELD(m_rigidMode);
+        RigidBody3DMode m_rigidMode{};
+
     };
     DECL_PTR(RigidBodyDynamics3DComponent);
+
 }

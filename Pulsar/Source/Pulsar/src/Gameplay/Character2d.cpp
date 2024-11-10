@@ -36,8 +36,12 @@ namespace pulsar
     {
         base::OnTick(ticker);
     }
+
     void Character2d::OnInput(SPtr<InputContext> ctx)
     {
+        auto vec = ctx->GetVector2();
+        auto newVec = Vector3f(vec.x, vec.y, 0.0f);
+        GetTransform()->Translate(newVec);
 
     }
 } // namespace pulsar

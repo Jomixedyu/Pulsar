@@ -11,9 +11,12 @@ namespace pulsar
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::InputContext, Object);
     public:
-        virtual float GetFloatValue() = 0;
+        virtual float GetFloatValue() const { return m_value.x; }
+        virtual Vector2f GetVector2() const { return {m_value.x, m_value.y}; }
+        virtual Vector3f GetVector3() const { return m_value; }
 
         string_view m_name;
+        Vector3f m_value{};
     };
     CORELIB_DECL_SHORTSPTR(InputContext);
 
