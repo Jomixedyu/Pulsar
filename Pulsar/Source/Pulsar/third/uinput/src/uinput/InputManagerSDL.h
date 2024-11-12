@@ -10,6 +10,7 @@ namespace uinput
     {
     public:
         void Initialize() override;
+        void Terminate() override;
         void ProcessEvents() override;
         void PushEvent(SDL_Event* event);
     private:

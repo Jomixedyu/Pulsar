@@ -18,6 +18,6 @@ namespace pulsar
         void OnInput(SPtr<InputContext> ctx);
 
     protected:
-        InputComponent_ref inputComponent;
+        InputComponent_ref m_inputComponent;
     };
 } // namespace pulsar

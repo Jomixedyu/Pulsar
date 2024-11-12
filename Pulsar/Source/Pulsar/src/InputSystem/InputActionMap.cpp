@@ -9,6 +9,7 @@ namespace pulsar
         base::OnConstruct();
         init_sptr_member(m_actionNames);
     }
+
     int InputActionMap::NewAction(string_view name)
     {
         string n{name};
@@ -19,13 +20,13 @@ namespace pulsar
         }
 
         auto newPair = mksptr(new ActionBindingPair);
-        init_sptr_member(newPair->m_bindings);
 
         m_actions.push_back(newPair);
         m_actionNames->push_back(n);
 
         return (int)m_actionNames->size() - 1;
     }
+
     void InputActionMap::RemoveAction(string_view name)
     {
         int index = 0;
@@ -54,6 +55,7 @@ namespace pulsar
             m_actions.erase(m_actions.begin() + index);
         }
     }
+
     bool InputActionMap::IsValidIndex(int index) const
     {
         return index > -1 && index < m_actionNames->size();

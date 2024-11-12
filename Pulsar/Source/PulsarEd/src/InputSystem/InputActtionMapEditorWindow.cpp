@@ -63,8 +63,8 @@ namespace pulsared
         {
             if (inputMap->IsValidIndex(m_selectedActionIndex))
             {
-                auto action = inputMap->GetActionAt(m_selectedActionIndex);
                 auto actionName = inputMap->GetActionNameAt(m_selectedActionIndex);
+                auto action = inputMap->GetActionAt(m_selectedActionIndex);
 
                 if (PImGui::BeginPropertyLines())
                 {
@@ -75,13 +75,12 @@ namespace pulsared
                         isDirty = true;
                     }
 
-                    auto inputAction = mkbox(RCPtrBase(action->Action));
-                    if (PImGui::PropertyLine("Action", cltypeof<InputAction>(), inputAction.get()))
+                    auto inputType = mkbox(action->m_valueType);
+                    if (PImGui::PropertyLine("InputType", cltypeof<BoxingInputValueType>(), inputType.get()))
                     {
-                        inputMap->SetActionAt(m_selectedActionIndex, UnboxUtil::Unbox<RCPtrBase>(inputAction));
+                        action->m_valueType = UnboxUtil::Unbox<InputValueType>(inputType);
                         isDirty = true;
                     }
-
 
                     PImGui::EndPropertyLines();
                 }
@@ -97,7 +96,7 @@ namespace pulsared
                 {
                     if (ImGui::Button("Keyboard"))
                     {
-                        action->m_bindings->push_back(mksptr(new InputActionKeyboardBinding));
+                        action->m_bindings.push_back(mksptr(new InputActionKeyboardBinding));
                         isDirty = true;
                         ImGui::CloseCurrentPopup();
                     }
@@ -105,11 +104,11 @@ namespace pulsared
                 }
 
                 array_list<SPtr<InputActionBinding>> pendingRemoveList;
-                auto bindingSize = action->m_bindings->size();
+                auto bindingSize = action->m_bindings.size();
                 for (int i = 0; i < bindingSize; ++i)
                 {
                     ImGui::PushID(i);
-                    auto& item = action->m_bindings->at(i);
+                    auto& item = action->m_bindings.at(i);
                     bool existsItem = true;
                     //bindings
                     if (ImGui::CollapsingHeader(item->ToString().c_str(), &existsItem, ImGuiTreeNodeFlags_DefaultOpen))
@@ -127,7 +126,7 @@ namespace pulsared
 
                 for (auto& item : pendingRemoveList)
                 {
-                    std::erase(*action->m_bindings, item);
+                    std::erase(action->m_bindings, item);
                 }
 
             }

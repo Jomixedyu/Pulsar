@@ -6,10 +6,10 @@ namespace pulsar
 {
     CORELIB_DEF_ENUM(AssemblyObject_pulsar, pulsar,
                      InputValueType,
-                     Bool,
-                     Float,
+                     Axis1D,
                      Axis2D,
-                     Axis3D);
+                     Axis3D,
+                     Bool);
 }
 CORELIB_DECL_BOXING(pulsar::InputValueType, pulsar::BoxingInputValueType);
 

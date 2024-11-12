@@ -8,6 +8,8 @@ namespace pulsar
     void NodeCollection::Serialize(AssetSerializer* s)
     {
         base::Serialize(s);
+        // 保存为 sceneobject
+
         if (s->IsWrite)
         {
             auto nodes = s->Object->New(ser::VarientType::Array);
@@ -56,6 +58,12 @@ namespace pulsar
     {
         assert(false);
         return Node_ref();
+    }
+    void NodeCollection::OnInstantiateAsset(AssetObject* obj)
+    {
+        base::OnInstantiateAsset(obj);
+        auto self = static_cast<NodeCollection*>(obj);
+
     }
 
     Node_ref NodeCollection::NewNode(index_string name, const Node_ref& parent, ObjectFlags flags)

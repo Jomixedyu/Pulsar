@@ -39,7 +39,6 @@ namespace pulsar
         }
 
         virtual AssetManager* GetAssetManager() = 0;
-        std::shared_ptr<uinput::InputManager> GetInputManager() const { return m_inputManager; }
 
         virtual void OnPreInitialize(gfx::GFXGlobalConfig* cfg) = 0;
         virtual void OnInitialized() = 0;
@@ -51,6 +50,6 @@ namespace pulsar
         Action<float> OnRenderTick;
 
     protected:
-        std::shared_ptr<uinput::InputManager> m_inputManager;
+
     };
 }

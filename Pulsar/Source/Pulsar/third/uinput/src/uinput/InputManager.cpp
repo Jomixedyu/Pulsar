@@ -12,6 +12,9 @@ namespace uinput
     void InputManager::Initialize()
     {
     }
+    void InputManager::Terminate()
+    {
+    }
     void InputManager::ProcessEvents()
     {
     }

@@ -161,6 +161,11 @@ namespace uinput
         InputManager::Initialize();
         SDL_AddEventWatch(OnEvent, this);
     }
+    void InputManagerSDL::Terminate()
+    {
+        InputManager::Terminate();
+        SDL_DelEventWatch(OnEvent, this);
+    }
 
     void InputManagerSDL::ProcessEvents()
     {

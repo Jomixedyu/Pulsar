@@ -496,12 +496,12 @@ namespace pulsared
         Workspace::OpenWorkspace(_SearchUpFolder("Project") / "Project.peproj");
         _Test();
 
-        // m_inputManager = uinput::InputManager::Create();
+        uinput::InputManager::GetInstance()->Initialize();
     }
 
     void EditorAppInstance::OnTerminate()
     {
-        // m_inputManager.reset();
+        uinput::InputManager::GetInstance()->Terminate();
 
         PrefabUtil::ClosePrefabMode();
         World::Reset(nullptr);
@@ -532,6 +532,8 @@ namespace pulsared
     void EditorAppInstance::OnBeginRender(float dt)
     {
         m_gui->NewFrame();
+
+        uinput::InputManager::GetInstance()->ProcessEvents();
 
         EditorWorld::GetPreviewWorld()->Tick(dt);
         //World::Current()->Tick(dt);

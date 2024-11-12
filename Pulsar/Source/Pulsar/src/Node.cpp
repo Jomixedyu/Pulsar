@@ -176,7 +176,8 @@ namespace pulsar
     }
     void Node::BeginPlay()
     {
-        for (auto& comp : *this->m_components)
+        auto comps = *this->m_components;
+        for (auto& comp : comps)
         {
             if (comp)
             {
@@ -186,7 +187,8 @@ namespace pulsar
     }
     void Node::EndPlay()
     {
-        for (auto& comp : *this->m_components)
+        auto comps = *this->m_components;
+        for (auto& comp : comps)
         {
             if (comp)
             {
@@ -224,6 +226,10 @@ namespace pulsar
         {
             BeginComponent(component);
             component->OnTransformChanged();
+            if (GetRuntimeWorld()->GetPlaying())
+            {
+                component->BeginPlay();
+            }
         }
 
         return component;
@@ -238,6 +244,10 @@ namespace pulsar
         }
         if (m_runtimeScene)
         {
+            if (GetRuntimeWorld()->GetPlaying())
+            {
+                component->EndPlay();
+            }
             EndComponent(component);
         }
         DestroyObject(component, true);

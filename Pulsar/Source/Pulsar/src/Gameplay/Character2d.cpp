@@ -13,16 +13,17 @@ namespace pulsar
     {
         base::BeginPlay();
 
-        inputComponent = GetNode()->GetComponent<InputComponent>();
+        m_inputComponent = GetNode()->GetComponent<InputComponent>();
 
-        if (!inputComponent)
+        if (!m_inputComponent)
         {
+            m_inputComponent = GetNode()->AddComponent<InputComponent>();
             return;
         }
 
         auto callback = InputComponent::InputEventDelegate::FromWeakMember(self_weak(), &ThisClass::OnInput);
 
-        inputComponent->Bind("Horizontal", callback);
+        m_inputComponent->Bind("Horizontal", callback);
 
     }
 
@@ -35,6 +36,14 @@ namespace pulsar
     void Character2d::OnTick(Ticker ticker)
     {
         base::OnTick(ticker);
+        if (m_inputComponent->m_keyboard.IsKeyDown(KeyCode::A))
+        {
+            GetTransform()->Translate({ -1.f * ticker.deltatime, 0, 0});
+        }
+        if (m_inputComponent->m_keyboard.IsKeyDown(KeyCode::D))
+        {
+            GetTransform()->Translate({ 1.f * ticker.deltatime, 0, 0});
+        }
     }
 
     void Character2d::OnInput(SPtr<InputContext> ctx)

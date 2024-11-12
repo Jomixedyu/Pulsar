@@ -32,12 +32,14 @@ namespace uinput
     public:
         virtual ~InputManager() = default;
         virtual void Initialize();
+        virtual void Terminate();
         virtual void ProcessEvents();
 
         virtual int AddKeyboardInput(const std::function<void(KeyState, KeyCode)>& func);
         virtual void RemoveKeyboardInput(int key);
 
         void BroadcastKeyboard(KeyState mode, KeyCode code);
+
     private:
         std::unordered_map<int, std::function<void(KeyState, KeyCode)>> m_keyboard;
 

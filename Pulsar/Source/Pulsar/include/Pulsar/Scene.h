@@ -101,6 +101,7 @@ namespace pulsar
         virtual void EndPlay();
 
         void Serialize(AssetSerializer* s) override;
+        void OnInstantiateAsset(AssetObject* obj) override;
 
         virtual void OnAddNode(Node_ref node) override;
         virtual void OnRemoveNode(Node_ref node) override;

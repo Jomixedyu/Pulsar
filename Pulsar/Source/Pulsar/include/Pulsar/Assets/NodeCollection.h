@@ -19,6 +19,8 @@ namespace pulsar
         ObjectPtr<Node> FindNodeByName(index_string name) const;
         ObjectPtr<Node> FindNodeByPath(string_view name) const;
 
+        void OnInstantiateAsset(AssetObject* obj) override;
+
 
         ObjectPtr<Node> NewNode(index_string name = "Node", const ObjectPtr<Node>& parent = nullptr, ObjectFlags flags = 0);
         void RemoveNode(ObjectPtr<Node> node);

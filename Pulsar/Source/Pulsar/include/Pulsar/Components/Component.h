@@ -57,11 +57,13 @@ namespace pulsar
 
 
 
-
     class SceneObject : public ObjectBase
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::SceneObject, ObjectBase);
-
+    public:
+        virtual void BeginScene(const ObjectPtr<Scene>& scene) {}
+        virtual void EndScene() {}
+    protected:
         guid_t m_sceneObjectId;
     };
 

@@ -6,12 +6,30 @@ namespace pulsar
 
     void InputComponent::Bind(string_view name, SPtr<InputEventDelegate> callback)
     {
-        m_callbacks.push_back(callback);
+        // m_eventMap.emplace(string{name}, callback);
     }
 
     void InputComponent::OnTick(Ticker ticker)
     {
-
+        if (!m_actionMap)
+        {
+            return;
+        }
+        for (int i = 0; i < m_actionMap->GetActionCount(); ++i)
+        {
+            auto action = m_actionMap->GetActionAt(i);
+            for (auto& binding : action->m_bindings)
+            {
+                if (auto keyboard = sptr_cast<InputActionKeyboardBinding>(binding))
+                {
+                    // if (m_state.m_downKey.contains(keyboard->m_code) && )
+                    // {
+                    //
+                    // }
+                    // keyboardMap[keyboard] = m_actionMap->GetActionNameAt(i);
+                }
+            }
+        }
     }
 
     void InputComponent::BeginPlay()
@@ -19,19 +37,14 @@ namespace pulsar
         base::BeginPlay();
         // uinput::InputManager::GetInstance()->AddKeyboardInput()
         //uinput::InputManager::AddKeyboardInput()
-
-        for (auto& action : m_actionMap->GetActions())
-        {
-        }
-
-        uinput::InputManager::GetInstance()->AddKeyboardInput([this](uinput::KeyState, uinput::KeyCode c) {
-            for (auto& action : m_actionMap->GetActions())
+        m_keyboardCallbackHandle = uinput::InputManager::GetInstance()->AddKeyboardInput([this](uinput::KeyState state, KeyCode c) {
+            if (state == uinput::KeyState::Down)
             {
-                // for (auto& binding : *action->m_bindings)
-                // {
-                //     binding->m_modifier
-                // }
-                // action->m_bindings
+                m_keyboard.m_downKey.insert(c);
+            }
+            else if (state == uinput::KeyState::Up)
+            {
+                m_keyboard.m_downKey.erase(c);
             }
         });
     }
@@ -39,6 +52,24 @@ namespace pulsar
     void InputComponent::EndPlay()
     {
         base::EndPlay();
+        uinput::InputManager::GetInstance()->RemoveKeyboardInput(m_keyboardCallbackHandle);
+    }
+
+    void InputComponent::RegisterInputMap()
+    {
+        hash_map<SPtr<InputActionKeyboardBinding>, string> keyboardMap;
+        for (int i = 0; i < m_actionMap->GetActionCount(); ++i)
+        {
+            auto action = m_actionMap->GetActionAt(i);
+            for (auto& binding : action->m_bindings)
+            {
+                if (auto keyboard = sptr_cast<InputActionKeyboardBinding>(binding))
+                {
+                    keyboardMap[keyboard] = m_actionMap->GetActionNameAt(i);
+                }
+            }
+        }
+
 
     }
 
