@@ -46,8 +46,8 @@ namespace pulsar
         CORELIB_REFL_DECL_FIELD(m_atlas);
         RCPtr<SpriteAtlas> m_atlas;
 
-        CORELIB_REFL_DECL_FIELD(m_index);
-        int m_index{};
+        CORELIB_REFL_DECL_FIELD(m_name);
+        string m_name{};
     };
 
 }

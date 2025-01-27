@@ -89,7 +89,10 @@ namespace pulsar
     void Scene::Serialize(AssetSerializer* s)
     {
         base::Serialize(s);
-
+    }
+    void Scene::OnInstantiateAsset(AssetObject* obj)
+    {
+        NodeCollection::OnInstantiateAsset(obj);
     }
 
     Scene::Scene()

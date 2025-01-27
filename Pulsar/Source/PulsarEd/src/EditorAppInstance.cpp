@@ -3,9 +3,11 @@
 #include "EditorAssetManager.h"
 #include "EditorRenderPipeline.h"
 #include "Importers/FBXImporter.h"
+#include "Pulsar/Components/BoxShape3DComponent.h"
 #include "Pulsar/Components/DirectionalLightComponent.h"
 #include "Pulsar/Components/PointLightComponent.h"
 #include "Pulsar/Components/SkyLightComponent.h"
+#include "Pulsar/Components/SphereShape3DComponent.h"
 #include "Pulsar/Components/StaticMeshRendererComponent.h"
 #include "Pulsar/Prefab.h"
 #include "Shaders/EditorShader.h"
@@ -136,8 +138,10 @@ namespace pulsared
                 auto entry = mksptr(new MenuEntryButton("Create Sphere"));
                 shapeMenu->AddEntry(entry);
                 entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
-                    auto renderer = World::Current()->GetResidentScene()->NewNode("New Sphere")
-                        ->AddComponent<StaticMeshRendererComponent>();
+                    auto newNode = World::Current()->GetResidentScene()->NewNode("New Sphere");
+                    newNode->AddComponent<SphereShape3DComponent>();
+
+                    auto renderer = newNode->AddComponent<StaticMeshRendererComponent>();
                     renderer->SetStaticMesh(GetAssetManager()->LoadAsset<StaticMesh>(BuiltinAsset::Shapes_Sphere));
                     renderer->SetMaterial(0, GetAssetManager()->LoadAsset<Material>(BuiltinAsset::Material_Lambert));
 
@@ -147,8 +151,10 @@ namespace pulsared
                 auto entry = mksptr(new MenuEntryButton("Create Cube"));
                 shapeMenu->AddEntry(entry);
                 entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
-                    auto renderer = World::Current()->GetResidentScene()->NewNode("New Cube")
-                        ->AddComponent<StaticMeshRendererComponent>();
+                    auto newNode = World::Current()->GetResidentScene()->NewNode("New Cube");
+                    newNode->AddComponent<BoxShape3DComponent>();
+
+                    auto renderer = newNode->AddComponent<StaticMeshRendererComponent>();
                     renderer->AddMaterial();
                     renderer->SetMaterial(0, GetAssetManager()->LoadAsset<Material>(BuiltinAsset::Material_Lambert));
                     renderer->SetStaticMesh(GetAssetManager()->LoadAsset<StaticMesh>(BuiltinAsset::Shapes_Cube));
@@ -214,7 +220,7 @@ namespace pulsared
                 }
                 else
                 {
-                    noCategoryComponents.push_back(type);
+                    // noCategoryComponents.push_back(type);
                 }
             }
 

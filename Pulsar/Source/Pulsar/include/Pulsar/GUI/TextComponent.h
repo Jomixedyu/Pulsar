@@ -1,12 +1,12 @@
 #pragma once
-#include "UIElement.h"
+#include "CanvasComponent.h"
 
 namespace pulsar::ui
 {
-    class Text : public UIElement
+    class TextComponent : public CanvasElement
     {
-        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::ui::Text, UIElement);
-
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::ui::TextComponent, CanvasElement);
+        CORELIB_CLASS_ATTR(new CategoryAttribute("UI"));
     public:
 
         void OnImmediateRender();

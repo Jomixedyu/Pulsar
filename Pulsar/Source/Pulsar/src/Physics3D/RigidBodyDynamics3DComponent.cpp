@@ -25,19 +25,40 @@ namespace pulsar
 
     void RigidBodyDynamics3DComponent::BeginSimulate()
     {
-        m_physics = new Physics3DObject;
-        m_physics->m_rigidMode = m_rigidMode;
-        m_physics->m_shapeType = Physics3DObject::BOX;
-
         auto shapes = CollectAttachedShapes();
 
-        m_physics->m_boxSize = shapes[0]->m_size;
+        if (shapes.empty())
+        {
+            return;
+        }
+        auto shapeType = shapes[0]->GetShapeType();
+
+        Physics3DObject::ShapeType targetShapeType{};
+        switch (shapeType)
+        {
+        case Shape3DType::Sphere:
+            targetShapeType = Physics3DObject::SPHERE;
+            break;
+        case Shape3DType::Box:
+            targetShapeType = Physics3DObject::BOX;
+            break;
+        case Shape3DType::Capsule:
+            targetShapeType = Physics3DObject::CAPSULE;
+            break;
+        }
+
+        m_physics = new Physics3DObject;
+        m_physics->m_rigidMode = m_rigidMode;
+        m_physics->m_shapeType = targetShapeType;
+        m_physics->m_event = this;
+
+        m_physics->m_boxHalfSize = shapes[0]->m_halfSize;
         m_physics->m_radius = shapes[0]->m_radius;
 
-        auto Transform = GetTransform();
+        auto transform = GetTransform();
 
-        m_physics->m_position = Transform->GetWorldPosition();
-        m_physics->m_rotation = Transform->GetRotation();
+        m_physics->m_position = transform->GetWorldPosition();
+        m_physics->m_rotation = transform->GetRotation();
 
         GetWorld()->physicsWorld3D->AddObject(m_physics);
     }
@@ -47,6 +68,15 @@ namespace pulsar
         GetWorld()->physicsWorld3D->RemoveObject(m_physics);
         delete m_physics;
         m_physics = nullptr;
+    }
+
+    void RigidBodyDynamics3DComponent::INotifyPhysics3DEvent_OnTransformChanged(Vector3f pos, Quat4f rot)
+    {
+        if (auto transform = GetTransform())
+        {
+            transform->SetWorldPosition(pos);
+            transform->SetRotation(rot);
+        }
     }
 
     array_list<Shape3DComponent_ref> RigidBodyDynamics3DComponent::CollectAttachedShapes() const

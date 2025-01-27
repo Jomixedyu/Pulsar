@@ -55,7 +55,6 @@ namespace pulsar
     class PhysicsWorld2D
     {
     public:
-
         void Tick(float dt);
 
         void BeginSimulate();
@@ -67,9 +66,14 @@ namespace pulsar
         void RemoveObject(Physics2DObject* object);
 
     protected:
+        void AddObjectToSystem(Physics2DObject* object);
+        void RemoveObjectFromSystem(Physics2DObject* object);
+
+    protected:
         bool m_isSimulating = false;
 
         array_list<Physics2DObject*> m_objects;
         _PhysicsWorld2DNative* m_world = nullptr;
     };
-}
+
+} // namespace pulsar

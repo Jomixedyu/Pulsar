@@ -6,44 +6,13 @@
 #include <fbxsdk.h>
 #include <stack>
 
-namespace pulsared
-{
-    FbxInfoViewer::FbxInfoViewer()
-    {
-    }
 
+namespace fbxinfo
+{
     #ifdef IOS_REF
     #undef IOS_REF
     #define IOS_REF (*(pManager->GetIOSettings()))
     #endif
-    static void InitializeSdkObjects(FbxManager*& pManager, FbxScene*& pScene)
-    {
-        // The first thing to do is to create the FBX Manager which is the object allocator for almost all the classes in the SDK
-        pManager = FbxManager::Create();
-        if (!pManager)
-        {
-            FBXSDK_printf("Error: Unable to create FBX Manager!\n");
-            exit(1);
-        }
-        else
-            FBXSDK_printf("Autodesk FBX SDK version %s\n", pManager->GetVersion());
-
-        // Create an IOSettings object. This object holds all import/export settings.
-        FbxIOSettings* ios = FbxIOSettings::Create(pManager, IOSROOT);
-        pManager->SetIOSettings(ios);
-
-        // Load plugins from the executable directory (optional)
-        FbxString lPath = FbxGetApplicationDirectory();
-        pManager->LoadPluginsDirectory(lPath.Buffer());
-
-        // Create an FBX scene. This object holds most objects imported/exported from/to files.
-        pScene = FbxScene::Create(pManager, "My Scene");
-        if (!pScene)
-        {
-            FBXSDK_printf("Error: Unable to create FBX scene!\n");
-            exit(1);
-        }
-    }
     static bool LoadScene(FbxManager* pManager, FbxDocument* pScene, const char* pFilename)
     {
         int lFileMajor, lFileMinor, lFileRevision;
@@ -171,118 +140,281 @@ namespace pulsared
         return {};
     }
 
-    static void LoadFbxNodes(FbxInfoViewer::FbxInfoNodePtr infoNode, FbxNode* node)
+    static void InitializeSdkObjects(FbxManager*& pManager, FbxScene*& pScene)
     {
-        infoNode->AssetName = node->GetName();
-        infoNode->TypeName = node->GetTypeName();
-        auto attrCount = node->GetNodeAttributeCount();
-
-        for (int i = 0; i < attrCount; ++i)
+        // The first thing to do is to create the FBX Manager which is the object allocator for almost all the classes in the SDK
+        pManager = FbxManager::Create();
+        if (!pManager)
         {
-            auto attr = node->GetNodeAttributeByIndex(i);
-            infoNode->AttributeType.push_back(FBXTypeToString(attr->GetAttributeType()));
+            FBXSDK_printf("Error: Unable to create FBX Manager!\n");
+            exit(1);
         }
+        else
+            FBXSDK_printf("Autodesk FBX SDK version %s\n", pManager->GetVersion());
 
-        const auto count = node->GetChildCount();
-        for (int i = 0; i < count; ++i)
+        // Create an IOSettings object. This object holds all import/export settings.
+        FbxIOSettings* ios = FbxIOSettings::Create(pManager, IOSROOT);
+        pManager->SetIOSettings(ios);
+
+        // Load plugins from the executable directory (optional)
+        FbxString lPath = FbxGetApplicationDirectory();
+        pManager->LoadPluginsDirectory(lPath.Buffer());
+
+        // Create an FBX scene. This object holds most objects imported/exported from/to files.
+        pScene = FbxScene::Create(pManager, "My Scene");
+        if (!pScene)
         {
-            auto childNode = node->GetChild(i);
-            auto childInfo = infoNode->NewChild();
-            LoadFbxNodes(childInfo, childNode);
+            FBXSDK_printf("Error: Unable to create FBX scene!\n");
+            exit(1);
         }
     }
-    static FbxInfoViewer::FbxInfoNodePtr LoadFbxNodes(FbxNode* node)
+
+
+    // static void LoadFbxNodes(FbxInfoViewer::FbxInfoNodePtr infoNode, FbxNode* node)
+    // {
+    //     infoNode->AssetName = node->GetName();
+    //     infoNode->TypeName = node->GetTypeName();
+    //     auto attrCount = node->GetNodeAttributeCount();
+    //
+    //     for (int i = 0; i < attrCount; ++i)
+    //     {
+    //         auto attr = node->GetNodeAttributeByIndex(i);
+    //         infoNode->AttributeType.push_back(FBXTypeToString(attr->GetAttributeType()));
+    //     }
+    //
+    //     const auto count = node->GetChildCount();
+    //     for (int i = 0; i < count; ++i)
+    //     {
+    //         auto childNode = node->GetChild(i);
+    //         auto childInfo = infoNode->NewChild();
+    //         LoadFbxNodes(childInfo, childNode);
+    //     }
+    // }
+    // static FbxInfoNodePtr LoadFbxNodes(FbxNode* node)
+    // {
+    //     auto retval = mksptr(new FbxInfoViewer::FbxInfoNode);
+    //     LoadFbxNodes(retval, node);
+    //     return retval;
+    // }
+
+    struct FbxInfoViewerContext
     {
-        auto retval = mksptr(new FbxInfoViewer::FbxInfoNode);
-        LoadFbxNodes(retval, node);
-        return retval;
+        char FbxPath[255]{0};
+        bool Opened = false;
+        FbxManager* FbxManager = nullptr;
+        FbxScene* FbxScene = nullptr;
+    };
+
+    inline const char* to_string(FbxAxisSystem::ECoordSystem system)
+    {
+        switch (system)
+        {
+        case FbxAxisSystem::eRightHanded: return "RightHanded";
+        case FbxAxisSystem::eLeftHanded: return "LeftHanded";
+        }
+        return nullptr;
     }
-
-    void FbxInfoViewer::OnDrawImGui(float dt)
+    inline const char* to_string(FbxAxisSystem::EFrontVector e)
     {
-        base::OnDrawImGui(dt);
-
-        ImGui::InputText("fbxpath", m_fbxpath, sizeof(m_fbxpath));
-        ImGui::SameLine();
-        if (ImGui::Button("..."))
+        switch (e)
         {
-            std::filesystem::path fbxpath;
-            auto hWnd = platform::window::GetMainWindowHandle();
-            if (platform::window::OpenFileDialog(hWnd, "fbx|*.fbx;", "", &fbxpath))
-            {
-               StringUtil::strcpy(m_fbxpath, fbxpath.string());
-            }
+        case FbxAxisSystem::eParityEven: return "ParityEven";
+        case FbxAxisSystem::eParityOdd: return "ParityOdd";
         }
-
-        if (ImGui::Button("Refresh"))
-        {
-            using namespace fbxsdk;
-            FbxManager* fbxManager;
-            FbxScene* fbxScene;
-
-            InitializeSdkObjects(fbxManager, fbxScene);
-            assert(LoadScene(fbxManager, fbxScene, m_fbxpath));
-
-            m_root = LoadFbxNodes(fbxScene->GetRootNode());
-
-            DestroySdkObjects(fbxManager, 0);
-        }
-
-
-        ImGui::Columns(2);
-        if (m_root)
-        {
-            ShowNode(m_root);
-        }
-        ImGui::NextColumn();
-        if (m_selected)
-        {
-            if (PImGui::PropertyGroup("AttrType"))
-            {
-                if (PImGui::BeginPropertyLines())
-                {
-                    for (int i = 0; i < m_selected->AttributeType.size(); ++i)
-                    {
-                        auto& item = m_selected->AttributeType.at(i);
-                        PImGui::PropertyLineText(std::to_string(i).c_str(), item.c_str());
-                    }
-
-                    PImGui::EndPropertyLines();
-                }
-            }
-
-        }
-        ImGui::Columns(1);
+        return nullptr;
     }
-
-    void FbxInfoViewer::ShowNode(FbxInfoNodePtr node)
+    inline const char* to_string(FbxAxisSystem::EUpVector e)
     {
-        ImGuiTreeNodeFlags flags =
+        switch (e)
+        {
+        case FbxAxisSystem::eXAxis: return "XAxis";
+        case FbxAxisSystem::eYAxis: return "YAxis";
+        case FbxAxisSystem::eZAxis: return "ZAxis";
+        }
+        return nullptr;
+    }
+    enum FvxDataTableColumn
+    {
+        eName,
+        eType,
+        ePosX,
+        ePosY,
+        ePosZ,
+        eRotX,
+        eRotY,
+        eRotZ,
+        eScaleX,
+        eScaleY,
+        eScaleZ,
+        eMAX_NUM
+    };
+    void DrawFbxTree(FbxInfoViewerContext* ctx, FbxNode* node)
+    {
+        ImGuiTreeNodeFlags base_flags =
             ImGuiTreeNodeFlags_OpenOnArrow |
             ImGuiTreeNodeFlags_OpenOnDoubleClick |
             ImGuiTreeNodeFlags_SpanFullWidth;
 
-        if (node->GetChildren().empty())
-        {
-            flags |= ImGuiTreeNodeFlags_Leaf;
-        }
-        if (node == m_selected)
-        {
-            flags |= ImGuiTreeNodeFlags_Selected;
-        }
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(eName);
+        bool isOpened = ImGui::TreeNodeEx(node, base_flags, node->GetName());
 
-        bool opened = ImGui::TreeNodeEx(node->AssetName.c_str(), flags);
-        if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen())
+        auto pos = node->LclTranslation.Get();
+        auto rot = node->LclRotation.Get();
+        auto scale = node->LclScaling.Get();
+
+        ImGui::TableSetColumnIndex(eType);
+        ImGui::Text(node->GetTypeName());
+
+
+        ImGui::TableSetColumnIndex(ePosX);
+        ImGui::Text("%f", pos[0]);;
+        ImGui::TableSetColumnIndex(ePosY);
+        ImGui::Text("%f", pos[1]);
+        ImGui::TableSetColumnIndex(ePosZ);
+        ImGui::Text("%f", pos[2]);
+
+        ImGui::TableSetColumnIndex(eRotX);
+        ImGui::Text("%f", rot[0]);
+        ImGui::TableSetColumnIndex(eRotY);
+        ImGui::Text("%f", rot[1]);
+        ImGui::TableSetColumnIndex(eRotZ);
+        ImGui::Text("%f", rot[2]);
+
+        ImGui::TableSetColumnIndex(eScaleX);
+        ImGui::Text("%f", scale[0]);
+        ImGui::TableSetColumnIndex(eScaleY);
+        ImGui::Text("%f", scale[1]);
+        ImGui::TableSetColumnIndex(eScaleZ);
+        ImGui::Text("%f", scale[2]);
+
+        if (isOpened)
         {
-            m_selected = node;
-        }
-        if (opened)
-        {
-            for (auto child : node->GetChildren())
+            for (int i = 0; i < node->GetChildCount(); ++i)
             {
-                ShowNode(child);
+                auto child = node->GetChild(i);
+                DrawFbxTree(ctx, child);
             }
+
             ImGui::TreePop();
         }
+    }
+
+    void DrawUI(FbxInfoViewerContext* ctx)
+    {
+        if (!ctx) return;
+        if (!ctx->Opened)
+        {
+            ImGui::InputText("fbx path", ctx->FbxPath, sizeof(ctx->FbxPath));
+            ImGui::SameLine();
+            if (ImGui::Button("Open"))
+            {
+                using namespace fbxsdk;
+
+                InitializeSdkObjects(ctx->FbxManager, ctx->FbxScene);
+                assert(LoadScene(ctx->FbxManager, ctx->FbxScene, ctx->FbxPath));
+                ctx->Opened = true;
+            }
+        }
+        else
+        {
+            if (ImGui::Button("Close"))
+            {
+                DestroySdkObjects(ctx->FbxManager, false);
+            }
+        }
+
+        if (ctx->Opened)
+        {
+            static const char* fbxviewId = "fbxviewId";
+            ImGui::Columns(2, fbxviewId);
+
+            if (ImGui::BeginChild("scene_data"))
+            {
+                bool b = ImGui::BeginTable("_data", FvxDataTableColumn::eMAX_NUM, ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable);
+                if (b)
+                {
+                    ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed);
+                    ImGui::TableSetupColumn("Type");
+                    ImGui::TableSetupColumn("P.x");
+                    ImGui::TableSetupColumn("P.y");
+                    ImGui::TableSetupColumn("P.z");
+                    ImGui::TableSetupColumn("R.x");
+                    ImGui::TableSetupColumn("R.y");
+                    ImGui::TableSetupColumn("R.z");
+                    ImGui::TableSetupColumn("S.x");
+                    ImGui::TableSetupColumn("S.y");
+                    ImGui::TableSetupColumn("S.z");
+                    ImGui::TableHeadersRow();
+
+                    DrawFbxTree(ctx, ctx->FbxScene->GetRootNode());
+                    ImGui::EndTable();
+                }
+            }
+            ImGui::EndChild();
+
+
+            ImGui::NextColumn();
+
+            auto& settings = ctx->FbxScene->GetGlobalSettings();
+
+            if (ImGui::BeginChild("detail"))
+            {
+
+                if (pulsared::PImGui::PropertyGroup("System"))
+                {
+                    if (pulsared::PImGui::BeginPropertyLines())
+                    {
+                        auto axisSystem = settings.GetAxisSystem();
+                        pulsared::PImGui::PropertyLineText("CoordSystem", to_string(axisSystem.GetCoorSystem()));
+                        int sign = 1;
+                        pulsared::PImGui::PropertyLineText("Up", to_string(axisSystem.GetUpVector(sign)));
+                        pulsared::PImGui::PropertyLineText("Front", to_string(axisSystem.GetFrontVector(sign)));
+                        ;
+                        pulsared::PImGui::EndPropertyLines();
+                    }
+                }
+                if (pulsared::PImGui::PropertyGroup("Unit"))
+                {
+                    if (pulsared::PImGui::BeginPropertyLines())
+                    {
+                        auto axisSystem = settings.GetAxisSystem();
+
+                        pulsared::PImGui::PropertyLineText("ScaleFactor", std::to_string(settings.GetSystemUnit().GetScaleFactor()));
+                        pulsared::PImGui::PropertyLineText("Multiplier", std::to_string(settings.GetSystemUnit().GetMultiplier()));
+                        pulsared::PImGui::PropertyLineText("OriginalScaleFactor", std::to_string(settings.GetOriginalSystemUnit().GetScaleFactor()));
+                        pulsared::PImGui::PropertyLineText("OriginalMultiplier", std::to_string(settings.GetOriginalSystemUnit().GetMultiplier()));
+                        ;
+                        pulsared::PImGui::EndPropertyLines();
+                    }
+                }
+            }
+            ImGui::EndChild();
+            ImGui::Columns(1, fbxviewId);
+        }
+    }
+}
+
+namespace pulsared
+{
+    FbxInfoViewer::FbxInfoViewer()
+    {
+    }
+
+
+
+    void FbxInfoViewer::OnDrawImGui(float dt)
+    {
+        base::OnDrawImGui(dt);
+        fbxinfo::DrawUI((fbxinfo::FbxInfoViewerContext*)m_fbxctx);
+    }
+
+    void FbxInfoViewer::OnOpen()
+    {
+        m_fbxctx = new fbxinfo::FbxInfoViewerContext{};
+    }
+    void FbxInfoViewer::OnClose()
+    {
+        delete (fbxinfo::FbxInfoViewerContext*)m_fbxctx;
     }
 } // pulsared

@@ -7,7 +7,7 @@
 namespace pulsar
 {
 
-    class RigidBodyDynamics3DComponent : public Component, public ISimulate
+    class RigidBodyDynamics3DComponent : public Component, public ISimulate, public INotifyPhysics3DEvent
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::RigidBodyDynamics3DComponent, Component);
         CORELIB_CLASS_ATTR(new CategoryAttribute("3D"));
@@ -20,6 +20,9 @@ namespace pulsar
 
         void BeginSimulate() override;
         void EndSimulate() override;
+
+    protected:
+        void INotifyPhysics3DEvent_OnTransformChanged(Vector3f pos, Quat4f rot) override;
 
     protected:
         array_list<Shape3DComponent_ref> CollectAttachedShapes() const;

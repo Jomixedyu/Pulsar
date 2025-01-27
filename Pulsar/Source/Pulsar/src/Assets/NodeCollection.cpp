@@ -64,6 +64,7 @@ namespace pulsar
         base::OnInstantiateAsset(obj);
         auto self = static_cast<NodeCollection*>(obj);
 
+        
     }
 
     Node_ref NodeCollection::NewNode(index_string name, const Node_ref& parent, ObjectFlags flags)

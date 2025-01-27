@@ -117,11 +117,14 @@ namespace pulsar
                             cmdBuffer.CmdBindDescriptorSets(descriptorSets, gfxPipeline.get());
                         }
 
+                        // bind vertex
                         cmdBuffer.CmdBindVertexBuffers({element.Vertex.get()});
                         if (batch.IsUsedIndices)
                         {
                             cmdBuffer.CmdBindIndexBuffer(element.Indices.get());
                         }
+
+                        // draw
                         if (batch.IsUsedIndices)
                         {
                             cmdBuffer.CmdDrawIndexed(element.Indices->GetElementCount());

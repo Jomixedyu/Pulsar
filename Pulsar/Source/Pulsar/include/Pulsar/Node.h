@@ -4,7 +4,9 @@
 #include <list>
 #include <type_traits>
 
+
 #include <Pulsar/ObjectBase.h>
+#include <Pulsar/SceneObject.h>
 #include <Pulsar/AssetObject.h>
 #include <Pulsar/Components/Component.h>
 #include <Pulsar/Components/TransformComponent.h>

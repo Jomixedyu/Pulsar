@@ -2,7 +2,7 @@
 
 #include "Pulsar/Gizmos.h"
 #include "CoreLib.Serialization/ObjectSerializer.h"
-
+#include <Pulsar/SceneObject.h>
 #include <CoreLib/CoreLib.h>
 #include <Pulsar/EngineMath.h>
 #include <Pulsar/ObjectBase.h>
@@ -55,33 +55,6 @@ namespace pulsar
         const bool HasEditorData;
     };
 
-
-
-    class SceneObject : public ObjectBase
-    {
-        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::SceneObject, ObjectBase);
-    public:
-        virtual void BeginScene(const ObjectPtr<Scene>& scene) {}
-        virtual void EndScene() {}
-    protected:
-        guid_t m_sceneObjectId;
-    };
-
-    class ISceneObjectFinder
-    {
-    public:
-        virtual ObjectHandle Find(guid_t sceneObjId) = 0;
-    };
-
-    template <typename T>
-    struct SceneObjectWeakPtr
-    {
-        ObjectPtr<SceneObject> Load(ISceneObjectFinder* finder)
-        {
-            return finder->Find(m_ref);
-        }
-        guid_t m_ref;
-    };
 
     class Component : public SceneObject, public ITickable
     {

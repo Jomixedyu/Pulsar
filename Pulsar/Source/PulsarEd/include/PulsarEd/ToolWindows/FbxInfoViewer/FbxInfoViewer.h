@@ -14,6 +14,7 @@ namespace pulsared
         virtual string_view GetWindowDisplayName() const override { return ICON_FK_WRENCH " FbxInfoViewer"; }
         virtual void OnDrawImGui(float dt);
 
+
         class FbxInfoNode : public FileTreeNode<FbxInfoNode>
         {
         public:
@@ -23,9 +24,11 @@ namespace pulsared
         using FbxInfoNodePtr = SPtr<FbxInfoNode>;
 
     protected:
-        void ShowNode(FbxInfoNodePtr node);
+        void OnOpen() override;
+        void OnClose() override;
 
     protected:
+        void* m_fbxctx;
         FbxInfoNodePtr m_root;
         FbxInfoNodePtr m_selected;
         char m_fbxpath[512]{};
