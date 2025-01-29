@@ -308,7 +308,7 @@ namespace jxcorlib
     public:
         virtual int32_t         GetStructureSize() const { return this->m_structureSize; }
         const string&           GetName() const { return this->m_name; }
-        const string            GetShortName() const { return this->m_shortName; }
+        const string&           GetShortName() const { return this->m_shortName; }
         Type*                   GetBase() const { return this->m_base; }
         const std::type_info&   GetTypeInfo() const { return this->m_typeinfo; }
         array_list<Type*>       GetInterfaces() const;
