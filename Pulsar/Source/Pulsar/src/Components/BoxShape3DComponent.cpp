@@ -27,19 +27,24 @@ namespace pulsar
         };
     }
 
-    static void DrawBoxLine(Vector3f pos, Vector3f extent, StaticMeshVertex vertices[12])
-    {
-        auto a = pos + Vector3f(-extent.x, extent.y, -extent.z);
-    }
-
     void BoxShape3DComponent::OnDrawGizmo(GizmoPainter* painter, bool selected)
     {
-        StaticMeshVertex vertices[12];
+        static auto array = IdentityBox<Vector3f>();
+
+        StaticMeshVertex vertices[24];
+
+        auto local2World = GetTransform()->GetLocalToWorldMatrix();
+        auto color = selected ? GizmoPainter::DefaultSelectedLineColor : GizmoPainter::DefaultLineColor;
+
+        for (int i = 0; i < 24; ++i)
+        {
+            vertices[i].Position = local2World * array[i];
+            vertices[i].Color = color;
+        }
+
         if (selected)
         {
-            auto pos = GetTransform()->GetLocalToWorldMatrix();
-            DrawBoxLine(pos, m_halfSize, vertices);
-            painter->DrawLines(vertices, 12);
+            painter->DrawLines(vertices, 24);
         }
     }
 
