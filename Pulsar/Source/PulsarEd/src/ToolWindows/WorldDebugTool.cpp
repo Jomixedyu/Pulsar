@@ -28,7 +28,7 @@ namespace pulsared
         {
             if (ImGui::TreeNode(world->GetWorldName().c_str()))
             {
-                for (size_t i = 0; i < world->GetSceneCount(); ++i)
+                for (int i = 0; i < world->GetSceneCount(); ++i)
                 {
                     if (ImGui::TreeNode(world->GetScene(i)->GetName().c_str()))
                     {

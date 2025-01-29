@@ -68,7 +68,7 @@ namespace pulsared
                 vert.Bitangent = ToVector3f(mesh->mBitangents[vertnum]);
             }
 
-            for (size_t i = 0; i < STATICMESH_MAX_TEXTURE_COORDS; i++)
+            for (int i = 0; i < STATICMESH_MAX_TEXTURE_COORDS; i++)
             {
                 if (mesh->HasTextureCoords(i))
                 {
