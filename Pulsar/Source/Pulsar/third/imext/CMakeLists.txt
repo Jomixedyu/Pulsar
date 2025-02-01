@@ -22,6 +22,13 @@ add_library(${PROJECT_NAME}
         "imgui_node_editor_internal.h"
         "imgui_node_editor_internal.inl"
 
+        "utilities/builders.h"
+        "utilities/builders.cpp"
+        "utilities/drawing.h"
+        "utilities/drawing.cpp"
+        "utilities/widgets.h"
+        "utilities/widgets.cpp"
+
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE "../imgui/include/imgui")
