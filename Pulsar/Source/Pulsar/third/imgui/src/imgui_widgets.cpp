@@ -1,4 +1,4 @@
-// dear imgui, v1.91.0
+// dear imgui, v1.91.0 WIP
 // (widgets code)
 
 /*
@@ -567,14 +567,8 @@ bool ImGui::ButtonBehavior(const ImRect& bb, ImGuiID id, bool* out_hovered, bool
                     SetActiveID(id, window);
                     g.ActiveIdMouseButton = mouse_button_clicked;
                     if (!(flags & ImGuiButtonFlags_NoNavFocus))
-                    {
                         SetFocusID(id, window);
-                        FocusWindow(window);
-                    }
-                    else
-                    {
-                        FocusWindow(window, ImGuiFocusRequestFlags_RestoreFocusedChild); // Still need to focus and bring to front, but try to avoid losing NavId when navigating a child
-                    }
+                    FocusWindow(window);
                 }
                 if ((flags & ImGuiButtonFlags_PressedOnClick) || ((flags & ImGuiButtonFlags_PressedOnDoubleClick) && g.IO.MouseClickedCount[mouse_button_clicked] == 2))
                 {
@@ -583,16 +577,10 @@ bool ImGui::ButtonBehavior(const ImRect& bb, ImGuiID id, bool* out_hovered, bool
                         ClearActiveID();
                     else
                         SetActiveID(id, window); // Hold on ID
-                    g.ActiveIdMouseButton = mouse_button_clicked;
                     if (!(flags & ImGuiButtonFlags_NoNavFocus))
-                    {
                         SetFocusID(id, window);
-                        FocusWindow(window);
-                    }
-                    else
-                    {
-                        FocusWindow(window, ImGuiFocusRequestFlags_RestoreFocusedChild); // Still need to focus and bring to front, but try to avoid losing NavId when navigating a child
-                    }
+                    g.ActiveIdMouseButton = mouse_button_clicked;
+                    FocusWindow(window);
                 }
             }
             if (flags & ImGuiButtonFlags_PressedOnRelease)
@@ -3903,7 +3891,7 @@ static void    STB_TEXTEDIT_LAYOUTROW(StbTexteditRow* r, ImGuiInputTextState* ob
 
 static bool is_separator(unsigned int c)
 {
-    return c==',' || c==';' || c=='(' || c==')' || c=='{' || c=='}' || c=='[' || c==']' || c=='|' || c=='\n' || c=='\r' || c=='.' || c=='!' || c=='\\' || c=='/';
+    return c==',' || c==';' || c=='(' || c==')' || c=='{' || c=='}' || c=='[' || c==']' || c=='|' || c=='\n' || c=='\r' || c=='.' || c=='!';
 }
 
 static int is_word_boundary_from_right(ImGuiInputTextState* obj, int idx)
@@ -6233,7 +6221,7 @@ bool ImGui::TreeNode(const char* label)
     if (window->SkipItems)
         return false;
     ImGuiID id = window->GetID(label);
-    return TreeNodeBehavior(id, ImGuiTreeNodeFlags_None, label, NULL);
+    return TreeNodeBehavior(id, id, ImGuiTreeNodeFlags_None, label, NULL);
 }
 
 bool ImGui::TreeNodeV(const char* str_id, const char* fmt, va_list args)
@@ -6252,7 +6240,7 @@ bool ImGui::TreeNodeEx(const char* label, ImGuiTreeNodeFlags flags)
     if (window->SkipItems)
         return false;
     ImGuiID id = window->GetID(label);
-    return TreeNodeBehavior(id, flags, label, NULL);
+    return TreeNodeBehavior(id, id, flags, label, NULL);
 }
 
 bool ImGui::TreeNodeEx(const char* str_id, ImGuiTreeNodeFlags flags, const char* fmt, ...)
@@ -6282,7 +6270,7 @@ bool ImGui::TreeNodeExV(const char* str_id, ImGuiTreeNodeFlags flags, const char
     ImGuiID id = window->GetID(str_id);
     const char* label, *label_end;
     ImFormatStringToTempBufferV(&label, &label_end, fmt, args);
-    return TreeNodeBehavior(id, flags, label, label_end);
+    return TreeNodeBehavior(id, id, flags, label, label_end);
 }
 
 bool ImGui::TreeNodeExV(const void* ptr_id, ImGuiTreeNodeFlags flags, const char* fmt, va_list args)
@@ -6294,7 +6282,7 @@ bool ImGui::TreeNodeExV(const void* ptr_id, ImGuiTreeNodeFlags flags, const char
     ImGuiID id = window->GetID(ptr_id);
     const char* label, *label_end;
     ImFormatStringToTempBufferV(&label, &label_end, fmt, args);
-    return TreeNodeBehavior(id, flags, label, label_end);
+    return TreeNodeBehavior(id, id, flags, label, label_end);
 }
 
 bool ImGui::TreeNodeGetOpen(ImGuiID storage_id)
@@ -6374,7 +6362,7 @@ static void TreeNodeStoreStackData(ImGuiTreeNodeFlags flags)
 }
 
 // When using public API, currently 'id == storage_id' is always true, but we separate the values to facilitate advanced user code doing storage queries outside of UI loop.
-bool ImGui::TreeNodeBehavior(ImGuiID id, ImGuiTreeNodeFlags flags, const char* label, const char* label_end)
+bool ImGui::TreeNodeBehavior(ImGuiID id, ImGuiID storage_id, ImGuiTreeNodeFlags flags, const char* label, const char* label_end)
 {
     ImGuiWindow* window = GetCurrentWindow();
     if (window->SkipItems)
@@ -6403,9 +6391,10 @@ bool ImGui::TreeNodeBehavior(ImGuiID id, ImGuiTreeNodeFlags flags, const char* l
     frame_bb.Max.y = window->DC.CursorPos.y + frame_height;
     if (display_frame)
     {
-        const float outer_extend = IM_TRUNC(window->WindowPadding.x * 0.5f); // Framed header expand a little outside of current limits
-        frame_bb.Min.x -= outer_extend;
-        frame_bb.Max.x += outer_extend;
+        // Framed header expand a little outside the default padding, to the edge of InnerClipRect
+        // (FIXME: May remove this at some point and make InnerClipRect align with WindowPadding.x instead of WindowPadding.x*0.5f)
+        frame_bb.Min.x -= IM_TRUNC(window->WindowPadding.x * 0.5f - 1.0f);
+        frame_bb.Max.x += IM_TRUNC(window->WindowPadding.x * 0.5f);
     }
 
     ImVec2 text_pos(window->DC.CursorPos.x + text_offset_x, window->DC.CursorPos.y + text_offset_y);
@@ -6416,28 +6405,26 @@ bool ImGui::TreeNodeBehavior(ImGuiID id, ImGuiTreeNodeFlags flags, const char* l
     if ((flags & (ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_SpanFullWidth | ImGuiTreeNodeFlags_SpanTextWidth | ImGuiTreeNodeFlags_SpanAllColumns)) == 0)
         interact_bb.Max.x = frame_bb.Min.x + text_width + (label_size.x > 0.0f ? style.ItemSpacing.x * 2.0f : 0.0f);
 
-    // Compute open and multi-select states before ItemAdd() as it clear NextItem data.
-    ImGuiID storage_id = (g.NextItemData.Flags & ImGuiNextItemDataFlags_HasStorageID) ? g.NextItemData.StorageId : id;
-    bool is_open = TreeNodeUpdateNextOpen(storage_id, flags);
-
-    bool is_visible;
+    // Modify ClipRect for the ItemAdd(), faster than doing a PushColumnsBackground/PushTableBackgroundChannel for every Selectable..
+    const float backup_clip_rect_min_x = window->ClipRect.Min.x;
+    const float backup_clip_rect_max_x = window->ClipRect.Max.x;
     if (span_all_columns)
     {
-        // Modify ClipRect for the ItemAdd(), faster than doing a PushColumnsBackground/PushTableBackgroundChannel for every Selectable..
-        const float backup_clip_rect_min_x = window->ClipRect.Min.x;
-        const float backup_clip_rect_max_x = window->ClipRect.Max.x;
         window->ClipRect.Min.x = window->ParentWorkRect.Min.x;
         window->ClipRect.Max.x = window->ParentWorkRect.Max.x;
-        is_visible = ItemAdd(interact_bb, id);
+    }
+
+    // Compute open and multi-select states before ItemAdd() as it clear NextItem data.
+    bool is_open = TreeNodeUpdateNextOpen(storage_id, flags);
+    bool item_add = ItemAdd(interact_bb, id);
+    g.LastItemData.StatusFlags |= ImGuiItemStatusFlags_HasDisplayRect;
+    g.LastItemData.DisplayRect = frame_bb;
+
+    if (span_all_columns)
+    {
         window->ClipRect.Min.x = backup_clip_rect_min_x;
         window->ClipRect.Max.x = backup_clip_rect_max_x;
     }
-    else
-    {
-        is_visible = ItemAdd(interact_bb, id);
-    }
-    g.LastItemData.StatusFlags |= ImGuiItemStatusFlags_HasDisplayRect;
-    g.LastItemData.DisplayRect = frame_bb;
 
     // If a NavLeft request is happening and ImGuiTreeNodeFlags_NavLeftJumpsBackHere enabled:
     // Store data for the current depth to allow returning to this node from any child item.
@@ -6452,7 +6439,7 @@ bool ImGui::TreeNodeBehavior(ImGuiID id, ImGuiTreeNodeFlags flags, const char* l
     }
 
     const bool is_leaf = (flags & ImGuiTreeNodeFlags_Leaf) != 0;
-    if (!is_visible)
+    if (!item_add)
     {
         if (store_tree_node_stack_data && is_open)
             TreeNodeStoreStackData(flags); // Call before TreePushOverrideID()
@@ -6574,54 +6561,52 @@ bool ImGui::TreeNodeBehavior(ImGuiID id, ImGuiTreeNodeFlags flags, const char* l
         g.LastItemData.StatusFlags |= ImGuiItemStatusFlags_ToggledSelection;
 
     // Render
+    const ImU32 text_col = GetColorU32(ImGuiCol_Text);
+    ImGuiNavHighlightFlags nav_highlight_flags = ImGuiNavHighlightFlags_Compact;
+    if (is_multi_select)
+        nav_highlight_flags |= ImGuiNavHighlightFlags_AlwaysDraw; // Always show the nav rectangle
+    if (display_frame)
     {
-        const ImU32 text_col = GetColorU32(ImGuiCol_Text);
-        ImGuiNavHighlightFlags nav_highlight_flags = ImGuiNavHighlightFlags_Compact;
-        if (is_multi_select)
-            nav_highlight_flags |= ImGuiNavHighlightFlags_AlwaysDraw; // Always show the nav rectangle
-        if (display_frame)
-        {
-            // Framed type
-            const ImU32 bg_col = GetColorU32((held && hovered) ? ImGuiCol_HeaderActive : hovered ? ImGuiCol_HeaderHovered : ImGuiCol_Header);
-            RenderFrame(frame_bb.Min, frame_bb.Max, bg_col, true, style.FrameRounding);
-            RenderNavHighlight(frame_bb, id, nav_highlight_flags);
-            if (flags & ImGuiTreeNodeFlags_Bullet)
-                RenderBullet(window->DrawList, ImVec2(text_pos.x - text_offset_x * 0.60f, text_pos.y + g.FontSize * 0.5f), text_col);
-            else if (!is_leaf)
-                RenderArrow(window->DrawList, ImVec2(text_pos.x - text_offset_x + padding.x, text_pos.y), text_col, is_open ? ((flags & ImGuiTreeNodeFlags_UpsideDownArrow) ? ImGuiDir_Up : ImGuiDir_Down) : ImGuiDir_Right, 1.0f);
-            else // Leaf without bullet, left-adjusted text
-                text_pos.x -= text_offset_x - padding.x;
-            if (flags & ImGuiTreeNodeFlags_ClipLabelForTrailingButton)
-                frame_bb.Max.x -= g.FontSize + style.FramePadding.x;
-            if (g.LogEnabled)
-                LogSetNextTextDecoration("###", "###");
-        }
-        else
-        {
-            // Unframed typed for tree nodes
-            if (hovered || selected)
-            {
-                const ImU32 bg_col = GetColorU32((held && hovered) ? ImGuiCol_HeaderActive : hovered ? ImGuiCol_HeaderHovered : ImGuiCol_Header);
-                RenderFrame(frame_bb.Min, frame_bb.Max, bg_col, false);
-            }
-            RenderNavHighlight(frame_bb, id, nav_highlight_flags);
-            if (flags & ImGuiTreeNodeFlags_Bullet)
-                RenderBullet(window->DrawList, ImVec2(text_pos.x - text_offset_x * 0.5f, text_pos.y + g.FontSize * 0.5f), text_col);
-            else if (!is_leaf)
-                RenderArrow(window->DrawList, ImVec2(text_pos.x - text_offset_x + padding.x, text_pos.y + g.FontSize * 0.15f), text_col, is_open ? ((flags & ImGuiTreeNodeFlags_UpsideDownArrow) ? ImGuiDir_Up : ImGuiDir_Down) : ImGuiDir_Right, 0.70f);
-            if (g.LogEnabled)
-                LogSetNextTextDecoration(">", NULL);
-        }
-
-        if (span_all_columns)
-            TablePopBackgroundChannel();
-
-        // Label
-        if (display_frame)
-            RenderTextClipped(text_pos, frame_bb.Max, label, label_end, &label_size);
-        else
-            RenderText(text_pos, label, label_end, false);
+        // Framed type
+        const ImU32 bg_col = GetColorU32((held && hovered) ? ImGuiCol_HeaderActive : hovered ? ImGuiCol_HeaderHovered : ImGuiCol_Header);
+        RenderFrame(frame_bb.Min, frame_bb.Max, bg_col, true, style.FrameRounding);
+        RenderNavHighlight(frame_bb, id, nav_highlight_flags);
+        if (flags & ImGuiTreeNodeFlags_Bullet)
+            RenderBullet(window->DrawList, ImVec2(text_pos.x - text_offset_x * 0.60f, text_pos.y + g.FontSize * 0.5f), text_col);
+        else if (!is_leaf)
+            RenderArrow(window->DrawList, ImVec2(text_pos.x - text_offset_x + padding.x, text_pos.y), text_col, is_open ? ((flags & ImGuiTreeNodeFlags_UpsideDownArrow) ? ImGuiDir_Up : ImGuiDir_Down) : ImGuiDir_Right, 1.0f);
+        else // Leaf without bullet, left-adjusted text
+            text_pos.x -= text_offset_x -padding.x;
+        if (flags & ImGuiTreeNodeFlags_ClipLabelForTrailingButton)
+            frame_bb.Max.x -= g.FontSize + style.FramePadding.x;
+        if (g.LogEnabled)
+            LogSetNextTextDecoration("###", "###");
     }
+    else
+    {
+        // Unframed typed for tree nodes
+        if (hovered || selected)
+        {
+            const ImU32 bg_col = GetColorU32((held && hovered) ? ImGuiCol_HeaderActive : hovered ? ImGuiCol_HeaderHovered : ImGuiCol_Header);
+            RenderFrame(frame_bb.Min, frame_bb.Max, bg_col, false);
+        }
+        RenderNavHighlight(frame_bb, id, nav_highlight_flags);
+        if (flags & ImGuiTreeNodeFlags_Bullet)
+            RenderBullet(window->DrawList, ImVec2(text_pos.x - text_offset_x * 0.5f, text_pos.y + g.FontSize * 0.5f), text_col);
+        else if (!is_leaf)
+            RenderArrow(window->DrawList, ImVec2(text_pos.x - text_offset_x + padding.x, text_pos.y + g.FontSize * 0.15f), text_col, is_open ? ((flags & ImGuiTreeNodeFlags_UpsideDownArrow) ? ImGuiDir_Up : ImGuiDir_Down) : ImGuiDir_Right, 0.70f);
+        if (g.LogEnabled)
+            LogSetNextTextDecoration(">", NULL);
+    }
+
+    if (span_all_columns)
+        TablePopBackgroundChannel();
+
+    // Label
+    if (display_frame)
+        RenderTextClipped(text_pos, frame_bb.Max, label, label_end, &label_size);
+    else
+        RenderText(text_pos, label, label_end, false);
 
     if (store_tree_node_stack_data && is_open)
         TreeNodeStoreStackData(flags); // Call before TreePushOverrideID()
@@ -6702,16 +6687,6 @@ void ImGui::SetNextItemOpen(bool is_open, ImGuiCond cond)
     g.NextItemData.OpenCond = (ImU8)(cond ? cond : ImGuiCond_Always);
 }
 
-// Set next TreeNode/CollapsingHeader storage id.
-void ImGui::SetNextItemStorageID(ImGuiID storage_id)
-{
-    ImGuiContext& g = *GImGui;
-    if (g.CurrentWindow->SkipItems)
-        return;
-    g.NextItemData.Flags |= ImGuiNextItemDataFlags_HasStorageID;
-    g.NextItemData.StorageId = storage_id;
-}
-
 // CollapsingHeader returns true when opened but do not indent nor push into the ID stack (because of the ImGuiTreeNodeFlags_NoTreePushOnOpen flag).
 // This is basically the same as calling TreeNodeEx(label, ImGuiTreeNodeFlags_CollapsingHeader). You can remove the _NoTreePushOnOpen flag if you want behavior closer to normal TreeNode().
 bool ImGui::CollapsingHeader(const char* label, ImGuiTreeNodeFlags flags)
@@ -6720,7 +6695,7 @@ bool ImGui::CollapsingHeader(const char* label, ImGuiTreeNodeFlags flags)
     if (window->SkipItems)
         return false;
     ImGuiID id = window->GetID(label);
-    return TreeNodeBehavior(id, flags | ImGuiTreeNodeFlags_CollapsingHeader, label);
+    return TreeNodeBehavior(id, id, flags | ImGuiTreeNodeFlags_CollapsingHeader, label);
 }
 
 // p_visible == NULL                        : regular collapsing header
@@ -6740,7 +6715,7 @@ bool ImGui::CollapsingHeader(const char* label, bool* p_visible, ImGuiTreeNodeFl
     flags |= ImGuiTreeNodeFlags_CollapsingHeader;
     if (p_visible)
         flags |= ImGuiTreeNodeFlags_AllowOverlap | (ImGuiTreeNodeFlags)ImGuiTreeNodeFlags_ClipLabelForTrailingButton;
-    bool is_open = TreeNodeBehavior(id, flags, label);
+    bool is_open = TreeNodeBehavior(id, id, flags, label);
     if (p_visible != NULL)
     {
         // Create a small overlapping close button
@@ -6800,7 +6775,7 @@ bool ImGui::Selectable(const char* label, bool selected, ImGuiSelectableFlags fl
     const ImVec2 text_max(min_x + size.x, pos.y + size.y);
 
     // Selectables are meant to be tightly packed together with no click-gap, so we extend their box to cover spacing between selectable.
-    // FIXME: Not part of layout so not included in clipper calculation, but ItemSize currently doesn't allow offsetting CursorPos.
+    // FIXME: Not part of layout so not included in clipper calculation, but ItemSize currenty doesn't allow offsetting CursorPos.
     ImRect bb(min_x, pos.y, text_max.x, text_max.y);
     if ((flags & ImGuiSelectableFlags_NoPadWithHalfSpacing) == 0)
     {
@@ -6815,23 +6790,22 @@ bool ImGui::Selectable(const char* label, bool selected, ImGuiSelectableFlags fl
     }
     //if (g.IO.KeyCtrl) { GetForegroundDrawList()->AddRect(bb.Min, bb.Max, IM_COL32(0, 255, 0, 255)); }
 
-    const bool disabled_item = (flags & ImGuiSelectableFlags_Disabled) != 0;
-    const ImGuiItemFlags extra_item_flags = disabled_item ? (ImGuiItemFlags)ImGuiItemFlags_Disabled : ImGuiItemFlags_None;
-    bool is_visible;
+    // Modify ClipRect for the ItemAdd(), faster than doing a PushColumnsBackground/PushTableBackgroundChannel for every Selectable..
+    const float backup_clip_rect_min_x = window->ClipRect.Min.x;
+    const float backup_clip_rect_max_x = window->ClipRect.Max.x;
     if (span_all_columns)
     {
-        // Modify ClipRect for the ItemAdd(), faster than doing a PushColumnsBackground/PushTableBackgroundChannel for every Selectable..
-        const float backup_clip_rect_min_x = window->ClipRect.Min.x;
-        const float backup_clip_rect_max_x = window->ClipRect.Max.x;
         window->ClipRect.Min.x = window->ParentWorkRect.Min.x;
         window->ClipRect.Max.x = window->ParentWorkRect.Max.x;
-        is_visible = ItemAdd(bb, id, NULL, extra_item_flags);
+    }
+
+    const bool disabled_item = (flags & ImGuiSelectableFlags_Disabled) != 0;
+    const bool is_visible = ItemAdd(bb, id, NULL, disabled_item ? (ImGuiItemFlags)ImGuiItemFlags_Disabled : ImGuiItemFlags_None);
+
+    if (span_all_columns)
+    {
         window->ClipRect.Min.x = backup_clip_rect_min_x;
         window->ClipRect.Max.x = backup_clip_rect_max_x;
-    }
-    else
-    {
-        is_visible = ItemAdd(bb, id, NULL, extra_item_flags);
     }
 
     const bool is_multi_select = (g.LastItemData.InFlags & ImGuiItemFlags_IsMultiSelect) != 0;
@@ -6912,15 +6886,14 @@ bool ImGui::Selectable(const char* label, bool selected, ImGuiSelectableFlags fl
     // Render
     if (is_visible)
     {
-        const bool highlighted = hovered || (flags & ImGuiSelectableFlags_Highlight);
-        if (highlighted || selected)
+        if (hovered || selected)
         {
             // FIXME-MULTISELECT: Styling: Color for 'selected' elements? ImGuiCol_HeaderSelected
             ImU32 col;
-            if (selected && !highlighted)
+            if (selected && !hovered)
                 col = GetColorU32(ImLerp(GetStyleColorVec4(ImGuiCol_Header), GetStyleColorVec4(ImGuiCol_HeaderHovered), 0.5f));
             else
-                col = GetColorU32((held && highlighted) ? ImGuiCol_HeaderActive : highlighted ? ImGuiCol_HeaderHovered : ImGuiCol_Header);
+                col = GetColorU32((held && hovered) ? ImGuiCol_HeaderActive : hovered ? ImGuiCol_HeaderHovered : ImGuiCol_Header);
             RenderFrame(bb.Min, bb.Max, col, false, 0.0f);
         }
         if (g.NavId == id)
@@ -7088,7 +7061,7 @@ static int ImStrimatchlen(const char* s1, const char* s1_end, const char* s2)
 // When SingleCharMode is set:
 // - it is better to NOT display a tooltip of other on-screen display indicator.
 // - the index of the currently focused item is required.
-//   if your SetNextItemSelectionUserData() values are indices, you can obtain it from ImGuiMultiSelectIO::NavIdItem, otherwise from g.NavLastValidSelectionUserData.
+//   if your SetNextItemSelectionData() values are indices, you can obtain it from ImGuiMultiSelectIO::NavIdItem, otherwise from g.NavLastValidSelectionUserData.
 int ImGui::TypingSelectFindMatch(ImGuiTypingSelectRequest* req, int items_count, const char* (*get_item_name_func)(void*, int), void* user_data, int nav_item_idx)
 {
     if (req == NULL || req->SelectRequest == false) // Support NULL parameter so both calls can be done from same spot.
@@ -7180,7 +7153,6 @@ static void BoxSelectPreStartDrag(ImGuiID id, ImGuiSelectionUserData clicked_ite
     bs->ID = id;
     bs->IsStarting = true; // Consider starting box-select.
     bs->IsStartedFromVoid = (clicked_item == ImGuiSelectionUserData_Invalid);
-    bs->IsStartedSetNavIdOnce = bs->IsStartedFromVoid;
     bs->KeyMods = g.IO.KeyMods;
     bs->StartPosRel = bs->EndPosRel = ImGui::WindowPosAbsToRel(g.CurrentWindow, g.IO.MousePos);
     bs->ScrollAccum = ImVec2(0.0f, 0.0f);
@@ -7239,7 +7211,7 @@ static void BoxSelectScrollWithMouseDrag(ImGuiBoxSelectState* bs, ImGuiWindow* w
     }
 }
 
-bool ImGui::BeginBoxSelect(const ImRect& scope_rect, ImGuiWindow* window, ImGuiID box_select_id, ImGuiMultiSelectFlags ms_flags)
+bool ImGui::BeginBoxSelect(ImGuiWindow* window, ImGuiID box_select_id, ImGuiMultiSelectFlags ms_flags)
 {
     ImGuiContext& g = *GImGui;
     ImGuiBoxSelectState* bs = &g.BoxSelectState;
@@ -7259,10 +7231,11 @@ bool ImGui::BeginBoxSelect(const ImRect& scope_rect, ImGuiWindow* window, ImGuiI
 
     // Current frame absolute prev/current rectangles are used to toggle selection.
     // They are derived from positions relative to scrolling space.
+    const ImRect scope_rect = window->InnerClipRect;
     ImVec2 start_pos_abs = WindowPosRelToAbs(window, bs->StartPosRel);
     ImVec2 prev_end_pos_abs = WindowPosRelToAbs(window, bs->EndPosRel); // Clamped already
     ImVec2 curr_end_pos_abs = g.IO.MousePos;
-    if (ms_flags & ImGuiMultiSelectFlags_ScopeWindow) // Box-select scrolling only happens with ScopeWindow
+    if (ms_flags & ImGuiMultiSelectFlags_ScopeWindow)  // Box-select scrolling only happens with ScopeWindow
         curr_end_pos_abs = ImClamp(curr_end_pos_abs, scope_rect.Min, scope_rect.Max);
     bs->BoxSelectRectPrev.Min = ImMin(start_pos_abs, prev_end_pos_abs);
     bs->BoxSelectRectPrev.Max = ImMax(start_pos_abs, prev_end_pos_abs);
@@ -7316,7 +7289,6 @@ void ImGui::EndBoxSelect(const ImRect& scope_rect, ImGuiMultiSelectFlags ms_flag
 // [SECTION] Widgets: Multi-Select support
 //-------------------------------------------------------------------------
 // - DebugLogMultiSelectRequests() [Internal]
-// - CalcScopeRect() [Internal]
 // - BeginMultiSelect()
 // - EndMultiSelect()
 // - SetNextItemSelectionUserData()
@@ -7332,22 +7304,6 @@ static void DebugLogMultiSelectRequests(const char* function, const ImGuiMultiSe
     {
         if (req.Type == ImGuiSelectionRequestType_SetAll)    IMGUI_DEBUG_LOG_SELECTION("[selection] %s: Request: SetAll %d (= %s)\n", function, req.Selected, req.Selected ? "SelectAll" : "Clear");
         if (req.Type == ImGuiSelectionRequestType_SetRange)  IMGUI_DEBUG_LOG_SELECTION("[selection] %s: Request: SetRange %" IM_PRId64 "..%" IM_PRId64 " (0x%" IM_PRIX64 "..0x%" IM_PRIX64 ") = %d (dir %d)\n", function, req.RangeFirstItem, req.RangeLastItem, req.RangeFirstItem, req.RangeLastItem, req.Selected, req.RangeDirection);
-    }
-}
-
-static ImRect CalcScopeRect(ImGuiMultiSelectTempData* ms, ImGuiWindow* window)
-{
-    if (ms->Flags & ImGuiMultiSelectFlags_ScopeRect)
-    {
-        // Warning: this depends on CursorMaxPos so it means to be called by EndMultiSelect() only
-        return ImRect(ms->ScopeRectMin, ImMax(window->DC.CursorMaxPos, ms->ScopeRectMin));
-    }
-    else
-    {
-        // Add inner table decoration (#7821) // FIXME: Why not baking in InnerClipRect?
-        ImRect scope_rect = window->InnerClipRect;
-        scope_rect.Min = ImMin(scope_rect.Min + ImVec2(window->DecoInnerSizeX1, window->DecoInnerSizeY1), scope_rect.Max);
-        return scope_rect;
     }
 }
 
@@ -7433,7 +7389,8 @@ ImGuiMultiSelectIO* ImGui::BeginMultiSelect(ImGuiMultiSelectFlags flags, int sel
     if (flags & (ImGuiMultiSelectFlags_BoxSelect1d | ImGuiMultiSelectFlags_BoxSelect2d))
     {
         ms->BoxSelectId = GetID("##BoxSelect");
-        if (BeginBoxSelect(CalcScopeRect(ms, window), window, ms->BoxSelectId, flags))
+        ms->BoxSelectLastitem = ImGuiSelectionUserData_Invalid;
+        if (BeginBoxSelect(window, ms->BoxSelectId, flags))
             request_clear |= bs->RequestClear;
     }
 
@@ -7461,12 +7418,12 @@ ImGuiMultiSelectIO* ImGui::BeginMultiSelect(ImGuiMultiSelectFlags flags, int sel
 
     if (request_clear || request_select_all)
     {
-        MultiSelectAddSetAll(ms, request_select_all);
+        ImGuiSelectionRequest req = { ImGuiSelectionRequestType_SetAll, request_select_all, 0, ImGuiSelectionUserData_Invalid, ImGuiSelectionUserData_Invalid };
         if (!request_select_all)
             storage->LastSelectionSize = 0;
+        ms->IO.Requests.push_back(req);
     }
     ms->LoopRequestSetAll = request_select_all ? 1 : request_clear ? 0 : -1;
-    ms->LastSubmittedItem = ImGuiSelectionUserData_Invalid;
 
     if (g.DebugLogFlags & ImGuiDebugLogFlags_EventSelection)
         DebugLogMultiSelectRequests("BeginMultiSelect", &ms->IO);
@@ -7486,7 +7443,7 @@ ImGuiMultiSelectIO* ImGui::EndMultiSelect()
     IM_ASSERT(g.CurrentMultiSelect != NULL && storage->Window == g.CurrentWindow);
     IM_ASSERT(g.MultiSelectTempDataStacked > 0 && &g.MultiSelectTempData[g.MultiSelectTempDataStacked - 1] == g.CurrentMultiSelect);
 
-    ImRect scope_rect = CalcScopeRect(ms, window);
+    const ImRect scope_rect = (ms->Flags & ImGuiMultiSelectFlags_ScopeRect) ? ImRect(ms->ScopeRectMin, ImMax(window->DC.CursorMaxPos, ms->ScopeRectMin)) : window->InnerClipRect;
     if (ms->IsFocused)
     {
         // We currently don't allow user code to modify RangeSrcItem by writing to BeginIO's version, but that would be an easy change here.
@@ -7531,7 +7488,11 @@ ImGuiMultiSelectIO* ImGui::EndMultiSelect()
 
         if (ms->Flags & ImGuiMultiSelectFlags_ClearOnClickVoid)
             if (IsMouseReleased(0) && IsMouseDragPastThreshold(0) == false && g.IO.KeyMods == ImGuiMod_None)
-                MultiSelectAddSetAll(ms, false);
+            {
+                ImGuiSelectionRequest req = { ImGuiSelectionRequestType_SetAll, false, 0, ImGuiSelectionUserData_Invalid, ImGuiSelectionUserData_Invalid };
+                ms->IO.Requests.resize(0);
+                ms->IO.Requests.push_back(req);
+            }
     }
 
     // Courtesy nav wrapping helper flag
@@ -7718,18 +7679,24 @@ void ImGui::MultiSelectItemFooter(ImGuiID id, bool* p_selected, bool* p_pressed)
             const bool rect_overlap_prev = bs->BoxSelectRectPrev.Overlaps(g.LastItemData.Rect);
             if ((rect_overlap_curr && !rect_overlap_prev && !selected) || (rect_overlap_prev && !rect_overlap_curr))
             {
-                if (storage->LastSelectionSize <= 0 && bs->IsStartedSetNavIdOnce)
+                if (storage->LastSelectionSize <= 0 && bs->IsStartedFromVoid)
                 {
                     pressed = true; // First item act as a pressed: code below will emit selection request and set NavId (whatever we emit here will be overridden anyway)
-                    bs->IsStartedSetNavIdOnce = false;
                 }
                 else
                 {
                     selected = !selected;
-                    MultiSelectAddSetRange(ms, selected, +1, item_data, item_data);
+                    ImGuiSelectionRequest req = { ImGuiSelectionRequestType_SetRange, selected, +1, item_data, item_data };
+                    // Merge continuous ranges (unless NoRangeSelect is set)
+                    ImGuiSelectionRequest* prev = ms->IO.Requests.Size > 0 ? &ms->IO.Requests.Data[ms->IO.Requests.Size - 1] : NULL;
+                    if (prev && prev->Type == ImGuiSelectionRequestType_SetRange && prev->RangeLastItem == ms->BoxSelectLastitem && prev->Selected == selected && (ms->Flags & ImGuiMultiSelectFlags_NoRangeSelect) == 0)
+                        prev->RangeLastItem = item_data; // Merge span into same request
+                    else
+                        ms->IO.Requests.push_back(req);
                 }
                 storage->LastSelectionSize = ImMax(storage->LastSelectionSize + 1, 1);
             }
+            ms->BoxSelectLastitem = item_data;
         }
 
     // Right-click handling.
@@ -7787,7 +7754,11 @@ void ImGui::MultiSelectItemFooter(ImGuiID id, bool* p_selected, bool* p_pressed)
             else if ((input_source == ImGuiInputSource_Keyboard || input_source == ImGuiInputSource_Gamepad) && is_shift && !is_ctrl)
                 request_clear = true; // With is_shift==false the RequestClear was done in BeginIO, not necessary to do again.
             if (request_clear)
-                MultiSelectAddSetAll(ms, false);
+            {
+                ImGuiSelectionRequest req = { ImGuiSelectionRequestType_SetAll, false, 0, ImGuiSelectionUserData_Invalid, ImGuiSelectionUserData_Invalid };
+                ms->IO.Requests.resize(0);
+                ms->IO.Requests.push_back(req);
+            }
         }
 
         int range_direction;
@@ -7825,7 +7796,9 @@ void ImGui::MultiSelectItemFooter(ImGuiID id, bool* p_selected, bool* p_pressed)
             range_selected = selected;
             range_direction = +1;
         }
-        MultiSelectAddSetRange(ms, range_selected, range_direction, storage->RangeSrcItem, item_data);
+        ImGuiSelectionUserData range_dst_item = item_data;
+        ImGuiSelectionRequest req = { ImGuiSelectionRequestType_SetRange, range_selected, (ImS8)range_direction, (range_direction > 0) ? storage->RangeSrcItem : range_dst_item, (range_direction > 0) ? range_dst_item : storage->RangeSrcItem };
+        ms->IO.Requests.push_back(req);
     }
 
     // Update/store the selection state of the Source item (used by CTRL+SHIFT, when Source is unselected we perform a range unselect)
@@ -7840,34 +7813,9 @@ void ImGui::MultiSelectItemFooter(ImGuiID id, bool* p_selected, bool* p_pressed)
     }
     if (storage->NavIdItem == item_data)
         ms->NavIdPassedBy = true;
-    ms->LastSubmittedItem = item_data;
 
     *p_selected = selected;
     *p_pressed = pressed;
-}
-
-void ImGui::MultiSelectAddSetAll(ImGuiMultiSelectTempData* ms, bool selected)
-{
-    ImGuiSelectionRequest req = { ImGuiSelectionRequestType_SetAll, selected, 0, ImGuiSelectionUserData_Invalid, ImGuiSelectionUserData_Invalid };
-    ms->IO.Requests.resize(0);      // Can always clear previous requests
-    ms->IO.Requests.push_back(req); // Add new request
-}
-
-void ImGui::MultiSelectAddSetRange(ImGuiMultiSelectTempData* ms, bool selected, int range_dir, ImGuiSelectionUserData first_item, ImGuiSelectionUserData last_item)
-{
-    // Merge contiguous spans into same request (unless NoRangeSelect is set which guarantees single-item ranges)
-    if (ms->IO.Requests.Size > 0 && first_item == last_item && (ms->Flags & ImGuiMultiSelectFlags_NoRangeSelect) == 0)
-    {
-        ImGuiSelectionRequest* prev = &ms->IO.Requests.Data[ms->IO.Requests.Size - 1];
-        if (prev->Type == ImGuiSelectionRequestType_SetRange && prev->RangeLastItem == ms->LastSubmittedItem && prev->Selected == selected)
-        {
-            prev->RangeLastItem = last_item;
-            return;
-        }
-    }
-
-    ImGuiSelectionRequest req = { ImGuiSelectionRequestType_SetRange, selected, (ImS8)range_dir, (range_dir > 0) ? first_item : last_item, (range_dir > 0) ? last_item : first_item };
-    ms->IO.Requests.push_back(req); // Add new request
 }
 
 void ImGui::DebugNodeMultiSelectState(ImGuiMultiSelectState* storage)
@@ -10079,13 +10027,13 @@ bool    ImGui::TabItemEx(ImGuiTabBar* tab_bar, const char* label, bool* p_open, 
     ImDrawList* display_draw_list = window->DrawList;
     const ImU32 tab_col = GetColorU32((held || hovered) ? ImGuiCol_TabHovered : tab_contents_visible ? (tab_bar_focused ? ImGuiCol_TabSelected : ImGuiCol_TabDimmedSelected) : (tab_bar_focused ? ImGuiCol_Tab : ImGuiCol_TabDimmed));
     TabItemBackground(display_draw_list, bb, flags, tab_col);
-    if (tab_contents_visible && (tab_bar->Flags & ImGuiTabBarFlags_DrawSelectedOverline) && style.TabBarOverlineSize > 0.0f)
+    if (tab_contents_visible && (tab_bar->Flags & ImGuiTabBarFlags_DrawSelectedOverline))
     {
         float x_offset = IM_TRUNC(0.4f * style.TabRounding);
         if (x_offset < 2.0f * g.CurrentDpiScale)
             x_offset = 0.0f;
         float y_offset = 1.0f * g.CurrentDpiScale;
-        display_draw_list->AddLine(bb.GetTL() + ImVec2(x_offset, y_offset), bb.GetTR() + ImVec2(-x_offset, y_offset), GetColorU32(tab_bar_focused ? ImGuiCol_TabSelectedOverline : ImGuiCol_TabDimmedSelectedOverline), style.TabBarOverlineSize);
+        display_draw_list->AddLine(bb.GetTL() + ImVec2(x_offset, y_offset), bb.GetTR() + ImVec2(-x_offset, y_offset), GetColorU32(tab_bar_focused ? ImGuiCol_TabSelectedOverline : ImGuiCol_TabDimmedSelectedOverline), 2.0f * g.CurrentDpiScale);
     }
     RenderNavHighlight(bb, id);
 

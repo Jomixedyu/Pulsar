@@ -1,4 +1,4 @@
-// dear imgui, v1.91.0
+// dear imgui, v1.91.0 WIP
 // (demo code)
 
 // Help:
@@ -200,7 +200,6 @@ Index of this file:
 #if !defined(IMGUI_DISABLE_DEMO_WINDOWS)
 
 // Forward Declarations
-struct ImGuiDemoWindowData;
 static void ShowExampleAppMainMenuBar();
 static void ShowExampleAppAssetsBrowser(bool* p_open);
 static void ShowExampleAppConsole(bool* p_open);
@@ -209,7 +208,7 @@ static void ShowExampleAppDockSpace(bool* p_open);
 static void ShowExampleAppDocuments(bool* p_open);
 static void ShowExampleAppLog(bool* p_open);
 static void ShowExampleAppLayout(bool* p_open);
-static void ShowExampleAppPropertyEditor(bool* p_open, ImGuiDemoWindowData* demo_data);
+static void ShowExampleAppPropertyEditor(bool* p_open);
 static void ShowExampleAppSimpleOverlay(bool* p_open);
 static void ShowExampleAppAutoResize(bool* p_open);
 static void ShowExampleAppConstrainedResize(bool* p_open);
@@ -220,9 +219,10 @@ static void ShowExampleMenuFile();
 
 // We split the contents of the big ShowDemoWindow() function into smaller functions
 // (because the link time of very large functions tends to grow non-linearly)
-static void ShowDemoWindowMenuBar(ImGuiDemoWindowData* demo_data);
-static void ShowDemoWindowWidgets(ImGuiDemoWindowData* demo_data);
-static void ShowDemoWindowMultiSelect(ImGuiDemoWindowData* demo_data);
+struct DemoWindowData;
+static void ShowDemoWindowMenuBar(DemoWindowData* demo_data);
+static void ShowDemoWindowWidgets(DemoWindowData* demo_data);
+static void ShowDemoWindowMultiSelect(DemoWindowData* demo_data);
 static void ShowDemoWindowLayout();
 static void ShowDemoWindowPopups();
 static void ShowDemoWindowTables();
@@ -274,15 +274,14 @@ void*                               GImGuiDemoMarkerCallbackUserData = NULL;
 struct ExampleTreeNode
 {
     // Tree structure
-    char                        Name[28] = "";
+    char                        Name[28];
     int                         UID = 0;
     ExampleTreeNode*            Parent = NULL;
     ImVector<ExampleTreeNode*>  Childs;
-    unsigned short              IndexInParent = 0;  // Maintaining this allows us to implement linear traversal more easily
 
     // Leaf Data
-    bool                        HasData = false;    // All leaves have data
-    bool                        DataMyBool = true;
+    bool                        HasData = false; // All leaves have data
+    bool                        DataMyBool = false;
     int                         DataMyInt = 128;
     ImVec2                      DataMyVec2 = ImVec2(0.0f, 3.141592f);
 };
@@ -311,24 +310,21 @@ static ExampleTreeNode* ExampleTree_CreateNode(const char* name, int uid, Exampl
     snprintf(node->Name, IM_ARRAYSIZE(node->Name), "%s", name);
     node->UID = uid;
     node->Parent = parent;
-    node->IndexInParent = parent ? (unsigned short)parent->Childs.Size : 0;
     if (parent)
         parent->Childs.push_back(node);
     return node;
 }
 
 // Create example tree data
-// (this allocates _many_ more times than most other code in either Dear ImGui or others demo)
 static ExampleTreeNode* ExampleTree_CreateDemoTree()
 {
-    static const char* root_names[] = { "Apple", "Banana", "Cherry", "Kiwi", "Mango", "Orange", "Pear", "Pineapple", "Strawberry", "Watermelon" };
+    static const char* root_names[] = { "Apple", "Banana", "Cherry", "Kiwi", "Mango", "Orange", "Pineapple", "Strawberry", "Watermelon" };
     char name_buf[32];
     int uid = 0;
     ExampleTreeNode* node_L0 = ExampleTree_CreateNode("<ROOT>", ++uid, NULL);
-    const int root_items_multiplier = 2;
-    for (int idx_L0 = 0; idx_L0 < IM_ARRAYSIZE(root_names) * root_items_multiplier; idx_L0++)
+    for (int idx_L0 = 0; idx_L0 < IM_ARRAYSIZE(root_names) * 2; idx_L0++)
     {
-        snprintf(name_buf, 32, "%s %d", root_names[idx_L0 / root_items_multiplier], idx_L0 % root_items_multiplier);
+        snprintf(name_buf, 32, "%s %d", root_names[idx_L0 / 2], idx_L0 % 2);
         ExampleTreeNode* node_L1 = ExampleTree_CreateNode(name_buf, ++uid, node_L0);
         const int number_of_childs = (int)strlen(node_L1->Name);
         for (int idx_L1 = 0; idx_L1 < number_of_childs; idx_L1++)
@@ -351,8 +347,7 @@ static ExampleTreeNode* ExampleTree_CreateDemoTree()
 // [SECTION] Demo Window / ShowDemoWindow()
 //-----------------------------------------------------------------------------
 
-// Data to be shared accross different functions of the demo.
-struct ImGuiDemoWindowData
+struct DemoWindowData
 {
     // Examples Apps (accessible from the "Examples" menu)
     bool ShowMainMenuBar = false;
@@ -377,9 +372,6 @@ struct ImGuiDemoWindowData
     bool ShowIDStackTool = false;
     bool ShowStyleEditor = false;
     bool ShowAbout = false;
-
-    // Other data
-    ExampleTreeNode* DemoTree = NULL;
 };
 
 // Demonstrate most Dear ImGui features (this is big function!)
@@ -395,33 +387,33 @@ void ImGui::ShowDemoWindow(bool* p_open)
     IMGUI_CHECKVERSION();
 
     // Stored data
-    static ImGuiDemoWindowData demo_data;
+    static DemoWindowData demo;
 
     // Examples Apps (accessible from the "Examples" menu)
-    if (demo_data.ShowMainMenuBar)          { ShowExampleAppMainMenuBar(); }
-    if (demo_data.ShowAppDockSpace)         { ShowExampleAppDockSpace(&demo_data.ShowAppDockSpace); } // Important: Process the Docking app first, as explicit DockSpace() nodes needs to be submitted early (read comments near the DockSpace function)
-    if (demo_data.ShowAppDocuments)         { ShowExampleAppDocuments(&demo_data.ShowAppDocuments); } // ...process the Document app next, as it may also use a DockSpace()
-    if (demo_data.ShowAppAssetsBrowser)     { ShowExampleAppAssetsBrowser(&demo_data.ShowAppAssetsBrowser); }
-    if (demo_data.ShowAppConsole)           { ShowExampleAppConsole(&demo_data.ShowAppConsole); }
-    if (demo_data.ShowAppCustomRendering)   { ShowExampleAppCustomRendering(&demo_data.ShowAppCustomRendering); }
-    if (demo_data.ShowAppLog)               { ShowExampleAppLog(&demo_data.ShowAppLog); }
-    if (demo_data.ShowAppLayout)            { ShowExampleAppLayout(&demo_data.ShowAppLayout); }
-    if (demo_data.ShowAppPropertyEditor)    { ShowExampleAppPropertyEditor(&demo_data.ShowAppPropertyEditor, &demo_data); }
-    if (demo_data.ShowAppSimpleOverlay)     { ShowExampleAppSimpleOverlay(&demo_data.ShowAppSimpleOverlay); }
-    if (demo_data.ShowAppAutoResize)        { ShowExampleAppAutoResize(&demo_data.ShowAppAutoResize); }
-    if (demo_data.ShowAppConstrainedResize) { ShowExampleAppConstrainedResize(&demo_data.ShowAppConstrainedResize); }
-    if (demo_data.ShowAppFullscreen)        { ShowExampleAppFullscreen(&demo_data.ShowAppFullscreen); }
-    if (demo_data.ShowAppLongText)          { ShowExampleAppLongText(&demo_data.ShowAppLongText); }
-    if (demo_data.ShowAppWindowTitles)      { ShowExampleAppWindowTitles(&demo_data.ShowAppWindowTitles); }
+    if (demo.ShowMainMenuBar)           { ShowExampleAppMainMenuBar(); }
+    if (demo.ShowAppDockSpace)          { ShowExampleAppDockSpace(&demo.ShowAppDockSpace); }    // Important: Process the Docking app first, as explicit DockSpace() nodes needs to be submitted early (read comments near the DockSpace function)
+    if (demo.ShowAppDocuments)          { ShowExampleAppDocuments(&demo.ShowAppDocuments); }    // ...Process the Document app next, as it may also use a DockSpace()
+    if (demo.ShowAppAssetsBrowser)      { ShowExampleAppAssetsBrowser(&demo.ShowAppAssetsBrowser); }
+    if (demo.ShowAppConsole)            { ShowExampleAppConsole(&demo.ShowAppConsole); }
+    if (demo.ShowAppCustomRendering)    { ShowExampleAppCustomRendering(&demo.ShowAppCustomRendering); }
+    if (demo.ShowAppLog)                { ShowExampleAppLog(&demo.ShowAppLog); }
+    if (demo.ShowAppLayout)             { ShowExampleAppLayout(&demo.ShowAppLayout); }
+    if (demo.ShowAppPropertyEditor)     { ShowExampleAppPropertyEditor(&demo.ShowAppPropertyEditor); }
+    if (demo.ShowAppSimpleOverlay)      { ShowExampleAppSimpleOverlay(&demo.ShowAppSimpleOverlay); }
+    if (demo.ShowAppAutoResize)         { ShowExampleAppAutoResize(&demo.ShowAppAutoResize); }
+    if (demo.ShowAppConstrainedResize)  { ShowExampleAppConstrainedResize(&demo.ShowAppConstrainedResize); }
+    if (demo.ShowAppFullscreen)         { ShowExampleAppFullscreen(&demo.ShowAppFullscreen); }
+    if (demo.ShowAppLongText)           { ShowExampleAppLongText(&demo.ShowAppLongText); }
+    if (demo.ShowAppWindowTitles)       { ShowExampleAppWindowTitles(&demo.ShowAppWindowTitles); }
 
     // Dear ImGui Tools (accessible from the "Tools" menu)
-    if (demo_data.ShowMetrics)              { ImGui::ShowMetricsWindow(&demo_data.ShowMetrics); }
-    if (demo_data.ShowDebugLog)             { ImGui::ShowDebugLogWindow(&demo_data.ShowDebugLog); }
-    if (demo_data.ShowIDStackTool)          { ImGui::ShowIDStackToolWindow(&demo_data.ShowIDStackTool); }
-    if (demo_data.ShowAbout)                { ImGui::ShowAboutWindow(&demo_data.ShowAbout); }
-    if (demo_data.ShowStyleEditor)
+    if (demo.ShowMetrics)               { ImGui::ShowMetricsWindow(&demo.ShowMetrics); }
+    if (demo.ShowDebugLog)              { ImGui::ShowDebugLogWindow(&demo.ShowDebugLog); }
+    if (demo.ShowIDStackTool)           { ImGui::ShowIDStackToolWindow(&demo.ShowIDStackTool); }
+    if (demo.ShowAbout)                 { ImGui::ShowAboutWindow(&demo.ShowAbout); }
+    if (demo.ShowStyleEditor)
     {
-        ImGui::Begin("Dear ImGui Style Editor", &demo_data.ShowStyleEditor);
+        ImGui::Begin("Dear ImGui Style Editor", &demo.ShowStyleEditor);
         ImGui::ShowStyleEditor();
         ImGui::End();
     }
@@ -473,7 +465,7 @@ void ImGui::ShowDemoWindow(bool* p_open)
     //ImGui::PushItemWidth(-ImGui::GetWindowWidth() * 0.35f);   // e.g. Use 2/3 of the space for widgets and 1/3 for labels (right align)
 
     // Menu Bar
-    ShowDemoWindowMenuBar(&demo_data);
+    ShowDemoWindowMenuBar(&demo);
 
     ImGui::Text("dear imgui says hello! (%s) (%d)", IMGUI_VERSION, IMGUI_VERSION_NUM);
     ImGui::Spacing();
@@ -636,7 +628,7 @@ void ImGui::ShowDemoWindow(bool* p_open)
         IMGUI_DEMO_MARKER("Configuration/Style");
         if (ImGui::TreeNode("Style"))
         {
-            ImGui::Checkbox("Style Editor", &demo_data.ShowStyleEditor);
+            ImGui::Checkbox("Style Editor", &demo.ShowStyleEditor);
             ImGui::SameLine();
             HelpMarker("The same contents can be accessed in 'Tools->Style Editor' or by calling the ShowStyleEditor() function.");
             ImGui::TreePop();
@@ -685,7 +677,7 @@ void ImGui::ShowDemoWindow(bool* p_open)
     }
 
     // All demo contents
-    ShowDemoWindowWidgets(&demo_data);
+    ShowDemoWindowWidgets(&demo);
     ShowDemoWindowLayout();
     ShowDemoWindowPopups();
     ShowDemoWindowTables();
@@ -700,7 +692,7 @@ void ImGui::ShowDemoWindow(bool* p_open)
 // [SECTION] ShowDemoWindowMenuBar()
 //-----------------------------------------------------------------------------
 
-static void ShowDemoWindowMenuBar(ImGuiDemoWindowData* demo_data)
+static void ShowDemoWindowMenuBar(DemoWindowData* demo_data)
 {
     IMGUI_DEMO_MARKER("Menu");
     if (ImGui::BeginMenuBar())
@@ -766,7 +758,7 @@ static void ShowDemoWindowMenuBar(ImGuiDemoWindowData* demo_data)
 // [SECTION] ShowDemoWindowWidgets()
 //-----------------------------------------------------------------------------
 
-static void ShowDemoWindowWidgets(ImGuiDemoWindowData* demo_data)
+static void ShowDemoWindowWidgets(DemoWindowData* demo_data)
 {
     IMGUI_DEMO_MARKER("Widgets");
     //ImGui::SetNextItemOpen(true, ImGuiCond_Once);
@@ -1424,18 +1416,18 @@ static void ShowDemoWindowWidgets(ImGuiDemoWindowData* demo_data)
         // (your selection data could be an index, a pointer to the object, an id for the object, a flag intrusively
         // stored in the object itself, etc.)
         const char* items[] = { "AAAA", "BBBB", "CCCC", "DDDD", "EEEE", "FFFF", "GGGG", "HHHH", "IIII", "JJJJ", "KKKK", "LLLLLLL", "MMMM", "OOOOOOO" };
-        static int item_selected_idx = 0; // Here we store our selection data as an index.
+        static int item_current_idx = 0; // Here we store our selection data as an index.
 
         // Pass in the preview value visible before opening the combo (it could technically be different contents or not pulled from items[])
-        const char* combo_preview_value = items[item_selected_idx];
+        const char* combo_preview_value = items[item_current_idx];
 
         if (ImGui::BeginCombo("combo 1", combo_preview_value, flags))
         {
             for (int n = 0; n < IM_ARRAYSIZE(items); n++)
             {
-                const bool is_selected = (item_selected_idx == n);
+                const bool is_selected = (item_current_idx == n);
                 if (ImGui::Selectable(items[n], is_selected))
-                    item_selected_idx = n;
+                    item_current_idx = n;
 
                 // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
                 if (is_selected)
@@ -1477,22 +1469,14 @@ static void ShowDemoWindowWidgets(ImGuiDemoWindowData* demo_data)
         // (your selection data could be an index, a pointer to the object, an id for the object, a flag intrusively
         // stored in the object itself, etc.)
         const char* items[] = { "AAAA", "BBBB", "CCCC", "DDDD", "EEEE", "FFFF", "GGGG", "HHHH", "IIII", "JJJJ", "KKKK", "LLLLLLL", "MMMM", "OOOOOOO" };
-        static int item_selected_idx = 0; // Here we store our selected data as an index.
-
-        static bool item_highlight = false;
-        int item_highlighted_idx = -1; // Here we store our highlighted data as an index.
-        ImGui::Checkbox("Highlight hovered item in second listbox", &item_highlight);
-
+        static int item_current_idx = 0; // Here we store our selection data as an index.
         if (ImGui::BeginListBox("listbox 1"))
         {
             for (int n = 0; n < IM_ARRAYSIZE(items); n++)
             {
-                const bool is_selected = (item_selected_idx == n);
+                const bool is_selected = (item_current_idx == n);
                 if (ImGui::Selectable(items[n], is_selected))
-                    item_selected_idx = n;
-
-                if (item_highlight && ImGui::IsItemHovered())
-                    item_highlighted_idx = n;
+                    item_current_idx = n;
 
                 // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
                 if (is_selected)
@@ -1508,10 +1492,9 @@ static void ShowDemoWindowWidgets(ImGuiDemoWindowData* demo_data)
         {
             for (int n = 0; n < IM_ARRAYSIZE(items); n++)
             {
-                bool is_selected = (item_selected_idx == n);
-                ImGuiSelectableFlags flags = (item_highlighted_idx == n) ? ImGuiSelectableFlags_Highlight : 0;
-                if (ImGui::Selectable(items[n], is_selected, flags))
-                    item_selected_idx = n;
+                const bool is_selected = (item_current_idx == n);
+                if (ImGui::Selectable(items[n], is_selected))
+                    item_current_idx = n;
 
                 // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
                 if (is_selected)
@@ -1558,8 +1541,8 @@ static void ShowDemoWindowWidgets(ImGuiDemoWindowData* demo_data)
             ImGui::TreePop();
         }
 
-        IMGUI_DEMO_MARKER("Widgets/Selectables/In Tables");
-        if (ImGui::TreeNode("In Tables"))
+        IMGUI_DEMO_MARKER("Widgets/Selectables/In columns");
+        if (ImGui::TreeNode("In columns"))
         {
             static bool selected[10] = {};
 
@@ -3178,7 +3161,7 @@ struct ExampleDualListBox
 // Also read: https://github.com/ocornut/imgui/wiki/Multi-Select
 //-----------------------------------------------------------------------------
 
-static void ShowDemoWindowMultiSelect(ImGuiDemoWindowData* demo_data)
+static void ShowDemoWindowMultiSelect(DemoWindowData* demo_data)
 {
     IMGUI_DEMO_MARKER("Widgets/Selection State & Multi-Select");
     if (ImGui::TreeNode("Selection State & Multi-Select"))
@@ -3388,52 +3371,6 @@ static void ShowDemoWindowMultiSelect(ImGuiDemoWindowData* demo_data)
             ImGui::TreePop();
         }
 
-        // Demonstrate using the clipper with BeginMultiSelect()/EndMultiSelect()
-        IMGUI_DEMO_MARKER("Widgets/Selection State/Multi-Select (in a table)");
-        if (ImGui::TreeNode("Multi-Select (in a table)"))
-        {
-            static ImGuiSelectionBasicStorage selection;
-
-            const int ITEMS_COUNT = 10000;
-            ImGui::Text("Selection: %d/%d", selection.Size, ITEMS_COUNT);
-            if (ImGui::BeginTable("##Basket", 2, ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter))
-            {
-                ImGui::TableSetupColumn("Object");
-                ImGui::TableSetupColumn("Action");
-                ImGui::TableSetupScrollFreeze(0, 1);
-                ImGui::TableHeadersRow();
-
-                ImGuiMultiSelectFlags flags = ImGuiMultiSelectFlags_ClearOnEscape | ImGuiMultiSelectFlags_BoxSelect1d;
-                ImGuiMultiSelectIO* ms_io = ImGui::BeginMultiSelect(flags, selection.Size, ITEMS_COUNT);
-                selection.ApplyRequests(ms_io);
-
-                ImGuiListClipper clipper;
-                clipper.Begin(ITEMS_COUNT);
-                if (ms_io->RangeSrcItem != -1)
-                    clipper.IncludeItemByIndex((int)ms_io->RangeSrcItem); // Ensure RangeSrc item is not clipped.
-                while (clipper.Step())
-                {
-                    for (int n = clipper.DisplayStart; n < clipper.DisplayEnd; n++)
-                    {
-                        ImGui::TableNextRow();
-                        ImGui::TableNextColumn();
-                        char label[64];
-                        sprintf(label, "Object %05d: %s", n, ExampleNames[n % IM_ARRAYSIZE(ExampleNames)]);
-                        bool item_is_selected = selection.Contains((ImGuiID)n);
-                        ImGui::SetNextItemSelectionUserData(n);
-                        ImGui::Selectable(label, item_is_selected, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowOverlap);
-                        ImGui::TableNextColumn();
-                        ImGui::SmallButton("hello");
-                    }
-                }
-
-                ms_io = ImGui::EndMultiSelect();
-                selection.ApplyRequests(ms_io);
-                ImGui::EndTable();
-            }
-            ImGui::TreePop();
-        }
-
         IMGUI_DEMO_MARKER("Widgets/Selection State/Multi-Select (checkboxes)");
         if (ImGui::TreeNode("Multi-Select (checkboxes)"))
         {
@@ -3524,162 +3461,6 @@ static void ShowDemoWindowMultiSelect(ImGuiDemoWindowData* demo_data)
             ImGui::TreePop();
         }
 
-        // Demonstrate supporting multiple-selection in a tree.
-        // - We don't use linear indices for selection user data, but our ExampleTreeNode* pointer directly!
-        //   This showcase how SetNextItemSelectionUserData() never assume indices!
-        // - The difficulty here is to "interpolate" from RangeSrcItem to RangeDstItem in the SetAll/SetRange request.
-        //   We want this interpolation to match what the user sees: in visible order, skipping closed nodes.
-        //   This is implemented by our TreeGetNextNodeInVisibleOrder() user-space helper.
-        // - Important: In a real codebase aiming to implement full-featured selectable tree with custom filtering, you
-        //   are more likely to build an array mapping sequential indices to visible tree nodes, since your
-        //   filtering/search + clipping process will benefit from it. Having this will make this interpolation much easier.
-        // - Consider this a prototype: we are working toward simplifying some of it.
-        IMGUI_DEMO_MARKER("Widgets/Selection State/Multi-Select (trees)");
-        if (ImGui::TreeNode("Multi-Select (trees)"))
-        {
-            HelpMarker(
-                "This is rather advanced and experimental. If you are getting started with multi-select,"
-                "please don't start by looking at how to use it for a tree!\n\n"
-                "Future versions will try to simplify and formalize some of this.");
-
-            struct ExampleTreeFuncs
-            {
-                static void DrawNode(ExampleTreeNode* node, ImGuiSelectionBasicStorage* selection)
-                {
-                    ImGuiTreeNodeFlags tree_node_flags = ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick;
-                    tree_node_flags |= ImGuiTreeNodeFlags_NavLeftJumpsBackHere; // Enable pressing left to jump to parent
-                    if (node->Childs.Size == 0)
-                        tree_node_flags |= ImGuiTreeNodeFlags_Bullet | ImGuiTreeNodeFlags_Leaf;
-                    if (selection->Contains((ImGuiID)node->UID))
-                        tree_node_flags |= ImGuiTreeNodeFlags_Selected;
-
-                    // Using SetNextItemStorageID() to specify storage id, so we can easily peek into
-                    // the storage holding open/close stage, using our TreeNodeGetOpen/TreeNodeSetOpen() functions.
-                    ImGui::SetNextItemSelectionUserData((ImGuiSelectionUserData)(intptr_t)node);
-                    ImGui::SetNextItemStorageID((ImGuiID)node->UID);
-                    if (ImGui::TreeNodeEx(node->Name, tree_node_flags))
-                    {
-                        for (ExampleTreeNode* child : node->Childs)
-                            DrawNode(child, selection);
-                        ImGui::TreePop();
-                    }
-                    else if (ImGui::IsItemToggledOpen())
-                    {
-                        TreeCloseAndUnselectChildNodes(node, selection);
-                    }
-                }
-
-                static bool TreeNodeGetOpen(ExampleTreeNode* node)
-                {
-                    return ImGui::GetStateStorage()->GetBool((ImGuiID)node->UID);
-                }
-
-                static void TreeNodeSetOpen(ExampleTreeNode* node, bool open)
-                {
-                    ImGui::GetStateStorage()->SetBool((ImGuiID)node->UID, open);
-                }
-
-                // When closing a node: 1) close and unselect all child nodes, 2) select parent if any child was selected.
-                // FIXME: This is currently handled by user logic but I'm hoping to eventually provide tree node
-                // features to do this automatically, e.g. a ImGuiTreeNodeFlags_AutoCloseChildNodes etc.
-                static int TreeCloseAndUnselectChildNodes(ExampleTreeNode* node, ImGuiSelectionBasicStorage* selection, int depth = 0)
-                {
-                    // Recursive close (the test for depth == 0 is because we call this on a node that was just closed!)
-                    int unselected_count = selection->Contains((ImGuiID)node->UID) ? 1 : 0;
-                    if (depth == 0 || TreeNodeGetOpen(node))
-                    {
-                        for (ExampleTreeNode* child : node->Childs)
-                            unselected_count += TreeCloseAndUnselectChildNodes(child, selection, depth + 1);
-                        TreeNodeSetOpen(node, false);
-                    }
-
-                    // Select root node if any of its child was selected, otherwise unselect
-                    selection->SetItemSelected((ImGuiID)node->UID, (depth == 0 && unselected_count > 0));
-                    return unselected_count;
-                }
-
-                // Apply multi-selection requests
-                static void ApplySelectionRequests(ImGuiMultiSelectIO* ms_io, ExampleTreeNode* tree, ImGuiSelectionBasicStorage* selection)
-                {
-                    for (ImGuiSelectionRequest& req : ms_io->Requests)
-                    {
-                        if (req.Type == ImGuiSelectionRequestType_SetAll)
-                        {
-                            if (req.Selected)
-                                TreeSetAllInOpenNodes(tree, selection, req.Selected);
-                            else
-                                selection->Clear();
-                        }
-                        else if (req.Type == ImGuiSelectionRequestType_SetRange)
-                        {
-                            ExampleTreeNode* first_node = (ExampleTreeNode*)(intptr_t)req.RangeFirstItem;
-                            ExampleTreeNode* last_node = (ExampleTreeNode*)(intptr_t)req.RangeLastItem;
-                            for (ExampleTreeNode* node = first_node; node != NULL; node = TreeGetNextNodeInVisibleOrder(node, last_node))
-                                selection->SetItemSelected((ImGuiID)node->UID, req.Selected);
-                        }
-                    }
-                }
-
-                static void TreeSetAllInOpenNodes(ExampleTreeNode* node, ImGuiSelectionBasicStorage* selection, bool selected)
-                {
-                    if (node->Parent != NULL) // Root node isn't visible nor selectable in our scheme
-                        selection->SetItemSelected((ImGuiID)node->UID, selected);
-                    if (node->Parent == NULL || TreeNodeGetOpen(node))
-                        for (ExampleTreeNode* child : node->Childs)
-                            TreeSetAllInOpenNodes(child, selection, selected);
-                }
-
-                // Interpolate in *user-visible order* AND only *over opened nodes*.
-                // If you have a sequential mapping tables (e.g. generated after a filter/search pass) this would be simpler.
-                // Here the tricks are that:
-                // - we store/maintain ExampleTreeNode::IndexInParent which allows implementing a linear iterator easily, without searches, without recursion.
-                //   this could be replaced by a search in parent, aka 'int index_in_parent = curr_node->Parent->Childs.find_index(curr_node)'
-                //   which would only be called when crossing from child to a parent, aka not too much.
-                // - we call SetNextItemStorageID() before our TreeNode() calls with an ID which doesn't relate to UI stack,
-                //   making it easier to call TreeNodeGetOpen()/TreeNodeSetOpen() from any location.
-                static ExampleTreeNode* TreeGetNextNodeInVisibleOrder(ExampleTreeNode* curr_node, ExampleTreeNode* last_node)
-                {
-                    // Reached last node
-                    if (curr_node == last_node)
-                        return NULL;
-
-                    // Recurse into childs. Query storage to tell if the node is open.
-                    if (curr_node->Childs.Size > 0 && TreeNodeGetOpen(curr_node))
-                        return curr_node->Childs[0];
-
-                    // Next sibling, then into our own parent
-                    while (curr_node->Parent != NULL)
-                    {
-                        if (curr_node->IndexInParent + 1 < curr_node->Parent->Childs.Size)
-                            return curr_node->Parent->Childs[curr_node->IndexInParent + 1];
-                        curr_node = curr_node->Parent;
-                    }
-                    return NULL;
-                }
-
-            }; // ExampleTreeFuncs
-
-            static ImGuiSelectionBasicStorage selection;
-            if (demo_data->DemoTree == NULL)
-                demo_data->DemoTree = ExampleTree_CreateDemoTree(); // Create tree once
-            ImGui::Text("Selection size: %d", selection.Size);
-
-            if (ImGui::BeginChild("##Tree", ImVec2(-FLT_MIN, ImGui::GetFontSize() * 20), ImGuiChildFlags_FrameStyle | ImGuiChildFlags_ResizeY))
-            {
-                ExampleTreeNode* tree = demo_data->DemoTree;
-                ImGuiMultiSelectFlags ms_flags = ImGuiMultiSelectFlags_ClearOnEscape | ImGuiMultiSelectFlags_BoxSelect2d;
-                ImGuiMultiSelectIO* ms_io = ImGui::BeginMultiSelect(ms_flags, selection.Size, -1);
-                ExampleTreeFuncs::ApplySelectionRequests(ms_io, tree, &selection);
-                for (ExampleTreeNode* node : tree->Childs)
-                    ExampleTreeFuncs::DrawNode(node, &selection);
-                ms_io = ImGui::EndMultiSelect();
-                ExampleTreeFuncs::ApplySelectionRequests(ms_io, tree, &selection);
-            }
-            ImGui::EndChild();
-
-            ImGui::TreePop();
-        }
-
         // Advanced demonstration of BeginMultiSelect()
         // - Showcase clipping.
         // - Showcase deletion.
@@ -3696,7 +3477,7 @@ static void ShowDemoWindowMultiSelect(ImGuiDemoWindowData* demo_data)
             static bool use_deletion = true;
             static bool use_drag_drop = true;
             static bool show_in_table = false;
-            static bool show_color_button = true;
+            static bool show_color_button = false;
             static ImGuiMultiSelectFlags flags = ImGuiMultiSelectFlags_ClearOnEscape | ImGuiMultiSelectFlags_BoxSelect1d;
             static WidgetType widget_type = WidgetType_Selectable;
 
@@ -4211,7 +3992,7 @@ static void ShowDemoWindowLayout()
         ImGui::Text("Manual wrapping:");
         ImGuiStyle& style = ImGui::GetStyle();
         int buttons_count = 20;
-        float window_visible_x2 = ImGui::GetCursorScreenPos().x + ImGui::GetContentRegionAvail().x;
+        float window_visible_x2 = ImGui::GetWindowPos().x + ImGui::GetWindowContentRegionMax().x;
         for (int n = 0; n < buttons_count; n++)
         {
             ImGui::PushID(n);
@@ -4679,8 +4460,8 @@ static void ShowDemoWindowLayout()
         ImGui::TreePop();
     }
 
-    IMGUI_DEMO_MARKER("Layout/Text Clipping");
-    if (ImGui::TreeNode("Text Clipping"))
+    IMGUI_DEMO_MARKER("Layout/Clipping");
+    if (ImGui::TreeNode("Clipping"))
     {
         static ImVec2 size(100.0f, 100.0f);
         static ImVec2 offset(30.0f, 30.0f);
@@ -4771,6 +4552,154 @@ static void ShowDemoWindowLayout()
         ImGui::Selectable("Some Selectable", false);
         ImGui::SameLine();
         ImGui::SmallButton("++");
+
+        ImGui::TreePop();
+    }
+
+    IMGUI_DEMO_MARKER("Layout/Stack Layout");
+    if (ImGui::TreeNode("Stack Layout"))
+    {
+        static bool widget_a = true, widget_b = true, widget_c = true;
+        static bool spring_a = true, spring_ab = true, spring_bc = true, spring_c = true;
+        static bool minimize_width = false, minimize_height = true;
+        static bool horizontal = true, draw_springs = true;
+        static ImVec2 item_spacing = ImGui::GetStyle().ItemSpacing;
+        static float a_c_spring_weight = 0.0f;
+        static float ab_spring_weight = 0.5f;
+        static float alignment = 0.5f;
+
+        struct funcs
+        {
+            static void VisibleSpring(float spring_weight)
+            {
+                ImGui::Spring(spring_weight);
+                if (!draw_springs)
+                    return;
+
+                ImVec2 rect_min = ImGui::GetItemRectMin();
+                ImVec2 rect_max = ImGui::GetItemRectMax();
+
+                ImVec2 rect_size = ImGui::GetItemRectSize();
+                if (rect_size.x <= 0.0f && rect_size.y <= 0.0f)
+                    return;
+
+                // Draw zig-zag
+                float width = 0.0f, spacing = 0.0f;
+                ImVec2 direction, origin;
+                ImVec2 spacing_min, spring_max;
+
+                if (horizontal)
+                {
+                    spacing     = floorf(item_spacing.x);
+                    width       = rect_size.x - spacing;
+                    origin      = ImVec2(floorf(rect_min.x), floorf(rect_min.y + (rect_max.y - rect_min.y) / 2));
+                    direction   = ImVec2(1.0f, 0.0f);
+                    spring_max  = ImVec2(rect_min.x + width, rect_max.y);
+                    spacing_min = ImVec2(rect_min.x + width, rect_min.y);
+                }
+                else
+                {
+                    spacing     = floorf(item_spacing.y);
+                    width       = rect_size.y - spacing;
+                    origin      = ImVec2(floorf(rect_min.x + (rect_max.x - rect_min.x) / 2), floorf(rect_min.y));
+                    direction   = ImVec2(0.0f, 1.0f);
+                    spring_max  = ImVec2(rect_max.x, rect_min.y + width);
+                    spacing_min = ImVec2(rect_min.x, rect_min.y + width);
+                }
+
+                if (spring_weight <= 0.0f && spacing <= 0.0f)
+                    return;
+
+                ImDrawList* draw_list = ImGui::GetWindowDrawList();
+
+                draw_list->PushClipRect(rect_min, rect_max, true);
+
+                draw_list->AddRectFilled(rect_min, spring_max, ImColor(80, 20, 80));
+                draw_list->AddRectFilled(spacing_min, rect_max, ImColor(80, 20, 20));
+
+                const float zig_zag_size = 3;
+                ImVec2 normal = ImVec2(-direction.y, direction.x);
+
+                draw_list->PathClear();
+                origin.x += 0.5f;
+                origin.y += 0.5f;
+                draw_list->PathLineTo(origin);
+                for (float x = zig_zag_size * 0.5f; x <= width; x += zig_zag_size)
+                {
+                    ImVec2 p;
+                    p.x = origin.x + direction.x * x + normal.x * zig_zag_size;
+                    p.y = origin.y + direction.y * x + normal.y * zig_zag_size;
+                    draw_list->PathLineTo(p);
+                    normal = ImVec2(-normal.x, -normal.y);
+                }
+                draw_list->PathStroke(ImColor(255, 255, 255, 190), false, 1.0f);
+
+                draw_list->PopClipRect();
+            }
+        };
+
+        ImGui::Checkbox("Widget A",  &widget_a);  ImGui::SameLine();
+        ImGui::Checkbox("Widget B",  &widget_b);  ImGui::SameLine();
+        ImGui::Checkbox("Widget C",  &widget_c);
+        ImGui::Checkbox("Spring A",  &spring_a);  ImGui::SameLine();
+        ImGui::Checkbox("Spring AB", &spring_ab); ImGui::SameLine();
+        ImGui::Checkbox("Spring BC", &spring_bc); ImGui::SameLine();
+        ImGui::Checkbox("Spring C",  &spring_c);
+        ImGui::Checkbox("Horizontal", &horizontal);            ImGui::SameLine();
+        ImGui::Checkbox("Minimize Width", &minimize_width);     ImGui::SameLine();
+        ImGui::Checkbox("Minimize Height",  &minimize_height);
+        ImGui::Checkbox("Draw Springs", &draw_springs); ImGui::SameLine();
+        ImGui::TextUnformatted(" "); ImGui::SameLine();
+        ImGui::ColorButton("- Spring", ImColor(80, 20, 80), ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoPicker); ImGui::SameLine();
+        ImGui::TextUnformatted("Spring"); ImGui::SameLine();
+        ImGui::TextUnformatted(" "); ImGui::SameLine();
+        ImGui::ColorButton("- Spacing", ImColor(80, 20, 20), ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoPicker); ImGui::SameLine();
+        ImGui::TextUnformatted("Item Spacing");
+        ImGui::DragFloat("Item Spacing", horizontal ? &item_spacing.x : &item_spacing.y, 0.1f, 0.0f, 50.0f);
+        ImGui::DragFloat("A & C Spring Weight", &a_c_spring_weight, 0.002f, 0.0f, 1.0f);
+        ImGui::DragFloat("AB Spring Weight", &ab_spring_weight, 0.002f, 0.0f, 1.0f);
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("BC Spring Weight = 1 - AB Spring Weight");
+        ImGui::DragFloat("Minor Axis Alignment", &alignment, 0.002f, 0.0f, 1.0f);
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("This is vertical alignment for horizontal layouts and horizontal alignment for vertical layouts.");
+        ImGui::Text("Layout widgets:");
+        ImGui::Text("| Spring A | Widget A | Spring AB | Widget B | Spring BC | Widget C | Spring C |");
+
+        ImGui::Spacing();
+
+        ImVec2 widget_size;
+        widget_size.x = floorf(ImGui::GetContentRegionAvail().x / 4);
+        widget_size.y = horizontal ? floorf(widget_size.x / 3) : widget_size.x;
+
+        ImVec2 small_widget_size = widget_size;
+        if (horizontal)
+            small_widget_size.y = floorf(small_widget_size.y / 2);
+        else
+            small_widget_size.x = floorf(small_widget_size.x / 2);
+
+        ImVec2 layout_size = ImVec2(widget_size.x * 4, widget_size.y * 4);
+        if (minimize_width)  layout_size.x = 0.0f;
+        if (minimize_height) layout_size.y = 0.0f;
+
+        // Minor axis alignment can be set by style or directly in BeginHorizontal/BeginVertical
+        // Example:
+        //    ImGui::PushStyleVar(ImGuiStyleVar_LayoutAlign, alignment);
+
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(floorf(item_spacing.x), floorf(item_spacing.y)));
+
+        if (horizontal) { ImGui::BeginHorizontal("h1", layout_size, alignment); } else { ImGui::BeginVertical("v1", layout_size, alignment); }
+        if (spring_a)   { funcs::VisibleSpring(a_c_spring_weight); }
+        if (widget_a)   { ImGui::Button("Widget A", widget_size); }
+        if (spring_ab)  { funcs::VisibleSpring(ab_spring_weight); }
+        if (widget_b)   { ImGui::Button("Widget B", small_widget_size); }
+        if (spring_bc)  { funcs::VisibleSpring(1.0f - ab_spring_weight); }
+        if (widget_c)   { ImGui::Button("Widget C", widget_size); }
+        if (spring_c)   { funcs::VisibleSpring(a_c_spring_weight); }
+        if (horizontal) { ImGui::EndHorizontal(); } else { ImGui::EndVertical(); }
+
+        ImGui::PopStyleVar();
+
+        ImDrawList* draw_list = ImGui::GetWindowDrawList();
+        draw_list->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImGui::GetColorU32(ImGuiCol_Border));
 
         ImGui::TreePop();
     }
@@ -7948,8 +7877,6 @@ void ImGui::ShowStyleEditor(ImGuiStyle* ref)
             ImGui::SliderFloat("FrameBorderSize", &style.FrameBorderSize, 0.0f, 1.0f, "%.0f");
             ImGui::SliderFloat("TabBorderSize", &style.TabBorderSize, 0.0f, 1.0f, "%.0f");
             ImGui::SliderFloat("TabBarBorderSize", &style.TabBarBorderSize, 0.0f, 2.0f, "%.0f");
-            ImGui::SliderFloat("TabBarOverlineSize", &style.TabBarOverlineSize, 0.0f, 2.0f, "%.0f");
-            ImGui::SameLine(); HelpMarker("Overline is only drawn over the selected tab when ImGuiTabBarFlags_DrawSelectedOverline is set.");
 
             ImGui::SeparatorText("Rounding");
             ImGui::SliderFloat("WindowRounding", &style.WindowRounding, 0.0f, 12.0f, "%.0f");
@@ -8918,129 +8845,109 @@ static void ShowExampleAppLayout(bool* p_open)
 // [SECTION] Example App: Property Editor / ShowExampleAppPropertyEditor()
 //-----------------------------------------------------------------------------
 // Some of the interactions are a bit lack-luster:
+// - We would want the table scrolling window to use NavFlattened.
 // - We would want pressing validating or leaving the filter to somehow restore focus.
 // - We may want more advanced filtering (child nodes) and clipper support: both will need extra work.
-// - We would want to customize some keyboard interactions to easily keyboard navigate between the tree and the properties.
 //-----------------------------------------------------------------------------
 
 struct ExampleAppPropertyEditor
 {
     ImGuiTextFilter     Filter;
-    ExampleTreeNode*    VisibleNode = NULL;
 
     void Draw(ExampleTreeNode* root_node)
     {
-        // Left side: draw tree
-        // - Currently using a table to benefit from RowBg feature
-        if (ImGui::BeginChild("##tree", ImVec2(300, 0), ImGuiChildFlags_ResizeX | ImGuiChildFlags_Border | ImGuiChildFlags_NavFlattened))
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        ImGui::SetNextItemShortcut(ImGuiMod_Ctrl | ImGuiKey_F, ImGuiInputFlags_Tooltip);
+        ImGui::PushItemFlag(ImGuiItemFlags_NoNavDefaultFocus, true);
+        if (ImGui::InputTextWithHint("##Filter", "incl,-excl", Filter.InputBuf, IM_ARRAYSIZE(Filter.InputBuf), ImGuiInputTextFlags_EscapeClearsAll))
+            Filter.Build();
+        ImGui::PopItemFlag();
+
+        ImGuiTableFlags table_flags = ImGuiTableFlags_Resizable | ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg;
+        if (ImGui::BeginTable("##split", 2, table_flags))
         {
-            ImGui::SetNextItemWidth(-FLT_MIN);
-            ImGui::SetNextItemShortcut(ImGuiMod_Ctrl | ImGuiKey_F, ImGuiInputFlags_Tooltip);
-            ImGui::PushItemFlag(ImGuiItemFlags_NoNavDefaultFocus, true);
-            if (ImGui::InputTextWithHint("##Filter", "incl,-excl", Filter.InputBuf, IM_ARRAYSIZE(Filter.InputBuf), ImGuiInputTextFlags_EscapeClearsAll))
-                Filter.Build();
-            ImGui::PopItemFlag();
+            ImGui::TableSetupColumn("Object", ImGuiTableColumnFlags_WidthStretch, 1.0f);
+            ImGui::TableSetupColumn("Contents", ImGuiTableColumnFlags_WidthStretch, 2.0f); // Default twice larger
+            //ImGui::TableSetupScrollFreeze(0, 1);
+            //ImGui::TableHeadersRow();
 
-            if (ImGui::BeginTable("##bg", 1, ImGuiTableFlags_RowBg))
-            {
-                for (ExampleTreeNode* node : root_node->Childs)
-                    if (Filter.PassFilter(node->Name)) // Filter root node
-                        DrawTreeNode(node);
-                ImGui::EndTable();
-            }
+            for (ExampleTreeNode* node : root_node->Childs)
+                if (Filter.PassFilter(node->Name)) // Filter root node
+                    DrawTreeNode(node);
+            ImGui::EndTable();
         }
-        ImGui::EndChild();
-
-        // Right side: draw properties
-        ImGui::SameLine();
-
-        ImGui::BeginGroup(); // Lock X position
-        if (ExampleTreeNode* node = VisibleNode)
-        {
-            ImGui::Text("%s", node->Name);
-            ImGui::TextDisabled("UID: 0x%08X", node->UID);
-            ImGui::Separator();
-            if (ImGui::BeginTable("##properties", 2, ImGuiTableFlags_Resizable | ImGuiTableFlags_ScrollY))
-            {
-                ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed);
-                ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthStretch, 2.0f); // Default twice larger
-                if (node->HasData)
-                {
-                    // In a typical application, the structure description would be derived from a data-driven system.
-                    // - We try to mimic this with our ExampleMemberInfo structure and the ExampleTreeNodeMemberInfos[] array.
-                    // - Limits and some details are hard-coded to simplify the demo.
-                    for (const ExampleMemberInfo& field_desc : ExampleTreeNodeMemberInfos)
-                    {
-                        ImGui::TableNextRow();
-                        ImGui::PushID(field_desc.Name);
-                        ImGui::TableNextColumn();
-                        ImGui::AlignTextToFramePadding();
-                        ImGui::TextUnformatted(field_desc.Name);
-                        ImGui::TableNextColumn();
-                        void* field_ptr = (void*)(((unsigned char*)node) + field_desc.Offset);
-                        switch (field_desc.DataType)
-                        {
-                        case ImGuiDataType_Bool:
-                        {
-                            IM_ASSERT(field_desc.DataCount == 1);
-                            ImGui::Checkbox("##Editor", (bool*)field_ptr);
-                            break;
-                        }
-                        case ImGuiDataType_S32:
-                        {
-                            int v_min = INT_MIN, v_max = INT_MAX;
-                            ImGui::SetNextItemWidth(-FLT_MIN);
-                            ImGui::DragScalarN("##Editor", field_desc.DataType, field_ptr, field_desc.DataCount, 1.0f, &v_min, &v_max);
-                            break;
-                        }
-                        case ImGuiDataType_Float:
-                        {
-                            float v_min = 0.0f, v_max = 1.0f;
-                            ImGui::SetNextItemWidth(-FLT_MIN);
-                            ImGui::SliderScalarN("##Editor", field_desc.DataType, field_ptr, field_desc.DataCount, &v_min, &v_max);
-                            break;
-                        }
-                        }
-                        ImGui::PopID();
-                    }
-                }
-                ImGui::EndTable();
-            }
-        }
-        ImGui::EndGroup();
     }
 
     void DrawTreeNode(ExampleTreeNode* node)
     {
-        ImGui::TableNextRow();
-        ImGui::TableNextColumn();
+        // Object tree node
         ImGui::PushID(node->UID);
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
+        ImGui::AlignTextToFramePadding();
         ImGuiTreeNodeFlags tree_flags = ImGuiTreeNodeFlags_None;
+        tree_flags |= ImGuiTreeNodeFlags_SpanAllColumns | ImGuiTreeNodeFlags_AllowOverlap;      // Highlight whole row for visibility
         tree_flags |= ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick;    // Standard opening mode as we are likely to want to add selection afterwards
         tree_flags |= ImGuiTreeNodeFlags_NavLeftJumpsBackHere;                                  // Left arrow support
-        if (node == VisibleNode)
-            tree_flags |= ImGuiTreeNodeFlags_Selected;
-        if (node->Childs.Size == 0)
-            tree_flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_Bullet;
-        if (node->DataMyBool == false)
-            ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyle().Colors[ImGuiCol_TextDisabled]);
-        bool node_open = ImGui::TreeNodeEx("", tree_flags, "%s", node->Name);
-        if (node->DataMyBool == false)
-            ImGui::PopStyleColor();
-        if (ImGui::IsItemFocused())
-            VisibleNode = node;
+        bool node_open = ImGui::TreeNodeEx("##Object", tree_flags, "%s", node->Name);
+        ImGui::TableSetColumnIndex(1);
+        ImGui::TextDisabled("UID: 0x%08X", node->UID);
+
+        // Display child and data
         if (node_open)
-        {
             for (ExampleTreeNode* child : node->Childs)
                 DrawTreeNode(child);
-            ImGui::TreePop();
+        if (node_open && node->HasData)
+        {
+            // In a typical application, the structure description would be derived from a data-driven system.
+            // - We try to mimic this with our ExampleMemberInfo structure and the ExampleTreeNodeMemberInfos[] array.
+            // - Limits and some details are hard-coded to simplify the demo.
+            // - Text and Selectable are less high than framed widgets, using AlignTextToFramePadding() we add vertical spacing to make the selectable lines equal high.
+            for (const ExampleMemberInfo& field_desc : ExampleTreeNodeMemberInfos)
+            {
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
+                ImGui::AlignTextToFramePadding();
+                ImGui::PushItemFlag(ImGuiItemFlags_NoTabStop | ImGuiItemFlags_NoNav, true);
+                ImGui::Selectable(field_desc.Name, false, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowOverlap);
+                ImGui::PopItemFlag();
+                ImGui::TableSetColumnIndex(1);
+                ImGui::PushID(field_desc.Name);
+                void* field_ptr = (void*)(((unsigned char*)node) + field_desc.Offset);
+                switch (field_desc.DataType)
+                {
+                case ImGuiDataType_Bool:
+                {
+                    IM_ASSERT(field_desc.DataCount == 1);
+                    ImGui::Checkbox("##Editor", (bool*)field_ptr);
+                    break;
+                }
+                case ImGuiDataType_S32:
+                {
+                    int v_min = INT_MIN, v_max = INT_MAX;
+                    ImGui::SetNextItemWidth(-FLT_MIN);
+                    ImGui::DragScalarN("##Editor", field_desc.DataType, field_ptr, field_desc.DataCount, 1.0f, &v_min, &v_max);
+                    break;
+                }
+                case ImGuiDataType_Float:
+                {
+                    float v_min = 0.0f, v_max = 1.0f;
+                    ImGui::SetNextItemWidth(-FLT_MIN);
+                    ImGui::SliderScalarN("##Editor", field_desc.DataType, field_ptr, field_desc.DataCount, &v_min, &v_max);
+                    break;
+                }
+                }
+                ImGui::PopID();
+            }
         }
+        if (node_open)
+            ImGui::TreePop();
         ImGui::PopID();
     }
 };
 
 // Demonstrate creating a simple property editor.
-static void ShowExampleAppPropertyEditor(bool* p_open, ImGuiDemoWindowData* demo_data)
+static void ShowExampleAppPropertyEditor(bool* p_open)
 {
     ImGui::SetNextWindowSize(ImVec2(430, 450), ImGuiCond_FirstUseEver);
     if (!ImGui::Begin("Example: Property editor", p_open))
@@ -9051,9 +8958,8 @@ static void ShowExampleAppPropertyEditor(bool* p_open, ImGuiDemoWindowData* demo
 
     IMGUI_DEMO_MARKER("Examples/Property Editor");
     static ExampleAppPropertyEditor property_editor;
-    if (demo_data->DemoTree == NULL)
-        demo_data->DemoTree = ExampleTree_CreateDemoTree();
-    property_editor.Draw(demo_data->DemoTree);
+    static ExampleTreeNode* tree_data = ExampleTree_CreateDemoTree();
+    property_editor.Draw(tree_data);
 
     ImGui::End();
 }
