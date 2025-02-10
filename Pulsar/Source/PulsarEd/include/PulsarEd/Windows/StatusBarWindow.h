@@ -1,11 +1,11 @@
 #pragma once
-#include "EditorWindow.h"
+#include "EdGuiWindow.h"
 
 namespace pulsared
 {
-    class StatusBarWindow : public EditorWindow
+    class StatusBarWindow : public EdGuiWindow
     {
-        CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::StatusBarWindow, EditorWindow);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::StatusBarWindow, EdGuiWindow);
     public:
         //virtual ImGuiWindowFlags GetGuiWindowFlags() const override {
         //    return ImGuiWindowFlags_None | ImGuiWindowFlags_::ImGuiWindowFlags_MenuBar;

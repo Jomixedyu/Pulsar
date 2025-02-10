@@ -97,4 +97,5 @@ namespace pulsared
         return context;
     }
 
-}
+
+} // namespace pulsared

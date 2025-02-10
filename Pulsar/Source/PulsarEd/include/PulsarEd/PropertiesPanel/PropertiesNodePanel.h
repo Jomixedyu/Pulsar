@@ -1,5 +1,5 @@
 #pragma once
-#include <PulsarEd/Windows/PropertiesWindow.h>
+#include <PulsarEd/Editors/CommonPanel/PropertiesWindow.h>
 #include <Pulsar/Node.h>
 
 namespace pulsared

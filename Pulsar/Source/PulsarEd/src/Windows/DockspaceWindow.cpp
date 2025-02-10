@@ -14,6 +14,10 @@ namespace pulsared
 
     void DockspaceWindow::OnDrawImGui(float dt)
     {
+        ImGuiWindowClass dockspaceClass{};
+        dockspaceClass.DockingAllowUnclassed = false;
+        dockspaceClass.ClassId = ImGui::GetID("EditorWindow");
+
         static bool opt_fullscreen = true;
         static bool opt_padding = false;
 
@@ -21,7 +25,7 @@ namespace pulsared
 
         // We are using the ImGuiWindowFlags_NoDocking flag to make the parent window not dockable into,
         // because it would be confusing to have two docking targets within each others.
-        ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
+        ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDocking;
         if (opt_fullscreen)
         {
             const ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -61,38 +65,16 @@ namespace pulsared
         if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable)
         {
             ImGuiID dockspace_id = ImGui::GetID("__DockSpace");
-            ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
-        }
 
-
-
-        // tool bar
-
-        if (ImGui::BeginMenuBar())
-        {
-            ImGui::Separator();
-            ImGui::Button(ICON_FK_FLOPPY_O); //save button
-
-            auto world = GetEdApp()->GetEditorWorld();
-            bool isPlaying = world->GetPlaying();
-
-            ImGui::BeginDisabled(isPlaying);
-            if (ImGui::Button(ICON_FK_PLAY))
-            {
-                world->BeginPlay();
-            }
-            ImGui::EndDisabled();
-
-            ImGui::BeginDisabled(!isPlaying);
-            if (ImGui::Button(ICON_FK_STOP))
-            {
-                world->EndPlay();
-            }
-            ImGui::EndDisabled();
-
-            ImGui::EndMenuBar();
+            ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags, &dockspaceClass);
         }
 
         ImGui::End();
     }
-}
+    void DockspaceWindow::DrawImGui(float dt)
+    {
+
+        this->OnDrawImGui(dt);
+
+    }
+} // namespace pulsared

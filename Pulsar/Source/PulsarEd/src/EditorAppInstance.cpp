@@ -1,23 +1,12 @@
 ﻿#include "EditorAppInstance.h"
-#include "../../Pulsar/third/uinput/include/uinput/InputManager.h"
 #include "EditorAssetManager.h"
 #include "EditorRenderPipeline.h"
-#include "Importers/FBXImporter.h"
-#include "Pulsar/Components/BoxShape3DComponent.h"
+#include "Editors/SceneEditor/SceneEditor.h"
 #include "Pulsar/Components/DirectionalLightComponent.h"
-#include "Pulsar/Components/PointLightComponent.h"
-#include "Pulsar/Components/SkyLightComponent.h"
-#include "Pulsar/Components/SphereShape3DComponent.h"
 #include "Pulsar/Components/StaticMeshRendererComponent.h"
 #include "Pulsar/Prefab.h"
 #include "Shaders/EditorShader.h"
-#include "ToolWindows/FbxInfoViewer/FbxInfoViewer.h"
-#include "ToolWindows/ObjectDebugTool.h"
-#include "ToolWindows/ShaderDebugTool.h"
-#include "ToolWindows/WorldDebugTool.h"
 #include "Utils/PrefabUtil.h"
-#include "Windows/ShelfBarWindow.h"
-
 #include <CoreLib.Serialization/JsonSerializer.h>
 #include <CoreLib/File.h>
 #include <Pulsar/Application.h>
@@ -40,16 +29,8 @@
 
 #include <CoreLib.Serialization/DataSerializer.h>
 #include <Pulsar/Assets/StaticMesh.h>
-
 #include <Pulsar/Assets/Texture2D.h>
-#include <Pulsar/BuiltinAsset.h>
-#include <PulsarEd/ToolWindows/MenuDebugTool.h>
-#include <PulsarEd/Windows/ConsoleWindow.h>
-#include <PulsarEd/Windows/OutlinerWindow.h>
-#include <PulsarEd/Windows/OutputWindow.h>
-#include <PulsarEd/Windows/PropertiesWindow.h>
-#include <PulsarEd/Windows/SceneWindow.h>
-#include <PulsarEd/Windows/WorkspaceWindow.h>
+
 namespace pulsared
 {
 
@@ -99,234 +80,6 @@ namespace pulsared
     std::filesystem::path EditorAppInstance::AppRootDir()
     {
         return std::filesystem::current_path();
-    }
-
-    static void InitBasicMenu()
-    {
-        auto mainMenu = MenuManager::GetMainMenu();
-        {
-            MenuEntrySubMenu_sp file = mksptr(new MenuEntrySubMenu("File"));
-            file->Priority = 10;
-            mainMenu->AddEntry(file);
-
-            auto openWorkSpace = mksptr(new MenuEntryButton("Open Workspace"));
-            openWorkSpace->Action = MenuAction::FromRaw([](SPtr<MenuContexts> ctx) {
-                Workspace::OpenDialogUserWorkspace();
-            });
-            file->AddEntry(openWorkSpace);
-        }
-        {
-            MenuEntrySubMenu_sp menu = mksptr(new MenuEntrySubMenu("Edit"));
-            menu->Priority = 20;
-            mainMenu->AddEntry(menu);
-        }
-        {
-            MenuEntrySubMenu_sp menu = mksptr(new MenuEntrySubMenu("Node"));
-            menu->Priority = 200;
-            mainMenu->AddEntry(menu);
-            {
-                auto entry = mksptr(new MenuEntryButton("Create Node"));
-                menu->AddEntry(entry);
-                entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
-                    World::Current()->GetResidentScene()->NewNode("New Node");
-                });
-            }
-
-            auto shapeMenu =  mksptr(new MenuEntrySubMenu("Shapes"));
-            menu->AddEntry(shapeMenu);
-            {
-                auto entry = mksptr(new MenuEntryButton("Create Sphere"));
-                shapeMenu->AddEntry(entry);
-                entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
-                    auto newNode = World::Current()->GetResidentScene()->NewNode("New Sphere");
-                    newNode->AddComponent<SphereShape3DComponent>();
-
-                    auto renderer = newNode->AddComponent<StaticMeshRendererComponent>();
-                    renderer->SetStaticMesh(GetAssetManager()->LoadAsset<StaticMesh>(BuiltinAsset::Shapes_Sphere));
-                    renderer->SetMaterial(0, GetAssetManager()->LoadAsset<Material>(BuiltinAsset::Material_Lambert));
-
-                });
-            }
-            {
-                auto entry = mksptr(new MenuEntryButton("Create Cube"));
-                shapeMenu->AddEntry(entry);
-                entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
-                    auto newNode = World::Current()->GetResidentScene()->NewNode("New Cube");
-                    newNode->AddComponent<BoxShape3DComponent>();
-
-                    auto renderer = newNode->AddComponent<StaticMeshRendererComponent>();
-                    renderer->AddMaterial();
-                    renderer->SetMaterial(0, GetAssetManager()->LoadAsset<Material>(BuiltinAsset::Material_Lambert));
-                    renderer->SetStaticMesh(GetAssetManager()->LoadAsset<StaticMesh>(BuiltinAsset::Shapes_Cube));
-
-                });
-            }
-            {
-                auto entry = mksptr(new MenuEntryButton("Create Plane"));
-                shapeMenu->AddEntry(entry);
-                entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
-                    auto renderer = World::Current()->GetResidentScene()->NewNode("New Plane")
-                        ->AddComponent<StaticMeshRendererComponent>();
-                    renderer->SetStaticMesh(GetAssetManager()->LoadAsset<StaticMesh>(BuiltinAsset::Shapes_Plane));
-                    renderer->SetMaterial(0, GetAssetManager()->LoadAsset<Material>(BuiltinAsset::Material_Lambert));
-
-                });
-            }
-
-            auto light3dMenu = mksptr(new MenuEntrySubMenu("Light3d"));
-            menu->AddEntry(light3dMenu);
-            {
-                auto entry = mksptr(new MenuEntryButton("Create Sky Light"));
-                light3dMenu->AddEntry(entry);
-                entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
-                    World::Current()->GetResidentScene()->NewNode("New Sky Light")
-                        ->AddComponent<SkyLightComponent>();
-                });
-            }
-            {
-                auto entry = mksptr(new MenuEntryButton("Create Directional Light"));
-                light3dMenu->AddEntry(entry);
-                entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
-                    World::Current()->GetResidentScene()->NewNode("New Directional Light")
-                        ->AddComponent<DirectionalLightComponent>();
-                });
-            }
-            {
-                auto entry = mksptr(new MenuEntryButton("Create Point Light"));
-                light3dMenu->AddEntry(entry);
-                entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
-                    World::Current()->GetResidentScene()->NewNode("New Point Light")
-                        ->AddComponent<PointLightComponent>();
-                });
-            }
-        }
-
-        {
-            MenuEntrySubMenu_sp menu = mksptr(new MenuEntrySubMenu("Components"));
-            menu->Priority = 500;
-            mainMenu->AddEntry(menu);
-
-            array_list<Type*> components;
-            array_list<Type*> noCategoryComponents;
-            for (auto type : AssemblyManager::GlobalSearchType(cltypeof<Component>()))
-            {
-                if (type->IsDefinedAttribute(cltypeof<AbstractComponentAttribute>(), false))
-                {
-                    continue;
-                }
-                if (type->IsDefinedAttribute(cltypeof<CategoryAttribute>(), false))
-                {
-                    components.push_back(type);
-                }
-                else
-                {
-                    // noCategoryComponents.push_back(type);
-                }
-            }
-
-            components.append_range(noCategoryComponents);
-            for (auto type : components)
-            {
-                auto targetMenu = menu;
-                if (auto category = type->GetAttribute<CategoryAttribute>(false))
-                {
-                    auto categoryEntry = menu->FindSubMenuEntry(category->GetCategory());
-                    if (!categoryEntry)
-                    {
-                        categoryEntry = mksptr(new MenuEntrySubMenu(string{category->GetCategory()}));
-                        menu->AddEntry(categoryEntry);
-                    }
-                    targetMenu = categoryEntry;
-                }
-
-                auto itemEntry = mksptr(new MenuEntryButton(type->GetName(),
-                                                            ComponentInfoManager::GetFriendlyComponentName(type)));
-                targetMenu->AddEntry(itemEntry);
-                itemEntry->Action = MenuAction::FromLambda([](MenuContexts_rsp ctxs) {
-                    auto edworld = dynamic_cast<EditorWorld*>(EditorWorld::GetPreviewWorld());
-
-                    if (auto node = ref_cast<Node>(edworld->GetSelection().GetSelected()))
-                    {
-                        Type* type = AssemblyManager::GlobalFindType(ctxs->EntryName);
-                        node->AddComponent(type);
-                    }
-                });
-            }
-        }
-        {
-            MenuEntrySubMenu_sp menu = mksptr(new MenuEntrySubMenu("Tool"));
-            menu->Priority = 800;
-            mainMenu->AddEntry(menu);
-            {
-                auto entry = mksptr(new MenuEntryButton("MenuDebug"));
-                entry->Action = MenuAction::FromRaw([](SPtr<MenuContexts> ctx) {
-                    ToolWindow::OpenToolWindow<MenuDebugTool>();
-                });
-                menu->AddEntry(entry);
-            }
-            {
-                auto entry = mksptr(new MenuEntryButton("ObjectDebug"));
-                entry->Action = MenuAction::FromRaw([](SPtr<MenuContexts> ctx) {
-                    ToolWindow::OpenToolWindow<ObjectDebugTool>();
-                });
-                menu->AddEntry(entry);
-            }
-            {
-                auto entry = mksptr(new MenuEntryButton("WorldDebug"));
-                entry->Action = MenuAction::FromRaw([](SPtr<MenuContexts> ctx) {
-                    ToolWindow::OpenToolWindow<WorldDebugTool>();
-                });
-                menu->AddEntry(entry);
-            }
-            {
-                auto entry = mksptr(new MenuEntryButton("ShaderDebugTool"));
-                entry->Action = MenuAction::FromRaw([](SPtr<MenuContexts> ctx) {
-                    ToolWindow::OpenToolWindow<ShaderDebugTool>();
-                });
-                menu->AddEntry(entry);
-            }
-            {
-                auto entry = mksptr(new MenuEntryButton("FbxInfoViewer"));
-                entry->Action = MenuAction::FromRaw([](SPtr<MenuContexts> ctx) {
-                    ToolWindow::OpenToolWindow<FbxInfoViewer>();
-                });
-                menu->AddEntry(entry);
-            }
-        }
-        {
-            MenuEntrySubMenu_sp menu = mksptr(new MenuEntrySubMenu("Build"));
-            menu->Priority = 900;
-            mainMenu->AddEntry(menu);
-        }
-        {
-            MenuEntrySubMenu_sp menu = mksptr(new MenuEntrySubMenu("Window"));
-            menu->Priority = 1000;
-            mainMenu->AddEntry(menu);
-        }
-        {
-            MenuEntrySubMenu_sp menu = mksptr(new MenuEntrySubMenu("Help"));
-            menu->Priority = 2000;
-            mainMenu->AddEntry(menu);
-        }
-    }
-
-    static void _InitWindowMenu()
-    {
-        EditorWindowManager::RegisterPanelWindowType(cltypeof<SceneWindow>());
-        EditorWindowManager::GetPanelWindow(cltypeof<SceneWindow>())->Open();
-        // EditorWindowManager::RegisterPanelWindowType(cltypeof<OutputWindow>());
-        // EditorWindowManager::GetPanelWindow(cltypeof<OutputWindow>())->Open();
-        EditorWindowManager::RegisterPanelWindowType(cltypeof<OutlinerWindow>());
-        EditorWindowManager::GetPanelWindow(cltypeof<OutlinerWindow>())->Open();
-        EditorWindowManager::RegisterPanelWindowType(cltypeof<PropertiesWindow>());
-        EditorWindowManager::GetPanelWindow(cltypeof<PropertiesWindow>())->Open();
-        EditorWindowManager::RegisterPanelWindowType(cltypeof<ConsoleWindow>());
-        EditorWindowManager::GetPanelWindow(cltypeof<ConsoleWindow>())->Open();
-        EditorWindowManager::RegisterPanelWindowType(cltypeof<WorkspaceWindow>());
-        EditorWindowManager::GetPanelWindow(cltypeof<WorkspaceWindow>())->Open();
-
-
-        // mksptr(new ShelfBarWindow)->Open();
     }
 
     void EditorAppInstance::OnPreInitialize(gfx::GFXGlobalConfig* config)
@@ -456,15 +209,14 @@ namespace pulsared
         edWorld->GetCurrentCamera()->GetTransform()->GetParent()->SetEuler({45.f,-45,0});
 
         m_world = edWorld;
-        {
-            auto skySphere = edWorld->GetResidentScene()->NewNode("Sky Sphere");
-            skySphere->GetTransform()->SetScale({500,500,500});
-            auto sphere = GetAssetManager()->LoadAsset<StaticMesh>(BuiltinAsset::Shapes_Sphere);
-            auto renderer = skySphere->AddComponent<StaticMeshRendererComponent>();
-            renderer->SetStaticMesh(sphere);
-            renderer->SetMaterial(0, GetAssetManager()->LoadAsset<Material>("Engine/Materials/SkySphere"));
-
-        }
+        // {
+        //     auto skySphere = edWorld->GetResidentScene()->NewNode("Sky Sphere");
+        //     skySphere->GetTransform()->SetScale({500,500,500});
+        //     auto sphere = GetAssetManager()->LoadAsset<StaticMesh>(BuiltinAsset::Shapes_Sphere);
+        //     auto renderer = skySphere->AddComponent<StaticMeshRendererComponent>();
+        //     renderer->SetStaticMesh(sphere);
+        //     renderer->SetMaterial(0, GetAssetManager()->LoadAsset<Material>("Engine/Materials/SkySphere"));
+        // }
 
         auto renderPipeline = new EditorRenderPipeline{m_world};
 
@@ -490,17 +242,24 @@ namespace pulsared
         _RegisterIcon(cltypeof<ObjectBase>(), "Editor/Icons/object.png");
         _RegisterIcon("WorkspaceWindow.Dirty", "Editor/Icons/Star.png");
 
-        InitBasicMenu();
+        // InitBasicMenu();
+
+
 
         Logger::Log("initialize subsystems");
 
         // init window ui
         Logger::Log("initialize editor window manager");
         EditorWindowManager::Initialize();
-        _InitWindowMenu();
+
+        auto se = new SceneEditor;
+        se->Initialize();
+        se->CreateEditorWindow()->Open();
+
+        // _InitWindowMenu();
 
         Workspace::OpenWorkspace(_SearchUpFolder("Project") / "Project.peproj");
-        _Test();
+        // _Test();
 
         uinput::InputManager::GetInstance()->Initialize();
     }

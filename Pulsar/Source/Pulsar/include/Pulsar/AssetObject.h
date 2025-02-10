@@ -89,19 +89,14 @@ namespace pulsar
         virtual void OnInstantiateAsset(AssetObject* obj);
 
     protected:
-        #ifdef WITH_EDITOR
 
+#ifdef WITH_EDITOR
         CORELIB_REFL_DECL_FIELD(m_importFiles);
         List_sp<ImportedFileInfo_sp> m_importFiles;
-
-        array_list<string> m_extraEditorMetadata;
-
-        #endif
+#endif
 
         CORELIB_REFL_DECL_FIELD(m_tags);
         List_sp<String_sp> m_tags;
-
-        uint32_t m_cref{};
     };
 
     DECL_PTR(AssetObject);

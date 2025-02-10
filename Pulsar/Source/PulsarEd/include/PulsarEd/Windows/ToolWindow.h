@@ -1,11 +1,11 @@
 #pragma once
-#include "EditorWindow.h"
+#include "EdGuiWindow.h"
 
 namespace pulsared
 {
-    class ToolWindow : public EditorWindow
+    class ToolWindow : public EdGuiWindow
     {
-        CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::ToolWindow, EditorWindow);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::ToolWindow, EdGuiWindow);
     public:
         ToolWindow();
         template<typename T>

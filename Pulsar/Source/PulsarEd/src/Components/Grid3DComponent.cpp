@@ -7,7 +7,7 @@
 #include <Pulsar/Rendering/LineRenderObject.h>
 #include <Pulsar/Rendering/ShaderPass.h>
 #include <PulsarEd/Windows/EditorWindowManager.h>
-#include <PulsarEd/Windows/SceneWindow.h>
+#include <PulsarEd/Editors/CommonPanel/SceneWindow.h>
 
 namespace pulsared
 {

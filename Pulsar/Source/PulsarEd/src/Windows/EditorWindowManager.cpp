@@ -1,11 +1,4 @@
 #include "Windows/EditorWindowManager.h"
-#include "Windows/SceneWindow.h"
-#include "Windows/WorkspaceWindow.h"
-#include "Windows/PropertiesWindow.h"
-#include "Windows/ConsoleWindow.h"
-#include "Windows/OutlinerWindow.h"
-#include "Windows/OutputWindow.h"
-#include "Windows/MainMenuBarWindow.h"
 #include "Windows/DockspaceWindow.h"
 #include "Windows/StatusBarWindow.h"
 #include <PulsarEd/Menus/Types.h>
@@ -83,12 +76,9 @@ namespace pulsared
         }
     };
 
-    static WaitableList<SPtr<EditorWindow>> _OpeningWindows;
-
-    static array_list<EditorWindow_sp> _PanelWindows;
+    static WaitableList<SPtr<EdGuiWindow>> _OpeningWindows;
 
     static SPtr<DockspaceWindow> _DockspaceWindow;
-    static SPtr<MainMenuBarWindow> _MainMenuBarWindow;
     static SPtr<StatusBarWindow> _StatusBarWindow;
 
     static void _ChangeWindowCheckedSatete(string_view window_name, bool check_state)
@@ -100,11 +90,9 @@ namespace pulsared
     void EditorWindowManager::Initialize()
     {
         _DockspaceWindow = mksptr(new DockspaceWindow);
-        _MainMenuBarWindow = mksptr(new MainMenuBarWindow);
-        _StatusBarWindow = mksptr(new StatusBarWindow);
+        // _StatusBarWindow = mksptr(new StatusBarWindow);
         _DockspaceWindow->Open();
-        _MainMenuBarWindow->Open();
-        _StatusBarWindow->Open();
+        // _StatusBarWindow->Open();
     }
 
     void EditorWindowManager::Terminate()
@@ -117,7 +105,6 @@ namespace pulsared
         _OpeningWindows.Refresh();
 
         _DockspaceWindow.reset();
-        _MainMenuBarWindow.reset();
         _StatusBarWindow.reset();
 
     }
@@ -136,7 +123,7 @@ namespace pulsared
         GetEdApp()->GetTaskQueue().TickDraw();
     }
 
-    EditorWindow_sp EditorWindowManager::GetOpeningWindow(string_view name)
+    EdGuiWindow_sp EditorWindowManager::GetOpeningWindow(string_view name)
     {
         for (auto& window : _OpeningWindows.items)
         {
@@ -148,7 +135,7 @@ namespace pulsared
         return nullptr;
     }
 
-    EditorWindow_sp EditorWindowManager::GetOpeningWindow(Type* type)
+    EdGuiWindow_sp EditorWindowManager::GetOpeningWindow(Type* type)
     {
         for (auto& window : _OpeningWindows.items)
         {
@@ -160,9 +147,9 @@ namespace pulsared
         return nullptr;
     }
 
-    array_list<EditorWindow_sp> EditorWindowManager::GetOpeningWindows(Type* type)
+    array_list<EdGuiWindow_sp> EditorWindowManager::GetOpeningWindows(Type* type)
     {
-        array_list<EditorWindow_sp> arr;
+        array_list<EdGuiWindow_sp> arr;
         for (auto& window : _OpeningWindows.items)
         {
             if (window->GetType() == type)
@@ -173,87 +160,20 @@ namespace pulsared
         return arr;
     }
 
-    bool EditorWindowManager::RegisterOpeningWindow(EditorWindow_rsp window)
+    bool EditorWindowManager::RegisterOpeningWindow(EdGuiWindow_rsp window)
     {
         if (!window)
             return false;
         _OpeningWindows.Add(window);
+        OnWindowStateChanged.Invoke(window.get(), true);
         return true;
     }
 
-    void EditorWindowManager::UnregisterOpeningWindow(EditorWindow_rsp window)
+    void EditorWindowManager::UnregisterOpeningWindow(EdGuiWindow_rsp window)
     {
         if (!window)
             return;
         _OpeningWindows.Remove(window);
-    }
-
-    static void _CheckableLabelAction(SPtr<MenuContexts> ctxs, bool checked)
-    {
-        auto win = EditorWindowManager::GetPanelWindow(ctxs->EntryName);
-        if (checked)
-        {
-            win->Open();
-        }
-        else
-        {
-            win->Close();
-        }
-    }
-
-    void EditorWindowManager::RegisterPanelWindowType(Type* type)
-    {
-        auto panel = sptr_cast<EditorWindow>(type->CreateSharedInstance({}));
-        _PanelWindows.push_back(panel);
-
-        string displayName = string{panel->GetWindowDisplayName()};
-
-        auto checkEntry = new MenuEntryCheck(type->GetName(), displayName, MenuCheckAction::FromRaw(_CheckableLabelAction));
-
-        auto window = MenuManager::GetMainMenu()->FindSubMenuEntry("Window");
-        if(!window)
-        {
-            window = mksptr(new MenuEntrySubMenu("Window"));
-            MenuManager::GetMainMenu()->AddEntry(window);
-        }
-        window->AddEntry(mksptr(checkEntry));
-    }
-
-    void EditorWindowManager::UnregisterPanelWindowType(Type* type)
-    {
-        auto it = std::find_if(_PanelWindows.begin(), _PanelWindows.end(), [type](EditorWindow_rsp win) {
-            return win->GetType() == type;
-        });
-        if (it != _PanelWindows.end())
-        {
-            _PanelWindows.erase(it);
-
-            auto window = MenuManager::GetMainMenu()->FindSubMenuEntry("Window");
-            window->RemoveEntry(type->GetName());
-        }
-    }
-
-    EditorWindow_sp EditorWindowManager::GetPanelWindow(Type* type)
-    {
-        for (auto& win : _PanelWindows)
-        {
-            if (win->GetType() == type)
-            {
-                return win;
-            }
-        }
-        return nullptr;
-    }
-
-    EditorWindow_sp EditorWindowManager::GetPanelWindow(string_view name)
-    {
-        for (auto& win : _PanelWindows)
-        {
-            if (win->GetWindowName() == name)
-            {
-                return win;
-            }
-        }
-        return nullptr;
+        OnWindowStateChanged.Invoke(window.get(), false);
     }
 }

@@ -22,5 +22,7 @@ namespace pulsared
         static void RegisterContextProvider(string_view name, const SPtr<OnGetContext>& callback);
         static void UnregisterContextProvider(string_view name, const SPtr<OnGetContext>& callback);
         static MenuContexts_sp RequestContexts(string_view name);
+
+
     };
 }

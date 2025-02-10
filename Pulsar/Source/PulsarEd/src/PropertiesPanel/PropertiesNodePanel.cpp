@@ -80,8 +80,7 @@ namespace pulsared
         ImGui::Spacing();
 
         ImGui::AlignTextToFramePadding();
-        ImGui::Text("Components");
-        ImGui::SameLine();
+
         if(ImGui::Button("Add Component", {-FLT_MIN, 20}))
         {
             ImGui::OpenPopup("Main.Components");
