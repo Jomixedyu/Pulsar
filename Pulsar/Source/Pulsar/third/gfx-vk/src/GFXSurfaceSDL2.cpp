@@ -18,10 +18,10 @@ namespace gfx
         }
     }
 
-    void GFXSurfaceSDL2::CreateMainWindow()
+    void GFXSurfaceSDL2::CreateMainWindow(const char* title, int width, int height)
     {
         SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
-        m_window = SDL_CreateWindow("x", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, window_flags);
+        m_window = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, window_flags);
         if (m_window == nullptr)
         {
             auto info = std::format("Error: SDL_CreateWindow(): {}", SDL_GetError());

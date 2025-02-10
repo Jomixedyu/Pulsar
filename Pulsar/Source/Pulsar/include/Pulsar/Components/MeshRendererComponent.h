@@ -1,6 +1,5 @@
 #pragma once
 #include "Component.h"
-#include <Pulsar/Assets/StaticMesh.h>
 
 namespace pulsar
 {

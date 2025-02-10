@@ -359,11 +359,12 @@ namespace gfx
         // glfwSetWindowUserPointer(m_window, this);
         // glfwSetFramebufferSizeCallback(m_window, FramebufferResizeCallback);
 
+
         auto win = new GFXSurfaceSDL2;
         m_window = win;
 
         win->Initialize();
-        win->CreateMainWindow();
+        win->CreateMainWindow(m_config.Title, m_config.WindowWidth, m_config.WindowHeight);
 
         this->InitVkInstance();
 

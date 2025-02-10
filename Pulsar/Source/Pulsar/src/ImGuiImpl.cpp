@@ -83,13 +83,13 @@ namespace pulsar
         //custom
 
         style.WindowPadding = { 2.f, 2.f };
-        style.WindowRounding = 8;
-        style.FrameRounding = 6;
-        //style.FramePadding = { 12,3 };
+        style.WindowRounding = 4;
+        style.FrameRounding = 4;
+        style.FramePadding = { 8,3 };
         style.ItemSpacing = { 10,5 };
         style.ScrollbarSize = 10;
         style.ItemInnerSpacing = { 10,4 };
-        style.GrabMinSize = 20;
+        style.GrabMinSize = 14;
         style.GrabRounding = 12;
         style.WindowTitleAlign = { 0.5,0.5 };
         style.SeparatorTextBorderSize = 1;

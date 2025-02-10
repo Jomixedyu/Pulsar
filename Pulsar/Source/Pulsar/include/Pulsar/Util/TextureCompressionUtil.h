@@ -12,3 +12,4 @@ namespace pulsar
             gfx::GFXTextureFormat format);
     };
 } // namespace pulsar
+
