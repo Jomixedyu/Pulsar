@@ -11,7 +11,7 @@ namespace gfx
         GFXSurfaceSDL2() = default;
 
         void Initialize() override;
-        void CreateMainWindow() override;
+        void CreateMainWindow(const char* title, int width, int height) override;
         int CreateVulkanSurface(void* instance, void* outSurface) override;
         void* GetUserPoint() const override;
         intptr_t GetNativeHandle() const override;
