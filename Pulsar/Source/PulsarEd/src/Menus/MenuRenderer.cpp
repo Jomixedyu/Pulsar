@@ -11,11 +11,18 @@ namespace pulsared
     void MenuRenderer::RenderMenu(ISubMenu* menu, MenuContexts_sp ctxs)
     {
         if (!menu) return;
+        if (!ctxs)
+        {
+            ctxs = mksptr(new MenuContexts);
+        }
         bool lastSep = false;
         string lastSepStr;
 
         auto entries = menu->GetEntries();
         std::ranges::sort(entries, [](const MenuEntry_sp& a, const MenuEntry_sp& b){ return a->Priority < b->Priority; });
+
+        auto& style = ImGui::GetStyle();
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, {style.ItemSpacing.x, 8});
 
         for (auto& entry : entries)
         {
@@ -39,18 +46,25 @@ namespace pulsared
                     ImGui::EndMenu();
                 }
             }
-            else if (auto check = sptr_cast<MenuEntryCheck>(entry))
+            else if (auto checkEntry = sptr_cast<MenuEntryCheck>(entry))
             {
-                ctxs->EntryName = check->Name;
-                bool checked = check->IsChecked;
+                ctxs->EntryName = checkEntry->Name;
 
-
-                ImGui::MenuItem(check->DisplayName.c_str(), 0,  &check->IsChecked);
-                if(checked != check->IsChecked)
+                bool checked = checkEntry->IsChecked;
+                if (checkEntry->GetCheckedAction)
                 {
-                    if(check->CheckedAction && check->CheckedAction->IsValid())
+                    checked = checkEntry->GetCheckedAction->Invoke(ctxs);
+                }
+                bool originalChecked = checked;
+
+                ImGui::MenuItem(checkEntry->DisplayName.c_str(), 0,  &checked);
+
+                if(checked != originalChecked)
+                {
+                    if(checkEntry->CheckedAction && checkEntry->CheckedAction->IsValid())
                     {
-                        check->CheckedAction->Invoke(ctxs, check->IsChecked);
+                        checkEntry->IsChecked = checked;
+                        checkEntry->CheckedAction->Invoke(ctxs, checked);
                     }
                 }
             }
@@ -92,5 +106,6 @@ namespace pulsared
 
             }
         }
+        ImGui::PopStyleVar();
     }
 }

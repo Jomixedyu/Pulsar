@@ -1,7 +1,7 @@
 #pragma once
 #include "Pulsar/Components/StaticMeshRendererComponent.h"
 
-#include <PulsarEd/Windows/AssetEditorWindow.h>
+#include <PulsarEd/Editors/AssetEditor/AssetEditorWindow.h>
 #include <Pulsar/InputSystem/InputActionMap.h>
 
 namespace pulsared

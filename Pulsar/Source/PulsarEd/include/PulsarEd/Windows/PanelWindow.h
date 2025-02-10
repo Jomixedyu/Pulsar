@@ -1,16 +1,20 @@
 #pragma once
-#include "EditorWindow.h"
+#include "EdGuiWindow.h"
 #include <PulsarEd/Menus/MenuEntry.h>
 
 namespace pulsared
 {
-    class PanelWindow : public EditorWindow
+    class PanelWindow : public EdGuiWindow
     {
-        CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::PanelWindow, EditorWindow);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::PanelWindow, EdGuiWindow);
     public:
         virtual void OnOpen() override;
         virtual void OnClose() override;
+        int GetParentWindowId() const { return m_parentWindowId; }
 
+        ImGuiWindowClass GetGuiWindowClass() const override;
+
+        int m_parentWindowId;
     protected:
         MenuEntryCheck_sp GetCheckedEntry() const;
     };

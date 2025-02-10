@@ -10,8 +10,6 @@ using namespace std;
 using namespace pulsar;
 using namespace pulsared;
 
-#include <Pulsar/TransformUtil.h>
-
 int main()
 {
     // auto tri = jmath::Triangle3f{{0.0f, 0.0, 0}, {1.f, 0, 0}, {0.f, 1.f, 0}};

@@ -1,7 +1,7 @@
 #pragma once
 
+#include "EdGuiWindow.h"
 #include <vector>
-#include "EditorWindow.h"
 
 namespace pulsared
 {
@@ -13,11 +13,11 @@ namespace pulsared
 
         static void Draw(float dt);
 
-        static inline Action<EditorWindow*, bool> OnWindowStateChanged;
+        static inline Action<EdGuiWindow*, bool> OnWindowStateChanged;
 
-        static EditorWindow_sp GetOpeningWindow(string_view name);
-        static EditorWindow_sp GetOpeningWindow(Type* type);
-        static array_list<EditorWindow_sp> GetOpeningWindows(Type* type);
+        static EdGuiWindow_sp GetOpeningWindow(string_view name);
+        static EdGuiWindow_sp GetOpeningWindow(Type* type);
+        static array_list<EdGuiWindow_sp> GetOpeningWindows(Type* type);
 
         template <typename T>
         static SPtr<T> GetOpeningWindow()
@@ -26,15 +26,8 @@ namespace pulsared
         }
 
         //editor window add this
-        static bool RegisterOpeningWindow(EditorWindow_rsp window);
-        static void UnregisterOpeningWindow(EditorWindow_rsp window);
-
-        static void RegisterPanelWindowType(Type* type);
-        static void UnregisterPanelWindowType(Type* type);
-        static EditorWindow_sp GetPanelWindow(Type* type);
-        static EditorWindow_sp GetPanelWindow(string_view name);
-
-    private:
+        static bool RegisterOpeningWindow(EdGuiWindow_rsp window);
+        static void UnregisterOpeningWindow(EdGuiWindow_rsp window);
 
 
     };

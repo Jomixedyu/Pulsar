@@ -11,6 +11,7 @@ namespace pulsared
     using MenuCanOperate = FunctionDelegate<bool, SPtr<MenuContexts>>;
     using MenuAction = FunctionDelegate<void, SPtr<MenuContexts>>;
     using MenuCheckAction = FunctionDelegate<void, SPtr<MenuContexts>, bool>;
+    using MenuGetCheckedAction = FunctionDelegate<bool, SPtr<MenuContexts>>;
 
     class MenuEntry : public Object
     {
@@ -60,8 +61,15 @@ namespace pulsared
             const SPtr<MenuCheckAction>& checkedAction, bool isChecked = false)
             : base(name, displayName), IsChecked(isChecked), CheckedAction(checkedAction)
         { }
+        MenuEntryCheck(const string& name, const string& displayName,
+            const SPtr<MenuCheckAction>& checkedAction, const SPtr<MenuGetCheckedAction>& getCheckedAction)
+                : base(name, displayName), CheckedAction(checkedAction), GetCheckedAction(getCheckedAction)
+        {
 
-        bool IsChecked;
+        }
+
+        bool IsChecked{};
+        SPtr<MenuGetCheckedAction> GetCheckedAction;
         SPtr<MenuCheckAction> CheckedAction;
     };
     CORELIB_DECL_SHORTSPTR(MenuEntryCheck);
