@@ -34,6 +34,8 @@ namespace gfx
             break;
         case gfx::GFXDescriptorType::Texture2D:
             return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+        case gfx::GFXDescriptorType::StructuredBuffer:
+            return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
         default:
             assert(false);
             break;
@@ -112,7 +114,24 @@ namespace gfx
 
         IsDirty = true;
     }
+    void GFXVulkanDescriptor::SetStructuredBuffer(GFXBuffer* buffer)
+    {
+        const auto vkBuffer = static_cast<GFXVulkanBuffer*>(buffer);
 
+        BufferInfo.buffer = vkBuffer->GetVkBuffer();
+        BufferInfo.offset = 0;
+        BufferInfo.range = vkBuffer->GetSize();
+
+        WriteInfo.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        WriteInfo.dstSet = m_descriptorSet->GetVkDescriptorSet();
+        WriteInfo.dstBinding = m_bindingPoint;
+        WriteInfo.dstArrayElement = 0;
+        WriteInfo.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        WriteInfo.descriptorCount = 1;
+        WriteInfo.pBufferInfo = &BufferInfo;
+
+        IsDirty = true;
+    }
     void GFXVulkanDescriptor::SetTextureSampler2D(GFXTexture2DView* texture)
     {
         auto vkView = dynamic_cast<GFXVulkanTexture2DView*>(texture);
@@ -161,6 +180,7 @@ namespace gfx
 
         IsDirty = true;
     }
+
 
     GFXVulkanDescriptorSet::GFXVulkanDescriptorSet(GFXVulkanDescriptorPool* pool, const GFXDescriptorSetLayout_sp& layout)
         : m_pool(pool)

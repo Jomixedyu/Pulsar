@@ -86,7 +86,7 @@ namespace pulsar
             auto info = gfx::GFXDescriptorSetLayoutInfo{
                 gfx::GFXDescriptorType::ConstantBuffer,
                 gfx::GFXShaderStageFlags::VertexFragment,
-                0, 3};
+                0, 4};
             descLayoutInfos.push_back(info);
         }
 
@@ -101,7 +101,7 @@ namespace pulsar
                 auto info = gfx::GFXDescriptorSetLayoutInfo{
                     gfx::GFXDescriptorType::CombinedImageSampler,
                     gfx::GFXShaderStageFlags::VertexFragment,
-                    (uint32_t)i + offset, 3};
+                    (uint32_t)i + offset, 4};
                 descLayoutInfos.push_back(info);
             }
         }

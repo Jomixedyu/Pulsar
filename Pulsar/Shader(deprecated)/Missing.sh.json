@@ -1,8 +1,0 @@
-{
-	"PassName": "Engine/Missing",
-	"CullMode": "None",
-	"DepthTestEnable": true,
-	"DepthWriteEnable": true,
-	"DepthCompareOp": "Less",
-	"StencilTestEnable": false
-}

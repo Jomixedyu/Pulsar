@@ -1,14 +1,14 @@
 #include "Common.inc.hlsl"
 #include "MeshRenderer.inc.hlsl"
 
-cbuffer shcbuf : register(b0, space3)
+cbuffer shcbuf : register(b0, USER_DESCSET)
 {
     float4 _Tint;
 }
 
-Texture2D _DiffuseTex : register(t1, space3);
+Texture2D _DiffuseTex : register(t1, USER_DESCSET);
 
-SamplerState _DiffuseTexSampler : register(s1, space3);
+SamplerState _DiffuseTexSampler : register(s1, USER_DESCSET);
 
 OutPixelAssembly main(InPixelAssembly v2f)
 {

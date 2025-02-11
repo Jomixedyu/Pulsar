@@ -1,5 +1,6 @@
 #pragma once
 #include "Component.h"
+#include "Pulsar/Rendering/LightingData.h"
 
 namespace pulsar
 {
@@ -15,6 +16,9 @@ namespace pulsar
         Color4f GetColor() const { return m_lightColor; }
 
     protected:
+
+        void MarkRenderingDirty();
+
         void PostEditChange(FieldInfo* info) override;
         virtual void OnIntensityChanged() {};
         virtual void OnLightColorChanged() {};
@@ -23,5 +27,7 @@ namespace pulsar
         float m_intensity{1};
         CORELIB_REFL_DECL_FIELD(m_lightColor);
         Color4f m_lightColor{1,1,1,1};
+
+        LightShaderParameter m_runtimeLightData{};
     };
 }

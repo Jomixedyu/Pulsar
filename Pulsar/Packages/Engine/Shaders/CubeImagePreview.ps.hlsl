@@ -9,7 +9,7 @@
 #define FLAGS_NORMALMAP 0x40
 
 
-cbuffer Properties : register(b0, space3)
+cbuffer Properties : register(b0, USER_DESCSET)
 {
     float4 _CheckerColorA;
     float4 _CheckerColorB;
@@ -17,8 +17,8 @@ cbuffer Properties : register(b0, space3)
     int    _Flags;
 }
 
-TextureCube _Image : register(t1, space3);
-SamplerState _ImageSampler : register(s1, space3);
+TextureCube _Image : register(t1, USER_DESCSET);
+SamplerState _ImageSampler : register(s1, USER_DESCSET);
 
 float4 main(PPVSOutput v2f) : SV_TARGET
 {

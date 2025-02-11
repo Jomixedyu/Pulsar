@@ -6,19 +6,21 @@
 
 #include "Physics2D/PhysicsWorld2D.h"
 #include "Physics3D/PhysicsWorld3D.h"
+#include "Rendering/LightingData.h"
 #include "Subsystems/Subsystem.h"
 #include "Subsystems/WorldSubsystem.h"
 
 namespace pulsar
 {
-    struct WorldRenderBufferData
+    struct WorldShaderParameter
     {
         Vector4f WorldSpaceLightVector;
         Vector4f WorldSpaceLightColor; // w is intensity
+        Vector4f SkyLightColor; // w is intensity
         float TotalTime;
         float DeltaTime;
-        Vector2f _Padding0;
-        Vector4f SkyLightColor; // w is intensity
+        uint32_t LightParameterCount;
+        float _Padding0;
     };
 
     static std::unique_ptr<World> _world_inst = nullptr;
@@ -103,8 +105,8 @@ namespace pulsar
         {
             simulate->BeginSimulate();
         }
-        physicsWorld2D->BeginSimulate();
-        physicsWorld3D->BeginSimulate();
+        m_physicsWorld2D->BeginSimulate();
+        m_physicsWorld3D->BeginSimulate();
     }
     void World::EndSimulate()
     {
@@ -112,8 +114,8 @@ namespace pulsar
         {
             simulate->EndSimulate();
         }
-        physicsWorld2D->EndSimulate();
-        physicsWorld3D->EndSimulate();
+        m_physicsWorld2D->EndSimulate();
+        m_physicsWorld3D->EndSimulate();
     }
 
     void World::Tick(float dt)
@@ -134,8 +136,8 @@ namespace pulsar
                     scene->Tick(m_ticker);
                 }
             }
-            physicsWorld2D->Tick(dt);
-            physicsWorld3D->StepSimulate(dt);
+            m_physicsWorld2D->Tick(dt);
+            m_physicsWorld3D->StepSimulate(dt);
         }
     }
 
@@ -258,9 +260,12 @@ namespace pulsar
     }
     void World::UpdateWorldCBuffer()
     {
-        WorldRenderBufferData buffer{};
+        GetLightManager()->Update();
+
+        WorldShaderParameter buffer{};
         buffer.DeltaTime = m_ticker.deltatime;
         buffer.TotalTime = m_totalTime;
+        buffer.LightParameterCount = GetLightManager()->GetLightCount();
 
         auto& sceneEnv = m_focusScene->GetRuntimeEnvironment();
 
@@ -313,14 +318,16 @@ namespace pulsar
         m_worldDescriptorLayout = Application::GetGfxApp()->CreateDescriptorSetLayout(&info, 1);
         m_worldDescriptorBuffer = Application::GetGfxApp()->CreateBuffer(
             gfx::GFXBufferUsage::ConstantBuffer,
-            sizeof(WorldRenderBufferData));
+            sizeof(WorldShaderParameter));
 
         m_worldDescriptors = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_worldDescriptorLayout);
         m_worldDescriptors->AddDescriptor("World", 0)->SetConstantBuffer(m_worldDescriptorBuffer.get());
         m_worldDescriptors->Submit();
 
-        physicsWorld2D = new PhysicsWorld2D();
-        physicsWorld3D = new PhysicsWorld3D;
+        m_physicsWorld2D = new PhysicsWorld2D;
+        m_physicsWorld3D = new PhysicsWorld3D;
+
+        m_lightManager = new LightManager;
 
         for (auto& item : SubsystemManager::GetAllSubsystems())
         {
@@ -359,11 +366,14 @@ namespace pulsar
         m_worldDescriptorBuffer.reset();
         m_worldDescriptors.reset();
 
-        delete physicsWorld2D;
-        physicsWorld2D = nullptr;
+        delete m_physicsWorld2D;
+        m_physicsWorld2D = nullptr;
 
-        delete physicsWorld3D;
-        physicsWorld3D = nullptr;
+        delete m_physicsWorld3D;
+        m_physicsWorld3D = nullptr;
+
+        delete m_lightManager;
+        m_lightManager = nullptr;
     }
 
     void World::OnSceneLoading(RCPtr<Scene> scene)

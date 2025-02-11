@@ -15,9 +15,25 @@ struct PerObjectCBufferStruct
     float4   _Padding2;
     float4   _Padding3;
 };
+struct LightShaderParameter
+{
+    float3 WorldPosition;
+    float3 Direction;
+    float3 Color;
+    float SourceRadius;
+    float SoftSourceRadius;
+    float FalloffExponent;
+    float2 SpotAngles;
+    float2 _Padding0;
+};
 
-ConstantBuffer<PerObjectCBufferStruct> PerObjectBuffer : register(b0, space2);
+StructuredBuffer<LightShaderParameter> LightDataBuffer : register(b0, space2);
 
+ConstantBuffer<PerObjectCBufferStruct> PerObjectBuffer : register(b0, space3);
+
+
+
+#define USER_DESCSET space4
 
 inline float4 ObjectToWorld(float3 position)
 {

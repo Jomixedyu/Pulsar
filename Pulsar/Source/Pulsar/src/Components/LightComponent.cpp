@@ -1,5 +1,7 @@
 #include "Components/LightComponent.h"
 
+#include "World.h"
+
 namespace pulsar
 {
 
@@ -12,6 +14,12 @@ namespace pulsar
     {
         m_lightColor = value;
         OnLightColorChanged();
+    }
+
+    void LightComponent::MarkRenderingDirty()
+    {
+        auto manager = GetWorld()->GetLightManager();
+        manager->MarkDirty(manager->GetId(&m_runtimeLightData));
     }
     void LightComponent::PostEditChange(FieldInfo* info)
     {

@@ -242,6 +242,8 @@ namespace pulsared
             "Engine/Shaders/Missing",
             "Engine/Shaders/WorldGrid",
             "Engine/Shaders/Lambert",
+            "Engine/Shaders/Unlit",
+            "Engine/Shaders/VertexColor",
         };
         if (PreCompileShaderPaths.empty())
         {
@@ -251,11 +253,13 @@ namespace pulsared
         {
             if (std::ranges::contains(PreCompileShaderPaths, element))
             {
+                std::erase(PreCompileShaderPaths, element);
                 auto asset = cref_cast<Shader>(AssetDatabase::LoadAssetAtPath(element));
                 assert(asset);
                 ShaderCompiler::CompileShader(asset.GetPtr(), {gfx::GFXApi::Vulkan}, {}, {});
             }
         }
+        assert(PreCompileShaderPaths.empty());
     }
 
     void EditorAppInstance::OnInitialized()

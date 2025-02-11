@@ -9,6 +9,7 @@ namespace gfx
     enum class GFXDescriptorType
     {
         ConstantBuffer,
+        StructuredBuffer,
         CombinedImageSampler,
         Texture2D
     };
@@ -33,7 +34,6 @@ namespace gfx
     {
     public:
         uint32_t BindingPoint;
-        uint32_t SpacePoint;
         GFXDescriptorType Type;
         GFXShaderStageFlags Stage;
 
@@ -42,7 +42,7 @@ namespace gfx
             GFXShaderStageFlags stage,
             uint32_t bindingPoint = 0,
             uint32_t spacePoint = 0)
-            : Type(type), Stage(stage), BindingPoint(bindingPoint), SpacePoint(spacePoint)
+            : Type(type), Stage(stage), BindingPoint(bindingPoint)
         {
         }
     };
@@ -65,6 +65,7 @@ namespace gfx
         GFXDescriptor(const GFXDescriptor&) = delete;
 
         virtual void SetConstantBuffer(GFXBuffer* buffer) = 0;
+        virtual void SetStructuredBuffer(GFXBuffer* buffer) = 0;
         virtual void SetTextureSampler2D(GFXTexture2DView* texture) = 0;
         virtual void SetTexture2D(GFXTexture* texture) = 0;
 

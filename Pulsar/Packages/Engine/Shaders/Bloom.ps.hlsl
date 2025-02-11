@@ -1,6 +1,6 @@
 #include "PostProcessing.inc.hlsl"
 
-cbuffer Properties : register(b0, space3)
+cbuffer Properties : register(b0, USER_DESCSET)
 {
 	float _Luminance;
 }

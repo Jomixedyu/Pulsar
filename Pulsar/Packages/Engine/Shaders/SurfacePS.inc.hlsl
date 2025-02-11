@@ -4,11 +4,10 @@
 #include "DeferredShading.inc.hlsl"
 #include "Common.inc.hlsl"
 #include "MaterialAttributes.inc.hlsl"
+#include "MeshRenderer.inc.hlsl"
 
 #define SHADING_MODEL_UNLIT      0x01
 #define SHADING_MODEL_LIT        0x02
-
-
 
 
 MaterialAttributes SurfacePixelMain(InPixelAssembly s);
