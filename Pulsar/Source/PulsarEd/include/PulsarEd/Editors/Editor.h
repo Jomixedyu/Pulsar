@@ -1,12 +1,9 @@
 #pragma once
-#include "EditorWindow.h"
+#include "Assembly.h"
 
 namespace pulsared
 {
-    class Editor;
-
-
-
+    class EditorWindow;
     class Editor
     {
     public:

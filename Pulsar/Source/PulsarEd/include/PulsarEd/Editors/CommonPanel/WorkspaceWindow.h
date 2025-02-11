@@ -28,9 +28,7 @@ namespace pulsared
     public:
         static string_view StaticWindowName() { return ICON_FK_DATABASE " Workspace###"  "Workspace"; }
         virtual string_view GetWindowDisplayName() const override { return StaticWindowName(); }
-        virtual ImGuiWindowFlags GetGuiWindowFlags() const override{
-            return ImGuiWindowFlags_None | ImGuiWindowFlags_MenuBar;
-        }
+        virtual ImGuiWindowFlags GetGuiWindowFlags() const override;
 
         virtual void OnOpen() override;
         virtual void OnClose() override;

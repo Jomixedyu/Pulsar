@@ -52,20 +52,22 @@ namespace pulsar
         m_physics->m_shapeType = targetShapeType;
         m_physics->m_event = this;
 
-        m_physics->m_boxHalfSize = shapes[0]->m_halfSize;
-        m_physics->m_radius = shapes[0]->m_radius;
-
         auto transform = GetTransform();
+        auto scale = transform->GetWorldScale();
+        auto maxScale = std::max(std::abs(scale.x), std::max(std::abs(scale.y), std::abs(scale.z)));
+
+        m_physics->m_boxHalfSize = shapes[0]->m_halfSize * scale;
+        m_physics->m_radius = shapes[0]->m_radius * maxScale;
 
         m_physics->m_position = transform->GetWorldPosition();
         m_physics->m_rotation = transform->GetRotation();
 
-        GetWorld()->physicsWorld3D->AddObject(m_physics);
+        GetWorld()->GetPhysicsWorld3D()->AddObject(m_physics);
     }
 
     void RigidBodyDynamics3DComponent::EndSimulate()
     {
-        GetWorld()->physicsWorld3D->RemoveObject(m_physics);
+        GetWorld()->GetPhysicsWorld3D()->RemoveObject(m_physics);
         delete m_physics;
         m_physics = nullptr;
     }

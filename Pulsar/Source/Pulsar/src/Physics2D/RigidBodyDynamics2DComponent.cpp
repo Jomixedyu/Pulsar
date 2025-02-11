@@ -61,12 +61,12 @@ namespace pulsar
             shape.m_isSensor = comp->m_isSensor;
         }
 
-        GetWorld()->physicsWorld2D->AddObject(m_physics);
+        GetWorld()->GetPhysicsWorld2D()->AddObject(m_physics);
     }
 
     void RigidBodyDynamics2DComponent::EndSimulate()
     {
-        GetWorld()->physicsWorld2D->RemoveObject(m_physics);
+        GetWorld()->GetPhysicsWorld2D()->RemoveObject(m_physics);
         delete m_physics;
         m_physics = nullptr;
     }

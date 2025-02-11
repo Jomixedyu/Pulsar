@@ -1,8 +1,9 @@
 #pragma once
 #include "Assembly.h"
+#include "Editors/Editor.h"
 #include "ExclusiveTask.h"
+
 #include <Pulsar/AppInstance.h>
-#include <Pulsar/AssetManager.h>
 #include <Pulsar/EngineAppInstance.h>
 #include <Pulsar/ImGuiImpl.h>
 
@@ -41,6 +42,7 @@ namespace pulsared
     class EditorAppInstance : public AppInstance
     {
     public:
+        virtual void OnCreateEditors();
         virtual const char* AppType() override;
         virtual void RequestQuit() override;
         virtual Vector2f GetOutputScreenSize() override;
@@ -80,6 +82,7 @@ namespace pulsared
         void ShowModalDialog(SPtr<ModalDialog> dialog);
 
     protected:
+        array_list<std::unique_ptr<Editor>> m_editors;
         SPtr<ModalDialog> m_modalDialog;
         std::shared_ptr<ImGuiObject> m_gui = nullptr;
 
