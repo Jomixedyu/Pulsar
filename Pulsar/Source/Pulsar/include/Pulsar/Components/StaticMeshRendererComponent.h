@@ -39,7 +39,7 @@ namespace pulsar
 
         RCPtr<StaticMesh> GetMaterial(int index) const;
         void   SetMaterial(int index, RCPtr<Material> material);
-        size_t AddMaterial();
+        size_t AddMaterial(RCPtr<Material> material = nullptr);
         void   RemoveMaterial(size_t index);
         size_t GetMaterialCount() const { return m_materialsSize; }
 

@@ -14,12 +14,12 @@ namespace pulsar
         template<baseof_assetobject T>
         inline RCPtr<T> LoadAsset(string_view path, bool allowException = false)
         {
-            RCPtr<AssetObject> ptr = LoadAssetAtPath(path);
+            RCPtr<T> ptr = cref_cast<T>(LoadAssetAtPath(path));
             if (allowException && ptr == nullptr)
             {
                throw NullPointerException{};
             }
-            return RCPtr<T>(cref_cast<T>(ptr));
+            return ptr;
         }
 
 

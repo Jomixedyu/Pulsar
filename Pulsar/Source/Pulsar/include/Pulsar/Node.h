@@ -83,7 +83,7 @@ namespace pulsar
         void EndPlay();
 
     public: //components
-        template<typename T>
+        template<baseof_component_concept T>
         ObjectPtr<T>         AddComponent() { return this->AddComponent(cltypeof<T>()); }
         ObjectPtr<Component> AddComponent(Type* type);
         void                 DestroyComponent(ObjectPtr<Component> component);

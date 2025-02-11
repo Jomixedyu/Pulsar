@@ -1,9 +1,6 @@
 #pragma once
 #include "AppInstance.h"
 #include "Components/SceneCaptureComponent.h"
-#include "Rendering/RenderObject.h"
-
-#include <ranges>
 
 namespace pulsar
 {

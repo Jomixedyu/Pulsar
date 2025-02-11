@@ -75,7 +75,7 @@ namespace pulsar
 
     protected:
 
-        TargetCBuffer m_targetBuffer{};
+        RenderTargetShaderParameter m_targetBuffer{};
 
         RCPtr<RenderTexture> m_sceneColor;
     };
