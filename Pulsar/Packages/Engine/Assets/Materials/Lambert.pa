@@ -2,7 +2,7 @@
     "Parameters": [
         {
             "Name": "DiffuseTex",
-            "Type": "Texture2D",
+            "Type": "Texture",
             "Value": "21087b111160aa48a1dcf6ca211d50da"
         }
     ],

@@ -10,7 +10,7 @@
   "Properties": [
     {
       "Name": "DiffuseTex",
-      "Type": "Texture2D"
+      "Type": "Texture"
     }
   ]
 }

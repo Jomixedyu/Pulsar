@@ -82,9 +82,8 @@ namespace pulsared
             {
                 const auto dragData = static_cast<ObjectPtrDragInfo*>(payload->Data);
 
-                if (dragData->Type == type)
+                if (dragData->Type->IsSubclassOf(type))
                 {
-
                     if ((payload = ImGui::AcceptDragDropPayload(ObjectPtrDragInfo::Name.data())))
                     {
                         (void)payload;

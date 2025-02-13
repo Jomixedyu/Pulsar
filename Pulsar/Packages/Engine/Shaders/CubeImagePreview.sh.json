@@ -1,4 +1,5 @@
 {
+  "$schema": "ShaderSchema.json",
   "CullMode": "Back",
   "DepthTestEnable": false,
   "DepthWriteEnable": false,
@@ -10,8 +11,7 @@
   "Properties" : [
     {
       "Name": "_Image",
-      "Type": "TextureCube",
-      "Value": "WHITE"
+      "Type": "Texture"
     }
   ]
 }

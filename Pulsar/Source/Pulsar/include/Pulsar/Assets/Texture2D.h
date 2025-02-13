@@ -63,7 +63,7 @@ namespace pulsar
         void DestroyGPUResource() override;
         bool IsCreatedGPUResource() const override;
 
-        std::shared_ptr<gfx::GFXTexture> GetGFXTexture() const { return m_tex; }
+        std::shared_ptr<gfx::GFXTexture> GetGFXTexture() const override { return m_tex; }
 
     public:
         bool IsSRGB() const { return m_isSRGB; }

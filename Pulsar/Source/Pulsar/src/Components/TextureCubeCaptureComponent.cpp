@@ -22,7 +22,16 @@ namespace pulsar
             passes.push_back(&cube);
         }
     }
-    void TextureCubeCaptureComponent::SetTexture(const RCPtr<TextureCube>& tex)
+
+    void TextureCubeCaptureComponent::PostEditChange(FieldInfo* info)
+    {
+        base::PostEditChange(info);
+        if (info->GetName() == NAMEOF(m_textureCube))
+        {
+
+        }
+    }
+    void TextureCubeCaptureComponent::SetTexture(const RCPtr<RenderTextureCube>& tex)
     {
         m_textureCube = tex;
     }

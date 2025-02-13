@@ -23,6 +23,7 @@ namespace pulsar
         void OnTransformChanged() override;
         void OnRadiusChanged();
         void OnLightColorChanged() override;
+        void OnIntensityChanged() override;
 
         void PostEditChange(FieldInfo* info) override;
 

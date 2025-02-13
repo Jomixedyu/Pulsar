@@ -17,14 +17,15 @@ struct PerObjectCBufferStruct
 };
 struct LightShaderParameter
 {
-    float3 WorldPosition;
-    float3 Direction;
-    float3 Color;
-    float SourceRadius;
-    float SoftSourceRadius;
-    float FalloffExponent;
+    float4 WorldPosition;
+    float4 Direction;
+    float4 Color;
+    float  SourceRadius;
+    float  SoftSourceRadius;
+    float  FalloffExponent;
+    float  _Padding0;
     float2 SpotAngles;
-    float2 _Padding0;
+    float2 _Padding1;
 };
 
 StructuredBuffer<LightShaderParameter> LightDataBuffer : register(b0, space2);

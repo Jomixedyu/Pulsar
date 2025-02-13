@@ -1,19 +1,19 @@
 {
     "Parameters": [
         {
-            "Name": "_NormalMap",
-            "Type": "Texture2D",
-            "Value": "0870a734c6c77b499c879ce01cdff774"
+            "Name": "_MRAMap",
+            "Type": "Texture",
+            "Value": "359dcce08600444892b2db133fa901a8"
         },
         {
             "Name": "_BaseColorMap",
-            "Type": "Texture2D",
-            "Value": "cb5158753e00d2438a7ea257e9aa44e7"
+            "Type": "Texture",
+            "Value": "21087b111160aa48a1dcf6ca211d50da"
         },
         {
-            "Name": "_MRAMap",
-            "Type": "Texture2D",
-            "Value": "b79f110645729844b27130a7d1d02e2f"
+            "Name": "_NormalMap",
+            "Type": "Texture",
+            "Value": "5df5657321cb6c4fbebfab1ec0df6c3a"
         }
     ],
     "Shader": "253fcdbbf1e0d44698dd15e6be7a3442"

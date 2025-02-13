@@ -5,7 +5,8 @@ namespace pulsar
 {
     class CurveFloat : public Curve
     {
-
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::CurveFloat, Curve);
+    public:
         float GetValue(float X) const
         {
             return 0;

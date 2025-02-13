@@ -57,7 +57,13 @@ namespace pulsar
     {
         m_canDrawGizmo = true;
         base::BeginComponent();
+
+        OnTransformChanged();
+        OnLightColorChanged();
+        OnRadiusChanged();
+
         GetWorld()->GetLightManager()->AddLight(&m_runtimeLightData);
+
     }
 
     void PointLightComponent::EndComponent()
@@ -105,7 +111,13 @@ namespace pulsar
     void PointLightComponent::OnLightColorChanged()
     {
         base::OnLightColorChanged();
-        m_runtimeLightData.Color = Vector3f(m_lightColor.r, m_lightColor.g, m_lightColor.b);
+        m_runtimeLightData.Color = Vector4f(m_lightColor.r, m_lightColor.g, m_lightColor.b, m_intensity);
+        MarkRenderingDirty();
+    }
+    void PointLightComponent::OnIntensityChanged()
+    {
+        base::OnIntensityChanged();
+        m_runtimeLightData.Color = Vector4f(m_lightColor.r, m_lightColor.g, m_lightColor.b, m_intensity);
         MarkRenderingDirty();
     }
 

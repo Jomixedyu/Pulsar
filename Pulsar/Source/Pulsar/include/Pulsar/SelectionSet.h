@@ -1,8 +1,8 @@
 #pragma once
-#include "Assembly.h"
+#include "Pulsar/ObjectBase.h"
 #include <CoreLib/Events.hpp>
 
-namespace pulsared
+namespace pulsar
 {
     template <typename T>
     class SelectionSet

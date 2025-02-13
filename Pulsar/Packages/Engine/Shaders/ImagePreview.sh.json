@@ -30,7 +30,7 @@
   "Properties" : [
     {
       "Name": "_Image",
-      "Type": "Texture2D",
+      "Type": "Texture",
       "Value": "WHITE"
     }
   ]

@@ -3,19 +3,21 @@
 #include "EditorRenderPipeline.h"
 #include "Editors/EditorWindow.h"
 #include "Editors/SceneEditor/SceneEditor.h"
-#include <Pulsar/Components/BoxShape3DComponent.h>
-#include <Pulsar/Components/DirectionalLightComponent.h>
-#include <Pulsar/Components/SphereShape3DComponent.h>
-#include <Pulsar/Components/StaticMeshRendererComponent.h>
-#include <Pulsar/Physics3D/RigidBodyDynamics3DComponent.h>
-#include <Pulsar/Prefab.h>
+#include "Pulsar/Components/PointLightComponent.h"
+
 #include "Shaders/EditorShader.h"
 #include "Utils/PrefabUtil.h"
 #include <CoreLib.Serialization/JsonSerializer.h>
 #include <CoreLib/File.h>
 #include <Pulsar/Application.h>
+#include <Pulsar/Components/BoxShape3DComponent.h>
+#include <Pulsar/Components/DirectionalLightComponent.h>
+#include <Pulsar/Components/SphereShape3DComponent.h>
+#include <Pulsar/Components/StaticMeshRendererComponent.h>
 #include <Pulsar/ImGuiImpl.h>
 #include <Pulsar/Logger.h>
+#include <Pulsar/Physics3D/RigidBodyDynamics3DComponent.h>
+#include <Pulsar/Prefab.h>
 #include <Pulsar/Scene.h>
 #include <Pulsar/World.h>
 #include <PulsarEd/AssetDatabase.h>
@@ -96,6 +98,7 @@ namespace pulsared
             RCPtr<Scene> scene,
             string name = "Node",
             RCPtr<Material> material = nullptr,
+            bool dynamicBody = false,
             Vector3f position = Vector3f(),
             Vector3f rotation = Vector3f(),
             Vector3f scale = Vector3f(1.0f, 1.0f, 1.0f))
@@ -108,7 +111,11 @@ namespace pulsared
 
             auto node = scene->NewNode(name);
             node->AddComponent<BoxShape3DComponent>();
-            node->AddComponent<RigidBodyDynamics3DComponent>();
+            auto body = node->AddComponent<RigidBodyDynamics3DComponent>();
+            if (dynamicBody)
+            {
+                body->SetMode(RigidBody3DMode::Dynamic);
+            }
             auto comp = node->AddComponent<StaticMeshRendererComponent>();
             comp->SetStaticMesh(cube);
             comp->SetMaterial(0, material);
@@ -121,6 +128,7 @@ namespace pulsared
             RCPtr<Scene> scene,
             string name = "Node",
             RCPtr<Material> material = nullptr,
+            bool dynamicBody = false,
             Vector3f position = Vector3f(),
             Vector3f rotation = Vector3f(),
             Vector3f scale = Vector3f(1.0f, 1.0f, 1.0f))
@@ -133,7 +141,11 @@ namespace pulsared
 
             auto node = scene->NewNode(name);
             node->AddComponent<SphereShape3DComponent>();
-            node->AddComponent<RigidBodyDynamics3DComponent>();
+            auto body = node->AddComponent<RigidBodyDynamics3DComponent>();
+            if (dynamicBody)
+            {
+                body->SetMode(RigidBody3DMode::Dynamic);
+            }
             auto comp = node->AddComponent<StaticMeshRendererComponent>();
             comp->SetStaticMesh(sphere);
             comp->SetMaterial(0, material);
@@ -186,7 +198,7 @@ namespace pulsared
             dlight->GetTransform()->TranslateRotateEuler({-3,3,-3}, {45,45,0});
         }
         // sky
-        if (0)
+        // if (0)
         {
             auto skySphere = scene->NewNode("Sky Sphere");
             skySphere->GetTransform()->SetScale({500,500,500});
@@ -199,15 +211,27 @@ namespace pulsared
         auto cube = GetAssetManager()->LoadAsset<StaticMesh>("Engine/Shapes/Cube", true);
         auto sphere = GetAssetManager()->LoadAsset<StaticMesh>("Engine/Shapes/Sphere", true);
         auto gridMat = GetAssetManager()->LoadAsset<Material>("Engine/Materials/WorldGrid", true);
+        auto litMat = GetAssetManager()->LoadAsset<Material>("Engine/Materials/Lit", true);
 
         {
-            ShapeMeshUtils::CreateCube(scene, "floor", gridMat, {},{}, { 10.f, 0.5f, 10.f});
-            ShapeMeshUtils::CreateCube(scene, "cube", nullptr,{-2.f,0.75f,2.f},{0.0f, -35.0f,0.0f});
-            ShapeMeshUtils::CreateCube(scene, "cube", nullptr,{0.f,0.75f,2.f},{0.0f, -10.0f,0.0f});
-            auto cube = ShapeMeshUtils::CreateCube(scene, "cube", nullptr, {-0.45f, 1.75f, 2.f}, {0.0f, -40.0f, 0.0f});
-            cube->GetComponent<RigidBodyDynamics3DComponent>()->SetMode(RigidBody3DMode::Dynamic);
-            auto sphere = ShapeMeshUtils::CreateSphere(scene, "sphere", nullptr, {-0.3f, 5.f, 1.3f});
-            sphere->GetComponent<RigidBodyDynamics3DComponent>()->SetMode(RigidBody3DMode::Dynamic);
+            ShapeMeshUtils::CreateCube(scene, "floor", gridMat, false, {0, -0.25f, 0},{}, { 10.f, 0.5f, 10.f});
+            ShapeMeshUtils::CreateCube(scene, "cube", litMat,true, {-2.f,0.5f,2.f},{0.0f, -35.0f,0.0f});
+            ShapeMeshUtils::CreateCube(scene, "cube", litMat,true, {0.f,0.5f,2.f},{0.0f, -10.0f,0.0f});
+            ShapeMeshUtils::CreateCube(scene, "cube", litMat, true, {-0.45f, 1.5f, 2.f}, {0.0f, -40.0f, 0.0f});
+            ShapeMeshUtils::CreateCube(scene, "cube", litMat, true, {-1.65f, 1.25f, 2.f}, {0.0f, -10.0f, 0.0f}, {0.5f, 0.5f, 0.5f});
+            ShapeMeshUtils::CreateSphere(scene, "sphere", litMat, true, {-0.3f, 5.f, 1.3f});
+
+        }
+        {
+            auto gamma = GetAssetManager()->LoadAsset<Material>("Engine/Materials/GammaCorrection", true);
+            World::Current()->GetCurrentCamera()->AddPostProcess(gamma);
+        }
+        {
+            auto p1 = scene->NewNode("PointLight");
+            auto light = p1->AddComponent<PointLightComponent>();
+            light->SetColor(Color4f(1,0.2,0.2));
+            light->SetIntensity(14);
+            light->GetTransform()->SetPosition({-1.7f,2,0});
         }
 
     }

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Assembly.h"
-#include "SelectionSet.h"
+#include <Pulsar/SelectionSet.h>
 #include <Pulsar/Components/CameraComponent.h>
 #include <Pulsar/Node.h>
 #include <Pulsar/World.h>
@@ -29,7 +29,6 @@ namespace pulsared
 
         void AddDirectionalLight();
         virtual CameraComponent_ref GetCurrentCamera() override;
-        bool IsSelectedNode(const ObjectPtr<Node>& node) const override;
     public:
         virtual void OnWorldBegin() override;
         virtual void OnWorldEnd() override;
@@ -41,8 +40,6 @@ namespace pulsared
         virtual const char* GetWorldTypeName() const { return StaticWorldTypeName(); }
         static const char* StaticWorldTypeName() { return "EditorWorld"; }
     public:
-        SelectionSet<Node>& GetSelection() { return m_selection; }
-        const SelectionSet<Node>& GetSelection() const { return m_selection; }
         EdTool* GetTool() const { return m_tool.get(); }
         void SetTool(std::unique_ptr<EdTool>&& tool);
     private:
@@ -50,7 +47,7 @@ namespace pulsared
         Node_ref m_camCtrlNode;
         CameraComponent_ref m_cam;
 
-        SelectionSet<Node> m_selection;
+
         std::unique_ptr<EdTool> m_tool = nullptr;
     };
 }

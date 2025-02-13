@@ -196,7 +196,7 @@ namespace pulsar
                     paramValue = parameter->New(ser::VarientType::Object);
                     paramValue->Assign(AssetSerializerUtil::NewObject(parameter, value.AsVector()));
                     break;
-                case ShaderParameterType::Texture2D:
+                case ShaderParameterType::Texture:
                     paramValue = parameter->New(ser::VarientType::String);
                     paramValue->Assign(value.AsTexture().GetHandle().to_string());
                     break;
@@ -238,7 +238,7 @@ namespace pulsar
                     case ShaderParameterType::Vector:
                         paramValue.SetValue(AssetSerializerUtil::GetVector4Object(valueObject));
                         break;
-                    case ShaderParameterType::Texture2D: {
+                    case ShaderParameterType::Texture: {
                         RCPtr<Texture2D> tex = ObjectHandle::parse(valueObject->AsString());
                         // RCPtr<Texture2D> tex = GetAssetManager()->LoadAssetById(handle);
                         paramValue.SetValue(tex);
@@ -277,7 +277,7 @@ namespace pulsar
         m_isDirtyParameter = true;
     }
 
-    void Material::SetTexture(const index_string& name, const RCPtr<Texture2D>& value)
+    void Material::SetTexture(const index_string& name, const RCPtr<Texture>& value)
     {
         m_parameterValues[name].SetValue(value);
         m_isDirtyParameter = true;
@@ -330,7 +330,7 @@ namespace pulsar
         return it->second.AsVector();
     }
 
-    RCPtr<Texture2D> Material::GetTexture(const index_string& name)
+    RCPtr<Texture> Material::GetTexture(const index_string& name)
     {
         auto it = m_parameterValues.find(name);
         if (it == m_parameterValues.end())
@@ -398,7 +398,7 @@ namespace pulsar
                 *(Vector4f*)ptr = paramValue->AsVector();
                 break;
             }
-            case ShaderParameterType::Texture2D: {
+            case ShaderParameterType::Texture: {
                 if (!isUseDefault)
                 {
                     auto t = paramValue->AsTexture();

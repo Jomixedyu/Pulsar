@@ -1,0 +1,10 @@
+{
+    "Parameters": [
+        {
+            "Name": "_Image",
+            "Type": "Texture",
+            "Value": "7925438ae4736e4d93077b862a6d3b0e"
+        }
+    ],
+    "Shader": "05908250f2cd95459f3f03187001ebf3"
+}

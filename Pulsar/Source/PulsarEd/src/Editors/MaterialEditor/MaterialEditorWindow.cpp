@@ -66,9 +66,9 @@ namespace pulsared
                         objType = obj->GetType();
                         break;
                     }
-                    case ShaderParameterType::Texture2D: {
+                    case ShaderParameterType::Texture: {
                         auto tex = material->GetTexture(name);
-                        objType = Texture2D::StaticType();
+                        objType = Texture::StaticType();
                         obj = mkbox(ObjectPtrBase(tex.GetHandle()));
                         break;
                     }
@@ -90,9 +90,9 @@ namespace pulsared
                             material->SetVector4(name, {color.r, color.g, color.b, color.a});
                             break;
                         }
-                        case ShaderParameterType::Texture2D: {
+                        case ShaderParameterType::Texture: {
                             auto objptr = UnboxUtil::Unbox<ObjectPtrBase>(obj);
-                            RCPtr<Texture2D> tex = objptr.GetHandle();
+                            RCPtr<Texture> tex = objptr.GetHandle();
                             material->SetTexture(name, tex);
                             break;
                         }

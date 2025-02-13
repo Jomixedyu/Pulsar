@@ -19,6 +19,7 @@ namespace pulsar
         virtual int32_t GetHeight() const = 0;
         virtual Vector2i GetSize2di() const { return { this->GetWidth(), this->GetHeight() }; }
         virtual Vector2f GetSize2df() const { return Vector2f((float)this->GetWidth(), (float)this->GetHeight()); }
+        virtual std::shared_ptr<gfx::GFXTexture> GetGFXTexture() const { return nullptr; }
     protected:
     };
     DECL_PTR(Texture);

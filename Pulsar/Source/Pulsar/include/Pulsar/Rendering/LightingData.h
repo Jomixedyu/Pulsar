@@ -9,22 +9,17 @@ namespace pulsar
 {
     struct LightShaderParameter
     {
-        Vector3f WorldPosition;
-        Vector3f Direction;
-        Vector3f Color;
+        Vector4f WorldPosition;
+        Vector4f Direction;
+        Vector4f Color;
         float SourceRadius;
         float SoftSourceRadius;
         float FalloffExponent;
+        float _Padding0;
         Vector2f SpotAngles;
-        Vector2f _Padding0;
+        Vector2f _Padding1;
     };
-    struct LightData
-    {
-        int Id;
 
-    private:
-        LightShaderParameter Parameter{};
-    };
     class LightManager final
     {
     public:
@@ -33,7 +28,7 @@ namespace pulsar
         void AddLight(LightShaderParameter* lightShaderParameter);
         void RemoveLight(LightShaderParameter* lightShaderParameter);
         void MarkDirty(int id);
-        int GetId(LightShaderParameter* light) { return m_ptr2index[light]; }
+        int GetId(LightShaderParameter* light);
         void Update();
         int GetLightCount() const;
         const auto& GetDescriptorSet() const { return m_descriptorSet; }

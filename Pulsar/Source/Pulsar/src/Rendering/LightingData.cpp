@@ -52,11 +52,14 @@ namespace pulsar
     {
         int id = m_ptr2index[lightShaderParameter];
 
+        auto back = m_lightShaderParameters.back();
         m_lightShaderParameters[id] = m_lightShaderParameters.back();
         m_lightShaderParameters.pop_back();
 
         m_pendingBuffer[id] = m_pendingBuffer.back();
         m_pendingBuffer.pop_back();
+
+        m_ptr2index[back] = id;
 
         m_ptr2index.erase(lightShaderParameter);
         MarkDirty(id);
@@ -64,7 +67,19 @@ namespace pulsar
 
     void LightManager::MarkDirty(int id)
     {
+        if (id < 0)
+        {
+            return;
+        }
         m_dirtyList.push(id);
+    }
+    int LightManager::GetId(LightShaderParameter* light)
+    {
+        if (m_ptr2index.contains(light))
+        {
+            return m_ptr2index[light];
+        }
+        return -1;
     }
 
     void LightManager::Update()

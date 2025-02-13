@@ -5,6 +5,7 @@
 #include "ObjectBase.h"
 #include "Rendering/RenderObject.h"
 #include "SceneCaptureManager.h"
+#include "SelectionSet.h"
 #include "Simulate.h"
 
 namespace pulsar
@@ -56,7 +57,9 @@ namespace pulsar
 
         const string& GetWorldName() const { return m_name; }
 
-        virtual bool IsSelectedNode(const ObjectPtr<Node>& node) const { return false; }
+        bool IsSelectedNode(const ObjectPtr<Node>& node) const;
+        SelectionSet<Node>& GetSelection() { return m_selection; }
+        const SelectionSet<Node>& GetSelection() const { return m_selection; }
 
         ObjectPtr<Node> FindNodeByName(string_view name, bool includeInactive = false) const;
 
@@ -109,6 +112,8 @@ namespace pulsar
     protected:
         void UpdateWorldCBuffer();
     protected:
+        SelectionSet<Node> m_selection;
+    protected:
         PhysicsWorld2D* m_physicsWorld2D = nullptr;
         PhysicsWorld3D* m_physicsWorld3D = nullptr;
         LightManager*   m_lightManager = nullptr;
@@ -130,6 +135,7 @@ namespace pulsar
         array_list<SPtr<class WorldSubsystem>> m_subsystems;
 
         hash_map<int64_t, guid_t> m_elementIdMap;
+
 
         Ticker   m_ticker{};
         float    m_totalTime = 0;

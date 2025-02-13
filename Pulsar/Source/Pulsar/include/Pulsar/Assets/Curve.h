@@ -3,7 +3,7 @@
 
 namespace pulsar
 {
-    struct CurveKeyInfo
+    struct CurveKey
     {
         float X;
         float Y;
@@ -16,10 +16,13 @@ namespace pulsar
             return 0;
         }
 
-        array_list<CurveKeyInfo> Keys;
+        array_list<CurveKey> Keys;
     };
-    class Curve
+
+    class Curve : public AssetObject
     {
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::Curve, AssetObject);
+    public:
 
     };
 }

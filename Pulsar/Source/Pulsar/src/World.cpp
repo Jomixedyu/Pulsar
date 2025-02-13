@@ -141,6 +141,10 @@ namespace pulsar
         }
     }
 
+    bool World::IsSelectedNode(const ObjectPtr<Node>& node) const
+    {
+        return std::ranges::any_of(m_selection.GetSelection(), [&](auto& i){ return i == node; });
+    }
     ObjectPtr<Node> World::FindNodeByName(string_view name, bool includeInactive) const
     {
         for (auto& scene : m_scenes)

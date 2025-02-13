@@ -28,6 +28,9 @@ namespace pulsar
         Context.LinePoints.push_back(b);
     }
 
+    GizmosManager::GizmosManager() : m_enabledDraw(true)
+    {
+    }
     GizmosManager::GizmosManager(World* world)
         : m_world(world)
     {

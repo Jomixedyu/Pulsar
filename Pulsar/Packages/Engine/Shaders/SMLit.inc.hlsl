@@ -45,22 +45,6 @@ float3 FresnelSchlick(float cosTheta, float3 F0)
     return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
-const float3 lightPositions[3] = 
-{
-    float3(1.5, 1.5, -1.5),
-    float3(2, 2, -2),
-    float3(1.25, 1.25, -1.25),
-    float3(4.5, 4.5, -4.5)
-};
-const float3 lightColors[3] = 
-{
-    float3(1, 1, 1),
-    float3(1, 1, 1),
-    float3(1, 1, 1),
-    float3(1, 1, 1),
-};
-
-
 
 float3 kS_CookTorrance(float3 N, float3 V, float3 L, float D, float G, float3 F)
 {
@@ -90,7 +74,7 @@ float4 ShadingModel_Lit(
 
     //direction light
     {
-        float3 L = -WorldBuffer.WorldSpaceLightVector;
+        float3 L = -WorldBuffer.WorldSpaceLightVector.xyz;
         float3 H = normalize(V + L);
         float3 dirLightRadiance = WorldBuffer.WorldSpaceLightColor.xyz * WorldBuffer.WorldSpaceLightColor.w;
 
@@ -109,14 +93,20 @@ float4 ShadingModel_Lit(
         Lo += BRDF * dirLightRadiance * NdotL;
     }
     
-    for(int i = 0; i < 4; ++i) 
+    // for(int i = 0; i < 4; ++i) 
+    for(int i = 0; i < WorldBuffer.LightParameterCount; ++i) 
     {
+        
+        LightShaderParameter lightData = LightDataBuffer.Load(i);
+        float3 L = normalize(lightData.WorldPosition.xyz - v2f.WorldPosition.xyz);
+        float  distance = length(lightData.WorldPosition.xyz - v2f.WorldPosition.xyz);
 
-        float3 L = normalize(lightPositions[i] - v2f.WorldPosition.xyz);
+        // float3 L = normalize(lightPositions[i] - v2f.WorldPosition.xyz);
         float3 H = normalize(V + L);
-        float  distance = length(lightPositions[i] - v2f.WorldPosition.xyz);
+        // float  distance = length(lightPositions[i] - v2f.WorldPosition.xyz);
         float  attenuation = 1.0 / (distance * distance);
-        float3 radiance = lightColors[i] * attenuation;
+        // float3 radiance = lightColors[i] * attenuation;
+        float3 radiance = lightData.Color.xyz * lightData.Color.w * attenuation;
 
         float  D = DistributionGGX(N, H, attr.Roughness);   
         float  G = GeometrySmith(N, V, L, attr.Roughness);      

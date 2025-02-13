@@ -4,6 +4,7 @@
 #include "Pulsar/EngineAppInstance.h"
 
 #include "EdTools/EdTool.h"
+#include "EdTools/MoveEdTool.h"
 #include "EdTools/SelectorEdTool.h"
 #include <Pulsar/Scene.h>
 #include <PulsarEd/Components/Grid3DComponent.h>
@@ -69,15 +70,11 @@ namespace pulsared
     {
         return base::GetCurrentCamera();
     }
-    bool EditorWorld::IsSelectedNode(const ObjectPtr<Node>& node) const
-    {
-        return std::ranges::any_of(m_selection.GetSelection(), [&](auto& i){ return i == node; });
-    }
 
     void EditorWorld::OnWorldBegin()
     {
         base::OnWorldBegin();
-        SetTool(std::make_unique<SelectorEdTool>());
+        SetTool(std::make_unique<MoveEdTool>());
     }
     void EditorWorld::OnWorldEnd()
     {

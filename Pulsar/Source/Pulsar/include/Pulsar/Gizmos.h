@@ -43,6 +43,7 @@ namespace pulsar
     class GizmosManager final
     {
     public:
+        GizmosManager();
         GizmosManager(const GizmosManager&) = delete;
         GizmosManager(GizmosManager&&) = delete;
         explicit GizmosManager(class World* world);
@@ -67,7 +68,7 @@ namespace pulsar
 
     private:
         SPtr<LineRenderObject> m_lineRenderObject;
-        class World* m_world;
-        bool m_enabledDraw{};
+        class World* m_world = nullptr;
+        bool m_enabledDraw;
     };
 }
