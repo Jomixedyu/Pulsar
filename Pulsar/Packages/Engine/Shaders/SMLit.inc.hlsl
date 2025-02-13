@@ -3,6 +3,7 @@
 
 #include "MaterialAttributes.inc.hlsl"
 #include "Common.inc.hlsl"
+#include "MeshRenderer.inc.hlsl"
 
 const float PI = 3.14159265358979;
 
@@ -107,9 +108,10 @@ float4 ShadingModel_Lit(
         
         Lo += BRDF * dirLightRadiance * NdotL;
     }
-
+    
     for(int i = 0; i < 4; ++i) 
     {
+
         float3 L = normalize(lightPositions[i] - v2f.WorldPosition.xyz);
         float3 H = normalize(V + L);
         float  distance = length(lightPositions[i] - v2f.WorldPosition.xyz);
