@@ -1,0 +1,10 @@
+{
+    "ChannelCount": 3,
+    "CompressedFormat": "BitmapRGBA",
+    "IsCompressedNativeData": true,
+    "IsSRGB": false,
+    "Size": {
+        "x": 16,
+        "y": 16
+    }
+}
