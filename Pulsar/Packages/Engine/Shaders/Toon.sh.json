@@ -1,0 +1,19 @@
+{
+	"$schema": "ShaderSchema.json",
+	"CullMode": "Back",
+	"DepthTestEnable": true,
+	"DepthWriteEnable": true,
+	"DepthCompareOp": "Less",
+	"StencilTestEnable": false,
+	"RenderingType": "OpaqueDeferred",
+	"Properties": [
+		{
+			"Name": "_BaseColorMap",
+			"Type": "Texture"
+		},
+		{
+			"Name": "_RampAtlas",
+			"Type": "Texture"
+		}
+	]
+}

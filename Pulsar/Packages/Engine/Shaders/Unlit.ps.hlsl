@@ -12,7 +12,7 @@ MaterialAttributes SurfacePixelMain(InPixelAssembly surf)
 {
     MaterialAttributes attr = (MaterialAttributes)0;
 
-    attr.EmissiveColor = _BaseColorMap.Sample(_BaseColorMapSampler, surf.TexCoord0);
+    attr.EmissiveColor = _BaseColorMap.Sample(_BaseColorMapSampler, surf.TexCoord0).xyz;
 
     attr.ShadingModel = SHADING_MODEL_UNLIT;
 
