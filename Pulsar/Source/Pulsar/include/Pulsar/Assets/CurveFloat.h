@@ -10,9 +10,10 @@ namespace pulsar
         float GetValue(float X) const
         {
             return 0;
-            
         }
-
-        CurveData m_curveData;
+        size_t GetCurveCount() const override
+        {
+            return 1;
+        }
     };
 }

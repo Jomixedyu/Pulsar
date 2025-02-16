@@ -10,6 +10,7 @@ namespace pulsared
         DEFINE_ASSET_EDITOR(CurveLinearColor, true);
 
     public:
+
         void OnOpen() override;
         void OnClose() override;
 

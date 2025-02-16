@@ -25,6 +25,7 @@ namespace pulsared
     public:
 
         virtual ImGuiWindowFlags GetGuiWindowFlags() const override;
+        string_view GetWindowDisplayName() const override;
         AssetEditorWindow();
         virtual bool IsDirtyAsset() const;
         virtual string GetWindowName() const override;

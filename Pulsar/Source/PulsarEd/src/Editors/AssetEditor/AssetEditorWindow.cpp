@@ -41,9 +41,15 @@ namespace pulsared
     } // namespace
     ImGuiWindowFlags AssetEditorWindow::GetGuiWindowFlags() const
     {
-        return ImGuiWindowFlags_MenuBar 
-            | (IsDirtyAsset() ? ImGuiWindowFlags_UnsavedDocument : ImGuiWindowFlags_None)
-            | ImGuiWindowFlags_NoCollapse;
+        return ImGuiWindowFlags_MenuBar | (IsDirtyAsset() ? ImGuiWindowFlags_UnsavedDocument : ImGuiWindowFlags_None) | ImGuiWindowFlags_NoCollapse;
+    }
+    string_view AssetEditorWindow::GetWindowDisplayName() const
+    {
+        if (m_assetObject)
+        {
+            return m_assetObject->GetName();
+        }
+        return base::GetWindowDisplayName();
     }
     // namespace
     AssetEditorWindow::AssetEditorWindow()

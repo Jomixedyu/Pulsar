@@ -19,7 +19,11 @@ namespace pulsared
 
         auto windowType = GetValue(asset->GetType());
         if (!windowType)
+        {
+            Logger::Log("asset editor not found: " + asset->GetType()->GetShortName());
             return;
+        }
+
         
         for (auto& win : EditorWindowManager::GetOpeningWindows(windowType))
         {

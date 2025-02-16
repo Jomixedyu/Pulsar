@@ -31,7 +31,7 @@ namespace pulsared
         m_createDirectionalLight = false;
         base::OnOpen();
 
-        RCPtr<Texture2D> tex = m_assetObject;
+        RCPtr<Texture> tex = m_assetObject;
         tex->CreateGPUResource();
 
         m_ppMat = GetAssetManager()->LoadAsset<Material>("Engine/Materials/ImagePreview")->InstantiateAsset();
@@ -51,6 +51,7 @@ namespace pulsared
 
         m_enableGamma = true;
     }
+
     void TextureEditorWindow::OnClose()
     {
         base::OnClose();
@@ -159,7 +160,7 @@ namespace pulsared
 
     void TextureEditorWindow::OnDrawAssetPreviewUI(float dt)
     {
-        RCPtr<Texture2D> tex = m_assetObject;
+        RCPtr<Texture> tex = m_assetObject;
         auto width = tex->GetWidth();
         auto height = tex->GetHeight();
 
@@ -260,10 +261,10 @@ namespace pulsared
     {
         base::OnDrawAssetPropertiesUI(dt);
 
-        RCPtr<Texture2D> tex = m_assetObject;
+        RCPtr<Texture> tex = m_assetObject;
         const auto texSize = tex->GetSize2df();
 
-        if (PImGui::PropertyGroup("Texture2D"))
+        if (PImGui::PropertyGroup("Texture"))
         {
             bool changed = PImGui::ObjectFieldProperties(
                 BoxingObjectPtrBase::StaticType(),
