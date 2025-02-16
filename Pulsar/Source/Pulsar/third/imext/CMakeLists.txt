@@ -5,6 +5,11 @@ project(imext)
 add_library(${PROJECT_NAME}
         "ImGuizmo.h"
         "ImGuizmo.cpp"
+        "ImCurveEdit.h"
+        "ImCurveEdit.cpp"
+        "ImGradient.h"
+        "ImGradient.cpp"
+
         "ImGuiExt.h"
         "ImGuiExt.cpp"
 
