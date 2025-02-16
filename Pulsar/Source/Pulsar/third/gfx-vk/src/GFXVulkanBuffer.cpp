@@ -31,10 +31,15 @@ namespace gfx
 
     GFXVulkanBuffer::~GFXVulkanBuffer()
     {
-        if (this->IsValid())
+        if (m_hasData)
         {
-            this->Release();
+            BufferHelper::DestroyBuffer(m_app, m_vkBuffer, m_vkBufferMemory);
+            m_hasData = false;
         }
+        // if (this->IsValid())
+        // {
+        //     this->Release();
+        // }
     }
 
 
@@ -95,8 +100,11 @@ namespace gfx
         case GFXBufferUsage::ConstantBuffer:
             vkUsage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
             break;
+        case GFXBufferUsage::StructuredBuffer:
+            vkUsage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+            break;
         default:
-            vkUsage = 0;
+            assert(false);
             break;
         }
         return vkUsage;
@@ -104,7 +112,7 @@ namespace gfx
 
     bool GFXVulkanBuffer::IsGpuLocalMemory() const
     {
-        return m_usage != GFXBufferUsage::ConstantBuffer;
+        return m_usage != GFXBufferUsage::ConstantBuffer && m_usage != GFXBufferUsage::StructuredBuffer;
     }
 
     bool GFXVulkanBuffer::IsValid() const

@@ -34,7 +34,7 @@ namespace pulsar
             m_camDescriptorLayout = _CameraDescriptorLayout.lock();
         }
 
-        m_cameraDataBuffer = Application::GetGfxApp()->CreateBuffer(gfx::GFXBufferUsage::ConstantBuffer, sizeof(TargetCBuffer));
+        m_cameraDataBuffer = Application::GetGfxApp()->CreateBuffer(gfx::GFXBufferUsage::ConstantBuffer, sizeof(RenderTargetShaderParameter));
         m_cameraDescriptorSet = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_camDescriptorLayout);
         m_cameraDescriptorSet->AddDescriptor("Target", 0)->SetConstantBuffer(m_cameraDataBuffer.get());
         m_cameraDescriptorSet->Submit();
@@ -136,7 +136,7 @@ namespace pulsar
     {
         m_debugViewMat = GetViewMat();
 
-        TargetCBuffer target{};
+        RenderTargetShaderParameter target{};
         target.MatrixV = GetViewMat();
         target.MatrixP = GetProjectionMat();
         target.MatrixVP = target.MatrixP * target.MatrixV;

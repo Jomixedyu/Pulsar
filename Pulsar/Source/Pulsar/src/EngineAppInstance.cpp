@@ -2,8 +2,10 @@
 #include "Assets/StaticMesh.h"
 #include "Components/CameraComponent.h"
 #include "Components/StaticMeshRendererComponent.h"
+#include "Rendering/LightingData.h"
 #include "Rendering/RenderObject.h"
 #include "Scene.h"
+
 #include <Pulsar/Application.h>
 #include <Pulsar/EngineAppInstance.h>
 #include <Pulsar/ImGuiImpl.h>
@@ -83,6 +85,7 @@ namespace pulsar
                         descriptorSetLayouts.push_back(refData.lock()->GetDescriptorSetLayout());
                     }
                     descriptorSetLayouts.push_back(world->GetWorldDescriptorSet()->GetDescriptorSetLayout());
+                    descriptorSetLayouts.push_back(world->GetLightManager()->GetDescriptorSetLayout());
                     descriptorSetLayouts.push_back(batch.DescriptorSetLayout);
                     if (batch.Material->GetGfxDescriptorSet()->GetDescriptorCount() != 0)
                     {
@@ -98,17 +101,20 @@ namespace pulsar
                         // bind descriptor sets
                         {
                             array_list<gfx::GFXDescriptorSet*> descriptorSets;
-                            // setup . per cam
+                            // setup 0. per cam
                             for (auto& refData : targetFBO->RefData)
                             {
                                 descriptorSets.push_back(refData.lock().get());
                             }
-                            // setup . world
+                            // setup 1. world
                             descriptorSets.push_back(world->GetWorldDescriptorSet().get());
-                            // setup . per renderer
+                            // setup 2. light data
+                            descriptorSets.push_back(world->GetLightManager()->GetDescriptorSet().get());
+                            // setup 3. per renderer
                             descriptorSets.push_back(element.ModelDescriptor.get());
-                            // setup . per material
+                            // setup 4. per material
                             const auto materialDesc = batch.Material->GetGfxDescriptorSet().get();
+
                             if(materialDesc->GetDescriptorCount() != 0)
                             {
                                 descriptorSets.push_back(materialDesc);

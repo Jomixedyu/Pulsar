@@ -2,9 +2,9 @@
 #include "SurfacePS.inc.hlsl"
 
 
-Texture2D _BaseColorMap : register(t0, space3);
+Texture2D _BaseColorMap : register(t0, USER_DESCSET);
 
-SamplerState _BaseColorMapSampler  : register(s0, space3);
+SamplerState _BaseColorMapSampler  : register(s0, USER_DESCSET);
 
 const float2 invAtan = float2(0.1591, 0.3183);
 float2 SampleSphericalMap(float3 v)

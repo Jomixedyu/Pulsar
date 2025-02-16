@@ -18,6 +18,7 @@ namespace pulsar
         Color4f Color{};
         Vector3f Vector{};
     };
+
     class SkyLightSceneInfo
     {
     public:
@@ -121,8 +122,8 @@ namespace pulsar
     private:
         SceneRuntimeEnvironment m_runtimeEnvironment{};
 
-        CORELIB_REFL_DECL_FIELD(cubemap_);
-        CubeMapAsset_ref cubemap_;
+        CORELIB_REFL_DECL_FIELD(m_cubemap);
+        CubeMapAsset_ref m_cubemap;
 
         World* m_runtimeWorld = nullptr;
 

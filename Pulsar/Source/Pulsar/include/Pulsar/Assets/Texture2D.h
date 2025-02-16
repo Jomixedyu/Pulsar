@@ -6,19 +6,7 @@
 #include <gfx/GFXTexture.h>
 
 
-namespace pulsar
-{
-    CORELIB_DEF_ENUM(AssemblyObject_pulsar, pulsar,
-        TextureCompressionFormat,
-        ColorSRGB_Compressed,
-        BitmapRGBA,
-        Gray,
-        NormalMap_Compressed,
-        HDR_Compressed
-        );
 
-}
-CORELIB_DECL_BOXING(pulsar::TextureCompressionFormat, pulsar::BoxingTextureCompressionFormat);
 
 namespace pulsar
 {
@@ -48,7 +36,7 @@ namespace pulsar
         void Serialize(AssetSerializer* s) override;
         virtual int32_t GetWidth() const override { return m_textureSize.x; }
         virtual int32_t GetHeight() const override { return m_textureSize.y; }
-        static hash_map<TextureCompressionFormat, gfx::GFXTextureFormat>* StaticGetFormatMapping(OSPlatform platform);
+
     public:
         void OnDestroy() override;
     protected:
@@ -63,15 +51,15 @@ namespace pulsar
         void DestroyGPUResource() override;
         bool IsCreatedGPUResource() const override;
 
-        std::shared_ptr<gfx::GFXTexture> GetGFXTexture() const { return m_tex; }
+        std::shared_ptr<gfx::GFXTexture> GetGFXTexture() const override { return m_tex; }
 
     public:
         bool IsSRGB() const { return m_isSRGB; }
         void SetIsSRGB(bool value) { m_isSRGB = value; }
-        auto GetCompressedFormat() const { return m_compressionFormat; }
-        size_t GetOriginCompressedBinarySize() const { return m_originMemory.size(); }
-        size_t GetRawBinarySize() const { return m_cachedUncompressedRawSize; }
-        size_t GetNativeBinarySize() const { return m_cachedNativeSize; }
+        TextureCompressionFormat GetCompressedFormat() const override { return m_compressionFormat; }
+        size_t GetOriginCompressedBinarySize() const override { return m_originMemory.size(); }
+        size_t GetRawBinarySize() const override { return m_cachedUncompressedRawSize; }
+        size_t GetNativeBinarySize() const override { return m_cachedNativeSize; }
     protected:
 
         CORELIB_REFL_DECL_FIELD(m_isSRGB);
@@ -83,7 +71,6 @@ namespace pulsar
         size_t m_cachedUncompressedRawSize{};
         size_t m_cachedNativeSize{};
 
-        gfx::GFXSamplerConfig m_samplerConfig{};
         bool m_enableReadWrite{};
         gfx::GFXTextureFormat m_format{};
 

@@ -59,17 +59,6 @@ namespace pulsar
         }
     }
 
-    hash_map<TextureCompressionFormat, gfx::GFXTextureFormat>* Texture2D::StaticGetFormatMapping(OSPlatform platform)
-    {
-        static hash_map<TextureCompressionFormat, gfx::GFXTextureFormat> map{
-                {TextureCompressionFormat::ColorSRGB_Compressed, gfx::GFXTextureFormat::BC3_SRGB},
-                {TextureCompressionFormat::BitmapRGBA, gfx::GFXTextureFormat::R8G8B8A8_UNorm},
-                {TextureCompressionFormat::Gray, gfx::GFXTextureFormat::R8_UNorm},
-                {TextureCompressionFormat::NormalMap_Compressed, gfx::GFXTextureFormat::BC5_UNorm},
-                {TextureCompressionFormat::HDR_Compressed, gfx::GFXTextureFormat::R32G32B32A32_SFloat}};
-                // {TextureCompressionFormat::HDR_Compressed, gfx::GFXTextureFormat::BC6H_RGB_SFloat}};
-        return &map;
-    }
     void Texture2D::OnDestroy()
     {
         base::OnDestroy();
@@ -95,7 +84,9 @@ namespace pulsar
         base::PostEditChange(info);
         auto name = info->GetName();
         if (name == NAMEOF(m_compressionFormat) ||
-            name == NAMEOF(m_isSRGB))
+            name == NAMEOF(m_isSRGB) ||
+            name == NAMEOF(m_samplerFilter) ||
+            name == NAMEOF(m_samplerAddressMode))
         {
             if (IsCreatedGPUResource())
             {
@@ -151,12 +142,16 @@ namespace pulsar
 
         m_isCreatedGPUResource = true;
 
+        SamplerConfig samplerConfig;
+        samplerConfig.Filter = GetSamplerFilter();
+        samplerConfig.AddressMode = GetSamplerAddressMode();
+
         m_tex = Application::GetGfxApp()->CreateTexture2DFromMemory(
             data.data(),
             data.size(),
             m_textureSize.x, m_textureSize.y,
             targetGfxFormat,
-            m_samplerConfig);
+            samplerConfig);
 
         return true;
     }

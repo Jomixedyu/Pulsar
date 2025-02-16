@@ -1,5 +1,5 @@
 #pragma once
-#include "Assets/TextureCube.h"
+#include "Assets/RenderTextureCube.h"
 #include "SceneCaptureComponent.h"
 
 namespace pulsar
@@ -15,11 +15,16 @@ namespace pulsar
 
         void Render(array_list<RenderCapturePassInfo*>& passes) override;
 
-        void SetTexture(const RCPtr<TextureCube>& tex);
-        RCPtr<TextureCube> GetTexture() const { return m_textureCube; }
+        void PostEditChange(FieldInfo* info) override;
+
+    public:
+        void SetTexture(const RCPtr<RenderTextureCube>& tex);
+        RCPtr<RenderTextureCube> GetTexture() const { return m_textureCube; }
 
     protected:
         RenderCapturePassInfo m_cube[6]{};
-        RCPtr<TextureCube> m_textureCube;
+
+        CORELIB_REFL_DECL_FIELD(m_textureCube)
+        RCPtr<RenderTextureCube> m_textureCube;
     };
 }

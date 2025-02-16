@@ -20,10 +20,10 @@ namespace pulsar
         virtual Shape3DType GetShapeType() const = 0;
 
         CORELIB_REFL_DECL_FIELD(m_halfSize);
-        Vector3f m_halfSize{0.5f,0.5f,0.5f};
+        Vector3f m_halfSize {0.5f, 0.5f, 0.5f};
 
         CORELIB_REFL_DECL_FIELD(m_radius);
-        float m_radius{0.5f};
+        float m_radius { 0.5f };
     };
     DECL_PTR(Shape3DComponent);
 }

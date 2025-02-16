@@ -5,6 +5,7 @@
 #include "ObjectBase.h"
 #include "Rendering/RenderObject.h"
 #include "SceneCaptureManager.h"
+#include "SelectionSet.h"
 #include "Simulate.h"
 
 namespace pulsar
@@ -17,6 +18,7 @@ namespace pulsar
     class PhysicsWorld2D;
     class PhysicsWorld3D;
     class WorldSubsystem;
+    class LightManager;
 
     class World
     {
@@ -55,7 +57,9 @@ namespace pulsar
 
         const string& GetWorldName() const { return m_name; }
 
-        virtual bool IsSelectedNode(const ObjectPtr<Node>& node) const { return false; }
+        bool IsSelectedNode(const ObjectPtr<Node>& node) const;
+        SelectionSet<Node>& GetSelection() { return m_selection; }
+        const SelectionSet<Node>& GetSelection() const { return m_selection; }
 
         ObjectPtr<Node> FindNodeByName(string_view name, bool includeInactive = false) const;
 
@@ -102,15 +106,18 @@ namespace pulsar
         SceneCaptureManager&  GetCaptureManager() { return m_captureManager; }
         GizmosManager&        GetGizmosManager() { return m_gizmosManager; }
         SimulateManager&      GetSimulateManager() { return m_simulateManager; }
+        PhysicsWorld2D*       GetPhysicsWorld2D() const { return m_physicsWorld2D; }
+        PhysicsWorld3D*       GetPhysicsWorld3D() const { return m_physicsWorld3D; }
+        LightManager*         GetLightManager() const { return m_lightManager; }
     protected:
         void UpdateWorldCBuffer();
-    public:
-        void            SetDefaultMaterial(const RCPtr<Material>& value) { m_defaultMaterial = value; }
-        RCPtr<Material> GetDefaultMaterial() const { return m_defaultMaterial; }
-
-        PhysicsWorld2D* physicsWorld2D = nullptr;
-        PhysicsWorld3D* physicsWorld3D = nullptr;
     protected:
+        SelectionSet<Node> m_selection;
+    protected:
+        PhysicsWorld2D* m_physicsWorld2D = nullptr;
+        PhysicsWorld3D* m_physicsWorld3D = nullptr;
+        LightManager*   m_lightManager = nullptr;
+
         RCPtr<Material>                       m_defaultMaterial;
         hash_set<rendering::RenderObject_sp>  m_renderObjects;
         array_list<RCPtr<Scene>>              m_scenes;
@@ -129,9 +136,10 @@ namespace pulsar
 
         hash_map<int64_t, guid_t> m_elementIdMap;
 
-        Ticker m_ticker{};
-        float  m_totalTime = 0;
-        string m_name;
-        bool m_isPlaying{};
+
+        Ticker   m_ticker{};
+        float    m_totalTime = 0;
+        string   m_name;
+        bool     m_isPlaying{};
     };
 }

@@ -7,6 +7,9 @@
 
 namespace pulsar
 {
+
+
+
     static void CreateCircleLines(array_list<StaticMeshVertex>& verts, int segmentCount, float radius, Color4f color)
     {
         auto theta = jmath::Radians(360.f / (float)segmentCount);
@@ -54,11 +57,19 @@ namespace pulsar
     {
         m_canDrawGizmo = true;
         base::BeginComponent();
+
+        OnTransformChanged();
+        OnLightColorChanged();
+        OnRadiusChanged();
+
+        GetWorld()->GetLightManager()->AddLight(&m_runtimeLightData);
+
     }
 
     void PointLightComponent::EndComponent()
     {
         base::EndComponent();
+        GetWorld()->GetLightManager()->RemoveLight(&m_runtimeLightData);
     }
 
     BoxSphereBounds3f PointLightComponent::GetBoundsWS()
@@ -86,11 +97,28 @@ namespace pulsar
     void PointLightComponent::OnTransformChanged()
     {
         base::OnTransformChanged();
+        m_runtimeLightData.WorldPosition = GetTransform()->GetWorldPosition();
+        MarkRenderingDirty();
     }
 
     void PointLightComponent::OnRadiusChanged()
     {
+        base::OnLightColorChanged();
+        m_runtimeLightData.SourceRadius = m_radius;
+        MarkRenderingDirty();
+    }
 
+    void PointLightComponent::OnLightColorChanged()
+    {
+        base::OnLightColorChanged();
+        m_runtimeLightData.Color = Vector4f(m_lightColor.r, m_lightColor.g, m_lightColor.b, m_intensity);
+        MarkRenderingDirty();
+    }
+    void PointLightComponent::OnIntensityChanged()
+    {
+        base::OnIntensityChanged();
+        m_runtimeLightData.Color = Vector4f(m_lightColor.r, m_lightColor.g, m_lightColor.b, m_intensity);
+        MarkRenderingDirty();
     }
 
     void PointLightComponent::PostEditChange(FieldInfo* info)

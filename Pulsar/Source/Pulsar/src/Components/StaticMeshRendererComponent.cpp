@@ -240,9 +240,13 @@ namespace pulsar
 
         OnMaterialChanged();
     }
-    size_t StaticMeshRendererComponent::AddMaterial()
+    size_t StaticMeshRendererComponent::AddMaterial(RCPtr<Material> material)
     {
         ResizeMaterials(m_materials->size() + 1);
+        if (material)
+        {
+            SetMaterial((int)m_materialsSize - 1, material);
+        }
         return m_materialsSize - 1;
     }
     void StaticMeshRendererComponent::RemoveMaterial(size_t index)

@@ -1,7 +1,9 @@
 #include "Editors/Editor.h"
 
+#include "Editors/EditorWindow.h"
 #include "Menus/Menu.h"
 #include "Menus/MenuEntrySubMenu.h"
+#include "Windows/PanelWindow.h"
 
 namespace pulsared
 {

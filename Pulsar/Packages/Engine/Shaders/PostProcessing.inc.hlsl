@@ -2,6 +2,8 @@
 #define _POST_PROCESS_INC
 #include "Common.inc.hlsl"
 
+#define USER_DESCSET space3
+
 Texture2D PP_InColor    : register(t0, space2);
 Texture2D PP_InDepth    : register(t1, space2);
 

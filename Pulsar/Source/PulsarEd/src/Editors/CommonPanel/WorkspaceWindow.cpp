@@ -179,10 +179,9 @@ namespace pulsared
             const ImGuiPayload* payload = ImGui::GetDragDropPayload();
             string dragType;
 
-            if(node->IsFolder && payload->DataType == ObjectPtrDragInfo::Name)
+            if (node->IsFolder && payload->DataType == ObjectPtrDragInfo::Name)
             {
                 const auto dragData = static_cast<ObjectPtrDragInfo*>(payload->Data);
-
 
                 if ((payload = ImGui::AcceptDragDropPayload(ObjectPtrDragInfo::Name.data())))
                 {
@@ -208,6 +207,10 @@ namespace pulsared
         }
     }
 
+    ImGuiWindowFlags WorkspaceWindow::GetGuiWindowFlags() const
+    {
+        return ImGuiWindowFlags_MenuBar;
+    }
     void WorkspaceWindow::OnOpen()
     {
         base::OnOpen();

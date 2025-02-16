@@ -19,9 +19,12 @@ namespace pulsar
         void SetRadius(float value);
     protected:
         void OnDrawGizmo(GizmoPainter* painter, bool selected) override;
-        void OnTransformChanged() override;
 
+        void OnTransformChanged() override;
         void OnRadiusChanged();
+        void OnLightColorChanged() override;
+        void OnIntensityChanged() override;
+
         void PostEditChange(FieldInfo* info) override;
 
         CORELIB_REFL_DECL_FIELD(m_radius);

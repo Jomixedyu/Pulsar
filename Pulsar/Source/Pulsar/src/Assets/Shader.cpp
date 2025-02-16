@@ -167,7 +167,7 @@ namespace pulsar
             }
             break;
         }
-        case ShaderParameterType::Texture2D: {
+        case ShaderParameterType::Texture: {
             auto handle = ObjectHandle::parse(value);
             RCPtr<Texture2D> tex;
             if (handle.is_empty())

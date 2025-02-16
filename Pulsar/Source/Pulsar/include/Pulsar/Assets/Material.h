@@ -47,12 +47,12 @@ namespace pulsar
         void ClearUnusedParameterValue();
         void SetIntScalar(const index_string& name, int value);
         void SetFloat(const index_string& name, float value);
-        void SetTexture(const index_string& name, const RCPtr<Texture2D>& value);
+        void SetTexture(const index_string& name, const RCPtr<Texture>& value);
         void SetVector4(const index_string& name, const Vector4f& value);
         int GetIntScalar(const index_string& name);
         float GetScalar(const index_string& name);
         Vector4f GetVector4(const index_string& name);
-        RCPtr<Texture2D> GetTexture(const index_string& name);
+        RCPtr<Texture> GetTexture(const index_string& name);
 
         void SubmitParameters(bool force = false);
 

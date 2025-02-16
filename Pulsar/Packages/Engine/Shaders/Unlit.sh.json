@@ -9,7 +9,7 @@
 	"Properties": [
 		{
 			"Name": "_BaseColorMap",
-			"Type": "Texture2D"
+			"Type": "Texture"
 		}
 	]
 }

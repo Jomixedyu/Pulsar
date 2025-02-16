@@ -54,7 +54,9 @@ namespace pulsared
                 auto entry = mksptr(new MenuEntryButton("Create Node"));
                 menu->AddEntry(entry);
                 entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
-                    World::Current()->GetResidentScene()->NewNode("New Node");
+                    auto newNode = World::Current()->GetResidentScene()->NewNode("New Node");
+                    World::Current()->GetSelection().Clear();
+                    World::Current()->GetSelection().Select(newNode);
                 });
             }
 

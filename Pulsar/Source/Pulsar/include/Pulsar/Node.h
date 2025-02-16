@@ -16,17 +16,6 @@ namespace pulsar
 {
     using namespace jxcorlib;
 
-
-    using MessageType_t = uint32_t;
-    namespace MessageType
-    {
-        constexpr inline MessageType_t Initialize = 1;
-        constexpr inline MessageType_t Destory = 2;
-        constexpr inline MessageType_t Update = 3;
-
-        constexpr inline MessageType_t Custom = 1000;
-    }
-
     template<typename T>
     concept baseof_component_concept = std::is_base_of<Component, T>::value;
 
@@ -94,7 +83,7 @@ namespace pulsar
         void EndPlay();
 
     public: //components
-        template<typename T>
+        template<baseof_component_concept T>
         ObjectPtr<T>         AddComponent() { return this->AddComponent(cltypeof<T>()); }
         ObjectPtr<Component> AddComponent(Type* type);
         void                 DestroyComponent(ObjectPtr<Component> component);

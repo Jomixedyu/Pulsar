@@ -1,17 +1,23 @@
 ﻿#include "EditorAppInstance.h"
 #include "EditorAssetManager.h"
 #include "EditorRenderPipeline.h"
+#include "Editors/EditorWindow.h"
 #include "Editors/SceneEditor/SceneEditor.h"
-#include "Pulsar/Components/DirectionalLightComponent.h"
-#include "Pulsar/Components/StaticMeshRendererComponent.h"
-#include "Pulsar/Prefab.h"
+#include "Pulsar/Components/PointLightComponent.h"
+
 #include "Shaders/EditorShader.h"
 #include "Utils/PrefabUtil.h"
 #include <CoreLib.Serialization/JsonSerializer.h>
 #include <CoreLib/File.h>
 #include <Pulsar/Application.h>
+#include <Pulsar/Components/BoxShape3DComponent.h>
+#include <Pulsar/Components/DirectionalLightComponent.h>
+#include <Pulsar/Components/SphereShape3DComponent.h>
+#include <Pulsar/Components/StaticMeshRendererComponent.h>
 #include <Pulsar/ImGuiImpl.h>
 #include <Pulsar/Logger.h>
+#include <Pulsar/Physics3D/RigidBodyDynamics3DComponent.h>
+#include <Pulsar/Prefab.h>
 #include <Pulsar/Scene.h>
 #include <Pulsar/World.h>
 #include <PulsarEd/AssetDatabase.h>
@@ -48,6 +54,10 @@ namespace pulsared
         Application::inst()->QuittingEvents.Invoke();
     }
 
+    void EditorAppInstance::OnCreateEditors()
+    {
+        m_editors.push_back(std::make_unique<SceneEditor>());
+    }
     const char* EditorAppInstance::AppType()
     {
         return "editor";
@@ -82,6 +92,70 @@ namespace pulsared
         return std::filesystem::current_path();
     }
 
+    namespace ShapeMeshUtils
+    {
+        ObjectPtr<Node> CreateCube(
+            RCPtr<Scene> scene,
+            string name = "Node",
+            RCPtr<Material> material = nullptr,
+            bool dynamicBody = false,
+            Vector3f position = Vector3f(),
+            Vector3f rotation = Vector3f(),
+            Vector3f scale = Vector3f(1.0f, 1.0f, 1.0f))
+        {
+            if (material == nullptr)
+            {
+                material = GetAssetManager()->LoadAsset<Material>("Engine/Materials/Lambert", true);
+            }
+            auto cube = GetAssetManager()->LoadAsset<StaticMesh>("Engine/Shapes/Cube", true);
+
+            auto node = scene->NewNode(name);
+            node->AddComponent<BoxShape3DComponent>();
+            auto body = node->AddComponent<RigidBodyDynamics3DComponent>();
+            if (dynamicBody)
+            {
+                body->SetMode(RigidBody3DMode::Dynamic);
+            }
+            auto comp = node->AddComponent<StaticMeshRendererComponent>();
+            comp->SetStaticMesh(cube);
+            comp->SetMaterial(0, material);
+            node->GetTransform()->SetPosition(position);
+            node->GetTransform()->SetEuler(rotation);
+            node->GetTransform()->SetScale(scale);
+            return node;
+        }
+        ObjectPtr<Node> CreateSphere(
+            RCPtr<Scene> scene,
+            string name = "Node",
+            RCPtr<Material> material = nullptr,
+            bool dynamicBody = false,
+            Vector3f position = Vector3f(),
+            Vector3f rotation = Vector3f(),
+            Vector3f scale = Vector3f(1.0f, 1.0f, 1.0f))
+        {
+            auto sphere = GetAssetManager()->LoadAsset<StaticMesh>("Engine/Shapes/Sphere", true);
+            if (material == nullptr)
+            {
+                material = GetAssetManager()->LoadAsset<Material>("Engine/Materials/Lambert", true);
+            }
+
+            auto node = scene->NewNode(name);
+            node->AddComponent<SphereShape3DComponent>();
+            auto body = node->AddComponent<RigidBodyDynamics3DComponent>();
+            if (dynamicBody)
+            {
+                body->SetMode(RigidBody3DMode::Dynamic);
+            }
+            auto comp = node->AddComponent<StaticMeshRendererComponent>();
+            comp->SetStaticMesh(sphere);
+            comp->SetMaterial(0, material);
+            node->GetTransform()->SetPosition(position);
+            node->GetTransform()->SetEuler(rotation);
+            node->GetTransform()->SetScale(scale);
+            return node;
+        }
+    }
+
     void EditorAppInstance::OnPreInitialize(gfx::GFXGlobalConfig* config)
     {
         using namespace std::filesystem;
@@ -114,34 +188,52 @@ namespace pulsared
         Logger::Log("pre intialized");
     }
 
-    static void _Test()
+    static void SetupDefaultResidentScene()
     {
-        auto vertexColorMat = GetAssetManager()->LoadAsset<Material>("Engine/Materials/VertexColor", true);
+        auto scene = World::Current()->GetResidentScene();
+        // light
         {
-            auto dlight = World::Current()->GetResidentScene()->NewNode("Directional Light");
+            auto dlight = scene->NewNode("Directional Light");
             dlight->AddComponent<DirectionalLightComponent>();
-
             dlight->GetTransform()->TranslateRotateEuler({-3,3,-3}, {45,45,0});
         }
+        // sky
+        // if (0)
+        {
+            auto skySphere = scene->NewNode("Sky Sphere");
+            skySphere->GetTransform()->SetScale({500,500,500});
+            auto sphere = GetAssetManager()->LoadAsset<StaticMesh>(BuiltinAsset::Shapes_Sphere);
+            auto renderer = skySphere->AddComponent<StaticMeshRendererComponent>();
+            renderer->SetStaticMesh(sphere);
+            renderer->SetMaterial(0, GetAssetManager()->LoadAsset<Material>("Engine/Materials/SkySphere"));
+        }
+        // default scene
+        auto cube = GetAssetManager()->LoadAsset<StaticMesh>("Engine/Shapes/Cube", true);
+        auto sphere = GetAssetManager()->LoadAsset<StaticMesh>("Engine/Shapes/Sphere", true);
+        auto gridMat = GetAssetManager()->LoadAsset<Material>("Engine/Materials/WorldGrid", true);
+        auto litMat = GetAssetManager()->LoadAsset<Material>("Engine/Materials/Lit", true);
 
-        array_list<StaticMeshSection> sections;
-        auto& section = sections.emplace_back();
-        StaticMeshVertex vert0{};
-        vert0.Position = {0,0.5,0};
-        StaticMeshVertex vert1{};
-        vert1.Position = {1,0,0};
-        StaticMeshVertex vert2{};
-        vert2.Position = {0,0,3};
+        {
+            ShapeMeshUtils::CreateCube(scene, "floor", gridMat, false, {0, -0.25f, 0},{}, { 10.f, 0.5f, 10.f});
+            ShapeMeshUtils::CreateCube(scene, "cube", litMat,true, {-2.f,0.5f,2.f},{0.0f, -35.0f,0.0f});
+            ShapeMeshUtils::CreateCube(scene, "cube", litMat,true, {0.f,0.5f,2.f},{0.0f, -10.0f,0.0f});
+            ShapeMeshUtils::CreateCube(scene, "cube", litMat, true, {-0.45f, 1.5f, 2.f}, {0.0f, -40.0f, 0.0f});
+            ShapeMeshUtils::CreateCube(scene, "cube", litMat, true, {-1.65f, 1.25f, 2.f}, {0.0f, -10.0f, 0.0f}, {0.5f, 0.5f, 0.5f});
+            ShapeMeshUtils::CreateSphere(scene, "sphere", litMat, true, {-0.3f, 5.f, 1.3f});
 
-        section.Vertex.push_back(vert0);
-        section.Vertex.push_back(vert1);
-        section.Vertex.push_back(vert2);
-        section.Indices.push_back(0);
-        section.Indices.push_back(1);
-        section.Indices.push_back(2);
+        }
+        {
+            auto gamma = GetAssetManager()->LoadAsset<Material>("Engine/Materials/GammaCorrection", true);
+            World::Current()->GetCurrentCamera()->AddPostProcess(gamma);
+        }
+        {
+            auto p1 = scene->NewNode("PointLight");
+            auto light = p1->AddComponent<PointLightComponent>();
+            light->SetColor(Color4f(1,0.2,0.2));
+            light->SetIntensity(14);
+            light->GetTransform()->SetPosition({-1.7f,2,0});
+        }
 
-        auto sm = StaticMesh::StaticCreate("aa", std::move(sections), {});
-        World::Current()->GetResidentScene()->NewNode("sm")->AddComponent<StaticMeshRendererComponent>()->SetStaticMesh(sm);
     }
 
     static void _RegisterIcon(Type* type, string_view path)
@@ -171,7 +263,11 @@ namespace pulsared
     static void PreCompileShaders()
     {
         array_list<string_view> PreCompileShaderPaths = {
-            "Engine/Shaders/Missing"
+            "Engine/Shaders/Missing",
+            "Engine/Shaders/WorldGrid",
+            "Engine/Shaders/Lambert",
+            "Engine/Shaders/Unlit",
+            "Engine/Shaders/VertexColor",
         };
         if (PreCompileShaderPaths.empty())
         {
@@ -181,16 +277,19 @@ namespace pulsared
         {
             if (std::ranges::contains(PreCompileShaderPaths, element))
             {
+                std::erase(PreCompileShaderPaths, element);
                 auto asset = cref_cast<Shader>(AssetDatabase::LoadAssetAtPath(element));
                 assert(asset);
                 ShaderCompiler::CompileShader(asset.GetPtr(), {gfx::GFXApi::Vulkan}, {}, {});
             }
         }
+        assert(PreCompileShaderPaths.empty());
     }
 
     void EditorAppInstance::OnInitialized()
     {
         m_assetManager = new EditorAssetManager;
+        OnCreateEditors();
 
         // search package path
         AssetDatabase::Initialize();
@@ -200,6 +299,7 @@ namespace pulsared
         AssetDatabase::AddPackage("Engine");
         AssetDatabase::AddPackage("Editor");
 
+        Logger::Log("precompile shaders...");
         // recompile obsolete shaders
         PreCompileShaders();
 
@@ -209,14 +309,6 @@ namespace pulsared
         edWorld->GetCurrentCamera()->GetTransform()->GetParent()->SetEuler({45.f,-45,0});
 
         m_world = edWorld;
-        // {
-        //     auto skySphere = edWorld->GetResidentScene()->NewNode("Sky Sphere");
-        //     skySphere->GetTransform()->SetScale({500,500,500});
-        //     auto sphere = GetAssetManager()->LoadAsset<StaticMesh>(BuiltinAsset::Shapes_Sphere);
-        //     auto renderer = skySphere->AddComponent<StaticMeshRendererComponent>();
-        //     renderer->SetStaticMesh(sphere);
-        //     renderer->SetMaterial(0, GetAssetManager()->LoadAsset<Material>("Engine/Materials/SkySphere"));
-        // }
 
         auto renderPipeline = new EditorRenderPipeline{m_world};
 
@@ -242,9 +334,6 @@ namespace pulsared
         _RegisterIcon(cltypeof<ObjectBase>(), "Editor/Icons/object.png");
         _RegisterIcon("WorkspaceWindow.Dirty", "Editor/Icons/Star.png");
 
-        // InitBasicMenu();
-
-
 
         Logger::Log("initialize subsystems");
 
@@ -252,14 +341,14 @@ namespace pulsared
         Logger::Log("initialize editor window manager");
         EditorWindowManager::Initialize();
 
-        auto se = new SceneEditor;
-        se->Initialize();
-        se->CreateEditorWindow()->Open();
-
-        // _InitWindowMenu();
+        for (auto& editor : m_editors)
+        {
+            editor->Initialize();
+        }
+        m_editors[0]->CreateEditorWindow()->Open();
 
         Workspace::OpenWorkspace(_SearchUpFolder("Project") / "Project.peproj");
-        // _Test();
+        SetupDefaultResidentScene();
 
         uinput::InputManager::GetInstance()->Initialize();
     }
@@ -267,6 +356,12 @@ namespace pulsared
     void EditorAppInstance::OnTerminate()
     {
         uinput::InputManager::GetInstance()->Terminate();
+
+        for (auto& editor : m_editors)
+        {
+            editor->Terminate();
+        }
+        m_editors.clear();
 
         PrefabUtil::ClosePrefabMode();
         World::Reset(nullptr);

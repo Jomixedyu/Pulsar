@@ -52,7 +52,7 @@ struct OutPixelAssembly
 };
 
 
-struct TargetCBufferStruct //512
+struct RenderTargetShaderParameter //512
 { 
     //256
     float4x4 MatrixV;
@@ -71,20 +71,20 @@ struct TargetCBufferStruct //512
     float4     _Padding2;
     float4x4   _Padding3;
 };
-struct WorldCBufferStruct
+struct WorldShaderParameter
 {
     //64
     float4 WorldSpaceLightVector;
     float4 WorldSpaceLightColor;
+    float4 SkyLightColor;
     float  TotalTime;
     float  DeltaTime;
-    float2 _Padding0;
-    float4 SkyLightColor;
+    uint   LightParameterCount;
+    float  _Padding0;
 };
 
 
-ConstantBuffer<TargetCBufferStruct> TargetBuffer : register(b0, space0);
-ConstantBuffer<WorldCBufferStruct>  WorldBuffer  : register(b0, space1);
-
+ConstantBuffer<RenderTargetShaderParameter> TargetBuffer : register(b0, space0);
+ConstantBuffer<WorldShaderParameter>  WorldBuffer  : register(b0, space1);
 
 #endif //_ENGINE_COMMON_INC

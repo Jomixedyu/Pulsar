@@ -83,12 +83,12 @@ namespace pulsared
 
         if(ImGui::Button("Add Component", {-FLT_MIN, 20}))
         {
-            ImGui::OpenPopup("Main.Components");
+            ImGui::OpenPopup("SceneEditor.Components");
 
         }
-        if (ImGui::BeginPopup("Main.Components"))
+        if (ImGui::BeginPopup("SceneEditor.Components"))
         {
-            auto menu = MenuManager::GetMainMenu()->FindSubMenuEntry("Components");
+            auto menu = MenuManager::GetMenu("SceneEditor")->FindSubMenuEntry("Components");
             MenuRenderer::RenderMenu(menu.get(), mksptr(new MenuContexts));
             ImGui::EndPopup();
         }

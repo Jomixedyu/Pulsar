@@ -8,6 +8,7 @@ namespace gfx
         Vertex,
         Index,
         ConstantBuffer,
+        StructuredBuffer,
     };
     enum class GFXBufferStorageState
     {

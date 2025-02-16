@@ -18,7 +18,7 @@ namespace pulsar
         IntScalar,
         Scalar,
         Vector,
-        Texture2D,
+        Texture,
     )
 }
 
@@ -51,14 +51,14 @@ namespace pulsar
             Type = ShaderParameterType::Vector;
         }
 
-        void SetValue(const RCPtr<Texture2D>& value)
+        void SetValue(const RCPtr<Texture>& value)
         {
             Value = value;
-            Type = ShaderParameterType::Texture2D;
+            Type = ShaderParameterType::Texture;
         }
 
     private:
-        std::variant<int, float, Vector4f, RCPtr<Texture2D>> Value;
+        std::variant<int, float, Vector4f, RCPtr<Texture>> Value;
 
     public:
         int AsIntScalar() const
@@ -73,9 +73,9 @@ namespace pulsar
         {
             return std::get<Vector4f>(Value);
         }
-        RCPtr<Texture2D> AsTexture() const
+        RCPtr<Texture> AsTexture() const
         {
-            return std::get<RCPtr<Texture2D>>(Value);
+            return std::get<RCPtr<Texture>>(Value);
         }
         int GetDataSize() const
         {

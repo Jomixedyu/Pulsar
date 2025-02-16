@@ -1,8 +1,8 @@
 #pragma once
-#include "Components/Component.h"
-#include "Physics3D/PhysicsWorld3D.h"
-#include "Components/Shape3DComponent.h"
-#include "Simulate.h"
+#include "Pulsar/Components/Component.h"
+#include "Pulsar/Physics3D/PhysicsWorld3D.h"
+#include "Pulsar/Components/Shape3DComponent.h"
+#include "Pulsar/Simulate.h"
 
 namespace pulsar
 {
@@ -14,14 +14,19 @@ namespace pulsar
     public:
 
         RigidBodyDynamics3DComponent();
+    public:
 
+        auto GetMode() const { return m_rigidMode; }
+        void SetMode(RigidBody3DMode value) { m_rigidMode = value; }
+
+    protected:
         void BeginComponent() override;
         void EndComponent() override;
 
         void BeginSimulate() override;
         void EndSimulate() override;
 
-    protected:
+
         void INotifyPhysics3DEvent_OnTransformChanged(Vector3f pos, Quat4f rot) override;
 
     protected:

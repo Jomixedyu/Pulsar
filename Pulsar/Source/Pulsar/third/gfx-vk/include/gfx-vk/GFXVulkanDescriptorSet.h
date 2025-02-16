@@ -41,6 +41,7 @@ namespace gfx
         virtual void SetConstantBuffer(GFXBuffer* buffer) override;
         virtual void SetTextureSampler2D(GFXTexture2DView* texture) override;
         virtual void SetTexture2D(GFXTexture* texture) override;
+        virtual void SetStructuredBuffer(GFXBuffer* buffer) override;
 
         uint32_t GetBindingPoint() const
         {
