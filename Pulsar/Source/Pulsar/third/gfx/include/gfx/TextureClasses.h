@@ -1,6 +1,8 @@
 #pragma once
 #include "TextureClasses.h"
 #include <cstdint>
+#include <string>
+#include <vector>
 
 namespace gfx
 {
@@ -74,6 +76,7 @@ namespace gfx
         Linear,
         Cubic
     };
+    std::vector<std::pair<std::string, uint32_t>> BuildEnumMap_SamplerFilter();
 
     enum class GFXSamplerAddressMode
     {
@@ -81,6 +84,7 @@ namespace gfx
         MirroredRepeat,
         ClampToEdge,
     };
+    std::vector<std::pair<std::string, uint32_t>> BuildEnumMap_SamplerAddressMode();
 
     struct GFXTextureSubresource
     {
