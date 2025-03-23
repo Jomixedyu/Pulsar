@@ -90,12 +90,11 @@ namespace pulsared
 
         if (m_altPressed)
         {
-            auto parent = m_world->GetCurrentCamera()->GetTransform()->GetParent()->GetNode();
-            auto camCtrl = parent->GetComponent<StdEditCameraControllerComponent>();
+            auto camCtrl = m_world->GetCurrentCamera()->GetNodePtr()->GetComponent<StdEditCameraControllerComponent>();
 
             if (m_leftMousePressed && camCtrl->CanRotate())
             {
-                auto trans = m_world->GetCurrentCamera()->GetNode()->GetTransform()->GetParent();
+                auto trans = camCtrl->GetTargetTransform();
                 auto euler = trans->GetEuler();
                 Vector3f mouseDt{newpos.y - m_latestMousePos.y, newpos.x - m_latestMousePos.x, 0};
                 if (euler.x + mouseDt.x < -85.f ||
@@ -132,7 +131,7 @@ namespace pulsared
             }
             else if (m_middleMousePressed)
             {
-                auto tr = m_world->GetCurrentCamera()->GetNode()->GetTransform()->GetParent();
+                auto tr = camCtrl->GetTargetTransform();
                 auto dtX = newpos.x - m_latestMousePos.x;
                 auto dtY = newpos.y - m_latestMousePos.y;
 

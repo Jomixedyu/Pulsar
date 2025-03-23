@@ -31,6 +31,7 @@
 #include <PulsarEd/Windows/EditorWindowManager.h>
 #include <filesystem>
 #include <gfx/GFXRenderPipeline.h>
+#include <random>
 #include <utility>
 
 #include <CoreLib.Serialization/DataSerializer.h>
@@ -234,6 +235,26 @@ namespace pulsared
             light->GetTransform()->SetPosition({-1.7f,2,0});
         }
 
+
+        // {
+        //     std::default_random_engine e;
+        //     std::uniform_real_distribution<float> dis(0.0, 1.0);
+        //
+        //     for (int x = 0; x < 10; ++x)
+        //     {
+        //         for (int y = 0; y < 10; ++y)
+        //         {
+        //             ShapeMeshUtils::CreateSphere(scene, "sphere", litMat, true, Vector3f(x - 5, 5+x, y - 5));
+        //             ShapeMeshUtils::CreateSphere(scene, "sphere", litMat, true, Vector3f(x - 5, 8+x, y - 5));
+        //             ShapeMeshUtils::CreateSphere(scene, "sphere", litMat, true, Vector3f(x - 5, 10+x, y - 5));
+        //             ShapeMeshUtils::CreateSphere(scene, "sphere", litMat, true, Vector3f(x - 5, 12+x, y - 5));
+        //             ShapeMeshUtils::CreateSphere(scene, "sphere", litMat, true, Vector3f(x - 5, 14+x, y - 5));
+        //
+        //
+        //             ShapeMeshUtils::CreateCube(scene, "cube", litMat,true, Vector3f(x - 5, 3+y, y - 5),{dis(e) * 360.f, dis(e) * 360.f,dis(e) * 360.f});
+        //         }
+        //     }
+        // }
     }
 
     static void _RegisterIcon(Type* type, string_view path)

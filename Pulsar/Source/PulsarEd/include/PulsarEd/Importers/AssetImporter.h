@@ -10,13 +10,13 @@ namespace pulsared
 {
     class PULSARED_API AssetImporterSettings : public Object
     {
-        CORELIB_DEF_TYPE(AssemblyObject_pulsared, AssetImporterSettings, Object);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::AssetImporterSettings, Object);
     public:
         CORELIB_REFL_DECL_FIELD(ImportFiles);
         List_sp<string> ImportFiles = mksptr(new List<string>);
 
-        CORELIB_REFL_DECL_FIELD(TargetPath);
-        string TargetPath;
+        CORELIB_REFL_DECL_FIELD(ImportingTargetFolder);
+        string ImportingTargetFolder;
     };
 
     class PULSARED_API AssetImporter

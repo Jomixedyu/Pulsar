@@ -219,6 +219,55 @@ namespace pulsared
         return {(float)q[0], (float)q[1], (float)q[2], (float)q[3]};
     }
 
+    template <typename T>
+    static T GetLayerElement(FbxLayerElementTemplate<T>* layer, int ctrlPoint, int vertIndex)
+    {
+        const auto mappingMode   = layer->GetMappingMode();
+        const auto referenceMode = layer->GetReferenceMode();
+        switch (mappingMode)
+        {
+        case FbxGeometryElement::EMappingMode::eByControlPoint: {
+            switch (referenceMode)
+            {
+            case FbxGeometryElement::EReferenceMode::eDirect: {
+                return layer->GetDirectArray().GetAt(ctrlPoint);
+                break;
+            }
+            case FbxGeometryElement::EReferenceMode::eIndexToDirect: {
+                auto index = layer->GetIndexArray().GetAt(ctrlPoint);
+                return layer->GetDirectArray().GetAt(index);
+                break;
+            }
+            default:
+                assert(false);
+                break;
+            }
+
+            break;
+        }
+        case FbxGeometryElement::EMappingMode::eByPolygonVertex: {
+            switch (referenceMode)
+            {
+            case FbxGeometryElement::EReferenceMode::eDirect: {
+                return layer->GetDirectArray().GetAt(vertIndex);
+                break;
+            }
+            case FbxGeometryElement::EReferenceMode::eIndexToDirect: {
+                auto index = layer->GetIndexArray().GetAt(vertIndex);
+                return layer->GetDirectArray().GetAt(index);
+                break;
+            }
+            default:
+                assert(false);
+            }
+
+            break;
+        }
+        default:
+            assert(false);
+        }
+        return {};
+    }
 
     static RCPtr<StaticMesh> ProcessMesh(FbxNode* fbxNode, bool inverseCoordsystem)
     {
@@ -274,61 +323,13 @@ namespace pulsared
                             {
                                 continue;
                             }
-
-                            auto uvElement = fbxMesh->GetElementUV(i);
-                            auto uv = uvElement->GetDirectArray().GetAt(controlPointIndex);
-                            vertex.TexCoords[i] = ToVector2f(uv);
+                            vertex.TexCoords[i] = ToVector2f(GetLayerElement(fbxMesh->GetElementUV(i), controlPointIndex, vertexIndex));
                         }
 
                         // color
                         if (auto fbxColors = fbxMesh->GetLayer(0)->GetVertexColors())
                         {
-                            const auto mappingMode = fbxColors->GetMappingMode();
-                            const auto referenceMode = fbxColors->GetReferenceMode();
-                            int index{};
-                            switch (mappingMode)
-                            {
-                            case FbxGeometryElement::EMappingMode::eByControlPoint: {
-                                switch (referenceMode)
-                                {
-                                case FbxGeometryElement::EReferenceMode::eDirect: {
-                                    index = controlPointIndex;
-                                    vertex.Color = ToColor4f(fbxColors->GetDirectArray().GetAt(index));
-                                    break;
-                                }
-                                case FbxGeometryElement::EReferenceMode::eIndexToDirect: {
-                                    index = fbxColors->GetIndexArray().GetAt(controlPointIndex);
-                                    vertex.Color = ToColor4f(fbxColors->GetDirectArray().GetAt(index));
-                                    break;
-                                }
-                                default:
-                                    assert(false);
-                                    break;
-                                }
-
-                                break;
-                            }
-                            case FbxGeometryElement::EMappingMode::eByPolygonVertex: {
-                                switch (referenceMode)
-                                {
-                                case FbxGeometryElement::EReferenceMode::eDirect: {
-                                    index = vertexIndex;
-                                    vertex.Color = ToColor4f(fbxColors->GetDirectArray().GetAt(index));
-                                    break;
-                                }
-                                case FbxGeometryElement::EReferenceMode::eIndexToDirect:
-                                    index = fbxColors->GetIndexArray().GetAt(vertexIndex);
-                                    vertex.Color = ToColor4f(fbxColors->GetDirectArray().GetAt(index));
-                                    break;
-                                default:
-                                    assert(false);
-                                }
-
-                                break;
-                            }
-                            default:
-                                assert(false);
-                            }
+                            vertex.Color = ToColor4f(GetLayerElement(fbxColors, controlPointIndex, vertexIndex));
                         }
 
                         section.Vertex[vertexIndex] = vertex;
@@ -440,7 +441,7 @@ namespace pulsared
             const auto fbxRootNode = fbxScene->GetRootNode();
             const auto filename = PathUtil::GetFilenameWithoutExt(importFile);
             auto prefab = Prefab::StaticCreate(filename);
-            const auto targetMeshFolder = settings->TargetPath + "/" + filename + "_Items";
+            const auto targetMeshFolder = settings->ImportingTargetFolder + "/" + filename + "_Items";
             const auto rootCount = fbxRootNode->GetChildCount();
             for (int i = 0; i < rootCount; ++i)
             {
@@ -448,7 +449,7 @@ namespace pulsared
                 ProcessNode(sceneRootNode, nullptr, prefab, fbxsetting, inverseCoordSystem, targetMeshFolder);
             }
 
-            AssetDatabase::CreateAsset(prefab.GetPtr(), settings->TargetPath + "/" + filename);
+            AssetDatabase::CreateAsset(prefab.GetPtr(), settings->ImportingTargetFolder + "/" + filename);
             DestroySdkObjects(fbxManager, 0);
         }
         return {};

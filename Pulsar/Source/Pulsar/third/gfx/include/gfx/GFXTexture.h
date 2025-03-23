@@ -13,19 +13,27 @@ namespace gfx
         GFXSamplerAddressMode AddressMode;
     };
 
-    struct GFXTextureCreateInfo
+
+    struct GFXTextureCreateDesc
     {
-        const uint8_t* imageData{};
-        size_t dataLength{};
-        int32_t width{};
-        int32_t height{};
-        int32_t depth{1};
-        GFXTextureFormat format{};
-        GFXTextureDataType dataType{};
-        GFXSamplerConfig samplerCfg{};
-        GFXTextureTargetType targetType{};
-        uint32_t mipLevels{1};
-        uint32_t arrayLayers{1};
+        const uint8_t* ImageData{};
+        size_t DataLength{};
+        int32_t Width{};
+        int32_t Height{};
+        int32_t Depth{1};
+        GFXTextureFormat Format{};
+        GFXTextureDataType DataType{};
+        GFXSamplerConfig SamplerCfg{};
+        GFXTextureTargetType TargetType{};
+        uint32_t MipLevels{1};
+        uint32_t ArrayLayers{1};
+    };
+
+    struct GFXTextureUpdateDesc
+    {
+        const uint8_t* ImageData{};
+        size_t DataLength{};
+
     };
 
     class GFXTexture

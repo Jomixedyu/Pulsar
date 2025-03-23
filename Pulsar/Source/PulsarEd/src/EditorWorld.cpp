@@ -88,11 +88,12 @@ namespace pulsared
 
         auto camCtrlNode = scene->NewNode("EdCameraController", nullptr, OF_NoPack);
         auto camNode = scene->NewNode("EdCamera", camCtrlNode, OF_NoPack);
-        camNode->GetTransform()->Translate({0, 0, -2});
+        camNode->GetTransform()->Translate({0, 0, -1});
         this->m_camNode = camNode;
-        this->m_camCtrlNode = camCtrlNode;
 
         m_cam = camNode->AddComponent<CameraComponent>();
+        auto ctrl = camNode->AddComponent<StdEditCameraControllerComponent>();
+        ctrl->m_targetTransform = camCtrlNode->GetTransform();
 
         m_cam->SetProjectionMode(CaptureProjectionMode::Perspective);
         m_cam->SetBackgroundColor(Color4f{0.3f, 0.3f, 0.3f, 1.0f});

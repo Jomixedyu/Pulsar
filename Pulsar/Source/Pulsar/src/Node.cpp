@@ -6,6 +6,7 @@
 #include <Pulsar/Logger.h>
 #include <Pulsar/TransformUtil.h>
 #include <stack>
+#include <utility>
 
 using namespace std;
 
@@ -21,15 +22,49 @@ namespace pulsar
             auto componentsObj = s->Object->New(ser::VarientType::Array);
             for (auto& component : *m_components)
             {
+                // add component description
                 auto compObj = s->Object->New(ser::VarientType::Object);
-                ComponentSerializer componentSerializer{compObj, s->IsWrite, s->HasEditorData};
-                component->Serialize(&componentSerializer);
+                compObj->Add("Type", component->GetType()->GetName());
+                compObj->Add("Id", component->GetObjectHandle().to_string());
+
+                // serialize component
+                {
+                    auto comp = s->Object->New(ser::VarientType::Object);
+                    ComponentSerializer componentSerializer {comp, s->IsWrite, s->HasEditorData};
+                    component->Serialize(&componentSerializer);
+                    compObj->Add("Data", comp);
+                }
                 componentsObj->Push(compObj);
             }
             s->Object->Add("Components", componentsObj);
+        }
+        else
+        {
+            SetName(s->Object->At("Name")->AsString());
+            m_active = s->Object->At("IsActive")->AsBool();
 
+            auto componentArr = s->Object->At("Components");
+            for (int i = 0; i < componentArr->GetCount(); ++i)
+            {
+                auto componentObj = componentArr->At(i);
+                // deserialize component description
+                auto typeStr = componentObj->At("Type")->AsString();
+                auto idStr = componentObj->At("Id")->AsString();
+                auto componentType = AssemblyManager::GlobalFindType(typeStr);
+                auto id = ObjectHandle::parse(idStr);
+
+                // deserialize component
+                auto compData = componentObj->At("Data");
+                if (componentType)
+                {
+                    auto newComponent = ConstructComponent(componentType, id);
+                    ComponentSerializer ser {compData, s->IsWrite, s->HasEditorData};
+                    newComponent->Serialize(&ser);
+                }
+            }
         }
     }
+
     bool Node::GetIsActive() const
     {
         Node_ref node = this->GetObjectHandle();
@@ -126,6 +161,19 @@ namespace pulsar
     {
         return m_transform;
     }
+    BoxSphereBounds3f Node::GetBounds()
+    {
+        BoxSphereBounds3f bounds{};
+        for (auto& comp : *m_components)
+        {
+            if (comp->HasBounds())
+            {
+                bounds = bounds + comp->GetBoundsWS();
+            }
+
+        }
+        return bounds;
+    }
 
     Node::Node()
     {
@@ -159,7 +207,7 @@ namespace pulsar
 
     void Node::BeginNode(ObjectPtr<Scene> scene)
     {
-        m_runtimeScene = scene;
+        m_runtimeScene = std::move(scene);
         if (GetIsActive())
         {
             OnActive();
@@ -174,6 +222,7 @@ namespace pulsar
         }
         m_runtimeScene = nullptr;
     }
+
     void Node::BeginPlay()
     {
         auto comps = *this->m_components;
@@ -185,6 +234,7 @@ namespace pulsar
             }
         }
     }
+
     void Node::EndPlay()
     {
         auto comps = *this->m_components;
@@ -197,11 +247,11 @@ namespace pulsar
         }
     }
 
-    ObjectPtr<Component> Node::AddComponent(Type* type)
+    ObjectPtr<Component> Node::ConstructComponent(Type* type, const ObjectHandle& handle)
     {
         Object_sp obj = type->CreateSharedInstance({});
         Component_sp component = sptr_cast<Component>(obj);
-        component->Construct();
+        component->Construct(handle);
 
         // init
         component->m_ownerNode = self_ref();
@@ -221,6 +271,13 @@ namespace pulsar
         {
             m_transform = sptr_cast<TransformComponent>(component).get();
         }
+
+        return component;
+    }
+
+    ObjectPtr<Component> Node::AddComponent(Type* type)
+    {
+        auto component = ConstructComponent(type, {});
 
         if (m_runtimeScene && m_runtimeScene->GetWorld())
         {
@@ -310,6 +367,11 @@ namespace pulsar
             }
         }
     }
+    void Node::SetLayer(int32_t layer)
+    {
+        m_layer = layer;
+    }
+
     void Node::BeginComponent(Component_ref component)
     {
         component->BeginComponent();

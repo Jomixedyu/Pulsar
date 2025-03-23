@@ -8,14 +8,20 @@ namespace pulsar
     void NodeCollection::Serialize(AssetSerializer* s)
     {
         base::Serialize(s);
-        // 保存为 sceneobject
 
         if (s->IsWrite)
         {
             auto nodes = s->Object->New(ser::VarientType::Array);
             for (auto& node : *m_nodes)
             {
+                if (node->IsTransientObject())
+                {
+                    continue;
+                }
+
                 auto nodeObj = s->Object->New(ser::VarientType::Object);
+                nodeObj->Add("Id", node->GetObjectHandle().to_string());
+
                 NodeSerializer nodeSerializer{nodeObj, s->IsWrite, s->HasEditorData};
                 node->Serialize(&nodeSerializer);
                 nodes->Push(nodeObj);
@@ -28,6 +34,26 @@ namespace pulsar
                 rootNodes->Push(node.GetHandle().to_string());
             }
             s->Object->Add("RootNodes", rootNodes);
+        }
+        else
+        {
+            auto nodesArr = s->Object->At("Nodes");
+            for (int i = 0; i < nodesArr->GetCount(); ++i)
+            {
+                auto node = nodesArr->At(i);
+                auto nodeId = ObjectHandle::parse(node->At("Id")->AsString());
+                auto newNode = ConstructNode("Node", nodeId);
+                NodeSerializer nodeSerializer{node, s->IsWrite, s->HasEditorData};
+                newNode->Serialize(&nodeSerializer);
+            }
+
+            auto rootNodeArr = s->Object->At("RootNodes");
+            for (int i = 0; i < rootNodeArr->GetCount(); ++i)
+            {
+                auto node = rootNodeArr->At(i);
+                auto handle = ObjectHandle::parse(node->AsString());
+                RegisterRootNode(handle);
+            }
         }
     }
     void NodeCollection::OnDestroy()
@@ -130,14 +156,7 @@ namespace pulsar
     }
     ObjectPtr<Node> NodeCollection::BeginNewNode(index_string name, const ObjectPtr<Node>& parent, ObjectFlags flags)
     {
-        auto newNode = mksptr(new Node);
-        newNode->Construct();
-        newNode->SetIndexName(name);
-        newNode->SetObjectFlags(newNode->GetObjectFlags() | flags | OF_LifecycleManaged);
-
-        auto node = ObjectPtr{newNode};
-
-        m_nodes->push_back(node);
+        auto node = ConstructNode(name, {}, flags);
         if (parent)
         {
             node->SetParent(parent);
@@ -152,6 +171,20 @@ namespace pulsar
     void NodeCollection::EndNewNode(ObjectPtr<Node> node)
     {
         OnAddNode(node);
+    }
+
+    ObjectPtr<Node> NodeCollection::ConstructNode(index_string name, ObjectHandle handle, ObjectFlags flags)
+    {
+        auto newNode = mksptr(new Node);
+        newNode->Construct(handle);
+        newNode->SetIndexName(name);
+        newNode->SetObjectFlags(newNode->GetObjectFlags() | flags | OF_LifecycleManaged);
+
+        auto node = ObjectPtr{newNode};
+
+        m_nodes->push_back(node);
+
+        return node;
     }
 
 } // namespace pulsar

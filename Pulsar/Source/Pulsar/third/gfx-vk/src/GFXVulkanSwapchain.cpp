@@ -216,13 +216,13 @@ namespace gfx
         {
             const auto extent = m_swapChainExtent;
 
-            GFXTextureCreateInfo info{};
-            info.format = m_app->GetSupportedDepthFormats()[0];
-            info.targetType = GFXTextureTargetType::DepthStencilTarget;
-            info.width = extent.width;
-            info.height = extent.height;
-            info.depth = 1;
-            info.dataType = GFXTextureDataType::Texture2D;
+            GFXTextureCreateDesc info{};
+            info.Format = m_app->GetSupportedDepthFormats()[0];
+            info.TargetType = GFXTextureTargetType::DepthStencilTarget;
+            info.Width = extent.width;
+            info.Height = extent.height;
+            info.Depth = 1;
+            info.DataType = GFXTextureDataType::Texture2D;
 
             auto depthRtPtr = new GFXVulkanTexture(m_app, info);
 

@@ -33,9 +33,14 @@ namespace pulsar
         {
             if (sizeof(StaticMeshVertex) * m_verties.size() > m_vertBuffer->GetSize())
             {
-                m_vertBuffer = Application::GetGfxApp()->CreateBuffer(gfx::GFXBufferUsage::Vertex, m_verties.size() * sizeof(StaticMeshVertex));
+                gfx::GFXBufferDesc desc{};
+                desc.Usage        = gfx::GFXBufferUsage::Vertex;
+                desc.StorageType  = gfx::GFXBufferMemoryPosition::DeviceLocal;
+                desc.BufferSize   = m_verties.size() * sizeof(StaticMeshVertex);
+                desc.ElementSize  = sizeof(StaticMeshVertex);
+
+                m_vertBuffer = Application::GetGfxApp()->CreateBuffer(desc);
             }
-            m_vertBuffer->SetElementCount(m_verties.size());
             m_vertBuffer->Fill(m_verties.data());
         }
     }
@@ -45,7 +50,7 @@ namespace pulsar
         base::OnCreateResource();
         if (MeshDescriptorSetLayout.expired())
         {
-            gfx::GFXDescriptorSetLayoutInfo info{
+            gfx::GFXDescriptorSetLayoutDesc info{
                 gfx::GFXDescriptorType::ConstantBuffer,
                 gfx::GFXGpuProgramStageFlags::VertexFragment,
                 0, kRenderingDescriptorSpace_ModelInfo};
@@ -57,13 +62,24 @@ namespace pulsar
             m_meshDescriptorSetLayout = MeshDescriptorSetLayout.lock();
         }
 
-        m_meshConstantBuffer = Application::GetGfxApp()->CreateBuffer(gfx::GFXBufferUsage::ConstantBuffer, sizeof(CBuffer_ModelObject));
+        gfx::GFXBufferDesc perMeshBufferDesc{};
+        perMeshBufferDesc.Usage         = gfx::GFXBufferUsage::ConstantBuffer;
+        perMeshBufferDesc.StorageType   = gfx::GFXBufferMemoryPosition::VisibleOnDevice;
+        perMeshBufferDesc.BufferSize    = sizeof(PerModelShaderParameter);
+        perMeshBufferDesc.ElementSize   = sizeof(PerModelShaderParameter);
+
+        m_meshConstantBuffer = Application::GetGfxApp()->CreateBuffer(perMeshBufferDesc);
         m_meshObjDescriptorSet = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_meshDescriptorSetLayout);
         m_meshObjDescriptorSet->AddDescriptor("ModelObject", 0)->SetConstantBuffer(m_meshConstantBuffer.get());
         m_meshObjDescriptorSet->Submit();
 
-        m_vertBuffer = Application::GetGfxApp()->CreateBuffer(gfx::GFXBufferUsage::Vertex, m_verties.size() * sizeof(StaticMeshVertex));
-        m_vertBuffer->SetElementCount(m_verties.size());
+        gfx::GFXBufferDesc vertexBufferDesc{};
+        vertexBufferDesc.Usage       = gfx::GFXBufferUsage::Vertex;
+        vertexBufferDesc.StorageType = gfx::GFXBufferMemoryPosition::DeviceLocal;
+        vertexBufferDesc.BufferSize  = m_verties.size() * sizeof(StaticMeshVertex);
+        vertexBufferDesc.ElementSize = sizeof(StaticMeshVertex);
+
+        m_vertBuffer = Application::GetGfxApp()->CreateBuffer(vertexBufferDesc);
         m_vertBuffer->Fill(m_verties.data());
 
         m_batchs.resize(1);
@@ -90,7 +106,7 @@ namespace pulsar
         m_meshConstantBuffer->Fill(&m_perModelData);
     }
 
-    array_list<rendering::MeshBatch> LineRenderObject::GetMeshBatchs()
+    array_list<rendering::MeshBatch> LineRenderObject::GetMeshBatches()
     {
         for (const auto& batch : m_batchs)
         {

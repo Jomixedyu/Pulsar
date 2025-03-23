@@ -49,12 +49,12 @@ namespace gfx
         return {};
     }
 
-    GFXVulkanTexture::GFXVulkanTexture(GFXVulkanApplication* app, const GFXTextureCreateInfo& info)
-        : base(info.width, info.height, info.depth, info.samplerCfg), m_isView(false), m_app(app)
+    GFXVulkanTexture::GFXVulkanTexture(GFXVulkanApplication* app, const GFXTextureCreateDesc& info)
+        : base(info.Width, info.Height, info.Depth, info.SamplerCfg), m_isView(false), m_app(app)
     {
-        m_dataType = info.dataType;
-        m_imageFormat = BufferHelper::GetVkFormat(info.format);
-        m_targetType = info.targetType;
+        m_dataType = info.DataType;
+        m_imageFormat = BufferHelper::GetVkFormat(info.Format);
+        m_targetType = info.TargetType;
 
         m_usageFlags = ImageHelper::GetImageUsageFlags(m_targetType);
         m_aspectFlags = ImageHelper::GetAspectFlags(m_targetType);
@@ -63,14 +63,14 @@ namespace gfx
         ImageHelper::CreateImage(app, &createInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_textureImage, m_textureImageMemory);
 
         auto currentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        if (info.dataLength > 0)
+        if (info.DataLength > 0)
         {
             BufferHelper::TransitionImageLayout(app, m_textureImage, m_imageFormat, m_aspectFlags, currentLayout, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
             currentLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 
             VkBuffer stagingBuffer;
             VkDeviceMemory stagingBufferMemory;
-            VkDeviceSize imageSize = info.dataLength;
+            VkDeviceSize imageSize = info.DataLength;
 
             auto stagingProperties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
@@ -79,7 +79,7 @@ namespace gfx
 
             void* data;
             vkMapMemory(app->GetVkDevice(), stagingBufferMemory, 0, imageSize, 0, &data);
-            memcpy(data, info.imageData, static_cast<size_t>(imageSize));
+            memcpy(data, info.ImageData, static_cast<size_t>(imageSize));
             vkUnmapMemory(app->GetVkDevice(), stagingBufferMemory);
             BufferHelper::CopyBufferToImage(app, stagingBuffer, m_textureImage, m_width, m_height);
 
@@ -108,7 +108,7 @@ namespace gfx
         : base(info.width, info.height, 1, {}),
           m_app(app), m_textureImage(info.image), m_textureImageMemory(VK_NULL_HANDLE), m_imageFormat(info.format),
           m_imageLayout(info.layout), m_targetType(info.usage), m_isView(true), m_targetFinalLayout(info.finalTargetLayout),
-        m_dataType(info.dataType)
+          m_dataType(info.dataType)
     {
         m_usageFlags = ImageHelper::GetImageUsageFlags(m_targetType);
         m_aspectFlags = ImageHelper::GetAspectFlags(info.usage);
@@ -118,6 +118,10 @@ namespace gfx
         m_inited = true;
     }
 
+    void GFXVulkanTexture::UpdateTextureResource(const GFXTextureUpdateDesc& desc)
+    {
+
+    }
     GFXTexture2DView_sp GFXVulkanTexture::Get2DView(size_t index)
     {
         assert(m_dataType != GFXTextureDataType::None);

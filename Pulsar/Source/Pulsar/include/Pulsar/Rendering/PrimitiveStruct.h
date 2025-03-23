@@ -16,7 +16,7 @@ namespace pulsar
     };
     constexpr inline int kSizeofStaticMeshVertex = sizeof(StaticMeshVertex);
 
-    struct CBuffer_ModelObject
+    struct PerModelShaderParameter
     {
         Matrix4f LocalToWorldMatrix;
         Matrix4f WorldToLocalMatrix;

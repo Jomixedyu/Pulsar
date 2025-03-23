@@ -66,6 +66,28 @@ namespace pulsared
             m_colorCurve->PostEditChange(nullptr);
         }
 
+        if (temporaryState.selectedIndex >= 0)
+        {
+            auto color = m_colorCurve->GetColorsKey(temporaryState.selectedIndex);
+            float color4[4];
+            color4[0] = color[0].Value;
+            color4[1] = color[1].Value;
+            color4[2] = color[2].Value;
+            color4[3] = color[3].Value;
+
+            if (ImGui::ColorEdit4("color", color4))
+            {
+                color[0].Value = color4[0];
+                color[1].Value = color4[1];
+                color[2].Value = color4[2];
+                color[3].Value = color4[3];
+
+                m_colorCurve->SetColorsKey(temporaryState.selectedIndex, color);
+                m_colorCurve->PostEditChange(nullptr);
+            }
+        }
+
+
         if (PImGui::PropertyGroup("Curve Color"))
         {
             auto type = cltypeof<CurveLinearColor>();

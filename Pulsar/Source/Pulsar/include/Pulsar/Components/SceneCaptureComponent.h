@@ -26,7 +26,7 @@ CORELIB_DECL_BOXING(pulsar::RenderingPathMode, pulsar::BoxingRenderingPathMode);
 
 namespace pulsar
 {
-    struct RenderTargetShaderParameter
+    struct PerCaptureShaderParameter
     {
         Matrix4f MatrixV;
         Matrix4f InvMatrixV;
@@ -42,7 +42,7 @@ namespace pulsar
         Vector4f _Padding2;
         Matrix4f _Padding3;
     };
-    static_assert(sizeof(RenderTargetShaderParameter) == 512);
+    static_assert(sizeof(PerCaptureShaderParameter) == 512);
 
 
     struct RenderCapturePassInfo

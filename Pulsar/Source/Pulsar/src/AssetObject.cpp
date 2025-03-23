@@ -30,10 +30,5 @@ namespace pulsar
     void AssetObject::OnInstantiateAsset(AssetObject* obj)
     {
         obj->SetIndexName(this->GetIndexName());
-
-        ObjectFlags flag = this->GetObjectFlags() | OF_Instance;
-        flag &= ~OF_Persistent;
-
-        obj->SetObjectFlags(flag);
     }
 }

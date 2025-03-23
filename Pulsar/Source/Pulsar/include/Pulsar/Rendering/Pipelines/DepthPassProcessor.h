@@ -1,22 +1,16 @@
 #pragma once
 #include "MeshDrawPassProcessor.h"
-#include <rdg/RDGGraphBuilder.h>
-#include <rdg/RDGPassNode.h>
+#include <rdg/RDGBuilder.h>
+#include <rdg/RDGPass.h>
 
 namespace pulsar
 {
-    class DepthPass : public rdg::RDGPassNode
+    struct TriScreenParameters : public rdg::ShaderParameters
     {
-        void Build(rdg::GraphBuilder& builder)
-        {
-            builder.CreateTexture("depth");
-        }
-        void Compile();
-        void Execute();
+
     };
 
     class DepthPassProcessor : public MeshDrawPassProcessor
     {
-
     };
-}
+} // namespace pulsar

@@ -44,7 +44,6 @@ namespace pulsared
         void SetTool(std::unique_ptr<EdTool>&& tool);
     private:
         Node_ref m_camNode;
-        Node_ref m_camCtrlNode;
         CameraComponent_ref m_cam;
 
 

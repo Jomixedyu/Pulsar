@@ -46,7 +46,7 @@ namespace pulsar
         virtual void BeginSimulate();
         virtual void EndSimulate();
 
-
+        void CameraFocusNode(Node* node);
         virtual void Tick(float dt);
         virtual void OnWorldBegin();
         virtual void OnWorldEnd();

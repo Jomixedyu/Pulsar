@@ -12,7 +12,7 @@
 
 namespace pulsar
 {
-    struct WorldShaderParameter
+    struct RenderingSceneConstantBuffer
     {
         Vector4f WorldSpaceLightVector;
         Vector4f WorldSpaceLightColor; // w is intensity
@@ -116,6 +116,11 @@ namespace pulsar
         }
         m_physicsWorld2D->EndSimulate();
         m_physicsWorld3D->EndSimulate();
+    }
+
+    void World::CameraFocusNode(Node* node)
+    {
+
     }
 
     void World::Tick(float dt)
@@ -240,7 +245,7 @@ namespace pulsar
     void World::InitializeResidentScene()
     {
         auto scene = Scene::StaticCreate("ResidentScene");
-        scene->SetObjectFlags(scene->GetObjectFlags() | OF_Instance & ~OF_Persistent & ~OF_Instantiable);
+        scene->SetObjectFlags(scene->GetObjectFlags() | OF_Transient & ~OF_Instantiable);
 
         LoadScene(scene);
         OnLoadingResidentScene(scene);
@@ -266,7 +271,7 @@ namespace pulsar
     {
         GetLightManager()->Update();
 
-        WorldShaderParameter buffer{};
+        RenderingSceneConstantBuffer buffer{};
         buffer.DeltaTime = m_ticker.deltatime;
         buffer.TotalTime = m_totalTime;
         buffer.LightParameterCount = GetLightManager()->GetLightCount();
@@ -314,15 +319,23 @@ namespace pulsar
         InitializeResidentScene();
         m_focusScene = GetResidentScene();
 
-        gfx::GFXDescriptorSetLayoutInfo info{
-            gfx::GFXDescriptorType::ConstantBuffer,
-            gfx::GFXGpuProgramStageFlags::VertexFragment,
-            0, kRenderingDescriptorSpace_World};
+        {
+            gfx::GFXDescriptorSetLayoutDesc info{
+                gfx::GFXDescriptorType::ConstantBuffer,
+                gfx::GFXGpuProgramStageFlags::VertexFragment,
+                0, kRenderingDescriptorSpace_World};
 
-        m_worldDescriptorLayout = Application::GetGfxApp()->CreateDescriptorSetLayout(&info, 1);
-        m_worldDescriptorBuffer = Application::GetGfxApp()->CreateBuffer(
-            gfx::GFXBufferUsage::ConstantBuffer,
-            sizeof(WorldShaderParameter));
+            m_worldDescriptorLayout = Application::GetGfxApp()->CreateDescriptorSetLayout(&info, 1);
+        }
+
+        {
+            gfx::GFXBufferDesc bufferDesc{};
+            bufferDesc.Usage = gfx::GFXBufferUsage::ConstantBuffer;
+            bufferDesc.BufferSize = sizeof(RenderingSceneConstantBuffer);
+
+            m_worldDescriptorBuffer = Application::GetGfxApp()->CreateBuffer(bufferDesc);
+        }
+
 
         m_worldDescriptors = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_worldDescriptorLayout);
         m_worldDescriptors->AddDescriptor("World", 0)->SetConstantBuffer(m_worldDescriptorBuffer.get());

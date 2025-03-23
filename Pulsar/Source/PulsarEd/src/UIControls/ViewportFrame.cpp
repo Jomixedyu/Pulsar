@@ -81,7 +81,7 @@ namespace pulsared
 
     void ViewportFrame::Initialize()
     {
-        m_descriptorLayout = Application::GetGfxApp()->CreateDescriptorSetLayout({gfx::GFXDescriptorSetLayoutInfo(
+        m_descriptorLayout = Application::GetGfxApp()->CreateDescriptorSetLayout({gfx::GFXDescriptorSetLayoutDesc(
             gfx::GFXDescriptorType::CombinedImageSampler,
             gfx::GFXGpuProgramStageFlags::Fragment,
             0)});

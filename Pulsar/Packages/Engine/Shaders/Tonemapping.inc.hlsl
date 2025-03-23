@@ -1,7 +1,7 @@
 #ifndef _TONEMAPPING_INC
 #define _TONEMAPPING_INC
 
-float3 ACESFilm(float3 x)
+float3 ToneMapping_ACESFilm(float3 x)
 {
     float a = 2.51f;
     float b = 0.03f;

@@ -32,6 +32,8 @@ namespace pulsar
 
         for (auto world : m_worlds)
         {
+            cmdBuffer.CmdPushDebugInfo("SceneRenderer");
+
             auto& renderObjects = world->GetRenderObjects();
 
             auto pipelineMgr = context->GetApplication()->GetGraphicsPipelineManager();
@@ -47,14 +49,14 @@ namespace pulsar
                     cmdBuffer.CmdClearColor(rt->GetTexture());
                 }
 
-                cmdBuffer.CmdBeginFrameBuffer();
+                cmdBuffer.CmdBeginRenderPass("BasePass");
                 cmdBuffer.CmdSetViewport(0, 0, (float)targetFBO->GetWidth(), (float)targetFBO->GetHeight());
 
                 // combine batches
                 std::unordered_map<size_t, rendering::MeshBatch> batches;
                 for (const rendering::RenderObject_sp& renderObject : renderObjects)
                 {
-                    for (auto& batch : renderObject->GetMeshBatchs())
+                    for (auto& batch : renderObject->GetMeshBatches())
                     {
                         auto stateHash = batch.GetRenderState();
                         if (batches.contains(stateHash))
@@ -145,7 +147,7 @@ namespace pulsar
 
                 } // end batches
 
-                cmdBuffer.CmdEndFrameBuffer();
+                cmdBuffer.CmdEndRenderPass();
                 cmdBuffer.SetFrameBuffer(nullptr);
 
                 // deferred lighting pass
@@ -162,6 +164,9 @@ namespace pulsar
                     {
                         continue;
                     }
+
+                    auto matName = ppMat->GetName();
+
                     RCPtr<RenderTexture> srcRt;
                     RCPtr<RenderTexture> destRt;
                     gfx::GFXDescriptorSet_sp srcResourceDescSet;
@@ -187,7 +192,7 @@ namespace pulsar
                     cmdBuffer.CmdImageTransitionBarrier(destRt->GetGfxRenderTarget0().get(), gfx::GFXResourceLayout::RenderTarget);
 
                     cmdBuffer.SetFrameBuffer(destRt->GetGfxFrameBufferObject().get());
-                    cmdBuffer.CmdBeginFrameBuffer();
+                    cmdBuffer.CmdBeginRenderPass("PostProcessingPass-" + matName);
                     cmdBuffer.CmdSetViewport(0, 0, (float)targetFBO->GetWidth(), (float)targetFBO->GetHeight());
 
                     array_list<gfx::GFXDescriptorSetLayout_sp> descriptorSetLayouts;
@@ -201,7 +206,7 @@ namespace pulsar
                     {
                         InitPPDescLayout()
                         {
-                            gfx::GFXDescriptorSetLayoutInfo info[2] {
+                            gfx::GFXDescriptorSetLayoutDesc info[2] {
                                 {
                                     gfx::GFXDescriptorType::CombinedImageSampler,
                                     gfx::GFXGpuProgramStageFlags::VertexFragment,
@@ -251,7 +256,7 @@ namespace pulsar
 
                     cmdBuffer.CmdDraw(3);
 
-                    cmdBuffer.CmdEndFrameBuffer();
+                    cmdBuffer.CmdEndRenderPass();
                     cmdBuffer.SetFrameBuffer(nullptr);
 
                     ++ppCount;
@@ -262,6 +267,8 @@ namespace pulsar
                     cmdBuffer.CmdBlit(lastPPRt->GetGfxRenderTarget0().get(), cam->GetRenderTexture()->GetGfxRenderTarget0().get());
                 }
             }
+
+            cmdBuffer.CmdPopDebugInfo();
         }
 
     }

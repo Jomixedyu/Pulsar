@@ -47,9 +47,8 @@ namespace pulsar
     enum ObjectFlags_ : uint64_t
     {
         OF_NoFlag           = 0,
-        OF_Persistent       = 1 << 0,
-        OF_Instantiable     = 1 << 1,
-        OF_Instance         = 1 << 2,
+        OF_Transient        = 1 << 1,
+        OF_Instantiable     = 1 << 2,
         OF_NoPack           = 1 << 3,
         OF_LifecycleManaged = 1 << 4,
     };
@@ -82,7 +81,7 @@ namespace pulsar
         ObjectFlags  GetObjectFlags() const noexcept { return m_flags; }
         bool         HasObjectFlags(ObjectFlags flags) const noexcept { return m_flags & flags;}
         void         SetObjectFlags(ObjectFlags flags) noexcept { m_flags = flags; }
-        bool         IsPersistentObject() const noexcept { return m_flags & OF_Persistent; }
+        bool         IsTransientObject() const noexcept { return m_flags & OF_Transient; }
 
         virtual void OnDependencyMessage(ObjectHandle inDependency, DependencyObjectState msg);
 

@@ -27,15 +27,7 @@ namespace gfx
         r.m_cmdBuffer = VK_NULL_HANDLE;
     }
 
-    void GFXVulkanCommandBuffer::CmdEndFrameBuffer()
-    {
-        for (auto& rt : m_fbo->GetRenderTargets())
-        {
-            auto vkrt = dynamic_cast<GFXVulkanTexture2DView*>(rt.get());
-            vkrt->GetVkTexture()->SetImageLayout(vkrt->GetVkTexture()->GetVkTargetFinalLayout());
-        }
-        vkCmdEndRenderPass(m_cmdBuffer);
-    }
+
 
     void GFXVulkanCommandBuffer::CmdSetViewport(float x, float y, float width, float height)
     {
@@ -230,13 +222,36 @@ namespace gfx
 
         const auto vkGpipeline = static_cast<GFXVulkanGraphicsPipeline*>(pipeline);
         vkCmdBindDescriptorSets(m_cmdBuffer,
-            VK_PIPELINE_BIND_POINT_GRAPHICS,
-            vkGpipeline->GetVkPipelineLayout(),
-            0,
-            descriptorSet.size(),
-            sets,
-            0,
-            nullptr);
+                                VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                vkGpipeline->GetVkPipelineLayout(),
+                                0,
+                                descriptorSet.size(),
+                                sets,
+                                0,
+                                nullptr);
+    }
+    void GFXVulkanCommandBuffer::CmdPushDebugInfo(std::string_view label, const std::array<float, 4>& color)
+    {
+        static auto vkCmdBeginDebugUtilsLabelEXT = (PFN_vkCmdBeginDebugUtilsLabelEXT)vkGetInstanceProcAddr(m_app->GetVkInstance(), "vkCmdBeginDebugUtilsLabelEXT");
+
+        VkDebugUtilsLabelEXT debugLabel{};
+        debugLabel.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
+        debugLabel.pLabelName = label.data();
+
+        if (vkCmdBeginDebugUtilsLabelEXT)
+        {
+            vkCmdBeginDebugUtilsLabelEXT(m_cmdBuffer, &debugLabel);
+        }
+    }
+
+    void GFXVulkanCommandBuffer::CmdPopDebugInfo()
+    {
+        static auto vkCmdEndDebugUtilsLabelEXT = (PFN_vkCmdEndDebugUtilsLabelEXT)vkGetInstanceProcAddr(m_app->GetVkInstance(), "vkCmdEndDebugUtilsLabelEXT");
+        if (vkCmdEndDebugUtilsLabelEXT)
+        {
+            vkCmdEndDebugUtilsLabelEXT(m_cmdBuffer);
+        }
+
     }
 
     void GFXVulkanCommandBuffer::CmdDrawIndexed(size_t indicesCount)
@@ -301,6 +316,7 @@ namespace gfx
                 barrier.subresourceRange.baseArrayLayer = 0;
                 barrier.subresourceRange.layerCount = rtv->GetArrayCount();
 
+
                 vkCmdPipelineBarrier(
                     m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
                     0, 0, nullptr, 0, nullptr, 1, &barrier);
@@ -354,7 +370,7 @@ namespace gfx
         CmdClearColor(rt, color[0], color[1], color[2], color[3]);
     }
 
-    void GFXVulkanCommandBuffer::CmdBeginFrameBuffer()
+    void GFXVulkanCommandBuffer::CmdBeginRenderPass(std::string_view name)
     {
         bool isClear = false;
 
@@ -372,9 +388,23 @@ namespace gfx
         renderPassInfo.clearValueCount = isClear ? static_cast<uint32_t>(clearValues.size()) : 0;
         renderPassInfo.pClearValues = clearValues.data();
 
+
+        CmdPushDebugInfo(!name.empty() ? name.data() : "UnknownPass", {});
+
         vkCmdBeginRenderPass(m_cmdBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
     }
+    void GFXVulkanCommandBuffer::CmdEndRenderPass()
+    {
+        for (auto& rt : m_fbo->GetRenderTargets())
+        {
+            auto vkrt = dynamic_cast<GFXVulkanTexture2DView*>(rt.get());
+            vkrt->GetVkTexture()->SetImageLayout(vkrt->GetVkTexture()->GetVkTargetFinalLayout());
+        }
+        vkCmdEndRenderPass(m_cmdBuffer);
 
+        CmdPopDebugInfo();
+
+    }
 
     GFXVulkanCommandBufferScope::GFXVulkanCommandBufferScope(GFXVulkanApplication* app)
         : m_app(app)

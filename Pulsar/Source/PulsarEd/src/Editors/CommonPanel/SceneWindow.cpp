@@ -137,7 +137,7 @@ namespace pulsared
             if (ImGui::Button(ICON_FK_CUBE " 2D###2D"))
             {
                 auto cam = world->GetCurrentCamera();
-                auto ctrl = cam->GetNode()->GetParent()->GetComponent<StdEditCameraControllerComponent>().GetPtr();
+                auto ctrl = cam->GetNode()->GetComponent<StdEditCameraControllerComponent>();
                 ctrl->SetEnable2DMode(!ctrl->GetEnable2DMode());
 
                 auto* storeData = &ctrl->m_saved3d;
@@ -150,7 +150,7 @@ namespace pulsared
                 {
                     storeData = &ctrl->m_saved2d;
                 }
-                auto ctrlTransform = ctrl->GetTransform();
+                auto ctrlTransform = ctrl->GetTargetTransform();
                 auto camTransform = cam->GetTransform();
                 storeData->ControllerPos = ctrlTransform->GetPosition();
                 storeData->ControllerEuler = ctrlTransform->GetEuler();
@@ -211,6 +211,26 @@ namespace pulsared
             else if (ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_B, false))
             {
                 world->SetTool(std::make_unique<MeshVertexBrush>());
+            }
+            if (ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_F, false))
+            {
+                // focus
+                if (auto cam = world->GetCurrentCamera())
+                {
+                    if (auto ctrl = cam->GetNodePtr()->GetComponent<StdEditCameraControllerComponent>())
+                    {
+                        if (auto selected = world->GetSelection().GetSelected())
+                        {
+                            if (auto transform = ctrl->GetTargetTransform())
+                            {
+                                auto bounds = selected->GetBounds();
+                                auto position = selected->GetTransform()->GetPosition();
+                                transform->SetPosition(position);
+                            }
+
+                        }
+                    }
+                }
             }
             if (ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_Delete, false))
             {

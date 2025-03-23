@@ -10,10 +10,12 @@ namespace pulsar
 {
     class Texture2D;
 
+    using MeshIndicesType = uint32_t;
+
     struct StaticMeshSection
     {
         array_list<StaticMeshVertex>  Vertex;
-        array_list<uint32_t>          Indices;
+        array_list<MeshIndicesType>   Indices;
         int32_t                       MaterialIndex;
 
         size_t GetVertexAllocSize() const
@@ -22,7 +24,7 @@ namespace pulsar
         }
         size_t GetIndicesAllocSize() const
         {
-            return Indices.size() * sizeof(uint32_t);
+            return Indices.size() * sizeof(MeshIndicesType);
         }
     };
 

@@ -16,7 +16,7 @@ namespace pulsar
     class StaticMeshRenderObject final : public rendering::RenderObject
     {
     public:
-        array_list<rendering::MeshBatch> m_batchs;
+        array_list<rendering::MeshBatch> m_batches;
         RCPtr<StaticMesh> m_staticMesh;
         array_list<RCPtr<Material>> m_materials;
 
@@ -50,28 +50,30 @@ namespace pulsar
 
         void OnChangedTransform() override
         {
-            for (auto& batch : m_batchs)
+            for (auto& batch : m_batches)
             {
-                batch.IsReverseCulling = IsDetermiantNegative();
+                batch.IsReverseCulling = IsDeterminantNegative();
             }
             m_meshConstantBuffer->Fill(&m_perModelData);
         }
 
-        array_list<rendering::MeshBatch> GetMeshBatchs() override
+        array_list<rendering::MeshBatch> GetMeshBatches() override
         {
-            return m_batchs;
+            return m_batches;
         }
     };
+
     void StaticMeshRenderObject::SubmitChange()
     {
-        m_batchs.clear();
+        m_batches.clear();
 
         if (!m_staticMesh)
             return;
 
-        for (auto& mat : m_materials)
+        for (int matIndex = 0; matIndex < m_materials.size(); ++matIndex)
         {
-            auto& batch = m_batchs.emplace_back();
+            auto& mat = m_materials.at(matIndex);
+            auto& batch = m_batches.emplace_back();
             batch.State.Topology = gfx::GFXPrimitiveTopology::TriangleList;
 
             batch.State.VertexLayouts = {StaticMesh::StaticGetVertexLayout()};
@@ -95,16 +97,24 @@ namespace pulsar
             {
                 m_staticMesh->CreateGPUResource();
             }
+
+            // collect elements
             auto vertBuffers = m_staticMesh->GetGPUResourceVertexBuffers();
             auto indicesBuffers = m_staticMesh->GetGPUResourceIndicesBuffers();
 
-            for (size_t i = 0; i < vertBuffers.size(); ++i)
+            if (matIndex < vertBuffers.size())
             {
                 auto& element = batch.Elements.emplace_back();
-                element.Vertex = vertBuffers[i];
-                element.Indices = indicesBuffers[i];
+                element.Vertex =  vertBuffers[matIndex];
+                element.Indices = indicesBuffers[matIndex];
                 element.ModelDescriptor = m_meshObjDescriptorSet;
             }
+
+        }
+
+        if (m_batches.empty())
+        {
+            // empty
         }
     }
 
@@ -112,7 +122,7 @@ namespace pulsar
     {
         if (MeshDescriptorSetLayout.expired())
         {
-            gfx::GFXDescriptorSetLayoutInfo info{
+            gfx::GFXDescriptorSetLayoutDesc info{
                 gfx::GFXDescriptorType::ConstantBuffer,
                 gfx::GFXGpuProgramStageFlags::VertexFragment,
                 0, kRenderingDescriptorSpace_ModelInfo};
@@ -124,7 +134,13 @@ namespace pulsar
             m_meshDescriptorSetLayout = MeshDescriptorSetLayout.lock();
         }
 
-        m_meshConstantBuffer = Application::GetGfxApp()->CreateBuffer(gfx::GFXBufferUsage::ConstantBuffer, sizeof(CBuffer_ModelObject));
+        gfx::GFXBufferDesc perModelDesc{};
+        perModelDesc.Usage        = gfx::GFXBufferUsage::ConstantBuffer;
+        perModelDesc.StorageType  = gfx::GFXBufferMemoryPosition::VisibleOnDevice;
+        perModelDesc.BufferSize   = sizeof(PerModelShaderParameter);
+        perModelDesc.ElementSize  = sizeof(PerModelShaderParameter);
+
+        m_meshConstantBuffer   = Application::GetGfxApp()->CreateBuffer(perModelDesc);
         m_meshObjDescriptorSet = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_meshDescriptorSetLayout);
         m_meshObjDescriptorSet->AddDescriptor("ModelObject", 0)->SetConstantBuffer(m_meshConstantBuffer.get());
         m_meshObjDescriptorSet->Submit();
@@ -188,6 +204,10 @@ namespace pulsar
 
     BoxSphereBounds3f StaticMeshRendererComponent::GetBoundsWS()
     {
+        if (!m_staticMesh)
+        {
+            return {};
+        }
         auto srcBounds = m_staticMesh->GetBounds();
         auto box = srcBounds.GetBox();
         auto sphere = srcBounds.GetSphere();
@@ -219,7 +239,7 @@ namespace pulsar
             return;
         }
 
-        m_materials->at(index) = material;
+        m_materials->at(index) = std::move(material);
 
         OnMaterialChanged();
     }

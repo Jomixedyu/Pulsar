@@ -74,6 +74,34 @@ namespace pulsared
             ImGui::SameLine();
             ImGui::Text("DebugMode");
 
+            ImGui::AlignTextToFramePadding();
+            ImGui::Text("Layer");
+            ImGui::SameLine();
+            auto layer = selected->GetLayer();
+            static const char* const layer_name[] = {
+                "Layer0",
+                "Layer1",
+                "Layer2",
+                "Layer3",
+                "Layer4",
+                "Layer5",
+                "Layer6",
+                "Layer7",
+                "Layer8",
+                "Layer9",
+                "Layer10",
+                "Layer11",
+                "Layer12",
+                "Layer13",
+                "Layer14",
+                "Layer15",
+            };
+
+            if (ImGui::Combo("##Layer", &layer, layer_name, 16))
+            {
+                selected->SetLayer(layer);
+            }
+
             //ImGui::PopItemWidth();
         }
 

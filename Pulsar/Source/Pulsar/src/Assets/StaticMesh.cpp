@@ -46,16 +46,32 @@ namespace pulsar
         for (auto& section : m_sections)
         {
             auto vertSize = section.Vertex.size() * kSizeofStaticMeshVertex;
-            auto vertBuffer = Application::GetGfxApp()->CreateBuffer(gfx::GFXBufferUsage::Vertex, vertSize);
-            vertBuffer->Fill(section.Vertex.data());
-            vertBuffer->SetElementCount(section.Vertex.size());
-            m_vertexBuffers.push_back(vertBuffer);
 
-            auto indicesSize = section.Indices.size() * sizeof(decltype(section.Indices)::value_type);
-            auto indicesBuffer = Application::GetGfxApp()->CreateBuffer(gfx::GFXBufferUsage::Index, indicesSize);
-            indicesBuffer->Fill(section.Indices.data());
-            indicesBuffer->SetElementCount(section.Indices.size());
-            m_indicesBuffers.push_back(indicesBuffer);
+            {
+                gfx::GFXBufferDesc vertexDesc{};
+                vertexDesc.Usage       = gfx::GFXBufferUsage::Vertex;
+                vertexDesc.StorageType = gfx::GFXBufferMemoryPosition::DeviceLocal;
+                vertexDesc.BufferSize  = vertSize;
+                vertexDesc.ElementSize = sizeof(StaticMeshVertex);
+
+                auto vertBuffer = Application::GetGfxApp()->CreateBuffer(vertexDesc);
+                vertBuffer->Fill(section.Vertex.data());
+                m_vertexBuffers.push_back(vertBuffer);
+            }
+
+            {
+                gfx::GFXBufferDesc indicesDesc{};
+                indicesDesc.Usage       = gfx::GFXBufferUsage::Indices;
+                indicesDesc.StorageType = gfx::GFXBufferMemoryPosition::DeviceLocal;
+                indicesDesc.BufferSize  = section.Indices.size() * sizeof(MeshIndicesType);
+                indicesDesc.ElementSize = sizeof(MeshIndicesType);
+
+                auto indicesBuffer = Application::GetGfxApp()->CreateBuffer(indicesDesc);
+                indicesBuffer->Fill(section.Indices.data());
+                m_indicesBuffers.push_back(indicesBuffer);
+            }
+
+
         }
         return true;
     }

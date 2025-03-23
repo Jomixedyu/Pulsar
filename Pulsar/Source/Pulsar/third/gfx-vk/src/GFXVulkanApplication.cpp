@@ -462,6 +462,8 @@ namespace gfx
 
     void GFXVulkanApplication::Terminate()
     {
+        base::Terminate();
+
         delete m_renderer;
         delete m_viewport;
         delete m_graphicsPipelineManager;
@@ -491,9 +493,9 @@ namespace gfx
         m_window = nullptr;
     }
 
-    GFXBuffer_sp GFXVulkanApplication::CreateBuffer(GFXBufferUsage usage, size_t bufferSize)
+    GFXBuffer_sp GFXVulkanApplication::CreateBuffer(const GFXBufferDesc& desc)
     {
-        return gfxmksptr(new GFXVulkanBuffer(this, usage, bufferSize));
+        return gfxmksptr(new GFXVulkanBuffer(this, desc));
     }
     GFXCommandBuffer_sp gfx::GFXVulkanApplication::CreateCommandBuffer()
     {
@@ -508,15 +510,15 @@ namespace gfx
     std::shared_ptr<GFXTexture> gfx::GFXVulkanApplication::CreateTexture2DFromMemory(
         const uint8_t* imageData, size_t length, int width, int height, GFXTextureFormat format, const GFXSamplerConfig& samplerConfig)
     {
-        GFXTextureCreateInfo info{};
-        info.imageData = imageData;
-        info.dataLength = length;
-        info.width = width;
-        info.height = height;
-        info.depth = 1;
-        info.format = format;
-        info.samplerCfg = samplerConfig;
-        info.dataType = GFXTextureDataType::Texture2D;
+        GFXTextureCreateDesc info{};
+        info.ImageData = imageData;
+        info.DataLength = length;
+        info.Width = width;
+        info.Height = height;
+        info.Depth = 1;
+        info.Format = format;
+        info.SamplerCfg = samplerConfig;
+        info.DataType = GFXTextureDataType::Texture2D;
 
         return gfxmksptr(new GFXVulkanTexture(this, info));
     }
@@ -546,27 +548,27 @@ namespace gfx
 
     GFXTexture_sp GFXVulkanApplication::CreateTextureCube(int32_t size)
     {
-        GFXTextureCreateInfo info{};
-        info.width = size;
-        info.height = size;
-        info.depth = 1;
-        info.arrayLayers = 6;
-        info.format = GFXTextureFormat::R16G16B16A16_SFloat;
-        info.targetType = GFXTextureTargetType::ColorTarget;
-        info.dataType = GFXTextureDataType::TextureCube;
+        GFXTextureCreateDesc info{};
+        info.Width = size;
+        info.Height = size;
+        info.Depth = 1;
+        info.ArrayLayers = 6;
+        info.Format = GFXTextureFormat::R16G16B16A16_SFloat;
+        info.TargetType = GFXTextureTargetType::ColorTarget;
+        info.DataType = GFXTextureDataType::TextureCube;
         return gfxmksptr(new GFXVulkanTexture(this, info));
     }
 
     GFXTexture_sp GFXVulkanApplication::CreateRenderTarget(
         int32_t width, int32_t height, GFXTextureTargetType type, GFXTextureFormat format, const GFXSamplerConfig& samplerCfg)
     {
-        GFXTextureCreateInfo info{};
-        info.width = width;
-        info.height = height;
-        info.depth = 1;
-        info.format = format;
-        info.targetType = type;
-        info.dataType = GFXTextureDataType::Texture2D;
+        GFXTextureCreateDesc info{};
+        info.Width = width;
+        info.Height = height;
+        info.Depth = 1;
+        info.Format = format;
+        info.TargetType = type;
+        info.DataType = GFXTextureDataType::Texture2D;
 
         auto rt = new GFXVulkanTexture(this, info);
         return gfxmksptr(rt);
@@ -578,7 +580,7 @@ namespace gfx
     }
 
     GFXDescriptorSetLayout_sp GFXVulkanApplication::CreateDescriptorSetLayout(
-        const GFXDescriptorSetLayoutInfo* layouts,
+        const GFXDescriptorSetLayoutDesc* layouts,
         size_t layoutCount)
     {
         return gfxmksptr(new GFXVulkanDescriptorSetLayout(this, layouts, layoutCount));

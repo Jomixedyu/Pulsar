@@ -11,14 +11,14 @@ namespace pulsar
         base::Serialize(s);
         if (!s->IsWrite)
         {
-            if (m_parent)
-            {
-                m_parent = s->MovingTable->at(m_parent.GetHandle());
-            }
-            for (auto& child : *m_children)
-            {
-                child = s->MovingTable->at(child.GetHandle());
-            }
+            // if (m_parent)
+            // {
+            //     m_parent = s->MovingTable->at(m_parent.GetHandle());
+            // }
+            // for (auto& child : *m_children)
+            // {
+            //     child = s->MovingTable->at(child.GetHandle());
+            // }
 
         }
     }

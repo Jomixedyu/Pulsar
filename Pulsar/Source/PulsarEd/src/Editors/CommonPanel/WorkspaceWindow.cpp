@@ -636,7 +636,7 @@ namespace pulsared
         ImGui::Text(("Type: " + assetType->GetName()).c_str());
 
         ImGui::Text(("Path: " + node->AssetPath).c_str());
-        ImGui::Text(("DiskPath: " + node->GetPhysicsPath()).c_str());
+        ImGui::Text(("DiskPath: " + node->GetPhysicsPathUTF8()).c_str());
     }
 
     template <typename IT, typename V>
@@ -804,7 +804,7 @@ namespace pulsared
                 return;
             }
             const auto settings = factory->CreateImporterSettings();
-            settings->TargetPath = m_currentFolder; // current target
+            settings->ImportingTargetFolder = m_currentFolder; // current target
             settings->ImportFiles->push_back(StringUtil::StringCast(selectedFileName.generic_u8string()));
 
             factory->CreateImporter()->Import(settings.get());

@@ -38,10 +38,11 @@ namespace pulsared
             {
                 cmd.CmdClearColor(rt->GetTexture(), 0.0, 0.0, 0.0, 1);
             }
-            cmd.CmdBeginFrameBuffer();
+
+            cmd.CmdBeginRenderPass("Editor UI");
             cmd.CmdSetViewport(0, 0, (float)backbuffer->GetWidth(), (float)backbuffer->GetHeight());
             ImGuiObject->Render(&cmd);
-            cmd.CmdEndFrameBuffer();
+            cmd.CmdEndRenderPass();
             cmd.SetFrameBuffer(nullptr);
 
             cmd.End();

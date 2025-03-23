@@ -21,7 +21,7 @@ namespace pulsar
 
         if (_CameraDescriptorLayout.expired())
         {
-            gfx::GFXDescriptorSetLayoutInfo info{
+            gfx::GFXDescriptorSetLayoutDesc info{
                 gfx::GFXDescriptorType::ConstantBuffer,
                 gfx::GFXGpuProgramStageFlags::VertexFragment,
                 0,
@@ -34,7 +34,13 @@ namespace pulsar
             m_camDescriptorLayout = _CameraDescriptorLayout.lock();
         }
 
-        m_cameraDataBuffer = Application::GetGfxApp()->CreateBuffer(gfx::GFXBufferUsage::ConstantBuffer, sizeof(RenderTargetShaderParameter));
+        gfx::GFXBufferDesc perCameraBufferDesc{};
+        perCameraBufferDesc.Usage       = gfx::GFXBufferUsage::ConstantBuffer;
+        perCameraBufferDesc.StorageType = gfx::GFXBufferMemoryPosition::VisibleOnDevice;
+        perCameraBufferDesc.BufferSize  = sizeof(PerCaptureShaderParameter);
+        perCameraBufferDesc.ElementSize = sizeof(PerCaptureShaderParameter);
+
+        m_cameraDataBuffer = Application::GetGfxApp()->CreateBuffer(perCameraBufferDesc);
         m_cameraDescriptorSet = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_camDescriptorLayout);
         m_cameraDescriptorSet->AddDescriptor("Target", 0)->SetConstantBuffer(m_cameraDataBuffer.get());
         m_cameraDescriptorSet->Submit();
@@ -136,7 +142,7 @@ namespace pulsar
     {
         m_debugViewMat = GetViewMat();
 
-        RenderTargetShaderParameter target{};
+        PerCaptureShaderParameter target{};
         target.MatrixV = GetViewMat();
         target.MatrixP = GetProjectionMat();
         target.MatrixVP = target.MatrixP * target.MatrixV;

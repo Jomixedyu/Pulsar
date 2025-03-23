@@ -14,6 +14,7 @@
 #include "GFXSwapchain.h"
 #include "GFXTextureView.h"
 #include "GFXVertexLayoutDescription.h"
+#include "GFXGlobalShaderManager.h"
 #include <functional>
 
 namespace gfx
@@ -43,6 +44,7 @@ namespace gfx
         }
         virtual void Terminate()
         {
+            m_shaderManager.Clear();
         }
 
         const GFXGlobalConfig& GetConfig() const
@@ -64,7 +66,7 @@ namespace gfx
 
         virtual GFXRenderer* GetRenderer() = 0;
 
-        virtual GFXBuffer_sp CreateBuffer(GFXBufferUsage usage, size_t bufferSize) = 0;
+        virtual GFXBuffer_sp CreateBuffer(const GFXBufferDesc& desc) = 0;
         virtual GFXCommandBuffer_sp CreateCommandBuffer() = 0;
         virtual GFXVertexLayoutDescription_sp CreateVertexLayoutDescription() = 0;
         virtual GFXGpuProgram_sp CreateGpuProgram(GFXGpuProgramStageFlags stage, const uint8_t* code, size_t length) = 0;
@@ -72,10 +74,10 @@ namespace gfx
         virtual GFXDescriptorManager* GetDescriptorManager() = 0;
 
         virtual GFXDescriptorSetLayout_sp CreateDescriptorSetLayout(
-            const GFXDescriptorSetLayoutInfo* layouts,
+            const GFXDescriptorSetLayoutDesc* layouts,
             size_t layoutCount) = 0;
         virtual GFXDescriptorSetLayout_sp CreateDescriptorSetLayout(
-            std::initializer_list<GFXDescriptorSetLayoutInfo> layouts);
+            std::initializer_list<GFXDescriptorSetLayoutDesc> layouts);
 
         virtual GFXGraphicsPipelineManager* GetGraphicsPipelineManager() const = 0;
 
@@ -105,11 +107,14 @@ namespace gfx
 
         virtual GFXSwapchain* GetViewport() = 0;
 
+        GFXGlobalShaderManager& GetGlobalShaderManager() { return m_shaderManager; }
+
     protected:
         GFXApplication() = default;
 
     protected:
         GFXGlobalConfig m_config{};
+        GFXGlobalShaderManager m_shaderManager;
     };
 
 } // namespace gfx

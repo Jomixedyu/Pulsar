@@ -263,7 +263,6 @@ namespace pulsared
             node->IsCreated = true;
 
             ResolveDirty(asset);
-            asset->SetObjectFlags(asset->GetObjectFlags() | OF_Persistent);
         }
 
         OnSavedAsset.Invoke(asset);

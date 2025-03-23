@@ -109,7 +109,7 @@ namespace pulsar
         sceneTargetInfo.push_back({gfx::GFXTextureTargetType::ColorTarget, gfx::GFXTextureFormat::R16G16B16A16_SFloat});
         m_sceneColor = RenderTexture::StaticCreate(index_string{rtname}, width, height, ppTargetInfo);
 
-        gfx::GFXDescriptorSetLayoutInfo ppDescLayouts[2]{
+        gfx::GFXDescriptorSetLayoutDesc ppDescLayouts[2]{
             {gfx::GFXDescriptorType::CombinedImageSampler,
              gfx::GFXGpuProgramStageFlags::VertexFragment,
              0, 2},

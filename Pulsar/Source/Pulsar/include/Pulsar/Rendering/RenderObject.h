@@ -77,16 +77,16 @@ namespace pulsar::rendering
         virtual void OnCreateResource() {}
         virtual void OnDestroyResource() {}
 
-        virtual array_list<MeshBatch> GetMeshBatchs() = 0;
+        virtual array_list<MeshBatch> GetMeshBatches() = 0;
         virtual bool IsActive() const { return m_active; };
 
-        bool IsDetermiantNegative() const { return m_isLocalToWorldDeterminantNegative; }
+        bool IsDeterminantNegative() const { return m_isLocalToWorldDeterminantNegative; }
 
     public:
 
     protected:
         bool      m_active = false;
-        CBuffer_ModelObject  m_perModelData{};;
+        PerModelShaderParameter  m_perModelData{};;
         bool      m_isLocalToWorldDeterminantNegative{};
         int       m_lineWidth{1};
     };

@@ -30,7 +30,7 @@ namespace pulsar
         void OnDestroyResource() override;
 
         void OnChangedTransform() override;
-        array_list<rendering::MeshBatch> GetMeshBatchs() override;
+        array_list<rendering::MeshBatch> GetMeshBatches() override;
     };
 
 }

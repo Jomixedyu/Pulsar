@@ -51,7 +51,6 @@ struct OutPixelAssembly
     float4 Color : SV_TARGET;
 };
 
-
 struct RenderTargetShaderParameter //512
 { 
     //256

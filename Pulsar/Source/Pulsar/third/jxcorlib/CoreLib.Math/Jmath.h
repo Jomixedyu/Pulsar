@@ -985,6 +985,36 @@ namespace jmath
         {
             return Max - Min;
         }
+        BoxBounds3& operator+=(const BoxBounds3& other)
+        {
+            Min.x = std::min(Min.x, other.Min.x);
+            Min.y = std::min(Min.y, other.Min.y);
+            Min.z = std::min(Min.z, other.Min.z);
+
+            Max.x = std::max(Max.x, other.Max.x);
+            Max.y = std::max(Max.y, other.Max.y);
+            Max.z = std::max(Max.z, other.Max.z);
+            return *this;
+        }
+
+        BoxBounds3 operator+(const BoxBounds3& other)
+        {
+            BoxBounds3 box = *this;
+            box += other;
+            return box;
+        }
+
+        BoxBounds3& operator+=(const Vector3<T>& other)
+        {
+            Min.x = std::min(Min.x, other.x);
+            Min.y = std::min(Min.y, other.y);
+            Min.z = std::min(Min.z, other.z);
+
+            Max.x = std::max(Max.x, other.x);
+            Max.y = std::max(Max.y, other.y);
+            Max.z = std::max(Max.z, other.z);
+            return *this;
+        }
 
         static BoxBounds3 CreateFromPoints(const Vector3<T>* points, size_t size)
         {
@@ -1102,6 +1132,21 @@ namespace jmath
             return {Origin, Radius};
         }
 
+        BoxSphereBounds3 operator+(const BoxSphereBounds3& b)
+        {
+            BoxBounds3<T> BoundingBox;
+
+            BoundingBox += (this->Origin - this->Extent);
+            BoundingBox += (this->Origin + this->Extent);
+            BoundingBox += (b.Origin - b.Extent);
+            BoundingBox += (b.Origin + b.Extent);
+
+            BoxSphereBounds3 Result(BoundingBox);
+
+            Result.Radius = std::min(Result.Radius,  std::max(Magnitude(Origin - Result.Origin) + Radius, Magnitude(b.Origin - Result.Origin) + b.Radius));
+
+            return Result;
+        }
     };
 
     template <typename T>

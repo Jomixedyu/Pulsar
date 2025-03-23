@@ -59,7 +59,7 @@ namespace gfx
 
     GFXVulkanDescriptorSetLayout::GFXVulkanDescriptorSetLayout(
         GFXVulkanApplication* app,
-        const GFXDescriptorSetLayoutInfo* layouts,
+        const GFXDescriptorSetLayoutDesc* layouts,
         size_t layoutCount)
         : m_app(app)
     {
@@ -213,6 +213,7 @@ namespace gfx
         m_descriptors.push_back(std::unique_ptr<GFXVulkanDescriptor>{descriptor});
         return descriptor;
     }
+
     GFXDescriptor* GFXVulkanDescriptorSet::GetDescriptorAt(int index)
     {
         if (index >= m_descriptors.size())

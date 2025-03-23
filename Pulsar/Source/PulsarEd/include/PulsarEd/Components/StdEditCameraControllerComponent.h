@@ -30,6 +30,9 @@ namespace pulsared
 	    void BeginComponent() override;
 	    void EndComponent() override;
 
+	    ObjectPtr<TransformComponent> GetTargetTransform() const { return m_targetTransform; }
+
+	    ObjectPtr<TransformComponent> m_targetTransform;
 	private:
 
 	    bool m_enable2DMode = false;

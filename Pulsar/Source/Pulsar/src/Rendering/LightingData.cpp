@@ -11,13 +11,22 @@ namespace pulsar
         m_pendingBuffer.reserve(m_bufferLength);
 
         auto bufferSize = sizeof(LightShaderParameter) * m_bufferLength;
-        m_buffer = Application::GetGfxApp()->CreateBuffer(gfx::GFXBufferUsage::StructuredBuffer, bufferSize);
 
-        array_list<gfx::GFXDescriptorSetLayoutInfo> layoutInfo;
+        gfx::GFXBufferDesc lightBufferDesc{};
+        lightBufferDesc.Usage       = gfx::GFXBufferUsage::StructuredBuffer;
+        lightBufferDesc.StorageType = gfx::GFXBufferMemoryPosition::VisibleOnDevice;
+        lightBufferDesc.BufferSize  = bufferSize;
+        lightBufferDesc.ElementSize = sizeof(LightShaderParameter);
+
+        m_buffer = Application::GetGfxApp()->CreateBuffer(lightBufferDesc);
+
+        array_list<gfx::GFXDescriptorSetLayoutDesc> layoutInfo;
         {
-            gfx::GFXDescriptorSetLayoutInfo info {
-                gfx::GFXDescriptorType::StructuredBuffer, gfx::GFXGpuProgramStageFlags::VertexFragment, 0, 4
-            };
+            gfx::GFXDescriptorSetLayoutDesc info;
+            info.Type = gfx::GFXDescriptorType::StructuredBuffer;
+            info.Stage = gfx::GFXGpuProgramStageFlags::VertexFragment;
+            info.BindingPoint = 0;
+
             layoutInfo.push_back(info);
         }
 
@@ -93,7 +102,14 @@ namespace pulsar
             m_bufferLength = size_t(m_bufferLength * 1.5);
 
             auto bufferSize = sizeof(LightShaderParameter) * m_bufferLength;
-            m_buffer = Application::GetGfxApp()->CreateBuffer(gfx::GFXBufferUsage::StructuredBuffer, bufferSize);
+
+            gfx::GFXBufferDesc lightBufferDesc{};
+            lightBufferDesc.Usage       = gfx::GFXBufferUsage::StructuredBuffer;
+            lightBufferDesc.StorageType = gfx::GFXBufferMemoryPosition::VisibleOnDevice;
+            lightBufferDesc.BufferSize  = bufferSize;
+
+            m_buffer = Application::GetGfxApp()->CreateBuffer(lightBufferDesc);
+
             m_descriptorSet->FindByBinding(0)->SetStructuredBuffer(m_buffer.get());
             m_descriptorSet->Submit();
         }

@@ -27,13 +27,17 @@ namespace gfx
         virtual void CmdBindVertexBuffers(const std::vector<GFXBuffer*>& buffers) override;
         virtual void CmdBindIndexBuffer(GFXBuffer* buffer) override;
         virtual void CmdBindDescriptorSets(const array_list<GFXDescriptorSet*>& descriptorSet, GFXGraphicsPipeline* pipeline) override;
+
+        virtual void CmdPushDebugInfo(std::string_view label, const std::array<float, 4>& color) override;
+        virtual void CmdPopDebugInfo() override;
+
         virtual void CmdDraw(size_t vertexCount) override;
         virtual void CmdDrawIndexed(size_t indicesCount) override;
         virtual void CmdClearColor(GFXTexture* rt, float r, float g, float b, float a) override;
         virtual void CmdClearColor(GFXTexture* rt) override;
 
-        virtual void CmdBeginFrameBuffer() override;
-        virtual void CmdEndFrameBuffer() override;
+        virtual void CmdBeginRenderPass(std::string_view name) override;
+        virtual void CmdEndRenderPass() override;
         virtual void CmdSetViewport(float x, float y, float width, float height) override;
         virtual void CmdSetCullMode(GFXCullMode mode) override;
         virtual void CmdBlit(GFXTextureView* src, GFXTextureView* dest) override;

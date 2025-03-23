@@ -74,19 +74,24 @@ namespace pulsar
         }
 
         // create constant layouts and constant buffer
-        array_list<gfx::GFXDescriptorSetLayoutInfo> descLayoutInfos;
+        array_list<gfx::GFXDescriptorSetLayoutDesc> descLayoutInfos;
 
         const auto cbufferSize = m_submitShader->GetConstantBufferSize();
 
         // create constant buffer
         if (cbufferSize)
         {
-            m_materialConstantBuffer = Application::GetGfxApp()->CreateBuffer(gfx::GFXBufferUsage::ConstantBuffer, cbufferSize);
+            gfx::GFXBufferDesc bufferDesc{};
+            bufferDesc.Usage = gfx::GFXBufferUsage::ConstantBuffer;
+            bufferDesc.StorageType = gfx::GFXBufferMemoryPosition::VisibleOnDevice;
+            bufferDesc.BufferSize = cbufferSize;
+
+            m_materialConstantBuffer = Application::GetGfxApp()->CreateBuffer(bufferDesc);
         }
 
         if (cbufferSize != 0)
         {
-            auto info = gfx::GFXDescriptorSetLayoutInfo{
+            auto info = gfx::GFXDescriptorSetLayoutDesc{
                 gfx::GFXDescriptorType::ConstantBuffer,
                 gfx::GFXGpuProgramStageFlags::VertexFragment,
                 0, 4};
@@ -101,7 +106,7 @@ namespace pulsar
             for (size_t i = 0; i < count; ++i)
             {
                 auto& item = shaderConfig->Properties->at(i);
-                auto info = gfx::GFXDescriptorSetLayoutInfo{
+                auto info = gfx::GFXDescriptorSetLayoutDesc{
                     gfx::GFXDescriptorType::CombinedImageSampler,
                     gfx::GFXGpuProgramStageFlags::VertexFragment,
                     (uint32_t)i + offset, 4};

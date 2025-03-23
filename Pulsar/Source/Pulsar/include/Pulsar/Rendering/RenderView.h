@@ -3,7 +3,15 @@
 
 namespace pulsar
 {
-    class Capture
+    class RenderView;
+
+    class IRenderView
+    {
+    public:
+        virtual RenderView* GetRenderView() = 0;
+    };
+
+    class RenderView
     {
     public:
         jmath::Matrix4f Transform;

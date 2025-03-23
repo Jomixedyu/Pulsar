@@ -101,24 +101,24 @@ namespace pulsar
             {
                 auto& fbo = frameBuffers[i];
                 cmd->SetFrameBuffer(fbo.get());
-                cmd->CmdBeginFrameBuffer();
+                cmd->CmdBeginRenderPass();
 
 
 
-                cmd->CmdEndFrameBuffer();
+                cmd->CmdEndRenderPass();
                 cmd->SetFrameBuffer(nullptr);
             }
 
             for (auto& fbo : frameBuffers)
             {
                 cmd->SetFrameBuffer(fbo.get());
-                cmd->CmdBeginFrameBuffer();
+                cmd->CmdBeginRenderPass();
 
 
 
 
 
-                cmd->CmdEndFrameBuffer();
+                cmd->CmdEndRenderPass();
                 cmd->SetFrameBuffer(nullptr);
             }
 

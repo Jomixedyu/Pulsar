@@ -38,6 +38,7 @@ namespace pulsar
     protected:
         ObjectPtr<Node> BeginNewNode(index_string name = "Node", const ObjectPtr<Node>& parent = nullptr, ObjectFlags flags = 0);
         void EndNewNode(ObjectPtr<Node> node);
+        ObjectPtr<Node> ConstructNode(index_string name = "Node", ObjectHandle handle = {}, ObjectFlags flags = 0);
     protected:
         CORELIB_REFL_DECL_FIELD(m_rootNodes);
         List_sp<ObjectPtr<Node>> m_rootNodes;

@@ -85,18 +85,18 @@ namespace pulsar
 
         RCPtr<Shader> m_submitShader;
 
-        array_list<gfx::GFXGpuProgram_sp> m_gpuPrograms;
-        gfx::GFXGraphicsPipelineStateParams m_psoState;
+        array_list<gfx::GFXGpuProgram_sp>    m_gpuPrograms;
+        gfx::GFXGraphicsPipelineStateParams  m_psoState;
 
-        std::vector<uint8_t> m_bufferData;
+        std::vector<uint8_t>                 m_bufferData;
 
-        gfx::GFXDescriptorSet_sp m_descriptorSet;
-        gfx::GFXDescriptorSetLayout_sp m_descriptorSetLayout;
-        gfx::GFXBuffer_sp m_materialConstantBuffer;
+        gfx::GFXDescriptorSet_sp             m_descriptorSet;
+        gfx::GFXDescriptorSetLayout_sp       m_descriptorSetLayout;
+        gfx::GFXBuffer_sp                    m_materialConstantBuffer;
 
         bool m_createdGpuResource = false;
         bool m_isDirtyParameter{};
-        int m_renderQueue{};
+        int  m_renderQueue{};
 
         hash_map<index_string, MaterialParameterValue> m_parameterValues;
     };

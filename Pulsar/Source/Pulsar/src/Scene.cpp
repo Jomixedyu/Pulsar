@@ -105,7 +105,7 @@ namespace pulsar
         auto self = mksptr(new Scene);
         self->Construct();
         self->SetIndexName(name);
-        self->SetObjectFlags(self->GetObjectFlags() | OF_Persistent | OF_Instantiable);
+        self->SetObjectFlags(self->GetObjectFlags() | OF_Instantiable);
 
         return self;
     }

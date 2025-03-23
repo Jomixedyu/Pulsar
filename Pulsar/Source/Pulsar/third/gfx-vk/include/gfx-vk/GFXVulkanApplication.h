@@ -20,6 +20,8 @@ namespace gfx
     class GFXVulkanApplication : public GFXApplication
     {
     public:
+        using base = GFXApplication;
+
         explicit GFXVulkanApplication(GFXGlobalConfig config)
         {
             m_config = config;
@@ -39,7 +41,7 @@ namespace gfx
         virtual const char* GetApiLevelName() const override { return "Vulkan 1.3"; }
 
         void TickRender(float deltaTime);
-        virtual GFXBuffer_sp CreateBuffer(GFXBufferUsage usage, size_t bufferSize) override;
+        virtual GFXBuffer_sp CreateBuffer(const GFXBufferDesc& desc) override;
         virtual GFXCommandBuffer_sp CreateCommandBuffer() override;
         virtual GFXVertexLayoutDescription_sp CreateVertexLayoutDescription() override;
         virtual GFXGpuProgram_sp CreateGpuProgram(GFXGpuProgramStageFlags stage, const uint8_t* code, size_t length) override;
@@ -73,7 +75,7 @@ namespace gfx
         virtual GFXDescriptorManager* GetDescriptorManager() override;
 
         virtual GFXDescriptorSetLayout_sp CreateDescriptorSetLayout(
-            const GFXDescriptorSetLayoutInfo* layouts,
+            const GFXDescriptorSetLayoutDesc* layouts,
             size_t layoutCount) override;
 
         virtual array_list<GFXTextureFormat> GetSupportedDepthFormats() override;

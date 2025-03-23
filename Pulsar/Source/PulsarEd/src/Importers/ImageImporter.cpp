@@ -25,7 +25,7 @@ namespace pulsared
 
             asset->FromNativeData(fileBytes.data(), fileBytes.size(), true, width, height, channel);
 
-            auto assetPath = settings->TargetPath + "/" + PathUtil::GetFilenameWithoutExt(file);
+            auto assetPath = settings->ImportingTargetFolder + "/" + PathUtil::GetFilenameWithoutExt(file);
             assetPath = AssetDatabase::GetUniquePath(assetPath);
             AssetDatabase::CreateAsset(asset.get(), assetPath);
             importAssets.push_back(asset.get());

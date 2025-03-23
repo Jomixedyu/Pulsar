@@ -44,9 +44,13 @@ namespace pulsared
         {
             return Children;
         }
-        string GetPhysicsPath() const
+        std::filesystem::path GetPhysicsPath() const
         {
-            return jxcorlib::StringUtil::StringCast(absolute(PhysicsPath).generic_u8string());
+            return PhysicsPath;
+        }
+        string GetPhysicsPathUTF8() const
+        {
+            return jxcorlib::StringUtil::StringCast(PhysicsPath.generic_u8string());
         }
         string GetPhysicsName() const
         {
