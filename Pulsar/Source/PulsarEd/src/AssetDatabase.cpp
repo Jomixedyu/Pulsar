@@ -680,7 +680,7 @@ namespace pulsared
             return GetPackagePhysicsPath(packagePath);
         }
         const auto packageName = packagePath.substr(0, index);
-        const auto path = packagePath.substr(index + 1);
+        const auto path = jxcorlib::u8path(packagePath.substr(index + 1));
         return (GetPackagePhysicsPath(packageName) / path).generic_string();
     }
     string AssetDatabase::AssetPathToPackagePath(string_view assetPath)
