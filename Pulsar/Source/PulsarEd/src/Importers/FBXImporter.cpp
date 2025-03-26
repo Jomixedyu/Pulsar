@@ -220,7 +220,7 @@ namespace pulsared
     }
 
     template <typename T>
-    static T GetLayerElement(FbxLayerElementTemplate<T>* layer, int ctrlPoint, int vertIndex)
+    static T GetColorLayerElement(FbxLayerElementTemplate<T>* layer, int ctrlPoint, int vertIndex)
     {
         const auto mappingMode   = layer->GetMappingMode();
         const auto referenceMode = layer->GetReferenceMode();
@@ -255,6 +255,52 @@ namespace pulsared
             case FbxGeometryElement::EReferenceMode::eIndexToDirect: {
                 auto index = layer->GetIndexArray().GetAt(vertIndex);
                 return layer->GetDirectArray().GetAt(index);
+                break;
+            }
+            default:
+                assert(false);
+            }
+
+            break;
+        }
+        default:
+            assert(false);
+        }
+        return {};
+    }
+
+    template <typename T>
+    static T GetUVLayerElement(FbxLayerElementTemplate<T>* layer, int ctrlPoint, int vertIndex)
+    {
+        const auto mappingMode   = layer->GetMappingMode();
+        const auto referenceMode = layer->GetReferenceMode();
+        switch (mappingMode)
+        {
+        case FbxGeometryElement::EMappingMode::eByControlPoint: {
+            switch (referenceMode)
+            {
+            case FbxGeometryElement::EReferenceMode::eDirect: {
+                return layer->GetDirectArray().GetAt(ctrlPoint);
+                break;
+            }
+            case FbxGeometryElement::EReferenceMode::eIndexToDirect: {
+                auto index = layer->GetIndexArray().GetAt(ctrlPoint);
+                return layer->GetDirectArray().GetAt(index);
+                break;
+            }
+            default:
+                assert(false);
+                break;
+            }
+
+            break;
+        }
+        case FbxGeometryElement::EMappingMode::eByPolygonVertex: {
+            switch (referenceMode)
+            {
+            case FbxGeometryElement::EReferenceMode::eDirect:
+            case FbxGeometryElement::EReferenceMode::eIndexToDirect: {
+                return layer->GetDirectArray().GetAt(vertIndex);
                 break;
             }
             default:
@@ -323,13 +369,19 @@ namespace pulsared
                             {
                                 continue;
                             }
-                            vertex.TexCoords[i] = ToVector2f(GetLayerElement(fbxMesh->GetElementUV(i), controlPointIndex, vertexIndex));
+
+                            vertex.TexCoords[i] = ToVector2f(GetUVLayerElement(fbxMesh->GetElementUV(i), controlPointIndex, vertexIndex));
+                            if (inverseCoordsystem)
+                            {
+                                vertex.TexCoords[i].y = 1 - vertex.TexCoords[i].y;
+                            }
+
                         }
 
                         // color
                         if (auto fbxColors = fbxMesh->GetLayer(0)->GetVertexColors())
                         {
-                            vertex.Color = ToColor4f(GetLayerElement(fbxColors, controlPointIndex, vertexIndex));
+                            vertex.Color = ToColor4f(GetColorLayerElement(fbxColors, controlPointIndex, vertexIndex));
                         }
 
                         section.Vertex[vertexIndex] = vertex;
