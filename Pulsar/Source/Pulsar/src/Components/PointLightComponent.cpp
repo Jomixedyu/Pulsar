@@ -10,7 +10,7 @@ namespace pulsar
 
 
 
-    static void CreateCircleLines(array_list<StaticMeshVertex>& verts, int segmentCount, float radius, Color4f color)
+    static void CreateCircleLines(array_list<StaticMeshVertex>& verts, int segmentCount, float radius, Color4b color)
     {
         auto theta = jmath::Radians(360.f / (float)segmentCount);
         for (int i = 0; i < segmentCount; ++i)
@@ -24,7 +24,7 @@ namespace pulsar
         }
     }
 
-    static void CreateSphereVolumeLines(array_list<StaticMeshVertex>& verts, int segmentCount, float radius, const Matrix4f& transform, Color4f defaultColor = {1, 1, 1, 1})
+    static void CreateSphereVolumeLines(array_list<StaticMeshVertex>& verts, int segmentCount, float radius, const Matrix4f& transform, Color4b defaultColor)
     {
         array_list<StaticMeshVertex> circle;
         circle.reserve(segmentCount * 2);
@@ -85,7 +85,7 @@ namespace pulsar
 
     void PointLightComponent::OnDrawGizmo(GizmoPainter* painter, bool selected)
     {
-        auto lineColor = selected ? Color4f{0.3f, 1.f, 0.3f} : Color4f{0, 0.1f, 0.4f};
+        auto lineColor = selected ? painter->DefaultSelectedLineColor : painter->DefaultLineColor;
 
         static array_list<StaticMeshVertex> verts;
         verts.clear();

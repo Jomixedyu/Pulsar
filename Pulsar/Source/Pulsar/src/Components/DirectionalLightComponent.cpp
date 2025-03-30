@@ -14,7 +14,7 @@ namespace pulsar
         base::BeginComponent();
 
         auto ro = mksptr(new LineRenderObject);
-        Color4f lineColor {1,1,1};
+        Color4b lineColor {255,255,255};
 
         array_list<Vector3f> prototype;
         prototype.emplace_back(0,0,0);
@@ -27,7 +27,7 @@ namespace pulsar
         prototype.emplace_back(0,0.1,1);
 
         array_list<Vector3f> points;
-        array_list<Color4f> colors;
+        array_list<Color4b> colors;
 
         int num = 3;
         for (int i = 0; i < num; ++i)

@@ -17,6 +17,99 @@
 
 namespace pulsared
 {
+    class FBXHelper
+    {
+        FBXHelper()
+        {
+            m_manager = FbxManager::Create();
+
+            // Create an IOSettings object. This object holds all import/export settings.
+            FbxIOSettings* ios = FbxIOSettings::Create(m_manager, IOSROOT);
+            m_manager->SetIOSettings(ios);
+
+            // Load plugins from the executable directory (optional)
+            FbxString lPath = FbxGetApplicationDirectory();
+            m_manager->LoadPluginsDirectory(lPath.Buffer());
+        }
+        FbxScene* LoadScene(const char* pFilename)
+        {
+            auto pScene = FbxScene::Create(m_manager, "My Scene");
+            auto pManager = m_manager;
+
+            int lFileMajor, lFileMinor, lFileRevision;
+            int lSDKMajor, lSDKMinor, lSDKRevision;
+            // int lFileFormat = -1;
+            int lAnimStackCount;
+            bool lStatus;
+            char lPassword[1024];
+
+            // Get the file version number generate by the FBX SDK.
+            FbxManager::GetFileFormatVersion(lSDKMajor, lSDKMinor, lSDKRevision);
+
+            // Create an importer.
+            FbxImporter* lImporter = FbxImporter::Create(pManager, "");
+
+            // Initialize the importer by providing a filename.
+            const bool lImportStatus = lImporter->Initialize(pFilename, -1, pManager->GetIOSettings());
+            lImporter->GetFileVersion(lFileMajor, lFileMinor, lFileRevision);
+
+            if (!lImportStatus)
+            {
+                FbxString error = lImporter->GetStatus().GetErrorString();
+                throw std::runtime_error(string("FbxImporter::Initialize() failed: ") + error.Buffer());
+            }
+
+            // Import the scene.
+            lStatus = lImporter->Import(pScene);
+            if (lStatus == true)
+            {
+                // Check the scene integrity!
+                FbxStatus status;
+                FbxArray<FbxString*> details;
+                FbxSceneCheckUtility sceneCheck(FbxCast<FbxScene>(pScene), &status, &details);
+                lStatus = sceneCheck.Validate(FbxSceneCheckUtility::eCkeckData);
+                bool lNotify = (!lStatus && details.GetCount() > 0) || (lImporter->GetStatus().GetCode() != FbxStatus::eSuccess);
+                if (lNotify)
+                {
+                    if (details.GetCount())
+                    {
+                        FBXSDK_printf("Scene integrity verification failed with the following errors:\n");
+                        for (int i = 0; i < details.GetCount(); i++)
+                            FBXSDK_printf("   %s\n", details[i]->Buffer());
+
+                        FbxArrayDelete<FbxString*>(details);
+                    }
+
+                    if (lImporter->GetStatus().GetCode() != FbxStatus::eSuccess)
+                    {
+                        FBXSDK_printf("\n");
+                        FBXSDK_printf("WARNING:\n");
+                        FBXSDK_printf("   The importer was able to read the file but with errors.\n");
+                        FBXSDK_printf("   Loaded scene may be incomplete.\n\n");
+                        FBXSDK_printf("   Last error message:'%s'\n", lImporter->GetStatus().GetErrorString());
+                    }
+                }
+            }
+
+            if (lStatus == false && lImporter->GetStatus().GetCode() == FbxStatus::ePasswordError)
+            {
+                assert((false, "Please enter password: "));
+            }
+
+            // Destroy the importer.
+            lImporter->Destroy();
+
+            return pScene;
+        }
+
+        ~FBXHelper()
+        {
+            m_manager->Destroy();
+        }
+
+        FbxManager* m_manager;
+    };
+
     static void InitializeSdkObjects(FbxManager*& pManager, FbxScene*& pScene)
     {
         // The first thing to do is to create the FBX Manager which is the object allocator for almost all the classes in the SDK
@@ -39,6 +132,7 @@ namespace pulsared
 
         // Create an FBX scene. This object holds most objects imported/exported from/to files.
         pScene = FbxScene::Create(pManager, "My Scene");
+
         if (!pScene)
         {
             FBXSDK_printf("Error: Unable to create FBX scene!\n");
@@ -210,9 +304,9 @@ namespace pulsared
     {
         return {(float)vec[0], (float)vec[1]};
     }
-    static inline Color4f ToColor4f(const FbxColor& color)
+    static inline auto ToColor(const FbxColor& color)
     {
-        return {(float)color.mRed, (float)color.mGreen, (float)color.mBlue, (float)color.mAlpha};
+        return Color4b{uint8_t(color.mRed * 255), uint8_t(color.mGreen * 255), uint8_t(color.mBlue * 255), uint8_t(color.mAlpha * 255) };
     }
     static inline Quat4f ToQuat(const FbxQuaternion& q)
     {
@@ -381,7 +475,7 @@ namespace pulsared
                         // color
                         if (auto fbxColors = fbxMesh->GetLayer(0)->GetVertexColors())
                         {
-                            vertex.Color = ToColor4f(GetColorLayerElement(fbxColors, controlPointIndex, vertexIndex));
+                            vertex.Color = ToColor(GetColorLayerElement(fbxColors, controlPointIndex, vertexIndex));
                         }
 
                         section.Vertex[vertexIndex] = vertex;
@@ -412,10 +506,12 @@ namespace pulsared
     static void ProcessNode(
         FbxNode* fbxNode,
         Node_ref parentNode,
-        NodeCollection_ref pscene,
+        RCPtr<Prefab> pscene,
         FBXImporterSettings* settings,
         bool inverseCoordsystem,
-        const string& meshFolder)
+        const string& meshFolder,
+        array_list<RCPtr<AssetObject>>& importedAssets
+        )
     {
         auto newNodeName = fbxNode->GetName();
         const auto newNode = pscene->NewNode(newNodeName, parentNode);
@@ -439,13 +535,15 @@ namespace pulsared
             transform->SetPosition(translation);
             transform->SetRotation(rotation);
             transform->SetScale(scaling);
+
+            importedAssets.push_back(staticMesh);
         }
 
         const auto childCount = fbxNode->GetChildCount();
         for (int childIndex = 0; childIndex < childCount; childIndex++)
         {
             const auto childFbxNode = fbxNode->GetChild(childIndex);
-            ProcessNode(childFbxNode, newNode, pscene, settings, inverseCoordsystem, meshFolder);
+            ProcessNode(childFbxNode, newNode, pscene, settings, inverseCoordsystem, meshFolder, importedAssets);
         }
     }
 
@@ -456,6 +554,8 @@ namespace pulsared
         using namespace fbxsdk;
         FbxManager* fbxManager;
         FbxScene* fbxScene;
+
+        array_list<RCPtr<AssetObject>> importedAssets;
 
         InitializeSdkObjects(fbxManager, fbxScene);
 
@@ -498,13 +598,15 @@ namespace pulsared
             for (int i = 0; i < rootCount; ++i)
             {
                 auto sceneRootNode = fbxRootNode->GetChild(i);
-                ProcessNode(sceneRootNode, nullptr, prefab, fbxsetting, inverseCoordSystem, targetMeshFolder);
+                ProcessNode(sceneRootNode, nullptr, prefab, fbxsetting, inverseCoordSystem, targetMeshFolder, importedAssets);
             }
 
             AssetDatabase::CreateAsset(prefab.GetPtr(), settings->ImportingTargetFolder + "/" + filename);
+            importedAssets.push_back(prefab);
+
             DestroySdkObjects(fbxManager, 0);
         }
-        return {};
+        return importedAssets;
     }
 
 } // namespace pulsared

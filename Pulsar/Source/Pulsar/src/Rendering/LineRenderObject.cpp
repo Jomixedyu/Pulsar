@@ -8,7 +8,7 @@ namespace pulsar
 {
     static inline gfx::GFXDescriptorSetLayout_wp MeshDescriptorSetLayout{};
 
-    void LineRenderObject::SetPoints(const array_list<Vector3f>& pointPairs, const array_list<Color4f>& pointColors)
+    void LineRenderObject::SetPoints(const array_list<Vector3f>& pointPairs, const array_list<Color4b>& pointColors)
     {
         m_verties.clear();
         for (size_t i = 0; i < pointPairs.size(); i++)

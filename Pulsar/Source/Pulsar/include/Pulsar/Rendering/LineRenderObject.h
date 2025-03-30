@@ -21,7 +21,7 @@ namespace pulsar
     public:
         LineRenderObject() = default;
 
-        void SetPoints(const array_list<Vector3f>& pointPairs, const array_list<Color4f>& pointColors);
+        void SetPoints(const array_list<Vector3f>& pointPairs, const array_list<Color4b>& pointColors);
         void SetVerties(const array_list<StaticMeshVertex>& verties);
         size_t GetPointCount() const { return m_verties.size(); }
         void Fill();

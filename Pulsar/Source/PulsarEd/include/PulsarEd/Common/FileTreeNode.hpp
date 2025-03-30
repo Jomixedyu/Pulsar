@@ -136,7 +136,7 @@ namespace pulsared
             newChild->Parent = sharedthis::shared_from_this();
             newChild->AssetName = name;
             newChild->AssetPath = AssetPath + "/" + string{name};
-            newChild->PhysicsPath = PhysicsPath / jxcorlib::u8path(string{name} + string{ext});
+            newChild->PhysicsPath = PhysicsPath / jxcorlib::PathToU8Str(string{name} + string{ext});
             Children.push_back(newChild);
             Sort();
             return newChild;

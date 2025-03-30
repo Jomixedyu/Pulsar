@@ -3,6 +3,7 @@
 #include "EditorRenderPipeline.h"
 #include "Editors/EditorWindow.h"
 #include "Editors/SceneEditor/SceneEditor.h"
+#include "Importers/FBXImporter.h"
 #include "Pulsar/Components/PointLightComponent.h"
 
 #include "Shaders/EditorShader.h"
@@ -310,6 +311,53 @@ namespace pulsared
         assert(PreCompileShaderPaths.empty());
     }
 
+    static void PreImportBuiltinModel()
+    {
+        {
+            FBXImporter importer;
+            FBXImporterSettings settings;
+
+            auto cube = AssetDatabase::GetPackagePhysicsPath("Engine") / "SrcModel/Cube.fbx";
+            settings.ImportFiles->push_back(jxcorlib::PathToU8Str(cube));
+            settings.ImportingTargetFolder = "Engine/Shapes";
+
+            auto imported = importer.Import(&settings);
+            for (auto item : imported)
+            {
+                AssetDatabase::Save(item);
+            }
+        }
+        {
+            FBXImporter importer;
+            FBXImporterSettings settings;
+
+            auto sphere = AssetDatabase::GetPackagePhysicsPath("Engine") / "SrcModel/Sphere.fbx";
+            settings.ImportFiles->push_back(jxcorlib::PathToU8Str(sphere));
+            settings.ImportingTargetFolder = "Engine/Shapes";
+
+            auto imported = importer.Import(&settings);
+            for (auto item : imported)
+            {
+                AssetDatabase::Save(item);
+            }
+        }
+
+        {
+            FBXImporter importer;
+            FBXImporterSettings settings;
+
+            auto sphere = AssetDatabase::GetPackagePhysicsPath("Engine") / "SrcModel/Plane.fbx";
+            settings.ImportFiles->push_back(jxcorlib::PathToU8Str(sphere));
+            settings.ImportingTargetFolder = "Engine/Shapes";
+
+            auto imported = importer.Import(&settings);
+            for (auto item : imported)
+            {
+                AssetDatabase::Save(item);
+            }
+        }
+    }
+
     void EditorAppInstance::OnInitialized()
     {
         m_assetManager = new EditorAssetManager;
@@ -326,6 +374,7 @@ namespace pulsared
         Logger::Log("precompile shaders...");
         // recompile obsolete shaders
         PreCompileShaders();
+        // PreImportBuiltinModel();
 
         // world
         Logger::Log("initialize world");

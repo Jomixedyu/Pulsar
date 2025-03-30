@@ -1,8 +1,8 @@
+#include <CoreLib/File.h>
 #include <Pulsar/Application.h>
 #include <Pulsar/EngineAppInstance.h>
 #include <PulsarEd/EditorAppInstance.h>
 #include <PulsarEd/EditorUIConfig.h>
-#include <CoreLib/File.h>
 #include <Windows.h>
 #include <iostream>
 
@@ -10,14 +10,36 @@ using namespace std;
 using namespace pulsar;
 using namespace pulsared;
 
+std::wstring String2Wstring(std::string wstr)
+{
+    std::wstring res;
+    int len = MultiByteToWideChar(CP_ACP, 0, wstr.c_str(), wstr.size(), nullptr, 0);
+    if( len < 0 ){
+        return res;
+    }
+    wchar_t* buffer = new wchar_t[len + 1];
+    if( buffer == nullptr){
+        return res;
+    }
+    MultiByteToWideChar(CP_ACP, 0, wstr.c_str(), wstr.size(), buffer, len);
+    buffer[len] = '\0';
+    res.append(buffer);
+    delete[] buffer;
+    return res;
+}
+
 int main()
 {
-    // auto tri = jmath::Triangle3f{{0.0f, 0.0, 0}, {1.f, 0, 0}, {0.f, 1.f, 0}};
-    // cout << to_string(tri.BarycentricCoordinates({-0.5f,0.1f,0}));
-    //
-    // Vector3f inter{};
-    // jmath::Edge3<float> edge { {0.01f, 0.01, -1}, {0.01f, 0.01, 1} };
-    // jmath::Intersect(tri.GetPlane(), edge, inter);
+    int code = 0;
+    try
+    {
+        code = Application::Exec(new EditorAppInstance, "Pulsar Editor", { 1280,720 });
+    }
+    catch(std::exception& e)
+    {
 
-    return Application::Exec(new EditorAppInstance, "Pulsar Editor", { 1280,720 });
+        _wassert(String2Wstring(e.what()).c_str(), _CRT_WIDE(__FILE__), __LINE__);
+
+    }
+    return code;
 }

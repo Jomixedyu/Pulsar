@@ -35,8 +35,8 @@ namespace pulsar
 
         GizmoContext Context;
 
-        inline static constexpr Color4f DefaultSelectedLineColor {0.3f, 1.f, 0.3f} ;
-        inline static constexpr Color4f DefaultLineColor {0, 0.1f, 0.4f};
+        inline static constexpr Color4b DefaultSelectedLineColor {uint8_t(255 * 0.3f), uint8_t(255 * 1.f), uint8_t(255 * 0.3f) } ;
+        inline static constexpr Color4b DefaultLineColor {0, uint8_t(255 * 0.1f), uint8_t(255 * 0.4f) };
     };
 
     class Component;

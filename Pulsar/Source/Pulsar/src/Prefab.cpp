@@ -4,7 +4,7 @@
 namespace pulsar
 {
 
-    ObjectPtr<Prefab> Prefab::StaticCreate(string_view name)
+    RCPtr<Prefab> Prefab::StaticCreate(string_view name)
     {
         auto self = mksptr(new Prefab);
         self->Construct();

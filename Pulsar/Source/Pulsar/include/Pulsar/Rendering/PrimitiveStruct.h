@@ -11,7 +11,7 @@ namespace pulsar
         Vector3f Normal;
         Vector3f Tangent;
         Vector3f Bitangent;
-        Color4f Color;
+        Color4b Color;
         Vector2f TexCoords[STATICMESH_MAX_TEXTURE_COORDS];
     };
     constexpr inline int kSizeofStaticMeshVertex = sizeof(StaticMeshVertex);

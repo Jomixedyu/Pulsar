@@ -21,7 +21,7 @@ namespace pulsared
         void OnTransformChanged() override;
     private:
         array_list<Vector3f> m_vert;
-        array_list<Color4f> m_colors;
+        array_list<Color4b> m_colors;
 
         SPtr<rendering::RenderObject> m_renderObject;
     };

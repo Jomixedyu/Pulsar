@@ -4,7 +4,7 @@
 
 namespace pulsar
 {
-    static void CreateCircleLines(array_list<StaticMeshVertex>& verts, int segmentCount, float radius, Color4f color)
+    static void CreateCircleLines(array_list<StaticMeshVertex>& verts, int segmentCount, float radius, Color4b color)
     {
         auto theta = jmath::Radians(360.f / (float)segmentCount);
         for (int i = 0; i < segmentCount; ++i)

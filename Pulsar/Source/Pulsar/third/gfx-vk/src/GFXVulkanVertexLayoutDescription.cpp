@@ -19,7 +19,8 @@ namespace gfx
             { GFXVertexInputDataFormat::R32G32B32_SFloat, VK_FORMAT_R32G32B32_SFLOAT },
             { GFXVertexInputDataFormat::R32G32B32A32_SFloat, VK_FORMAT_R32G32B32A32_SFLOAT },
             { GFXVertexInputDataFormat::R32G32_SFloat, VK_FORMAT_R32G32_SFLOAT },
-            { GFXVertexInputDataFormat::R8G8B8A8_UInt, VK_FORMAT_R8G8B8A8_UINT }
+            { GFXVertexInputDataFormat::R8G8B8A8_UInt, VK_FORMAT_R8G8B8A8_UINT },
+            { GFXVertexInputDataFormat::R8G8B8A8_UNorm, VK_FORMAT_R8G8B8A8_UNORM }
         };
         auto it = map.find(format);
         assert(it != map.end());
