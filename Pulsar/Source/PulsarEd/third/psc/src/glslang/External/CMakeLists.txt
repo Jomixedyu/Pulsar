@@ -1,4 +1,4 @@
-# Copyright (C) 2020 The Khronos Group Inc.
+# Copyright (C) 2020-2025 The Khronos Group Inc.
 #
 # All rights reserved.
 #
@@ -34,7 +34,7 @@
 # Suppress all warnings from external projects.
 set_property(DIRECTORY APPEND PROPERTY COMPILE_OPTIONS -w)
 
-if(BUILD_TESTING)
+if(GLSLANG_TESTS)
     if(TARGET gmock)
         message(STATUS "Google Mock already configured - use it")
     elseif(IS_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/googletest)
@@ -42,7 +42,7 @@ if(BUILD_TESTING)
         # global CRT settings on Windows.
         if(WIN32)
             set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-        endif(WIN32)
+        endif()
         # EXCLUDE_FROM_ALL keeps the install target from installing GTEST files.
         add_subdirectory(googletest EXCLUDE_FROM_ALL)
         set(GTEST_TARGETS
@@ -71,7 +71,7 @@ endif()
 if(ENABLE_OPT AND NOT TARGET SPIRV-Tools-opt)
     if(IS_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/spirv-tools)
         set(SPIRV_SKIP_TESTS ON CACHE BOOL "Skip building SPIRV-Tools tests")
-        add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/spirv-tools spirv-tools)
+        add_subdirectory(spirv-tools)
     endif()
 endif()
 

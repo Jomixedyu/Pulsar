@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2002-2005  3Dlabs Inc. Ltd.
+// Copyright (C) 2024 The Khronos Group Inc.
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -32,6 +32,20 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //
 
-namespace glslang {
+#ifdef GLSLANG_IS_SHARED_LIBRARY
+#ifdef _WIN32
+#ifdef GLSLANG_EXPORTING
+#define STUB_EXPORT __declspec(dllexport)
+#else
+#define STUB_EXPORT __declspec(dllimport)
+#endif
+#endif
+#endif // GLSLANG_IS_SHARED_LIBRARY
 
-} // end namespace glslang
+#ifndef STUB_EXPORT
+#define STUB_EXPORT
+#endif
+
+// Force stub library to export function to preserve backcompat.
+// https://github.com/KhronosGroup/glslang/issues/3882
+STUB_EXPORT int stub_library_function() { return 0; }
