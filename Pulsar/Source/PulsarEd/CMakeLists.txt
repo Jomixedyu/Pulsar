@@ -19,11 +19,11 @@ endif ()
 
 
 #add_library(${PROJECT_NAME} STATIC ${Pulsared_SRC})
-file(GLOB_RECURSE Pulsared_SRC "src/*.h" "src/*.hpp" "src/*.cpp" "include/*.h" "include/*.hpp" "include/*.cpp")
+file(GLOB_RECURSE Pulsared_SRC "src/*.h" "src/*.hpp" "src/*.cpp")
 add_executable(${PROJECT_NAME} ${Pulsared_SRC})
 
-target_include_directories(${PROJECT_NAME} PUBLIC "./include")
-target_include_directories(${PROJECT_NAME} PRIVATE "./include/PulsarEd")
+target_include_directories(${PROJECT_NAME} PUBLIC "./src")
+target_include_directories(${PROJECT_NAME} PRIVATE "./src/PulsarEd")
 
 
 #link pulsar
