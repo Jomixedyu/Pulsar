@@ -1,5 +1,5 @@
 #pragma once
-#include "../../../../Pulsar/include/Pulsar/SelectionSet.h"
+#include <Pulsar/SelectionSet.h>
 #include "EdTool.h"
 #include "ViewEdTool.h"
 
