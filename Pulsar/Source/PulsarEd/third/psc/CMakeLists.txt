@@ -21,5 +21,5 @@ target_include_directories(${PROJECT_NAME} PRIVATE "./include/psc")
 
 #target_include_directories(${PROJECT_NAME} PUBLIC "./src/glslang")
 
-target_link_libraries(${PROJECT_NAME} PRIVATE "GenericCodeGen" "MachineIndependent" "glslang" "HLSL" "OSDependent" "OGLCompiler" "SPIRV")
+target_link_libraries(${PROJECT_NAME} PRIVATE "GenericCodeGen" "MachineIndependent" "glslang" "OSDependent" "SPIRV")
 target_link_libraries(${PROJECT_NAME} PRIVATE "spirv-cross-core" "spirv-cross-glsl")
