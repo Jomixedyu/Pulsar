@@ -192,6 +192,7 @@ namespace pulsared
 
     static void SetupDefaultResidentScene()
     {
+
         auto scene = World::Current()->GetResidentScene();
         // light
         {
@@ -199,6 +200,7 @@ namespace pulsared
             dlight->AddComponent<DirectionalLightComponent>();
             dlight->GetTransform()->TranslateRotateEuler({-3,3,-3}, {45,45,0});
         }
+
         // sky
         // if (0)
         {
@@ -209,6 +211,7 @@ namespace pulsared
             renderer->SetStaticMesh(sphere);
             renderer->SetMaterial(0, GetAssetManager()->LoadAsset<Material>("Engine/Materials/SkySphere"));
         }
+
         // default scene
         auto cube = GetAssetManager()->LoadAsset<StaticMesh>("Engine/Shapes/Cube", true);
         auto sphere = GetAssetManager()->LoadAsset<StaticMesh>("Engine/Shapes/Sphere", true);
@@ -237,25 +240,25 @@ namespace pulsared
         }
 
 
-        // {
-        //     std::default_random_engine e;
-        //     std::uniform_real_distribution<float> dis(0.0, 1.0);
-        //
-        //     for (int x = 0; x < 10; ++x)
-        //     {
-        //         for (int y = 0; y < 10; ++y)
-        //         {
-        //             ShapeMeshUtils::CreateSphere(scene, "sphere", litMat, true, Vector3f(x - 5, 5+x, y - 5));
-        //             ShapeMeshUtils::CreateSphere(scene, "sphere", litMat, true, Vector3f(x - 5, 8+x, y - 5));
-        //             ShapeMeshUtils::CreateSphere(scene, "sphere", litMat, true, Vector3f(x - 5, 10+x, y - 5));
-        //             ShapeMeshUtils::CreateSphere(scene, "sphere", litMat, true, Vector3f(x - 5, 12+x, y - 5));
-        //             ShapeMeshUtils::CreateSphere(scene, "sphere", litMat, true, Vector3f(x - 5, 14+x, y - 5));
-        //
-        //
-        //             ShapeMeshUtils::CreateCube(scene, "cube", litMat,true, Vector3f(x - 5, 3+y, y - 5),{dis(e) * 360.f, dis(e) * 360.f,dis(e) * 360.f});
-        //         }
-        //     }
-        // }
+         {
+             std::default_random_engine e;
+             std::uniform_real_distribution<float> dis(0.0, 1.0);
+
+             for (int x = 0; x < 10; ++x)
+             {
+                 for (int y = 0; y < 10; ++y)
+                 {
+                     ShapeMeshUtils::CreateSphere(scene, "sphere", litMat, true, Vector3f(x - 5, 5+x, y - 5));
+                     ShapeMeshUtils::CreateSphere(scene, "sphere", litMat, true, Vector3f(x - 5, 8+x, y - 5));
+                     ShapeMeshUtils::CreateSphere(scene, "sphere", litMat, true, Vector3f(x - 5, 10+x, y - 5));
+                     ShapeMeshUtils::CreateSphere(scene, "sphere", litMat, true, Vector3f(x - 5, 12+x, y - 5));
+                     ShapeMeshUtils::CreateSphere(scene, "sphere", litMat, true, Vector3f(x - 5, 14+x, y - 5));
+
+
+                     ShapeMeshUtils::CreateCube(scene, "cube", litMat,true, Vector3f(x - 5, 3+y, y - 5),{dis(e) * 360.f, dis(e) * 360.f,dis(e) * 360.f});
+                 }
+             }
+         }
     }
 
     static void _RegisterIcon(Type* type, string_view path)
@@ -303,9 +306,9 @@ namespace pulsared
             if (std::ranges::contains(PreCompileShaderPaths, element))
             {
                 std::erase(PreCompileShaderPaths, element);
-                auto asset = cref_cast<Shader>(AssetDatabase::LoadAssetAtPath(element));
+                auto asset = cast<Shader>(AssetDatabase::LoadAssetAtPath(element));
                 assert(asset);
-                ShaderCompiler::CompileShader(asset.GetPtr(), {gfx::GFXApi::Vulkan}, {}, {});
+                ShaderCompiler::CompileShader(asset, {gfx::GFXApi::Vulkan}, {}, {});
             }
         }
         assert(PreCompileShaderPaths.empty());

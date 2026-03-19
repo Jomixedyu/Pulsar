@@ -25,7 +25,7 @@ namespace pulsar
     public:
         SPtr<rendering::RenderObject> CreateRenderObject() override;
     public:
-        void GetDependencies(array_list<ObjectHandle>& out) override;
+        void GetSubscribeObserverHandles(array_list<ObjectHandle>& out) override;
         List_sp<RCPtr<Material>> GetMaterials() const { return this->m_materials; }
 
         void PostEditChange(FieldInfo* info) override;
@@ -38,7 +38,7 @@ namespace pulsar
         RCPtr<StaticMesh> GetStaticMesh() const { return m_staticMesh; }
         void SetStaticMesh(RCPtr<StaticMesh> staticMesh);
 
-        RCPtr<StaticMesh> GetMaterial(int index) const;
+        RCPtr<Material> GetMaterial(int index) const;
         void   SetMaterial(int index, RCPtr<Material> material);
         size_t AddMaterial(RCPtr<Material> material = nullptr);
         void   RemoveMaterial(size_t index);
@@ -52,7 +52,7 @@ namespace pulsar
         int32_t GetRenderQueuePriority() const { return m_renderQueuePriority; }
         void SetRenderQueuePriority(int32_t value) { m_renderQueuePriority = value; }
     protected:
-        void OnDependencyMessage(ObjectHandle inDependency, DependencyObjectState msg) override;
+        void OnNotifyObserver(ObjectHandle inDependency, DependencyObjectState msg) override;
         void ResizeMaterials(size_t size);
         // void BeginListenMaterialStateChanged(size_t index);
         // void EndListenMaterialStateChanged(size_t index);

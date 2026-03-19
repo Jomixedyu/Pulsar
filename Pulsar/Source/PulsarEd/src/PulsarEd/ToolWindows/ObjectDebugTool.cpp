@@ -39,8 +39,9 @@ namespace pulsared
             ImGui::TableSetColumnIndex(2);
             ImGui::Text(info.Handle.to_string().c_str());
 
+
             ImGui::TableSetColumnIndex(3);
-            ImGui::Text(AssetDatabase::GetPathById(info.Handle).c_str());
+            ImGui::Text(AssetDatabase::GetPathByAsset(RCPtrBase::SafeCreate(info.Handle)).c_str());
 
             ImGui::TableSetColumnIndex(4);
             ImGui::Text(std::to_string(RuntimeObjectManager::GetPointer(info.Handle)->RefCount()).c_str());

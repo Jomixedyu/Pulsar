@@ -20,8 +20,8 @@ namespace pulsar
         std::shared_ptr<gfx::GFXTexture> GetGFXTexture() const override { return m_gfxTexture; }
 
         void PostEditChange(FieldInfo* info) override;
-        void OnDependencyMessage(ObjectHandle inDependency, DependencyObjectState msg) override;
-        void GetDependencies(array_list<ObjectHandle>& out) override;
+        void OnNotifyObserver(ObjectHandle inDependency, DependencyObjectState msg) override;
+        void GetSubscribeObserverHandles(array_list<ObjectHandle>& out) override;
     protected:
 
         CORELIB_REFL_DECL_FIELD(m_width, new RangePropertyAttribute(4, 2048))

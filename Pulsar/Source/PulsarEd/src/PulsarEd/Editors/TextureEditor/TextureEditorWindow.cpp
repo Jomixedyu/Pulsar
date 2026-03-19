@@ -31,10 +31,10 @@ namespace pulsared
         m_createDirectionalLight = false;
         base::OnOpen();
 
-        RCPtr<Texture> tex = m_assetObject;
+        RCPtr<Texture> tex = cast<Texture>(m_assetObject);
         tex->CreateGPUResource();
 
-        m_ppMat = GetAssetManager()->LoadAsset<Material>("Engine/Materials/ImagePreview")->InstantiateAsset();
+        m_ppMat = InstantiateAsset(GetAssetManager()->LoadAsset<Material>("Engine/Materials/ImagePreview"));
         m_ppMat->SetTexture("_Image", tex);
         int32_t flags{};
         flags |= FLAGS_GAMMA;
@@ -160,7 +160,7 @@ namespace pulsared
 
     void TextureEditorWindow::OnDrawAssetPreviewUI(float dt)
     {
-        RCPtr<Texture> tex = m_assetObject;
+        RCPtr<Texture> tex = cast<Texture>(m_assetObject);
         auto width = tex->GetWidth();
         auto height = tex->GetHeight();
 
@@ -261,7 +261,7 @@ namespace pulsared
     {
         base::OnDrawAssetPropertiesUI(dt);
 
-        RCPtr<Texture> tex = m_assetObject;
+        RCPtr<Texture> tex = cast<Texture>(m_assetObject);
         const auto texSize = tex->GetSize2df();
 
         if (PImGui::PropertyGroup("Texture"))

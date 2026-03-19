@@ -1,6 +1,9 @@
 {
     "ExtraFiles": {},
-    "Handle": "fdb7814ec76fdd4f8a146135011b4a8a",
+    "Guid": "fdb7814ec76fdd4f8a146135011b4a8a",
     "Tags": {},
-    "Type": "pulsar::Material"
+    "Type": "pulsar::Material",
+	"Dependencies": [
+		"d0bcbdb69f3a7f4c9fbcf4244ce26e9c"
+	]
 }

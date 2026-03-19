@@ -12,7 +12,7 @@
 namespace pulsar
 {
 
-    void Component::Serialize(ComponentSerializer* s)
+    void Component::Serialize(SceneObjectSerializer* s)
     {
         if (s->IsWrite)
         {
@@ -25,7 +25,7 @@ namespace pulsar
         }
     }
 
-    ObjectPtr<Node> Component::GetMasterComponent() const
+    ObjectPtr<Component> Component::GetMasterComponent() const
     {
         return m_masterComponent;
     }
@@ -37,7 +37,7 @@ namespace pulsar
     {
         return m_runtimeScene;
     }
-    TransformComponent* Component::GetTransform() const
+    ObjectPtr<TransformComponent> Component::GetTransform() const
     {
         return m_ownerNode->GetTransform();
     }
@@ -90,11 +90,11 @@ namespace pulsar
     void Component::BeginComponent()
     {
         m_beginning = true;
-        m_runtimeScene = GetNode()->GetRuntimeOwnerScene().GetPtr();
+        m_runtimeScene = GetNode()->GetRuntimeOwnerScene();
 
         if (m_canDrawGizmo)
         {
-            GetWorld()->GetGizmosManager().AddGizmoComponent(this);
+            GetWorld()->GetGizmosManager().AddGizmoComponent(self_ptr());
         }
     }
     void Component::EndComponent()
@@ -103,7 +103,7 @@ namespace pulsar
 
         if (m_canDrawGizmo)
         {
-            GetWorld()->GetGizmosManager().RemoveGizmoComponent(this);
+            GetWorld()->GetGizmosManager().RemoveGizmoComponent(self_ptr());
         }
     }
 } // namespace pulsar

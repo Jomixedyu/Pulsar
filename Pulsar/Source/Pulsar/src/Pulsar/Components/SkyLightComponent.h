@@ -16,6 +16,7 @@ namespace pulsar
         void OnLightColorChanged() override;
         void OnEnvironmentChanged();
         void PostEditChange(FieldInfo* info) override;
+        void GetDependenciesAsset(array_list<guid_t>& deps) const override;
 
         std::unique_ptr<SkyLightSceneInfo> m_sceneInfo;
 

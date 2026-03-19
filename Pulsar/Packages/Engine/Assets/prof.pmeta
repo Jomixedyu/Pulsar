@@ -1,6 +1,9 @@
 {
     "ExtraFiles": {},
-    "Handle": "7925438ae4736e4d93077b862a6d3b0e",
+    "Guid": "7925438ae4736e4d93077b862a6d3b0e",
     "Tags": {},
-    "Type": "pulsar::Texture2D"
+    "Type": "pulsar::Texture2D",
+	"Dependencies": [
+		
+	]
 }

@@ -7,7 +7,7 @@
 
 namespace pulsared
 {
-    static void _Show(EditorWorld* world, List_sp<Node_ref> nodes)
+    static void _Show(EditorWorld* world, List_sp<ObjectPtr<Node>> nodes)
     {
         for (auto& node : *nodes)
         {
@@ -60,7 +60,7 @@ namespace pulsared
 
             if (isOpened)
             {
-                auto childNodes = mksptr(new List<Node_ref>);
+                auto childNodes = mksptr(new List<ObjectPtr<Node>>);
                 childNodes->reserve(children->size());
                 for (auto& child : *children)
                 {

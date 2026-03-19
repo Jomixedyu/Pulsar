@@ -93,7 +93,7 @@ namespace pulsar
     void CurveLinearColor::PostEditChange(FieldInfo* info)
     {
         base::PostEditChange(info);
-        RuntimeObjectManager::NotifyDependencySource(GetObjectHandle(), DependencyObjectState::Reload);
+        RuntimeObjectManager::NotifyDependencySource(GetObjectHandle(), DependencyObjectState::Modified);
     }
 
 } // namespace pulsar

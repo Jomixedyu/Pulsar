@@ -7,7 +7,7 @@
 
 namespace pulsar
 {
-    static void _BeginNode(Scene_ref scene, Node_ref node)
+    static void _BeginNode(Scene_ref scene, ObjectPtr<Node> node)
     {
         if (!node->GetRuntimeOwnerScene())
         {
@@ -18,15 +18,15 @@ namespace pulsar
         //     _BeginNode(scene, child->GetAttachedNode());
         // }
     }
-    void Scene::OnAddNode(Node_ref node)
+    void Scene::OnAddNode(ObjectPtr<Node> node)
     {
         if (m_runtimeWorld)
         {
-            _BeginNode(self_ref(), node);
+            _BeginNode(self_ptr(), node);
         }
     }
 
-    void Scene::OnRemoveNode(Node_ref node)
+    void Scene::OnRemoveNode(ObjectPtr<Node> node)
     {
         if (m_runtimeWorld)
         {
@@ -39,7 +39,7 @@ namespace pulsar
         m_runtimeWorld = world;
         for (auto& node : *m_nodes)
         {
-            node->BeginNode(self_ref());
+            node->BeginNode(self_ptr());
         }
         for (auto& node : *m_rootNodes)
         {
@@ -102,8 +102,7 @@ namespace pulsar
 
     RCPtr<Scene> Scene::StaticCreate(string_view name)
     {
-        auto self = mksptr(new Scene);
-        self->Construct();
+        auto self = NewAssetObject<Scene>();
         self->SetIndexName(name);
         self->SetObjectFlags(self->GetObjectFlags() | OF_Instantiable);
 
@@ -112,64 +111,67 @@ namespace pulsar
 
     void Scene::AddPrefab(RCPtr<Prefab> prefab)
     {
-        auto prefabHandles = prefab->GetCollectionHandles().get();
-        hash_map<guid_t, guid_t> map;
-
-        array_list<Node_ref> addedNodes;
-        addedNodes.reserve(prefab->GetCollectionHandles()->size());
-
-        hash_map<Node_ref, Node_ref> newOldMapping;
-
-        for (auto& node : *prefab->GetNodes())
-        {
-            auto newNode = BeginNewNode(node->GetIndexName());
-            addedNodes.emplace_back(newNode);
-            map[node.GetHandle()] = newNode.GetHandle();
-            newOldMapping[newNode] = node;
-
-            array_list<Component_ref> components;
-            node->GetAllComponents(components);
-
-            for (auto& component : components)
-            {
-                auto newComponent = newNode->AddComponent(component->GetType());
-                map[component.GetHandle()] = newComponent.GetHandle();
-            }
-        }
-
-        for (auto& addedNode : addedNodes)
-        {
-            auto found = newOldMapping.find(addedNode);
-            if (found != newOldMapping.end())
-            {
-                auto oldNode = found->second;
-                for (size_t i = 0; i < oldNode->GetComponentCount(); ++i)
-                {
-                    auto oldComponent = oldNode->GetAllComponentArray()[i];
-
-                    auto objser = ser::CreateVarient("json");
-                    ComponentSerializer ser{objser, true, true};
-                    oldComponent->Serialize(&ser);
-
-                    auto newComponent = addedNode->GetAllComponentArray()[i];
-                    ser.IsWrite = false;
-                    ser.MovingTable = &map;
-                    newComponent->Serialize(&ser);
-
-                    if (auto transform = ref_cast<TransformComponent>(newComponent))
-                    {
-                        if (transform->GetParent())
-                        {
-                            UnregisterRootNode(addedNode);
-                        }
-                    }
-                }
-            }
-        }
-        for (auto& addedNode : addedNodes)
-        {
-            EndNewNode(addedNode);
-        }
+        //TODO: replace to combineFrom
+//
+//        auto prefabHandles = prefab->GetCollectionHandles().get();
+//        //hash_map<guid_t, guid_t> map;
+//
+//        array_list<ObjectPtr<Node>> addedNodes;
+//        addedNodes.reserve(prefab->GetCollectionHandles()->size());
+//
+//        hash_map<ObjectPtr<Node>, ObjectPtr<Node>> newOldMapping;
+//
+//        for (auto& nodePrefab : *prefab->GetNodes())
+//        {
+//            auto newNode = BeginNewNode(nodePrefab->GetIndexName());
+//            newNode->m_sourceSceneObjectGuid = nodePrefab->GetSceneObjectGuid();
+//            addedNodes.emplace_back(newNode);
+//            map[nodePrefab.GetHandle()] = newNode.GetHandle();
+//            newOldMapping[newNode] = nodePrefab;
+//
+//            array_list<Component_ref> components;
+//            nodePrefab->GetAllComponents(components);
+//
+//            for (auto& component : components)
+//            {
+//                auto newComponent = newNode->AddComponent(component->GetType());
+//                map[component.GetHandle()] = newComponent.GetHandle();
+//            }
+//        }
+//
+//        for (auto& addedNode : addedNodes)
+//        {
+//            auto found = newOldMapping.find(addedNode);
+//            if (found != newOldMapping.end())
+//            {
+//                auto oldNode = found->second;
+//                for (size_t i = 0; i < oldNode->GetComponentCount(); ++i)
+//                {
+//                    auto oldComponent = oldNode->GetAllComponentArray()[i];
+//
+//                    auto objser = ser::CreateVarient("json");
+//                    ComponentSerializer ser{objser, true, true};
+//                    oldComponent->Serialize(&ser);
+//
+//                    auto newComponent = addedNode->GetAllComponentArray()[i];
+//                    ser.IsWrite = false;
+//                    ser.MovingTable = &map;
+//                    newComponent->Serialize(&ser);
+//
+//                    if (auto transform = cast<TransformComponent>(newComponent))
+//                    {
+//                        if (transform->GetParent())
+//                        {
+//                            UnregisterRootNode(addedNode);
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//        for (auto& addedNode : addedNodes)
+//        {
+//            EndNewNode(addedNode);
+//        }
     }
 
     void Scene::OnDestroy()

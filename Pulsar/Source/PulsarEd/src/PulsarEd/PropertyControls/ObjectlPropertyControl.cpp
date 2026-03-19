@@ -14,82 +14,44 @@ namespace PImGui
 namespace pulsared
 {
 
-
-    bool ObjectPropertyControl::OnDrawImGui(const string& name, Type* type, Object* prop)
+    static bool AssetObjectControl(BoxingRCPtrBase* obj, Type* type)
     {
-        bool isChanged = false;
+        auto ptr = obj->ptr;
 
-        auto objectPtr = dynamic_cast<BoxingObjectPtrBase*>(prop);
-        auto rcobjPtr = dynamic_cast<BoxingRCPtrBase*>(prop);
-
-        if (!objectPtr && !rcobjPtr)
-        {
-            throw EngineException();
-        }
-
-        ObjectHandle handle;
-        if (objectPtr)
-        {
-            handle = objectPtr->GetHandle();
-        }
-        else
-        {
-            handle = rcobjPtr->GetHandle();
-        }
-        auto SetHandle = [=](ObjectHandle handle)
-        {
-            if (objectPtr)
-            {
-                objectPtr->SetHandle(handle);
-            }
-            else
-            {
-                rcobjPtr->SetHandle(handle);
-            }
-        };
-
-        char buf[128] = "[Null Object Reference]";
-        enum { eNullRef = 0x01, eObject = 0x02, eMissing = 0x04 } mode = eNullRef;
+        char buf[128] = "[Null AssetObject Reference]";
 
         string objectName;
-        if (!handle.is_empty())
+        if (ptr.IsValid())
         {
-            auto obj = RuntimeObjectManager::GetObject(handle);
-            if (!obj)
-            {
-                obj = AssetDatabase::LoadAssetById(handle).GetPtr();
-            }
-            auto objectShortHandle = handle.to_string().substr(24, 8);
-            if (obj)
-            {
-                objectName = StringUtil::Concat(obj->GetName(), " (", objectShortHandle, ")");
-                StringUtil::strcpy(buf, objectName);
-                mode = eObject;
-            }
-            else
-            {
-                StringUtil::strcpy(buf, StringUtil::Concat("[Missing Object (", objectShortHandle, ")]"));
-                mode = eMissing;
-            }
+            auto guid = ptr.GetGuid();
+            auto shortGuid = guid.to_string().substr(24, 8);
+            objectName = StringUtil::Concat(ptr->GetName(), " (", shortGuid, ")");
+
+            StringUtil::strcpy(buf, objectName);
+        }
+        else if (!ptr.IsEmpty())
+        {
+            StringUtil::strcpy(buf, StringUtil::Concat("[Missing Object)]"));
         }
 
         ImGui::InputTextEx("##i", nullptr, buf, sizeof(buf), ImVec2(-50, 0), 0);
-
+        bool isChanged = false;
         if (ImGui::BeginDragDropTarget())
         {
             const ImGuiPayload* payload = ImGui::GetDragDropPayload();
             string dragType;
 
-            if (payload->DataType == ObjectPtrDragInfo::Name)
+            if (payload->DataType == AssetObjectDragInfo::Name)
             {
-                const auto dragData = static_cast<ObjectPtrDragInfo*>(payload->Data);
+                const auto dragData = static_cast<AssetObjectDragInfo*>(payload->Data);
 
                 if (dragData->Type->IsSubclassOf(type))
                 {
-                    if ((payload = ImGui::AcceptDragDropPayload(ObjectPtrDragInfo::Name.data())))
+                    if ((payload = ImGui::AcceptDragDropPayload(AssetObjectDragInfo::Name.data())))
                     {
                         (void)payload;
-                        SetHandle(dragData->ObjectHandle);
+                        //obj->ptr = RuntimeAssetManager::GetLoadedAssetByGuid(dragData->AssetGuid);
+                        obj->ptr = AssetDatabase::LoadAssetById(dragData->AssetGuid);
                         isChanged = true;
                     }
                 }
@@ -97,7 +59,69 @@ namespace pulsared
 
             ImGui::EndDragDropTarget();
         }
-
         return isChanged;
+    }
+    static bool SceneObjectControl(BoxingObjectPtrBase* obj, Type* type)
+    {
+        auto ptr = cast<SceneObject>(obj->ptr);
+
+        char buf[128] = "[Null Object Reference]";
+
+        string objectName;
+        if (ptr.IsValid())
+        {
+            auto guid = ptr->GetSceneObjectGuid();
+            auto shortGuid = guid.to_string().substr(24, 8);
+            objectName = StringUtil::Concat(ptr->GetName(), " (", shortGuid, ")");
+
+            StringUtil::strcpy(buf, objectName);
+        }
+        else if (!ptr.IsEmpty())
+        {
+            StringUtil::strcpy(buf, StringUtil::Concat("[Missing Object]"));
+        }
+
+        ImGui::InputTextEx("##i", nullptr, buf, sizeof(buf), ImVec2(-50, 0), 0);
+        bool isChanged = false;
+        if (ImGui::BeginDragDropTarget())
+        {
+            const ImGuiPayload* payload = ImGui::GetDragDropPayload();
+            string dragType;
+
+            if (payload->DataType == SceneObjectDragInfo::Name)
+            {
+                const auto dragData = static_cast<SceneObjectDragInfo*>(payload->Data);
+
+                if (dragData->Type->IsSubclassOf(type))
+                {
+                    if ((payload = ImGui::AcceptDragDropPayload(SceneObjectDragInfo::Name.data())))
+                    {
+                        (void)payload;
+
+                        obj->ptr = dragData->Handle;
+                        isChanged = true;
+                    }
+                }
+            }
+
+            ImGui::EndDragDropTarget();
+        }
+        return isChanged;
+    }
+
+    bool ObjectPropertyControl::OnDrawImGui(const string& name, Type* type, Object* prop)
+    {
+        if (auto objectPtr = dynamic_cast<BoxingObjectPtrBase*>(prop))
+        {
+            return SceneObjectControl(objectPtr, type);
+        }
+
+        if (auto rcobjPtr = dynamic_cast<BoxingRCPtrBase*>(prop))
+        {
+            return AssetObjectControl(rcobjPtr, type);
+        }
+
+        assert(false);
+
     }
 } // namespace pulsared

@@ -7,6 +7,8 @@
 #include <filesystem>
 
 CORELIB_DECL_LIST(pulsared::string);
+CORELIB_DECL_LIST(pulsared::guid_t);
+
 
 namespace pulsared
 {
@@ -18,8 +20,14 @@ namespace pulsared
         CORELIB_REFL_DECL_FIELD(Type);
         string Type;
 
-        CORELIB_REFL_DECL_FIELD(Handle);
-        ObjectHandle Handle;
+        CORELIB_REFL_DECL_FIELD(Guid);
+        guid_t Guid;
+
+        CORELIB_REFL_DECL_FIELD(Dependencies)
+        List_sp<guid_t> Dependencies;
+
+        CORELIB_REFL_DECL_FIELD(WeakDependencies);
+        List_sp<guid_t> WeakDependencies;
 
         CORELIB_REFL_DECL_FIELD(ExtraFiles);
         List_sp<string> ExtraFiles;
@@ -81,15 +89,15 @@ namespace pulsared
         static array_list<ProgramPackage> GetPackageInfos();
 
         static RCPtr<AssetObject> LoadAssetAtPath(string_view path);
-        static RCPtr<AssetObject> LoadAssetById(ObjectHandle id);
+        static RCPtr<AssetObject> LoadAssetById(guid_t id);
         static bool ExistsAssetPath(string_view path);
-        static string GetPathById(ObjectHandle id);
-        static string GetPathByAsset(const RCPtr<AssetObject>& asset);
-        static ObjectHandle GetIdByPath(string_view path);
+        static string GetPathByGuid(guid_t id);
+        static string GetPathByAsset(const RCPtrBase& asset);
+        static guid_t GetGuidByPath(string_view path);
         static string GetUniquePath(string_view path);
 
         static bool ExistsAsset(const RCPtr<AssetObject>& asset);
-        static void ReloadAsset(ObjectHandle id);
+        static void ReloadAsset(guid_t id);
         static void Save(const RCPtr<AssetObject>& asset);
         static void SaveAll();
         static void NewAsset(string_view folderPath, string_view assetName, Type* assetType);
@@ -108,7 +116,7 @@ namespace pulsared
 
         static void MarkDirty(const RCPtr<AssetObject>& asset) noexcept;
         static bool IsDirty(const RCPtr<AssetObject>& asset) noexcept;
-        static bool IsDirtyHandle(const ObjectHandle& asset) noexcept;
+        static bool IsDirtyHandle(const guid_t& asset) noexcept;
         static void ResolveDirty(const RCPtr<AssetObject>& asset) noexcept;
 
 

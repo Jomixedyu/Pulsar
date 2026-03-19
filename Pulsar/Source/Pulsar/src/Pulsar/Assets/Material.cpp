@@ -17,17 +17,13 @@ namespace pulsar
 
     RCPtr<Material> Material::StaticCreate(string_view name)
     {
-        Material_sp material = mksptr(new Material);
-        material->Construct();
+        auto material = NewAssetObject<Material>();
         material->SetName(name);
         material->SetShader(GetAssetManager()->LoadAsset<Shader>(BuiltinAsset::Shader_Missing));
 
-        return material.get();
+        return material;
     }
 
-    void Material::OnConstruct()
-    {
-    }
     void Material::ClearUnusedParameterValue()
     {
         for (auto& name : m_shader->GetPropertyNames())
@@ -44,7 +40,6 @@ namespace pulsar
         }
 
         RCPtr<Shader> shader = m_submitShader;
-        TryLoadAssetRCPtr(shader);
 
         m_createdGpuResource = true;
 
@@ -156,25 +151,25 @@ namespace pulsar
     {
         return m_createdGpuResource;
     }
-    void Material::GetDependencies(array_list<ObjectHandle>& out)
+    void Material::GetSubscribeObserverHandles(array_list<ObjectHandle>& out)
     {
-        base::GetDependencies(out);
-        out.push_back(m_shader.Handle);
+        base::GetSubscribeObserverHandles(out);
+        out.push_back(m_shader.GetHandle());
         for (auto& val : m_parameterValues | std::views::values)
         {
             if (val.Type == ShaderParameterType::Texture)
             {
-                out.push_back(val.AsTexture().Handle);
+                out.push_back(val.AsTexture().GetHandle());
             }
         }
 
     }
-    void Material::OnDependencyMessage(ObjectHandle inDependency, DependencyObjectState msg)
+    void Material::OnNotifyObserver(ObjectHandle inDependency, DependencyObjectState msg)
     {
-        base::OnDependencyMessage(inDependency, msg);
-        if (inDependency == m_shader.Handle)
+        base::OnNotifyObserver(inDependency, msg);
+        if (inDependency == m_shader.GetHandle())
         {
-            if (EnumHasFlag(msg, DependencyObjectState::Reload))
+            if (EnumHasFlag(msg, DependencyObjectState::Modified))
             {
                 ActiveShader();
             }
@@ -199,7 +194,7 @@ namespace pulsar
         if (s->IsWrite)
         {
             const auto shaderObject = s->Object->New(ser::VarientType::String);
-            shaderObject->Assign(m_shader.GetHandle().to_string());
+            shaderObject->Assign(m_shader.GetGuid().to_string());
             s->Object->Add("Shader", shaderObject);
 
             const auto parametersArray = s->Object->New(ser::VarientType::Array);
@@ -264,7 +259,8 @@ namespace pulsar
                         paramValue.SetValue(AssetSerializerUtil::GetVector4Object(valueObject));
                         break;
                     case ShaderParameterType::Texture: {
-                        RCPtr<Texture2D> tex = ObjectHandle::parse(valueObject->AsString());
+                        guid_t guid = guid_t::parse(valueObject->AsString());
+                        RCPtr<Texture2D> tex = RuntimeAssetManager::GetLoadedAssetByGuid<Texture2D>(guid);
                         // RCPtr<Texture2D> tex = GetAssetManager()->LoadAssetById(handle);
                         paramValue.SetValue(tex);
                         break;
@@ -275,11 +271,11 @@ namespace pulsar
                 }
             }
             // shader
-            auto shaderObject = ObjectHandle::parse(s->Object->At("Shader")->AsString());
-            auto shader = GetAssetManager()->LoadAssetById(shaderObject);
+            auto shaderObject = guid_t::parse(s->Object->At("Shader")->AsString());
+            auto shader = RuntimeAssetManager::GetLoadedAssetByGuid<Shader>(shaderObject);
             SetShader(shader);
 
-            RuntimeObjectManager::RebuildDependencies(this);
+            RuntimeObjectManager::RebuildMessageBox(this);
         }
     }
 
@@ -308,7 +304,7 @@ namespace pulsar
     {
         m_parameterValues[name].SetValue(value);
         m_isDirtyParameter = true;
-        RuntimeObjectManager::RebuildDependencies(this);
+        RuntimeObjectManager::RebuildMessageBox(this);
     }
 
     void Material::SetVector4(const index_string& name, const Vector4f& value)
@@ -434,7 +430,6 @@ namespace pulsar
                 if (!isUseDefault)
                 {
                     auto t = paramValue->AsTexture();
-                    TryLoadAssetRCPtr(t);
                     if (!t)
                     {
                         paramValue = &prop.Value;
@@ -442,7 +437,7 @@ namespace pulsar
                     }
                 }
                 auto tex = paramValue->AsTexture();
-                TryLoadAssetRCPtr(tex);
+
                 tex->CreateGPUResource();
                 m_descriptorSet->Find(name.to_string())->SetTextureSampler2D(tex->GetGFXTexture()->Get2DView().get());
                 break;
@@ -480,11 +475,9 @@ namespace pulsar
 
     void Material::SetShader(RCPtr<Shader> value)
     {
-        TryLoadAssetRCPtr(value);
-
         m_shader = std::move(value);
 
-        RuntimeObjectManager::RebuildDependencies(this);
+        RuntimeObjectManager::RebuildMessageBox(this);
 
         if (m_shader == nullptr || !m_shader->IsReady())
         {

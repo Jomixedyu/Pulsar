@@ -146,8 +146,7 @@ namespace pulsar
         array_list<StaticMeshSection>&& vertData,
         array_list<string>&& materialNames)
     {
-        StaticMesh_sp self = mksptr(new StaticMesh);
-        self->Construct();
+        auto self = NewAssetObject<StaticMesh>();
         self->SetIndexName(name);
         self->m_sections = std::move(vertData);
         self->m_materialNames = std::move(materialNames);

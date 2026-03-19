@@ -18,7 +18,7 @@ namespace pulsared
     void SpriteEditorWindow::OnDrawAssetPropertiesUI(float dt)
     {
         base::OnDrawAssetPropertiesUI(dt);
-        RCPtr<SpriteAtlas> atlas = cref_cast<SpriteAtlas>(m_assetObject);
+        RCPtr<SpriteAtlas> atlas = cast<SpriteAtlas>(m_assetObject);
 
         if (PImGui::PropertyGroup("Sprite"))
         {

@@ -4,12 +4,20 @@
 namespace pulsared
 {
 
-    struct ObjectPtrDragInfo
+    struct SceneObjectDragInfo
     {
-        static constexpr string_view Name = "PULSARED_DRAG";
+        static constexpr string_view Name = "PULSARED_DRAG_SCENEOBJECT";
         Type* Type{};
-        ObjectHandle ObjectHandle;
-        string AssetPath;
+        ObjectHandle Handle;
+        guid_t SceneObjectGuid;
+    };
+
+    struct AssetObjectDragInfo
+    {
+        static constexpr string_view Name = "PULSARED_DRAG_ASSETOBJECT";
+        Type* Type{};
+        guid_t AssetGuid {};
+        char Path[256] = {};
     };
 
 } // namespace pulsared

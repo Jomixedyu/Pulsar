@@ -80,7 +80,7 @@ namespace pulsared
                 const auto localStart = component->GetNode()->GetTransform()->GetWorldToLocalMatrix() * traceStart;
                 const auto localEnd = component->GetNode()->GetTransform()->GetWorldToLocalMatrix() * traceEnd;
 
-                if (auto smc = cast<StaticMeshRendererComponent>(component))
+                if (auto smc = ref_cast<StaticMeshRendererComponent>(component))
                 {
                     if (auto sm = smc->GetStaticMesh())
                     {

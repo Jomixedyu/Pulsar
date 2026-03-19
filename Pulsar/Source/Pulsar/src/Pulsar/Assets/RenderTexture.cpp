@@ -52,8 +52,7 @@ namespace pulsar
     RCPtr<RenderTexture> RenderTexture::StaticCreate(index_string name, int width, int height,
         const array_list<RenderTargetInfo>& targetInfo)
     {
-        auto self = mksptr(new RenderTexture);
-        self->Construct();
+        auto self = NewAssetObject<RenderTexture>();
         self->SetIndexName(name);
 
         auto gfx = Application::GetGfxApp();

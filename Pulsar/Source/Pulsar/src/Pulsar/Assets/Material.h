@@ -38,15 +38,13 @@ namespace pulsar
         virtual bool CreateGPUResource() override;
         virtual void DestroyGPUResource() override;
         virtual bool IsCreatedGPUResource() const override;
-        void GetDependencies(array_list<ObjectHandle>& out) override;
+        void GetSubscribeObserverHandles(array_list<ObjectHandle>& out) override;
 
     protected:
-        void OnDependencyMessage(ObjectHandle inDependency, DependencyObjectState msg) override;
+        void OnNotifyObserver(ObjectHandle inDependency, DependencyObjectState msg) override;
         void ActiveShader();
         void InactiveShader();
     public:
-        void OnConstruct() override;
-
         void ClearUnusedParameterValue();
         void SetIntScalar(const index_string& name, int value);
         void SetFloat(const index_string& name, float value);

@@ -516,7 +516,7 @@ public:
 
         const ValueType* properties = GetMember(value, GetPropertiesString());
         const ValueType* required = GetMember(value, GetRequiredString());
-        const ValueType* dependencies = GetMember(value, GetDependenciesString());
+        const ValueType* dependencies = GetMember(value, GetSubscribeObserverHandlesString());
         {
             // Gather properties from properties/required/dependencies
             SValue allProperties(kArrayType);
@@ -583,7 +583,7 @@ public:
                 }
 
         if (dependencies && dependencies->IsObject()) {
-            PointerType q = p.Append(GetDependenciesString(), allocator_);
+            PointerType q = p.Append(GetSubscribeObserverHandlesString(), allocator_);
             hasDependencies_ = true;
             for (ConstMemberIterator itr = dependencies->MemberBegin(); itr != dependencies->MemberEnd(); ++itr) {
                 SizeType sourceIndex;
@@ -1070,7 +1070,7 @@ public:
             case kValidateErrorRequired:                return GetRequiredString();
             case kValidateErrorAdditionalProperties:    return GetAdditionalPropertiesString();
             case kValidateErrorPatternProperties:       return GetPatternPropertiesString();
-            case kValidateErrorDependencies:            return GetDependenciesString();
+            case kValidateErrorDependencies:            return GetSubscribeObserverHandlesString();
 
             case kValidateErrorEnum:                    return GetEnumString();
             case kValidateErrorType:                    return GetTypeString();

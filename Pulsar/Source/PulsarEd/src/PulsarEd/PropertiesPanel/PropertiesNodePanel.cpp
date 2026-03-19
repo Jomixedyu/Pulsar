@@ -38,7 +38,7 @@ namespace pulsared
         {
             return;
         }
-        Node_ref selected;
+        ObjectPtr<Node> selected;
         if (cltypeof<Node>()->IsInstanceOfType(selectedObj.GetPtr()))
         {
             selected = selectedObj;

@@ -11,7 +11,7 @@ namespace pulsared
     void CurveLinearColorEditorWindow::OnOpen()
     {
         base::OnOpen();
-        m_colorCurve = cref_cast<CurveLinearColor>(m_assetObject);
+        m_colorCurve = cast<CurveLinearColor>(m_assetObject);
     }
     void CurveLinearColorEditorWindow::OnClose()
     {

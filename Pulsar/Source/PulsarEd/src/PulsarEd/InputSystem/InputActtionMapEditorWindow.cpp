@@ -13,7 +13,7 @@ namespace pulsared
 
         ImGui::Columns(2);
 
-        auto inputMap = cref_cast<InputActionMap>(m_assetObject).GetPtr();
+        auto inputMap = cast<InputActionMap>(m_assetObject);
 
         bool isDirty = false;
 
@@ -115,7 +115,7 @@ namespace pulsared
                     if (ImGui::CollapsingHeader(item->ToString().c_str(), &existsItem, ImGuiTreeNodeFlags_DefaultOpen))
                     {
                         auto bindingType = item->GetType();
-                        isDirty |= PImGui::ObjectFieldProperties(bindingType, bindingType, item.get(), inputMap);
+                        isDirty |= PImGui::ObjectFieldProperties(bindingType, bindingType, item.get(), inputMap.GetPtr());
                     }
                     if (!existsItem)
                     {

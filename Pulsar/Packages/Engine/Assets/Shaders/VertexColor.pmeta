@@ -1,8 +1,9 @@
 {
-    "ExtraFiles": [
-        "ccc"
-    ],
-    "Handle": "a2b74bf755ea46f6723e3ab4216b3fda",
+    "ExtraFiles": [],
+    "Guid": "a2b74bf755ea46f6723e3ab4216b3fda",
     "Tags": {},
-    "Type": "pulsar::Shader"
+    "Type": "pulsar::Shader",
+	"Dependencies": [
+		
+	]
 }

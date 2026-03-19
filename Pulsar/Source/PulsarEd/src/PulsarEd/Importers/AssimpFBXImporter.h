@@ -8,6 +8,6 @@ namespace pulsared
 	class AssimpFBXImporter
 	{
 	public:
-		static Node_ref Import(string_view path, string& error);
+		static ObjectPtr<Node> Import(string_view path, string& error);
 	};
 }

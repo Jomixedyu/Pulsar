@@ -13,8 +13,9 @@ namespace pulsar
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::TransformComponent, Component);
         CORELIB_CLASS_ATTR(new AbstractComponentAttribute);
+        DECL_OBJECTPTR_SELF
     public:
-        void Serialize(ComponentSerializer* s) override;
+        void Serialize(SceneObjectSerializer* s) override;
         
         ObjectPtr<TransformComponent> FindByName(string_view name) const;
         ObjectPtr<TransformComponent> FindByPath(string_view path) const;

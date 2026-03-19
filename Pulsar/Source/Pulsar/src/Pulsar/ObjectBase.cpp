@@ -1,5 +1,5 @@
 #include <CoreLib/Guid.h>
-#include <Pulsar/ObjectBase.h>
+#include "ObjectBase.h"
 #include <map>
 #include <ranges>
 
@@ -29,37 +29,31 @@ namespace pulsar
 
         struct ObjectManager
         {
-            array_list<RuntimeObjectPointerValue> Array;
-            hash_map<ObjectHandle, size_t> Map;
+            hash_map<ObjectHandle, RuntimeObjectPointerValue> Map;
 
-            RuntimeObjectPointerValue& Emplace(const ObjectHandle& handle)
+            RuntimeObjectPointerValue& New(const ObjectHandle& handle, SPtr<ObjectBase>&& managedObj)
             {
-                auto& value = Array.emplace_back();
+                RuntimeObjectPointerValue value;
                 value.Handle = handle;
-                Map.emplace(handle, Array.size() - 1);
-                return value;
+                value.OriginalObject = std::move(managedObj);
+                value.ManagedPtr = mksptr(new ManagedPointer);
+                value.ManagedPtr->Pointer = value.OriginalObject.get();
+                Map.insert({handle, value});
+
+                return Map[handle];
             }
 
             static constexpr size_t npos = std::numeric_limits<size_t>::max();
 
-            size_t Find(const ObjectHandle& handle) const
-            {
-                auto it = Map.find(handle);
-                if (it != Map.end())
-                    return it->second;
-                return npos;
-            }
-
-            RuntimeObjectPointerValue& At(size_t index)
-            {
-                return Array[index];
-            }
 
             RuntimeObjectPointerValue* Get(const ObjectHandle& handle)
             {
-                auto index = Find(handle);
-                if (index == npos) return nullptr;
-                return &At(index);
+                auto it = Map.find(handle);
+                if (it != Map.end())
+                {
+                    return &it->second;
+                }
+                return nullptr;
             }
 
             void Remove(const ObjectHandle& handle)
@@ -68,20 +62,15 @@ namespace pulsar
                 if (it == Map.end())
                     return;
 
-                auto index = it->second;
+                auto& value = it->second;
 
-                auto lastHandle = Array[Array.size() - 1].Handle;
-
-                Array[index] = Array[Array.size() - 1];
-                Map[lastHandle] = index;
+                value.ManagedPtr->SetEmptyPtr();
 
                 Map.erase(handle);
-                Array.pop_back();
             }
 
             void Clear()
             {
-                decltype(Array){}.swap(Array);
                 decltype(Map){}.swap(Map);
             }
         };
@@ -105,7 +94,12 @@ namespace pulsar
 
     static inline ObjectHandle _NewId()
     {
-        return ObjectHandle::create_new();
+        static uint64_t id = 0;
+        ++id;
+
+        ObjectHandle h;
+        h.value = id;
+        return h;
     }
 
 
@@ -139,12 +133,7 @@ namespace pulsar
         return nullptr;
     }
 
-    SPtr<ManagedPointer> RuntimeObjectManager::AddWaitPointer(const ObjectHandle& id)
-    {
-        auto& ptr = GetObjectManager().Emplace(id);
-        ptr.ManagedPtr = mksptr(new ManagedPointer{});
-        return ptr.ManagedPtr;
-    }
+
 
     bool RuntimeObjectManager::IsValid(const ObjectHandle& id) noexcept
     {
@@ -157,23 +146,12 @@ namespace pulsar
         return false;
     }
 
-    void RuntimeObjectManager::NewInstance(SPtr<ObjectBase>&& managedObj, const ObjectHandle& handle) noexcept
+    void RuntimeObjectManager::NewInstance(SPtr<ObjectBase>&& managedObj) noexcept
     {
-        const auto id = handle.is_empty() ? _NewId() : handle;
+        const auto id = _NewId();
         managedObj->m_objectHandle = id;
 
-        if (auto ptr = GetObjectManager().Get(id))
-        {
-            ptr->OriginalObject = std::move(managedObj);
-            ptr->ManagedPtr->Pointer = ptr->OriginalObject.get();
-        }
-        else
-        {
-            auto& newPtr = GetObjectManager().Emplace(id);
-            newPtr.OriginalObject = std::move(managedObj);;
-            newPtr.ManagedPtr = mksptr(new ManagedPointer{});
-            newPtr.ManagedPtr->Pointer = newPtr.OriginalObject.get();
-        }
+        GetObjectManager().New(id, std::move(managedObj));
 
     }
 
@@ -181,6 +159,7 @@ namespace pulsar
     {
         if (id.is_empty())
             return false;
+
         auto ptr = GetObjectManager().Get(id);
         if (ptr == nullptr) return true;
 
@@ -189,26 +168,13 @@ namespace pulsar
             const bool dontDestory = obj->HasObjectFlags(OF_LifecycleManaged);
             if (!dontDestory || (dontDestory && isForce))
             {
-                obj->Destroy();
-                ptr->OriginalObject.reset();
-                ptr->ManagedPtr->SetEmptyPtr();
-                if (ptr->ManagedPtr.use_count() == 1)
-                {
-                    ptr->ManagedPtr.reset();
-                    GetObjectManager().Remove(id);
-                }
+                obj->Destroy(); // set object handle to empty
+
+                ptr->OriginalObject.reset(); // destructor, release object and memory
+                GetObjectManager().Remove(id);
 
                 return true;
             }
-        }
-        else
-        {
-            if (ptr->ManagedPtr.use_count() == 1)
-            {
-                ptr->ManagedPtr.reset();
-                GetObjectManager().Remove(id);
-            }
-            return true;
         }
 
         return false;
@@ -217,38 +183,41 @@ namespace pulsar
     void RuntimeObjectManager::GetData(size_t* total, size_t* place, size_t* alive)
     {
         size_t p = 0, a = 0;
-        for (auto& item : GetObjectManager().Array)
+        for (auto& item : GetObjectManager().Map)
         {
-            if (item.OriginalObject)
+            auto& value = item.second;
+            if (value.OriginalObject)
             {
                 ++a;
             }
             else
             {
-                if (item.ManagedPtr)
+                if (value.ManagedPtr)
                 {
                     ++p;
                 }
             }
         }
-        *total = GetObjectManager().Array.size();
+        *total = GetObjectManager().Map.size();
         *place = p;
         *alive = a;
     }
     void RuntimeObjectManager::Terminate()
     {
         array_list<ObjectHandle> destroyList;
-        for (const auto& item : GetObjectManager().Array)
+        for (auto& item : GetObjectManager().Map)
         {
-            if (item.IsValid())
+            auto& value = item.second;
+            if (value.IsValid())
             {
-                if (item.OriginalObject->HasObjectFlags(OF_LifecycleManaged))
+                if (value.OriginalObject->HasObjectFlags(OF_LifecycleManaged))
                 {
                     continue;
                 }
-                destroyList.push_back(item.Handle);
+                destroyList.push_back(value.Handle);
             }
         }
+
         for (auto& id : destroyList)
         {
             DestroyObject(id);
@@ -260,47 +229,18 @@ namespace pulsar
 
     void RuntimeObjectManager::TickGCollect()
     {
-        constexpr size_t kProcessPerFrame = 2;
-
-        static ObjectHandle list[kProcessPerFrame];
-        size_t listCount = 0;
-
-        static size_t itIndex = -1;
-        if (GetObjectManager().Array.empty())
-        {
-            return;
-        }
-
-        for (size_t i = 0; i < kProcessPerFrame; ++i)
-        {
-            ++itIndex;
-            if (itIndex >= GetObjectManager().Array.size())
-            {
-                itIndex = 0;
-            }
-            auto& it = GetObjectManager().At(itIndex);
-            if (!it.IsValid() && it.ManagedPtr.use_count() == 1)
-            {
-                list[listCount] = it.Handle;
-                listCount++;
-            }
-        }
-
-        for (auto i = 0; i < listCount; ++i)
-        {
-            GetObjectManager().Remove(list[i]);
-        }
 
     }
 
     void RuntimeObjectManager::ForEachObject(const std::function<void(const RuntimeObjectInfo&)>& func)
     {
-        for (auto& item : GetObjectManager().Array)
+        for (auto& item : GetObjectManager().Map)
         {
+            auto& value = item.second;
             RuntimeObjectInfo info;
-            info.Handle = item.Handle;
-            info.Pointer = item.OriginalObject.get();
-            info.ManagedCounter = item.ManagedPtr.use_count();
+            info.Handle = value.Handle;
+            info.Pointer = value.OriginalObject.get();
+            info.ManagedCounter = value.ManagedPtr.use_count();
             func(info);
         }
     }
@@ -323,15 +263,15 @@ namespace pulsar
         {
             for (const auto& srcId : it->second)
             {
-                if (auto src = ObjectPtr<ObjectBase>(srcId).GetPtr())
+                if (ObjectPtrBase src = srcId)
                 {
-                    src->OnDependencyMessage(dest, id);
+                    src->OnNotifyObserver(dest, id);
                 }
             }
         }
     }
 
-    void RuntimeObjectManager::RebuildDependencies(ObjectBase* obj)
+    void RuntimeObjectManager::RebuildMessageBox(ObjectBase* obj)
     {
         auto& deps = _depends();
         auto& refs = _refs();
@@ -345,7 +285,7 @@ namespace pulsar
         refs.clear();
 
         array_list<ObjectHandle> dependencies;
-        obj->GetDependencies(dependencies);
+        obj->GetSubscribeObserverHandles(dependencies);
 
         refs[sourceHandle] = dependencies;
         for (auto& dependency : dependencies)
@@ -357,11 +297,11 @@ namespace pulsar
     ObjectBase::ObjectBase()
     {
     }
-    void ObjectBase::Construct(ObjectHandle handle)
+    void ObjectBase::Construct()
     {
         assert(this);
         assert(!this->m_objectHandle);
-        RuntimeObjectManager::NewInstance(self(), handle);
+        RuntimeObjectManager::NewInstance(self());
         this->OnConstruct();
     }
 
@@ -378,13 +318,13 @@ namespace pulsar
         SetIndexName(name);
     }
 
-    void ObjectBase::OnDependencyMessage(ObjectHandle inDependency, DependencyObjectState msg)
+    void ObjectBase::OnNotifyObserver(ObjectHandle inDependency, DependencyObjectState msg)
     {
     }
 
-    void ObjectBase::RebuildDependencies()
+    void ObjectBase::RebuildObserver()
     {
-        RuntimeObjectManager::RebuildDependencies(this);
+        RuntimeObjectManager::RebuildMessageBox(this);
     }
     void ObjectBase::OnConstruct()
     {
@@ -413,36 +353,5 @@ namespace pulsar
         RuntimeObjectManager::NotifyDependencySource(GetObjectHandle(), msg);
     }
 
-    std::iostream& ReadWriteStream(std::iostream& stream, bool isWrite, ObjectPtrBase& obj)
-    {
-        ObjectHandle handle = obj.Handle;
 
-        sser::ReadWriteStream(stream, isWrite, handle.x);
-        sser::ReadWriteStream(stream, isWrite, handle.y);
-        sser::ReadWriteStream(stream, isWrite, handle.z);
-        sser::ReadWriteStream(stream, isWrite, handle.w);
-
-        if (!isWrite)
-        {
-            obj = handle;
-        }
-
-        return stream;
-    }
-    std::iostream& ReadWriteStream(std::iostream& stream, bool isWrite, RCPtrBase& obj)
-    {
-        ObjectHandle handle = obj.Handle;
-
-        sser::ReadWriteStream(stream, isWrite, handle.x);
-        sser::ReadWriteStream(stream, isWrite, handle.y);
-        sser::ReadWriteStream(stream, isWrite, handle.z);
-        sser::ReadWriteStream(stream, isWrite, handle.w);
-
-        if (!isWrite)
-        {
-            obj = handle;
-        }
-
-        return stream;
-    }
 } // namespace pulsar

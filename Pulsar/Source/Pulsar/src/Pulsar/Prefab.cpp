@@ -6,8 +6,7 @@ namespace pulsar
 
     RCPtr<Prefab> Prefab::StaticCreate(string_view name)
     {
-        auto self = mksptr(new Prefab);
-        self->Construct();
+        auto self = NewAssetObject<Prefab>();
         self->SetName(name);
 
         return self;

@@ -11,7 +11,7 @@ namespace pulsared
     {
         m_winSize = {800, 500};
     }
-    static void RenderNodes(Node_ref node)
+    static void RenderNodes(ObjectPtr<Node> node)
     {
         if (ImGui::TreeNode(node->GetName().c_str()))
         {

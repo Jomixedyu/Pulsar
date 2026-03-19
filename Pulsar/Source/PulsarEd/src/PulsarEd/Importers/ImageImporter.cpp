@@ -12,8 +12,7 @@ namespace pulsared
         array_list<RCPtr<AssetObject>> importAssets;
         for (auto& file : *settings->ImportFiles)
         {
-            auto asset = mksptr(new Texture2D);
-            asset->Construct();
+            auto asset = NewAssetObject<Texture2D>();
 
             std::filesystem::path filePath { (char8_t*)file.c_str() };
 
@@ -27,8 +26,8 @@ namespace pulsared
 
             auto assetPath = settings->ImportingTargetFolder + "/" + PathUtil::GetFilenameWithoutExt(file);
             assetPath = AssetDatabase::GetUniquePath(assetPath);
-            AssetDatabase::CreateAsset(asset.get(), assetPath);
-            importAssets.push_back(asset.get());
+            AssetDatabase::CreateAsset(asset, assetPath);
+            importAssets.push_back(asset);
         }
 
         return importAssets;

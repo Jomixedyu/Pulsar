@@ -179,18 +179,18 @@ namespace pulsared
             const ImGuiPayload* payload = ImGui::GetDragDropPayload();
             string dragType;
 
-            if (node->IsFolder && payload->DataType == ObjectPtrDragInfo::Name)
+            if (node->IsFolder && payload->DataType == AssetObjectDragInfo::Name)
             {
-                const auto dragData = static_cast<ObjectPtrDragInfo*>(payload->Data);
+                const auto dragData = static_cast<AssetObjectDragInfo*>(payload->Data);
 
-                if ((payload = ImGui::AcceptDragDropPayload(ObjectPtrDragInfo::Name.data())))
+                if ((payload = ImGui::AcceptDragDropPayload(AssetObjectDragInfo::Name.data())))
                 {
                     if (dragData->Type == cltypeof<FolderAsset>())
                     {
                     }
                     else
                     {
-                        auto assetPath = AssetDatabase::GetPathById(dragData->ObjectHandle);
+                        auto assetPath = AssetDatabase::GetPathByGuid(dragData->AssetGuid);
                         auto assetName = AssetDatabase::AssetPathToAssetName(assetPath);
                         auto dstPath = StringUtil::Concat(node->AssetPath, "/", assetName);
                         AssetDatabase::Rename(assetPath, dstPath);
@@ -424,7 +424,7 @@ namespace pulsared
             menu->AddEntry(entry);
         }
         {
-            auto entry = mksptr(new MenuEntryButton("Reload"));
+            auto entry = mksptr(new MenuEntryButton("Modified"));
             entry->CanOperate = hasPathLambda;
             entry->Action = MenuAction::FromLambda([](const MenuContexts_sp& ctxs) {
                 if (AssetsMenuContext_sp ctx; ctxs && ((ctx = ctxs->FindContext<AssetsMenuContext>())))
@@ -435,7 +435,7 @@ namespace pulsared
                         {
                             if (!file->IsFolder)
                             {
-                                AssetDatabase::ReloadAsset(file->AssetMeta->Handle);
+                                AssetDatabase::ReloadAsset(file->AssetMeta->Guid);
                             }
                         }
                     }
@@ -492,23 +492,23 @@ namespace pulsared
         {
             const ImGuiPayload* payload = ImGui::GetDragDropPayload();
 
-            if (payload->DataType == ObjectPtrDragInfo::Name)
+            if (payload->DataType == AssetObjectDragInfo::Name)
             {
-                const auto dragData = static_cast<ObjectPtrDragInfo*>(payload->Data);
+                const auto dragData = static_cast<AssetObjectDragInfo*>(payload->Data);
 
                 if (dragData->Type->IsSubclassOf(cltypeof<AssetObject>()) || dragData->Type == cltypeof<FolderAsset>())
                 {
-                    if ((payload = ImGui::AcceptDragDropPayload(ObjectPtrDragInfo::Name.data())))
+                    if ((payload = ImGui::AcceptDragDropPayload(AssetObjectDragInfo::Name.data())))
                     {
                         if (dragData->Type == cltypeof<FolderAsset>())
                         {
-                            auto dstPath = currentAssetPath + "/" + AssetDatabase::AssetPathToAssetName(dragData->AssetPath);
-                            AssetDatabase::Rename(dragData->AssetPath, dstPath);
+                            auto dstPath = currentAssetPath + "/" + AssetDatabase::AssetPathToAssetName(dragData->Path);
+                            AssetDatabase::Rename(dragData->Path, dstPath);
                             result = true;
                         }
                         else
                         {
-                            auto srcPath = AssetDatabase::GetPathById(dragData->ObjectHandle);
+                            auto srcPath = AssetDatabase::GetPathByGuid(dragData->AssetGuid);
                             auto dstPath = currentAssetPath + "/" + AssetDatabase::AssetPathToAssetName(srcPath);
                             AssetDatabase::Rename(srcPath, dstPath);
                             result = true;
@@ -679,7 +679,7 @@ namespace pulsared
 
             const bool isFolder = child->IsFolder;
             const auto isSelected = weaks_find(m_selectedFiles.begin(), m_selectedFiles.end(), std::weak_ptr{child}) != m_selectedFiles.end();
-            const bool isDirty = isFolder ? false : AssetDatabase::IsDirtyHandle(child->AssetMeta->Handle);
+            const bool isDirty = isFolder ? false : AssetDatabase::IsDirtyHandle(child->AssetMeta->Guid);
 
             const auto iconSize = ImVec2(m_iconSize, m_iconSize);
             ImTextureID iconDesc = reinterpret_cast<void*>(descSet.lock()->GetId());
@@ -690,15 +690,15 @@ namespace pulsared
             //     ";",
             //     isFolder ? child->AssetPath : child->AssetMeta->Handle.to_string());
 
-            ObjectPtrDragInfo dragData;
+            AssetObjectDragInfo dragData;
             dragData.Type = child->GetAssetType();
             if (isFolder)
             {
-                dragData.AssetPath = child->AssetPath;
+                StringUtil::strcpy(dragData.Path, child->AssetPath);
             }
             else
             {
-                dragData.ObjectHandle = child->AssetMeta->Handle;
+                dragData.AssetGuid = child->AssetMeta->Guid;
             }
 
             PImGui::FileButtonContext uictx{};
@@ -713,7 +713,7 @@ namespace pulsared
             uictx.tootip = &_RenderFileToolTips;
             uictx.is_folder = isFolder;
 
-            if (PImGui::DragFileButton(&uictx, ObjectPtrDragInfo::Name.data(), &dragData, sizeof(dragData)))
+            if (PImGui::DragFileButton(&uictx, AssetObjectDragInfo::Name.data(), &dragData, sizeof(dragData)))
             {
                 if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
                 {

@@ -42,9 +42,9 @@ namespace pulsared
                         const auto ctx = ctxs->FindContext<AssetEditorMenuContext>();
                         if (!ctx)
                             return;
-                        if (const RCPtr<Shader> shader = cref_cast<Shader>(ctx->Asset))
+                        if (const RCPtr<Shader> shader = cast<Shader>(ctx->Asset))
                         {
-                            ShaderCompiler::CompileShader(shader.GetPtr());
+                            ShaderCompiler::CompileShader(shader);
                         }
                     });
                     menu->AddEntry(entry);
@@ -64,7 +64,7 @@ namespace pulsared
     void ShaderEditorWindow::OnOpen()
     {
         base::OnOpen();
-        RCPtr<Shader> shader = cref_cast<Shader>(m_assetObject);
+        RCPtr<Shader> shader = cast<Shader>(m_assetObject);
 
         m_previewMaterial = Material::StaticCreate("PreviewMaterial");
         m_previewMaterial->SetShader(shader);
@@ -103,7 +103,7 @@ namespace pulsared
     void ShaderEditorWindow::OnDrawAssetPropertiesUI(float dt)
     {
         base::OnDrawAssetPropertiesUI(dt);
-        RCPtr<Shader> shader = cref_cast<Shader>(m_assetObject);
+        RCPtr<Shader> shader = cast<Shader>(m_assetObject);
         if (PImGui::PropertyGroup("Shader"))
         {
             PImGui::ObjectFieldProperties(

@@ -45,7 +45,6 @@ namespace pulsar
         {
             for (auto& item : *m_postProcessMaterials)
             {
-                TryLoadAssetRCPtr(item);
                 if (item)
                 {
                     item->CreateGPUResource();
@@ -212,7 +211,7 @@ namespace pulsar
             ResizeManagedRenderTexture(1, 1);
         }
 
-        GetNode()->GetRuntimeOwnerScene()->GetWorld()->GetCameraManager().AddCamera(THIS_REF);
+        GetNode()->GetRuntimeOwnerScene()->GetWorld()->GetCameraManager().AddCamera(self_ptr());
 
         BeginRT();
     }
@@ -220,7 +219,7 @@ namespace pulsar
     void CameraComponent::EndComponent()
     {
         base::EndComponent();
-        GetNode()->GetRuntimeOwnerScene()->GetWorld()->GetCameraManager().RemoveCamera(THIS_REF);
+        GetNode()->GetRuntimeOwnerScene()->GetWorld()->GetCameraManager().RemoveCamera(self_ptr());
         if (m_managedRT && m_renderTarget)
         {
             DestroyObject(m_renderTarget);

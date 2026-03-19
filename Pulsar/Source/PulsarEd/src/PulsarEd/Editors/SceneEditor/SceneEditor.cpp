@@ -173,7 +173,7 @@ namespace pulsared
                 itemEntry->Action = MenuAction::FromLambda([](MenuContexts_rsp ctxs) {
                     auto edworld = dynamic_cast<EditorWorld*>(EditorWorld::GetPreviewWorld());
 
-                    if (auto node = ref_cast<Node>(edworld->GetSelection().GetSelected()))
+                    if (auto node = cast<Node>(edworld->GetSelection().GetSelected()))
                     {
                         Type* type = AssemblyManager::GlobalFindType(ctxs->EntryName);
                         node->AddComponent(type);

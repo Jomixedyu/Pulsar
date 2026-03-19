@@ -15,6 +15,7 @@ namespace pulsar
         OnIntensityChanged();
         OnLightColorChanged();
     }
+
     void SkyLightComponent::EndComponent()
     {
         base::EndComponent();
@@ -33,19 +34,26 @@ namespace pulsar
     }
     void SkyLightComponent::OnEnvironmentChanged()
     {
-        TryLoadAssetRCPtr(m_environment);
         if (!m_environment)
         {
             return;
         }
-
     }
+
     void SkyLightComponent::PostEditChange(FieldInfo* info)
     {
         base::PostEditChange(info);
         if (info->GetName() == NAMEOF(m_environment))
         {
             OnEnvironmentChanged();
+        }
+    }
+    void SkyLightComponent::GetDependenciesAsset(array_list<guid_t>& deps) const
+    {
+        base::GetDependenciesAsset(deps);
+        if (m_environment)
+        {
+            deps.push_back(m_environment.GetGuid());
         }
     }
 } // namespace pulsar

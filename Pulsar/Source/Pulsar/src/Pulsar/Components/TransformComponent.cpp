@@ -6,7 +6,7 @@
 
 namespace pulsar
 {
-    void TransformComponent::Serialize(ComponentSerializer* s)
+    void TransformComponent::Serialize(SceneObjectSerializer* s)
     {
         base::Serialize(s);
         if (!s->IsWrite)
@@ -41,7 +41,7 @@ namespace pulsar
     {
         array_list<string> paths = StringUtil::Split(path, u8char('/'));
 
-        TransformComponent_ref target = this->GetObjectHandle();
+        auto target = self_ptr();
 
         for (auto& comp : *m_children)
         {
@@ -251,14 +251,14 @@ namespace pulsar
         if (parent == nullptr)
         {
             // set empty
-            const auto it = std::ranges::find(*m_parent->m_children, THIS_REF);
+            const auto it = std::ranges::find(*m_parent->m_children, self_ptr());
             m_parent->m_children->erase(it);
             m_parent = nullptr;
         }
         else
         {
             m_parent = parent;
-            m_parent->m_children->push_back(THIS_REF);
+            m_parent->m_children->push_back(self_ptr());
         }
     }
 } // namespace pulsar

@@ -22,37 +22,20 @@ namespace pulsar
     class Scene;
     class World;
     class NodeCollection;
-
-    struct NodeSerializer
-    {
-        NodeSerializer(ser::VarientRef obj, bool isWrite, bool editorData)
-            : Object(std::move(obj)),
-              IsWrite(isWrite),
-              HasEditorData(editorData)
-        {
-        }
-
-        NodeSerializer(const NodeSerializer&) = delete;
-        NodeSerializer(NodeSerializer&&) = delete;
-    public:
-        ser::VarientRef Object;
-        const bool IsWrite;
-        const bool HasEditorData;
-    };
-
     class Component;
     class TransformComponent;
+
+
 
     class Node final : public SceneObject, public ITickable
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::Node, SceneObject);
-        ObjectPtr<Node> self_ref() const
-        {
-            return GetObjectHandle();
-        }
+        DECL_OBJECTPTR_SELF
 
+        friend class NodeCollection;
     public:
-        void Serialize(NodeSerializer* s);
+        void BeginSerialize(SceneObjectSerializer* s);
+        void EndSerialize(SceneObjectSerializer* s);
         bool GetIsActive() const;
         bool GetIsActiveSelf() const
         {
@@ -67,8 +50,9 @@ namespace pulsar
         void OnInactive();
         void OnParentActiveChanged();
         void OnTransformChanged();
-        TransformComponent* GetTransform() const;
+        ObjectPtr<TransformComponent> GetTransform() const;
         BoxSphereBounds3f GetBounds();
+        void GetDependenciesAsset(array_list<jxcorlib::guid_t> &deps) const override;
     public:
         Node(const Node& r) = delete;
         Node(Node&& r) = delete;
@@ -92,11 +76,13 @@ namespace pulsar
         void BeginPlay();
         void EndPlay();
 
+
+
     public: // components
         template <baseof_component_concept T>
         ObjectPtr<T> AddComponent()
         {
-            return this->AddComponent(cltypeof<T>());
+            return cast<T>( this->AddComponent(cltypeof<T>()) );
         }
         ObjectPtr<Component> AddComponent(Type* type);
         void DestroyComponent(ObjectPtr<Component> component);
@@ -105,7 +91,7 @@ namespace pulsar
         template <baseof_component_concept T>
         ObjectPtr<T> GetComponent()
         {
-            return this->GetComponent(cltypeof<T>());
+            return cast<T>(this->GetComponent(cltypeof<T>()));
         }
         ObjectPtr<Component> GetComponent(Type* type) const;
 
@@ -121,9 +107,9 @@ namespace pulsar
         {
             for (const auto& item : *this->m_components)
             {
-                if (cltypeof<T>()->IsInstanceOfType(item.GetPtr()))
+                if (auto comp = cast<T>(item))
                 {
-                    array.push_back(item);
+                    array.push_back(comp);
                 }
             }
         }
@@ -145,7 +131,7 @@ namespace pulsar
         void SetLayer(int32_t layer);
 
     protected:
-        ObjectPtr<Component> ConstructComponent(Type* type, const ObjectHandle& handle);
+        ObjectPtr<Component> ConstructComponent(Type* type, const guid_t& guid = {});
         void BeginComponent(Component_ref component);
         void EndComponent(Component_ref component);
 
@@ -155,10 +141,6 @@ namespace pulsar
             return m_runtimeScene;
         }
         World* GetRuntimeWorld() const;
-        int64_t GetNodeId() const
-        {
-            return m_nodeId;
-        }
 
     private:
         CORELIB_REFL_DECL_FIELD(m_active);
@@ -166,18 +148,16 @@ namespace pulsar
 
         CORELIB_REFL_DECL_FIELD(m_components);
         List_sp<ObjectPtr<Component>> m_components;
-        TransformComponent* m_transform = nullptr;
+
+        ObjectPtr<TransformComponent> m_transform = nullptr;
 
         bool m_isInitialized = false;
 
         ObjectPtr<Scene> m_runtimeScene = nullptr;
 
         ObjectPtr<NodeCollection> m_owner;
-        int64_t m_nodeId = 0;
 
         int32_t m_layer = 0;
     };
-
-    DECL_PTR(Node);
 
 }

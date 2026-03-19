@@ -104,7 +104,7 @@ namespace pulsared
     }
 
     void ShaderCompiler::CompileShader(
-        Shader* shader,
+        const RCPtr<Shader>& shader,
         const array_list<gfx::GFXApi>& api,
         const std::vector<std::filesystem::path>& includes,
         const std::vector<string>& defines)
@@ -159,7 +159,7 @@ namespace pulsared
             Logger::Log(e.what(), LogLevel::Error);
         }
     }
-    void ShaderCompiler::CompileShader(Shader* shader)
+    void ShaderCompiler::CompileShader(const RCPtr<Shader>& shader)
     {
         //GetEdApp()->GetTaskQueue().AddTask();
         CompileShader(shader, Application::inst()->GetSupportedApis(), {}, {});

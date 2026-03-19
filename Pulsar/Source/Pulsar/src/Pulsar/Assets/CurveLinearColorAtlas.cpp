@@ -20,7 +20,7 @@ namespace pulsar
             auto list = s->Object->New(ser::VarientType::Array);
             for (auto& element : *m_colorCurveAssets)
             {
-                list->Push(element.Handle.to_string());
+                list->Push(element.GetGuid().to_string());
             }
             s->Object->Add("curves", list);
         }
@@ -32,9 +32,8 @@ namespace pulsar
             auto curves = s->Object->At("curves");
             for (int i = 0; i < curves->GetCount(); ++i)
             {
-                auto handleStr = curves->At(i)->AsString();
-                auto handle = ObjectHandle::parse(handleStr);
-                m_colorCurveAssets->push_back(handle);
+                WeakAssetPtr<CurveLinearColor> curve = curves->At(i)->AsString();
+                m_colorCurveAssets->push_back(curve.Get());
             }
         }
     }
@@ -77,7 +76,7 @@ namespace pulsar
             cfg.AddressMode = GetSamplerAddressMode();
             m_gfxTexture = Application::GetGfxApp()->CreateTexture2DFromMemory((uint8_t*)m_bitmap.data(), bitmapDataSize, m_width, m_height, gfx::GFXTextureFormat::R8G8B8A8_UNorm, cfg);
         }
-        RuntimeObjectManager::NotifyDependencySource(GetObjectHandle(), DependencyObjectState::Reload);
+        RuntimeObjectManager::NotifyDependencySource(GetObjectHandle(), DependencyObjectState::Modified);
     }
 
     bool CurveLinearColorAtlas::CreateGPUResource()
@@ -113,28 +112,28 @@ namespace pulsar
         base::PostEditChange(info);
         if (info->GetName() == NAMEOF(m_colorCurveAssets))
         {
-            RebuildDependencies();
+            RebuildObserver();
             // Generate();
         }
         Generate();
     }
 
-    void CurveLinearColorAtlas::OnDependencyMessage(ObjectHandle inDependency, DependencyObjectState msg)
+    void CurveLinearColorAtlas::OnNotifyObserver(ObjectHandle inDependency, DependencyObjectState msg)
     {
-        base::OnDependencyMessage(inDependency, msg);
-        if (msg == DependencyObjectState::Reload)
+        base::OnNotifyObserver(inDependency, msg);
+        if (msg == DependencyObjectState::Modified)
         {
             Generate();
         }
 
     }
 
-    void CurveLinearColorAtlas::GetDependencies(array_list<ObjectHandle>& out)
+    void CurveLinearColorAtlas::GetSubscribeObserverHandles(array_list<ObjectHandle>& out)
     {
-        base::GetDependencies(out);
+        base::GetSubscribeObserverHandles(out);
         for (auto& curve : *m_colorCurveAssets)
         {
-            out.push_back(curve.Handle);
+            out.push_back(curve.GetHandle());
         }
     }
 } // namespace pulsar

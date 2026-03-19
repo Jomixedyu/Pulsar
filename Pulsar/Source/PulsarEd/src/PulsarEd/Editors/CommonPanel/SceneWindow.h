@@ -25,8 +25,8 @@ namespace pulsared
         virtual void OnDrawImGui(float dt) override;
 
 
-        //Node_ref GetSceneCameraNode() { return this->m_camNode; }
-        //Node_ref GetSceneCameraControllerNode() { return this->m_camCtrlNode; }
+        //ObjectPtr<Node> GetSceneCameraNode() { return this->m_camNode; }
+        //ObjectPtr<Node> GetSceneCameraControllerNode() { return this->m_camCtrlNode; }
         //CameraComponent_ref GetSceneCamera() { return this->GetSceneCameraNode()->GetComponent<CameraComponent>(); }
 
     private:
@@ -40,8 +40,8 @@ namespace pulsared
         SceneEditorViewportFrame* m_sceneEditor = nullptr;
 
 
-        //Node_ref m_camNode;
-        //Node_ref m_camCtrlNode;
+        //ObjectPtr<Node> m_camNode;
+        //ObjectPtr<Node> m_camCtrlNode;
         //Vector2i m_viewportSize;
 
         //gfx::GFXDescriptorSetLayout_sp m_descriptorLayout;

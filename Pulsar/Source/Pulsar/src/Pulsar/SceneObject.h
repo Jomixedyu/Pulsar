@@ -1,5 +1,6 @@
 #pragma once
 #include "ObjectBase.h"
+#include <CoreLib.Serialization/ObjectSerializer.h>
 
 namespace pulsar
 {
@@ -9,26 +10,46 @@ namespace pulsar
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::SceneObject, ObjectBase);
     public:
-        virtual void BeginScene(const ObjectPtr<Scene>& scene) {}
-        virtual void EndScene() {}
+
+        void SceneObjectConstruct(guid_t guid = {});
+
+        guid_t GetSceneObjectGuid() const { return m_sceneObjectGuid; }
+
+        virtual void GetDependenciesAsset(array_list<guid_t>& deps) const {}
+
     protected:
-        guid_t m_sceneObjectId;
+        guid_t m_sceneObjectGuid;
+    public:
+        guid_t m_sourceSceneObjectGuid; //in prefab
     };
+
 
     class ISceneObjectFinder
     {
     public:
         virtual ~ISceneObjectFinder() = default;
-        virtual ObjectHandle Find(guid_t sceneObjId) = 0;
+        virtual ObjectPtr<SceneObject> FindSceneObject(guid_t sceneObjId) const = 0;
+        virtual void AddSceneObjectToFinder(const ObjectPtr<SceneObject>& obj) = 0;
     };
 
-    template <typename T>
-    struct SceneObjectWeakPtr
+    struct SceneObjectSerializer
     {
-        ObjectPtr<SceneObject> Load(ISceneObjectFinder* finder)
+        SceneObjectSerializer(ser::VarientRef obj, bool isWrite, bool editorData,
+                              ISceneObjectFinder* sceneObjectFinder = nullptr)
+            : Object(std::move(obj)),
+              IsWrite(isWrite),
+              HasEditorData(editorData),
+              SceneObjectFinder(sceneObjectFinder)
         {
-            return finder->Find(m_ref);
         }
-        guid_t m_ref;
+
+        SceneObjectSerializer(const SceneObjectSerializer&) = delete;
+        SceneObjectSerializer(SceneObjectSerializer&&) = delete;
+    public:
+        ISceneObjectFinder* SceneObjectFinder;
+        ser::VarientRef Object;
+        const bool IsWrite;
+        const bool HasEditorData;
     };
+
 }

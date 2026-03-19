@@ -14,7 +14,7 @@ namespace pulsared
 		{
 			return AssetDatabase::LoadAssetAtPath(path);
 		}
-		virtual RCPtr<AssetObject> LoadAssetById(ObjectHandle id) override
+		virtual RCPtr<AssetObject> LoadAssetById(guid_t id) override
 		{
 			return AssetDatabase::LoadAssetById(id);
 		}

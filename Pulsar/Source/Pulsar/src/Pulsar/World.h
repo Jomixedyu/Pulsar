@@ -70,9 +70,6 @@ namespace pulsar
             return static_cast<T*>(GetSubsystem(cltypeof<T>()));
         }
 
-        int64_t AllocElementId(guid_t obj);
-        void FreeElementId(int64_t id);
-        guid_t FindElementId(int64_t id);
 
     public: // properties
         Ticker                      GetTicker() const { return m_ticker; }
@@ -133,8 +130,6 @@ namespace pulsar
 
         GizmosManager m_gizmosManager;
         array_list<SPtr<class WorldSubsystem>> m_subsystems;
-
-        hash_map<int64_t, guid_t> m_elementIdMap;
 
 
         Ticker   m_ticker{};

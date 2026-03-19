@@ -43,7 +43,7 @@ namespace pulsared
         EdTool* GetTool() const { return m_tool.get(); }
         void SetTool(std::unique_ptr<EdTool>&& tool);
     private:
-        Node_ref m_camNode;
+        ObjectPtr<Node> m_camNode;
         CameraComponent_ref m_cam;
 
 

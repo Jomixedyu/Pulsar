@@ -232,7 +232,7 @@ namespace pulsared
     {
         base::OnOpen();
         m_externalContext = ax::NodeEditor::CreateEditor();
-        m_graph = cref_cast<RDGGraph>(m_assetObject);
+        //m_graph = cast<RDGGraph>(m_assetObject);
     }
     void RDGEditorWindow::OnClose()
     {

@@ -31,15 +31,15 @@ std::wstring String2Wstring(std::string wstr)
 int main()
 {
     int code = 0;
-    try
-    {
+//    try
+//    {
         code = Application::Exec(new EditorAppInstance, "Pulsar Editor", { 1280,720 });
-    }
-    catch(std::exception& e)
-    {
-
-        _wassert(String2Wstring(e.what()).c_str(), _CRT_WIDE(__FILE__), __LINE__);
-
-    }
+//    }
+//    catch(std::exception& e)
+//    {
+//
+//        _wassert(String2Wstring(e.what()).c_str(), _CRT_WIDE(__FILE__), __LINE__);
+//
+//    }
     return code;
 }

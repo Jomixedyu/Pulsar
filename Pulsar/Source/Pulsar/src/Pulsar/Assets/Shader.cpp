@@ -19,14 +19,13 @@ namespace pulsar
 
     RCPtr<Shader> Shader::StaticCreate(string_view name, ShaderSourceData&& pass)
     {
-        Shader_sp self = mksptr(new Shader);
-        self->Construct();
+        auto self = NewAssetObject<Shader>();
         self->SetName(name);
         self->m_shaderSource = std::move(pass);
 
         self->SetReady(true);
 
-        return self.get();
+        return self;
     }
 
 
@@ -92,7 +91,7 @@ namespace pulsar
         m_shaderConfig = ser::JsonSerializer::Deserialize<ShaderPassConfig>(cfg);
 
         Initialize();
-        SendOuterDependencyMsg(DependencyObjectState::Reload);
+        SendOuterDependencyMsg(DependencyObjectState::Modified);
     }
 
     ShaderPassConfig* Shader::GetConfig() const
@@ -168,15 +167,16 @@ namespace pulsar
             break;
         }
         case ShaderParameterType::Texture: {
-            auto handle = ObjectHandle::parse(value);
+            WeakAssetPtr<Texture2D> texPath = value;
             RCPtr<Texture2D> tex;
-            if (handle.is_empty())
+
+            if (texPath.IsEmpty())
             {
                 tex = GetAssetManager()->LoadAsset<Texture2D>(BuiltinAsset::Texture_White);
             }
             else
             {
-                tex = handle;
+                tex = texPath.Get();
             }
 
             ret.SetValue(tex);
@@ -193,7 +193,7 @@ namespace pulsar
         m_isReady = b;
         if (b)
         {
-            RuntimeObjectManager::NotifyDependencySource(GetObjectHandle(), DependencyObjectState::Reload);
+            RuntimeObjectManager::NotifyDependencySource(GetObjectHandle(), DependencyObjectState::Modified);
         }
         else
         {

@@ -1,14 +1,17 @@
 #pragma once
 #include <Pulsar/AssetObject.h>
-
+#include <Pulsar/SceneObject.h>
 
 namespace pulsar
 {
     class Node;
-    class NodeCollection : public AssetObject
+    class NodeCollection : public AssetObject, public ISceneObjectFinder
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::NodeCollection, AssetObject)
     public:
+        virtual ObjectPtr<SceneObject> FindSceneObject(guid_t sceneObjId) const override;
+        virtual void AddSceneObjectToFinder(const ObjectPtr<SceneObject>& obj) override;
+
         void Serialize(AssetSerializer* s) override;
 
         void OnDestroy() override;
@@ -21,6 +24,7 @@ namespace pulsar
 
         void OnInstantiateAsset(AssetObject* obj) override;
 
+        void CombineFrom(RCPtr<NodeCollection> collection);
 
         ObjectPtr<Node> NewNode(index_string name = "Node", const ObjectPtr<Node>& parent = nullptr, ObjectFlags flags = 0);
         void RemoveNode(ObjectPtr<Node> node);
@@ -34,11 +38,13 @@ namespace pulsar
         virtual void CopyFrom(ObjectPtr<NodeCollection> nc);
         const List_sp<ObjectHandle>& GetCollectionHandles() const { return m_collectionHandles; }
 
+        void OnCollectAssetDependencies(array_list<jxcorlib::guid_t> &deps) override;
+
         NodeCollection();
     protected:
         ObjectPtr<Node> BeginNewNode(index_string name = "Node", const ObjectPtr<Node>& parent = nullptr, ObjectFlags flags = 0);
         void EndNewNode(ObjectPtr<Node> node);
-        ObjectPtr<Node> ConstructNode(index_string name = "Node", ObjectHandle handle = {}, ObjectFlags flags = 0);
+        ObjectPtr<Node> ConstructNode(index_string name = "Node", guid_t guid = {}, ObjectFlags flags = 0);
     protected:
         CORELIB_REFL_DECL_FIELD(m_rootNodes);
         List_sp<ObjectPtr<Node>> m_rootNodes;
@@ -48,6 +54,8 @@ namespace pulsar
 
         CORELIB_REFL_DECL_FIELD(m_collectionHandles);
         List_sp<ObjectHandle> m_collectionHandles;
+
+        hash_map<guid_t, ObjectPtr<SceneObject>> m_guidToNode;
     };
     DECL_PTR(NodeCollection);
 

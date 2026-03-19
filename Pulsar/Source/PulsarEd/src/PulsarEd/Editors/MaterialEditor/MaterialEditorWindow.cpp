@@ -22,13 +22,13 @@ namespace pulsared
         if (PImGui::PropertyGroup("Material"))
         {
             PImGui::ObjectFieldProperties(
-                BoxingObjectPtrBase::StaticType(),
+                BoxingRCPtrBase::StaticType(),
                 m_assetObject->GetType(),
-                mkbox(ObjectPtrBase(m_assetObject.Handle)).get(),
+                mkbox( (RCPtrBase)m_assetObject ).get(),
                 m_assetObject.GetPtr());
         }
 
-        RCPtr<Material> material = cref_cast<Material>(m_assetObject);
+        RCPtr<Material> material = cast<Material>(m_assetObject);
         if (material)
         {
             if (m_shader != material->GetShader())
@@ -69,7 +69,7 @@ namespace pulsared
                     case ShaderParameterType::Texture: {
                         auto tex = material->GetTexture(name);
                         objType = Texture::StaticType();
-                        obj = mkbox(ObjectPtrBase(tex.GetHandle()));
+                        obj = mkbox((RCPtrBase&)tex);
                         break;
                     }
                     }
@@ -91,8 +91,8 @@ namespace pulsared
                             break;
                         }
                         case ShaderParameterType::Texture: {
-                            auto objptr = UnboxUtil::Unbox<ObjectPtrBase>(obj);
-                            RCPtr<Texture> tex = objptr.GetHandle();
+                            auto objptr = UnboxUtil::Unbox<RCPtrBase>(obj);
+                            RCPtr<Texture> tex = cast<Texture>(objptr);
                             material->SetTexture(name, tex);
                             break;
                         }
@@ -108,7 +108,7 @@ namespace pulsared
     void MaterialEditorWindow::OnOpen()
     {
         base::OnOpen();
-        RCPtr<Material> material = m_assetObject;
+        RCPtr<Material> material = cast<Material>(m_assetObject);
         material->CreateGPUResource();
 
         auto previewMesh =m_world->GetResidentScene()->NewNode("PreviewMesh");
@@ -128,27 +128,28 @@ namespace pulsared
     }
     void MaterialEditorWindow::OnShaderChanged(const RCPtr<Shader>& newShader)
     {
+        RCPtr<Material> material = cast<Material>(m_assetObject);
         if (newShader == nullptr)
         {
             m_world->GetCurrentCamera()->ClearPostProcess();
-            m_previewMeshRenderer->SetMaterial(0, m_assetObject);
+            m_previewMeshRenderer->SetMaterial(0, material);
         }
         else if (newShader->GetConfig()->RenderingType == ShaderPassRenderingType::PostProcessing)
         {
             if (m_world->GetCurrentCamera()->GetPostProcessCount() == 0)
             {
-                m_world->GetCurrentCamera()->AddPostProcess(m_assetObject);
+                m_world->GetCurrentCamera()->AddPostProcess(material);
             }
             else
             {
-                m_world->GetCurrentCamera()->SetPostProcess(0, m_assetObject);
+                m_world->GetCurrentCamera()->SetPostProcess(0, material);
             }
             m_previewMeshRenderer->SetMaterial(0, GetAssetManager()->LoadAsset<Material>(BuiltinAsset::Material_Lambert));
         }
         else
         {
             m_world->GetCurrentCamera()->ClearPostProcess();
-            m_previewMeshRenderer->SetMaterial(0, m_assetObject);
+            m_previewMeshRenderer->SetMaterial(0, material);
         }
 
     }

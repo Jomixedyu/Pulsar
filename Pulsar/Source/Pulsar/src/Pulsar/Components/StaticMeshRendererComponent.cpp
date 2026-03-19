@@ -73,6 +73,10 @@ namespace pulsar
         for (int matIndex = 0; matIndex < m_materials.size(); ++matIndex)
         {
             auto& mat = m_materials.at(matIndex);
+            if (!mat || !mat->GetShader())
+            {
+                continue;
+            }
             auto& batch = m_batches.emplace_back();
             batch.State.Topology = gfx::GFXPrimitiveTopology::TriangleList;
 
@@ -170,13 +174,13 @@ namespace pulsar
         }
         return ro;
     }
-    void StaticMeshRendererComponent::GetDependencies(array_list<ObjectHandle>& out)
+    void StaticMeshRendererComponent::GetSubscribeObserverHandles(array_list<ObjectHandle>& out)
     {
-        base::GetDependencies(out);
-        out.push_back(m_staticMesh.Handle);
+        base::GetSubscribeObserverHandles(out);
+        out.push_back(m_staticMesh.GetHandle());
         for (auto& mat : *m_materials)
         {
-            out.push_back(mat.Handle);
+            out.push_back(mat.GetHandle());
         }
     }
 
@@ -226,7 +230,7 @@ namespace pulsar
 
         OnMeshChanged();
     }
-    RCPtr<StaticMesh> StaticMeshRendererComponent::GetMaterial(int index) const
+    RCPtr<Material> StaticMeshRendererComponent::GetMaterial(int index) const
     {
         return m_materials->at(index);
     }
@@ -305,12 +309,12 @@ namespace pulsar
         base::OnReceiveMessage(id);
     }
 
-    void StaticMeshRendererComponent::OnDependencyMessage(ObjectHandle inDependency, DependencyObjectState msg)
+    void StaticMeshRendererComponent::OnNotifyObserver(ObjectHandle inDependency, DependencyObjectState msg)
     {
-        base::OnDependencyMessage(inDependency, msg);
-        if (EnumHasFlag(msg, DependencyObjectState::Reload))
+        base::OnNotifyObserver(inDependency, msg);
+        if (EnumHasFlag(msg, DependencyObjectState::Modified))
         {
-            ObjectPtr<ObjectBase> obj = inDependency;
+            ObjectPtrBase obj = inDependency;
             if (!obj) return;
             if (obj->GetType() == cltypeof<Material>())
             {
@@ -331,7 +335,7 @@ namespace pulsar
     {
         m_materialsSize = size;
         m_materials->resize(size);
-        RebuildDependencies();
+        RebuildObserver();
     }
 
     void StaticMeshRendererComponent::OnTransformChanged()
@@ -344,7 +348,6 @@ namespace pulsar
     {
         if (m_staticMesh)
         {
-            TryLoadAssetRCPtr(m_staticMesh);
             if (m_staticMesh->GetMaterialCount() > m_materials->size())
             {
                 ResizeMaterials(m_staticMesh->GetMaterialCount());
@@ -356,22 +359,15 @@ namespace pulsar
         {
             m_renderObject->SetStaticMesh(m_staticMesh)->SubmitChange();
         }
-        RebuildDependencies();
+        RebuildObserver();
     }
     void StaticMeshRendererComponent::OnMaterialChanged()
     {
         if (m_renderObject)
         {
-            for (auto& mat : *m_materials)
-            {
-                if (!mat.GetPtr())
-                {
-                    TryLoadAssetRCPtr(mat);
-                }
-            }
             m_renderObject->SetMaterials(*m_materials)->SubmitChange();
         }
-        RebuildDependencies();
+        RebuildObserver();
     }
 
 } // namespace pulsar

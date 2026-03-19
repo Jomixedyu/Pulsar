@@ -15,6 +15,7 @@ namespace pulsar
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::CameraComponent, SceneCapture2DComponent);
         CORELIB_CLASS_ATTR(new CategoryAttribute("Capture"));
+        DECL_OBJECTPTR_SELF
     public:
         CameraComponent();
         ~CameraComponent() override;

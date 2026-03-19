@@ -14,12 +14,17 @@
 namespace pulsared
 {
 
-    static std::unordered_set<RCPtr<AssetObject>> _DirtyObjects;
+    static auto& _DirtyObjects()
+    {
+        static std::unordered_set<RCPtr<AssetObject>> set;
+        return set;
+    }
+
 
     class PackageAssetRegistry
     {
     public:
-        hash_map<ObjectHandle, string> AssetPathMapping;
+        hash_map<guid_t, string> AssetPathMapping;
     };
 
     static hash_map<string, PackageAssetRegistry> _AssetRegistry;
@@ -39,6 +44,7 @@ namespace pulsared
             if (newNode->GetPhysicsNameExt() == ".pmeta")
             {
                 newNode->AssetMeta = ser::JsonSerializer::Deserialize<AssetMetaData>(FileUtil::ReadAllText(newNode->PhysicsPath.string()));
+                assert(newNode->AssetMeta->Guid);
             }
             else if (!newNode->IsFolder)
             {
@@ -82,9 +88,9 @@ namespace pulsared
     {
         // string pathStr{path};
 
-        if(auto id = GetIdByPath(path))
+        if(auto id = GetGuidByPath(path))
         {
-            if(auto obj = RuntimeObjectManager::GetObject(id))
+            if(auto obj = RuntimeAssetManager::GetLoadedAssetByGuid<AssetObject>(id))
             {
                 return obj;
             }
@@ -93,34 +99,34 @@ namespace pulsared
         auto node = FileTree->Find(path).get();
         if (!node)
         {
-            return nullptr;
+            Logger::Log("not found asset.", LogLevel::Error);
+            return {};
         }
-        if (!node->IsCreated)
-        {
-            return GetIdByPath(path);
-        }
-
-        SPtr<AssetObject> assetObj;
 
         auto json = FileUtil::ReadAllText(node->GetPhysicsPath());
         auto meta = ser::JsonSerializer::Deserialize<AssetMetaData>(json);
 
-        if (auto existObj = RuntimeObjectManager::GetObject(meta->Handle))
-        {
-            return static_cast<AssetObject*>(existObj);
-        }
-
+        // load asset on editor
         auto type = AssemblyManager::GlobalFindType(meta->Type);
         if(!type)
         {
             Logger::Log("not found type.", LogLevel::Error);
-            return nullptr;
+            return {};
         }
-        assetObj = sptr_cast<AssetObject>(type->CreateSharedInstance({}));
 
+        // load dependencies
+        array_list<RCPtr<AssetObject>> dependencies;
+        if (meta->Dependencies)
+        {
+            for(auto& depend : *meta->Dependencies)
+            {
+                dependencies.push_back(AssetDatabase::LoadAssetById(depend));
+            }
+        }
+
+        // load asset
+        auto assetObj = cast<AssetObject>(InternalNewAssetObject(type, meta->Guid));
         assetObj->SetName(node->AssetName);
-        assetObj->Construct(meta->Handle);
-
         {
             auto assetPath = node->PhysicsPath;
             assetPath.replace_extension({".pa"});
@@ -142,7 +148,7 @@ namespace pulsared
         return assetObj;
     }
 
-    RCPtr<AssetObject> AssetDatabase::LoadAssetById(ObjectHandle id)
+    RCPtr<AssetObject> AssetDatabase::LoadAssetById(guid_t id)
     {
         for (auto& [packageName, registry] : _AssetRegistry)
         {
@@ -162,7 +168,7 @@ namespace pulsared
         return node != nullptr;
     }
 
-    string AssetDatabase::GetPathById(ObjectHandle id)
+    string AssetDatabase::GetPathByGuid(guid_t id)
     {
         for (auto& [package, registry] : _AssetRegistry)
         {
@@ -175,12 +181,16 @@ namespace pulsared
 
         return {};
     }
-    string AssetDatabase::GetPathByAsset(const RCPtr<AssetObject>& asset)
+    string AssetDatabase::GetPathByAsset(const RCPtrBase& asset)
     {
-        return GetPathById(asset.GetHandle());
+        if (asset)
+        {
+            return GetPathByGuid(asset->GetAssetGuid());
+        }
+        return {};
     }
 
-    ObjectHandle AssetDatabase::GetIdByPath(string_view path)
+    guid_t AssetDatabase::GetGuidByPath(string_view path)
     {
         for (auto& [package, registry] : _AssetRegistry)
         {
@@ -205,10 +215,11 @@ namespace pulsared
 
     void AssetDatabase::ResolveDirty(const RCPtr<AssetObject>& asset) noexcept
     {
-        auto it = _DirtyObjects.find(asset.GetHandle());
-        if (it != _DirtyObjects.end())
+        auto& set = _DirtyObjects();
+        auto it = set.find(asset);
+        if (it != set.end())
         {
-            _DirtyObjects.erase(it);
+            set.erase(it);
         }
     }
 
@@ -217,11 +228,14 @@ namespace pulsared
         return !GetPathByAsset(asset).empty();
     }
 
-    void AssetDatabase::ReloadAsset(ObjectHandle id)
+    void AssetDatabase::ReloadAsset(guid_t id)
     {
-        RuntimeObjectManager::DestroyObject(id, true);
-        LoadAssetById(id);
-        ResolveDirty(id);
+        if (auto ptr = RuntimeAssetManager::GetLoadedAssetByGuid(id))
+        {
+            DestroyObject(ptr);
+        }
+        auto asset = LoadAssetById(id);
+        ResolveDirty(asset);
     }
 
     void AssetDatabase::Save(const RCPtr<AssetObject>& asset)
@@ -238,14 +252,20 @@ namespace pulsared
         {
             auto assetPath = GetPathByAsset(asset);
             auto node = FileTree->Find(assetPath);
-
+            auto meta = node->AssetMeta;
             ser::JsonSerializerSettings metaJsonSettings{};
             metaJsonSettings.IndentSpace = 4;
+            if (!meta->Dependencies)
+            {
+                init_sptr_member(meta->Dependencies);
+            }
+            meta->Dependencies->clear();
+            asset->OnCollectAssetDependencies(*meta->Dependencies);
             auto metaJson = ser::JsonSerializer::Serialize(node->AssetMeta.get(), metaJsonSettings);
             FileUtil::WriteAllText(node->PhysicsPath, metaJson);
 
-            auto assetPhyicsPath = node->PhysicsPath;
-            assetPhyicsPath.replace_extension({".pa"});
+            auto assetPhysicalPath = node->PhysicsPath;
+            assetPhysicalPath.replace_extension({".pa"});
 
             auto assetBinPath = node->PhysicsPath;
             assetBinPath.replace_extension({".pba"});
@@ -258,7 +278,7 @@ namespace pulsared
             ser.ExistStream = true;
             asset->Serialize(&ser);
 
-            FileUtil::WriteAllText(assetPhyicsPath, textAssetObject->ToString());
+            FileUtil::WriteAllText(assetPhysicalPath, textAssetObject->ToString());
             node->IsPhysicsFile = true;
             node->IsCreated = true;
 
@@ -270,11 +290,11 @@ namespace pulsared
 
     void AssetDatabase::SaveAll()
     {
-        auto copy = _DirtyObjects;
+        auto& copy = _DirtyObjects();
 
         for (auto& item : copy)
         {
-            Save(item.GetPtr());
+            Save(item);
         }
     }
 
@@ -288,14 +308,13 @@ namespace pulsared
         if (attr && attr->GetInstantiatePath())
         {
             auto _asset = LoadAssetAtPath(attr->GetInstantiatePath());
-            asset = _asset->InstantiateAsset();
+            asset = InstantiateAsset(_asset);
             asset->SetName(assetName);
         }
         else
         {
-            auto newAsset = sptr_cast<AssetObject>(assetType->CreateSharedInstance({}));
+            auto newAsset = NewAssetObject<AssetObject>(assetType);
             newAsset->SetName(assetName);
-            newAsset->Construct();
 
             asset = newAsset;
         }
@@ -311,7 +330,9 @@ namespace pulsared
         const auto newAsset = root->PrepareChildFile(path, ".pmeta");
         newAsset->AssetMeta = mksptr(new AssetMetaData);
         newAsset->AssetMeta->Type = asset->GetType()->GetName();
-        newAsset->AssetMeta->Handle = asset.GetHandle();
+        newAsset->AssetMeta->Guid = asset.GetGuid();
+        init_sptr_member(newAsset->AssetMeta->Dependencies);
+
         newAsset->IsPhysicsFile = false;
         //newAsset->PhysicsPath = phypath;
         // ser::JsonSerializerSettings settings;
@@ -332,7 +353,7 @@ namespace pulsared
         }
 
         _WriteAssetToDisk(FileTree, path, asset);
-        _AssetRegistry[GetPackageName(path)].AssetPathMapping[asset->GetObjectHandle()] = path;
+        _AssetRegistry[GetPackageName(path)].AssetPathMapping[asset->GetAssetGuid()] = path;
 
         MarkDirty(asset);
 
@@ -381,15 +402,15 @@ namespace pulsared
             parentNode->RemoveChild(node);
 
             // destroy memory object
-            auto handle = GetIdByPath(assetPath);
-            if (RuntimeObjectManager::IsValid(handle))
+            auto guid = GetGuidByPath(assetPath);
+            if (auto asset = RuntimeAssetManager::GetLoadedAssetByGuid(guid))
             {
-                ObjectPtr<AssetObject> asset = RuntimeObjectManager::GetObject(handle)->GetObjectHandle();
                 DestroyObject(asset, true);
             }
 
+
             // unregister registry
-            auto assetId = GetIdByPath(assetPath);
+            auto assetId = GetGuidByPath(assetPath);
             _AssetRegistry.at(packageName).AssetPathMapping.erase(assetId);
 
             // delete physic file
@@ -539,7 +560,7 @@ namespace pulsared
         dstFolderNode->AddChild(node);
 
         auto packageName = AssetDatabase::GetPackageName(srcAsset);
-        _AssetRegistry.at(packageName).AssetPathMapping.at(node->AssetMeta->Handle) = dstAsset;
+        _AssetRegistry.at(packageName).AssetPathMapping.at(node->AssetMeta->Guid) = dstAsset;
 
 
         return true;
@@ -567,16 +588,21 @@ namespace pulsared
 
     void AssetDatabase::MarkDirty(const RCPtr<AssetObject>& asset) noexcept
     {
-        _DirtyObjects.insert(asset);
+        auto& set = _DirtyObjects();
+        set.insert(asset);
     }
 
     bool AssetDatabase::IsDirty(const RCPtr<AssetObject>& asset) noexcept
     {
-        return _DirtyObjects.contains(asset);
+        auto& set = _DirtyObjects();
+        auto isDirty = set.contains(asset);
+        return isDirty;
     }
-    bool AssetDatabase::IsDirtyHandle(const ObjectHandle& asset) noexcept
+    bool AssetDatabase::IsDirtyHandle(const guid_t& asset) noexcept
     {
-        return std::ranges::any_of(_DirtyObjects, [asset](auto& obj) { return obj.Handle == asset; });
+        auto& set = _DirtyObjects();
+        auto isDirty = std::ranges::any_of(set, [asset](auto& obj) { return obj.GetGuid() == asset; });
+        return isDirty;
     }
 
     Type* AssetFileNode::GetAssetType() const
@@ -593,10 +619,10 @@ namespace pulsared
     }
     static void _OnPostEditChanged(ObjectBase* object)
     {
-        if(cltypeof<AssetObject>()->IsInstanceOfType(object))
-        {
-            AssetDatabase::MarkDirty(object->GetObjectHandle());
-        }
+//        if(cltypeof<AssetObject>()->IsInstanceOfType(object))
+//        {
+//            AssetDatabase::MarkDirty(object->GetObjectHandle());
+//        }
     }
     void AssetDatabase::Initialize()
     {
@@ -618,7 +644,10 @@ namespace pulsared
         Workspace::OnWorkspaceOpened -= _OnWorkspaceOpened;
         RuntimeObjectManager::OnPostEditChanged -= _OnPostEditChanged;
         IconPool.reset();
-        decltype(_DirtyObjects){}.swap(_DirtyObjects);
+
+        auto& set = _DirtyObjects();
+        set.clear();
+
         decltype(_AssetRegistry){}.swap(_AssetRegistry);
     }
 
@@ -752,7 +781,7 @@ namespace pulsared
                 {
                     _AssetRegistry.insert({packageName, {}});
                 }
-                _AssetRegistry[packageName].AssetPathMapping[node->AssetMeta->Handle] = node->AssetPath;
+                _AssetRegistry[packageName].AssetPathMapping[node->AssetMeta->Guid] = node->AssetPath;
             }
         });
 

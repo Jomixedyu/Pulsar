@@ -37,38 +37,20 @@ namespace pulsar
         string_view m_category;
     };
 
-    struct ComponentSerializer
-    {
-        ComponentSerializer(ser::VarientRef obj, bool isWrite, bool editorData)
-            : Object(std::move(obj)),
-              IsWrite(isWrite),
-              HasEditorData(editorData)
-        {
-        }
-
-        ComponentSerializer(const ComponentSerializer&) = delete;
-        ComponentSerializer(ComponentSerializer&&) = delete;
-    public:
-        ser::VarientRef Object;
-        hash_map<ObjectHandle, ObjectHandle>* MovingTable = nullptr;
-        bool IsWrite;
-        const bool HasEditorData;
-    };
-
-
     class Component : public SceneObject, public ITickable
     {
         friend class Node;
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::Component, SceneObject);
         CORELIB_CLASS_ATTR(new AbstractComponentAttribute);
+        DECL_OBJECTPTR_SELF
     public:
-        virtual void Serialize(ComponentSerializer* s);
+        virtual void Serialize(SceneObjectSerializer* s);
         [[always_inline]] ObjectPtr<Node> GetNode() const noexcept { return m_ownerNode; }
         [[always_inline]] Node* GetNodePtr() const noexcept { return m_ownerNodePtr; }
-        ObjectPtr<Node> GetMasterComponent() const;
+        ObjectPtr<Component> GetMasterComponent() const;
         World* GetWorld() const;
         ObjectPtr<Scene> GetRuntimeScene() const;
-        TransformComponent* GetTransform() const;
+        ObjectPtr<TransformComponent> GetTransform() const;
         array_list<ObjectHandle> GetReferenceHandles() const;
         void SendMessage(MessageId msgid);
         virtual BoxSphereBounds3f GetBoundsWS() { return {}; }

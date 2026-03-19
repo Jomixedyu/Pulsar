@@ -1,6 +1,9 @@
 {
     "ExtraFiles": {},
-    "Handle": "37ef06c846a9e343bca88e5de111a8ca",
+    "Guid": "37ef06c846a9e343bca88e5de111a8ca",
     "Tags": {},
-    "Type": "pulsar::StaticMesh"
+    "Type": "pulsar::StaticMesh",
+	"Dependencies": [
+		
+	]
 }

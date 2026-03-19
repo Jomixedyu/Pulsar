@@ -41,7 +41,7 @@ namespace pulsared
     {
         base::OnOpen();
 
-        m_staticmesh = cref_cast<StaticMesh>(m_assetObject);
+        m_staticmesh = cast<StaticMesh>(m_assetObject);
         m_staticmesh->CreateGPUResource();
 
         auto previewMesh = m_world->GetResidentScene()->NewNode("PreviewMesh");

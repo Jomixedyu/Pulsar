@@ -11,18 +11,16 @@ namespace pulsar
 
     RCPtr<TextAsset> TextAsset::StaticCreate(string_view str)
     {
-        auto self = mksptr(new TextAsset);
-        self->Construct();
+        auto self = NewAssetObject<TextAsset>();
         self->text_ = str;
-        return self.get();
+        return self;
     }
 
     RCPtr<TextAsset> TextAsset::StaticCreate(string&& str)
     {
-        auto self = mksptr(new TextAsset);
-        self->Construct();
+        auto self = NewAssetObject<TextAsset>();
         self->text_ = std::move(str);
-        return self.get();
+        return self;
     }
 
 

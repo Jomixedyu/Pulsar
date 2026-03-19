@@ -28,7 +28,6 @@ namespace pulsared
 
             auto path = m_shaderPaths[i];
             auto& shader = m_shaders[i];
-            TryLoadAssetRCPtr(shader);
 
             ImGui::PushID(path.c_str());
 
@@ -54,7 +53,7 @@ namespace pulsared
             // }
             if (ImGui::Button("Compile"))
             {
-                ShaderCompiler::CompileShader(shader.GetPtr());
+                ShaderCompiler::CompileShader(shader);
             }
             ImGui::PopID();
         }

@@ -20,10 +20,10 @@ namespace pulsar
                 }
 
                 auto nodeObj = s->Object->New(ser::VarientType::Object);
-                nodeObj->Add("Id", node->GetObjectHandle().to_string());
+                nodeObj->Add("Id", node->GetSceneObjectGuid().to_string());
 
-                NodeSerializer nodeSerializer{nodeObj, s->IsWrite, s->HasEditorData};
-                node->Serialize(&nodeSerializer);
+                SceneObjectSerializer nodeSerializer{nodeObj, s->IsWrite, s->HasEditorData, this};
+                node->BeginSerialize(&nodeSerializer);
                 nodes->Push(nodeObj);
             }
             s->Object->Add("Nodes", nodes);
@@ -31,28 +31,54 @@ namespace pulsar
             auto rootNodes = s->Object->New(ser::VarientType::Array);
             for (auto node : *m_rootNodes)
             {
-                rootNodes->Push(node.GetHandle().to_string());
+                rootNodes->Push(node->GetSceneObjectGuid().to_string());
             }
             s->Object->Add("RootNodes", rootNodes);
         }
         else
         {
+            //1. load and construct(sceneguid) all sceneobject
+            //2. init all sceneobject
+
+            struct NodeInfo
+            {
+                ObjectPtr<Node> Node;
+                jxcorlib::ser::VarientRef NodeSerializer;
+
+            };
+            array_list<NodeInfo> nodes;
+
             auto nodesArr = s->Object->At("Nodes");
+            // construct all node & add node.Guid to table
             for (int i = 0; i < nodesArr->GetCount(); ++i)
             {
-                auto node = nodesArr->At(i);
-                auto nodeId = ObjectHandle::parse(node->At("Id")->AsString());
+                auto serNode = nodesArr->At(i);
+                auto nodeId = guid_t::parse(serNode->At("Id")->AsString());
                 auto newNode = ConstructNode("Node", nodeId);
-                NodeSerializer nodeSerializer{node, s->IsWrite, s->HasEditorData};
-                newNode->Serialize(&nodeSerializer);
+                m_guidToNode.insert({ nodeId, newNode });
+                nodes.push_back({ newNode, serNode});
+            }
+
+            // construct all components
+            for (auto& nodeInfo : nodes)
+            {
+                SceneObjectSerializer nodeSerializer{nodeInfo.NodeSerializer, s->IsWrite, s->HasEditorData, this};
+                nodeInfo.Node->BeginSerialize(&nodeSerializer);
+            }
+            // deserialize all components
+            for (auto& nodeInfo : nodes)
+            {
+                SceneObjectSerializer nodeSerializer{nodeInfo.NodeSerializer, s->IsWrite, s->HasEditorData, this};
+                nodeInfo.Node->EndSerialize(&nodeSerializer);
             }
 
             auto rootNodeArr = s->Object->At("RootNodes");
             for (int i = 0; i < rootNodeArr->GetCount(); ++i)
             {
                 auto node = rootNodeArr->At(i);
-                auto handle = ObjectHandle::parse(node->AsString());
-                RegisterRootNode(handle);
+                auto sceneGuid = guid_t::parse(node->AsString());
+
+                RegisterRootNode(cast<Node>(FindSceneObject(sceneGuid)));
             }
         }
     }
@@ -67,7 +93,7 @@ namespace pulsar
         }
 
     }
-    Node_ref NodeCollection::FindNodeByName(index_string name) const
+    ObjectPtr<Node> NodeCollection::FindNodeByName(index_string name) const
     {
         for (const auto& node : *m_rootNodes)
         {
@@ -80,11 +106,12 @@ namespace pulsar
     }
 
 
-    Node_ref NodeCollection::FindNodeByPath(string_view name) const
+    ObjectPtr<Node> NodeCollection::FindNodeByPath(string_view name) const
     {
         assert(false);
-        return Node_ref();
+        return ObjectPtr<Node>();
     }
+
     void NodeCollection::OnInstantiateAsset(AssetObject* obj)
     {
         base::OnInstantiateAsset(obj);
@@ -93,13 +120,13 @@ namespace pulsar
         
     }
 
-    Node_ref NodeCollection::NewNode(index_string name, const Node_ref& parent, ObjectFlags flags)
+    ObjectPtr<Node> NodeCollection::NewNode(index_string name, const ObjectPtr<Node>& parent, ObjectFlags flags)
     {
         auto node = BeginNewNode(name, parent, flags);
         EndNewNode(node);
         return node;
     }
-    void NodeCollection::RemoveNode(Node_ref node)
+    void NodeCollection::RemoveNode(ObjectPtr<Node> node)
     {
         const auto transform = node->GetTransform();
         const auto count = (int)transform->GetChildCount();
@@ -173,18 +200,45 @@ namespace pulsar
         OnAddNode(node);
     }
 
-    ObjectPtr<Node> NodeCollection::ConstructNode(index_string name, ObjectHandle handle, ObjectFlags flags)
+    ObjectPtr<Node> NodeCollection::ConstructNode(index_string name, guid_t guid, ObjectFlags flags)
     {
         auto newNode = mksptr(new Node);
-        newNode->Construct(handle);
         newNode->SetIndexName(name);
-        newNode->SetObjectFlags(newNode->GetObjectFlags() | flags | OF_LifecycleManaged);
 
-        auto node = ObjectPtr{newNode};
+        newNode->SetObjectFlags(newNode->GetObjectFlags() | flags | OF_LifecycleManaged);
+        newNode->SceneObjectConstruct(guid);
+
+        auto node = cast<Node>(ObjectPtrBase{newNode->GetObjectHandle()});
 
         m_nodes->push_back(node);
 
         return node;
     }
 
+    ObjectPtr<SceneObject> NodeCollection::FindSceneObject(guid_t sceneObjId) const
+    {
+        auto it = m_guidToNode.find(sceneObjId);
+        if (it != m_guidToNode.end())
+        {
+            return it->second;
+        }
+        return {};
+    }
+    void NodeCollection::AddSceneObjectToFinder(const ObjectPtr<SceneObject>& obj)
+    {
+        m_guidToNode.insert({obj->GetSceneObjectGuid(), obj});
+    }
+
+    void NodeCollection::CombineFrom(RCPtr<NodeCollection> collection)
+    {
+        // serialize data and deserialize this
+        //collection->Serialize()
+    }
+    void NodeCollection::OnCollectAssetDependencies(array_list<guid_t>& deps)
+    {
+        for (auto& node : *m_nodes)
+        {
+            node->GetDependenciesAsset(deps);
+        }
+    }
 } // namespace pulsar

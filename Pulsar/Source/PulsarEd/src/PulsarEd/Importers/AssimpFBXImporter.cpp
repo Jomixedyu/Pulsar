@@ -96,7 +96,7 @@ namespace pulsared
 
     }
 
-    static void _ProcessNode(aiNode* node, const aiScene* scene, Node_ref pnode, Scene_ref pscene, const string& dir, float scale_factor)
+    static void _ProcessNode(aiNode* node, const aiScene* scene, ObjectPtr<Node> pnode, Scene_ref pscene, const string& dir, float scale_factor)
     {
         array_list<StaticMeshSection> sections;
         sections.resize(node->mNumMeshes);
@@ -140,7 +140,7 @@ namespace pulsared
         }
     }
 
-    Node_ref AssimpFBXImporter::Import(string_view path, string& error)
+    ObjectPtr<Node> AssimpFBXImporter::Import(string_view path, string& error)
     {
         // float scale_factor = 1;
         //

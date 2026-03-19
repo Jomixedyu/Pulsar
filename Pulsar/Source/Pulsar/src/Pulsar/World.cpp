@@ -64,7 +64,7 @@ namespace pulsar
         target->m_name = m_name + "_copy";
         for (auto& scene : m_scenes)
         {
-            target->m_scenes.push_back(scene->InstantiateAsset());
+            target->m_scenes.push_back(InstantiateAsset(scene));
         }
     }
 
@@ -172,21 +172,7 @@ namespace pulsar
         }
         return {};
     }
-    int64_t World::AllocElementId(guid_t obj)
-    {
-        static int64_t i = 0;
-        ++i;
-        m_elementIdMap[i] = obj;
-        return i;
-    }
-    void World::FreeElementId(int64_t id)
-    {
-        m_elementIdMap.erase(id);
-    }
-    guid_t World::FindElementId(int64_t id)
-    {
-        return m_elementIdMap[id];
-    }
+
 
     ObjectPtr<CameraComponent> World::GetCurrentCamera()
     {
@@ -231,7 +217,7 @@ namespace pulsar
         }
         else
         {
-            if (m_focusScene.Handle == scene.Handle)
+            if (m_focusScene == scene)
             {
                 m_focusScene = GetResidentScene();
             }

@@ -12,7 +12,7 @@ using namespace std;
 
 namespace pulsar
 {
-    void Node::Serialize(NodeSerializer* s)
+    void Node::BeginSerialize(SceneObjectSerializer* s)
     {
         if (s->IsWrite)
         {
@@ -30,11 +30,12 @@ namespace pulsar
                 // serialize component
                 {
                     auto comp = s->Object->New(ser::VarientType::Object);
-                    ComponentSerializer componentSerializer {comp, s->IsWrite, s->HasEditorData};
+                    SceneObjectSerializer componentSerializer {comp, s->IsWrite, s->HasEditorData};
                     component->Serialize(&componentSerializer);
                     compObj->Add("Data", comp);
                 }
                 componentsObj->Push(compObj);
+
             }
             s->Object->Add("Components", componentsObj);
         }
@@ -51,23 +52,52 @@ namespace pulsar
                 auto typeStr = componentObj->At("Type")->AsString();
                 auto idStr = componentObj->At("Id")->AsString();
                 auto componentType = AssemblyManager::GlobalFindType(typeStr);
-                auto id = ObjectHandle::parse(idStr);
+                auto id = guid_t::parse(idStr);
 
                 // deserialize component
-                auto compData = componentObj->At("Data");
+
                 if (componentType)
                 {
-                    auto newComponent = ConstructComponent(componentType, id);
-                    ComponentSerializer ser {compData, s->IsWrite, s->HasEditorData};
-                    newComponent->Serialize(&ser);
+                    ConstructComponent(componentType, id);
+
                 }
             }
         }
     }
 
+    void Node::EndSerialize(SceneObjectSerializer* s)
+    {
+        if (!s->IsWrite)
+        {
+            auto componentArr = s->Object->At("Components");
+            for (int i = 0; i < componentArr->GetCount(); ++i)
+            {
+                auto componentObj = componentArr->At(i);
+                auto idStr = componentObj->At("Id")->AsString();
+
+                guid_t guid = guid_t::parse(idStr);
+
+                Component* target = nullptr;
+                for (auto& component : *m_components)
+                {
+                    if (component->GetSceneObjectGuid() == guid)
+                    {
+                        target = component.GetPtr();
+                    }
+                }
+
+                assert(target);
+
+                auto compData = componentObj->At("Data");
+                SceneObjectSerializer ser {compData, s->IsWrite, s->HasEditorData};
+                target->Serialize(&ser);
+            }
+
+        }
+    }
     bool Node::GetIsActive() const
     {
-        Node_ref node = this->GetObjectHandle();
+        ObjectPtr<Node> node = self_ptr();
         while (node)
         {
             if (!node->GetIsActiveSelf())
@@ -123,7 +153,6 @@ namespace pulsar
         {
             BeginComponent(comp);
         }
-        m_nodeId = GetRuntimeWorld()->AllocElementId(GetObjectHandle());
     }
     void Node::OnInactive()
     {
@@ -131,8 +160,6 @@ namespace pulsar
         {
             EndComponent(comp);
         }
-        GetRuntimeWorld()->FreeElementId(m_nodeId);
-        m_nodeId = 0;
     }
 
     void Node::OnParentActiveChanged()
@@ -157,7 +184,7 @@ namespace pulsar
             comp->OnTransformChanged();
         }
     }
-    TransformComponent* Node::GetTransform() const
+    ObjectPtr<TransformComponent> Node::GetTransform() const
     {
         return m_transform;
     }
@@ -247,14 +274,16 @@ namespace pulsar
         }
     }
 
-    ObjectPtr<Component> Node::ConstructComponent(Type* type, const ObjectHandle& handle)
+    ObjectPtr<Component> Node::ConstructComponent(Type* type, const guid_t& guid)
     {
         Object_sp obj = type->CreateSharedInstance({});
-        Component_sp component = sptr_cast<Component>(obj);
-        component->Construct(handle);
+        SPtr<Component> newComponent = sptr_cast<Component>(obj);
+        newComponent->SceneObjectConstruct(guid);
+
+        ObjectPtr<Component> component = ObjectPtr<Component>::UnsafeCreate(newComponent->GetObjectHandle());
 
         // init
-        component->m_ownerNode = self_ref();
+        component->m_ownerNode = self_ptr();
         component->m_ownerNodePtr = this;
 
         bool isTransform = type->IsSubclassOf(cltypeof<TransformComponent>());
@@ -269,7 +298,7 @@ namespace pulsar
         }
         if (isTransform)
         {
-            m_transform = sptr_cast<TransformComponent>(component).get();
+            m_transform = cast<TransformComponent>(component);
         }
 
         return component;
@@ -393,4 +422,12 @@ namespace pulsar
         }
         return nullptr;
     }
+    void Node::GetDependenciesAsset(array_list<guid_t>& deps) const
+    {
+        for (auto& comp : *m_components)
+        {
+            comp->GetDependenciesAsset(deps);
+        }
+    }
+
 } // namespace pulsar

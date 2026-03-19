@@ -8,18 +8,18 @@ namespace pulsar
     {
     public:
 
-        void Add(const ObjectPtr<SceneCaptureComponent>& component)
+        void Add(SceneCaptureComponent* component)
         {
             m_captures.push_back(component);
         }
-        void Remove(const ObjectPtr<SceneCaptureComponent>& component)
+        void Remove(const SceneCaptureComponent* component)
         {
             std::erase(m_captures, component);
         }
 
-        const array_list<ObjectPtr<SceneCaptureComponent>>& GetCaptures() const { return m_captures; }
+        const array_list<SceneCaptureComponent*>& GetCaptures() const { return m_captures; }
 
     protected:
-        array_list<ObjectPtr<SceneCaptureComponent>> m_captures;
+        array_list<SceneCaptureComponent*> m_captures;
     };
 }

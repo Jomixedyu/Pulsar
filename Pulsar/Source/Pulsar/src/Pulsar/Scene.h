@@ -87,7 +87,7 @@ namespace pulsar
     class Scene : public NodeCollection
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::Scene, NodeCollection);
-        inline ObjectPtr<Scene> self_ref() const { return this->GetObjectHandle(); }
+        DECL_OBJECTPTR_SELF
     public:
 
         Scene();
@@ -104,8 +104,8 @@ namespace pulsar
         void Serialize(AssetSerializer* s) override;
         void OnInstantiateAsset(AssetObject* obj) override;
 
-        virtual void OnAddNode(Node_ref node) override;
-        virtual void OnRemoveNode(Node_ref node) override;
+        virtual void OnAddNode(ObjectPtr<Node> node) override;
+        virtual void OnRemoveNode(ObjectPtr<Node> node) override;
 
         static RCPtr<Scene> StaticCreate(string_view name);
 
