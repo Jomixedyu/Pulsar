@@ -96,10 +96,7 @@ namespace gfx
             GFXTextureFormat format, const GFXSamplerConfig& samplerCfg) = 0;
 
         virtual GFXFrameBufferObject_sp CreateFrameBufferObject(
-            const array_list<GFXTexture2DView_sp>& renderTargets,
-            const GFXRenderPassLayout_sp& renderPassLayout) = 0;
-
-        virtual GFXRenderPassLayout_sp CreateRenderPassLayout(const array_list<GFXTexture2DView*>& renderTargets) = 0;
+            const array_list<GFXTexture2DView_sp>& renderTargets) = 0;
 
         virtual array_list<GFXTextureFormat> GetSupportedDepthFormats() = 0;
 

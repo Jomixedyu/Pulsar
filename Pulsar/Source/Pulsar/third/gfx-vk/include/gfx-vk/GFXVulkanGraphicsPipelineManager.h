@@ -15,7 +15,7 @@ namespace gfx
             const array_list<GFXGpuProgram_sp>& gpuPrograms,
             GFXGraphicsPipelineStateParams stateParams,
             const array_list<GFXDescriptorSetLayout_sp>& descriptorSetLayouts,
-            const std::shared_ptr<GFXRenderPassLayout>& renderPass,
+            const GFXRenderTargetDesc& renderTargetDesc,
             const GFXGraphicsPipelineState& gpInfo) override;
 
         virtual void GCollect() override;

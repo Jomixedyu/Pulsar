@@ -9,7 +9,6 @@
 // #include <glfw/include/GLFW/glfw3native.h>
 
 #include "GFXVulkanCommandBuffer.h"
-#include "GFXVulkanRenderPass.h"
 #include "GFXVulkanSwapchain.h"
 #include "gfx/GFXTextureView.h"
 #include <chrono>
@@ -61,10 +60,7 @@ namespace gfx
 
 
         virtual GFXFrameBufferObject_sp CreateFrameBufferObject(
-            const array_list<GFXTexture2DView_sp>& renderTargets,
-            const GFXRenderPassLayout_sp& renderPassLayout) override;
-
-        virtual GFXRenderPassLayout_sp CreateRenderPassLayout(const std::vector<GFXTexture2DView*>& renderTargets) override;
+            const array_list<GFXTexture2DView_sp>& renderTargets) override;
 
         virtual GFXTexture_sp CreateTextureCube(int32_t size) override;
 

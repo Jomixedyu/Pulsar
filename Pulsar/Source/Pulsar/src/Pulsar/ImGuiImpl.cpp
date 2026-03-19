@@ -163,8 +163,10 @@ namespace pulsar
             init_info.ImageCount = 2;
             init_info.DescriptorPool = m_app->GetVulkanDescriptorManager()->GetCommonDescriptorSetPool()->GetVkDescriptorPool();
             init_info.Allocator = VK_NULL_HANDLE;
+            init_info.UseDynamicRendering = true;
+            init_info.ColorAttachmentFormat = m_app->GetVulkanViewport()->GetVkSwapChainImageFormat();
 
-            ImGui_ImplVulkan_Init(&init_info, m_app->GetVulkanViewport()->GetRenderPass()->GetVkRenderPass());
+            ImGui_ImplVulkan_Init(&init_info, VK_NULL_HANDLE);
 
             {
                 gfx::GFXVulkanCommandBuffer font(m_app);

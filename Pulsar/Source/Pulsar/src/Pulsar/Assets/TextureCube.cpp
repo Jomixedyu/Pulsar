@@ -88,12 +88,10 @@ namespace pulsar
                 | std::views::transform([](gfx::GFXTexture2DView_sp& x){ return x.get(); })
                 | std::ranges::to<array_list<gfx::GFXTexture2DView*>>();
 
-            gfx::GFXRenderPassLayout_sp renderPass = gfxapp->CreateRenderPassLayout(facePointers);
-
             gfx::GFXFrameBufferObject_sp frameBuffers[6]{};
             for (auto& fbo : frameBuffers)
             {
-                fbo = gfxapp->CreateFrameBufferObject(faceRts, renderPass);
+                fbo = gfxapp->CreateFrameBufferObject(faceRts);
             }
 
             // render

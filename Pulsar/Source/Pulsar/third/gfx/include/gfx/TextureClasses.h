@@ -10,6 +10,7 @@ namespace gfx
         R8_UNorm,
         R8G8B8A8_UNorm,
         R8G8B8A8_SRGB,
+        B8G8R8A8_UNorm,
         R16G16B16A16_SFloat,
         R32G32B32A32_SFloat,
         B10G11R11_UFloat,
@@ -30,6 +31,8 @@ namespace gfx
             return "R8G8B8A8_UNorm";
         case GFXTextureFormat::R8G8B8A8_SRGB:
             return "R8G8B8A8_SRGB";
+        case GFXTextureFormat::B8G8R8A8_UNorm:
+            return "B8G8R8A8_UNorm";
         case GFXTextureFormat::R16G16B16A16_SFloat:
             return "R16G16B16A16_SFloat";
         case GFXTextureFormat::R32G32B32A32_SFloat:

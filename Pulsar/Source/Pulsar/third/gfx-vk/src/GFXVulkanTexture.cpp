@@ -1,4 +1,5 @@
 #include "GFXVulkanTexture.h"
+#include "GFXVulkanTextureView.h"
 
 #include "ImageHelper.h"
 

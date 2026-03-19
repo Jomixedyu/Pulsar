@@ -2,6 +2,8 @@
 #include "GFXVulkanApplication.h"
 #include "GFXVulkanCommandBufferPool.h"
 #include "GFXVulkanGraphicsPipeline.h"
+#include "GFXVulkanTextureView.h"
+#include "BufferHelper.h"
 
 namespace gfx
 {
@@ -372,38 +374,91 @@ namespace gfx
 
     void GFXVulkanCommandBuffer::CmdBeginRenderPass(std::string_view name)
     {
-        bool isClear = false;
-
-        VkRenderPassBeginInfo renderPassInfo{};
-        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        renderPassInfo.renderPass = m_fbo->GetVkRenderPass();
-        renderPassInfo.framebuffer = m_fbo->GetVkFrameBuffer();
-        renderPassInfo.renderArea.offset = { 0, 0 };
-        renderPassInfo.renderArea.extent = m_fbo->GetVkExtent();
-
-        std::array<VkClearValue, 2> clearValues{};
-        clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
-        clearValues[1].depthStencil = { 1.0f, 0 };
-
-        renderPassInfo.clearValueCount = isClear ? static_cast<uint32_t>(clearValues.size()) : 0;
-        renderPassInfo.pClearValues = clearValues.data();
-
-
         CmdPushDebugInfo(!name.empty() ? name.data() : "UnknownPass", {});
 
-        vkCmdBeginRenderPass(m_cmdBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+        auto& renderTargets = m_fbo->GetRenderTargets();
+        auto extent = m_fbo->GetVkExtent();
+
+        array_list<VkRenderingAttachmentInfo> colorAttachments;
+        VkRenderingAttachmentInfo depthAttachment{};
+        bool hasDepth = false;
+
+        for (auto& rt : renderTargets)
+        {
+            auto vkrt = static_cast<GFXVulkanTexture2DView*>(rt.get());
+            auto targetType = rt->GetTargetType();
+
+            if (targetType == GFXTextureTargetType::ColorTarget)
+            {
+                // Transition to COLOR_ATTACHMENT_OPTIMAL if needed
+                vkrt->GetVkTexture()->TransitionLayout(m_cmdBuffer, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+                VkRenderingAttachmentInfo colorInfo{};
+                colorInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+                colorInfo.imageView = vkrt->GetVkImageView();
+                colorInfo.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                colorInfo.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+                colorInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+                colorAttachments.push_back(colorInfo);
+            }
+            else if (targetType == GFXTextureTargetType::DepthStencilTarget ||
+                     targetType == GFXTextureTargetType::DepthTarget)
+            {
+                // Transition to DEPTH_STENCIL_ATTACHMENT_OPTIMAL if needed
+                vkrt->GetVkTexture()->TransitionLayout(m_cmdBuffer, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+
+                depthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+                depthAttachment.imageView = vkrt->GetVkImageView();
+                depthAttachment.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+                depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+                depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+                hasDepth = true;
+            }
+        }
+
+        VkRenderingInfo renderingInfo{};
+        renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+        renderingInfo.renderArea.offset = { 0, 0 };
+        renderingInfo.renderArea.extent = extent;
+        renderingInfo.layerCount = 1;
+        renderingInfo.colorAttachmentCount = static_cast<uint32_t>(colorAttachments.size());
+        renderingInfo.pColorAttachments = colorAttachments.data();
+        renderingInfo.pDepthAttachment = hasDepth ? &depthAttachment : nullptr;
+
+        vkCmdBeginRendering(m_cmdBuffer, &renderingInfo);
     }
     void GFXVulkanCommandBuffer::CmdEndRenderPass()
     {
+        vkCmdEndRendering(m_cmdBuffer);
+
+        // Dynamic Rendering does not perform automatic layout transitions.
+        // After rendering, images are still in their attachment layout.
+        // Transition each render target to its final target layout (e.g. PRESENT_SRC_KHR for swapchain).
         for (auto& rt : m_fbo->GetRenderTargets())
         {
             auto vkrt = dynamic_cast<GFXVulkanTexture2DView*>(rt.get());
-            vkrt->GetVkTexture()->SetImageLayout(vkrt->GetVkTexture()->GetVkTargetFinalLayout());
+            auto targetType = rt->GetTargetType();
+
+            // First update tracking to reflect the actual layout after rendering
+            if (targetType == GFXTextureTargetType::ColorTarget)
+            {
+                vkrt->GetVkTexture()->SetImageLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+            }
+            else if (targetType == GFXTextureTargetType::DepthStencilTarget ||
+                     targetType == GFXTextureTargetType::DepthTarget)
+            {
+                vkrt->GetVkTexture()->SetImageLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+            }
+
+            // Then transition to final layout if it differs from the attachment layout
+            VkImageLayout finalLayout = vkrt->GetVkTexture()->GetVkTargetFinalLayout();
+            if (finalLayout != vkrt->GetVkTexture()->GetVkImageLayout())
+            {
+                vkrt->GetVkTexture()->TransitionLayout(m_cmdBuffer, finalLayout);
+            }
         }
-        vkCmdEndRenderPass(m_cmdBuffer);
 
         CmdPopDebugInfo();
-
     }
 
     GFXVulkanCommandBufferScope::GFXVulkanCommandBufferScope(GFXVulkanApplication* app)

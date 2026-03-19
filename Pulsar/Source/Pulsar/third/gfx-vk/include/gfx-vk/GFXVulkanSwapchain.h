@@ -6,7 +6,6 @@
 
 #include "GFXVulkanFrameBufferObject.h"
 #include "GFXVulkanQueue.h"
-#include "GFXVulkanRenderPass.h"
 #include "GFXVulkanTexture.h"
 #include <gfx/GFXSurface.h>
 #include <gfx/GFXSwapchain.h>
@@ -41,7 +40,6 @@ namespace gfx
         VkResult AcquireNextImage(uint32_t* outIndex);
     public:
         virtual GFXFrameBufferObject* GetFrameBufferObject() override;
-        GFXVulkanRenderPass* GetRenderPass() const { return m_renderPass.get(); }
     protected:
         static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -61,8 +59,6 @@ namespace gfx
         std::vector<std::unique_ptr<GFXVulkanTexture>> m_swapRenderTarget;
 
         std::unique_ptr<GFXVulkanTexture> m_depthRenderTarget = nullptr;
-
-        std::shared_ptr<GFXVulkanRenderPass> m_renderPass;
 
         VkFormat m_swapChainImageFormat;
         VkExtent2D m_swapChainExtent;

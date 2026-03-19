@@ -147,7 +147,6 @@ namespace gfx
         m_imageAvailableSemaphores.clear();
         m_renderFinishedSemaphores.clear();
         m_inFlightFences.clear();
-        m_renderPass.reset();
     }
 
 
@@ -272,23 +271,13 @@ namespace gfx
 
         }
 
-        std::vector<GFXVulkanTexture2DView*> layoutArray = {
-            dynamic_cast<GFXVulkanTexture2DView*>( m_swapRenderTarget[0]->Get2DView(0).get() ),
-            dynamic_cast<GFXVulkanTexture2DView*>( m_depthRenderTarget->Get2DView(0).get() ),
-        };
-
-        m_renderPass = std::make_shared<GFXVulkanRenderPass>( m_app, layoutArray);
-
-
-
         for (size_t i = 0; i < m_swapChainImages.size(); i++)
         {
             std::vector rtViews = {
                 m_swapRenderTarget[i]->Get2DView(0),
-                m_depthRenderTarget->Get2DView(0)
             };
 
-            auto fbo = new GFXVulkanFrameBufferObject(m_app, rtViews, m_renderPass);
+            auto fbo = new GFXVulkanFrameBufferObject(m_app, rtViews);
             m_framebuffer.push_back(std::unique_ptr<GFXVulkanFrameBufferObject>{fbo});
         }
     }
@@ -305,7 +294,6 @@ namespace gfx
         }
 
         vkDestroySwapchainKHR(m_app->GetVkDevice(), m_swapChain, nullptr);
-        m_renderPass.reset();
     }
 
     void GFXVulkanSwapchain::ReInitSwapChain()

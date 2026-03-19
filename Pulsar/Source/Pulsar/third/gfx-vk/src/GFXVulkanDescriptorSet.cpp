@@ -4,6 +4,7 @@
 #include <gfx-vk/GFXVulkanDescriptorPool.h>
 #include <gfx-vk/GFXVulkanDescriptorSet.h>
 #include <gfx-vk/GFXVulkanTexture.h>
+#include <gfx-vk/GFXVulkanTextureView.h>
 #include <stdexcept>
 
 namespace gfx

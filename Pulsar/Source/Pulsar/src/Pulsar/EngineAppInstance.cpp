@@ -97,7 +97,7 @@ namespace pulsar
                         descriptorSetLayouts.push_back(batch.Material->GetGfxDescriptorSetLayout());
                     }
 
-                    auto gfxPipeline = pipelineMgr->GetGraphicsPipeline(gpuPrograms, psoParams, descriptorSetLayouts, targetFBO->GetRenderPassLayout(), batch.State);
+                    auto gfxPipeline = pipelineMgr->GetGraphicsPipeline(gpuPrograms, psoParams, descriptorSetLayouts, targetFBO->GetRenderTargetDesc(), batch.State);
                     cmdBuffer.CmdBindGraphicsPipeline(gfxPipeline.get());
                     cmdBuffer.CmdSetCullMode(batch.GetCullMode());
 
@@ -230,7 +230,7 @@ namespace pulsar
                         ppMat->GetGpuPrograms(),
                         ppMat->GetPSOParams(),
                         descriptorSetLayouts,
-                        destRt->GetGfxFrameBufferObject()->GetRenderPassLayout(), {});
+                        destRt->GetGfxFrameBufferObject()->GetRenderTargetDesc(), {});
 
                     cmdBuffer.CmdBindGraphicsPipeline(pso.get());
 

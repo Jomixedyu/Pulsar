@@ -75,8 +75,7 @@ namespace pulsar
             rtsPtr.push_back(view.get());
         }
 
-        auto renderPass = gfx->CreateRenderPassLayout(rtsPtr);
-        self->m_framebuffer = gfx->CreateFrameBufferObject(rts, renderPass);
+        self->m_framebuffer = gfx->CreateFrameBufferObject(rts);
 
         self->m_width = width;
         self->m_height = height;

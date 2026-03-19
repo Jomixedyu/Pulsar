@@ -8,7 +8,6 @@
 #include "GFXVulkanGpuProgram.h"
 #include "GFXVulkanGraphicsPipeline.h"
 #include "GFXVulkanGraphicsPipelineManager.h"
-#include "GFXVulkanRenderPass.h"
 #include "GFXVulkanRenderer.h"
 #include "GFXVulkanSwapchain.h"
 #include "GFXVulkanTexture.h"
@@ -309,13 +308,24 @@ namespace gfx
         VkPhysicalDeviceFeatures deviceFeatures{};
         deviceFeatures.samplerAnisotropy = VK_TRUE;
 
+        VkPhysicalDeviceVulkan13Features features13{};
+        features13.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
+        features13.dynamicRendering = VK_TRUE;
+        features13.synchronization2 = VK_TRUE;
+
+        VkPhysicalDeviceFeatures2 features2{};
+        features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        features2.features = deviceFeatures;
+        features2.pNext = &features13;
+
         VkDeviceCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 
         createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
         createInfo.pQueueCreateInfos = queueCreateInfos.data();
 
-        createInfo.pEnabledFeatures = &deviceFeatures;
+        createInfo.pEnabledFeatures = nullptr;
+        createInfo.pNext = &features2;
 
         createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
         createInfo.ppEnabledExtensionNames = deviceExtensions.data();
@@ -524,10 +534,9 @@ namespace gfx
     }
 
     std::shared_ptr<GFXFrameBufferObject> GFXVulkanApplication::CreateFrameBufferObject(
-        const std::vector<GFXTexture2DView_sp>& renderTargets,
-        const std::shared_ptr<GFXRenderPassLayout>& renderPassLayout)
+        const std::vector<GFXTexture2DView_sp>& renderTargets)
     {
-        auto buf = new GFXVulkanFrameBufferObject(this, renderTargets, std::static_pointer_cast<GFXVulkanRenderPass>(renderPassLayout));
+        auto buf = new GFXVulkanFrameBufferObject(this, renderTargets);
         return gfxmksptr(buf);
     }
 
@@ -536,15 +545,6 @@ namespace gfx
         return gfxmksptr(new GFXVulkanGpuProgram(this, stage, code, length));
     }
 
-    GFXRenderPassLayout_sp GFXVulkanApplication::CreateRenderPassLayout(const std::vector<GFXTexture2DView*>& renderTargets)
-    {
-        array_list<GFXVulkanTexture2DView*> rt;
-        for (auto i : renderTargets)
-        {
-            rt.push_back(static_cast<GFXVulkanTexture2DView*>(i));
-        }
-        return gfxmksptr(new GFXVulkanRenderPass(this, rt));
-    }
 
     GFXTexture_sp GFXVulkanApplication::CreateTextureCube(int32_t size)
     {

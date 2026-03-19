@@ -3,6 +3,7 @@
 #include "GFXVulkanDescriptorSet.h"
 #include "GFXVulkanGpuProgram.h"
 #include "GFXVulkanVertexLayoutDescription.h"
+#include "BufferHelper.h"
 
 namespace gfx
 {
@@ -71,12 +72,11 @@ namespace gfx
         const array_list<GFXGpuProgram_sp>& gpuPrograms,
         GFXGraphicsPipelineStateParams stateParams,
         const array_list<GFXDescriptorSetLayout_sp>& descriptorSetLayouts,
-        const GFXRenderPassLayout& renderLayout,
+        const GFXRenderTargetDesc& renderTargetDesc,
         const GFXGraphicsPipelineState& gpInfo)
         : m_app(app)
     {
         // create pipeline layout
-        auto& vkRenderpass = static_cast<const GFXVulkanRenderPass&>(renderLayout);
         array_list<VkDescriptorSetLayout> vkdescriptorSetLayouts;
         for (const auto& layout : descriptorSetLayouts)
         {
@@ -135,7 +135,7 @@ namespace gfx
 
         array_list<VkPipelineColorBlendAttachmentState> colorBlendAttachments;
 
-        for (size_t i = 0; i < vkRenderpass.GetColorAttachmentCount(); ++i)
+        for (size_t i = 0; i < renderTargetDesc.ColorFormats.size(); ++i)
         {
             auto& attachment = colorBlendAttachments.emplace_back();
             attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
@@ -209,10 +209,34 @@ namespace gfx
         pipelineInfo.pColorBlendState = &colorBlending;
         pipelineInfo.pDynamicState = &dynamicState;
         pipelineInfo.layout = m_pipelineLayout;
-        pipelineInfo.renderPass = static_cast<const GFXVulkanRenderPass&>(renderLayout).GetVkRenderPass();
+        pipelineInfo.renderPass = VK_NULL_HANDLE;
         pipelineInfo.subpass = 0;
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
         pipelineInfo.pDepthStencilState = &depthStencil;
+
+        // Dynamic Rendering: VkPipelineRenderingCreateInfo
+        array_list<VkFormat> vkColorFormats;
+        for (auto fmt : renderTargetDesc.ColorFormats)
+        {
+            vkColorFormats.push_back(BufferHelper::GetVkFormat(fmt));
+        }
+
+        VkPipelineRenderingCreateInfo pipelineRenderingInfo{};
+        pipelineRenderingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
+        pipelineRenderingInfo.colorAttachmentCount = static_cast<uint32_t>(vkColorFormats.size());
+        pipelineRenderingInfo.pColorAttachmentFormats = vkColorFormats.data();
+        VkFormat depthStencilVkFormat = renderTargetDesc.HasDepthStencil
+            ? BufferHelper::GetVkFormat(renderTargetDesc.DepthStencilFormat)
+            : VK_FORMAT_UNDEFINED;
+        pipelineRenderingInfo.depthAttachmentFormat = depthStencilVkFormat;
+
+        // If the depth format also contains a stencil component, set stencilAttachmentFormat
+        bool hasStencil = (depthStencilVkFormat == VK_FORMAT_D32_SFLOAT_S8_UINT ||
+                           depthStencilVkFormat == VK_FORMAT_D24_UNORM_S8_UINT ||
+                           depthStencilVkFormat == VK_FORMAT_D16_UNORM_S8_UINT);
+        pipelineRenderingInfo.stencilAttachmentFormat = hasStencil ? depthStencilVkFormat : VK_FORMAT_UNDEFINED;
+
+        pipelineInfo.pNext = &pipelineRenderingInfo;
 
         if (vkCreateGraphicsPipelines(app->GetVkDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_pipeline) != VK_SUCCESS)
         {
