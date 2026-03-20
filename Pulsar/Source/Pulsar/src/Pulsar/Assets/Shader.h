@@ -9,6 +9,7 @@
 #include <Pulsar/Assets/Texture.h>
 #include <Pulsar/IGPUResource.h>
 #include <Pulsar/ObjectBase.h>
+#include <Pulsar/Rendering/ShaderConfig.h>
 #include <Pulsar/Rendering/Types.h>
 #include <functional>
 #include <gfx/GFXApi.h>
@@ -18,6 +19,7 @@ namespace pulsar
 {
     struct ShaderSourceData
     {
+
         struct ApiPlatform
         {
             string Config;
@@ -30,64 +32,6 @@ namespace pulsar
 namespace pulsar
 {
     class Texture2D;
-
-    class ShaderPassConfigProperty : public Object
-    {
-        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::ShaderPassConfigProperty, Object);
-    public:
-        CORELIB_REFL_DECL_FIELD(Name);
-        string Name;
-
-        CORELIB_REFL_DECL_FIELD(Type);
-        ShaderParameterType Type{};
-
-        CORELIB_REFL_DECL_FIELD(Value);
-        string Value;
-
-    };
-    CORELIB_DECL_SHORTSPTR(ShaderPassConfigProperty);
-
-    class ShaderPassConfig : public Object
-    {
-        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::ShaderPassConfig, Object);
-
-    public:
-        CORELIB_REFL_DECL_FIELD(RenderingType);
-        ShaderPassRenderingType RenderingType{};
-
-        CORELIB_REFL_DECL_FIELD(CullMode);
-        CullMode CullMode{};
-
-        CORELIB_REFL_DECL_FIELD(DepthTestEnable);
-        bool DepthTestEnable{};
-
-        CORELIB_REFL_DECL_FIELD(DepthWriteEnable);
-        bool DepthWriteEnable{};
-
-        CORELIB_REFL_DECL_FIELD(DepthCompareOp);
-        CompareMode DepthCompareOp{};
-
-        CORELIB_REFL_DECL_FIELD(StencilTestEnable);
-        bool StencilTestEnable{};
-
-        CORELIB_REFL_DECL_FIELD(ConstantProperties, new ListItemAttribute(cltypeof<ShaderPassConfigProperty>()));
-        List_sp<ShaderPassConfigProperty_sp> ConstantProperties;
-
-        CORELIB_REFL_DECL_FIELD(Properties, new ListItemAttribute(cltypeof<ShaderPassConfigProperty>()));
-        List_sp<ShaderPassConfigProperty_sp> Properties;
-
-        CORELIB_REFL_DECL_FIELD(FeatureDeclare);
-        List_sp<string> FeatureDeclare;
-
-        ShaderPassConfig()
-        {
-            init_sptr_member(ConstantProperties);
-            init_sptr_member(Properties);
-            init_sptr_member(FeatureDeclare);
-        }
-    };
-    CORELIB_DECL_SHORTSPTR(ShaderPassConfig);
-
 
 
     std::iostream& ReadWriteStream(std::iostream& stream, bool write, ShaderSourceData& data);
@@ -126,7 +70,7 @@ namespace pulsar
         const ShaderSourceData& GetSourceData() const { return m_shaderSource; }
         String_sp GetPassName() const { return m_passName; }
 
-        ShaderPassConfig* GetConfig() const;
+        auto GetConfig() const { return m_config; }
 
         array_list<gfx::GFXApi> GetSupportedApi() const;
         bool HasSupportedApiData(gfx::GFXApi api) const;
@@ -156,10 +100,11 @@ namespace pulsar
 
         // runtime data
         hash_map<index_string, MaterialParameterInfo> m_propertyInfo;
-        ShaderPassConfig_sp m_shaderConfig;
         size_t m_constantBufferSize{};
 
         bool m_isReady{};
+        
+        SPtr<ShaderConfig> m_config; //read only
     };
     DECL_PTR(Shader);
 

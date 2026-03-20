@@ -11,6 +11,19 @@ namespace gfx
         Back = 1 << 1,
         FrontAndBack = Front | Back,
     };
+    enum class GFXBlendFactor
+    {
+        One,
+        Zero,
+        SrcColor,
+        SrcAlpha,
+        DstColor,
+        DstAlpha,
+        OneMinusSrcColor,
+        OneMinusSrcAlpha,
+        OneMinusDstColor,
+        OneMinusDstAlpha
+    };
     enum class GFXCompareMode
     {
         Never,
@@ -22,6 +35,18 @@ namespace gfx
         GreaterOrEqual,
         Always
     };
+    enum class GFXStencilOp
+    {
+        Keep,
+        Zero,
+        Replace,
+        IncrSat,
+        DecrSat,
+        Invert,
+        IncrWrap,
+        DecrWrap
+    };
+
     enum class GFXPrimitiveTopology
     {
         TriangleList,

@@ -1,0 +1,42 @@
+{
+	"$schema": "SbfSchema.json",
+    "Interfaces": [
+        "RENDERER_STATIC_MESH"
+    ],
+    "Passes": [
+        {
+            "Name": "Forward",
+            "Features": [
+                "FEATURE_ALPHATEST"
+            ],
+            "Entry": {
+                "Vertex": "VSMain",
+                "Fragment": "PSMain"
+            }
+        },
+        {
+            "Name": "ShadowCaster",
+            "Features": [
+                "FEATURE_ALPHATEST"
+            ],
+            "Entry": {
+                "Vertex": "ShadowVSMain",
+                "Fragment": "ShadowPSMain"
+            }
+        }
+    ],
+    "PreDefines": [
+
+    ],
+    "Properties": [
+        {
+            "Name": "_Test",
+            "Label": "Test",
+            "DefaultValue": "0",
+            "Type": "Float"
+        }
+    ],
+    "Tag": []
+
+
+}

@@ -1,29 +1,8 @@
 #pragma once
-#include <Pulsar/ObjectBase.h>
 #include <Pulsar/Assets/Texture2D.h>
+#include <Pulsar/ObjectBase.h>
+#include <Pulsar/Rendering/ShaderConfig.h>
 #include <variant>
-
-namespace pulsar
-{
-    CORELIB_DEF_ENUM(AssemblyObject_pulsar, pulsar,
-        ShaderPassRenderingType,
-        OpaqueForward,
-        OpaqueDeferred,
-        Transparency,
-        PostProcessing,
-        );
-
-    CORELIB_DEF_ENUM(AssemblyObject_pulsar, pulsar,
-        ShaderParameterType,
-        IntScalar,
-        Scalar,
-        Vector,
-        Texture,
-    )
-}
-
-CORELIB_DECL_BOXING(pulsar::ShaderPassRenderingType, pulsar::BoxingShaderPassRenderingType);
-CORELIB_DECL_BOXING(pulsar::ShaderParameterType, pulsar::BoxingShaderParameterType);
 
 namespace pulsar
 {

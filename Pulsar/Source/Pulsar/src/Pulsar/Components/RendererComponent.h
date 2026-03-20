@@ -8,7 +8,7 @@ namespace pulsar
 {
     class Mesh;
     class Material;
-    class ShaderPass;
+    class ShaderConfig;
     
     class IRendererComponent : public IInterface
     {

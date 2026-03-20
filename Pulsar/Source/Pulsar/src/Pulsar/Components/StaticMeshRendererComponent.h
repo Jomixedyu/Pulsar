@@ -14,7 +14,7 @@ namespace pulsar
 {
     class Mesh;
     class Material;
-    class ShaderPass;
+    class ShaderConfig;
     class StaticMeshRenderObject;
 
     class StaticMeshRendererComponent : public MeshRendererComponent, public IRendererComponent
