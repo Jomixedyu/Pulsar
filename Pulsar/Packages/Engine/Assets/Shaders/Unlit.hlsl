@@ -8,7 +8,7 @@ SamplerState Sampler__BaseColorMap : register(s1);
 
 
 
-StandardVaryings VSMainStandardAttributes a)
+StandardVaryings VSMain(StandardAttributes a)
 {
     StandardVaryings v = (StandardVaryings)0;
     v.Position = TransformObjectToClip(a.Position);

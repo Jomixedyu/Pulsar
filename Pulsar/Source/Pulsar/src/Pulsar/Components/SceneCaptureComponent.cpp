@@ -1,5 +1,5 @@
 #include "Components/SceneCaptureComponent.h"
-
+#include "Pulsar/Rendering/RenderGraph/DefaultSceneCaptureRenderer.h"
 #include "World.h"
 
 namespace pulsar
@@ -8,6 +8,7 @@ namespace pulsar
     SceneCaptureComponent::SceneCaptureComponent()
     {
         init_sptr_member(m_postProcessMaterials);
+        m_captureRenderer = std::make_unique<DefaultSceneCaptureRenderer>();
     }
 
     void SceneCaptureComponent::BeginComponent()
@@ -17,6 +18,7 @@ namespace pulsar
     }
     void SceneCaptureComponent::EndComponent()
     {
+        m_captureRenderer.reset();
         base::EndComponent();
         GetWorld()->GetCaptureManager().Remove(this);
     }

@@ -1,6 +1,8 @@
 #pragma once
 #include "Pulsar/Assets/RenderTexture.h"
 #include "Component.h"
+#include "Pulsar/Rendering/RenderGraph/ScriptableCaptureRenderer.h"
+#include <memory>
 
 namespace pulsar
 {
@@ -78,10 +80,7 @@ namespace pulsar
         bool m_enabledCapture = true;
 
     public:
-        RCPtr<RenderTexture> m_postprocessRtA;
-        gfx::GFXDescriptorSet_sp m_postprocessDescA;
-        RCPtr<RenderTexture> m_postprocessRtB;
-        gfx::GFXDescriptorSet_sp m_postprocessDescB;
+        std::unique_ptr<ScriptableCaptureRenderer> m_captureRenderer;
     };
 
 

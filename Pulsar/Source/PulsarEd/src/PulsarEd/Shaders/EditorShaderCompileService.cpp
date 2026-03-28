@@ -275,6 +275,11 @@ namespace pulsared
     {
         pulsar::ShaderCompileResult result{};
 
+        // 从 guid 解析 HLSL 资产路径（提前到 try 外，catch 中可用于错误信息）
+        auto assetPath = AssetDatabase::GetPathByGuid(task.m_variantKey.m_shaderGuid);
+        auto dotPos = assetPath.rfind('.');
+        auto hlslAssetPath = (dotPos != std::string::npos ? assetPath.substr(0, dotPos) : assetPath) + ".hlsl";
+
         try
         {
             auto pscApi = GetPscApiType(gfx::GFXApi::Vulkan); // TODO: 获取当前 API
@@ -286,10 +291,6 @@ namespace pulsared
             program->m_key = task.m_variantKey;
 
             // 从 guid 解析 HLSL 物理路径
-            auto assetPath = AssetDatabase::GetPathByGuid(task.m_variantKey.m_shaderGuid);
-            // shader 资产路径去掉扩展名，加 .hlsl
-            auto dotPos = assetPath.rfind('.');
-            auto hlslAssetPath = (dotPos != std::string::npos ? assetPath.substr(0, dotPos) : assetPath) + ".hlsl";
             auto hlslPhysicsPath = AssetDatabase::AssetPathToPhysicsPath(hlslAssetPath);
 
             auto includeDir = hlslPhysicsPath.parent_path();
@@ -386,7 +387,7 @@ namespace pulsared
             result.m_errorMessage = e.what();
 
             pulsar::Logger::Log(
-                std::string("Shader compile failed: ") + e.what(),
+                std::string("Shader compile failed [") + hlslAssetPath + "]: " + e.what(),
                 pulsar::LogLevel::Error);
         }
 

@@ -65,8 +65,7 @@ namespace pulsar
         {
             DestroyObject(m_renderTarget);
         }
-        DestroyObject(m_postprocessRtA);
-        DestroyObject(m_postprocessRtB);
+        // Task 7.3: m_postprocessRtA/B removed (now managed by TransientRTPool via RenderGraph)
 
         auto rtname = GetNode()->GetName() + "_CamRT";
 
@@ -99,31 +98,8 @@ namespace pulsar
         m_renderTarget = RenderTexture::StaticCreate(index_string{rtname}, width, height, formats);
 
 
-        array_list<RenderTargetInfo> ppTargetInfo;
-        ppTargetInfo.push_back({gfx::GFXTextureTargetType::ColorTarget, gfx::GFXTextureFormat::R16G16B16A16_SFloat});
-        m_postprocessRtA = RenderTexture::StaticCreate(index_string{rtname}, width, height, ppTargetInfo);
-        m_postprocessRtB = RenderTexture::StaticCreate(index_string{rtname}, width, height, ppTargetInfo);
-
-        array_list<RenderTargetInfo> sceneTargetInfo;
-        sceneTargetInfo.push_back({gfx::GFXTextureTargetType::ColorTarget, gfx::GFXTextureFormat::R16G16B16A16_SFloat});
-        m_sceneColor = RenderTexture::StaticCreate(index_string{rtname}, width, height, ppTargetInfo);
-
-        gfx::GFXDescriptorSetLayoutDesc ppDescLayouts[2]{
-            {gfx::GFXDescriptorType::CombinedImageSampler,
-             gfx::GFXGpuProgramStageFlags::VertexFragment,
-             0, 2},
-            {gfx::GFXDescriptorType::CombinedImageSampler,
-             gfx::GFXGpuProgramStageFlags::VertexFragment,
-             1, 2},
-        };
-
-        auto layout = Application::GetGfxApp()->CreateDescriptorSetLayout(ppDescLayouts, 2);
-        m_postprocessDescA = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(layout);
-        m_postprocessDescA->AddDescriptor("Color", 0)->SetTextureSampler2D(m_postprocessRtB->GetGfxRenderTarget0().get());
-        m_postprocessDescA->Submit();
-        m_postprocessDescB = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(layout);
-        m_postprocessDescB->AddDescriptor("Color", 0)->SetTextureSampler2D(m_postprocessRtA->GetGfxRenderTarget0().get());
-        m_postprocessDescB->Submit();
+        // Task 7.2: PostProcess ping-pong RTs are now transient (pool-managed via RenderGraph).
+        // Task 7.5: m_sceneColor was unused; removed.
 
         UpdateRT();
         BeginRT();

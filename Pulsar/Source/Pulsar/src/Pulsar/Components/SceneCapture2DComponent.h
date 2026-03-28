@@ -76,7 +76,6 @@ namespace pulsar
     protected:
 
         PerCaptureShaderParameter m_targetBuffer{};
-
-        RCPtr<RenderTexture> m_sceneColor;
+        // Task 7.5: m_sceneColor removed (was unused)
     };
 } // namespace pulsar
