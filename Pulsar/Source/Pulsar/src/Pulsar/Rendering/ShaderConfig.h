@@ -1,6 +1,7 @@
 #pragma once
 #include <Pulsar/Assembly.h>
 #include "Types.h"
+#include <Pulsar/Masks.h>
 
 namespace pulsar
 {
@@ -11,84 +12,8 @@ namespace pulsar
                      Transparency);
 }
 CORELIB_DECL_BOXING(pulsar::ShaderPassRenderQueueType, pulsar::BoxingShaderPassRenderQueueType);
-namespace pulsar
-{
 
-    CORELIB_DEF_ENUM(AssemblyObject_pulsar, pulsar,
-                     ShaderParameterType,
-                     Int,
-                     Float,
-                     Float4,
-                     Color,
-                     Texture2D,
-                     TextureCube
-    )
-}
-CORELIB_DECL_BOXING(pulsar::ShaderParameterType, pulsar::BoxingShaderParameterType);
 
-namespace pulsar
-{
-    struct Mask8
-    {
-        uint8_t Value{};
-
-        Mask8() = default;
-        Mask8(uint8_t value) : Value(value) {}
-
-        static Mask8 parse(std::string_view str)
-        {
-            Mask8 result{};
-            int base = 0; // auto-detect: 0x→16, 0→8, otherwise 10
-            const char* begin = str.data();
-            if (str.starts_with("0b") || str.starts_with("0B"))
-            {
-                begin += 2;
-                base = 2;
-            }
-            result.Value = static_cast<uint8_t>(std::strtoul(begin, nullptr, base));
-            return result;
-        }
-
-        std::string to_string() const
-        {
-            return std::to_string(Value);
-        }
-    };
-
-    class BoxingMask8 : public BoxingObject, public IStringify
-    {
-        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::BoxingMask8, Object);
-        CORELIB_IMPL_INTERFACES(IStringify);
-    public:
-        using unboxing_type = Mask8;
-        auto get_unboxing_value() { return m_mask; }
-
-        BoxingMask8() : CORELIB_INIT_INTERFACE(IStringify) {}
-        BoxingMask8(Mask8 value) : m_mask(value), CORELIB_INIT_INTERFACE(IStringify) {}
-
-        void IStringify_Parse(const string& value) override
-        {
-            m_mask = Mask8::parse(value);
-        }
-        string IStringify_Stringify() override
-        {
-            return m_mask.to_string();
-        }
-
-        string ToString() const override
-        {
-            return m_mask.to_string();
-        }
-
-        Mask8 m_mask{};
-    };
-}
-CORELIB_DECL_BOXING(pulsar::Mask8, pulsar::BoxingMask8);
-
-namespace pulsar
-{
-
-}
 
 namespace pulsar
 {
@@ -103,7 +28,7 @@ namespace pulsar
         string Label;
 
         CORELIB_REFL_DECL_FIELD(Type);
-        ShaderParameterType Type{};
+        ShaderPropertyType Type{};
 
         CORELIB_REFL_DECL_FIELD(DefaultValue);
         string DefaultValue;
@@ -194,6 +119,13 @@ namespace pulsar
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::ShaderConfigPass, Object);
     public:
+        ShaderConfigPass()
+        {
+            init_sptr_member(Entry);
+            init_sptr_member(Features);
+            init_sptr_member(GraphicsPipeline);
+        }
+
         CORELIB_REFL_DECL_FIELD(Name);
         string Name;
 
@@ -201,7 +133,7 @@ namespace pulsar
         ShaderPassRenderQueueType Queue;
 
         CORELIB_REFL_DECL_FIELD(Entry);
-        List_sp<SPtr<ShaderConfigEntry>> Entry;
+        SPtr<ShaderConfigEntry> Entry;
 
         CORELIB_REFL_DECL_FIELD(Features);
         List_sp<string> Features;
@@ -215,6 +147,15 @@ namespace pulsar
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::ShaderConfig, Object);
 
     public:
+        ShaderConfig()
+        {
+            init_sptr_member(PreDefines);
+            init_sptr_member(Tags);
+            init_sptr_member(Interfaces);
+            init_sptr_member(Passes);
+            init_sptr_member(Properties);
+        }
+
         CORELIB_REFL_DECL_FIELD(PreDefines);
         List_sp<string> PreDefines;
         

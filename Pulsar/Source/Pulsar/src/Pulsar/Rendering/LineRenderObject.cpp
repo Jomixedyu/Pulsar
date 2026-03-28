@@ -65,8 +65,8 @@ namespace pulsar
         gfx::GFXBufferDesc perMeshBufferDesc{};
         perMeshBufferDesc.Usage         = gfx::GFXBufferUsage::ConstantBuffer;
         perMeshBufferDesc.StorageType   = gfx::GFXBufferMemoryPosition::VisibleOnDevice;
-        perMeshBufferDesc.BufferSize    = sizeof(PerModelShaderParameter);
-        perMeshBufferDesc.ElementSize   = sizeof(PerModelShaderParameter);
+                perMeshBufferDesc.BufferSize    = sizeof(PerRendererData);
+                perMeshBufferDesc.ElementSize   = sizeof(PerRendererData);
 
         m_meshConstantBuffer = Application::GetGfxApp()->CreateBuffer(perMeshBufferDesc);
         m_meshObjDescriptorSet = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_meshDescriptorSetLayout);
@@ -84,6 +84,7 @@ namespace pulsar
 
         m_batchs.resize(1);
         rendering::MeshBatch& batch = m_batchs[0];
+        batch.Interface = GetInterface();
         batch.DescriptorSetLayout = m_meshDescriptorSetLayout;
         batch.Elements.resize(1);
         batch.Elements[0].Vertex = m_vertBuffer;

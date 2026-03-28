@@ -1,0 +1,18 @@
+{
+	"$schema": "SbfSchema.json",
+	"Interfaces": [
+		"RENDERER_STATICMESH",
+		"RENDERER_SKINNEDMESH",
+		"RENDERER_INSTANCING"
+	],
+	"Passes": [
+		{
+			"Name": "Forward",
+			"Queue": "Opaque",
+			"Entry": {
+				"Vertex": "VSMain",
+				"Fragment": "PSMain"
+			}
+		}
+	]
+}

@@ -51,7 +51,7 @@ namespace gfx
     {
         VkPipelineShaderStageCreateInfo info{};
         info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        info.pName = "main";
+        info.pName = m_entryName.c_str();
         info.module = m_shader;
         info.stage = GetVkStage();
         return info;

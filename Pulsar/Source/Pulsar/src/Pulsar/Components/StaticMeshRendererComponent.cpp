@@ -1,12 +1,12 @@
 #include "Components/StaticMeshRendererComponent.h"
 
 #include "AssetManager.h"
-#include "Components/MeshRendererComponent.h"
+#include "Components/RendererComponent.h"
 #include <Pulsar/Application.h>
 #include <Pulsar/Logger.h>
-#include <Pulsar/Rendering/RenderContext.h>
 #include <gfx/GFXBuffer.h>
 
+#include <Pulsar/Rendering/ShaderConfig.h>
 #include <utility>
 
 namespace pulsar
@@ -18,23 +18,19 @@ namespace pulsar
     public:
         array_list<rendering::MeshBatch> m_batches;
         RCPtr<StaticMesh> m_staticMesh;
-        array_list<RCPtr<Material>> m_materials;
+        array_list<SPtr<MaterialSlot>> m_materials;
 
         gfx::GFXBuffer_sp m_meshConstantBuffer;
         gfx::GFXDescriptorSet_sp m_meshObjDescriptorSet;
         gfx::GFXDescriptorSetLayout_sp m_meshDescriptorSetLayout;
 
-        explicit StaticMeshRenderObject(RCPtr<StaticMesh> staticMesh, const array_list<RCPtr<Material>>& materials)
-            : m_staticMesh(std::move(staticMesh)), m_materials(materials)
-        {
-        }
         StaticMeshRenderObject() = default;
         StaticMeshRenderObject* SetStaticMesh(RCPtr<StaticMesh> mesh)
         {
             m_staticMesh = std::move(mesh);
             return this;
         }
-        StaticMeshRenderObject* SetMaterials(const array_list<RCPtr<Material>>& materials)
+        StaticMeshRenderObject* SetMaterials(const array_list<SPtr<MaterialSlot>>& materials)
         {
             m_materials = materials;
             return this;
@@ -61,6 +57,11 @@ namespace pulsar
         {
             return m_batches;
         }
+
+        std::string GetInterface() const override
+        {
+            return "RENDERER_STATICMESH";
+        }
     };
 
     void StaticMeshRenderObject::SubmitChange()
@@ -72,29 +73,51 @@ namespace pulsar
 
         for (int matIndex = 0; matIndex < m_materials.size(); ++matIndex)
         {
-            auto& mat = m_materials.at(matIndex);
-            if (!mat || !mat->GetShader())
-            {
-                continue;
-            }
+            auto& slot = m_materials.at(matIndex);
+
             auto& batch = m_batches.emplace_back();
             batch.State.Topology = gfx::GFXPrimitiveTopology::TriangleList;
-
             batch.State.VertexLayouts = {StaticMesh::StaticGetVertexLayout()};
             batch.IsUsedIndices = true;
             batch.IsCastShadow = true;
-            batch.IsUsedIndices = true;
-            batch.Material = mat;
-            bool isInvalidMaterial = false;
-            isInvalidMaterial = batch.Material == nullptr || !batch.Material->CreateGPUResource();
-            isInvalidMaterial = isInvalidMaterial || (batch.Material && batch.Material->GetShader()->GetConfig()->RenderingType == ShaderPassRenderingType::PostProcessing);
+
+            // Fill sorting metadata from MaterialSlot
+            batch.Material  = (slot ? slot->material : nullptr);
+            batch.Priority  = (slot ? slot->priority : 0);
+
+            // null / invalid material → fallback to Error material
+            bool isInvalidMaterial = !batch.Material
+                || !batch.Material->GetShader()
+                || !batch.Material->CreateGPUResource();
             if (isInvalidMaterial)
             {
-                batch.Material = GetAssetManager()->LoadAsset<Material>("Engine/Materials/Missing");
-                batch.Material->CreateGPUResource();
+                batch.Material = GetAssetManager()->LoadAsset<Material>("Engine/Materials/Error");
+                if (batch.Material)
+                    batch.Material->CreateGPUResource();
             }
-            batch.CullMode = batch.Material->GetShader()->GetConfig()->CullMode;
 
+            // still no valid material after fallback, skip
+            if (!batch.Material || !batch.Material->GetShader())
+            {
+                m_batches.pop_back();
+                continue;
+            }
+
+            // Fill Queue and CullMode from shader config Pass[0]
+            if (batch.Material->GetShader() &&
+                batch.Material->GetShader()->GetConfig() &&
+                batch.Material->GetShader()->GetConfig()->Passes &&
+                batch.Material->GetShader()->GetConfig()->Passes->size() > 0)
+            {
+                auto& pass0 = (*batch.Material->GetShader()->GetConfig()->Passes)[0];
+                batch.Queue = pass0->Queue;
+                if (pass0->GraphicsPipeline)
+                {
+                    batch.CullMode = pass0->GraphicsPipeline->CullMode;
+                }
+            }
+
+            batch.Interface = GetInterface();
             batch.DescriptorSetLayout = m_meshDescriptorSetLayout;
 
             if (!m_staticMesh->IsCreatedGPUResource())
@@ -141,8 +164,8 @@ namespace pulsar
         gfx::GFXBufferDesc perModelDesc{};
         perModelDesc.Usage        = gfx::GFXBufferUsage::ConstantBuffer;
         perModelDesc.StorageType  = gfx::GFXBufferMemoryPosition::VisibleOnDevice;
-        perModelDesc.BufferSize   = sizeof(PerModelShaderParameter);
-        perModelDesc.ElementSize  = sizeof(PerModelShaderParameter);
+                perModelDesc.BufferSize   = sizeof(PerRendererData);
+                perModelDesc.ElementSize  = sizeof(PerRendererData);
 
         m_meshConstantBuffer   = Application::GetGfxApp()->CreateBuffer(perModelDesc);
         m_meshObjDescriptorSet = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_meshDescriptorSetLayout);
@@ -163,9 +186,9 @@ namespace pulsar
             m_staticMesh->CreateGPUResource();
             for (const auto& mat : *m_materials)
             {
-                if (mat)
+                if (mat && mat->material)
                 {
-                    mat->CreateGPUResource();
+                    mat->material->CreateGPUResource();
                 }
             }
             ro->SetStaticMesh(m_staticMesh)
@@ -180,7 +203,11 @@ namespace pulsar
         out.push_back(m_staticMesh.GetHandle());
         for (auto& mat : *m_materials)
         {
-            out.push_back(mat.GetHandle());
+            if (mat)
+            {
+                auto h = mat->material.GetHandle();
+                out.push_back(h);
+            }
         }
     }
 
@@ -200,8 +227,7 @@ namespace pulsar
             OnMaterialChanged();
         }
     }
-    StaticMeshRendererComponent::StaticMeshRendererComponent() :
-        CORELIB_INIT_INTERFACE(IRendererComponent)
+    StaticMeshRendererComponent::StaticMeshRendererComponent()
     {
         init_sptr_member(m_materials);
     }
@@ -232,7 +258,7 @@ namespace pulsar
     }
     RCPtr<Material> StaticMeshRendererComponent::GetMaterial(int index) const
     {
-        return m_materials->at(index);
+        return m_materials->at(index)->material;
     }
 
     void StaticMeshRendererComponent::SetMaterial(int index, RCPtr<Material> material)
@@ -243,7 +269,7 @@ namespace pulsar
             return;
         }
 
-        m_materials->at(index) = std::move(material);
+        m_materials->at(index)->material = std::move(material);
 
         OnMaterialChanged();
     }
@@ -333,8 +359,17 @@ namespace pulsar
     }
     void StaticMeshRendererComponent::ResizeMaterials(size_t size)
     {
+        size_t oldSize = m_materials->size();
         m_materialsSize = size;
         m_materials->resize(size);
+        // 为新增的槽位创建 MaterialSlot 对象
+        for (size_t i = oldSize; i < size; ++i)
+        {
+            if (!m_materials->at(i))
+            {
+                m_materials->at(i) = mksptr(new MaterialSlot());
+            }
+        }
         RebuildObserver();
     }
 

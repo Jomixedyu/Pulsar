@@ -58,7 +58,7 @@ namespace gfx
         virtual void SetTextureSampler2D(GFXTexture2DView* texture) = 0;
         virtual void SetTexture2D(GFXTexture* texture) = 0;
 
-        bool IsDirty;
+        bool IsDirty = false;
         std::string name;
     };
     GFX_DECL_SPTR(GFXDescriptor);

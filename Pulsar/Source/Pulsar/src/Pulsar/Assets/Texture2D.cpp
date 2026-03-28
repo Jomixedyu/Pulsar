@@ -25,7 +25,7 @@ namespace pulsar
         if (s->IsWrite)
         {
             assert(m_loadedOriginMemory);
-            sser::ReadWriteStream(s->Stream, s->IsWrite, m_originMemory);
+            sser::ReadWriteStream(s->GetStream(), s->IsWrite, m_originMemory);
 
             s->Object->Add("IsCompressedNativeData", m_compressedOriginImage);
 
@@ -42,7 +42,7 @@ namespace pulsar
         else // read
         {
             m_originMemory.clear();
-            sser::ReadWriteStream(s->Stream, s->IsWrite, m_originMemory);
+            sser::ReadWriteStream(s->GetStream(), s->IsWrite, m_originMemory);
             m_compressedOriginImage = s->Object->At("IsCompressedNativeData")->AsBool();
 
             auto size = s->Object->At("Size");

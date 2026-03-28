@@ -31,6 +31,7 @@ namespace pulsar
         int GetId(LightShaderParameter* light);
         void Update();
         int GetLightCount() const;
+        const LightShaderParameter& GetLightParameter(int index) const { return m_pendingBuffer[index]; }
         const auto& GetDescriptorSet() const { return m_descriptorSet; }
         const auto& GetDescriptorSetLayout() const { return m_descriptorSetLayout; }
     private:

@@ -1,5 +1,6 @@
 #pragma once
 #include "GFXInclude.h"
+#include <string>
 
 namespace gfx
 {
@@ -39,6 +40,11 @@ namespace gfx
         virtual ~GFXGpuProgram() {}
 
         virtual GFXGpuProgramStageFlags GetStage() const = 0;
+        const std::string& GetEntryName() const { return m_entryName; }
+        void SetEntryName(const std::string& name) { m_entryName = name; }
+
+    protected:
+        std::string m_entryName = "main";
     };
     GFX_DECL_SPTR(GFXGpuProgram);
 

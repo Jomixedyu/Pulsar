@@ -1,15 +1,13 @@
 #pragma once
 #include "Assets/SkinnedMesh.h"
-#include "MeshRendererComponent.h"
 #include "RendererComponent.h"
 
 namespace pulsar
 {
-    class SkinnedMeshRendererComponent : public MeshRendererComponent, public IRendererComponent
+    class SkinnedMeshRendererComponent : public RendererComponent
     {
-        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::SkinnedMeshRendererComponent, MeshRendererComponent);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::SkinnedMeshRendererComponent, RendererComponent);
         CORELIB_CLASS_ATTR(new CategoryAttribute("Renderer"));
-        CORELIB_IMPL_INTERFACES(IRendererComponent);
     public:
         SkinnedMeshRendererComponent();
 

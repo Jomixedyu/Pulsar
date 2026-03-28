@@ -2,41 +2,11 @@
 
 #include "Pulsar/BuiltinAsset.h"
 
-#include "Pulsar/MaterialParameterValue.h"
-#include "gfx/GFXGpuProgram.h"
-
 #include <Pulsar/AssetObject.h>
-#include <Pulsar/Assets/Texture.h>
-#include <Pulsar/IGPUResource.h>
-#include <Pulsar/ObjectBase.h>
 #include <Pulsar/Rendering/ShaderConfig.h>
-#include <Pulsar/Rendering/Types.h>
-#include <functional>
-#include <gfx/GFXApi.h>
-#include <mutex>
 
 namespace pulsar
 {
-    struct ShaderSourceData
-    {
-
-        struct ApiPlatform
-        {
-            string Config;
-            hash_map<gfx::GFXGpuProgramStageFlags, array_list<char>> Sources;
-        };
-        hash_map<gfx::GFXApi, ApiPlatform> ApiMaps;
-    };
-}
-
-namespace pulsar
-{
-    class Texture2D;
-
-
-    std::iostream& ReadWriteStream(std::iostream& stream, bool write, ShaderSourceData& data);
-
-
     enum class EngineInputSemantic : int
     {
         POSITION = 0,
@@ -57,53 +27,17 @@ namespace pulsar
     public:
         virtual void Serialize(AssetSerializer* s) override;
 
-        static RCPtr<Shader> StaticCreate(string_view name, ShaderSourceData&& pass);
+        static RCPtr<Shader> StaticCreate(string_view name);
 
-        void OnInstantiateAsset(AssetObject* obj) override;
+        SPtr<ShaderConfig> GetConfig() const { return m_config; }
 
     public:
         Shader();
 
         virtual void OnDestroy() override;
 
-        void ResetShaderSource(ShaderSourceData&& serData);
-        const ShaderSourceData& GetSourceData() const { return m_shaderSource; }
-        String_sp GetPassName() const { return m_passName; }
-
-        auto GetConfig() const { return m_config; }
-
-        array_list<gfx::GFXApi> GetSupportedApi() const;
-        bool HasSupportedApiData(gfx::GFXApi api) const;
-
-        array_list<index_string> GetPropertyNames() const;
-        const MaterialParameterInfo* GetPropertyInfo(index_string name) const;
-
-        size_t GetConstantBufferSize() const noexcept { return m_constantBufferSize; }
-        auto& GetFeatureOptions() noexcept { return m_featureOptions; }
-
-        bool IsReady() const { return m_isReady; }
-        void SetReady(bool b);
     protected:
-        void Initialize();
-    private:
-        ShaderSourceData m_shaderSource;
-
-        CORELIB_REFL_DECL_FIELD(m_passName);
-        String_sp m_passName;
-
-        CORELIB_REFL_DECL_FIELD(m_preDefines, new ListItemAttribute(cltypeof<String>()));
-        List_sp<String_sp> m_preDefines;
-
-        array_list<string> m_featureOptions;
-
-        size_t m_compiledHash{};
-
-        // runtime data
-        hash_map<index_string, MaterialParameterInfo> m_propertyInfo;
-        size_t m_constantBufferSize{};
-
-        bool m_isReady{};
-        
+        CORELIB_REFL_DECL_FIELD(m_config)
         SPtr<ShaderConfig> m_config; //read only
     };
     DECL_PTR(Shader);

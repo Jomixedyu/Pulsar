@@ -9,7 +9,6 @@
 #include <PulsarEd/Menus/MenuEntrySubMenu.h>
 #include <PulsarEd/Menus/MenuRenderer.h>
 #include <PulsarEd/PropertyControls/PropertyControl.h>
-#include <PulsarEd/Shaders/EditorShader.h>
 #include <PulsarEd/Editors/MaterialEditor//MaterialEditorWindow.h>
 
 namespace pulsared
@@ -42,62 +41,74 @@ namespace pulsared
         {
             if (PImGui::BeginPropertyLines())
             {
-                for (auto& name : material->GetShader()->GetPropertyNames())
+                auto shader = material->GetShader();
+                auto shaderConfig = shader ? shader->GetConfig() : nullptr;
+                if (shaderConfig && shaderConfig->Properties)
                 {
-                    auto& prop = *material->GetShader()->GetPropertyInfo(name);
-                    const auto paramType = prop.Value.Type;
-                    Object_sp obj;
-                    Type* objType{};
-                    switch (paramType)
+                    for (const auto& prop : *shaderConfig->Properties)
                     {
-                    case ShaderParameterType::IntScalar: {
-                        obj = mkbox(material->GetIntScalar(name));
-                        objType = obj->GetType();
-                        break;
-                    }
-                    case ShaderParameterType::Scalar: {
-                        obj = mkbox(material->GetScalar(name));
-                        objType = obj->GetType();
-                        break;
-                    }
-                    case ShaderParameterType::Vector: {
-                        const auto vec = material->GetVector4(name);
-                        obj = mkbox(Color4f{vec.x, vec.y, vec.z, vec.w});
-                        objType = obj->GetType();
-                        break;
-                    }
-                    case ShaderParameterType::Texture: {
-                        auto tex = material->GetTexture(name);
-                        objType = Texture::StaticType();
-                        obj = mkbox((RCPtrBase&)tex);
-                        break;
-                    }
-                    }
-
-                    if (PImGui::PropertyLine(name.to_string(), objType, obj.get()))
-                    {
-                        AssetDatabase::MarkDirty(m_assetObject);
+                        index_string name{prop->Name};
+                        const auto paramType = prop->Type;
+                        Object_sp obj;
+                        Type* objType{};
                         switch (paramType)
                         {
-                        case ShaderParameterType::IntScalar:
-                            material->SetIntScalar(name, UnboxUtil::Unbox<int>(obj));
-                            break;
-                        case ShaderParameterType::Scalar:
-                            material->SetFloat(name, UnboxUtil::Unbox<float>(obj));
-                            break;
-                        case ShaderParameterType::Vector: {
-                            auto color = UnboxUtil::Unbox<Color4f>(obj);
-                            material->SetVector4(name, {color.r, color.g, color.b, color.a});
+                        case ShaderPropertyType::Int: {
+                            obj = mkbox(material->GetIntScalar(name));
+                            objType = obj->GetType();
                             break;
                         }
-                        case ShaderParameterType::Texture: {
-                            auto objptr = UnboxUtil::Unbox<RCPtrBase>(obj);
-                            RCPtr<Texture> tex = cast<Texture>(objptr);
-                            material->SetTexture(name, tex);
+                        case ShaderPropertyType::Float: {
+                            obj = mkbox(material->GetScalar(name));
+                            objType = obj->GetType();
                             break;
                         }
+                        case ShaderPropertyType::Float4:
+                        case ShaderPropertyType::Color: {
+                            const auto vec = material->GetVector4(name);
+                            obj = mkbox(Color4f{vec.x, vec.y, vec.z, vec.w});
+                            objType = obj->GetType();
+                            break;
                         }
-                        material->SubmitParameters();
+                        case ShaderPropertyType::Texture2D: {
+                            auto tex = material->GetTexture(name);
+                            objType = Texture::StaticType();
+                            obj = mkbox((RCPtrBase&)tex);
+                            break;
+                        }
+                        default:
+                            break;
+                        }
+
+                        const auto& label = !prop->Label.empty() ? prop->Label : prop->Name;
+                        if (obj && PImGui::PropertyLine(label, objType, obj.get()))
+                        {
+                            AssetDatabase::MarkDirty(m_assetObject);
+                            switch (paramType)
+                            {
+                            case ShaderPropertyType::Int:
+                                material->SetIntScalar(name, UnboxUtil::Unbox<int>(obj));
+                                break;
+                            case ShaderPropertyType::Float:
+                                material->SetFloat(name, UnboxUtil::Unbox<float>(obj));
+                                break;
+                            case ShaderPropertyType::Float4:
+                            case ShaderPropertyType::Color: {
+                                auto color = UnboxUtil::Unbox<Color4f>(obj);
+                                material->SetVector4(name, {color.r, color.g, color.b, color.a});
+                                break;
+                            }
+                            case ShaderPropertyType::Texture2D: {
+                                auto objptr = UnboxUtil::Unbox<RCPtrBase>(obj);
+                                RCPtr<Texture> tex = cast<Texture>(objptr);
+                                material->SetTexture(name, tex);
+                                break;
+                            }
+                            default:
+                                break;
+                            }
+                            material->SubmitParameters();
+                        }
                     }
                 }
                 PImGui::EndPropertyLines();
@@ -134,20 +145,9 @@ namespace pulsared
             m_world->GetCurrentCamera()->ClearPostProcess();
             m_previewMeshRenderer->SetMaterial(0, material);
         }
-        else if (newShader->GetConfig()->RenderingType == ShaderPassRenderingType::PostProcessing)
-        {
-            if (m_world->GetCurrentCamera()->GetPostProcessCount() == 0)
-            {
-                m_world->GetCurrentCamera()->AddPostProcess(material);
-            }
-            else
-            {
-                m_world->GetCurrentCamera()->SetPostProcess(0, material);
-            }
-            m_previewMeshRenderer->SetMaterial(0, GetAssetManager()->LoadAsset<Material>(BuiltinAsset::Material_Lambert));
-        }
         else
         {
+            // TODO: 通过 ShaderConfigPass::Queue 判断 PostProcess
             m_world->GetCurrentCamera()->ClearPostProcess();
             m_previewMeshRenderer->SetMaterial(0, material);
         }

@@ -10,7 +10,7 @@ Texture2D _DiffuseTex : register(t1, USER_DESCSET);
 
 SamplerState _DiffuseTexSampler : register(s1, USER_DESCSET);
 
-OutPixelAssembly main(InPixelAssembly v2f)
+OutPixelAssembly main(StandardVaryings v2f)
 {
     OutPixelAssembly p2o;
 

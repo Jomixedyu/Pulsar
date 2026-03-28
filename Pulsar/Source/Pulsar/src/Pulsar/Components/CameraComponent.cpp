@@ -87,7 +87,7 @@ namespace pulsar
         }
         else if (m_renderingPath == RenderingPathMode::Forward)
         {
-            assert((false, "not impl"));
+            formats.push_back({ gfx::GFXTextureTargetType::ColorTarget, gfx::GFXTextureFormat::R16G16B16A16_SFloat});
         }
         else
         {

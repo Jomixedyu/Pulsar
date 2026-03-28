@@ -1,5 +1,6 @@
 #pragma once
 #include "PrimitiveStruct.h"
+#include "ShaderConfig.h"
 
 #include <Pulsar/Assets/Material.h>
 #include <Pulsar/EngineMath.h>
@@ -21,6 +22,7 @@ namespace pulsar::rendering
         array_list<MeshBatchElement> Elements;
         gfx::GFXDescriptorSetLayout_sp DescriptorSetLayout;
         RCPtr<Material> Material;
+        std::string Interface; // Renderer interface name (e.g. "RENDERER_STATICMESH")
 
         gfx::GFXGraphicsPipelineState State{};
         bool IsUsedIndices{};
@@ -28,6 +30,11 @@ namespace pulsar::rendering
         bool IsCastShadow{};
         gfx::GFXCullMode CullMode{};
         bool IsReverseCulling{false};
+
+        // Sorting metadata (filled by RenderObject or pipeline)
+        ShaderPassRenderQueueType Queue = ShaderPassRenderQueueType::Opaque;
+        int32_t Priority = 0;   // from MaterialSlot::priority
+        float   Depth    = 0.f; // signed camera-space depth, filled by pipeline
 
         size_t GetRenderState() const
         {
@@ -78,15 +85,23 @@ namespace pulsar::rendering
         virtual void OnDestroyResource() {}
 
         virtual array_list<MeshBatch> GetMeshBatches() = 0;
+        virtual std::string GetInterface() const { return {}; }
         virtual bool IsActive() const { return m_active; };
 
         bool IsDeterminantNegative() const { return m_isLocalToWorldDeterminantNegative; }
+
+        // Returns world-space position (column 3 of LocalToWorld matrix)
+        Vector3f GetWorldPosition() const
+        {
+            const auto& col3 = m_perModelData.LocalToWorldMatrix.GetColumn(3);
+            return Vector3f{col3.x, col3.y, col3.z};
+        }
 
     public:
 
     protected:
         bool      m_active = false;
-        PerModelShaderParameter  m_perModelData{};;
+        PerRendererData  m_perModelData{};
         bool      m_isLocalToWorldDeterminantNegative{};
         int       m_lineWidth{1};
     };

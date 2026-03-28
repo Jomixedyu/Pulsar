@@ -56,7 +56,6 @@ namespace pulsared
         virtual void OnBeginRender(float dt) override;
         virtual void OnEndRender(float dt) override;
         virtual bool IsQuit() override;
-        virtual rendering::Pipeline* GetPipeline() override;
         World* GetEditorWorld() const
         {
             return m_world;

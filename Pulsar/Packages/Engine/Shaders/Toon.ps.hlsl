@@ -13,7 +13,7 @@ Texture2D _RampAtlas : register(t2, USER_DESCSET);
 SamplerState _RampAtlasSampler : register(s2, USER_DESCSET);
 
 
-MaterialAttributes SurfacePixelMain(InPixelAssembly surf)
+MaterialAttributes SurfacePixelMain(StandardVaryings surf)
 {
     MaterialAttributes attr = (MaterialAttributes)0;
     

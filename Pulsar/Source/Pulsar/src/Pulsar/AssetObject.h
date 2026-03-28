@@ -6,6 +6,9 @@
 #include <CoreLib.Serialization/DataSerializer.h>
 #include <CoreLib.Serialization/ObjectSerializer.h>
 #include <iostream>
+#include <fstream>
+#include <filesystem>
+#include <memory>
 #include <utility>
 
 
@@ -32,26 +35,73 @@ namespace pulsar
 
     struct AssetSerializer
     {
-        AssetSerializer(ser::VarientRef obj, std::iostream& stream, bool isWrite, bool editorData)
+        // 磁盘文件模式：懒打开 .pba 文件
+        AssetSerializer(ser::VarientRef obj, std::filesystem::path binaryPath, bool isWrite, bool editorData)
             : Object(std::move(obj)),
-              Stream(stream),
+              m_binaryPath(std::move(binaryPath)),
               IsWrite(isWrite),
-              HasEditorData(editorData),
-              ExistStream(false)
+              HasEditorData(editorData)
+        {
+        }
+
+        // 内存流模式：直接使用外部提供的流（用于资产克隆等场景）
+        AssetSerializer(ser::VarientRef obj, std::iostream& externalStream, bool isWrite, bool editorData)
+            : Object(std::move(obj)),
+              m_externalStream(&externalStream),
+              IsWrite(isWrite),
+              HasEditorData(editorData)
         {
         }
 
         AssetSerializer(const AssetSerializer&) = delete;
         AssetSerializer(AssetSerializer&&) = delete;
 
+        // 懒访问器：首次调用时按需打开/创建 .pba 文件
+        std::iostream& GetStream()
+        {
+            // 内存流模式
+            if (m_externalStream)
+                return *m_externalStream;
+
+            // 磁盘文件懒初始化
+            if (!m_stream)
+            {
+                if (IsWrite)
+                {
+                    m_stream = std::make_unique<std::fstream>(
+                        m_binaryPath, std::ios::out | std::ios::trunc | std::ios::binary);
+                }
+                else
+                {
+                    m_stream = std::make_unique<std::fstream>(
+                        m_binaryPath, std::ios::in | std::ios::binary);
+                }
+            }
+            return *m_stream;
+        }
+
+        // 查询流是否可用
+        bool HasStream() const
+        {
+            if (m_externalStream)
+                return true;
+            if (IsWrite)
+                return m_stream != nullptr;
+            else
+                return std::filesystem::exists(m_binaryPath);
+        }
+
     public:
         ser::VarientRef Object;
-        std::iostream& Stream;
         OSPlatform Platform;
         bool CookedOnly;
-        bool ExistStream;
         const bool IsWrite;
         const bool HasEditorData;
+
+    private:
+        std::filesystem::path m_binaryPath;
+        std::unique_ptr<std::fstream> m_stream;
+        std::iostream* m_externalStream = nullptr;
     };
 
     class ImportedFileInfo : public Object
@@ -134,6 +184,9 @@ namespace pulsar
     {
     protected:
         SPtr<ManagedPointer> ManagedPtr;
+
+        template <typename T>
+        friend struct RCPtr;
 
     protected:
         [[always_inline]] void Incref() const noexcept
@@ -234,6 +287,8 @@ namespace pulsar
         }
         RCPtrBase& operator=(RCPtrBase&& ptr) noexcept
         {
+            if (this == &ptr)
+                return *this;
             Decref();
             ManagedPtr = std::move(ptr.ManagedPtr);
             return *this;
@@ -338,7 +393,7 @@ namespace pulsar
 
         RCPtr<T>& operator=(const RCPtr<T>& ptr) noexcept
         {
-            if (this == &ptr)
+            if (ManagedPtr == ptr.ManagedPtr)
                 return *this;
             Decref();
             ManagedPtr = ptr.ManagedPtr;
@@ -346,10 +401,11 @@ namespace pulsar
             return *this;
         }
 
+
         template <typename U> requires std::is_base_of_v<T, U>
         RCPtr<T>& operator=(const RCPtr<U>& ptr) noexcept
         {
-            if (this == &ptr)
+            if (ManagedPtr == ptr.ManagedPtr)
                 return *this;
             Decref();
             ManagedPtr = ptr.ManagedPtr;
@@ -359,6 +415,8 @@ namespace pulsar
 
         RCPtr<T>& operator=(RCPtr<T>&& ptr) noexcept
         {
+            if (ManagedPtr == ptr.ManagedPtr)
+                return *this;
             ManagedPtr = ptr.ManagedPtr;
             ptr.ManagedPtr = nullptr;
             return *this;

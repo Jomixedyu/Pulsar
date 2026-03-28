@@ -7,7 +7,6 @@
 #include "cxxopts.hpp"
 #include "stlext.hpp"
 #include "GlslangCompilerImpl.h"
-#include "DxcCompilerImpl.h"
 
 namespace psc
 {

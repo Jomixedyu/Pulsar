@@ -5,7 +5,6 @@
 #include <vector>
 #include <cstdint>
 #include <filesystem>
-#include "BinaryFileHeader.h"
 #include "Classes.hpp"
 
 #ifdef _WIN32
@@ -24,6 +23,9 @@ namespace psc
 
     struct CompileInfo
     {
+        const char* code;
+        ApiPlatformType platform;
+        FilePartialType Stage;
         bool Debug = false;
         IncludePaths IncludePaths;
         std::string EntryName;
@@ -34,24 +36,8 @@ namespace psc
     {
     public:
         virtual std::vector<char> CompileStage(
-            const char* code, 
-            ApiPlatformType platform, 
-            FilePartialType Stage, 
             const CompileInfo& compileInfo,
             const char* extraDebugPath = nullptr) = 0;
-
-        virtual std::vector<TargetShader> CompilePSH(
-            std::filesystem::path shPath,
-            CompileInfo compileInfo,
-            const std::vector<ApiPlatformType>& TargetPlatforms) = 0;
-
-        virtual void CompileBinaryPSH(
-            std::filesystem::path shPath,
-            CompileInfo compileInfo,
-            const std::vector<ApiPlatformType>& TargetPlatforms,
-            std::ostream& out) = 0;
-
-
     };
 
     extern PSC_API std::shared_ptr<ShaderCompiler> CreateShaderCompiler(ApiPlatformType platform);

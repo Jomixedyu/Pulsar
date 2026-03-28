@@ -39,6 +39,7 @@ namespace gfx
             hash = hash * HashS1 ^ (uintptr_t)gpuProgram.get();
         }
         hash = hash * HashS1 ^ renderTargetDesc.GetHashCode();
+        hash = hash * HashS1 ^ gpInfo.GetHashCode(); // must include topology & vertex layout
 
         auto v = m_caches.find(hash);
         if (v != m_caches.end())

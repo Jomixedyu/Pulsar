@@ -4,16 +4,12 @@
 
 namespace pulsar
 {
-    class SpriteRendererComponent : public Component, public IRendererComponent
+    class SpriteRendererComponent : public RendererComponent
     {
-        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::SpriteRendererComponent, Component);
-        CORELIB_IMPL_INTERFACES(IRendererComponent);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::SpriteRendererComponent, RendererComponent);
         CORELIB_CLASS_ATTR(new CategoryAttribute("Renderer"))
     public:
-        SpriteRendererComponent() : CORELIB_INIT_INTERFACE(IRendererComponent)
-        {
-
-        }
+        SpriteRendererComponent() = default;
 
         void BeginComponent() override;
         void EndComponent() override;

@@ -3,6 +3,7 @@
 #include "CameraManager.h"
 #include "Components/Component.h"
 #include "ObjectBase.h"
+#include "Rendering/PerPassResources.h"
 #include "Rendering/RenderObject.h"
 #include "SceneCaptureManager.h"
 #include "SelectionSet.h"
@@ -96,6 +97,7 @@ namespace pulsar
     public: //rendering
         array_list<ObjectPtrBase>&      GetDeferredDestroyedQueue() { return m_deferredDestroyedQueue; }
         gfx::GFXDescriptorSet_sp        GetWorldDescriptorSet() const { return m_worldDescriptors; }
+        PerPassResources&                GetPerPassResources() { return m_perPassResources; }
         const hash_set<rendering::RenderObject_sp>& GetRenderObjects() const { return m_renderObjects; }
         void            AddRenderObject(const rendering::RenderObject_sp& renderObject);
         void            RemoveRenderObject(rendering::RenderObject_rsp renderObject);
@@ -127,6 +129,8 @@ namespace pulsar
         gfx::GFXDescriptorSetLayout_sp m_worldDescriptorLayout;
         gfx::GFXBuffer_sp              m_worldDescriptorBuffer;
         gfx::GFXDescriptorSet_sp       m_worldDescriptors;
+
+        PerPassResources m_perPassResources;
 
         GizmosManager m_gizmosManager;
         array_list<SPtr<class WorldSubsystem>> m_subsystems;

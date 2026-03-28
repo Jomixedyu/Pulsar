@@ -6,8 +6,13 @@
 #include "Importers/FBXImporter.h"
 #include "Pulsar/Components/PointLightComponent.h"
 
-#include "Shaders/EditorShader.h"
+#include "Shaders/EditorShaderCompileService.h"
 #include "Utils/PrefabUtil.h"
+
+#include <Pulsar/Rendering/ShaderInstanceCache.h>
+#include <psc/ShaderCompiler.h>
+
+#include <fstream>
 #include <CoreLib.Serialization/JsonSerializer.h>
 #include <CoreLib/File.h>
 #include <Pulsar/Application.h>
@@ -201,6 +206,7 @@ namespace pulsared
             dlight->GetTransform()->TranslateRotateEuler({-3,3,-3}, {45,45,0});
         }
 
+        return;
         // sky
         // if (0)
         {
@@ -287,31 +293,8 @@ namespace pulsared
 
     static void PreCompileShaders()
     {
-        array_list<string_view> PreCompileShaderPaths = {
-            "Engine/Shaders/Missing",
-            "Engine/Shaders/WorldGrid",
-            "Engine/Shaders/Lambert",
-            "Engine/Shaders/Unlit",
-            "Engine/Shaders/VertexColor",
-            "Engine/Shaders/Lit",
-            "Engine/Shaders/ImagePreview",
-            "Engine/Shaders/SkySphere",
-        };
-        if (PreCompileShaderPaths.empty())
-        {
-            return;
-        }
-        for (auto& element : AssetDatabase::FindAssets(cltypeof<Shader>()))
-        {
-            if (std::ranges::contains(PreCompileShaderPaths, element))
-            {
-                std::erase(PreCompileShaderPaths, element);
-                auto asset = cast<Shader>(AssetDatabase::LoadAssetAtPath(element));
-                assert(asset);
-                ShaderCompiler::CompileShader(asset, {gfx::GFXApi::Vulkan}, {}, {});
-            }
-        }
-        assert(PreCompileShaderPaths.empty());
+        // TODO: 旧的预编译流程已废弃，shader 编译现在通过
+        // ShaderInstanceCache + EditorShaderCompileService 按需触发
     }
 
     static void PreImportBuiltinModel()
@@ -373,6 +356,74 @@ namespace pulsared
         // add package
         AssetDatabase::AddPackage("Engine");
         AssetDatabase::AddPackage("Editor");
+
+        // 注册 Shader 编译服务
+        static EditorShaderCompileService s_shaderCompileService;
+        pulsar::ShaderCompileServiceLocator::Register(&s_shaderCompileService);
+
+        // 同步编译 Pending/Error shader 并初始化 ShaderInstanceCache
+        {
+            auto pendingProgram = std::make_shared<pulsar::ShaderProgramResource>();
+            auto errorProgram = std::make_shared<pulsar::ShaderProgramResource>();
+
+            auto CompileBuiltinShader = [&](const std::string& assetPath, std::shared_ptr<pulsar::ShaderProgramResource>& outProgram)
+            {
+                auto hlslAssetPath = assetPath + ".hlsl";
+                auto hlslPhysicsPath = AssetDatabase::AssetPathToPhysicsPath(hlslAssetPath);
+                auto includeDir = hlslPhysicsPath.parent_path();
+
+                std::ifstream hlslFile(hlslPhysicsPath);
+                if (!hlslFile.is_open())
+                {
+                    Logger::Log("Failed to open builtin shader: " + hlslPhysicsPath.string(), pulsar::LogLevel::Error);
+                    return;
+                }
+                auto hlslSource = std::string(
+                    (std::istreambuf_iterator<char>(hlslFile.rdbuf())),
+                    std::istreambuf_iterator<char>());
+
+                auto pscApi = psc::ApiPlatformType::Vulkan;
+                auto pscCompiler = psc::CreateShaderCompiler(pscApi);
+                auto gfxApp = pulsar::Application::GetGfxApp();
+
+                // VS
+                {
+                    psc::CompileInfo info{};
+                    info.code = hlslSource.c_str();
+                    info.platform = pscApi;
+                    info.Stage = psc::FilePartialType::Vert;
+                    info.EntryName = "VSMain";
+                    info.IncludePaths = { includeDir };
+                    auto spirv = pscCompiler->CompileStage(info);
+                    auto vsProgram = gfxApp->CreateGpuProgram(
+                        gfx::GFXGpuProgramStageFlags::Vertex,
+                        reinterpret_cast<const uint8_t*>(spirv.data()), spirv.size());
+                    vsProgram->SetEntryName("VSMain");
+                    outProgram->m_gpuPrograms.push_back(vsProgram);
+                }
+                // PS
+                {
+                    psc::CompileInfo info{};
+                    info.code = hlslSource.c_str();
+                    info.platform = pscApi;
+                    info.Stage = psc::FilePartialType::Pixel;
+                    info.EntryName = "PSMain";
+                    info.IncludePaths = { includeDir };
+                    auto spirv = pscCompiler->CompileStage(info);
+                    auto psProgram = gfxApp->CreateGpuProgram(
+                        gfx::GFXGpuProgramStageFlags::Fragment,
+                        reinterpret_cast<const uint8_t*>(spirv.data()), spirv.size());
+                    psProgram->SetEntryName("PSMain");
+                    outProgram->m_gpuPrograms.push_back(psProgram);
+                }
+            };
+
+            CompileBuiltinShader("Engine/Shaders/Pending", pendingProgram);
+            CompileBuiltinShader("Engine/Shaders/Error", errorProgram);
+
+            pulsar::ShaderInstanceCache::Instance().Initialize(pendingProgram, errorProgram);
+            Logger::Log("ShaderInstanceCache initialized with Pending/Error programs");
+        }
 
         Logger::Log("precompile shaders...");
         // recompile obsolete shaders
@@ -440,6 +491,11 @@ namespace pulsared
         m_editors.clear();
 
         PrefabUtil::ClosePrefabMode();
+
+        // 在 World 和 GFX Device 销毁前清理 ShaderInstanceCache，
+        // 否则 GpuProgram 析构时 VkDevice 已经无效
+        pulsar::ShaderInstanceCache::Instance().Clear();
+
         World::Reset(nullptr);
 
         m_gui->Terminate();
@@ -467,6 +523,12 @@ namespace pulsared
 
     void EditorAppInstance::OnBeginRender(float dt)
     {
+        // 刷新异步 shader 编译回调（主线程）
+        if (auto* compileService = dynamic_cast<EditorShaderCompileService*>(pulsar::ShaderCompileServiceLocator::Get()))
+        {
+            compileService->FlushCallbacks();
+        }
+
         m_gui->NewFrame();
 
         uinput::InputManager::GetInstance()->ProcessEvents();
@@ -500,10 +562,6 @@ namespace pulsared
         return false;
     }
 
-    rendering::Pipeline* EditorAppInstance::GetPipeline()
-    {
-        return nullptr;
-    }
 
     Vector2f EditorAppInstance::GetAppSize()
     {

@@ -15,7 +15,7 @@ half4 TriPlanar (float4 posWS,half3 normal, float smooth, sampler2D textures)
     return col0+col1+col2;
 }
 
-MaterialAttributes SurfacePixelMain(InPixelAssembly surf)
+MaterialAttributes SurfacePixelMain(StandardVaryings surf)
 {
     MaterialAttributes attr = (MaterialAttributes)0;
 

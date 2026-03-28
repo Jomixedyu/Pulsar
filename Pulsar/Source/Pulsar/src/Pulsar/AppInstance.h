@@ -2,7 +2,6 @@
 #include <CoreLib/Events.hpp>
 #include <Pulsar/ObjectBase.h>
 #include <Pulsar/World.h>
-#include <Pulsar/Rendering/Pipelines/Pipeline.h>
 #include <gfx/GFXApplication.h>
 #include <uinput/InputManager.h>
 
@@ -25,7 +24,6 @@ namespace pulsar
         virtual string GetTitle() = 0;
         virtual void SetTitle(string_view title) = 0;
         virtual std::filesystem::path AppRootDir() = 0;
-        virtual rendering::Pipeline* GetPipeline() = 0;
 
         virtual array_list<gfx::GFXApi> GetSupportedApis();
 

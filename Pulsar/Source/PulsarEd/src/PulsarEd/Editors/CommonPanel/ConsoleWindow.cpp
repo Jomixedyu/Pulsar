@@ -1,6 +1,7 @@
 #include <PulsarEd/Editors/CommonPanel/ConsoleWindow.h>
 #include <Pulsar/Logger.h>
 #include <PulsarEd/EditorLogRecorder.h>
+#include <mutex>
 
 namespace pulsared
 {
@@ -43,7 +44,8 @@ namespace pulsared
             ImGui::EndMenuBar();
         }
 
-        auto& loglist = EditorLogRecorder::loglist;
+        std::lock_guard<std::mutex> lock(EditorLogRecorder::GetMutex());
+        auto& loglist = EditorLogRecorder::GetLogList();
 
 
         ImGui::BeginChild("##console detail", ImVec2{ -FLT_MIN, ImGui::GetContentRegionAvail().y * 0.5f }, false, ImGuiWindowFlags_::ImGuiWindowFlags_HorizontalScrollbar);

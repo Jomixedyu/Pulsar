@@ -40,7 +40,6 @@ namespace pulsar
         virtual void SetTitle(string_view title) override;
         virtual std::filesystem::path AppRootDir() override;
         virtual AssetManager* GetAssetManager() override;
-        virtual rendering::Pipeline* GetPipeline() override;
 
         virtual void OnPreInitialize(gfx::GFXGlobalConfig* cfg) override;
 

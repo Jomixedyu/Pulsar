@@ -11,7 +11,7 @@ SamplerState _NormamlMapSampler    : register(s1, USER_DESCSET);
 SamplerState _MRAMapSampler        : register(s2, USER_DESCSET);
 
 
-MaterialAttributes SurfacePixelMain(InPixelAssembly surf)
+MaterialAttributes SurfacePixelMain(StandardVaryings surf)
 {
     MaterialAttributes attr = (MaterialAttributes)0;
     attr.BaseColor = _BaseColorMap.Sample(_BaseColorMapSampler, surf.TexCoord0).xyz;

@@ -112,7 +112,7 @@ namespace pulsar
             m_materialNames.clear();
         }
 
-        sser::ReadWriteStream(s->Stream, s->IsWrite, m_sections);
+        sser::ReadWriteStream(s->GetStream(), s->IsWrite, m_sections);
         if (s->IsWrite)
         {
             auto materialNames = s->Object->New(ser::VarientType::Array);

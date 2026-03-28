@@ -279,6 +279,16 @@ namespace pulsar
         }
 
         m_worldDescriptorBuffer->Fill(&buffer);
+
+        // 同步到合并的 PerPass descriptor set
+        PerPassWorldData perPassWorld{};
+        perPassWorld.WorldSpaceLightVector = buffer.WorldSpaceLightVector;
+        perPassWorld.WorldSpaceLightColor = buffer.WorldSpaceLightColor;
+        perPassWorld.SkyLightColor = buffer.SkyLightColor;
+        perPassWorld.TotalTime = buffer.TotalTime;
+        perPassWorld.DeltaTime = buffer.DeltaTime;
+        perPassWorld.LightParameterCount = buffer.LightParameterCount;
+        m_perPassResources.UpdateWorld(perPassWorld);
     }
 
     void World::AddRenderObject(const rendering::RenderObject_sp& renderObject)
@@ -327,6 +337,9 @@ namespace pulsar
         m_worldDescriptors->AddDescriptor("World", 0)->SetConstantBuffer(m_worldDescriptorBuffer.get());
         m_worldDescriptors->Submit();
 
+        // 初始化合并的 PerPass descriptor set (set 1)
+        m_perPassResources.Initialize();
+
         m_physicsWorld2D = new PhysicsWorld2D;
         m_physicsWorld3D = new PhysicsWorld3D;
 
@@ -368,6 +381,8 @@ namespace pulsar
         m_worldDescriptorLayout.reset();
         m_worldDescriptorBuffer.reset();
         m_worldDescriptors.reset();
+
+        m_perPassResources.Destroy();
 
         delete m_physicsWorld2D;
         m_physicsWorld2D = nullptr;

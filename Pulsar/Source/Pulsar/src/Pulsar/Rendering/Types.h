@@ -23,3 +23,18 @@ CORELIB_DECL_BOXING(pulsar::CullMode, pulsar::BoxingCullMode);
 CORELIB_DECL_BOXING(pulsar::CompareMode, pulsar::BoxingCompareMode);
 CORELIB_DECL_BOXING(pulsar::StencilOp, pulsar::BoxingStencilOp);
 CORELIB_DECL_BOXING(pulsar::BlendFactor, pulsar::BoxingBlendFactor);
+
+namespace pulsar
+{
+
+    CORELIB_DEF_ENUM(AssemblyObject_pulsar, pulsar,
+                     ShaderPropertyType,
+                     Int,
+                     Float,
+                     Float4,
+                     Color,
+                     Texture2D,
+                     TextureCube
+    )
+}
+CORELIB_DECL_BOXING(pulsar::ShaderPropertyType, pulsar::BoxingShaderPropertyType);

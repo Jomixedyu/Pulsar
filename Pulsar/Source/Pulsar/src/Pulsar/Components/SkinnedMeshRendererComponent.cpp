@@ -4,7 +4,6 @@ namespace pulsar
 {
 
     SkinnedMeshRendererComponent::SkinnedMeshRendererComponent()
-        : CORELIB_INIT_INTERFACE(IRendererComponent)
     {
         m_canDrawGizmo = true;
     }

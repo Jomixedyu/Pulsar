@@ -5,7 +5,7 @@
 #include <Pulsar/Application.h>
 #include <Pulsar/Assets/Material.h>
 #include <Pulsar/Assets/StaticMesh.h>
-#include <Pulsar/Components/MeshRendererComponent.h>
+#include <Pulsar/Components/RendererComponent.h>
 #include <Pulsar/Components/StaticMeshRendererComponent.h>
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
@@ -108,7 +108,7 @@ namespace pulsared
             _ProcessMesh(&sections[i], mesh, scene);
             auto sectionMat = scene->mMaterials[mesh->mMaterialIndex];
 
-            materials.push_back(Material::StaticCreate(sectionMat->GetName().C_Str()));
+            materials.push_back(Material::StaticCreate(nullptr, sectionMat->GetName().C_Str()));
 
             sections[i].MaterialIndex = materials.size() - 1;
         }
@@ -129,7 +129,7 @@ namespace pulsared
             auto renderer = newNode->AddComponent<StaticMeshRendererComponent>();
             for (auto& mat : materials)
             {
-                renderer->GetMaterials()->push_back(mat);
+                renderer->AddMaterial(mat);
             }
         }
 

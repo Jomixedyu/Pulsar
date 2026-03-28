@@ -1,9 +1,0 @@
-{
-    "ExtraFiles": {},
-    "Guid": "b88d61c448f0884e877a3c9979070a96",
-    "Tags": {},
-    "Type": "pulsar::Material",
-	"Dependencies": [
-		"d45a4d51becaff43b0aed6f6020622cb"
-	]
-}

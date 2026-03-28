@@ -10,7 +10,6 @@
 #include <PulsarEd/Menus/MenuEntrySubMenu.h>
 #include <PulsarEd/Menus/MenuRenderer.h>
 #include <PulsarEd/PropertyControls/PropertyControl.h>
-#include <PulsarEd/Shaders/EditorShader.h>
 
 namespace pulsared
 {
@@ -44,7 +43,7 @@ namespace pulsared
                             return;
                         if (const RCPtr<Shader> shader = cast<Shader>(ctx->Asset))
                         {
-                            ShaderCompiler::CompileShader(shader);
+                            // TODO: 迁移到新的 ShaderInstanceCache 编译流程
                         }
                     });
                     menu->AddEntry(entry);
@@ -64,34 +63,11 @@ namespace pulsared
     void ShaderEditorWindow::OnOpen()
     {
         base::OnOpen();
-        RCPtr<Shader> shader = cast<Shader>(m_assetObject);
-
-        m_previewMaterial = Material::StaticCreate("PreviewMaterial");
-        m_previewMaterial->SetShader(shader);
-        m_previewMaterial->CreateGPUResource();
-
-        auto previewMesh = m_world->GetResidentScene()->NewNode("PreviewMesh");
-        auto renderer = previewMesh->AddComponent<StaticMeshRendererComponent>();
-
-        renderer->SetStaticMesh(GetAssetManager()->LoadAsset<StaticMesh>(BuiltinAsset::Shapes_Sphere));
-
-        auto renderingType = m_previewMaterial->GetShader()->GetConfig()->RenderingType;
-        if (renderingType == ShaderPassRenderingType::PostProcessing)
-        {
-            renderer->SetMaterial(0, GetAssetManager()->LoadAsset<Material>(BuiltinAsset::Material_Lambert));
-            m_world->GetCurrentCamera()->AddPostProcess(m_previewMaterial);
-        }
-        else
-        {
-            renderer->SetMaterial(0, m_previewMaterial);
-        }
 
     }
     void ShaderEditorWindow::OnClose()
     {
         base::OnClose();
-        DestroyObject(m_previewMaterial);
-        m_previewMaterial.Reset();
     }
 
     void ShaderEditorWindow::OnRefreshMenuContexts()
@@ -100,9 +76,12 @@ namespace pulsared
         m_menuBarCtxs->Contexts.push_back(mksptr(new ShaderEditorMenuContext{this->GetAssetObject()}));
     }
 
-    void ShaderEditorWindow::OnDrawAssetPropertiesUI(float dt)
+
+    void ShaderEditorWindow::OnDrawImGui(float dt)
     {
-        base::OnDrawAssetPropertiesUI(dt);
+        static MenuInit _MenuInit_;
+        base::OnDrawImGui(dt);
+
         RCPtr<Shader> shader = cast<Shader>(m_assetObject);
         if (PImGui::PropertyGroup("Shader"))
         {
@@ -112,78 +91,6 @@ namespace pulsared
                 mkbox(ObjectPtrBase(m_assetObject.GetHandle())).get(),
                 m_assetObject.GetPtr());
         }
-
-        if (PImGui::PropertyGroup("Shader Features"))
-        {
-            array_list<uint8_t> bools;
-            array_list<size_t> changedIndex;
-            bools.reserve(shader->GetConfig()->FeatureDeclare->size());
-            for (auto& feature : *shader->GetConfig()->FeatureDeclare)
-            {
-                if (std::ranges::contains(shader->GetFeatureOptions(), feature))
-                {
-                    bools.push_back(true);
-                }
-                else
-                {
-                    bools.push_back(false);
-                }
-            }
-
-            if (PImGui::BeginPropertyLines())
-            {
-                for (int i = 0; i < shader->GetConfig()->FeatureDeclare->size(); ++i)
-                {
-                    auto& item = shader->GetConfig()->FeatureDeclare->at(i);
-                    auto boolObj = mkbox((bool)bools.at(i));
-                    if (PImGui::PropertyLine(item, cltypeof<Boolean>(), boolObj.get()))
-                    {
-                        bools.at(i) = boolObj->get_unboxing_value();
-                        changedIndex.push_back(i);
-                    }
-                }
-                PImGui::EndPropertyLines();
-            }
-
-            for (size_t index : changedIndex)
-            {
-                auto& name = shader->GetConfig()->FeatureDeclare->at(index);
-                if (bools.at(index))
-                {
-                    shader->GetFeatureOptions().push_back(name);
-                }
-                else
-                {
-                    std::erase(shader->GetFeatureOptions(), name);
-                }
-            }
-            if (!changedIndex.empty())
-            {
-                AssetDatabase::MarkDirty(shader);
-            }
-        }
-
-        if (PImGui::PropertyGroup("Compiled"))
-        {
-            string apis;
-            for (auto api : shader->GetSupportedApi())
-            {
-                apis += gfx::to_string(api);
-                apis += ";";
-            }
-            if (PImGui::BeginPropertyLines())
-            {
-                PImGui::PropertyLineText("Platforms", apis);
-                PImGui::EndPropertyLines();
-            }
-        }
-    }
-
-
-    void ShaderEditorWindow::OnDrawImGui(float dt)
-    {
-        static MenuInit _MenuInit_;
-        base::OnDrawImGui(dt);
     }
 
 } // namespace pulsared

@@ -1,6 +1,5 @@
 #include "AssetDatabase.h"
 #include "Pulsar/AssetManager.h"
-#include "Shaders/EditorShader.h"
 
 #include <PulsarEd/ToolWindows/ShaderDebugTool.h>
 
@@ -35,13 +34,7 @@ namespace pulsared
             ImGui::Text(path.c_str());
 
             ImGui::TableSetColumnIndex(2);
-            string compiled;
-            for (auto api : shader->GetSupportedApi())
-            {
-                compiled += to_string(api);
-                compiled += ";";
-            }
-            ImGui::Text(compiled.c_str());
+            ImGui::Text("N/A");
 
             ImGui::TableSetColumnIndex(3);
             // if (i == 3)
@@ -53,7 +46,7 @@ namespace pulsared
             // }
             if (ImGui::Button("Compile"))
             {
-                ShaderCompiler::CompileShader(shader);
+                // TODO: 迁移到新的 ShaderInstanceCache 编译流程
             }
             ImGui::PopID();
         }

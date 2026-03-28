@@ -5,7 +5,7 @@
 
 #include <Pulsar/Assets/NodeCollection.h>
 #include <Pulsar/Assets/StaticMesh.h>
-#include <Pulsar/Components/MeshRendererComponent.h>
+#include <Pulsar/Components/RendererComponent.h>
 #include <Pulsar/Components/StaticMeshRendererComponent.h>
 #include <PulsarEd/AssetDatabase.h>
 #include <fbxsdk.h>

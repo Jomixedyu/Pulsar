@@ -3,7 +3,6 @@
 #include "Pulsar/Application.h"
 
 #include "Component.h"
-#include "MeshRendererComponent.h"
 #include "RendererComponent.h"
 #include <Pulsar/Assets/Material.h>
 #include <Pulsar/Assets/StaticMesh.h>
@@ -17,16 +16,17 @@ namespace pulsar
     class ShaderConfig;
     class StaticMeshRenderObject;
 
-    class StaticMeshRendererComponent : public MeshRendererComponent, public IRendererComponent
+
+
+    class StaticMeshRendererComponent : public RendererComponent
     {
-        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::StaticMeshRendererComponent, MeshRendererComponent);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::StaticMeshRendererComponent, RendererComponent);
         CORELIB_CLASS_ATTR(new CategoryAttribute("Renderer"));
-        CORELIB_IMPL_INTERFACES(IRendererComponent);
     public:
         SPtr<rendering::RenderObject> CreateRenderObject() override;
     public:
         void GetSubscribeObserverHandles(array_list<ObjectHandle>& out) override;
-        List_sp<RCPtr<Material>> GetMaterials() const { return this->m_materials; }
+        List_sp<SPtr<MaterialSlot>> GetMaterials() const { return this->m_materials; }
 
         void PostEditChange(FieldInfo* info) override;
 
@@ -49,8 +49,6 @@ namespace pulsar
 
         void OnReceiveMessage(MessageId id) override;
 
-        int32_t GetRenderQueuePriority() const { return m_renderQueuePriority; }
-        void SetRenderQueuePriority(int32_t value) { m_renderQueuePriority = value; }
     protected:
         void OnNotifyObserver(ObjectHandle inDependency, DependencyObjectState msg) override;
         void ResizeMaterials(size_t size);
@@ -61,8 +59,8 @@ namespace pulsar
         void OnMeshChanged();
         void OnMaterialChanged();
     protected:
-        CORELIB_REFL_DECL_FIELD(m_materials, new ListItemAttribute(cltypeof<Material>()));
-        List_sp<RCPtr<Material>> m_materials;
+        CORELIB_REFL_DECL_FIELD(m_materials, new ListItemAttribute(cltypeof<MaterialSlot>()));
+        List_sp<SPtr<MaterialSlot>> m_materials;
 
         size_t m_materialsSize = 0;
 
@@ -71,9 +69,6 @@ namespace pulsar
 
         CORELIB_REFL_DECL_FIELD(m_isCastShadow);
         bool m_isCastShadow = true;
-
-        CORELIB_REFL_DECL_FIELD(m_renderQueuePriority);
-        int32_t m_renderQueuePriority{1000};
 
         CORELIB_REFL_DECL_FIELD(m_boundsScale, new RangePropertyAttribute(0.1f, 10.f));
         float m_boundsScale = 1;

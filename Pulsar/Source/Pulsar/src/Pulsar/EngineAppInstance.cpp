@@ -1,8 +1,11 @@
 ﻿#include "EngineAppInstance.h"
 #include "Assets/StaticMesh.h"
+#include <algorithm>
 #include "Components/CameraComponent.h"
 #include "Components/StaticMeshRendererComponent.h"
+#include "Node.h"
 #include "Rendering/LightingData.h"
+#include "Rendering/PerPassResources.h"
 #include "Rendering/RenderObject.h"
 #include "Scene.h"
 
@@ -11,6 +14,7 @@
 #include <Pulsar/ImGuiImpl.h>
 #include <Pulsar/Logger.h>
 #include <Pulsar/World.h>
+#include <Pulsar/Rendering/ShaderInstanceCache.h>
 #include <filesystem>
 
 namespace pulsar
@@ -42,6 +46,43 @@ namespace pulsar
             {
                 auto targetFBO = cam->GetRenderTexture()->GetGfxFrameBufferObject().get();
 
+                // 同步 Camera 数据到 PerPassResources (set 1)
+                {
+                    PerPassCameraData camData{};
+                    camData.MatrixV = cam->GetViewMat();
+                    camData.MatrixP = cam->GetProjectionMat();
+                    camData.MatrixVP = camData.MatrixP * camData.MatrixV;
+                    camData.InvMatrixV = jmath::Inverse(camData.MatrixV);
+                    camData.InvMatrixP = jmath::Inverse(camData.MatrixP);
+                    camData.InvMatrixVP = jmath::Inverse(camData.MatrixVP);
+                    camData.CamPosition = cam->GetNode()->GetTransform()->GetWorldPosition();
+                    camData.CamNear = cam->GetNear();
+                    camData.CamFar = cam->GetFar();
+                    camData.Resolution = cam->GetRenderTexture()->GetSize2df();
+                    world->GetPerPassResources().UpdateCamera(camData);
+                }
+
+                // 同步 Light 数据到 PerPassResources (set 1)
+                {
+                    PerPassLightsBufferData lightsData{};
+                    auto lightMgr = world->GetLightManager();
+                    int lightCount = std::min(lightMgr->GetLightCount(), 63);
+                    for (int i = 0; i < lightCount; ++i)
+                    {
+                        auto& src = lightMgr->GetLightParameter(i);
+                        auto& dst = lightsData.Lights[i];
+                        dst.Position = {src.WorldPosition.x, src.WorldPosition.y, src.WorldPosition.z};
+                        dst.CutOff = src.SpotAngles.x;
+                        dst.Direction = {src.Direction.x, src.Direction.y, src.Direction.z};
+                        dst.Radius = src.SourceRadius;
+                        dst.Color = src.Color;
+                    }
+                    lightsData.PointCount = static_cast<uint32_t>(lightCount);
+                    world->GetPerPassResources().UpdateLights(lightsData);
+                }
+
+                world->GetPerPassResources().Submit();
+
                 cmdBuffer.SetFrameBuffer(targetFBO);
 
                 for (auto& rt : targetFBO->GetRenderTargets())
@@ -52,100 +93,159 @@ namespace pulsar
                 cmdBuffer.CmdBeginRenderPass("BasePass");
                 cmdBuffer.CmdSetViewport(0, 0, (float)targetFBO->GetWidth(), (float)targetFBO->GetHeight());
 
-                // combine batches
-                std::unordered_map<size_t, rendering::MeshBatch> batches;
+                // -------------------------------------------------------
+                // 收集 BatchEntry 列表，计算 Depth
+                // -------------------------------------------------------
+                struct BatchEntry
+                {
+                    rendering::RenderObject* renderObject;
+                    rendering::MeshBatch     batch; // value copy (contains Depth)
+                };
+
+                const Vector3f camPos     = cam->GetNode()->GetTransform()->GetWorldPosition();
+                const Vector3f camForward = cam->GetNode()->GetTransform()->GetForward();
+
+                array_list<BatchEntry> opaqueList, alphaTestList, transparentList;
+
                 for (const rendering::RenderObject_sp& renderObject : renderObjects)
                 {
-                    for (auto& batch : renderObject->GetMeshBatches())
+                    const Vector3f objPos = renderObject->GetWorldPosition();
+                    const float depth = jmath::Dot(camForward, objPos - camPos);
+
+                    for (auto batch : renderObject->GetMeshBatches())
                     {
-                        auto stateHash = batch.GetRenderState();
-                        if (batches.contains(stateHash))
+                        batch.Depth = depth;
+
+                        switch (batch.Queue)
                         {
-                            batches[stateHash].Append(batch);
-                        }
-                        else
-                        {
-                            batches[stateHash] = batch;
+                        case ShaderPassRenderQueueType::AlphaTest:
+                            alphaTestList.push_back({renderObject.get(), std::move(batch)});
+                            break;
+                        case ShaderPassRenderQueueType::Transparency:
+                            transparentList.push_back({renderObject.get(), std::move(batch)});
+                            break;
+                        case ShaderPassRenderQueueType::Opaque:
+                        default:
+                            opaqueList.push_back({renderObject.get(), std::move(batch)});
+                            break;
                         }
                     }
                 }
 
-                // batch render
-                for (auto& [state, batch] : batches)
+                // -------------------------------------------------------
+                // 排序
+                // Opaque & AlphaTest: (priority ASC, depth ASC)   近 → 远
+                // Transparent:        (priority ASC, depth DESC)   远 → 近
+                // -------------------------------------------------------
+                auto sortAscDepth = [](const BatchEntry& a, const BatchEntry& b) {
+                    if (a.batch.Priority != b.batch.Priority)
+                        return a.batch.Priority < b.batch.Priority;
+                    return a.batch.Depth < b.batch.Depth;
+                };
+                auto sortDescDepth = [](const BatchEntry& a, const BatchEntry& b) {
+                    if (a.batch.Priority != b.batch.Priority)
+                        return a.batch.Priority < b.batch.Priority;
+                    return a.batch.Depth > b.batch.Depth;
+                };
+
+                std::sort(opaqueList.begin(),      opaqueList.end(),      sortAscDepth);
+                std::sort(alphaTestList.begin(),   alphaTestList.end(),   sortAscDepth);
+                std::sort(transparentList.begin(), transparentList.end(), sortDescDepth);
+
+                // -------------------------------------------------------
+                // 绘制辅助函数
+                // -------------------------------------------------------
+                auto DrawBatchList = [&](const array_list<BatchEntry>& entries)
                 {
-                    auto gpuPrograms = batch.Material->GetGpuPrograms();
-                    auto psoParams = batch.Material->GetPSOParams();
-
-                    auto renderingType = batch.Material->GetShader()->GetConfig()->RenderingType;
-                    if (renderingType != ShaderPassRenderingType::OpaqueForward && renderingType != ShaderPassRenderingType::OpaqueDeferred)
+                    for (const auto& entry : entries)
                     {
-                        continue;
-                    }
+                        const auto& batch = entry.batch;
 
-                    // bind render state
-                    array_list<gfx::GFXDescriptorSetLayout_sp> descriptorSetLayouts;
+                        if (!batch.Material)
+                            continue;
+                        auto shader = batch.Material->GetShader();
+                        if (!shader || !shader->GetConfig())
+                            continue;
 
-                    for (auto& refData : targetFBO->RefData)
-                    {
-                        descriptorSetLayouts.push_back(refData.lock()->GetDescriptorSetLayout());
-                    }
-                    descriptorSetLayouts.push_back(world->GetWorldDescriptorSet()->GetDescriptorSetLayout());
-                    descriptorSetLayouts.push_back(world->GetLightManager()->GetDescriptorSetLayout());
-                    descriptorSetLayouts.push_back(batch.DescriptorSetLayout);
-                    if (batch.Material->GetGfxDescriptorSet()->GetDescriptorCount() != 0)
-                    {
-                        descriptorSetLayouts.push_back(batch.Material->GetGfxDescriptorSetLayout());
-                    }
+                        const auto& passBinding = batch.Material->GetPassBinding("Forward", batch.Interface);
+                        // 每帧提交参数（纹理、cbuffer），EnsureGPUResources 也在此触发
+                        batch.Material->SubmitParameters();
+                        auto program = passBinding.GetCurrentProgram();
+                        if (!program)
+                        {
+                            Logger::Log("DrawBatchList: program is null (shader still compiling?)", LogLevel::Warning);
+                            continue;
+                        }
 
-                    auto gfxPipeline = pipelineMgr->GetGraphicsPipeline(gpuPrograms, psoParams, descriptorSetLayouts, targetFBO->GetRenderTargetDesc(), batch.State);
-                    cmdBuffer.CmdBindGraphicsPipeline(gfxPipeline.get());
-                    cmdBuffer.CmdSetCullMode(batch.GetCullMode());
+                        auto& gpuPrograms = program->GetGpuPrograms();
+                        auto shaderConfig = shader->GetConfig();
 
-                    for (auto& element : batch.Elements)
-                    {
-                        // bind descriptor sets
+                        // 从 ShaderConfigPass 中获取 GraphicsPipeline 参数
+                        gfx::GFXGraphicsPipelineStateParams psoParams{};
+                        if (shaderConfig->Passes && shaderConfig->Passes->size() > 0)
+                        {
+                            auto& passConfig = (*shaderConfig->Passes)[0];
+                            if (passConfig->GraphicsPipeline)
+                            {
+                                auto& gp = passConfig->GraphicsPipeline;
+                                psoParams.CullMode = gp->CullMode;
+                                psoParams.DepthCompareOp = gp->ZTestOp;
+                                psoParams.DepthWriteEnable = gp->ZWriteEnabled;
+                                psoParams.DepthTestEnable = true;
+                                psoParams.StencilTestEnable = gp->Stencil_Enabled;
+                            }
+                        }
+
+                        // descriptor set layouts: set 0 (material), set 1 (pass), set 2 (renderer)
+                        array_list<gfx::GFXDescriptorSetLayout_sp> descriptorSetLayouts;
+
+                        auto matDescSetLayout = batch.Material->GetDescriptorSetLayout();
+                        if (!matDescSetLayout)
+                        {
+                            Logger::Log("DrawBatchList: matDescSetLayout is null, skipping. shader="
+                                + (batch.Material->GetShader() ? batch.Material->GetShader()->GetName() : string("null"))
+                                + " gpuInit=" + std::to_string(batch.Material->IsCreatedGPUResource()),
+                                LogLevel::Warning);
+                            continue;
+                        }
+                        descriptorSetLayouts.push_back(matDescSetLayout);
+                        descriptorSetLayouts.push_back(world->GetPerPassResources().GetDescriptorSetLayout());
+                        descriptorSetLayouts.push_back(batch.DescriptorSetLayout);
+
+                        auto gfxPipeline = pipelineMgr->GetGraphicsPipeline(
+                            gpuPrograms, psoParams, descriptorSetLayouts,
+                            targetFBO->GetRenderTargetDesc(), batch.State);
+                        cmdBuffer.CmdBindGraphicsPipeline(gfxPipeline.get());
+                        cmdBuffer.CmdSetCullMode(batch.GetCullMode());
+
+                        for (const auto& element : batch.Elements)
                         {
                             array_list<gfx::GFXDescriptorSet*> descriptorSets;
-                            // setup 0. per cam
-                            for (auto& refData : targetFBO->RefData)
-                            {
-                                descriptorSets.push_back(refData.lock().get());
-                            }
-                            // setup 1. world
-                            descriptorSets.push_back(world->GetWorldDescriptorSet().get());
-                            // setup 2. light data
-                            descriptorSets.push_back(world->GetLightManager()->GetDescriptorSet().get());
-                            // setup 3. per renderer
+                            descriptorSets.push_back(batch.Material->GetDescriptorSet().get());
+                            descriptorSets.push_back(world->GetPerPassResources().GetDescriptorSet().get());
                             descriptorSets.push_back(element.ModelDescriptor.get());
-                            // setup 4. per material
-                            const auto materialDesc = batch.Material->GetGfxDescriptorSet().get();
-
-                            if(materialDesc->GetDescriptorCount() != 0)
-                            {
-                                descriptorSets.push_back(materialDesc);
-                            }
                             cmdBuffer.CmdBindDescriptorSets(descriptorSets, gfxPipeline.get());
-                        }
 
-                        // bind vertex
-                        cmdBuffer.CmdBindVertexBuffers({element.Vertex.get()});
-                        if (batch.IsUsedIndices)
-                        {
-                            cmdBuffer.CmdBindIndexBuffer(element.Indices.get());
-                        }
-
-                        // draw
-                        if (batch.IsUsedIndices)
-                        {
-                            cmdBuffer.CmdDrawIndexed(element.Indices->GetElementCount());
-                        }
-                        else
-                        {
-                            cmdBuffer.CmdDraw(element.Vertex->GetElementCount());
+                            cmdBuffer.CmdBindVertexBuffers({element.Vertex.get()});
+                            if (batch.IsUsedIndices)
+                            {
+                                cmdBuffer.CmdBindIndexBuffer(element.Indices.get());
+                                cmdBuffer.CmdDrawIndexed(element.Indices->GetElementCount());
+                            }
+                            else
+                            {
+                                cmdBuffer.CmdDraw(element.Vertex->GetElementCount());
+                            }
                         }
                     }
+                };
 
-                } // end batches
+                // -------------------------------------------------------
+                // 按序绘制三组：Opaque → AlphaTest → Transparent
+                // -------------------------------------------------------
+                DrawBatchList(opaqueList);
+                DrawBatchList(alphaTestList);
+                DrawBatchList(transparentList);
 
                 cmdBuffer.CmdEndRenderPass();
                 cmdBuffer.SetFrameBuffer(nullptr);
@@ -195,13 +295,19 @@ namespace pulsar
                     cmdBuffer.CmdBeginRenderPass("PostProcessingPass-" + matName);
                     cmdBuffer.CmdSetViewport(0, 0, (float)targetFBO->GetWidth(), (float)targetFBO->GetHeight());
 
+                    // PP descriptor set layouts: set 0 (material), set 1 (pass), set 2 (src texture)
                     array_list<gfx::GFXDescriptorSetLayout_sp> descriptorSetLayouts;
-                    for (auto& refData : targetFBO->RefData)
-                    {
-                        descriptorSetLayouts.push_back(refData.lock()->GetDescriptorSetLayout());
-                    }
-                    descriptorSetLayouts.push_back(world->GetWorldDescriptorSet()->GetDescriptorSetLayout());
 
+                    // set 0: per-material (始终存在)
+                    auto ppMatDescSetLayout = ppMat->GetDescriptorSetLayout();
+                    if (!ppMatDescSetLayout)
+                        continue;
+                    descriptorSetLayouts.push_back(ppMatDescSetLayout);
+
+                    // set 1: per-pass (camera + world + light merged)
+                    descriptorSetLayouts.push_back(world->GetPerPassResources().GetDescriptorSetLayout());
+
+                    // set 2: src texture (as per-renderer slot)
                     struct InitPPDescLayout
                     {
                         InitPPDescLayout()
@@ -224,11 +330,34 @@ namespace pulsar
                     } _InitPPDescLayout{};
 
                     descriptorSetLayouts.push_back(_InitPPDescLayout.layout);
-                    descriptorSetLayouts.push_back(ppMat->GetGfxDescriptorSetLayout());
+
+                    // 获取 PP pass binding
+                    const auto& ppPassBinding = ppMat->GetPassBinding("PostProcess", "");
+                    auto ppProgram = ppPassBinding.GetCurrentProgram();
+                    if (!ppProgram)
+                        continue;
+
+                    auto& ppGpuPrograms = ppProgram->GetGpuPrograms();
+                    auto ppShaderConfig = ppMat->GetShader()->GetConfig();
+
+                    gfx::GFXGraphicsPipelineStateParams ppPsoParams{};
+                    if (ppShaderConfig && ppShaderConfig->Passes && ppShaderConfig->Passes->size() > 0)
+                    {
+                        auto& ppPassConfig = (*ppShaderConfig->Passes)[0];
+                        if (ppPassConfig->GraphicsPipeline)
+                        {
+                            auto& gp = ppPassConfig->GraphicsPipeline;
+                            ppPsoParams.CullMode = gp->CullMode;
+                            ppPsoParams.DepthCompareOp = gp->ZTestOp;
+                            ppPsoParams.DepthWriteEnable = gp->ZWriteEnabled;
+                            ppPsoParams.DepthTestEnable = true;
+                            ppPsoParams.StencilTestEnable = gp->Stencil_Enabled;
+                        }
+                    }
 
                     auto pso = pipelineMgr->GetGraphicsPipeline(
-                        ppMat->GetGpuPrograms(),
-                        ppMat->GetPSOParams(),
+                        ppGpuPrograms,
+                        ppPsoParams,
                         descriptorSetLayouts,
                         destRt->GetGfxFrameBufferObject()->GetRenderTargetDesc(), {});
 
@@ -236,21 +365,16 @@ namespace pulsar
 
                     {
                         array_list<gfx::GFXDescriptorSet*> descriptorSets;
-                        // setup cam
-                        for (auto& refData : targetFBO->RefData)
-                        {
-                            descriptorSets.push_back(refData.lock().get());
-                        }
-                        // setup world
-                        descriptorSets.push_back(world->GetWorldDescriptorSet().get());
-                        // setup model
+
+                        // set 0: per-material (始终存在)
+                        descriptorSets.push_back(ppMat->GetDescriptorSet().get());
+
+                        // set 1: per-pass (camera + world + light merged)
+                        descriptorSets.push_back(world->GetPerPassResources().GetDescriptorSet().get());
+
+                        // set 2: src texture
                         descriptorSets.push_back(srcResourceDescSet.get());
-                        // setup matinst
-                        const auto materialDesc = ppMat->GetGfxDescriptorSet().get();
-                        if(materialDesc->GetDescriptorCount() != 0)
-                        {
-                            descriptorSets.push_back(materialDesc);
-                        }
+
                         cmdBuffer.CmdBindDescriptorSets(descriptorSets, pso.get());
                     }
 
@@ -327,7 +451,7 @@ namespace pulsar
 
     void EngineAppInstance::OnTerminate()
     {
-
+        ShaderInstanceCache::Instance().Clear();
         World::Reset(nullptr);
     }
 
@@ -388,14 +512,6 @@ namespace pulsar
     {
         return nullptr;
     }
-
-    rendering::Pipeline* EngineAppInstance::GetPipeline()
-    {
-        return nullptr;
-    }
-
-
-
 
 
 }

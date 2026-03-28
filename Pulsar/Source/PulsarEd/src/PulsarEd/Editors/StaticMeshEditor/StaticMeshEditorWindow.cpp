@@ -10,7 +10,6 @@
 #include <PulsarEd/Menus/MenuEntrySubMenu.h>
 #include <PulsarEd/Menus/MenuRenderer.h>
 #include <PulsarEd/PropertyControls/PropertyControl.h>
-#include <PulsarEd/Shaders/EditorShader.h>
 
 namespace pulsared
 {

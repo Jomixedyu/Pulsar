@@ -2,6 +2,7 @@
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
 #include "EditorLogRecorder.h"
+#include <mutex>
 
 namespace pulsared
 {
@@ -51,9 +52,13 @@ namespace pulsared
         ImGui::PushStyleColor(ImGuiCol_MenuBarBg, { 0.08f, 0.08f, 0.08f, 1.f });
         if (BeginMainStatusBar())
         {
-            if (EditorLogRecorder::loglist.size() != 0)
             {
-                ImGui::Text(EditorLogRecorder::loglist[EditorLogRecorder::loglist.size() - 1].record_info.c_str());
+                std::lock_guard<std::mutex> lock(EditorLogRecorder::GetMutex());
+                auto& ll = EditorLogRecorder::GetLogList();
+                if (!ll.empty())
+                {
+                    ImGui::Text(ll[ll.size() - 1].record_info.c_str());
+                }
             }
             ImGui::EndMainMenuBar();
         }

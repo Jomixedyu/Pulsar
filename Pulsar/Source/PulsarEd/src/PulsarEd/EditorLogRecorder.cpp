@@ -26,10 +26,21 @@ namespace pulsared
         rec.stacktrace_info.append("\n\nstacktrace:\n");
         rec.stacktrace_info.append(std::move(st));
 
-        EditorLogRecorder::loglist.push_back(std::move(rec));
+        std::lock_guard<std::mutex> lock(EditorLogRecorder::GetMutex());
+        EditorLogRecorder::GetLogList().push_back(std::move(rec));
     }
 
-    array_list<EditorLogRecord> EditorLogRecorder::loglist;
+    array_list<EditorLogRecord>& EditorLogRecorder::GetLogList()
+    {
+        static array_list<EditorLogRecord> loglist;
+        return loglist;
+    }
+
+    std::mutex& EditorLogRecorder::GetMutex()
+    {
+        static std::mutex mtx;
+        return mtx;
+    }
 
     void EditorLogRecorder::Initialize()
     {
@@ -42,6 +53,7 @@ namespace pulsared
     }
     void EditorLogRecorder::Clear()
     {
-        loglist.clear();
+        std::lock_guard<std::mutex> lock(GetMutex());
+        GetLogList().clear();
     }
 }

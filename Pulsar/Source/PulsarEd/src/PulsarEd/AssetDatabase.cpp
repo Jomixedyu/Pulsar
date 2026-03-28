@@ -138,10 +138,7 @@ namespace pulsared
             auto objser = ser::CreateVarient("json");
             objser->AssignParse(fileJson);
 
-            auto fs = std::fstream{assetBinPath, std::ios::in | std::ios::out | std::ios::binary};
-
-            auto serializer = AssetSerializer{objser, fs, false, true};
-            serializer.ExistStream = fs.is_open();
+            auto serializer = AssetSerializer{objser, assetBinPath, false, true};
             assetObj->Serialize(&serializer);
         }
 
@@ -270,12 +267,9 @@ namespace pulsared
             auto assetBinPath = node->PhysicsPath;
             assetBinPath.replace_extension({".pba"});
 
-            auto fs = std::fstream{assetBinPath, std::ios::out | std::ios::trunc | std::ios::binary};
-
             const ser::VarientRef textAssetObject = ser::CreateVarient("json");
 
-            auto ser = AssetSerializer{textAssetObject, fs, true, true};
-            ser.ExistStream = true;
+            auto ser = AssetSerializer{textAssetObject, assetBinPath, true, true};
             asset->Serialize(&ser);
 
             FileUtil::WriteAllText(assetPhysicalPath, textAssetObject->ToString());

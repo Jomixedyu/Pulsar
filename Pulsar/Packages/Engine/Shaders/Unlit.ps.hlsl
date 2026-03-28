@@ -8,7 +8,7 @@ SamplerState _BaseColorMapSampler  : register(s0, USER_DESCSET);
 
 
 
-MaterialAttributes SurfacePixelMain(InPixelAssembly surf)
+MaterialAttributes SurfacePixelMain(StandardVaryings surf)
 {
     MaterialAttributes attr = (MaterialAttributes)0;
 

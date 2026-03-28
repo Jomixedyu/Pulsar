@@ -1,6 +1,7 @@
 #pragma once
 #include <PulsarEd/Assembly.h>
 #include <Pulsar/Logger.h>
+#include <mutex>
 
 namespace pulsared
 {
@@ -17,6 +18,8 @@ namespace pulsared
         static void Initialize();
         static void Terminate();
         static void Clear();
-        static array_list<EditorLogRecord> loglist;
+        // 调用前必须持有 GetMutex() 的锁
+        static array_list<EditorLogRecord>& GetLogList();
+        static std::mutex& GetMutex();
     };
 }

@@ -9,7 +9,6 @@
 #include <PulsarEd/Menus/MenuEntrySubMenu.h>
 #include <PulsarEd/Menus/MenuRenderer.h>
 #include <PulsarEd/PropertyControls/PropertyControl.h>
-#include <PulsarEd/Shaders/EditorShader.h>
 
 namespace pulsared
 {
@@ -34,8 +33,11 @@ namespace pulsared
         RCPtr<Texture> tex = cast<Texture>(m_assetObject);
         tex->CreateGPUResource();
 
-        m_ppMat = InstantiateAsset(GetAssetManager()->LoadAsset<Material>("Engine/Materials/ImagePreview"));
+        auto shader = GetAssetManager()->LoadAsset<Shader>("Engine/Shaders/PreviewImage");
+        m_ppMat = Material::StaticCreate(shader);
+
         m_ppMat->SetTexture("_Image", tex);
+
         int32_t flags{};
         flags |= FLAGS_GAMMA;
         flags |= FLAGS_CHANNEL_R | FLAGS_CHANNEL_G | FLAGS_CHANNEL_B | FLAGS_CHANNEL_A;

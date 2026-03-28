@@ -10,7 +10,6 @@
 
 #include <Pulsar/Assets/Shader.h>
 #include <Pulsar/Components/CameraComponent.h>
-#include <Pulsar/Rendering/RenderContext.h>
 #include <Pulsar/Scene.h>
 #include <PulsarEd/Assembly.h>
 #include <PulsarEd/Components/Grid3DComponent.h>

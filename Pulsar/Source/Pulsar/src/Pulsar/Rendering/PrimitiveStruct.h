@@ -16,12 +16,17 @@ namespace pulsar
     };
     constexpr inline int kSizeofStaticMeshVertex = sizeof(StaticMeshVertex);
 
-    struct PerModelShaderParameter
+    struct PerRendererData
     {
         Matrix4f LocalToWorldMatrix;
         Matrix4f WorldToLocalMatrix;
         Matrix4f NormalLocalToWorldMatrix;
         Vector4f NodePosition;
+        uint32_t ShaderFlags;
+        uint32_t _Padding0;
+        Vector2f _Padding1;
+        Vector4f _Padding2;
+        Vector4f _Padding3;
     };
 
     constexpr uint32_t kRenderingDescriptorSpace_ModelInfo = 2;

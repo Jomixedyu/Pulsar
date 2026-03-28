@@ -15,7 +15,7 @@ float2 SampleSphericalMap(float3 v)
     return uv;
 }
 
-MaterialAttributes SurfacePixelMain(InPixelAssembly surf)
+MaterialAttributes SurfacePixelMain(StandardVaryings surf)
 {
     MaterialAttributes attr = (MaterialAttributes)0;
     
