@@ -182,8 +182,10 @@ namespace pulsar
                 }
             }
 
+            cmd.CmdPushDebugInfo(pass.name);
             RGPassContext ctx(m_physicalRTs, m_handleToRTIndex, pass.perPassResources);
             pass.executeFunc(ctx, cmd);
+            cmd.CmdPopDebugInfo();
         }
 
         auto* pool = TransientRTPool::Get();
