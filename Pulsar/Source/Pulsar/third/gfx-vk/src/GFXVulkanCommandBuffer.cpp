@@ -372,12 +372,39 @@ namespace gfx
         CmdClearColor(rt, color[0], color[1], color[2], color[3]);
     }
 
-    void GFXVulkanCommandBuffer::CmdBeginRenderPass(std::string_view name)
+    static VkAttachmentLoadOp ToVkLoadOp(GFXRenderPassLoadOp op)
+    {
+        switch (op)
+        {
+        case GFXRenderPassLoadOp::Load:     return VK_ATTACHMENT_LOAD_OP_LOAD;
+        case GFXRenderPassLoadOp::Clear:    return VK_ATTACHMENT_LOAD_OP_CLEAR;
+        case GFXRenderPassLoadOp::DontCare: return VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        default:                            return VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        }
+    }
+
+    static VkAttachmentStoreOp ToVkStoreOp(GFXRenderPassStoreOp op)
+    {
+        switch (op)
+        {
+        case GFXRenderPassStoreOp::Store:    return VK_ATTACHMENT_STORE_OP_STORE;
+        case GFXRenderPassStoreOp::DontCare: return VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        default:                             return VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        }
+    }
+
+    void GFXVulkanCommandBuffer::CmdBeginRenderPass(std::string_view name,
+                                                    const GFXRenderPassBeginInfo& info)
     {
         CmdPushDebugInfo(!name.empty() ? name.data() : "UnknownPass", {});
 
         auto& renderTargets = m_fbo->GetRenderTargets();
         auto extent = m_fbo->GetVkExtent();
+
+        const VkAttachmentLoadOp  vkColorLoadOp  = ToVkLoadOp(info.colorLoadOp);
+        const VkAttachmentStoreOp vkColorStoreOp = ToVkStoreOp(info.colorStoreOp);
+        const VkAttachmentLoadOp  vkDepthLoadOp  = ToVkLoadOp(info.depthLoadOp);
+        const VkAttachmentStoreOp vkDepthStoreOp = ToVkStoreOp(info.depthStoreOp);
 
         array_list<VkRenderingAttachmentInfo> colorAttachments;
         VkRenderingAttachmentInfo depthAttachment{};
@@ -390,28 +417,37 @@ namespace gfx
 
             if (targetType == GFXTextureTargetType::ColorTarget)
             {
-                // Transition to COLOR_ATTACHMENT_OPTIMAL if needed
                 vkrt->GetVkTexture()->TransitionLayout(m_cmdBuffer, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
                 VkRenderingAttachmentInfo colorInfo{};
-                colorInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-                colorInfo.imageView = vkrt->GetVkImageView();
+                colorInfo.sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+                colorInfo.imageView   = vkrt->GetVkImageView();
                 colorInfo.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-                colorInfo.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-                colorInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+                colorInfo.loadOp      = vkColorLoadOp;
+                colorInfo.storeOp     = vkColorStoreOp;
+                if (info.colorLoadOp == GFXRenderPassLoadOp::Clear)
+                {
+                    colorInfo.clearValue.color = {{
+                        info.clearColor[0], info.clearColor[1],
+                        info.clearColor[2], info.clearColor[3]
+                    }};
+                }
                 colorAttachments.push_back(colorInfo);
             }
             else if (targetType == GFXTextureTargetType::DepthStencilTarget ||
                      targetType == GFXTextureTargetType::DepthTarget)
             {
-                // Transition to DEPTH_STENCIL_ATTACHMENT_OPTIMAL if needed
                 vkrt->GetVkTexture()->TransitionLayout(m_cmdBuffer, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
-                depthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-                depthAttachment.imageView = vkrt->GetVkImageView();
+                depthAttachment.sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+                depthAttachment.imageView   = vkrt->GetVkImageView();
                 depthAttachment.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-                depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-                depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+                depthAttachment.loadOp      = vkDepthLoadOp;
+                depthAttachment.storeOp     = vkDepthStoreOp;
+                if (info.depthLoadOp == GFXRenderPassLoadOp::Clear)
+                {
+                    depthAttachment.clearValue.depthStencil = {info.clearDepth, info.clearStencil};
+                }
                 hasDepth = true;
             }
         }
@@ -457,8 +493,6 @@ namespace gfx
                 vkrt->GetVkTexture()->TransitionLayout(m_cmdBuffer, finalLayout);
             }
         }
-
-        CmdPopDebugInfo();
     }
 
     GFXVulkanCommandBufferScope::GFXVulkanCommandBufferScope(GFXVulkanApplication* app)

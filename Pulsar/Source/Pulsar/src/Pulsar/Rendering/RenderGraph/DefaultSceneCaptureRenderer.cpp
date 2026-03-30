@@ -79,7 +79,14 @@ namespace pulsar
         RGTextureHandle hFinal = graph.ImportTexture("FinalOutput", camRenderTexture);
 
         graph.AddPass("BasePass")
-            .Write(hFinal)
+            .Write(hFinal, RGAttachmentDesc{
+                .colorLoadOp  = gfx::GFXRenderPassLoadOp::Clear,
+                .colorStoreOp = gfx::GFXRenderPassStoreOp::Store,
+                .clearColor   = {0.3f, 0.3f, 0.3f, 1.f},
+                .depthLoadOp  = gfx::GFXRenderPassLoadOp::Clear,
+                .depthStoreOp = gfx::GFXRenderPassStoreOp::DontCare,
+                .clearDepth   = 1.f,
+            })
             .WithPerPass(perPass)
             .Execute([cam, world, perPass](RGPassContext& ctx, gfx::GFXCommandBuffer& cmdBuffer)
             {
@@ -89,11 +96,6 @@ namespace pulsar
                 auto* pipelineMgr   = cmdBuffer.GetApplication()->GetGraphicsPipelineManager();
                 auto& renderObjects = world->GetRenderObjects();
 
-                cmdBuffer.SetFrameBuffer(targetFBO);
-                for (auto& renderTarget : targetFBO->GetRenderTargets())
-                    cmdBuffer.CmdClearColor(renderTarget->GetTexture());
-
-                cmdBuffer.CmdBeginRenderPass("BasePass");
                 cmdBuffer.CmdSetViewport(0, 0, (float)targetFBO->GetWidth(), (float)targetFBO->GetHeight());
 
                 struct BatchEntry
@@ -213,9 +215,6 @@ namespace pulsar
                 DrawBatchList(opaqueList);
                 DrawBatchList(alphaTestList);
                 DrawBatchList(transparentList);
-
-                cmdBuffer.CmdEndRenderPass();
-                cmdBuffer.SetFrameBuffer(nullptr);
             });
     }
 

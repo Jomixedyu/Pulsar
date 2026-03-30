@@ -36,7 +36,8 @@ namespace gfx
         virtual void CmdClearColor(GFXTexture* rt, float r, float g, float b, float a) override;
         virtual void CmdClearColor(GFXTexture* rt) override;
 
-        virtual void CmdBeginRenderPass(std::string_view name) override;
+        virtual void CmdBeginRenderPass(std::string_view name = "",
+                                        const gfx::GFXRenderPassBeginInfo& info = {}) override;
         virtual void CmdEndRenderPass() override;
         virtual void CmdSetViewport(float x, float y, float width, float height) override;
         virtual void CmdSetCullMode(GFXCullMode mode) override;

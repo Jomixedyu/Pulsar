@@ -3,6 +3,7 @@
 #include "GFXFrameBufferObject.h"
 #include "GFXGraphicsPipeline.h"
 #include "GFXInclude.h"
+#include "GFXRenderPass.h"
 #include "GFXTextureView.h"
 #include <memory>
 
@@ -40,7 +41,8 @@ namespace gfx
         virtual void CmdClearColor(GFXTexture* rt, float r, float g, float b, float a) = 0;
         virtual void CmdClearColor(GFXTexture* rt) = 0;
 
-        virtual void CmdBeginRenderPass(std::string_view name = "") = 0;
+        virtual void CmdBeginRenderPass(std::string_view name = "",
+                                        const GFXRenderPassBeginInfo& info = {}) = 0;
         virtual void CmdEndRenderPass() = 0;
         virtual void CmdSetViewport(float x, float y, float width, float height) = 0;
         virtual void CmdSetCullMode(GFXCullMode mode) = 0;

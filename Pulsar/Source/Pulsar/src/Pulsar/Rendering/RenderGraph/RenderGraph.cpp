@@ -68,11 +68,11 @@ namespace pulsar
         for (size_t pi = 0; pi < passCount; ++pi)
         {
             const auto& pass = m_passes[pi];
-            for (const auto& [h, usage] : pass.resources)
+            for (const auto& binding : pass.resources)
             {
-                if (usage == RGResourceUsage::Read)
+                if (binding.usage == RGResourceUsage::Read)
                 {
-                    int writer = latestWriterForResource[h.id];
+                    int writer = latestWriterForResource[binding.handle.id];
                     if (writer >= 0 && static_cast<size_t>(writer) != pi)
                     {
                         passEdges[writer].push_back(pi);
@@ -81,7 +81,7 @@ namespace pulsar
                 }
                 else
                 {
-                    latestWriterForResource[h.id] = static_cast<int>(pi);
+                    latestWriterForResource[binding.handle.id] = static_cast<int>(pi);
                 }
             }
         }
@@ -115,10 +115,10 @@ namespace pulsar
         for (size_t si = 0; si < m_sortedPassIndices.size(); ++si)
         {
             size_t pi = m_sortedPassIndices[si];
-            for (const auto& [h, usage] : m_passes[pi].resources)
+            for (const auto& binding : m_passes[pi].resources)
             {
-                if (firstUse[h.id] < 0) firstUse[h.id] = static_cast<int>(si);
-                lastUse[h.id] = static_cast<int>(si);
+                if (firstUse[binding.handle.id] < 0) firstUse[binding.handle.id] = static_cast<int>(si);
+                lastUse[binding.handle.id] = static_cast<int>(si);
             }
         }
 
@@ -161,15 +161,16 @@ namespace pulsar
             const auto& pass = m_passes[si];
             if (!pass.executeFunc) continue;
 
-            for (const auto& [h, usage] : pass.resources)
+            // --- barrier transitions ---
+            for (const auto& binding : pass.resources)
             {
-                auto it = m_handleToRTIndex.find(h.id);
+                auto it = m_handleToRTIndex.find(binding.handle.id);
                 if (it == m_handleToRTIndex.end()) continue;
 
                 auto* rt = m_physicalRTs[it->second].GetPtr();
                 if (!rt) continue;
 
-                const gfx::GFXResourceLayout barrierLayout = (usage == RGResourceUsage::Read)
+                const gfx::GFXResourceLayout barrierLayout = (binding.usage == RGResourceUsage::Read)
                     ? gfx::GFXResourceLayout::ShaderReadOnly
                     : gfx::GFXResourceLayout::RenderTarget;
 
@@ -182,10 +183,35 @@ namespace pulsar
                 }
             }
 
-            cmd.CmdPushDebugInfo(pass.name);
+            // --- find the first Write RT to bind as framebuffer ---
+            gfx::GFXFrameBufferObject* fbo      = nullptr;
+            const RGAttachmentDesc*    fboAttach = nullptr;
+            for (const auto& binding : pass.resources)
+            {
+                if (binding.usage != RGResourceUsage::Write) continue;
+                auto it = m_handleToRTIndex.find(binding.handle.id);
+                if (it == m_handleToRTIndex.end()) continue;
+                auto* rt = m_physicalRTs[it->second].GetPtr();
+                if (!rt) continue;
+                fbo       = rt->GetGfxFrameBufferObject().get();
+                fboAttach = &binding.attachment;
+                break;
+            }
+
+            if (fbo && fboAttach)
+            {
+                cmd.SetFrameBuffer(fbo);
+                cmd.CmdBeginRenderPass(pass.name, *fboAttach);
+            }
+
             RGPassContext ctx(m_physicalRTs, m_handleToRTIndex, pass.perPassResources);
             pass.executeFunc(ctx, cmd);
-            cmd.CmdPopDebugInfo();
+
+            if (fbo)
+            {
+                cmd.CmdEndRenderPass();
+                cmd.SetFrameBuffer(nullptr);
+            }
         }
 
         auto* pool = TransientRTPool::Get();

@@ -1,6 +1,7 @@
 #pragma once
 #include "TransientRTPool.h"
 #include <Pulsar/Assets/RenderTexture.h>
+#include <gfx/GFXRenderPass.h>
 #include <functional>
 #include <string>
 #include <vector>
@@ -55,12 +56,21 @@ namespace pulsar
         Write,
     };
 
+    using RGAttachmentDesc = gfx::GFXRenderPassBeginInfo;
+
+    struct RGResourceBinding
+    {
+        RGTextureHandle  handle;
+        RGResourceUsage  usage;
+        RGAttachmentDesc attachment; // only meaningful for Write
+    };
+
     struct RGPassDesc
     {
         std::string name;
-        std::vector<std::pair<RGTextureHandle, RGResourceUsage>> resources;
-        RGPassExecuteFunc executeFunc;
-        PerPassResources* perPassResources = nullptr;
+        std::vector<RGResourceBinding>  resources;
+        RGPassExecuteFunc               executeFunc;
+        PerPassResources*               perPassResources = nullptr;
     };
 
     enum class RGResourceKind : uint8_t { Transient, Persistent };
@@ -78,15 +88,15 @@ namespace pulsar
     public:
         explicit RGPassBuilder(RGPassDesc& pass) : m_pass(pass) {}
 
-        RGPassBuilder& Read(RGTextureHandle h)
+        RGPassBuilder& Read(RGTextureHandle h, RGAttachmentDesc desc = {})
         {
-            m_pass.resources.push_back({h, RGResourceUsage::Read});
+            m_pass.resources.push_back({h, RGResourceUsage::Read, desc});
             return *this;
         }
 
-        RGPassBuilder& Write(RGTextureHandle h)
+        RGPassBuilder& Write(RGTextureHandle h, RGAttachmentDesc desc = {})
         {
-            m_pass.resources.push_back({h, RGResourceUsage::Write});
+            m_pass.resources.push_back({h, RGResourceUsage::Write, desc});
             return *this;
         }
 
