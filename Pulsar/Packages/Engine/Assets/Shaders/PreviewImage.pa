@@ -7,7 +7,7 @@
         {
             "Name": "PostProcess",
             "Entry": {
-                "Vertex": "VSMain",
+                "Vertex": "BlitVSMain",
                 "Fragment": "PSMain"
             },
             "GraphicsPipeline": {

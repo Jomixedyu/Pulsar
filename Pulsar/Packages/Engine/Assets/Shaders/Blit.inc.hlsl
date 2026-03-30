@@ -1,4 +1,5 @@
-
+#ifndef _BLIT_INC_HLSL
+#define _BLIT_INC_HLSL
 
 
 struct Varyings
@@ -13,10 +14,12 @@ void TriangleFullScreen(uint vertexID, inout float2 uv, inout float4 pos)
 	pos = float4(uv.x * 2.0f - 1.0f, -(uv.y * 2.0f - 1.0f), 0.1f, 1.0f);
 }
 
-Varyings VSMain(uint vertexID : SV_VertexID)
+Varyings BlitVSMain(uint vertexID : SV_VertexID)
 {
     Varyings output;
     TriangleFullScreen(vertexID, output.TexCoord, output.Position);
 
     return output;
 }
+
+#endif

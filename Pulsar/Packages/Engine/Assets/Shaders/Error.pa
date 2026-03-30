@@ -3,7 +3,8 @@
 	"Interfaces": [
 		"RENDERER_STATICMESH",
 		"RENDERER_SKINNEDMESH",
-		"RENDERER_INSTANCING"
+		"RENDERER_INSTANCING",
+		"RENDERER_IMAGEPROCESS"
 	],
 	"Passes": [
 		{
@@ -12,6 +13,13 @@
 			"Entry": {
 				"Vertex": "VSMain",
 				"Fragment": "PSMain"
+			}
+		},
+		{
+			"Name": "PostProcess",
+			"Entry": {
+				"Vertex": "BlitVSMain",
+				"Fragment": "BlitPSMain"
 			}
 		}
 	]
