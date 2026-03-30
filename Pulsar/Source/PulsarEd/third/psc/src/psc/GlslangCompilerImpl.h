@@ -166,7 +166,7 @@ namespace psc
             glslang::EShClient client = GetShClient(info.platform);
 
             int ClientInputSemanticsVersion = 100;
-            glslang::EShTargetClientVersion ClientVersion = glslang::EShTargetVulkan_1_2;
+            glslang::EShTargetClientVersion ClientVersion = glslang::EShTargetVulkan_1_3;
 
 
             glslang::EShTargetLanguageVersion TargetVersion = glslang::EShTargetSpv_1_3;
@@ -176,11 +176,20 @@ namespace psc
             shader.setEnvTarget(glslang::EShTargetSpv, TargetVersion);
             shader.setEntryPoint(info.EntryName.c_str());
 
+            std::string preamble = "";
+            for (auto& item : info.PreDefines)
+            {
+                preamble.append("#define ");
+                preamble.append(item);
+                preamble.append(" 1 \n");
+            }
+            shader.setPreamble(preamble.c_str());
+
             TBuiltInResource resources{};
             resources = GetDefaultTBuiltInResource();
 
             EShMessages messages;
-            messages = (EShMessages)(EShMsgSpvRules | EShMsgVulkanRules);
+            messages = (EShMessages)(EShMsgSpvRules | EShMsgVulkanRules | EShMsgAbsolutePath | EShMsgDisplayErrorColumn);
 
             const int DefaultVersion = 100;
 
@@ -190,8 +199,9 @@ namespace psc
             {
                 includer.pushExternalLocalDirectory(path.string());
             }
-
+            //shader.setStrings()
             std::string PreprocessedGLSL;
+
 
             if (!shader.preprocess(&resources, DefaultVersion, ENoProfile, false, false, messages, &PreprocessedGLSL, includer))
             {
