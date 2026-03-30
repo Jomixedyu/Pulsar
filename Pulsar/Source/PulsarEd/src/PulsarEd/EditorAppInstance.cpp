@@ -10,7 +10,6 @@
 #include "Utils/PrefabUtil.h"
 
 #include <Pulsar/Rendering/ShaderInstanceCache.h>
-#include <psc/ShaderCompiler.h>
 
 #include <fstream>
 #include <CoreLib.Serialization/JsonSerializer.h>
@@ -361,68 +360,22 @@ namespace pulsared
         static EditorShaderCompileService s_shaderCompileService;
         pulsar::ShaderCompileServiceLocator::Register(&s_shaderCompileService);
 
-        // 同步编译 Pending/Error shader 并初始化 ShaderInstanceCache
+        // 注册 Pending/Error shader 编译任务；程序本身按需懒编译
         {
-            auto pendingProgram = std::make_shared<pulsar::ShaderProgramResource>();
-            auto errorProgram = std::make_shared<pulsar::ShaderProgramResource>();
-
-            auto CompileBuiltinShader = [&](const std::string& assetPath, std::shared_ptr<pulsar::ShaderProgramResource>& outProgram)
+            auto MakeBuiltinTask = [](const std::string& assetPath) -> pulsar::ShaderCompileTask
             {
-                auto hlslAssetPath = assetPath + ".hlsl";
-                auto hlslPhysicsPath = AssetDatabase::AssetPathToPhysicsPath(hlslAssetPath);
-                auto includeDir = hlslPhysicsPath.parent_path();
-
-                std::ifstream hlslFile(hlslPhysicsPath);
-                if (!hlslFile.is_open())
-                {
-                    Logger::Log("Failed to open builtin shader: " + hlslPhysicsPath.string(), pulsar::LogLevel::Error);
-                    return;
-                }
-                auto hlslSource = std::string(
-                    (std::istreambuf_iterator<char>(hlslFile.rdbuf())),
-                    std::istreambuf_iterator<char>());
-
-                auto pscApi = psc::ApiPlatformType::Vulkan;
-                auto pscCompiler = psc::CreateShaderCompiler(pscApi);
-                auto gfxApp = pulsar::Application::GetGfxApp();
-
-                // VS
-                {
-                    psc::CompileInfo info{};
-                    info.code = hlslSource.c_str();
-                    info.platform = pscApi;
-                    info.Stage = psc::FilePartialType::Vert;
-                    info.EntryName = "VSMain";
-                    info.IncludePaths = { includeDir };
-                    auto spirv = pscCompiler->CompileStage(info);
-                    auto vsProgram = gfxApp->CreateGpuProgram(
-                        gfx::GFXGpuProgramStageFlags::Vertex,
-                        reinterpret_cast<const uint8_t*>(spirv.data()), spirv.size());
-                    vsProgram->SetEntryName("VSMain");
-                    outProgram->m_gpuPrograms.push_back(vsProgram);
-                }
-                // PS
-                {
-                    psc::CompileInfo info{};
-                    info.code = hlslSource.c_str();
-                    info.platform = pscApi;
-                    info.Stage = psc::FilePartialType::Pixel;
-                    info.EntryName = "PSMain";
-                    info.IncludePaths = { includeDir };
-                    auto spirv = pscCompiler->CompileStage(info);
-                    auto psProgram = gfxApp->CreateGpuProgram(
-                        gfx::GFXGpuProgramStageFlags::Fragment,
-                        reinterpret_cast<const uint8_t*>(spirv.data()), spirv.size());
-                    psProgram->SetEntryName("PSMain");
-                    outProgram->m_gpuPrograms.push_back(psProgram);
-                }
+                pulsar::ShaderCompileTask task;
+                task.m_variantKey.m_shaderGuid = AssetDatabase::GetGuidByPath(assetPath);
+                task.m_entries.m_vertex   = "VSMain";
+                task.m_entries.m_fragment = "PSMain";
+                return task;
             };
 
-            CompileBuiltinShader("Engine/Shaders/Pending", pendingProgram);
-            CompileBuiltinShader("Engine/Shaders/Error", errorProgram);
+            pulsar::ShaderInstanceCache::Instance().Initialize(
+                MakeBuiltinTask("Engine/Shaders/Pending"),
+                MakeBuiltinTask("Engine/Shaders/Error"));
 
-            pulsar::ShaderInstanceCache::Instance().Initialize(pendingProgram, errorProgram);
-            Logger::Log("ShaderInstanceCache initialized with Pending/Error programs");
+            Logger::Log("ShaderInstanceCache initialized");
         }
 
         Logger::Log("precompile shaders...");

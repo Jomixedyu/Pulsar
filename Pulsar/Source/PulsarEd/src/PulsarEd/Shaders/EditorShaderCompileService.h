@@ -21,6 +21,7 @@ namespace pulsared
         ~EditorShaderCompileService();
 
         void RequestCompile(const pulsar::ShaderCompileTask& task) override;
+        pulsar::ShaderCompileResult CompileSync(const pulsar::ShaderCompileTask& task) override;
 
         // 处理已完成的编译结果回调（需要在主线程调用）
         void FlushCallbacks();
@@ -30,7 +31,7 @@ namespace pulsared
 
     private:
         void WorkerThread();
-        void ExecuteCompile(const pulsar::ShaderCompileTask& task);
+        pulsar::ShaderCompileResult ExecuteCompile(const pulsar::ShaderCompileTask& task);
 
         std::vector<std::string> BuildDefines(const pulsar::ShaderCompileTask& task) const;
 

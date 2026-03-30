@@ -36,7 +36,10 @@ namespace pulsar
     {
     public:
         virtual ~IShaderCompileService() = default;
+        // Async: enqueues task, calls task.m_callback on main thread via FlushCallbacks
         virtual void RequestCompile(const ShaderCompileTask& task) = 0;
+        // Sync: compiles on the calling thread, returns result immediately
+        virtual ShaderCompileResult CompileSync(const ShaderCompileTask& task) = 0;
     };
 
     class ShaderCompileServiceLocator

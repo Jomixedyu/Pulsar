@@ -101,7 +101,12 @@ namespace pulsared
                 m_pendingTasks.pop();
             }
 
-            ExecuteCompile(task);
+            auto result = ExecuteCompile(task);
+            // push callback to main thread queue
+            {
+                std::lock_guard lock(m_callbackMutex);
+                m_completedCallbacks.push_back({task.m_callback, std::move(result)});
+            }
         }
     }
 
@@ -238,6 +243,9 @@ namespace pulsared
         const std::string& stageSuffix,
         std::vector<char>& outSpirv) const
     {
+        // Disabled: always recompile (shader changes frequently)
+        return false;
+
         auto cachePath = GetCachePath(hash, stageSuffix);
         if (!std::filesystem::exists(cachePath))
             return false;
@@ -271,7 +279,7 @@ namespace pulsared
         }
     }
 
-    void EditorShaderCompileService::ExecuteCompile(const pulsar::ShaderCompileTask& task)
+    pulsar::ShaderCompileResult EditorShaderCompileService::ExecuteCompile(const pulsar::ShaderCompileTask& task)
     {
         pulsar::ShaderCompileResult result{};
 
@@ -391,10 +399,11 @@ namespace pulsared
                 pulsar::LogLevel::Error);
         }
 
-        // 将回调推入主线程队列
-        {
-            std::lock_guard lock(m_callbackMutex);
-            m_completedCallbacks.push_back({task.m_callback, result});
-        }
+        return result;
+    }
+
+    pulsar::ShaderCompileResult EditorShaderCompileService::CompileSync(const pulsar::ShaderCompileTask& task)
+    {
+        return ExecuteCompile(task);
     }
 }

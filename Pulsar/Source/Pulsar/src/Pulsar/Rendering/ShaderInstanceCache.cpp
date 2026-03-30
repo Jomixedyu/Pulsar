@@ -9,12 +9,53 @@ namespace pulsar
         return instance;
     }
 
-    void ShaderInstanceCache::Initialize(
-        std::shared_ptr<ShaderProgramResource> pendingProgram,
-        std::shared_ptr<ShaderProgramResource> errorProgram)
+    void ShaderInstanceCache::Initialize(ShaderCompileTask pendingTask, ShaderCompileTask errorTask)
     {
-        m_pendingProgram = std::move(pendingProgram);
-        m_errorProgram = std::move(errorProgram);
+        m_pendingTask = std::move(pendingTask);
+        m_errorTask   = std::move(errorTask);
+        // programs stay null — compiled lazily on first access
+    }
+
+    ShaderCompileTask ShaderInstanceCache::MakeBuiltinVariantTask(
+        const ShaderCompileTask& baseTask,
+        const std::string& interface_,
+        const std::vector<std::string>& features) const
+    {
+        ShaderCompileTask task  = baseTask;
+        task.m_variantKey.m_interface = interface_;
+        task.m_variantKey.m_features  = features;
+        // pass name is intentionally left empty for builtin shaders
+        return task;
+    }
+
+    std::shared_ptr<ShaderProgramResource> ShaderInstanceCache::EnsureBuiltinProgram_Locked(
+        const ShaderCompileTask& baseTask,
+        std::unordered_map<std::string, std::shared_ptr<ShaderProgramResource>>& cache,
+        const ShaderVariantKey& requestedKey)
+    {
+        // Pending/Error shaders only vary by interface (renderer variant); features are ignored
+        const std::string& interface_ = requestedKey.m_interface;
+
+        auto it = cache.find(interface_);
+        if (it != cache.end())
+            return it->second;
+
+        // Compile this interface-variant of the builtin shader synchronously (no features)
+        auto task = MakeBuiltinVariantTask(baseTask, interface_, {});
+        auto* svc = ShaderCompileServiceLocator::Get();
+        std::shared_ptr<ShaderProgramResource> program;
+        if (svc)
+        {
+            auto result = svc->CompileSync(task);
+            program = result.m_success ? result.m_program : std::make_shared<ShaderProgramResource>();
+        }
+        else
+        {
+            program = std::make_shared<ShaderProgramResource>();
+        }
+
+        cache[interface_] = program;
+        return program;
     }
 
     std::shared_ptr<ShaderInstance> ShaderInstanceCache::GetOrCreate(
@@ -29,32 +70,29 @@ namespace pulsar
             return it->second;
         }
 
-        auto instance = std::make_shared<ShaderInstance>(m_pendingProgram);
-        m_cache[key] = instance;
+        // Compile builtin programs for this specific interface+features variant
+        auto pendingProgram = EnsureBuiltinProgram_Locked(m_pendingTask, m_pendingByInterface, key);
+        auto errorProgram   = EnsureBuiltinProgram_Locked(m_errorTask,   m_errorByInterface,   key);
 
-        // TODO: 磁盘缓存查询逻辑
-        // 如果磁盘缓存命中，加载 SPIR-V 直接创建 Ready 实例
+        auto instance = std::make_shared<ShaderInstance>(pendingProgram);
+        m_cache[key] = instance;
 
         auto* compileService = ShaderCompileServiceLocator::Get();
         if (compileService)
         {
             ShaderCompileTask task = compileTask;
             std::weak_ptr<ShaderInstance> weakInstance = instance;
-            task.m_callback = [weakInstance, errorProgram = m_errorProgram](const ShaderCompileResult& result)
+            task.m_callback = [weakInstance, errorProgram](const ShaderCompileResult& result)
             {
                 auto inst = weakInstance.lock();
                 if (!inst) return;
 
                 if (result.m_success)
-                {
                     inst->ReplaceProgram(result.m_program, ShaderCompileState::Ready);
-                }
                 else
-                {
                     inst->ReplaceProgram(errorProgram, ShaderCompileState::Error);
-                }
             };
-            instance->ReplaceProgram(m_pendingProgram, ShaderCompileState::Compiling);
+            instance->ReplaceProgram(pendingProgram, ShaderCompileState::Compiling);
             compileService->RequestCompile(task);
         }
 
@@ -65,20 +103,8 @@ namespace pulsar
     {
         std::lock_guard lock(m_mutex);
         m_cache.clear();
-        m_pendingProgram.reset();
-        m_errorProgram.reset();
+        m_pendingByInterface.clear();
+        m_errorByInterface.clear();
     }
 
-    void ShaderInstanceCache::InvalidateByShader(const guid_t& shaderGuid)
-    {
-        std::lock_guard lock(m_mutex);
-
-        for (auto& [key, instance] : m_cache)
-        {
-            if (key.m_shaderGuid == shaderGuid)
-            {
-                // TODO: 需要重新构造 CompileTask 并提交
-            }
-        }
-    }
 }

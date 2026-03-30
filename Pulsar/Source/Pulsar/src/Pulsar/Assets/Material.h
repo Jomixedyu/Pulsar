@@ -117,7 +117,8 @@ namespace pulsar
         gfx::GFXBuffer_sp                    m_materialConstantBuffer;
 
         bool m_createdGpuResource = false;
-        bool m_gpuResourcesInitialized = false; // true after first ShaderInstance Ready
+        bool m_gpuResourcesInitialized = false;
+        std::weak_ptr<ShaderProgramResource> m_builtWithProgram; // tracks which program GPU resources were built from
         bool m_isDirtyParameter{};
     };
 

@@ -307,6 +307,25 @@ namespace pulsar
     {
         if (!IsCreatedGPUResource())
             return;
+
+        // Detect shader program change (e.g. async compilation finished), rebuild GPU resources if needed
+        for (const auto& [key, binding] : m_passBindings)
+        {
+            auto program = binding.GetCurrentProgram();
+            if (!program) continue;
+            if (program != m_builtWithProgram.lock())
+            {
+                m_descriptorSet.reset();
+                m_descriptorSetLayout.reset();
+                m_materialConstantBuffer.reset();
+                m_gpuResourcesInitialized = false;
+                EnsureGPUResources(program->m_layout);
+                m_builtWithProgram = program;
+                m_isDirtyParameter = true; // force re-upload parameters with new layout
+            }
+            break; // all passes share the same GPU resources, only check the first
+        }
+
         if (!m_gpuResourcesInitialized)
             return;
 
@@ -345,19 +364,7 @@ namespace pulsar
         PassKey key{passName, interface_};
         auto it = m_passBindings.find(key);
         if (it != m_passBindings.end())
-        {
-            // 检查是否 Ready/Error 且还没初始化 GPU 资源
-            if (!m_gpuResourcesInitialized)
-            {
-                auto program = it->second.GetCurrentProgram();
-                auto state = it->second.m_instance ? it->second.m_instance->GetState() : ShaderCompileState::Pending;
-                if (program && (state == ShaderCompileState::Ready || state == ShaderCompileState::Error))
-                {
-                    EnsureGPUResources(program->m_layout);
-                }
-            }
             return it->second;
-        }
 
         // 懒创建: 从 ShaderInstanceCache 获取
         if (!m_shader)
@@ -417,18 +424,6 @@ namespace pulsar
         binding.m_instance = instance;
         auto [insertIt, _] = m_passBindings.emplace(key, std::move(binding));
 
-        // 如果已经 Ready 或 Error，立刻初始化 GPU 资源
-        auto state = instance->GetState();
-        if (!m_gpuResourcesInitialized &&
-            (state == ShaderCompileState::Ready || state == ShaderCompileState::Error))
-        {
-            auto program = instance->GetCurrentProgram();
-            if (program)
-            {
-                EnsureGPUResources(program->m_layout);
-            }
-        }
-
         return insertIt->second;
     }
 
@@ -484,7 +479,6 @@ namespace pulsar
         }
 
         m_gpuResourcesInitialized = true;
-        SubmitParameters(true);
     }
 
     void Material::ClearPassBindings()
