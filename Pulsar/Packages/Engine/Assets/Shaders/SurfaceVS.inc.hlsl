@@ -7,7 +7,7 @@
 void SurfaceVertexMain(inout StandardVaryings v2f);
 
 
-StandardVaryings mainStandardAttributes a2v)
+StandardVaryings main(StandardAttributes a2v)
 {
     StandardVaryings v2f = (StandardVaryings) 0;
     v2f.WorldNormal = TransformObjectNormalToWorld(a2v.Normal);

@@ -46,11 +46,6 @@ struct StandardVaryings
     float2 TexCoord3 : TEXCOORD3;
 };
 
-struct OutPixelAssembly
-{
-    float4 Color : SV_TARGET;
-};
-
 // Descriptor Set Layout:
 //   set 0 (space0) = per-Material  (user params, auto-assigned by compiler)
 //   set 1 (space1) = per-Pass      (camera, world, lights)

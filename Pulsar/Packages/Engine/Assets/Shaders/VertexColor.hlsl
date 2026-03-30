@@ -3,10 +3,8 @@
 #include "DefaultVSImpl.inc.hlsl"
 
 
-OutPixelAssembly PSMain(StandardVaryings v2f)
+
+float4 PSMain(StandardVaryings v2f) : SV_Target
 {
-    OutPixelAssembly p2o;
-    p2o.Color = v2f.Color;
-    
-    return p2o;
+    return v2f.Color;
 }
