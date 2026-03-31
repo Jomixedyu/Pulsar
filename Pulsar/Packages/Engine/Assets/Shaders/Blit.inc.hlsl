@@ -2,24 +2,16 @@
 #define _BLIT_INC_HLSL
 
 
-struct Varyings
-{
-    float4 Position : SV_POSITION;
-    float2 TexCoord : TEXCOORD0;
-};
 
-void TriangleFullScreen(uint vertexID, inout float2 uv, inout float4 pos)
+void TriangleFullScreen(uint vertexID, out float2 uv, out float4 pos)
 {
 	uv = float2(vertexID & 2, (vertexID << 1) & 2);
 	pos = float4(uv.x * 2.0f - 1.0f, -(uv.y * 2.0f - 1.0f), 0.1f, 1.0f);
 }
 
-Varyings BlitVSMain(uint vertexID : SV_VertexID)
+void BlitVSMain(uint vertexID : SV_VertexID, out float4 position : SV_Position, out float2 texcoord : TEXCOORD0)
 {
-    Varyings output;
-    TriangleFullScreen(vertexID, output.TexCoord, output.Position);
-
-    return output;
+    TriangleFullScreen(vertexID, texcoord, position);
 }
 
 #endif

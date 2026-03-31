@@ -297,6 +297,17 @@ namespace pulsared
 
             auto program = std::make_shared<pulsar::ShaderProgramResource>();
             program->m_key = task.m_variantKey;
+            // 拼一个可读名字，方便断点调试时识别是哪个 shader variant
+            {
+                std::string name = hlslAssetPath;
+                if (!task.m_variantKey.m_passName.empty())
+                    name += " [" + task.m_variantKey.m_passName;
+                if (!task.m_variantKey.m_interface.empty())
+                    name += "|" + task.m_variantKey.m_interface;
+                if (!task.m_variantKey.m_passName.empty())
+                    name += "]";
+                program->m_shaderName = std::move(name);
+            }
 
             // 从 guid 解析 HLSL 物理路径
             auto hlslPhysicsPath = AssetDatabase::AssetPathToPhysicsPath(hlslAssetPath);

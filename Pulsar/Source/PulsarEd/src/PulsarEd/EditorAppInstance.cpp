@@ -40,6 +40,7 @@
 #include <utility>
 
 #include <CoreLib.Serialization/DataSerializer.h>
+#include <Pulsar/Assets/Shader.h>
 #include <Pulsar/Assets/StaticMesh.h>
 #include <Pulsar/Assets/Texture2D.h>
 
@@ -360,20 +361,16 @@ namespace pulsared
         static EditorShaderCompileService s_shaderCompileService;
         pulsar::ShaderCompileServiceLocator::Register(&s_shaderCompileService);
 
-        // 注册 Pending/Error shader 编译任务；程序本身按需懒编译
+        // 注册 Pending/Error shader 资产；入口名在运行时从 ShaderConfig 按 passName 查找
         {
-            auto MakeBuiltinTask = [](const std::string& assetPath) -> pulsar::ShaderCompileTask
+            auto LoadBuiltinShader = [](const std::string& assetPath) -> RCPtr<pulsar::Shader>
             {
-                pulsar::ShaderCompileTask task;
-                task.m_variantKey.m_shaderGuid = AssetDatabase::GetGuidByPath(assetPath);
-                task.m_entries.m_vertex   = "VSMain";
-                task.m_entries.m_fragment = "PSMain";
-                return task;
+                return cast<pulsar::Shader>(AssetDatabase::LoadAssetAtPath(assetPath));
             };
 
             pulsar::ShaderInstanceCache::Instance().Initialize(
-                MakeBuiltinTask("Engine/Shaders/Pending"),
-                MakeBuiltinTask("Engine/Shaders/Error"));
+                LoadBuiltinShader("Engine/Shaders/Pending"),
+                LoadBuiltinShader("Engine/Shaders/Error"));
 
             Logger::Log("ShaderInstanceCache initialized");
         }

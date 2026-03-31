@@ -22,7 +22,7 @@ float4 PSMain(StandardVaryings v2f) : SV_Target
 
 #include "PostProcessing.inc.hlsl"
 
-float4 BlitPSMain(Varyings v) : SV_Target
+float4 BlitPSMain() : SV_Target
 {
     return float4(0, 1, 1, 1);
 }

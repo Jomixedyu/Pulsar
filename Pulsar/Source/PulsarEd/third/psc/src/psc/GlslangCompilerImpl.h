@@ -175,6 +175,10 @@ namespace psc
             shader.setEnvClient(client, ClientVersion);
             shader.setEnvTarget(glslang::EShTargetSpv, TargetVersion);
             shader.setEntryPoint(info.EntryName.c_str());
+            // Automatically assign unique bindings to resources that don't have explicit register() declarations.
+            // This prevents duplicate binding=0 when multiple textures/buffers are declared without register hints.
+            shader.setAutoMapBindings(true);
+            shader.setAutoMapLocations(true);
 
             std::string preamble = "";
             for (auto& item : info.PreDefines)
@@ -237,16 +241,20 @@ namespace psc
 
             if (!Program.link(messages))
             {
-                std::cout << shader.getInfoLog() << std::endl;
-                std::cout << shader.getInfoDebugLog() << std::endl;
-                throw std::runtime_error("Linking Failed");
+                std::string info = "Linking Failed: ";
+                info += shader.getInfoLog();
+                info += "  debug: ";
+                info += shader.getInfoDebugLog();
+                throw std::runtime_error(info);
             }
 
             if (!Program.mapIO())
             {
-                std::cout << shader.getInfoLog() << std::endl;
-                std::cout << shader.getInfoDebugLog() << std::endl;
-                throw std::runtime_error("Linking (Mapping IO) Failed");
+                std::string info = "Linking (Mapping IO) Failed: ";
+                info += shader.getInfoLog();
+                info += "  debug: ";
+                info += shader.getInfoDebugLog();
+                throw std::runtime_error(info);
             }
 
             std::vector<unsigned int> SpirV;

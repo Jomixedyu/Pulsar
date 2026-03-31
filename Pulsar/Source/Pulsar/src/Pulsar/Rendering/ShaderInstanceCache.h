@@ -1,6 +1,7 @@
 #pragma once
 #include <Pulsar/Rendering/ShaderInstance.h>
 #include <Pulsar/Rendering/IShaderCompileService.h>
+#include <Pulsar/Assets/Shader.h>
 
 #include <memory>
 #include <mutex>
@@ -8,15 +9,14 @@
 
 namespace pulsar
 {
-    class Shader;
 
     class ShaderInstanceCache
     {
     public:
         static ShaderInstanceCache& Instance();
 
-        // Store compile tasks for builtin shaders; programs are compiled lazily on first access
-        void Initialize(ShaderCompileTask pendingTask, ShaderCompileTask errorTask);
+        // Store builtin shader assets; entry names are resolved at compile time from ShaderConfig
+        void Initialize(RCPtr<Shader> pendingShader, RCPtr<Shader> errorShader);
 
         // Async: returns immediately with Compiling instance, result delivered via FlushCallbacks
         std::shared_ptr<ShaderInstance> GetOrCreate(
@@ -28,23 +28,22 @@ namespace pulsar
     private:
         ShaderInstanceCache() = default;
 
-        // Build a builtin (pending/error) compile task for a specific interface+features variant
+        // Build a compile task for a builtin shader, resolving entry names from ShaderConfig by passName+interface
         ShaderCompileTask MakeBuiltinVariantTask(
-            const ShaderCompileTask& baseTask,
-            const std::string& interface_,
-            const std::vector<std::string>& features) const;
+            const RCPtr<Shader>& shader,
+            const ShaderVariantKey& requestedKey) const;
 
-        // Compile and cache a builtin program per interface (renderer variant) only — features ignored (mutex must be held)
+        // Compile and cache a builtin program per variant key (mutex must be held)
         std::shared_ptr<ShaderProgramResource> EnsureBuiltinProgram_Locked(
-            const ShaderCompileTask& baseTask,
+            const RCPtr<Shader>& shader,
             std::unordered_map<std::string, std::shared_ptr<ShaderProgramResource>>& cache,
             const ShaderVariantKey& requestedKey);
 
         mutable std::mutex m_mutex;
         std::unordered_map<ShaderVariantKey, std::shared_ptr<ShaderInstance>, ShaderVariantKeyHash> m_cache;
 
-        ShaderCompileTask m_pendingTask; // template task for Pending shader (no variant)
-        ShaderCompileTask m_errorTask;   // template task for Error shader (no variant)
+        RCPtr<Shader> m_pendingShader;
+        RCPtr<Shader> m_errorShader;
 
         // Pending/Error programs cached per interface (renderer variant) only — features are irrelevant for builtins
         std::unordered_map<std::string, std::shared_ptr<ShaderProgramResource>> m_pendingByInterface;

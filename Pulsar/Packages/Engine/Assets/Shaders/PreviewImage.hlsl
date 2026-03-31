@@ -14,6 +14,9 @@ int    _Flags;
 Texture2D    _Image        ;
 SamplerState Sampler__Image ;
 
+Texture2D    _Image2        ;
+SamplerState Sampler__Image2 ;
+
 #define FLAGS_GAMMA                   0x01
 #define FLAGS_EnableCheckerBackground 0x02
 #define FLAGS_CHANNEL_R               0x04
@@ -25,12 +28,12 @@ SamplerState Sampler__Image ;
 
 
 
-float4 PSMain(Varyings v) : SV_TARGET
+float4 PSMain(float4 position : SV_Position, float2 texcoord) : SV_TARGET
 {
     float4 output = float4(0,0,0,1);
     if (_Flags & FLAGS_NORMALMAP) output.b = 1;
 
-    float4 imgColor = _Image.Sample(Sampler__Image, v.TexCoord);
+    float4 imgColor = _Image.Sample(Sampler__Image, texcoord);
 
     if (_Flags & FLAGS_CHANNEL_R) output.x = imgColor.x;
     if (_Flags & FLAGS_CHANNEL_G) output.y = imgColor.y;
@@ -46,7 +49,7 @@ float4 PSMain(Varyings v) : SV_TARGET
 
     if (_Flags & FLAGS_EnableCheckerBackground)
     {
-        float2 channels = saturate(fmod(floor(v.Position.xy / _GridSize), 2));
+        float2 channels = saturate(fmod(floor(position.xy / _GridSize), 2));
         float crossArea = 1-saturate(channels.x + channels.y);
         float blackArea = channels.x * channels.y;
         float4 checker = lerp(_CheckerColorA, _CheckerColorB, crossArea + blackArea);
