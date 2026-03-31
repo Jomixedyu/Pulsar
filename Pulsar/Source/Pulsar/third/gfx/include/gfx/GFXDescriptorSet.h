@@ -31,7 +31,7 @@ namespace gfx
             GFXGpuProgramStageFlags stage,
             uint32_t bindingPoint = 0,
             uint32_t spacePoint = 0)
-            : Type(type), Stage(stage), BindingPoint(bindingPoint)
+            : BindingPoint(bindingPoint), Type(type), Stage(stage)   // fix: match field declaration order
         {
         }
     };

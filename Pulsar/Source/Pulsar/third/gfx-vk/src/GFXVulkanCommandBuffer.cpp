@@ -396,8 +396,6 @@ namespace gfx
     void GFXVulkanCommandBuffer::CmdBeginRenderPass(std::string_view name,
                                                     const GFXRenderPassBeginInfo& info)
     {
-        CmdPushDebugInfo(!name.empty() ? name.data() : "UnknownPass", {});
-
         auto& renderTargets = m_fbo->GetRenderTargets();
         auto extent = m_fbo->GetVkExtent();
 

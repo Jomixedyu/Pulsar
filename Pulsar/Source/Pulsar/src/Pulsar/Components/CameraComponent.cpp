@@ -71,45 +71,18 @@ namespace pulsar
 
         array_list<RenderTargetInfo> formats;
 
-        if (m_renderingPath == RenderingPathMode::Deferred)
-        {
-            // GBUFFER_0: Albedo(rgb), genericAO(a)
-            formats.push_back({ gfx::GFXTextureTargetType::ColorTarget, gfx::GFXTextureFormat::R8G8B8A8_UNorm});
-            // GBUFFER_1: WorldNormal(rgb), ShadingModel(a)
-            formats.push_back({ gfx::GFXTextureTargetType::ColorTarget, gfx::GFXTextureFormat::R8G8B8A8_UNorm});
-            // GBUFFER_2: M/R(rg), Specular(b), _(a)
-            formats.push_back({ gfx::GFXTextureTargetType::ColorTarget, gfx::GFXTextureFormat::R8G8B8A8_UNorm});
-            // GBUFFER_3: WorldTangent(rgb), Aniso(a)
-            formats.push_back({ gfx::GFXTextureTargetType::ColorTarget, gfx::GFXTextureFormat::R8G8B8A8_UNorm});
-            // GBUFFER_4: ShadowColor(rgb), NdotL(a)
-            formats.push_back({ gfx::GFXTextureTargetType::ColorTarget, gfx::GFXTextureFormat::R8G8B8A8_UNorm});
-        }
-        else if (m_renderingPath == RenderingPathMode::Forward)
-        {
-            formats.push_back({ gfx::GFXTextureTargetType::ColorTarget, gfx::GFXTextureFormat::R16G16B16A16_SFloat});
-        }
-        else
-        {
-            assert((false, "not impl"));
-        }
+        formats.push_back({ gfx::GFXTextureTargetType::ColorTarget, gfx::GFXTextureFormat::R8G8B8A8_UNorm});
+
         formats.push_back({
             .TargetType = gfx::GFXTextureTargetType::DepthStencilTarget, .Format = gfx::GFXTextureFormat::D32_SFloat_S8_UInt});
 
         m_renderTarget = RenderTexture::StaticCreate(index_string{rtname}, width, height, formats);
 
 
-        // Task 7.2: PostProcess ping-pong RTs are now transient (pool-managed via RenderGraph).
-        // Task 7.5: m_sceneColor was unused; removed.
-
         UpdateRT();
         BeginRT();
 
-
     }
-
-
-
-
 
 
     void CameraComponent::UpdateRT()

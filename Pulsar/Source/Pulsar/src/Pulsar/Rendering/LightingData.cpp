@@ -1,7 +1,5 @@
 #include "Rendering/LightingData.h"
 
-#include "Application.h"
-
 namespace pulsar
 {
 
@@ -9,38 +7,9 @@ namespace pulsar
     {
         m_lightShaderParameters.reserve(m_bufferLength);
         m_pendingBuffer.reserve(m_bufferLength);
-
-        auto bufferSize = sizeof(LightShaderParameter) * m_bufferLength;
-
-        gfx::GFXBufferDesc lightBufferDesc{};
-        lightBufferDesc.Usage       = gfx::GFXBufferUsage::StructuredBuffer;
-        lightBufferDesc.StorageType = gfx::GFXBufferMemoryPosition::VisibleOnDevice;
-        lightBufferDesc.BufferSize  = bufferSize;
-        lightBufferDesc.ElementSize = sizeof(LightShaderParameter);
-
-        m_buffer = Application::GetGfxApp()->CreateBuffer(lightBufferDesc);
-
-        array_list<gfx::GFXDescriptorSetLayoutDesc> layoutInfo;
-        {
-            gfx::GFXDescriptorSetLayoutDesc info;
-            info.Type = gfx::GFXDescriptorType::StructuredBuffer;
-            info.Stage = gfx::GFXGpuProgramStageFlags::VertexFragment;
-            info.BindingPoint = 0;
-
-            layoutInfo.push_back(info);
-        }
-
-        m_descriptorSetLayout = Application::GetGfxApp()->CreateDescriptorSetLayout(layoutInfo.data(), layoutInfo.size());
-        m_descriptorSet = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_descriptorSetLayout);
-
-        m_descriptorSet->AddDescriptor("light", 0)->SetStructuredBuffer(m_buffer.get());
-        m_descriptorSet->Submit();
     }
     LightManager::~LightManager()
     {
-        m_buffer.reset();
-        m_descriptorSetLayout.reset();
-        m_descriptorSet.reset();
     }
 
     void LightManager::AddLight(LightShaderParameter* lightShaderParameter)
@@ -93,39 +62,16 @@ namespace pulsar
 
     void LightManager::Update()
     {
-        if (m_dirtyList.empty())
-        {
-            return;
-        }
-        if (m_bufferLength < GetLightCount())
-        {
-            m_bufferLength = size_t(m_bufferLength * 1.5);
-
-            auto bufferSize = sizeof(LightShaderParameter) * m_bufferLength;
-
-            gfx::GFXBufferDesc lightBufferDesc{};
-            lightBufferDesc.Usage       = gfx::GFXBufferUsage::StructuredBuffer;
-            lightBufferDesc.StorageType = gfx::GFXBufferMemoryPosition::VisibleOnDevice;
-            lightBufferDesc.BufferSize  = bufferSize;
-
-            m_buffer = Application::GetGfxApp()->CreateBuffer(lightBufferDesc);
-
-            m_descriptorSet->FindByBinding(0)->SetStructuredBuffer(m_buffer.get());
-            m_descriptorSet->Submit();
-        }
-
         while (!m_dirtyList.empty())
         {
             auto id = m_dirtyList.front();
             m_dirtyList.pop();
-            if (id >= m_pendingBuffer.size())
+            if (id >= (int)m_pendingBuffer.size())
             {
                 continue; // removed
             }
-
             m_pendingBuffer[id] = *m_lightShaderParameters[id];
         }
-        m_buffer->Fill(m_pendingBuffer.data());
     }
     int LightManager::GetLightCount() const
     {

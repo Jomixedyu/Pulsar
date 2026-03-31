@@ -71,11 +71,15 @@ namespace gfx
             m_debugInfo.push_back(layoutInfo);
 
             VkDescriptorSetLayoutBinding& binding = bindings.emplace_back();
-            binding.binding = layoutInfo.BindingPoint;
-            binding.descriptorType = _GetDescriptorType(layoutInfo.Type);
+            binding.binding         = layoutInfo.BindingPoint;
+            binding.descriptorType  = _GetDescriptorType(layoutInfo.Type);
             binding.descriptorCount = 1;
-            binding.stageFlags = _GetShaderStage(layoutInfo.Stage);
+            binding.stageFlags      = _GetShaderStage(layoutInfo.Stage);
             binding.pImmutableSamplers = nullptr;
+
+            // Sanity-check: log if a CombinedImageSampler layout ends up mapped to UNIFORM_BUFFER
+            assert(!(layoutInfo.Type == GFXDescriptorType::CombinedImageSampler &&
+                     binding.descriptorType != VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER));
         }
         VkDescriptorSetLayoutCreateInfo layoutCreateInfo{};
         layoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;

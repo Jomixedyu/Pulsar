@@ -158,11 +158,19 @@ namespace gfx
 
 
 
-        if (newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+        const VkFormat fmt = tex->GetVkImageFormat();
+        const bool isDepthFormat =
+            fmt == VK_FORMAT_D16_UNORM ||
+            fmt == VK_FORMAT_X8_D24_UNORM_PACK32 ||
+            fmt == VK_FORMAT_D32_SFLOAT ||
+            fmt == VK_FORMAT_D16_UNORM_S8_UINT ||
+            fmt == VK_FORMAT_D24_UNORM_S8_UINT ||
+            fmt == VK_FORMAT_D32_SFLOAT_S8_UINT;
+
+        if (isDepthFormat)
         {
             barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-
-            if (_HasStencilComponent(tex->GetVkImageFormat()))
+            if (_HasStencilComponent(fmt))
             {
                 barrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
             }

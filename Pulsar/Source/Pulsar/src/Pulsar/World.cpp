@@ -12,17 +12,6 @@
 
 namespace pulsar
 {
-    struct RenderingSceneConstantBuffer
-    {
-        Vector4f WorldSpaceLightVector;
-        Vector4f WorldSpaceLightColor; // w is intensity
-        Vector4f SkyLightColor; // w is intensity
-        float TotalTime;
-        float DeltaTime;
-        uint32_t LightParameterCount;
-        float _Padding0;
-    };
-
     static std::unique_ptr<World> _world_inst = nullptr;
     World* World::Current()
     {
@@ -128,7 +117,7 @@ namespace pulsar
         m_ticker += dt;
         m_totalTime += dt;
 
-        UpdateWorldCBuffer();
+        m_lightManager->Update();
 
         m_gizmosManager.Draw();
 
@@ -253,44 +242,6 @@ namespace pulsar
     void World::OnUnloadingResidentScene(RCPtr<Scene> scene)
     {
     }
-    void World::UpdateWorldCBuffer()
-    {
-        GetLightManager()->Update();
-
-        RenderingSceneConstantBuffer buffer{};
-        buffer.DeltaTime = m_ticker.deltatime;
-        buffer.TotalTime = m_totalTime;
-        buffer.LightParameterCount = GetLightManager()->GetLightCount();
-
-        auto& sceneEnv = m_focusScene->GetRuntimeEnvironment();
-
-        if (const auto dirLight = sceneEnv.GetDirectionalLight())
-        {
-            buffer.WorldSpaceLightVector = dirLight->Vector;
-            auto c = dirLight->Color;
-            buffer.WorldSpaceLightColor = {c.r, c.g, c.b, c.a};
-            buffer.WorldSpaceLightColor.w = dirLight->Intensity;
-        }
-
-        {
-            auto skyLight = sceneEnv.GetSkyLight();
-            buffer.SkyLightColor = {skyLight.Color.r, skyLight.Color.g, skyLight.Color.b, 1};
-            buffer.SkyLightColor.w = skyLight.Intensity;
-        }
-
-        m_worldDescriptorBuffer->Fill(&buffer);
-
-        // 同步到合并的 PerPass descriptor set
-        PerPassWorldData perPassWorld{};
-        perPassWorld.WorldSpaceLightVector = buffer.WorldSpaceLightVector;
-        perPassWorld.WorldSpaceLightColor = buffer.WorldSpaceLightColor;
-        perPassWorld.SkyLightColor = buffer.SkyLightColor;
-        perPassWorld.TotalTime = buffer.TotalTime;
-        perPassWorld.DeltaTime = buffer.DeltaTime;
-        perPassWorld.LightParameterCount = buffer.LightParameterCount;
-        m_perPassResources.UpdateWorld(perPassWorld);
-    }
-
     void World::AddRenderObject(const rendering::RenderObject_sp& renderObject)
     {
         renderObject->OnCreateResource();
@@ -314,31 +265,6 @@ namespace pulsar
 
         InitializeResidentScene();
         m_focusScene = GetResidentScene();
-
-        {
-            gfx::GFXDescriptorSetLayoutDesc info{
-                gfx::GFXDescriptorType::ConstantBuffer,
-                gfx::GFXGpuProgramStageFlags::VertexFragment,
-                0, kRenderingDescriptorSpace_World};
-
-            m_worldDescriptorLayout = Application::GetGfxApp()->CreateDescriptorSetLayout(&info, 1);
-        }
-
-        {
-            gfx::GFXBufferDesc bufferDesc{};
-            bufferDesc.Usage = gfx::GFXBufferUsage::ConstantBuffer;
-            bufferDesc.BufferSize = sizeof(RenderingSceneConstantBuffer);
-
-            m_worldDescriptorBuffer = Application::GetGfxApp()->CreateBuffer(bufferDesc);
-        }
-
-
-        m_worldDescriptors = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_worldDescriptorLayout);
-        m_worldDescriptors->AddDescriptor("World", 0)->SetConstantBuffer(m_worldDescriptorBuffer.get());
-        m_worldDescriptors->Submit();
-
-        // 初始化合并的 PerPass descriptor set (set 1)
-        m_perPassResources.Initialize();
 
         m_physicsWorld2D = new PhysicsWorld2D;
         m_physicsWorld3D = new PhysicsWorld3D;
@@ -377,12 +303,6 @@ namespace pulsar
             DestroyObject(i);
         }
         m_deferredDestroyedQueue.clear();
-
-        m_worldDescriptorLayout.reset();
-        m_worldDescriptorBuffer.reset();
-        m_worldDescriptors.reset();
-
-        m_perPassResources.Destroy();
 
         delete m_physicsWorld2D;
         m_physicsWorld2D = nullptr;

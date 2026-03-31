@@ -200,6 +200,7 @@ namespace pulsar
 
             if (fbo && fboAttach)
             {
+                cmd.CmdPushDebugInfo(pass.name);
                 cmd.SetFrameBuffer(fbo);
                 cmd.CmdBeginRenderPass(pass.name, *fboAttach);
             }
@@ -211,6 +212,7 @@ namespace pulsar
             {
                 cmd.CmdEndRenderPass();
                 cmd.SetFrameBuffer(nullptr);
+                cmd.CmdPopDebugInfo();
             }
         }
 
