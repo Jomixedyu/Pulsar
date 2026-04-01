@@ -7,14 +7,10 @@ namespace pulsar
     struct LightShaderParameter
     {
         Vector4f WorldPosition;
-        Vector4f Direction;
+        Vector4f DirectionAndFalloffExponent;
         Vector4f Color;
-        float SourceRadius;
-        float SoftSourceRadius;
-        float FalloffExponent;
-        float _Padding0;
         Vector2f SpotAngles;
-        Vector2f _Padding1;
+        Vector2f SourceAndSoftSourceRadius;
     };
 
     class LightManager final

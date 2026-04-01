@@ -220,6 +220,7 @@ namespace pulsared
 //        }
 
 
+        return;
         // default scene
         auto cube = AssetManager::Get()->LoadAsset<StaticMesh>("Engine/Shapes/Cube", true);
         auto sphere = AssetManager::Get()->LoadAsset<StaticMesh>("Engine/Shapes/Sphere", true);

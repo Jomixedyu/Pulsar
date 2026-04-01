@@ -32,34 +32,23 @@ struct WorldData
     float  _Padding0;
 };
 
-struct LightRenderingData
+struct LightShaderParameter
 {
-    float3 Position;
-    float  CutOff;
-    float3 Direction;
-    float  Radius;
-    float4 Color; // w intensity
-    uint   Flags;
-    float3 _Pad0;
+    float4 WorldPosition;
+    float4 DirectionAndFalloffExponent;
+    float4 Color;
+    float2 SpotAngles;
+    float2 SourceAndSoftSourceRadius;
 };
 
 struct LightsBufferData
 {
-    LightRenderingData Lights[63];
-    uint PointCount;
-    uint SpotCount;
-    uint AreaCount;
-    uint Flags;
-    float4 _Pad0;
-    float4 _Pad1;
-    float4 _Pad2;
+    LightShaderParameter Lights[64];
 };
 
 ConstantBuffer<CameraData>      CameraBuffer : register(b0, space1);
 ConstantBuffer<WorldData>       WorldBuffer  : register(b1, space1);
 ConstantBuffer<LightsBufferData> LightBuffer : register(b2, space1);
 
-// Legacy aliases for compatibility during migration
-#define TargetBuffer CameraBuffer
 
 #endif // _ENGINE_PER_PASS_INC

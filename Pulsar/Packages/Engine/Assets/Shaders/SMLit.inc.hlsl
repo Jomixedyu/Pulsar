@@ -96,9 +96,9 @@ float4 ShadingModel_Lit(
     // for(int i = 0; i < 4; ++i) 
     for(int i = 0; i < WorldBuffer.LightParameterCount; ++i) 
     {
-        LightRenderingData lightData = LightBuffer.Lights[i];
-        float3 L = normalize(lightData.Position.xyz - v2f.WorldPosition.xyz);
-        float  distance = length(lightData.Position.xyz - v2f.WorldPosition.xyz);
+        LightShaderParameter lightData = LightBuffer.Lights[i];
+        float3 L = normalize(lightData.WorldPosition.xyz - v2f.WorldPosition.xyz);
+        float  distance = length(lightData.WorldPosition.xyz - v2f.WorldPosition.xyz);
 
         float3 H = normalize(V + L);
         float  attenuation = 1.0 / (distance * distance);

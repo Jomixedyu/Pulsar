@@ -87,14 +87,8 @@ namespace pulsar
             for (int i = 0; i < lightCount; ++i)
             {
                 auto& src = lightMgr->GetLightParameter(i);
-                auto& dst = lightsData.Lights[i];
-                dst.Position  = {src.WorldPosition.x, src.WorldPosition.y, src.WorldPosition.z};
-                dst.CutOff    = src.SpotAngles.x;
-                dst.Direction = {src.Direction.x, src.Direction.y, src.Direction.z};
-                dst.Radius    = src.SourceRadius;
-                dst.Color     = src.Color;
+                lightsData.Lights[i] = src;
             }
-            lightsData.PointCount = static_cast<uint32_t>(lightCount);
             perPass->UpdateLights(lightsData);
         }
 

@@ -343,6 +343,7 @@ namespace pulsared
                     info.EntryName = task.m_entries.m_vertex;
                     info.PreDefines = defines;
                     info.IncludePaths = { includeDir };
+                    info.Debug = false;
 
                     spirv = pscCompiler->CompileStage(info);
                     WriteToDiskCache(cacheHash, "vs", spirv);
@@ -378,6 +379,7 @@ namespace pulsared
                     info.EntryName = task.m_entries.m_fragment;
                     info.PreDefines = defines;
                     info.IncludePaths = { includeDir };
+                    info.Debug = false;
 
                     spirv = pscCompiler->CompileStage(info);
                     WriteToDiskCache(cacheHash, "ps", spirv);

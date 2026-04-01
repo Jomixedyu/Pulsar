@@ -104,7 +104,7 @@ namespace pulsar
     void PointLightComponent::OnRadiusChanged()
     {
         base::OnLightColorChanged();
-        m_runtimeLightData.SourceRadius = m_radius;
+        m_runtimeLightData.SourceAndSoftSourceRadius.x = m_radius;
         MarkRenderingDirty();
     }
 

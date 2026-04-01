@@ -4,6 +4,8 @@
 
 #include <Pulsar/EngineMath.h>
 
+#include "LightingData.h"
+
 namespace pulsar
 {
     // CPU 端结构体，对应 PerPass.inc.hlsl 中的 CameraData (b0, space1)
@@ -36,29 +38,10 @@ namespace pulsar
         float    _Padding0;
     };
 
-    // CPU 端结构体，对应 PerPass.inc.hlsl 中的 LightRenderingData
-    struct PerPassLightRenderingData
-    {
-        Vector3f Position;
-        float    CutOff;
-        Vector3f Direction;
-        float    Radius;
-        Vector4f Color; // w = intensity
-        uint32_t Flags;
-        Vector3f _Pad0;
-    };
-
     // CPU 端结构体，对应 PerPass.inc.hlsl 中的 LightsBufferData (b2, space1)
     struct PerPassLightsBufferData
     {
-        PerPassLightRenderingData Lights[63];
-        uint32_t PointCount;
-        uint32_t SpotCount;
-        uint32_t AreaCount;
-        uint32_t Flags;
-        Vector4f _Pad0;
-        Vector4f _Pad1;
-        Vector4f _Pad2;
+        LightShaderParameter Lights[64];
     };
 
     // 管理 set 1 (PerPass) 的 descriptor set：Camera + World + Light 合并

@@ -224,7 +224,7 @@ namespace psc
             const char* PreprocessedCStr = PreprocessedGLSL.c_str();
             shader.setStrings(&PreprocessedCStr, 1);
 
-            if (!shader.parse(&resources, 100, false, messages))
+            if (!shader.parse(&resources, 110, false, messages))
             {
                 auto str = std::string("shader parsing failed: ") + shader.getInfoLog() + shader.getInfoDebugLog();
                 if (extraDebugPath)
@@ -261,7 +261,14 @@ namespace psc
             spv::SpvBuildLogger logger;
             glslang::SpvOptions spvOptions;
 
-            spvOptions.generateDebugInfo = info.Debug;
+            if (info.Debug)
+            {
+                spvOptions.generateDebugInfo = true;
+                spvOptions.disableOptimizer = true;
+                spvOptions.emitNonSemanticShaderDebugInfo = true;
+                spvOptions.emitNonSemanticShaderDebugSource = true;
+            }
+
 
             glslang::GlslangToSpv(*Program.getIntermediate(langStage), SpirV, &logger, &spvOptions);
 
