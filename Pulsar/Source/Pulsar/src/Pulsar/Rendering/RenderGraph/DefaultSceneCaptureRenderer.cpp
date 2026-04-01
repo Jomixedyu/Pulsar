@@ -247,21 +247,15 @@ namespace pulsar
 
         if (ppCount > 0)
         {
-            // Build a transient RT with the same size/format as the final output for ping-pong
             auto* camRT  = cam->GetRenderTexture().GetPtr();
-            auto* camFBO = camRT->GetGfxFrameBufferObject().get();
 
             RGTextureDesc pingPongDesc{};
             pingPongDesc.Width  = camRT->GetWidth();
             pingPongDesc.Height = camRT->GetHeight();
-            // 后处理 pass 只需要 color attachment，不需要 depth/stencil
-            if (camFBO)
-            {
-                const auto& rtDesc = camFBO->GetRenderTargetDesc();
-                for (auto fmt : rtDesc.ColorFormats)
-                    pingPongDesc.TargetInfos.push_back({ gfx::GFXTextureTargetType::ColorTarget, fmt });
-            }
+            auto format = camRT->GetRenderTargets()[0]->GetFormat();
+            pingPongDesc.TargetInfos.push_back({ gfx::GFXTextureTargetType::ColorTarget, format });
 
+            {
             RGTextureHandle hPingPong = graph.CreateTransient("PostProcessPingPong", pingPongDesc);
 
             // hSrc: 当前读取源（初始为 BasePass 的输出 hFinal）
@@ -308,7 +302,7 @@ namespace pulsar
                         .colorStoreOp = gfx::GFXRenderPassStoreOp::Store,
                     })
                     .WithPerPass(perPass)
-                    .Execute([ppMat, hSrc, hDst, perPass, ppRendererSet, ppRendererLayout](RGPassContext& passCtx, gfx::GFXCommandBuffer& cmdBuffer)
+                    .Execute([ppMat, hSrc, hDst, hFinal, cam, perPass, ppRendererSet, ppRendererLayout](RGPassContext& passCtx, gfx::GFXCommandBuffer& cmdBuffer)
                     {
                         auto* mat = ppMat.GetPtr();
                         if (!mat) return;
@@ -328,13 +322,19 @@ namespace pulsar
                         if (!ppRendererSet) return;
 
                         // ping-pong RT 只有 color，FBO 在 execute 时可以正常取到
-                        auto* dstRT = passCtx.Get(hDst);
+                        // hDst 是 transient，通过 passCtx.Get 取；若是 hFinal（imported）则直接用 cam RT
+                        RenderTexture* dstRT = passCtx.Get(hDst);
+                        if (!dstRT && hDst == hFinal)
+                            dstRT = cam->GetRenderTexture().GetPtr();
                         if (!dstRT) return;
                         auto* dstFBO = dstRT->GetGfxFrameBufferObject().get();
                         if (!dstFBO) return;
 
                         // 每帧更新 PP_InColor 绑定（场景颜色来源变化时需要重新 Submit）
-                        auto* srcRT = passCtx.Get(hSrc);
+                        // hSrc 首次是 hFinal（imported），passCtx.Get 可能对 imported 资源返回 null，fallback 到 cam RT
+                        RenderTexture* srcRT = passCtx.Get(hSrc);
+                        if (!srcRT && hSrc == hFinal)
+                            srcRT = cam->GetRenderTexture().GetPtr();
                         if (srcRT)
                         {
                             auto srcView = srcRT->GetGfxRenderTarget0();
@@ -393,8 +393,8 @@ namespace pulsar
             if (hSrc != hFinal)
             {
                 // hFinal 是 Write 资源，passCtx.Get 取不到；提前拿好 dstView
-                auto* camFinalRT  = cam->GetRenderTexture().GetPtr();
-                auto  capturedDstView = camFinalRT ? camFinalRT->GetGfxRenderTarget0() : nullptr;
+//                auto* camFinalRT  = cam->GetRenderTexture().GetPtr();
+//                auto  capturedDstView = camFinalRT ? camFinalRT->GetGfxRenderTarget0() : nullptr;
 
                 graph.AddPass("PostProcess_CopyToFinal")
                     .Read(hSrc)
@@ -403,16 +403,20 @@ namespace pulsar
                         .colorStoreOp = gfx::GFXRenderPassStoreOp::Store,
                     })
                     .WithPerPass(perPass)
-                    .Execute([hSrc, capturedDstView](RGPassContext& passCtx, gfx::GFXCommandBuffer& cmdBuffer)
+                    .Execute([hSrc, hFinal](RGPassContext& passCtx, gfx::GFXCommandBuffer& cmdBuffer)
                     {
                         auto* srcRT = passCtx.Get(hSrc);
-                        if (!srcRT || !capturedDstView) return;
+                        auto* finalRT = passCtx.Get(hFinal);
+                        if (!srcRT || !finalRT) return;
 
                         auto srcView = srcRT->GetGfxRenderTarget0();
+                        auto finalView = finalRT->GetGfxRenderTarget0();
                         if (!srcView) return;
+                        if (!finalView) return;
 
-                        cmdBuffer.CmdBlit(srcView.get(), capturedDstView.get());
+                        cmdBuffer.CmdBlit(srcView.get(), finalView.get());
                     });
+            }
             }
         }
     }

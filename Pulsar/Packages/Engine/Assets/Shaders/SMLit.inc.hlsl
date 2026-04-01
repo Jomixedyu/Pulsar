@@ -5,7 +5,7 @@
 #include "Common.inc.hlsl"
 #include "MeshRenderer.inc.hlsl"
 
-const float PI = 3.14159265358979;
+#define PI 3.14159265358979
 
 float DistributionGGX(float3 N, float3 H, float roughness)
 {
@@ -65,7 +65,7 @@ float4 ShadingModel_Lit(
 )
 {
     float3 N = normalize(v2f.WorldNormal);
-    float3 V = normalize(TargetBuffer.CamPosition.xyz - v2f.WorldPosition.xyz);
+    float3 V = normalize(CameraBuffer.CamPosition.xyz - v2f.WorldPosition.xyz);
 
     float3 F0 = float3(0.04); 
     F0 = lerp(F0, attr.BaseColor, attr.Metallic);
@@ -74,7 +74,7 @@ float4 ShadingModel_Lit(
 
     //direction light
     {
-        float3 L = -WorldBuffer.WorldSpaceLightVector.xyz;
+        float3 L = WorldBuffer.WorldSpaceLightVector.xyz;
         float3 H = normalize(V + L);
         float3 dirLightRadiance = WorldBuffer.WorldSpaceLightColor.xyz * WorldBuffer.WorldSpaceLightColor.w;
 

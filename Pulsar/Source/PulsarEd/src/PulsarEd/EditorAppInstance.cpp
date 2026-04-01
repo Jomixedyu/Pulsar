@@ -10,6 +10,7 @@
 #include "Utils/PrefabUtil.h"
 
 #include <Pulsar/Rendering/ShaderInstanceCache.h>
+#include <Pulsar/Rendering/RenderGraph/TransientRTPool.h>
 
 #include <fstream>
 #include <CoreLib.Serialization/JsonSerializer.h>
@@ -206,23 +207,24 @@ namespace pulsared
             dlight->GetTransform()->TranslateRotateEuler({-3,3,-3}, {45,45,0});
         }
 
-        return;
+
         // sky
         // if (0)
-        {
-            auto skySphere = scene->NewNode("Sky Sphere");
-            skySphere->GetTransform()->SetScale({500,500,500});
-            auto sphere = AssetManager::Get()->LoadAsset<StaticMesh>(BuiltinAsset::Shapes_Sphere);
-            auto renderer = skySphere->AddComponent<StaticMeshRendererComponent>();
-            renderer->SetStaticMesh(sphere);
-            renderer->SetMaterial(0, AssetManager::Get()->LoadAsset<Material>("Engine/Materials/SkySphere"));
-        }
+//        {
+//            auto skySphere = scene->NewNode("Sky Sphere");
+//            skySphere->GetTransform()->SetScale({500,500,500});
+//            auto sphere = AssetManager::Get()->LoadAsset<StaticMesh>(BuiltinAsset::Shapes_Sphere);
+//            auto renderer = skySphere->AddComponent<StaticMeshRendererComponent>();
+//            renderer->SetStaticMesh(sphere);
+//            renderer->SetMaterial(0, AssetManager::Get()->LoadAsset<Material>("Engine/Materials/SkySphere"));
+//        }
+
 
         // default scene
         auto cube = AssetManager::Get()->LoadAsset<StaticMesh>("Engine/Shapes/Cube", true);
         auto sphere = AssetManager::Get()->LoadAsset<StaticMesh>("Engine/Shapes/Sphere", true);
         auto gridMat = AssetManager::Get()->LoadAsset<Material>("Engine/Materials/WorldGrid", true);
-        auto litMat = AssetManager::Get()->LoadAsset<Material>("Engine/Materials/Lit", true);
+        auto litMat = AssetManager::Get()->LoadAsset<Material>("Engine/Materials/Lambert", true);
 
         {
             ShapeMeshUtils::CreateCube(scene, "floor", gridMat, false, {0, -0.25f, 0},{}, { 10.f, 0.5f, 10.f});
@@ -234,8 +236,8 @@ namespace pulsared
 
         }
         {
-            auto gamma = AssetManager::Get()->LoadAsset<Material>("Engine/Materials/GammaCorrection", true);
-            World::Current()->GetCurrentCamera()->AddPostProcess(gamma);
+//            auto gamma = AssetManager::Get()->LoadAsset<Material>("Engine/Materials/GammaCorrection", true);
+//            World::Current()->GetCurrentCamera()->AddPostProcess(gamma);
         }
         {
             auto p1 = scene->NewNode("PointLight");
@@ -265,6 +267,8 @@ namespace pulsared
                  }
              }
          }
+
+         return;
     }
 
     static void _RegisterIcon(Type* type, string_view path)
@@ -346,6 +350,8 @@ namespace pulsared
 
     void EditorAppInstance::OnInitialized()
     {
+        pulsar::TransientRTPool::Initialize();
+
         m_assetManager = new EditorAssetManager;
         OnCreateEditors();
 
@@ -445,6 +451,7 @@ namespace pulsared
         // 在 World 和 GFX Device 销毁前清理 ShaderInstanceCache，
         // 否则 GpuProgram 析构时 VkDevice 已经无效
         pulsar::ShaderInstanceCache::Instance().Clear();
+        pulsar::TransientRTPool::Shutdown();
 
         World::Reset(nullptr);
 
