@@ -70,8 +70,8 @@ namespace pulsared
                     newNode->AddComponent<SphereShape3DComponent>();
 
                     auto renderer = newNode->AddComponent<StaticMeshRendererComponent>();
-                    renderer->SetStaticMesh(GetAssetManager()->LoadAsset<StaticMesh>(BuiltinAsset::Shapes_Sphere));
-                    renderer->SetMaterial(0, GetAssetManager()->LoadAsset<Material>(BuiltinAsset::Material_Lambert));
+                    renderer->SetStaticMesh(AssetManager::Get()->LoadAsset<StaticMesh>(BuiltinAsset::Shapes_Sphere));
+                    renderer->SetMaterial(0, AssetManager::Get()->LoadAsset<Material>(BuiltinAsset::Material_Lambert));
 
                 });
             }
@@ -84,8 +84,8 @@ namespace pulsared
 
                     auto renderer = newNode->AddComponent<StaticMeshRendererComponent>();
                     renderer->AddMaterial();
-                    renderer->SetMaterial(0, GetAssetManager()->LoadAsset<Material>(BuiltinAsset::Material_Lambert));
-                    renderer->SetStaticMesh(GetAssetManager()->LoadAsset<StaticMesh>(BuiltinAsset::Shapes_Cube));
+                    renderer->SetMaterial(0, AssetManager::Get()->LoadAsset<Material>(BuiltinAsset::Material_Lambert));
+                    renderer->SetStaticMesh(AssetManager::Get()->LoadAsset<StaticMesh>(BuiltinAsset::Shapes_Cube));
 
                 });
             }
@@ -95,8 +95,8 @@ namespace pulsared
                 entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
                     auto renderer = World::Current()->GetResidentScene()->NewNode("New Plane")
                         ->AddComponent<StaticMeshRendererComponent>();
-                    renderer->SetStaticMesh(GetAssetManager()->LoadAsset<StaticMesh>(BuiltinAsset::Shapes_Plane));
-                    renderer->SetMaterial(0, GetAssetManager()->LoadAsset<Material>(BuiltinAsset::Material_Lambert));
+                    renderer->SetStaticMesh(AssetManager::Get()->LoadAsset<StaticMesh>(BuiltinAsset::Shapes_Plane));
+                    renderer->SetMaterial(0, AssetManager::Get()->LoadAsset<Material>(BuiltinAsset::Material_Lambert));
 
                 });
             }

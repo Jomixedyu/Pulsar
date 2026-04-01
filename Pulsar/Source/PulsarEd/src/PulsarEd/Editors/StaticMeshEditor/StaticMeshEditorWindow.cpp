@@ -49,7 +49,7 @@ namespace pulsared
 
         for (int i = 0; i < renderer->GetMaterialCount(); ++i)
         {
-            renderer->SetMaterial(i, GetAssetManager()->LoadAsset<Material>(BuiltinAsset::Material_Lambert));
+            renderer->SetMaterial(i, AssetManager::Get()->LoadAsset<Material>(BuiltinAsset::Material_Lambert));
         }
     }
     void StaticMeshEditorWindow::OnClose()

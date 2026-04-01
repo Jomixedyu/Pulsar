@@ -71,6 +71,7 @@ namespace pulsar
 
     public: // properties
         Ticker                      GetTicker() const { return m_ticker; }
+        float                       GetTotalTime() const { return m_totalTime; }
         virtual ObjectPtr<CameraComponent> GetCurrentCamera();
         const RCPtr<Scene>&         GetScene(int index) const { return m_scenes[index]; }
         RCPtr<Scene>                GetFocusScene() const { return m_focusScene; }

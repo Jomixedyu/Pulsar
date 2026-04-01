@@ -4,6 +4,7 @@
 #include <Pulsar/Components/CameraComponent.h>
 #include <Pulsar/Components/SceneCaptureComponent.h>
 #include <Pulsar/World.h>
+#include <Pulsar/Scene.h>
 #include <Pulsar/Rendering/RenderObject.h>
 #include <Pulsar/Rendering/ShaderPass.h>
 #include <Pulsar/Assets/Material.h>
@@ -58,6 +59,26 @@ namespace pulsar
         camData.CamFar      = cam->GetFar();
         camData.Resolution  = cam->GetRenderTexture()->GetSize2df();
         perPass->UpdateCamera(camData);
+
+        {
+            PerPassWorldData worldData{};
+            worldData.TotalTime  = world->GetTotalTime();
+            worldData.DeltaTime  = world->GetTicker().deltatime;
+
+            auto& sceneEnv = world->GetFocusScene()->GetRuntimeEnvironment();
+            if (const auto* dirLight = sceneEnv.GetDirectionalLight())
+            {
+                worldData.WorldSpaceLightVector = -dirLight->Vector;
+                auto& c = dirLight->Color;
+                worldData.WorldSpaceLightColor  = {c.r, c.g, c.b, dirLight->Intensity};
+            }
+            {
+                auto skyLight = sceneEnv.GetSkyLight();
+                worldData.SkyLightColor = {skyLight.Color.r, skyLight.Color.g, skyLight.Color.b, skyLight.Intensity};
+            }
+            worldData.LightParameterCount = static_cast<uint32_t>(world->GetLightManager()->GetLightCount());
+            perPass->UpdateWorld(worldData);
+        }
 
         {
             PerPassLightsBufferData lightsData{};

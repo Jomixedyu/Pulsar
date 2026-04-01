@@ -124,7 +124,7 @@ namespace pulsared
 
         auto previewMesh =m_world->GetResidentScene()->NewNode("PreviewMesh");
         m_previewMeshRenderer = previewMesh->AddComponent<StaticMeshRendererComponent>();
-        m_previewMeshRenderer->SetStaticMesh(GetAssetManager()->LoadAsset<StaticMesh>(BuiltinAsset::Shapes_Sphere));
+        m_previewMeshRenderer->SetStaticMesh(AssetManager::Get()->LoadAsset<StaticMesh>(BuiltinAsset::Shapes_Sphere));
 
     }
     void MaterialEditorWindow::OnClose()

@@ -5,8 +5,9 @@
 
 namespace pulsar
 {
-    AssetManager* GetAssetManager()
+    AssetManager* AssetManager::Get()
     {
         return Application::inst()->GetAssetManager();
     }
+
 }

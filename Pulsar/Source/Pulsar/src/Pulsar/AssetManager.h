@@ -34,8 +34,8 @@ namespace pulsar
         }
 
         virtual ~AssetManager() = default;
-    };
 
-    AssetManager* GetAssetManager();
+        static AssetManager* Get();
+    };
 
 }

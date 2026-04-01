@@ -93,7 +93,7 @@ namespace pulsar
         batch.State.LineWidth = 1.f;
         batch.State.VertexLayouts = {StaticMesh::StaticGetVertexLayout()};
         batch.IsUsedIndices = false;
-        batch.Material = GetAssetManager()->LoadAsset<Material>("Engine/Materials/VertexColor");
+        batch.Material = AssetManager::Get()->LoadAsset<Material>("Engine/Materials/VertexColor");
     }
 
     void LineRenderObject::OnDestroyResource()

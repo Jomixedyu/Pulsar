@@ -58,7 +58,7 @@ namespace pulsared
         m_shaderPaths = AssetDatabase::FindAssets(cltypeof<Shader>());
         for (auto& element : m_shaderPaths)
         {
-            m_shaders.push_back(GetAssetManager()->LoadAsset<Shader>(element));
+            m_shaders.push_back(AssetManager::Get()->LoadAsset<Shader>(element));
         }
     }
     void ShaderDebugTool::OnOpen()

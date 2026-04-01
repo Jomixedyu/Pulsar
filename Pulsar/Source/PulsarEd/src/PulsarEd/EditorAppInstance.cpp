@@ -112,9 +112,9 @@ namespace pulsared
         {
             if (material == nullptr)
             {
-                material = GetAssetManager()->LoadAsset<Material>("Engine/Materials/Lambert", true);
+                material = AssetManager::Get()->LoadAsset<Material>("Engine/Materials/Lambert", true);
             }
-            auto cube = GetAssetManager()->LoadAsset<StaticMesh>("Engine/Shapes/Cube", true);
+            auto cube = AssetManager::Get()->LoadAsset<StaticMesh>("Engine/Shapes/Cube", true);
 
             auto node = scene->NewNode(name);
             node->AddComponent<BoxShape3DComponent>();
@@ -140,10 +140,10 @@ namespace pulsared
             Vector3f rotation = Vector3f(),
             Vector3f scale = Vector3f(1.0f, 1.0f, 1.0f))
         {
-            auto sphere = GetAssetManager()->LoadAsset<StaticMesh>("Engine/Shapes/Sphere", true);
+            auto sphere = AssetManager::Get()->LoadAsset<StaticMesh>("Engine/Shapes/Sphere", true);
             if (material == nullptr)
             {
-                material = GetAssetManager()->LoadAsset<Material>("Engine/Materials/Lambert", true);
+                material = AssetManager::Get()->LoadAsset<Material>("Engine/Materials/Lambert", true);
             }
 
             auto node = scene->NewNode(name);
@@ -212,17 +212,17 @@ namespace pulsared
         {
             auto skySphere = scene->NewNode("Sky Sphere");
             skySphere->GetTransform()->SetScale({500,500,500});
-            auto sphere = GetAssetManager()->LoadAsset<StaticMesh>(BuiltinAsset::Shapes_Sphere);
+            auto sphere = AssetManager::Get()->LoadAsset<StaticMesh>(BuiltinAsset::Shapes_Sphere);
             auto renderer = skySphere->AddComponent<StaticMeshRendererComponent>();
             renderer->SetStaticMesh(sphere);
-            renderer->SetMaterial(0, GetAssetManager()->LoadAsset<Material>("Engine/Materials/SkySphere"));
+            renderer->SetMaterial(0, AssetManager::Get()->LoadAsset<Material>("Engine/Materials/SkySphere"));
         }
 
         // default scene
-        auto cube = GetAssetManager()->LoadAsset<StaticMesh>("Engine/Shapes/Cube", true);
-        auto sphere = GetAssetManager()->LoadAsset<StaticMesh>("Engine/Shapes/Sphere", true);
-        auto gridMat = GetAssetManager()->LoadAsset<Material>("Engine/Materials/WorldGrid", true);
-        auto litMat = GetAssetManager()->LoadAsset<Material>("Engine/Materials/Lit", true);
+        auto cube = AssetManager::Get()->LoadAsset<StaticMesh>("Engine/Shapes/Cube", true);
+        auto sphere = AssetManager::Get()->LoadAsset<StaticMesh>("Engine/Shapes/Sphere", true);
+        auto gridMat = AssetManager::Get()->LoadAsset<Material>("Engine/Materials/WorldGrid", true);
+        auto litMat = AssetManager::Get()->LoadAsset<Material>("Engine/Materials/Lit", true);
 
         {
             ShapeMeshUtils::CreateCube(scene, "floor", gridMat, false, {0, -0.25f, 0},{}, { 10.f, 0.5f, 10.f});
@@ -234,7 +234,7 @@ namespace pulsared
 
         }
         {
-            auto gamma = GetAssetManager()->LoadAsset<Material>("Engine/Materials/GammaCorrection", true);
+            auto gamma = AssetManager::Get()->LoadAsset<Material>("Engine/Materials/GammaCorrection", true);
             World::Current()->GetCurrentCamera()->AddPostProcess(gamma);
         }
         {
@@ -463,6 +463,8 @@ namespace pulsared
 
         delete Application::GetGfxApp()->GetRenderPipeline();
         Application::GetGfxApp()->SetRenderPipeline(nullptr);
+
+        BuiltinAsset::ClearAssets();
 
         delete m_assetManager;
         m_assetManager = nullptr;

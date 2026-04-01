@@ -91,7 +91,7 @@ namespace pulsar
                 || !batch.Material->CreateGPUResource();
             if (isInvalidMaterial)
             {
-                batch.Material = GetAssetManager()->LoadAsset<Material>("Engine/Materials/Error");
+                batch.Material = AssetManager::Get()->LoadAsset<Material>("Engine/Materials/Error");
                 if (batch.Material)
                     batch.Material->CreateGPUResource();
             }

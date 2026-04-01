@@ -64,7 +64,7 @@ namespace pulsar
         if (!descriptorSet)
             return;
 
-        auto assetMgr = Application::inst()->GetAssetManager();
+        auto assetMgr = AssetManager::Get();
 
         for (const auto& entry : layout.m_textureEntries)
         {
@@ -74,8 +74,8 @@ namespace pulsar
             // 没找到时 fallback 白色纹理，保证 descriptor 永远被 update
             if (!tex)
             {
-                RCPtr<Texture2D> white = assetMgr->LoadAsset<Texture2D>(BuiltinAsset::Texture_White);
-                if (white) tex = white;
+                RCPtr<Texture2D> defaultTex = BuiltinAsset::GetTextureBlack();
+                if (defaultTex) tex = defaultTex;
             }
 
             if (tex && !tex->IsCreatedGPUResource())

@@ -23,7 +23,7 @@ namespace pulsar
         auto s = shader;
         if (!s)
         {
-            s = GetAssetManager()->LoadAsset<Shader>(BuiltinAsset::Shader_Missing);
+            s = AssetManager::Get()->LoadAsset<Shader>(BuiltinAsset::Shader_Missing);
         }
         material->SetShader(s);
         return material;
@@ -511,7 +511,7 @@ namespace pulsar
         auto config = m_shader->GetConfig();
         if (!config || !config->Properties) return;
 
-        auto assetMgr = Application::inst() ? Application::inst()->GetAssetManager() : nullptr;
+        auto assetMgr = AssetManager::Get() ? AssetManager::Get() : nullptr;
 
         for (const auto& prop : *config->Properties)
         {

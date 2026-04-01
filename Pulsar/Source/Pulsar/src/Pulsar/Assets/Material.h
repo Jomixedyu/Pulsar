@@ -42,7 +42,7 @@ namespace pulsar
     class Material final : public AssetObject, public IGPUResource
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::Material, AssetObject);
-        CORELIB_CLASS_ATTR(new CreateAssetAttribute(BuiltinAsset::Material_Missing));
+        CORELIB_CLASS_ATTR(new CreateAssetAttribute("Engine/Materials/Error"));
 
     public:
         static RCPtr<Material> StaticCreate(const RCPtr<Shader>& shader, string_view name = {});
