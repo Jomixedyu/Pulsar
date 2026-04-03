@@ -14,7 +14,6 @@ namespace pulsar
         uint32_t m_offset{};
         uint32_t m_size{};
         ShaderPropertyType m_type{};
-        gfx::GFXGpuProgramStageFlags m_stageFlags = gfx::GFXGpuProgramStageFlags::VertexFragment;
     };
 
     struct TextureEntry
@@ -30,5 +29,7 @@ namespace pulsar
         std::vector<CBufferEntry> m_constantEntries;
         std::vector<TextureEntry> m_textureEntries;
         uint32_t m_totalCBufferSize{};
+        uint32_t m_cbufferBindingPoint{0};
+        gfx::GFXGpuProgramStageFlags m_cbufferStageFlags = gfx::GFXGpuProgramStageFlags::None;
     };
 }

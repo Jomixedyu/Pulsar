@@ -219,23 +219,23 @@ namespace pulsared
 //            renderer->SetMaterial(0, AssetManager::Get()->LoadAsset<Material>("Engine/Materials/SkySphere"));
 //        }
 
-
-        return;
         // default scene
         auto cube = AssetManager::Get()->LoadAsset<StaticMesh>("Engine/Shapes/Cube", true);
         auto sphere = AssetManager::Get()->LoadAsset<StaticMesh>("Engine/Shapes/Sphere", true);
         auto gridMat = AssetManager::Get()->LoadAsset<Material>("Engine/Materials/WorldGrid", true);
         auto litMat = AssetManager::Get()->LoadAsset<Material>("Engine/Materials/Lambert", true);
-
+        ShapeMeshUtils::CreateCube(scene, "floor", gridMat, false, {0, -0.25f, 0},{}, { 10.f, 0.5f, 10.f});
         {
-            ShapeMeshUtils::CreateCube(scene, "floor", gridMat, false, {0, -0.25f, 0},{}, { 10.f, 0.5f, 10.f});
-            ShapeMeshUtils::CreateCube(scene, "cube", litMat,true, {-2.f,0.5f,2.f},{0.0f, -35.0f,0.0f});
-            ShapeMeshUtils::CreateCube(scene, "cube", litMat,true, {0.f,0.5f,2.f},{0.0f, -10.0f,0.0f});
-            ShapeMeshUtils::CreateCube(scene, "cube", litMat, true, {-0.45f, 1.5f, 2.f}, {0.0f, -40.0f, 0.0f});
-            ShapeMeshUtils::CreateCube(scene, "cube", litMat, true, {-1.65f, 1.25f, 2.f}, {0.0f, -10.0f, 0.0f}, {0.5f, 0.5f, 0.5f});
-            ShapeMeshUtils::CreateSphere(scene, "sphere", litMat, true, {-0.3f, 5.f, 1.3f});
+
+            ShapeMeshUtils::CreateCube(scene, "cube", gridMat,true, {-2.f,0.5f,2.f},{0.0f, -35.0f,0.0f});
+            ShapeMeshUtils::CreateCube(scene, "cube", gridMat,true, {0.f,0.5f,2.f},{0.0f, -10.0f,0.0f});
+            ShapeMeshUtils::CreateCube(scene, "cube", gridMat, true, {-0.45f, 1.5f, 2.f}, {0.0f, -40.0f, 0.0f});
+            ShapeMeshUtils::CreateCube(scene, "cube", gridMat, true, {-1.65f, 1.25f, 2.f}, {0.0f, -10.0f, 0.0f}, {0.5f, 0.5f, 0.5f});
+            ShapeMeshUtils::CreateSphere(scene, "sphere", gridMat, true, {-0.3f, 5.f, 1.3f});
 
         }
+        return;
+
         {
 //            auto gamma = AssetManager::Get()->LoadAsset<Material>("Engine/Materials/GammaCorrection", true);
 //            World::Current()->GetCurrentCamera()->AddPostProcess(gamma);

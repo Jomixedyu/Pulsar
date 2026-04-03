@@ -441,14 +441,10 @@ namespace pulsar
         {
             gfx::GFXDescriptorSetLayoutDesc cbDesc{};
             cbDesc.Type = gfx::GFXDescriptorType::ConstantBuffer;
-            cbDesc.Stage = [&]() {
-                uint32_t merged = 0;
-                for (const auto& e : layout.m_constantEntries)
-                    merged |= static_cast<uint32_t>(e.m_stageFlags);
-                return merged ? static_cast<gfx::GFXGpuProgramStageFlags>(merged)
-                              : gfx::GFXGpuProgramStageFlags::VertexFragment;
-            }();
-            cbDesc.BindingPoint = 0;
+            cbDesc.Stage = (layout.m_cbufferStageFlags != gfx::GFXGpuProgramStageFlags::None)
+                ? layout.m_cbufferStageFlags
+                : gfx::GFXGpuProgramStageFlags::VertexFragment;
+            cbDesc.BindingPoint = layout.m_cbufferBindingPoint;
             descLayoutInfos.push_back(cbDesc);
 
             // 创建 cbuffer
@@ -459,7 +455,6 @@ namespace pulsar
             m_materialConstantBuffer = gfxApp->CreateBuffer(bufferDesc);
         }
 
-        uint32_t textureBindingOffset = layout.m_totalCBufferSize > 0 ? 1 : 0;
         for (const auto& texEntry : layout.m_textureEntries)
         {
             gfx::GFXDescriptorSetLayoutDesc texDesc{};

@@ -160,8 +160,12 @@ namespace pulsared
                 continue;
 
             layout.m_totalCBufferSize = std::max(layout.m_totalCBufferSize, ub.Size);
+            layout.m_cbufferBindingPoint = ub.Binding;
 
-            auto gfxStage = toGfxStage(ub.StageFlags);
+            // Merge cbuffer stage flags across all SPIR-V stages
+            layout.m_cbufferStageFlags = static_cast<gfx::GFXGpuProgramStageFlags>(
+                static_cast<uint32_t>(layout.m_cbufferStageFlags) |
+                static_cast<uint32_t>(toGfxStage(ub.StageFlags)));
 
             for (const auto& member : ub.Members)
             {
@@ -170,10 +174,6 @@ namespace pulsared
                 {
                     if (existing.m_name == member.Name)
                     {
-                        // Merge stage flags from this SPIR-V stage
-                        existing.m_stageFlags = static_cast<gfx::GFXGpuProgramStageFlags>(
-                            static_cast<uint32_t>(existing.m_stageFlags) |
-                            static_cast<uint32_t>(gfxStage));
                         found = true;
                         break;
                     }
@@ -184,7 +184,6 @@ namespace pulsared
                     entry.m_name = member.Name;
                     entry.m_offset = member.Offset;
                     entry.m_size = member.Size;
-                    entry.m_stageFlags = gfxStage;
                     if (member.Size == 4)
                         entry.m_type = pulsar::ShaderPropertyType::Float;
                     else if (member.Size == 16)

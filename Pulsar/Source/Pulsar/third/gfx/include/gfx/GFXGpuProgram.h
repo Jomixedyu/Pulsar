@@ -7,6 +7,7 @@ namespace gfx
 
     enum class GFXGpuProgramStageFlags : uint32_t
     {
+        None = 0,
         Vertex = 1,
         Fragment = 1 << 1,
         Compute = 1 << 2,
