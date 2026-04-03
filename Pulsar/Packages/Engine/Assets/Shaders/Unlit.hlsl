@@ -3,10 +3,10 @@
 
 float4 _TintColor;
 
-Texture2D _BaseColorMap : register(t1);
-SamplerState Sampler__BaseColorMap : register(s1);
+Texture2D _BaseColorMap;
+SamplerState Sampler__BaseColorMap;
 
-
+Texture2D _BaseColorMap2;
 
 StandardVaryings VSMain(StandardAttributes a)
 {

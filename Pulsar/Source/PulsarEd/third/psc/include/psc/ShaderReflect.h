@@ -6,6 +6,26 @@
 
 namespace psc
 {
+    // Bitmask matching gfx::GFXGpuProgramStageFlags values intentionally,
+    // so a static_cast is safe on the engine side.
+    enum class ShaderStageFlags : uint32_t
+    {
+        None     = 0,
+        Vertex   = 1,
+        Fragment = 1 << 1,
+        Compute  = 1 << 2,
+        All      = 0xFFFFFFFF,
+    };
+    inline ShaderStageFlags operator|(ShaderStageFlags a, ShaderStageFlags b)
+    {
+        return static_cast<ShaderStageFlags>(
+            static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
+    }
+    inline ShaderStageFlags& operator|=(ShaderStageFlags& a, ShaderStageFlags b)
+    {
+        return a = a | b;
+    }
+
     struct ReflectedCBufferMember
     {
         std::string Name;
@@ -19,6 +39,7 @@ namespace psc
         uint32_t Set;
         uint32_t Binding;
         uint32_t Size;
+        ShaderStageFlags StageFlags = ShaderStageFlags::None;
         std::vector<ReflectedCBufferMember> Members;
     };
 
@@ -27,6 +48,8 @@ namespace psc
         std::string Name;
         uint32_t Set;
         uint32_t Binding;
+        bool IsCombined = false;
+        ShaderStageFlags StageFlags = ShaderStageFlags::None;
     };
 
     struct ReflectedShaderResources

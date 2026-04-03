@@ -40,6 +40,9 @@
 #include <array>
 #include <unordered_map>
 #include <unordered_set>
+#include "glslang/Include/BaseTypes.h"
+#include "glslang/Include/Types.h"
+#include "glslang/Include/intermediate.h"
 //
 // A reflection database and its interface, consistent with the OpenGL API reflection queries.
 //
@@ -49,7 +52,56 @@ class TInfoSink;
 namespace glslang {
 
 class TIntermediate;
-struct TVarEntryInfo;
+
+// Full definition moved here from iomapper.cpp so external resolvers can access members.
+struct TVarEntryInfo {
+    long long id;
+    TIntermSymbol* symbol;
+    bool live;
+    TLayoutPacking upgradedToPushConstantPacking;
+    int newBinding;
+    int newSet;
+    int newLocation;
+    int newComponent;
+    int newIndex;
+    EShLanguage stage;
+
+    void clearNewAssignments() {
+        upgradedToPushConstantPacking = ElpNone;
+        newBinding = -1;
+        newSet = -1;
+        newLocation = -1;
+        newComponent = -1;
+        newIndex = -1;
+    }
+
+    struct TOrderById {
+        inline bool operator()(const TVarEntryInfo& l, const TVarEntryInfo& r) { return l.id < r.id; }
+    };
+
+    struct TOrderByPriority {
+        inline bool operator()(const TVarEntryInfo& l, const TVarEntryInfo& r) {
+            const TQualifier& lq = l.symbol->getQualifier();
+            const TQualifier& rq = r.symbol->getQualifier();
+            int lPoints = (lq.hasBinding() ? 2 : 0) + (lq.hasSet() ? 1 : 0);
+            int rPoints = (rq.hasBinding() ? 2 : 0) + (rq.hasSet() ? 1 : 0);
+            if (lPoints == rPoints) return l.id < r.id;
+            return lPoints > rPoints;
+        }
+    };
+
+    struct TOrderByPriorityAndLive {
+        inline bool operator()(const TVarEntryInfo& l, const TVarEntryInfo& r) {
+            if (l.live != r.live) return l.live > r.live;
+            const TQualifier& lq = l.symbol->getQualifier();
+            const TQualifier& rq = r.symbol->getQualifier();
+            int lPoints = (lq.hasBinding() ? 2 : 0) + (lq.hasSet() ? 1 : 0);
+            int rPoints = (rq.hasBinding() ? 2 : 0) + (rq.hasSet() ? 1 : 0);
+            if (lPoints == rPoints) return l.id < r.id;
+            return lPoints > rPoints;
+        }
+    };
+};
 // Base class for shared TIoMapResolver services, used by several derivations.
 struct TDefaultIoResolverBase : public glslang::TIoMapResolver {
 public:

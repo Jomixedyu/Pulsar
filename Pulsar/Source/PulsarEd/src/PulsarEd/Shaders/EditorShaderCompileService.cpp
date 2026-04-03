@@ -148,6 +148,12 @@ namespace pulsared
         // 材质参数所在的 descriptor set（space0 = set 0）
         constexpr uint32_t kMaterialDescSet = 0;
 
+        // Convert psc::ShaderStageFlags to gfx::GFXGpuProgramStageFlags.
+        // The two enums share the same bit values by design, so a static_cast is safe.
+        auto toGfxStage = [](psc::ShaderStageFlags f) {
+            return static_cast<gfx::GFXGpuProgramStageFlags>(static_cast<uint32_t>(f));
+        };
+
         for (const auto& ub : reflected.UniformBuffers)
         {
             if (ub.Set != kMaterialDescSet)
@@ -155,25 +161,30 @@ namespace pulsared
 
             layout.m_totalCBufferSize = std::max(layout.m_totalCBufferSize, ub.Size);
 
+            auto gfxStage = toGfxStage(ub.StageFlags);
+
             for (const auto& member : ub.Members)
             {
-                // 避免重复添加（VS/PS 可能有相同的 cbuffer）
-                bool exists = false;
-                for (const auto& existing : layout.m_constantEntries)
+                bool found = false;
+                for (auto& existing : layout.m_constantEntries)
                 {
                     if (existing.m_name == member.Name)
                     {
-                        exists = true;
+                        // Merge stage flags from this SPIR-V stage
+                        existing.m_stageFlags = static_cast<gfx::GFXGpuProgramStageFlags>(
+                            static_cast<uint32_t>(existing.m_stageFlags) |
+                            static_cast<uint32_t>(gfxStage));
+                        found = true;
                         break;
                     }
                 }
-                if (!exists)
+                if (!found)
                 {
                     pulsar::CBufferEntry entry{};
                     entry.m_name = member.Name;
                     entry.m_offset = member.Offset;
                     entry.m_size = member.Size;
-                    // 根据 size 推断类型
+                    entry.m_stageFlags = gfxStage;
                     if (member.Size == 4)
                         entry.m_type = pulsar::ShaderPropertyType::Float;
                     else if (member.Size == 16)
@@ -190,21 +201,28 @@ namespace pulsared
             if (img.Set != kMaterialDescSet)
                 continue;
 
-            // 避免重复
-            bool exists = false;
-            for (const auto& existing : layout.m_textureEntries)
+            auto gfxStage = toGfxStage(img.StageFlags);
+
+            bool found = false;
+            for (auto& existing : layout.m_textureEntries)
             {
                 if (existing.m_name == img.Name)
                 {
-                    exists = true;
+                    // Merge stage flags
+                    existing.m_stageFlags = static_cast<gfx::GFXGpuProgramStageFlags>(
+                        static_cast<uint32_t>(existing.m_stageFlags) |
+                        static_cast<uint32_t>(gfxStage));
+                    found = true;
                     break;
                 }
             }
-            if (!exists)
+            if (!found)
             {
                 pulsar::TextureEntry entry{};
                 entry.m_name = img.Name;
                 entry.m_bindingPoint = img.Binding;
+                entry.m_isCombinedImageSampler = img.IsCombined;
+                entry.m_stageFlags = gfxStage;
                 layout.m_textureEntries.push_back(std::move(entry));
             }
         }
@@ -325,74 +343,49 @@ namespace pulsared
 
             auto gfxApp = pulsar::Application::GetGfxApp();
 
-            // 编译 Vertex Shader
-            if (!task.m_entries.m_vertex.empty())
+            // 使用 CompilePass 将 VS + PS 放入同一 TProgram 编译，
+            // 通过 HlslBindingResolver 保证跨 stage binding 编号一致。
+            psc::PassCompileInfo passInfo{};
+            passInfo.code = hlslSource.c_str();
+            passInfo.platform = pscApi;
+            passInfo.vsEntry = task.m_entries.m_vertex;
+            passInfo.psEntry = task.m_entries.m_fragment;
+            passInfo.PreDefines = defines;
+            passInfo.IncludePaths = { includeDir };
+            passInfo.Debug = false;
+
+            auto passResult = pscCompiler->CompilePass(passInfo, hlslAssetPath.c_str());
+
+            // VS SPIR-V — 创建 GpuProgram，并反射活跃资源加入布局
+            if (!task.m_entries.m_vertex.empty() && !passResult.vsSpirv.empty())
             {
-                std::vector<char> spirv;
+                auto& spirv = passResult.vsSpirv;
+                WriteToDiskCache(cacheHash, "vs", spirv);
 
-                if (TryLoadFromDiskCache(cacheHash, "vs", spirv))
-                {
-                    pulsar::Logger::Log("Shader VS cache hit: " + hlslAssetPath);
-                }
-                else
-                {
-                    psc::CompileInfo info{};
-                    info.code = hlslSource.c_str();
-                    info.platform = pscApi;
-                    info.Stage = psc::FilePartialType::Vert;
-                    info.EntryName = task.m_entries.m_vertex;
-                    info.PreDefines = defines;
-                    info.IncludePaths = { includeDir };
-                    info.Debug = false;
-
-                    spirv = pscCompiler->CompileStage(info);
-                    WriteToDiskCache(cacheHash, "vs", spirv);
-                }
-
-                // 从 SPIR-V 创建 GFXGpuProgram
                 auto gpuProgram = gfxApp->CreateGpuProgram(
                     gfx::GFXGpuProgramStageFlags::Vertex,
                     reinterpret_cast<const uint8_t*>(spirv.data()), spirv.size());
                 gpuProgram->SetEntryName(task.m_entries.m_vertex);
                 program->m_gpuPrograms.push_back(gpuProgram);
 
-                // 通过反射提取 ShaderPropertyLayout（从 VS 提取）
+                // ReflectSpirvResources 只反射活跃变量，死绑定不会出现
                 auto reflected = psc::ReflectSpirvResources(spirv);
                 ExtractLayout(reflected, program->m_layout);
             }
 
-            // 编译 Fragment Shader
-            if (!task.m_entries.m_fragment.empty())
+            // PS SPIR-V — 创建 GpuProgram，并反射活跃资源合并入布局
+            if (!task.m_entries.m_fragment.empty() && !passResult.psSpirv.empty())
             {
-                std::vector<char> spirv;
+                auto& spirv = passResult.psSpirv;
+                WriteToDiskCache(cacheHash, "ps", spirv);
 
-                if (TryLoadFromDiskCache(cacheHash, "ps", spirv))
-                {
-                    pulsar::Logger::Log("Shader PS cache hit: " + hlslAssetPath);
-                }
-                else
-                {
-                    psc::CompileInfo info{};
-                    info.code = hlslSource.c_str();
-                    info.platform = pscApi;
-                    info.Stage = psc::FilePartialType::Pixel;
-                    info.EntryName = task.m_entries.m_fragment;
-                    info.PreDefines = defines;
-                    info.IncludePaths = { includeDir };
-                    info.Debug = false;
-
-                    spirv = pscCompiler->CompileStage(info);
-                    WriteToDiskCache(cacheHash, "ps", spirv);
-                }
-
-                // 从 SPIR-V 创建 GFXGpuProgram
                 auto gpuProgram = gfxApp->CreateGpuProgram(
                     gfx::GFXGpuProgramStageFlags::Fragment,
                     reinterpret_cast<const uint8_t*>(spirv.data()), spirv.size());
                 gpuProgram->SetEntryName(task.m_entries.m_fragment);
                 program->m_gpuPrograms.push_back(gpuProgram);
 
-                // 通过反射提取 ShaderPropertyLayout（合并 PS 的参数）
+                // ExtractLayout 内部有名字去重，VS+PS 共同活跃的资源只记录一次
                 auto reflected = psc::ReflectSpirvResources(spirv);
                 ExtractLayout(reflected, program->m_layout);
             }

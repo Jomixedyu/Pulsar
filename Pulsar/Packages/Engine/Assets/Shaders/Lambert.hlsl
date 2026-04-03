@@ -2,8 +2,8 @@
 #include "MeshRenderer.inc.hlsl"
 
 
-Texture2D _BaseColorMap : register(t1);
-SamplerState Sampler__BaseColorMap : register(s1);
+Texture2D _BaseColorMap;
+SamplerState Sampler__BaseColorMap;
 
 
 

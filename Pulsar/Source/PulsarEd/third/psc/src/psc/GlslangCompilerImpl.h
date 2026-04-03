@@ -15,6 +15,7 @@
 
 namespace psc
 {
+
     static TBuiltInResource GetDefaultTBuiltInResource()
     {
         TBuiltInResource res{};
@@ -280,6 +281,15 @@ namespace psc
             return spirData;
         }
 
+
+        // ------------------------------------------------------------------
+        // CompilePass: compile VS + PS together in one TProgram.
+        // Implementation is in ShaderCompiler.cpp where internal glslang
+        // headers (iomapper.h / TVarEntryInfo) are accessible.
+        // ------------------------------------------------------------------
+        virtual PassCompileResult CompilePass(
+            const PassCompileInfo& info,
+            const char* extraDebugPath) override;
 
         std::unordered_map<std::string, FilePartialType> _ShaderSrcExts
         {
