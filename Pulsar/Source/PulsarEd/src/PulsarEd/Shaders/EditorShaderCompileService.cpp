@@ -181,15 +181,23 @@ namespace pulsared
                 if (!found)
                 {
                     pulsar::CBufferEntry entry{};
-                    entry.m_name = member.Name;
+                    entry.m_name   = member.Name;
                     entry.m_offset = member.Offset;
-                    entry.m_size = member.Size;
-                    if (member.Size == 4)
-                        entry.m_type = pulsar::ShaderPropertyType::Float;
-                    else if (member.Size == 16)
-                        entry.m_type = pulsar::ShaderPropertyType::Float4;
-                    else
-                        entry.m_type = pulsar::ShaderPropertyType::Float;
+                    entry.m_size   = member.Size;
+
+                    // Map (BaseType, Columns) → ShaderPropertyType
+                    // Columns: 1=scalar, 2=vec2, 3=vec3, 4=vec4
+                    if (member.BaseType == psc::MemberBaseType::Int)
+                    {
+                        entry.m_type = pulsar::ShaderPropertyType::Int;
+                    }
+                    else // Float / Unknown — treat Unknown as float
+                    {
+                        entry.m_type = (member.Columns >= 4)
+                            ? pulsar::ShaderPropertyType::Float4
+                            : pulsar::ShaderPropertyType::Float;
+                    }
+
                     layout.m_constantEntries.push_back(std::move(entry));
                 }
             }

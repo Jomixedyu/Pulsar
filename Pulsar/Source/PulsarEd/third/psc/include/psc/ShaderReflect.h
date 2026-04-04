@@ -26,11 +26,20 @@ namespace psc
         return a = a | b;
     }
 
+    enum class MemberBaseType : uint8_t
+    {
+        Unknown,
+        Int,    // int32 / uint32 / bool — all stored as 4-byte integer
+        Float,  // float32
+    };
+
     struct ReflectedCBufferMember
     {
         std::string Name;
-        uint32_t Offset;
-        uint32_t Size;
+        uint32_t    Offset;
+        uint32_t    Size;
+        uint32_t    Columns = 1;   // vec/matrix column count (1 = scalar)
+        MemberBaseType BaseType = MemberBaseType::Unknown;
     };
 
     struct ReflectedUniformBuffer

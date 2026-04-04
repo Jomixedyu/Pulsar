@@ -45,9 +45,29 @@ namespace psc
             for (uint32_t i = 0; i < type.member_types.size(); i++)
             {
                 ReflectedCBufferMember member{};
-                member.Name = compiler.get_member_name(ub.base_type_id, i);
-                member.Offset = compiler.type_struct_member_offset(type, i);
-                member.Size = static_cast<uint32_t>(compiler.get_declared_struct_member_size(type, i));
+                member.Name    = compiler.get_member_name(ub.base_type_id, i);
+                member.Offset  = compiler.type_struct_member_offset(type, i);
+                member.Size    = static_cast<uint32_t>(compiler.get_declared_struct_member_size(type, i));
+
+                // Reflect scalar base type and vector width from SPIRV-Cross type info
+                const auto& memberType = compiler.get_type(type.member_types[i]);
+                member.Columns = memberType.vecsize; // 1=scalar, 2=vec2, 4=vec4, etc.
+                switch (memberType.basetype)
+                {
+                case spirv_cross::SPIRType::Int:
+                case spirv_cross::SPIRType::Short:
+                case spirv_cross::SPIRType::UInt:
+                case spirv_cross::SPIRType::UShort:
+                case spirv_cross::SPIRType::Boolean:
+                    // uint / bool have no dedicated ShaderPropertyType; treat as Int (4-byte storage)
+                    member.BaseType = MemberBaseType::Int;   break;
+                case spirv_cross::SPIRType::Float:
+                case spirv_cross::SPIRType::Half:
+                    member.BaseType = MemberBaseType::Float; break;
+                default:
+                    member.BaseType = MemberBaseType::Unknown; break;
+                }
+
                 reflected.Members.push_back(std::move(member));
             }
 
