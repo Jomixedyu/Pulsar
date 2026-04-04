@@ -48,7 +48,8 @@ namespace pulsar
         const std::unordered_map<uint32_t, size_t>& m_handleToIndex;
     };
 
-    using RGPassExecuteFunc = std::function<void(RGPassContext&, gfx::GFXCommandBuffer&)>;
+    using RGPassExecuteFunc  = std::function<void(RGPassContext&, gfx::GFXCommandBuffer&)>;
+    using RGPassPrepareFunc  = std::function<void(RGPassContext&)>;
 
     enum class RGResourceUsage : uint8_t
     {
@@ -69,8 +70,10 @@ namespace pulsar
     {
         std::string name;
         std::vector<RGResourceBinding>  resources;
-        RGPassExecuteFunc               executeFunc;
+        RGPassPrepareFunc               prepareFunc;      // called after Compile, before BeginRenderPass
+        RGPassExecuteFunc               executeFunc;      // called inside BeginRenderPass (or outside if noRenderPass)
         PerPassResources*               perPassResources = nullptr;
+        bool                            noRenderPass     = false; // skip BeginRenderPass/EndRenderPass (e.g. transfer-only passes)
     };
 
     enum class RGResourceKind : uint8_t { Transient, Persistent };
@@ -103,6 +106,21 @@ namespace pulsar
         RGPassBuilder& WithPerPass(PerPassResources* perPass)
         {
             m_pass.perPassResources = perPass;
+            return *this;
+        }
+
+        // Mark this pass as transfer-only (blit, copy, etc.).
+        // Write() declarations are still respected for resource barrier/lifetime tracking,
+        // but BeginRenderPass / EndRenderPass will NOT be called.
+        RGPassBuilder& NoRenderPass()
+        {
+            m_pass.noRenderPass = true;
+            return *this;
+        }
+
+        RGPassBuilder& Prepare(RGPassPrepareFunc func)
+        {
+            m_pass.prepareFunc = std::move(func);
             return *this;
         }
 

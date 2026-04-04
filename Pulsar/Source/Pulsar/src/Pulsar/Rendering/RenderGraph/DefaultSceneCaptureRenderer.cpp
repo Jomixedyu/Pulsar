@@ -96,6 +96,16 @@ namespace pulsar
 
         RGTextureHandle hFinal = graph.ImportTexture("FinalOutput", camRenderTexture);
 
+        // PreparedBatch: batch + its ready binding (nullptr if shader not yet compiled)
+        struct PreparedBatch
+        {
+            rendering::MeshBatch       batch;
+            const MaterialPassBinding* binding = nullptr;
+        };
+        auto preparedOpaque      = std::make_shared<array_list<PreparedBatch>>();
+        auto preparedAlphaTest   = std::make_shared<array_list<PreparedBatch>>();
+        auto preparedTransparent = std::make_shared<array_list<PreparedBatch>>();
+
         graph.AddPass("BasePass")
             .Write(hFinal, RGAttachmentDesc{
                 .colorLoadOp  = gfx::GFXRenderPassLoadOp::Clear,
@@ -106,75 +116,73 @@ namespace pulsar
                 .clearDepth   = 1.f,
             })
             .WithPerPass(perPass)
-            .Execute([cam, world, perPass](RGPassContext& ctx, gfx::GFXCommandBuffer& cmdBuffer)
+            .Prepare([cam, world, preparedOpaque, preparedAlphaTest, preparedTransparent](RGPassContext&)
             {
-                auto* targetFBO = cam->GetRenderTexture()->GetGfxFrameBufferObject().get();
-                if (!targetFBO) return;
-
-                auto* pipelineMgr   = cmdBuffer.GetApplication()->GetGraphicsPipelineManager();
-                auto& renderObjects = world->GetRenderObjects();
-
-                cmdBuffer.CmdSetViewport(0, 0, (float)targetFBO->GetWidth(), (float)targetFBO->GetHeight());
-
-                struct BatchEntry
-                {
-                    rendering::RenderObject* renderObject;
-                    rendering::MeshBatch     batch;
-                };
-
+                // Collect batches and prepare material GPU resources.
+                // This runs after Compile() but before BeginRenderPass — safe for resource creation.
                 const Vector3f camPos     = cam->GetNode()->GetTransform()->GetWorldPosition();
                 const Vector3f camForward = cam->GetNode()->GetTransform()->GetForward();
 
-                array_list<BatchEntry> opaqueList, alphaTestList, transparentList;
-
-                for (const rendering::RenderObject_sp& ro : renderObjects)
+                for (const rendering::RenderObject_sp& ro : world->GetRenderObjects())
                 {
                     const float depth = jmath::Dot(camForward, ro->GetWorldPosition() - camPos);
                     for (auto batch : ro->GetMeshBatches())
                     {
                         batch.Depth = depth;
-                        switch (batch.Queue)
+                        const MaterialPassBinding* binding = batch.Material
+                            ? batch.Material->PrepareForRendering("Forward", batch.Interface)
+                            : nullptr;
+
+                        PreparedBatch pb{ std::move(batch), binding };
+                        switch (pb.batch.Queue)
                         {
                         case ShaderPassRenderQueueType::AlphaTest:
-                            alphaTestList.push_back({ro.get(), std::move(batch)});
+                            preparedAlphaTest->push_back(std::move(pb));
                             break;
                         case ShaderPassRenderQueueType::Transparency:
-                            transparentList.push_back({ro.get(), std::move(batch)});
+                            preparedTransparent->push_back(std::move(pb));
                             break;
                         default:
-                            opaqueList.push_back({ro.get(), std::move(batch)});
+                            preparedOpaque->push_back(std::move(pb));
                             break;
                         }
                     }
                 }
 
-                auto sortAsc  = [](const BatchEntry& a, const BatchEntry& b)
+                auto sortAsc  = [](const PreparedBatch& a, const PreparedBatch& b)
                 {
                     if (a.batch.Priority != b.batch.Priority) return a.batch.Priority < b.batch.Priority;
                     return a.batch.Depth < b.batch.Depth;
                 };
-                auto sortDesc = [](const BatchEntry& a, const BatchEntry& b)
+                auto sortDesc = [](const PreparedBatch& a, const PreparedBatch& b)
                 {
                     if (a.batch.Priority != b.batch.Priority) return a.batch.Priority < b.batch.Priority;
                     return a.batch.Depth > b.batch.Depth;
                 };
-                std::sort(opaqueList.begin(),      opaqueList.end(),      sortAsc);
-                std::sort(alphaTestList.begin(),   alphaTestList.end(),   sortAsc);
-                std::sort(transparentList.begin(), transparentList.end(), sortDesc);
+                std::sort(preparedOpaque->begin(),      preparedOpaque->end(),      sortAsc);
+                std::sort(preparedAlphaTest->begin(),   preparedAlphaTest->end(),   sortAsc);
+                std::sort(preparedTransparent->begin(), preparedTransparent->end(), sortDesc);
+            })
+            .Execute([cam, perPass, preparedOpaque, preparedAlphaTest, preparedTransparent]
+                     (RGPassContext& ctx, gfx::GFXCommandBuffer& cmdBuffer)
+            {
+                auto* targetFBO = cam->GetRenderTexture()->GetGfxFrameBufferObject().get();
+                if (!targetFBO) return;
 
-                auto DrawBatchList = [&](const array_list<BatchEntry>& entries)
+                auto* pipelineMgr = cmdBuffer.GetApplication()->GetGraphicsPipelineManager();
+                cmdBuffer.CmdSetViewport(0, 0, (float)targetFBO->GetWidth(), (float)targetFBO->GetHeight());
+
+                auto DrawBatchList = [&](const array_list<PreparedBatch>& entries)
                 {
-                    for (const auto& entry : entries)
+                    for (const auto& pb : entries)
                     {
-                        const auto& batch = entry.batch;
-                        if (!batch.Material) continue;
-                        auto shader = batch.Material->GetShader();
-                        if (!shader || !shader->GetConfig()) continue;
+                        if (!pb.binding) continue; // shader not ready yet
 
-                        const auto& passBinding = batch.Material->GetPassBinding("Forward", batch.Interface);
-                        batch.Material->SubmitParameters();
-                        auto program = passBinding.GetCurrentProgram();
+                        auto program = pb.binding->GetCurrentProgram();
                         if (!program) continue;
+
+                        auto shader = pb.batch.Material->GetShader();
+                        if (!shader || !shader->GetConfig()) continue;
 
                         auto& gpuPrograms = program->GetGpuPrograms();
                         auto shaderConfig = shader->GetConfig();
@@ -195,29 +203,27 @@ namespace pulsar
                         }
 
                         array_list<gfx::GFXDescriptorSetLayout_sp> descLayouts;
-                        auto matDescSetLayout = batch.Material->GetDescriptorSetLayout();
-                        if (!matDescSetLayout) continue;
-                        descLayouts.push_back(matDescSetLayout);
+                        descLayouts.push_back(pb.binding->m_descriptorSetLayout);
                         descLayouts.push_back(perPass->GetDescriptorSetLayout());
-                        descLayouts.push_back(batch.DescriptorSetLayout);
+                        descLayouts.push_back(pb.batch.DescriptorSetLayout);
 
                         auto gfxPipeline = pipelineMgr->GetGraphicsPipeline(
                             gpuPrograms, psoParams, descLayouts,
-                            targetFBO->GetRenderTargetDesc(), batch.State);
+                            targetFBO->GetRenderTargetDesc(), pb.batch.State);
 
                         cmdBuffer.CmdBindGraphicsPipeline(gfxPipeline.get());
-                        cmdBuffer.CmdSetCullMode(batch.GetCullMode());
+                        cmdBuffer.CmdSetCullMode(pb.batch.GetCullMode());
 
-                        for (const auto& element : batch.Elements)
+                        for (const auto& element : pb.batch.Elements)
                         {
                             array_list<gfx::GFXDescriptorSet*> descSets;
-                            descSets.push_back(batch.Material->GetDescriptorSet().get());
+                            descSets.push_back(pb.binding->m_descriptorSet.get());
                             descSets.push_back(perPass->GetDescriptorSet().get());
                             descSets.push_back(element.ModelDescriptor.get());
                             cmdBuffer.CmdBindDescriptorSets(descSets, gfxPipeline.get());
 
                             cmdBuffer.CmdBindVertexBuffers({element.Vertex.get()});
-                            if (batch.IsUsedIndices)
+                            if (pb.batch.IsUsedIndices)
                             {
                                 cmdBuffer.CmdBindIndexBuffer(element.Indices.get());
                                 cmdBuffer.CmdDrawIndexed(element.Indices->GetElementCount());
@@ -230,9 +236,9 @@ namespace pulsar
                     }
                 };
 
-                DrawBatchList(opaqueList);
-                DrawBatchList(alphaTestList);
-                DrawBatchList(transparentList);
+                DrawBatchList(*preparedOpaque);
+                DrawBatchList(*preparedAlphaTest);
+                DrawBatchList(*preparedTransparent);
             });
 
         // ---- Post-Process Passes ----
@@ -296,6 +302,13 @@ namespace pulsar
                         .colorStoreOp = gfx::GFXRenderPassStoreOp::Store,
                     })
                     .WithPerPass(perPass)
+                    .Prepare([ppMat, ppRendererSet](RGPassContext&)
+                    {
+                        // PrepareForRendering must run before BeginRenderPass (resource creation + descriptor updates)
+                        if (ppMat)
+                            ppMat->PrepareForRendering("PostProcess", "RENDERER_IMAGEPROCESS");
+                        (void)ppRendererSet;
+                    })
                     .Execute([ppMat, hSrc, hDst, hFinal, cam, perPass, ppRendererSet, ppRendererLayout](RGPassContext& passCtx, gfx::GFXCommandBuffer& cmdBuffer)
                     {
                         auto* mat = ppMat.GetPtr();
@@ -307,10 +320,14 @@ namespace pulsar
                         // set 0: per-Material (user params)
                         // set 1: per-Pass (camera / lights)
                         // set 2: per-Renderer — PP_InColor (t0/s0, space2)
-                        const auto& ppPassBinding = mat->GetPassBinding("PostProcess", "RENDERER_IMAGEPROCESS");
-                        // SubmitParameters 初始化 set0 descriptor set layout
-                        mat->SubmitParameters();
-                        auto program = ppPassBinding.GetCurrentProgram();
+                        // PrepareForRendering was already called in Prepare; here we just fetch the result.
+                        const auto* ppPassBinding = mat->GetPassBinding("PostProcess", "RENDERER_IMAGEPROCESS")
+                                                        .m_gpuResourcesInitialized
+                                                    ? &mat->GetPassBinding("PostProcess", "RENDERER_IMAGEPROCESS")
+                                                    : nullptr;
+                        if (!ppPassBinding) return;
+
+                        auto program = ppPassBinding->GetCurrentProgram();
                         if (!program) return;
 
                         if (!ppRendererSet) return;
@@ -345,11 +362,8 @@ namespace pulsar
 
                         auto* gfxApp          = cmdBuffer.GetApplication();
                         auto* pipelineMgr     = gfxApp->GetGraphicsPipelineManager();
-                        auto  matDescSetLayout = mat->GetDescriptorSetLayout();
-                        if (!matDescSetLayout) return;
-
                         array_list<gfx::GFXDescriptorSetLayout_sp> descLayouts;
-                        descLayouts.push_back(matDescSetLayout);                    // set 0
+                        descLayouts.push_back(ppPassBinding->m_descriptorSetLayout); // set 0
                         descLayouts.push_back(perPass->GetDescriptorSetLayout());   // set 1
                         descLayouts.push_back(ppRendererLayout);                    // set 2
 
@@ -369,7 +383,7 @@ namespace pulsar
                         cmdBuffer.CmdBindGraphicsPipeline(gfxPipeline.get());
 
                         array_list<gfx::GFXDescriptorSet*> descSets;
-                        descSets.push_back(mat->GetDescriptorSet().get());          // set 0
+                        descSets.push_back(ppPassBinding->m_descriptorSet.get());   // set 0
                         descSets.push_back(perPass->GetDescriptorSet().get());      // set 1
                         descSets.push_back(ppRendererSet);                          // set 2
                         cmdBuffer.CmdBindDescriptorSets(descSets, gfxPipeline.get());
@@ -390,23 +404,26 @@ namespace pulsar
 //                auto* camFinalRT  = cam->GetRenderTexture().GetPtr();
 //                auto  capturedDstView = camFinalRT ? camFinalRT->GetGfxRenderTarget0() : nullptr;
 
+                // CopyToFinal is a transfer-only (blit) pass.
+                // Write(hFinal) is declared for correct resource barrier and lifetime tracking,
+                // but NoRenderPass() prevents BeginRenderPass/EndRenderPass from being called,
+                // so CmdBlit (and its internal layout transitions) run safely outside a render pass.
                 graph.AddPass("PostProcess_CopyToFinal")
                     .Read(hSrc)
-                    .Write(hFinal, RGAttachmentDesc{
-                        .colorLoadOp  = gfx::GFXRenderPassLoadOp::DontCare,
-                        .colorStoreOp = gfx::GFXRenderPassStoreOp::Store,
-                    })
-                    .WithPerPass(perPass)
-                    .Execute([hSrc, hFinal](RGPassContext& passCtx, gfx::GFXCommandBuffer& cmdBuffer)
+                    .Write(hFinal)
+                    .NoRenderPass()
+                    .Execute([hSrc, hFinal, cam](RGPassContext& passCtx, gfx::GFXCommandBuffer& cmdBuffer)
                     {
-                        auto* srcRT = passCtx.Get(hSrc);
+                        auto* srcRT   = passCtx.Get(hSrc);
+                        // hFinal is imported; passCtx.Get works even without declaring Write(hFinal)
                         auto* finalRT = passCtx.Get(hFinal);
+                        if (!finalRT)
+                            finalRT = cam->GetRenderTexture().GetPtr();
                         if (!srcRT || !finalRT) return;
 
-                        auto srcView = srcRT->GetGfxRenderTarget0();
+                        auto srcView   = srcRT->GetGfxRenderTarget0();
                         auto finalView = finalRT->GetGfxRenderTarget0();
-                        if (!srcView) return;
-                        if (!finalView) return;
+                        if (!srcView || !finalView) return;
 
                         cmdBuffer.CmdBlit(srcView.get(), finalView.get());
                     });

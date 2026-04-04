@@ -198,22 +198,30 @@ namespace pulsar
                 break;
             }
 
-            if (fbo && fboAttach)
+            RGPassContext ctx(m_physicalRTs, m_handleToRTIndex, pass.perPassResources);
+
+            // Prepare: runs after Compile, before BeginRenderPass.
+            // Safe place for GPU resource creation, material preparation, descriptor set updates.
+            if (pass.prepareFunc)
+                pass.prepareFunc(ctx);
+
+            const bool beginPass = fbo && fboAttach && !pass.noRenderPass;
+
+            cmd.CmdPushDebugInfo(pass.name);
+            if (beginPass)
             {
-                cmd.CmdPushDebugInfo(pass.name);
                 cmd.SetFrameBuffer(fbo);
                 cmd.CmdBeginRenderPass(pass.name, *fboAttach);
             }
 
-            RGPassContext ctx(m_physicalRTs, m_handleToRTIndex, pass.perPassResources);
             pass.executeFunc(ctx, cmd);
 
-            if (fbo)
+            if (beginPass)
             {
                 cmd.CmdEndRenderPass();
                 cmd.SetFrameBuffer(nullptr);
-                cmd.CmdPopDebugInfo();
             }
+            cmd.CmdPopDebugInfo();
         }
 
         auto* pool = TransientRTPool::Get();
