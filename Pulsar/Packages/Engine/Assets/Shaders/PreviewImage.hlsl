@@ -1,21 +1,19 @@
-
-
 #include "Common.inc.hlsl"
 #include "PostProcessing.inc.hlsl"
-
-
 
 
 float4 _CheckerColorA;
 float4 _CheckerColorB;
 float  _GridSize;
+
+float4 _TexSize;
+float _Zoom;
 int    _Flags;
+
 
 Texture2D    _Image        ;
 SamplerState Sampler__Image ;
 
-Texture2D    _Image2        ;
-SamplerState Sampler__Image2 ;
 
 #define FLAGS_GAMMA                   0x01
 #define FLAGS_EnableCheckerBackground 0x02
@@ -27,13 +25,26 @@ SamplerState Sampler__Image2 ;
 
 
 
-
 float4 PSMain(float4 position : SV_Position, float2 texcoord) : SV_TARGET
 {
+    float3 backColor = 0;
+
     float4 output = float4(0,0,0,1);
     if (_Flags & FLAGS_NORMALMAP) output.b = 1;
 
-    float4 imgColor = _Image.Sample(Sampler__Image, texcoord);
+    float2 ratio = _TexSize.xy / _TexSize.zw;
+
+    float2 uv = texcoord  * 2 - 1;
+    uv /= _Zoom;
+    uv /= ratio;
+    uv = (uv + 1) * 0.5;
+
+    float4 imgColor = _Image.Sample(Sampler__Image, uv);
+
+    imgColor.rgb = lerp(imgColor.rgb, backColor.rgb, uv.x > 1);
+    imgColor.rgb = lerp(imgColor.rgb, backColor.rgb, uv.y > 1);
+    imgColor.rgb = lerp(imgColor.rgb, backColor.rgb, uv.x < 0);
+    imgColor.rgb = lerp(imgColor.rgb, backColor.rgb, uv.y < 0);
 
     if (_Flags & FLAGS_CHANNEL_R) output.x = imgColor.x;
     if (_Flags & FLAGS_CHANNEL_G) output.y = imgColor.y;

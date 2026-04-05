@@ -216,7 +216,6 @@ namespace pulsared
                     flag &= ~FLAGS_CHANNEL_A;
             }
             m_ppMat->SetIntScalar("_Flags", flag);
-            m_ppMat->SubmitParameters();
         }
         ImGui::SameLine();
         if (ImGui::Checkbox("Gamma", &m_enableGamma))
@@ -227,7 +226,6 @@ namespace pulsared
             else
                 flag &= ~FLAGS_GAMMA;
             m_ppMat->SetIntScalar("_Flags", flag);
-            m_ppMat->SubmitParameters();
         }
         ImGui::SameLine();
         if (ImGui::Checkbox("bg", &m_enableTransparency))
@@ -238,8 +236,11 @@ namespace pulsared
             else
                 flag &= ~FLAGS_EnableCheckerBackground;
             m_ppMat->SetIntScalar("_Flags", flag);
-            m_ppMat->SubmitParameters();
+
         }
+
+
+
 
         auto size = ImGui::GetContentRegionAvail();
         if (fitBtnDown)
@@ -249,14 +250,35 @@ namespace pulsared
             m_imageScale = std::min(rateX, rateY);
         }
 
+        m_ppMat->SetFloat("_Zoom", m_imageScale);
+        m_ppMat->SetVector4("_TexSize", Vector4f(width, height, size.x, size.y));
+
         ImGui::BeginChild("picframe", size);
-        ImGui::SetNextWindowPos(ImGui::GetWindowPos() + size / 2 - (ImVec2((float)width, (float)height) / 2) * m_imageScale);
-        if (ImGui::BeginChild("pic", {width * m_imageScale, height * m_imageScale}))
+
+        ImVec2 frameSize = ImGui::GetContentRegionAvail();
+        //ImGui::SetNextWindowPos(ImGui::GetWindowPos() + size / 2 - (ImVec2((float)width, (float)height) / 2));
+        if (ImGui::BeginChild("pic", frameSize))
         {
             base::OnDrawAssetPreviewUI(dt);
+            // Mouse wheel zoom (only when hovering the preview area)
+            if (ImGui::IsWindowHovered())
+            {
+                float wheel = ImGui::GetIO().MouseWheel;
+                if (wheel != 0.0f)
+                {
+                    constexpr float kZoomSpeed = 0.1f;
+                    constexpr float kMinScale  = 0.05f;
+                    constexpr float kMaxScale  = 32.0f;
+                    m_imageScale *= (1.0f + wheel * kZoomSpeed);
+                    m_imageScale  = std::clamp(m_imageScale, kMinScale, kMaxScale);
+                }
+            }
         }
         ImGui::EndChild();
+
         ImGui::EndChild();
+
+        m_ppMat->SubmitParameters();
     }
 
     void TextureEditorWindow::OnDrawAssetPropertiesUI(float dt)
