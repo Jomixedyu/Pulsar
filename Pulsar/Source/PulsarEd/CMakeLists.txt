@@ -7,7 +7,6 @@ set(PUBLIC_MODULE
         psc
 )
 set(PRIVATE_MODULE
-        assimp
 )
 
 
