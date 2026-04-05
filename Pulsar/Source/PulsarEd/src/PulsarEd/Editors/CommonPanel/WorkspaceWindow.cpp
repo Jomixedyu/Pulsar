@@ -7,6 +7,7 @@
 #include "CoreLib.Platform/Window.h"
 #include "EditorAppInstance.h"
 #include "Importers/AssetImporter.h"
+#include "Importers/ImportAssetWindow.h"
 #include "Windows/EditorWindowManager.h"
 
 #include <Pulsar/IconsForkAwesome.h>
@@ -225,6 +226,9 @@ namespace pulsared
 
     void WorkspaceWindow::OnDrawImGui(float dt)
     {
+        // Execute deferred import (file dialog must run outside the ImGui frame)
+        ExecutePendingImport();
+
         if (!Workspace::IsOpened())
         {
             ImGui::Text("no project");
@@ -786,29 +790,29 @@ namespace pulsared
     }
     void WorkspaceWindow::OnClick_Import()
     {
-        const auto mainWindow = jxcorlib::platform::window::GetMainWindowHandle();
-        fs::path selectedFileName;
+        // Defer to next frame to avoid calling the blocking Win32 file dialog
+        // inside the ImGui render loop (which would corrupt ImGui's internal state)
+        m_pendingImport = true;
+    }
 
-        string filterStr;
-        for (const auto factory : AssetImporterFactoryManager::GetFactories())
+    void WorkspaceWindow::ExecutePendingImport()
+    {
+        if (!m_pendingImport)
+            return;
+        m_pendingImport = false;
+
+        // Get all registered factories
+        const auto factories = AssetImporterFactoryManager::GetFactories();
+        if (factories.empty())
         {
-            filterStr += StringUtil::Concat(factory->GetDescription(), "(", factory->GetFilter(), ")", ";", factory->GetFilter(), ";");
+            Logger::Log("No import factories registered.", LogLevel::Warning);
+            return;
         }
 
-        if (jxcorlib::platform::window::OpenFileDialog(mainWindow, filterStr, "", &selectedFileName))
-        {
-            const auto factory = AssetImporterFactoryManager::FindFactoryByExt(selectedFileName.extension().string());
-            if (!factory)
-            {
-                Logger::Log("no import factory.", LogLevel::Error);
-                return;
-            }
-            const auto settings = factory->CreateImporterSettings();
-            settings->ImportingTargetFolder = m_currentFolder; // current target
-            settings->ImportFiles->push_back(StringUtil::StringCast(selectedFileName.generic_u8string()));
-
-            factory->CreateImporter()->Import(settings.get());
-        }
+        // Open the type-selection modal immediately (no file dialog yet).
+        // The file dialog will only appear after the user confirms the type + settings.
+        auto modal = std::make_shared<ImportAssetWindow>(factories, m_currentFolder);
+        GetEdApp()->ShowModalDialog(std::move(modal));
     }
 
     WorkspaceWindow::WorkspaceWindow()

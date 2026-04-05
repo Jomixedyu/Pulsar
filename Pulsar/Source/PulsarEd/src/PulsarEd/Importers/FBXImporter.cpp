@@ -579,7 +579,7 @@ namespace pulsared
 
         for (auto& importFile : *settings->ImportFiles)
         {
-            LoadScene(fbxManager, fbxScene, importFile.c_str());
+            LoadScene(fbxManager, fbxScene, importFile.string().c_str());
 
             bool inverseCoordSystem = false;
             if (fbxsetting->ConvertAxisSystem)
@@ -609,7 +609,7 @@ namespace pulsared
             geomConverter.SplitMeshesPerMaterial(fbxScene, true);
 
             const auto fbxRootNode = fbxScene->GetRootNode();
-            const auto filename = PathUtil::GetFilenameWithoutExt(importFile);
+            const auto filename = PathUtil::GetFilenameWithoutExt(importFile.filename().string());
             auto prefab = Prefab::StaticCreate(filename);
             const auto targetMeshFolder = settings->ImportingTargetFolder + "/" + filename + "_Items";
             const auto rootCount = fbxRootNode->GetChildCount();

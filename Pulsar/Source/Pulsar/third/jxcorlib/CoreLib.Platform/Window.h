@@ -37,6 +37,12 @@ namespace jxcorlib::platform::window
      */
     bool OpenFileDialog(intptr_t owner, std::string_view filter, const std::filesystem::path& default_path, std::filesystem::path* out_select);
 
+    /**
+     * Multi-select variant. Returns all selected file paths.
+     * @param filter: same format as OpenFileDialog
+     */
+    bool OpenFileDialogMulti(intptr_t owner, std::string_view filter, const std::filesystem::path& default_path, std::vector<std::filesystem::path>* out_select);
+
     float GetUIScaling();
 
     intptr_t FindWindow(std::string_view title);

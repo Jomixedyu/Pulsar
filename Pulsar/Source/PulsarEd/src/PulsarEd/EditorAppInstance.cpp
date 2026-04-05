@@ -296,58 +296,6 @@ namespace pulsared
         return curPath / p;
     }
 
-    static void PreCompileShaders()
-    {
-        // TODO: 旧的预编译流程已废弃，shader 编译现在通过
-        // ShaderInstanceCache + EditorShaderCompileService 按需触发
-    }
-
-    static void PreImportBuiltinModel()
-    {
-        {
-            FBXImporter importer;
-            FBXImporterSettings settings;
-
-            auto cube = AssetDatabase::GetPackagePhysicsPath("Engine") / "SrcModel/Cube.fbx";
-            settings.ImportFiles->push_back(jxcorlib::PathToU8Str(cube));
-            settings.ImportingTargetFolder = "Engine/Shapes";
-
-            auto imported = importer.Import(&settings);
-            for (auto item : imported)
-            {
-                AssetDatabase::Save(item);
-            }
-        }
-        {
-            FBXImporter importer;
-            FBXImporterSettings settings;
-
-            auto sphere = AssetDatabase::GetPackagePhysicsPath("Engine") / "SrcModel/Sphere.fbx";
-            settings.ImportFiles->push_back(jxcorlib::PathToU8Str(sphere));
-            settings.ImportingTargetFolder = "Engine/Shapes";
-
-            auto imported = importer.Import(&settings);
-            for (auto item : imported)
-            {
-                AssetDatabase::Save(item);
-            }
-        }
-
-        {
-            FBXImporter importer;
-            FBXImporterSettings settings;
-
-            auto sphere = AssetDatabase::GetPackagePhysicsPath("Engine") / "SrcModel/Plane.fbx";
-            settings.ImportFiles->push_back(jxcorlib::PathToU8Str(sphere));
-            settings.ImportingTargetFolder = "Engine/Shapes";
-
-            auto imported = importer.Import(&settings);
-            for (auto item : imported)
-            {
-                AssetDatabase::Save(item);
-            }
-        }
-    }
 
     void EditorAppInstance::OnInitialized()
     {
@@ -382,10 +330,6 @@ namespace pulsared
             Logger::Log("ShaderInstanceCache initialized");
         }
 
-        Logger::Log("precompile shaders...");
-        // recompile obsolete shaders
-        PreCompileShaders();
-        // PreImportBuiltinModel();
 
         // world
         Logger::Log("initialize world");

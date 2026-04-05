@@ -32,6 +32,19 @@ namespace pulsared
         return nullptr;
     }
 
+    array_list<AssetImporterFactory*> AssetImporterFactoryManager::FindFactoriesByExt(string_view ext)
+    {
+        array_list<AssetImporterFactory*> result;
+        for (const auto& factory : factories | std::views::values)
+        {
+            if (factory->IsSupportFormat(ext))
+            {
+                result.push_back(factory.get());
+            }
+        }
+        return result;
+    }
+
     AssetImporterFactory* AssetImporterFactoryManager::GetFactory(string_view name)
     {
         for (auto& [factoryName, factory] : factories)

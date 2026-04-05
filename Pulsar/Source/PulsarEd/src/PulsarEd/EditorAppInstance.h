@@ -21,7 +21,11 @@ namespace pulsared
         void Tick(float dt)
         {
             ImGui::OpenPopup(m_name.c_str());
-            if (ImGui::BeginPopupModal(m_name.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+            auto size = GetWindowSize();
+            if (size.x > 0 && size.y > 0)
+                ImGui::SetNextWindowSize(size, ImGuiCond_Always);
+            ImGuiWindowFlags flags = (size.x > 0) ? ImGuiWindowFlags_None : ImGuiWindowFlags_AlwaysAutoResize;
+            if (ImGui::BeginPopupModal(m_name.c_str(), nullptr, flags))
             {
                 OnDraw(dt);
                 if (m_childModal)
@@ -36,6 +40,8 @@ namespace pulsared
             }
         }
         virtual void OnDraw(float dt) = 0;
+        // Override to return a fixed window size; return {0,0} for auto-resize (default)
+        virtual ImVec2 GetWindowSize() const { return {0, 0}; }
         virtual ~ModalDialog() = default;
     };
 

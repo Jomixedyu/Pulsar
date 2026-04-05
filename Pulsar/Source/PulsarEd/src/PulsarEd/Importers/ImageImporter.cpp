@@ -14,7 +14,7 @@ namespace pulsared
         {
             auto asset = NewAssetObject<Texture2D>();
 
-            std::filesystem::path filePath { (char8_t*)file.c_str() };
+            std::filesystem::path filePath = file;
 
             auto fileBytes = FileUtil::ReadAllBytes(filePath);
 
@@ -24,7 +24,7 @@ namespace pulsared
 
             asset->FromNativeData(fileBytes.data(), fileBytes.size(), true, width, height, channel);
 
-            auto assetPath = settings->ImportingTargetFolder + "/" + PathUtil::GetFilenameWithoutExt(file);
+            auto assetPath = settings->ImportingTargetFolder + "/" + PathUtil::GetFilenameWithoutExt(file.filename().string());
             assetPath = AssetDatabase::GetUniquePath(assetPath);
             AssetDatabase::CreateAsset(asset, assetPath);
             importAssets.push_back(asset);

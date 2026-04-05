@@ -2,6 +2,8 @@
 
 #include <Windows.h>
 #include <commdlg.h>
+#include <vector>
+#include <filesystem>
 
 namespace jxcorlib::platform::window
 {
@@ -114,55 +116,100 @@ namespace jxcorlib::platform::window
         return _MessageBoxImpl(owner, text, title, mode);
     }
 
+    // Helper: build the null-delimited filter string used by OPENFILENAME
+    static char* BuildFilterStr(std::string_view _filter)
+    {
+        auto filter = UTF8ToANSI(_filter.data());
+        char* filter_str = new char[filter.length() + 2];
+        for (size_t i = 0; i < filter.length(); i++)
+        {
+            char c = filter[i];
+            if (c == ';')       filter_str[i] = '\0';
+            else if (c == '|')  filter_str[i] = ';';
+            else                filter_str[i] = c;
+        }
+        filter_str[filter.length()]     = 0;
+        filter_str[filter.length() + 1] = 0;
+        return filter_str;
+    }
+
     bool OpenFileDialog(intptr_t owner, std::string_view _filter, const std::filesystem::path& default_path, std::filesystem::path* out_select)
     {
         OPENFILENAME ofn = { 0 };
         ofn.lStructSize = sizeof(ofn);
         ofn.hwndOwner = (HWND)owner;
 
-        auto filter = UTF8ToANSI(_filter.data());
-        char* filter_str = new char[filter.length() + 2];
+        char* filter_str = BuildFilterStr(_filter);
         auto default_dir = UTF8ToANSI(default_path.string().c_str());
 
-        for (size_t i = 0; i < filter.length(); i++)
-        {
-            char c = filter[i];
-            if (c == ';')
-            {
-                filter_str[i] = '\0';
-            }
-            else if(c == '|')
-            {
-                filter_str[i] = ';';
-            }
-            else
-            {
-                filter_str[i] = c;
-            }
-        }
-        filter_str[filter.length()] = 0;
-        filter_str[filter.length() + 1] = 0;
-
         TCHAR szBuffer[MAX_PATH] = { 0 };
-        ofn.lpstrFilter = filter_str;
+        ofn.lpstrFilter    = filter_str;
         ofn.lpstrInitialDir = default_dir.c_str();
-        ofn.lpstrFile = szBuffer; 
-        ofn.nMaxFile = sizeof(szBuffer) / sizeof(*szBuffer);
-        ofn.nFilterIndex = 0;
-        ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_EXPLORER | OFN_NOCHANGEDIR;
+        ofn.lpstrFile      = szBuffer;
+        ofn.nMaxFile       = sizeof(szBuffer) / sizeof(*szBuffer);
+        ofn.nFilterIndex   = 0;
+        ofn.Flags          = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_EXPLORER | OFN_NOCHANGEDIR;
 
         BOOL bSel = GetOpenFileName(&ofn);
-
         delete[] filter_str;
+
         if (bSel)
         {
-            if (out_select)
-            {
-                *out_select = szBuffer;
-            }
+            if (out_select) *out_select = szBuffer;
             return true;
         }
         return false;
+    }
+
+    bool OpenFileDialogMulti(intptr_t owner, std::string_view _filter, const std::filesystem::path& default_path, std::vector<std::filesystem::path>* out_select)
+    {
+        OPENFILENAME ofn = { 0 };
+        ofn.lStructSize = sizeof(ofn);
+        ofn.hwndOwner = (HWND)owner;
+
+        char* filter_str = BuildFilterStr(_filter);
+        auto default_dir = UTF8ToANSI(default_path.string().c_str());
+
+        // Large buffer: directory + '\0' + file1 '\0' file2 '\0' ... '\0' '\0'
+        const DWORD bufSize = 32768;
+        std::vector<TCHAR> szBuffer(bufSize, 0);
+        ofn.lpstrFilter     = filter_str;
+        ofn.lpstrInitialDir = default_dir.c_str();
+        ofn.lpstrFile       = szBuffer.data();
+        ofn.nMaxFile        = bufSize;
+        ofn.nFilterIndex    = 0;
+        ofn.Flags           = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_EXPLORER
+                            | OFN_NOCHANGEDIR   | OFN_ALLOWMULTISELECT;
+
+        BOOL bSel = GetOpenFileName(&ofn);
+        delete[] filter_str;
+
+        if (!bSel) return false;
+
+        if (out_select)
+        {
+            // When multiple files are selected the buffer contains:
+            //   "dir\0file1\0file2\0...\0\0"
+            // When only one file: "full_path\0\0"
+            const TCHAR* p = szBuffer.data();
+            std::filesystem::path dir(p);
+            p += dir.native().size() + 1;
+
+            if (*p == 0)
+            {
+                // Single selection – p is empty, dir is the full path
+                out_select->push_back(dir);
+            }
+            else
+            {
+                while (*p != 0)
+                {
+                    out_select->push_back(dir / p);
+                    p += std::char_traits<TCHAR>::length(p) + 1;
+                }
+            }
+        }
+        return true;
     }
 
     float GetUIScaling()

@@ -225,7 +225,8 @@ namespace pulsared
                         {
                             field->SetValue(parentObj, fieldInstSptr);
                         }
-                        receiver->PostEditChange(receiverField);
+                        if (receiver)
+                            receiver->PostEditChange(receiverField);
                     }
                     isChanged |= curFieldChanged;
 

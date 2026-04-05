@@ -1,6 +1,7 @@
 #pragma once
 #include <ranges>
 #include <PulsarEd/Assembly.h>
+#include <CoreLib/Path.h>  // must come after Assembly.h so STL headers are already included
 
 #define PULSARED_ASSET_IMPORTER_FACTORY(NAME) static inline struct __assetfactory_##NAME{ \
     __assetfactory_##NAME() { ::pulsared::AssetImporterFactoryManager::RegisterFactory(#NAME, std::make_unique<NAME>()); } } \
@@ -13,7 +14,7 @@ namespace pulsared
         CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::AssetImporterSettings, Object);
     public:
         CORELIB_REFL_DECL_FIELD(ImportFiles);
-        List_sp<string> ImportFiles = mksptr(new List<string>);
+        List_sp<jxcorlib::path> ImportFiles = mksptr(new List<jxcorlib::path>);
 
         CORELIB_REFL_DECL_FIELD(ImportingTargetFolder);
         string ImportingTargetFolder;
@@ -47,17 +48,20 @@ namespace pulsared
     public:
         static void RegisterFactory(string_view name, std::unique_ptr<AssetImporterFactory>&& factory)
         {
-            factories[name] = std::move(factory);
+            factories[string(name)] = std::move(factory);
         }
         static void UnregisterFactory(string_view name)
         {
-            factories.erase(name);
+            factories.erase(string(name));
         }
+        // Returns the first matching factory (legacy)
         static AssetImporterFactory* FindFactoryByExt(string_view ext);
+        // Returns ALL factories that support the given extension
+        static array_list<AssetImporterFactory*> FindFactoriesByExt(string_view ext);
         static AssetImporterFactory* GetFactory(string_view name);
         static array_list<AssetImporterFactory*> GetFactories();
 
     protected:
-        static inline hash_map<string_view, std::unique_ptr<AssetImporterFactory>> factories;
+        static inline hash_map<string, std::unique_ptr<AssetImporterFactory>> factories;
     };
 }

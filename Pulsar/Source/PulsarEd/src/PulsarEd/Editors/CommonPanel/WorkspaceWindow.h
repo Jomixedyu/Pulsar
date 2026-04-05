@@ -52,9 +52,11 @@ namespace pulsared
         MenuContextBase_sp MakeMenuContext();
     private:
         void OnClick_Import();
+        void ExecutePendingImport();
     private:
         SPtr<OnGetContext> m_onGetContextCallback;
         string m_currentFolder;
+        bool m_pendingImport = false;
 
         array_list< std::weak_ptr<AssetFileNode> > m_selectedFiles;
 
