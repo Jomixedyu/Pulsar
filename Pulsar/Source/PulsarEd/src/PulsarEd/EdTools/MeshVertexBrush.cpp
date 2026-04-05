@@ -89,10 +89,10 @@ namespace pulsared
                             auto& section = sm->GetMeshSection(sectionIndex);
                             for (int i = 0; i < section.Indices.size(); i+=3)
                             {
-                                auto p0 = section.Vertex[section.Indices[i]];
-                                auto p1 = section.Vertex[section.Indices[i+1]];
-                                auto p2 = section.Vertex[section.Indices[i+2]];
-                                Triangle3f tri {p0.Position, p1.Position, p2.Position};
+                                const Vector3f& p0 = section.Positions[section.Indices[i]];
+                                const Vector3f& p1 = section.Positions[section.Indices[i+1]];
+                                const Vector3f& p2 = section.Positions[section.Indices[i+2]];
+                                Triangle3f tri {p0, p1, p2};
                                 Vector3f intersection{};
                                 if (Intersect(tri.GetPlane(), {localStart, localEnd}, intersection) && tri.IsPointIn(intersection))
                                 {

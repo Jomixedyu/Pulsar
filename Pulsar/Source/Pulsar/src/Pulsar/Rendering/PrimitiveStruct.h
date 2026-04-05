@@ -3,15 +3,15 @@
 
 namespace pulsar
 {
-    constexpr int STATICMESH_MAX_TEXTURE_COORDS = 4;
+    constexpr int STATICMESH_MAX_TEXTURE_COORDS = 8;
 
+    // GPU 上传时使用的临时交错结构，不用于序列化
     struct StaticMeshVertex
     {
         Vector3f Position;
         Vector3f Normal;
-        Vector3f Tangent;
-        Vector3f Bitangent;
-        Color4b Color;
+        Vector4f Tangent;   // xyz=切线方向，w=副切线符号(+1/-1)
+        Color4b  Color;
         Vector2f TexCoords[STATICMESH_MAX_TEXTURE_COORDS];
     };
     constexpr inline int kSizeofStaticMeshVertex = sizeof(StaticMeshVertex);

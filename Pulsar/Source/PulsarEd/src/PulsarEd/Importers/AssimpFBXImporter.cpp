@@ -53,47 +53,65 @@ namespace pulsared
 
     static void _ProcessMesh(StaticMeshSection* section, aiMesh* mesh, const aiScene* scene)
     {
-        section->Vertex.resize(mesh->mNumVertices);
-        for (unsigned int vertnum = 0; vertnum < mesh->mNumVertices; ++vertnum)
+        const unsigned int vertCount = mesh->mNumVertices;
+
+        // 确定实际 UV 套数
+        uint8_t numUV = 0;
+        for (int i = 0; i < STATICMESH_MAX_TEXTURE_COORDS; i++)
         {
-            StaticMeshVertex& vert = section->Vertex[vertnum];
-            vert.Position = ToVector3f(mesh->mVertices[vertnum]);
-            vert.Normal = ToVector3f(mesh->mNormals[vertnum]);
-            if (mesh->mTangents)
-            {
-                vert.Tangent = ToVector3f(mesh->mTangents[vertnum]);
-            }
-            if (mesh->mBitangents)
-            {
-                vert.Bitangent = ToVector3f(mesh->mBitangents[vertnum]);
-            }
+            if (mesh->HasTextureCoords(i)) numUV = (uint8_t)(i + 1);
+        }
+        section->NumTexCoords = numUV;
 
-            for (int i = 0; i < STATICMESH_MAX_TEXTURE_COORDS; i++)
-            {
-                if (mesh->HasTextureCoords(i))
-                {
-                    auto v = mesh->mTextureCoords[i][vertnum];
-                    vert.TexCoords[i] = { v.x, v.y };
-                }
-            }
+        // Position（必须有）
+        section->Positions.resize(vertCount);
+        for (unsigned int i = 0; i < vertCount; i++)
+            section->Positions[i] = ToVector3f(mesh->mVertices[i]);
 
-            if (mesh->HasVertexColors(0))
-            {
-                vert.Color = ToColor(mesh->mColors[0][vertnum]);
-            }
-
+        // Normal
+        if (mesh->mNormals)
+        {
+            section->Normals.resize(vertCount);
+            for (unsigned int i = 0; i < vertCount; i++)
+                section->Normals[i] = ToVector3f(mesh->mNormals[i]);
         }
 
-        section->Indices.reserve(mesh->mNumFaces);
+        // Tangent（Bitangent 不存，运行时由 Normal×Tangent 计算）
+        if (mesh->mTangents)
+        {
+            section->Tangents.resize(vertCount);
+            for (unsigned int i = 0; i < vertCount; i++)
+                section->Tangents[i] = ToVector3f(mesh->mTangents[i]);
+        }
+
+        // VertexColor
+        if (mesh->HasVertexColors(0))
+        {
+            section->Colors.resize(vertCount);
+            for (unsigned int i = 0; i < vertCount; i++)
+                section->Colors[i] = ToColor(mesh->mColors[0][i]);
+        }
+
+        // TexCoords（只存实际有的套数）
+        section->TexCoords.resize(numUV);
+        for (uint8_t uvIdx = 0; uvIdx < numUV; uvIdx++)
+        {
+            section->TexCoords[uvIdx].resize(vertCount);
+            for (unsigned int i = 0; i < vertCount; i++)
+            {
+                auto& v = mesh->mTextureCoords[uvIdx][i];
+                section->TexCoords[uvIdx][i] = { v.x, v.y };
+            }
+        }
+
+        // Indices
+        section->Indices.reserve(mesh->mNumFaces * 3);
         for (unsigned int i = 0; i < mesh->mNumFaces; i++)
         {
             aiFace face = mesh->mFaces[i];
             for (unsigned int j = 0; j < face.mNumIndices; j++)
-            {
                 section->Indices.push_back(face.mIndices[j]);
-            }
         }
-
     }
 
     static void _ProcessNode(aiNode* node, const aiScene* scene, ObjectPtr<Node> pnode, Scene_ref pscene, const string& dir, float scale_factor)

@@ -15,11 +15,10 @@ namespace pulsar
         vertDescLayout->BindingPoint = 0;
         vertDescLayout->Stride = sizeof(StaticMeshVertex);
 
-        vertDescLayout->Attributes.push_back({(int)EngineInputSemantic::POSITION, gfx::GFXVertexInputDataFormat::R32G32B32_SFloat, offsetof(StaticMeshVertex, Position)});
-        vertDescLayout->Attributes.push_back({(int)EngineInputSemantic::NORMAL, gfx::GFXVertexInputDataFormat::R32G32B32_SFloat, offsetof(StaticMeshVertex, Normal)});
-        vertDescLayout->Attributes.push_back({(int)EngineInputSemantic::TANGENT, gfx::GFXVertexInputDataFormat::R32G32B32_SFloat, offsetof(StaticMeshVertex, Tangent)});
-        vertDescLayout->Attributes.push_back({(int)EngineInputSemantic::BITANGENT, gfx::GFXVertexInputDataFormat::R32G32B32_SFloat, offsetof(StaticMeshVertex, Bitangent)});
-        vertDescLayout->Attributes.push_back({(int)EngineInputSemantic::COLOR, gfx::GFXVertexInputDataFormat::R8G8B8A8_UNorm, offsetof(StaticMeshVertex, Color)});
+        vertDescLayout->Attributes.push_back({(int)EngineInputSemantic::POSITION,  gfx::GFXVertexInputDataFormat::R32G32B32_SFloat, offsetof(StaticMeshVertex, Position)});
+        vertDescLayout->Attributes.push_back({(int)EngineInputSemantic::NORMAL,    gfx::GFXVertexInputDataFormat::R32G32B32_SFloat, offsetof(StaticMeshVertex, Normal)});
+        vertDescLayout->Attributes.push_back({(int)EngineInputSemantic::TANGENT,   gfx::GFXVertexInputDataFormat::R32G32B32A32_SFloat, offsetof(StaticMeshVertex, Tangent)});
+        vertDescLayout->Attributes.push_back({(int)EngineInputSemantic::COLOR,     gfx::GFXVertexInputDataFormat::R8G8B8A8_UNorm,   offsetof(StaticMeshVertex, Color)});
 
         for (size_t i = 0; i < STATICMESH_MAX_TEXTURE_COORDS; i++)
         {
@@ -27,6 +26,29 @@ namespace pulsar
         }
 
         return vertDescLayout;
+    }
+
+    // 将按属性分离的序列化数据合并为交错格式用于 GPU 上传
+    array_list<StaticMeshVertex> StaticMeshSection::BuildInterleavedVertices() const
+    {
+        const size_t vertCount = Positions.size();
+        array_list<StaticMeshVertex> result(vertCount);
+
+        for (size_t i = 0; i < vertCount; i++)
+        {
+            StaticMeshVertex& v = result[i];
+            v.Position = Positions[i];
+            v.Normal   = Normals.empty()   ? Vector3f{0, 1, 0} : Normals[i];
+            v.Tangent  = Tangents.empty()  ? Vector4f{1, 0, 0, 1} : Tangents[i];
+            v.Color    = Colors.empty()    ? Color4b{255, 255, 255, 255} : Colors[i];
+
+            for (uint8_t uvIdx = 0; uvIdx < NumTexCoords && uvIdx < STATICMESH_MAX_TEXTURE_COORDS; uvIdx++)
+            {
+                v.TexCoords[uvIdx] = TexCoords[uvIdx][i];
+            }
+        }
+
+        return result;
     }
 
     void StaticMesh::OnInstantiateAsset(AssetObject* obj)
@@ -45,7 +67,9 @@ namespace pulsar
         m_isCreatedResource = true;
         for (auto& section : m_sections)
         {
-            auto vertSize = section.Vertex.size() * kSizeofStaticMeshVertex;
+            // 从分离属性数据合并为交错格式再上传（GPU 侧暂时保持单 Buffer）
+            auto interleavedVerts = section.BuildInterleavedVertices();
+            const size_t vertSize = interleavedVerts.size() * sizeof(StaticMeshVertex);
 
             {
                 gfx::GFXBufferDesc vertexDesc{};
@@ -55,7 +79,7 @@ namespace pulsar
                 vertexDesc.ElementSize = sizeof(StaticMeshVertex);
 
                 auto vertBuffer = Application::GetGfxApp()->CreateBuffer(vertexDesc);
-                vertBuffer->Fill(section.Vertex.data());
+                vertBuffer->Fill(interleavedVerts.data());
                 m_vertexBuffers.push_back(vertBuffer);
             }
 
@@ -63,15 +87,13 @@ namespace pulsar
                 gfx::GFXBufferDesc indicesDesc{};
                 indicesDesc.Usage       = gfx::GFXBufferUsage::Indices;
                 indicesDesc.StorageType = gfx::GFXBufferMemoryPosition::DeviceLocal;
-                indicesDesc.BufferSize  = section.Indices.size() * sizeof(MeshIndicesType);
+                indicesDesc.BufferSize  = section.GetIndicesAllocSize();
                 indicesDesc.ElementSize = sizeof(MeshIndicesType);
 
                 auto indicesBuffer = Application::GetGfxApp()->CreateBuffer(indicesDesc);
                 indicesBuffer->Fill(section.Indices.data());
                 m_indicesBuffers.push_back(indicesBuffer);
             }
-
-
         }
         return true;
     }
@@ -170,28 +192,21 @@ namespace pulsar
         {
             for (uint32_t index : section.Indices)
             {
-                auto& pos = section.Vertex[index].Position;
-                verties.push_back(pos);
+                verties.push_back(section.Positions[index]);
             }
         }
 
         m_bounds = BoxSphereBounds3f::CreateFromPoints(verties.data(), verties.size());
     }
 
-    std::iostream& ReadWriteStream(std::iostream& stream, bool isWrite, StaticMeshVertex& data)
-    {
-        ReadWriteStream(stream, isWrite, data.Position);
-        ReadWriteStream(stream, isWrite, data.Normal);
-        ReadWriteStream(stream, isWrite, data.Tangent);
-        ReadWriteStream(stream, isWrite, data.Bitangent);
-        ReadWriteStream(stream, isWrite, data.Color);
-        sser::ReadWriteStream(stream, isWrite, data.TexCoords);
-        return stream;
-    }
-
     std::iostream& ReadWriteStream(std::iostream& stream, bool isWrite, StaticMeshSection& data)
     {
-        sser::ReadWriteStream(stream, isWrite, data.Vertex);
+        sser::ReadWriteStream(stream, isWrite, data.NumTexCoords);
+        sser::ReadWriteStream(stream, isWrite, data.Positions);
+        sser::ReadWriteStream(stream, isWrite, data.Normals);
+        sser::ReadWriteStream(stream, isWrite, data.Tangents);
+        sser::ReadWriteStream(stream, isWrite, data.Colors);
+        sser::ReadWriteStream(stream, isWrite, data.TexCoords);
         sser::ReadWriteStream(stream, isWrite, data.Indices);
         sser::ReadWriteStream(stream, isWrite, data.MaterialIndex);
         return stream;

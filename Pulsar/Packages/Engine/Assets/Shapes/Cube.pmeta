@@ -1,9 +1,8 @@
 {
+    "Dependencies": [],
     "ExtraFiles": {},
-    "Guid": "44b325b172fe1040a325975d5a730f0b",
+    "Guid": "951286419e0e624eb3f4fec7a9a08b86",
     "Tags": {},
     "Type": "pulsar::StaticMesh",
-	"Dependencies": [
-		
-	]
+    "WeakDependencies": {}
 }

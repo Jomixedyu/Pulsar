@@ -437,48 +437,66 @@ namespace pulsared
                 const auto vertexCount = fbxMesh->GetPolygonVertexCount();
                 const auto polygonCount = fbxMesh->GetPolygonCount();
                 assert(vertexCount == polygonCount * kPolygonCount);
+
+                // 确定实际 UV 套数
+                const uint8_t numUV = (uint8_t)std::min(fbxMesh->GetUVLayerCount(), (int)STATICMESH_MAX_TEXTURE_COORDS);
+                section.NumTexCoords = numUV;
+
+                // 初始化各属性数组
                 section.Indices.resize(vertexCount);
-                section.Vertex.resize(vertexCount);
+                section.Positions.resize(vertexCount);
+                section.Normals.resize(vertexCount);
+                section.TexCoords.resize(numUV);
+                for (uint8_t uvIdx = 0; uvIdx < numUV; uvIdx++)
+                    section.TexCoords[uvIdx].resize(vertexCount);
+
+                const bool hasColors   = fbxMesh->GetLayer(0) && fbxMesh->GetLayer(0)->GetVertexColors();
+                const bool hasTangents = fbxMesh->GetElementTangentCount() > 0 && fbxMesh->GetElementBinormalCount() > 0;
+                if (hasColors)   section.Colors.resize(vertexCount);
+                if (hasTangents) section.Tangents.resize(vertexCount);
 
                 // #pragma omp parallel for
                 for (int polyIndex = 0; polyIndex < polygonCount; polyIndex++)
                 {
                     for (int vertIndexInFace = 0; vertIndexInFace < kPolygonCount; vertIndexInFace++)
                     {
-                        const auto vertexIndex = polyIndex * kPolygonCount + vertIndexInFace;
+                        const auto vertexIndex       = polyIndex * kPolygonCount + vertIndexInFace;
                         const auto controlPointIndex = fbxMesh->GetPolygonVertex(polyIndex, vertIndexInFace);
 
-                        StaticMeshVertex vertex{};
                         // position
-                        auto controlPoint = fbxMesh->GetControlPointAt(controlPointIndex);
-                        vertex.Position = ToVector3f(controlPoint);
+                        section.Positions[vertexIndex] = ToVector3f(fbxMesh->GetControlPointAt(controlPointIndex));
+
                         // normal
                         FbxVector4 normal;
                         fbxMesh->GetPolygonVertexNormal(polyIndex, vertIndexInFace, normal);
-                        vertex.Normal = ToVector3f(normal);
-                        // UVs
-                        for (int i = 0; i < fbxMesh->GetUVLayerCount(); ++i)
+                        section.Normals[vertexIndex] = ToVector3f(normal);
+
+                        // tangent + bitangent sign (w)
+                        if (hasTangents)
                         {
-                            if (i >= STATICMESH_MAX_TEXTURE_COORDS)
-                            {
-                                continue;
-                            }
+                            const Vector3f T = ToVector3f(GetColorLayerElement(fbxMesh->GetElementTangent(0),  controlPointIndex, vertexIndex));
+                            const Vector3f B = ToVector3f(GetColorLayerElement(fbxMesh->GetElementBinormal(0), controlPointIndex, vertexIndex));
+                            const Vector3f N = section.Normals[vertexIndex];
+                            // cross(N,T) 与 FBX 提供的 B 方向一致则 w=+1，否则 w=-1
+                            const float w = Dot(Cross(N, T), B) > 0.0f ? 1.0f : -1.0f;
+                            section.Tangents[vertexIndex] = Vector4f{T.x, T.y, T.z, w};
+                        }
 
-                            vertex.TexCoords[i] = ToVector2f(GetUVLayerElement(fbxMesh->GetElementUV(i), controlPointIndex, vertexIndex));
-                            if (inverseCoordsystem)
-                            {
-                                vertex.TexCoords[i].y = 1 - vertex.TexCoords[i].y;
-                            }
-
+                        // UVs
+                        for (uint8_t uvIdx = 0; uvIdx < numUV; uvIdx++)
+                        {
+                            auto uv = ToVector2f(GetUVLayerElement(fbxMesh->GetElementUV(uvIdx), controlPointIndex, vertexIndex));
+                            if (inverseCoordsystem) uv.y = 1.0f - uv.y;
+                            section.TexCoords[uvIdx][vertexIndex] = uv;
                         }
 
                         // color
-                        if (auto fbxColors = fbxMesh->GetLayer(0)->GetVertexColors())
+                        if (hasColors)
                         {
-                            vertex.Color = ToColor(GetColorLayerElement(fbxColors, controlPointIndex, vertexIndex));
+                            section.Colors[vertexIndex] = ToColor(GetColorLayerElement(
+                                fbxMesh->GetLayer(0)->GetVertexColors(), controlPointIndex, vertexIndex));
                         }
 
-                        section.Vertex[vertexIndex] = vertex;
                         auto indicesValue = vertexIndex;
                         if (inverseCoordsystem)
                         {

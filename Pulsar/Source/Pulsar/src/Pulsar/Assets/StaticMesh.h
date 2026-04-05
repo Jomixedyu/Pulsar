@@ -12,25 +12,27 @@ namespace pulsar
 
     using MeshIndicesType = uint32_t;
 
+    // 序列化层：按属性分离存储，与 GPU Buffer 布局无关
     struct StaticMeshSection
     {
-        array_list<StaticMeshVertex>  Vertex;
-        array_list<MeshIndicesType>   Indices;
-        int32_t                       MaterialIndex;
+        uint8_t                          NumTexCoords = 0; // 实际使用的 UV 套数
+        array_list<Vector3f>             Positions;
+        array_list<Vector3f>             Normals;
+        array_list<Vector4f>             Tangents;  // xyz=切线方向，w=副切线符号(+1/-1)
+        array_list<Color4b>              Colors;
+        array_list<array_list<Vector2f>> TexCoords;   // [uvIndex][vertexIndex]
+        array_list<MeshIndicesType>      Indices;
+        int32_t                          MaterialIndex = 0;
 
-        size_t GetVertexAllocSize() const
-        {
-            return Vertex.size() * sizeof(StaticMeshVertex);
-        }
         size_t GetIndicesAllocSize() const
         {
             return Indices.size() * sizeof(MeshIndicesType);
         }
+
+        // 构建 GPU 上传用的临时交错 Buffer
+        array_list<StaticMeshVertex> BuildInterleavedVertices() const;
     };
 
-
-
-    std::iostream& ReadWriteStream(std::iostream& stream, bool isWrite, StaticMeshVertex& data);
     std::iostream& ReadWriteStream(std::iostream& stream, bool isWrite, StaticMeshSection& data);
 
 
@@ -39,7 +41,7 @@ namespace pulsar
         friend class StaticMeshAssetSerializer;
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::StaticMesh, Mesh)
     public:
-        constexpr static int32_t SerializeVersion = 1;
+        constexpr static int32_t SerializeVersion = 2;
         StaticMesh() = default;
         ~StaticMesh() override;
     public:
