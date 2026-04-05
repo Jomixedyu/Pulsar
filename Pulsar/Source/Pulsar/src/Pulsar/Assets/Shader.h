@@ -9,11 +9,11 @@ namespace pulsar
 {
     enum class EngineInputSemantic : int
     {
-        POSITION = 0,
-        NORMAL = 1,
-        TANGENT = 2,
-        BITANGENT = 3,
-        COLOR = 4,
+        POSITION  = 0,
+        NORMAL    = 1,
+        TANGENT   = 2,
+        // 3 保留（原 BITANGENT，已移除，w 分量并入 Tangent.w）
+        COLOR     = 4,
         TEXCOORD0 = 5,
         TEXCOORD1 = 6,
         TEXCOORD2 = 7,

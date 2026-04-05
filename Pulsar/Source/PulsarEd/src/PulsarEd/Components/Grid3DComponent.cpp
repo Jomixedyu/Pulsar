@@ -19,7 +19,7 @@ namespace pulsared
         float detail_distance = 1;
         float total_width = detail_distance * line_count;
 
-        Color4b detailLineColor = jmath::MakeColor4b(0.2f, 0.2f, 0.2f, 1);
+        Color4f detailLineColor = Color4f(0.2f, 0.2f, 0.2f, 1);
 
         for (int x = -line_count / 2; x <= line_count / 2; x++)
         {
@@ -31,18 +31,18 @@ namespace pulsared
                 m_vert.emplace_back(0, 0, detail_distance * x);
                 m_vert.emplace_back(0, 0, detail_distance * x);
                 m_vert.emplace_back(-total_width / 2, 0, detail_distance * x);
-                m_colors.push_back(color);
-                m_colors.push_back(color);
+                m_colors.push_back(MakeColor4b(color));
+                m_colors.push_back(MakeColor4b(color));
                 color.r = 0.4f;
-                m_colors.push_back(color);
-                m_colors.push_back(color);
+                m_colors.push_back(MakeColor4b(color));
+                m_colors.push_back(MakeColor4b(color));
             }
             else
             {
                 m_vert.emplace_back(total_width / 2, 0, detail_distance * x);
                 m_vert.emplace_back(-total_width / 2, 0, detail_distance * x);
-                m_colors.push_back(detailLineColor);
-                m_colors.push_back(detailLineColor);
+                m_colors.push_back(MakeColor4b(detailLineColor));
+                m_colors.push_back(MakeColor4b(detailLineColor));
             }
         }
         for (int z = -line_count / 2; z <= line_count / 2; z++)
@@ -54,28 +54,28 @@ namespace pulsared
                 color.g = 0.18f;
                 color.b = 1.f;
                 m_vert.emplace_back(detail_distance * z, 0, total_width / 2);
-                m_colors.push_back(color);
+                m_colors.push_back(MakeColor4b(color));
                 m_vert.emplace_back(detail_distance * z, 0, 0);
-                m_colors.push_back(color);
+                m_colors.push_back(MakeColor4b(color));
                 color.b = 0.4f;
                 m_vert.emplace_back(detail_distance * z, 0, 0);
-                m_colors.push_back(color);
+                m_colors.push_back(MakeColor4b(color));
                 m_vert.emplace_back(detail_distance * z, 0, -total_width / 2);
-                m_colors.push_back(color);
+                m_colors.push_back(MakeColor4b(color));
             }
             else
             {
                 m_vert.emplace_back(detail_distance * z, 0, total_width / 2);
                 m_vert.emplace_back(detail_distance * z, 0, -total_width / 2);
-                m_colors.push_back(detailLineColor);
-                m_colors.push_back(detailLineColor);
+                m_colors.push_back(MakeColor4b(detailLineColor));
+                m_colors.push_back(MakeColor4b(detailLineColor));
             }
         }
 
         m_vert.emplace_back(0, 0, 0);
         m_vert.emplace_back(0, 1, 0);
-        m_colors.push_back({0, 1, 0, 1});
-        m_colors.push_back({0, 1, 0, 1});
+        m_colors.push_back(jmath::MakeColor4b(0.f, 1, 0, 1));
+        m_colors.push_back(jmath::MakeColor4b(0.f, 1, 0, 1));
 
         m_renderObject = CreateRenderObject();
         GetNode()->GetRuntimeWorld()->AddRenderObject(m_renderObject);

@@ -74,9 +74,9 @@ namespace pulsared
             ImGui::SameLine();
             ImGui::Text("DebugMode");
 
-            ImGui::AlignTextToFramePadding();
-            ImGui::Text("Layer");
-            ImGui::SameLine();
+//            ImGui::AlignTextToFramePadding();
+//            ImGui::Text("Layer");
+//            ImGui::SameLine();
             auto layer = selected->GetLayer();
             static const char* const layer_name[] = {
                 "Layer0",
@@ -97,10 +97,10 @@ namespace pulsared
                 "Layer15",
             };
 
-            if (ImGui::Combo("##Layer", &layer, layer_name, 16))
-            {
-                selected->SetLayer(layer);
-            }
+//            if (ImGui::Combo("##Layer", &layer, layer_name, 16))
+//            {
+//                selected->SetLayer(layer);
+//            }
 
             //ImGui::PopItemWidth();
         }

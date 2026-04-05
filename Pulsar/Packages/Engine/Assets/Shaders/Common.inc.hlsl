@@ -11,10 +11,11 @@
 #endif
 
 // Engine Input Semantic
+// location 编号与 C++ EngineInputSemantic 枚举严格对应
 #define EIS_POSITION  LAYOUT_LOCATION(0)
 #define EIS_NORMAL    LAYOUT_LOCATION(1)
 #define EIS_TANGENT   LAYOUT_LOCATION(2)
-#define EIS_BITANGENT LAYOUT_LOCATION(3)
+// location 3 保留（原 BITANGENT，已移除，w 分量并入 Tangent）
 #define EIS_VERTCOLOR LAYOUT_LOCATION(4)
 #define EIS_TEXCOORD0 LAYOUT_LOCATION(5)
 #define EIS_TEXCOORD1 LAYOUT_LOCATION(6)
@@ -25,8 +26,7 @@ struct StandardAttributes
 {
     EIS_POSITION  float3 Position  : POSITION;
     EIS_NORMAL    float3 Normal    : NORMAL;
-    EIS_TANGENT   float3 Tangent   : TANGENT;
-    EIS_BITANGENT float3 BiTangent : BINORMAL;
+    EIS_TANGENT   float4 Tangent   : TANGENT;   // xyz=切线方向, w=副切线符号(+1/-1)
     EIS_VERTCOLOR float4 Color     : COLOR0;
     EIS_TEXCOORD0 float2 TexCoord0 : TEXCOORD0;
     EIS_TEXCOORD1 float2 TexCoord1 : TEXCOORD1;

@@ -980,6 +980,11 @@ namespace jmath
         return Color4b(uint8_t(r*255), uint8_t(g*255), uint8_t(b*255), uint8_t(a*255));
     }
 
+    inline constexpr Color4b MakeColor4b(const Color4f& c)
+    {
+        return MakeColor4b(c.r, c.g, c.b, c.a);
+    }
+
 
     template <typename T>
     struct BoxBounds3
