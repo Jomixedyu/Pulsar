@@ -2,6 +2,7 @@
 #include <PulsarEd/Assembly.h>
 #include "AssetImporter.h"
 #include "Pulsar/Node.h"
+#include "Pulsar/MatchPolicy.h"
 
 namespace pulsared
 {
@@ -9,8 +10,8 @@ namespace pulsared
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::FBXImporterSettings, AssetImporterSettings);
     public:
-        CORELIB_REFL_DECL_FIELD(FindMaterial);
-        bool FindMaterial = true;
+        CORELIB_REFL_DECL_FIELD(MaterialPolicy);
+        pulsar::MatchPolicy MaterialPolicy = pulsar::MatchPolicy::MatchOrCreate;
 
         CORELIB_REFL_DECL_FIELD(ConvertAxisSystem);
         bool ConvertAxisSystem = true;

@@ -7,11 +7,11 @@ namespace pulsared
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::ImageImporterSettings, AssetImporterSettings);
     public:
-        CORELIB_REFL_DECL_FIELD(FindMaterial);
-        bool FindMaterial = true;
+        CORELIB_REFL_DECL_FIELD(sRGB);
+        bool sRGB = true;
 
-        CORELIB_REFL_DECL_FIELD(ConvertAxisSystem);
-        bool ConvertAxisSystem = true;
+        CORELIB_REFL_DECL_FIELD(GenerateMipmaps);
+        bool GenerateMipmaps = true;
     };
 
     class PULSARED_API ImageImporter : public AssetImporter
