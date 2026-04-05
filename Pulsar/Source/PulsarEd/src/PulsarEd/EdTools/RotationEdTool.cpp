@@ -83,8 +83,6 @@ namespace pulsared
         auto matrix = node->GetTransform()->GetLocalToWorldMatrix();
 
         static ImGuizmo::MODE CurrentGizmoMode(ImGuizmo::LOCAL);
-        auto T_i = jmath::Inverse(jmath::Translate(node->GetTransform()->GetWorldPosition()));
-        auto S_i = jmath::Inverse(jmath::Scale(node->GetTransform()->GetWorldScale()));
 
         if (ImGuizmo::Manipulate(
             viewMat.get_value_ptr(),
@@ -94,15 +92,39 @@ namespace pulsared
             matrix.get_value_ptr(),
             nullptr, nullptr, nullptr, nullptr))
         {
-            float translate[3], rotation[3], scale[3];
-            ImGuizmo::DecomposeMatrixToComponents(matrix.get_value_ptr(), translate, rotation, scale);
-            auto R = T_i * matrix * S_i;
-            Logger::Log(to_string(T_i));
-            Logger::Log(to_string(matrix));
-            Logger::Log(to_string(S_i));
-            node->GetTransform()->SetEuler(Vector3f{rotation[0], rotation[1], rotation[2]});
-            // auto q = MatToQuat(R);
-            // node->GetTransform()->SetEuler();
+            auto transform = node->GetTransform();
+
+            // Normalize each column of the world matrix to strip scale, leaving pure rotation
+            Matrix4f rotMat = matrix;
+            for (int col = 0; col < 3; ++col)
+            {
+                float len = jmath::Magnitude(Vector3f{rotMat[col][0], rotMat[col][1], rotMat[col][2]});
+                if (len > 1e-6f)
+                {
+                    rotMat[col][0] /= len;
+                    rotMat[col][1] /= len;
+                    rotMat[col][2] /= len;
+                }
+            }
+            auto worldQuat = MatToQuat(rotMat);
+
+            // Remove parent world rotation to get local rotation:
+            // local = Inverse(parentWorldRot) * worldRot
+            auto parentMat = transform->GetParentLocalToWorldMatrix();
+            Matrix4f parentRotMat = parentMat;
+            for (int col = 0; col < 3; ++col)
+            {
+                float len = jmath::Magnitude(Vector3f{parentRotMat[col][0], parentRotMat[col][1], parentRotMat[col][2]});
+                if (len > 1e-6f)
+                {
+                    parentRotMat[col][0] /= len;
+                    parentRotMat[col][1] /= len;
+                    parentRotMat[col][2] /= len;
+                }
+            }
+            auto parentWorldQuat = MatToQuat(parentRotMat);
+
+            transform->SetRotation(jmath::Inverse(parentWorldQuat) * worldQuat);
         }
 
 
