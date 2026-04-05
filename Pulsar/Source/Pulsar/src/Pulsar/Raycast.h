@@ -37,4 +37,23 @@ namespace pulsar
         ObjectPtr<Node>      HitNode;
     };
 
+    // Ray utility functions
+    struct RayUtils
+    {
+        // Ray vs AABB intersection (slab method)
+        // Returns true if hit; outDist is the distance along the ray to the hit point
+        static bool RayAABBIntersect(const Ray& ray, const BoxBounds3f& box, float& outDist);
+
+        // Project a world-space position to screen pixel coordinates
+        // viewProjMat : projection * view matrix
+        // vpPos/vpSize: viewport top-left screen position and size
+        // Returns false if the point is behind the camera
+        static bool WorldToScreenPoint(
+            const Vector3f& worldPos,
+            const Matrix4f& viewProjMat,
+            Vector2f vpPos,
+            Vector2f vpSize,
+            Vector2f& outScreenPos);
+    };
+
 }

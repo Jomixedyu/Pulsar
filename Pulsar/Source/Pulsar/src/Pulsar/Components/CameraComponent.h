@@ -1,6 +1,6 @@
 #pragma once
 #include "Component.h"
-#include "Pulsar/HitResult.h"
+#include "Pulsar/Raycast.h"
 #include "SceneCapture2DComponent.h"
 #include "SceneCaptureComponent.h"
 #include "gfx/GFXBuffer.h"

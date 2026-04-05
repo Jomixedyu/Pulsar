@@ -69,10 +69,13 @@ namespace pulsared
         if (!IsModifilerKeysDown())
         {
             MouseEventData e{};
-            e.Position = newpos;
             ImVec2 inRegionPos{};
             e.InRegion = ImGuiExt::GetMousePosOnContentRegion(inRegionPos);
             e.InRegionPosition = inRegionPos;
+            // Position is viewport-local (global mouse pos minus viewport top-left)
+            Vector2f vpPos, vpSize;
+            GetViewportSize(vpPos, vpSize);
+            e.Position = Vector2f{newpos.x - vpPos.x, newpos.y - vpPos.y};
 
             for (int i = 0; i < ImGuiMouseButton_COUNT; ++i)
             {

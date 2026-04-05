@@ -108,6 +108,12 @@ namespace jmath
         return input;
     }
 
+    template <typename T>
+    T Magnitude(const Vector2<T>& v)
+    {
+        return sqrtf(Dot(v, v));
+    }
+
     template<typename T> std::string to_string(Vector2<T> v)
     {
         std::string s;
@@ -123,11 +129,6 @@ namespace jmath
     using Vector2f = Vector2<float>;
     using Vector2d = Vector2<double>;
     using Vector2i = Vector2<int>;
-
-
-
-
-
 
 
 

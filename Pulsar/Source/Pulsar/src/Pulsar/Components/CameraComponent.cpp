@@ -130,11 +130,12 @@ namespace pulsar
         auto near = invMat * Vector4f {x, y, 0.f, 1.f};
         auto far  = invMat * Vector4f {x, y, 1.f, 1.f};
 
-        far /= far.w;
+        near /= near.w;
+        far  /= far.w;
 
         Ray ray{};
-        ray.Origin = near.xyz();
-        ray.Direction = Normalize(far.xyz());
+        ray.Origin    = near.xyz();
+        ray.Direction = Normalize(far.xyz() - near.xyz());
         return ray;
     }
 

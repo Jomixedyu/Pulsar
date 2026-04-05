@@ -81,7 +81,7 @@ namespace pulsar
 
     Matrix4f SceneCapture2DComponent::GetInvViewProjectionMat() const
     {
-        return Inverse(GetViewMat()) * Inverse(GetProjectionMat());
+        return Inverse(GetProjectionMat() * GetViewMat());
     }
 
     void SceneCapture2DComponent::SetFOV(float value)

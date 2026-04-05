@@ -191,13 +191,21 @@ namespace pulsar
     BoxSphereBounds3f Node::GetBounds()
     {
         BoxSphereBounds3f bounds{};
+        bool initialized = false;
         for (auto& comp : *m_components)
         {
             if (comp->HasBounds())
             {
-                bounds = bounds + comp->GetBoundsWS();
+                if (!initialized)
+                {
+                    bounds = comp->GetBoundsWS();
+                    initialized = true;
+                }
+                else
+                {
+                    bounds = bounds + comp->GetBoundsWS();
+                }
             }
-
         }
         return bounds;
     }

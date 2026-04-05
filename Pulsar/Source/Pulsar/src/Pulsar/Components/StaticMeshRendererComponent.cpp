@@ -242,11 +242,12 @@ namespace pulsar
         auto box = srcBounds.GetBox();
         auto sphere = srcBounds.GetSphere();
 
-        auto mat = GetTransform()->GetLocalToWorldMatrix();
+        auto transform = GetTransform();
+        auto mat = transform->GetLocalToWorldMatrix();
         box.Min = mat * box.Min;
         box.Max = mat * box.Max;
 
-        sphere.Radius = jmath::MaxComponent(jmath::Abs(GetTransform()->GetWorldScale())) * srcBounds.Radius;
+        sphere.Radius = jmath::MaxComponent(jmath::Abs(transform->GetWorldScale())) * srcBounds.Radius;
         return BoxSphereBounds3f{box, sphere};
     }
 

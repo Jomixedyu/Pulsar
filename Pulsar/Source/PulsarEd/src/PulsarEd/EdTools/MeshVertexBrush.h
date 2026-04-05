@@ -1,6 +1,6 @@
 #pragma once
 #include "BrushEdTool.h"
-#include "Pulsar/HitResult.h"
+#include "Pulsar/Raycast.h"
 
 namespace pulsared
 {
