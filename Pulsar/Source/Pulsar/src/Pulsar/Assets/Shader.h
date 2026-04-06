@@ -9,15 +9,18 @@ namespace pulsar
 {
     enum class EngineInputSemantic : int
     {
-        POSITION  = 0,
-        NORMAL    = 1,
-        TANGENT   = 2,
+        POSITION     = 0,
+        NORMAL       = 1,
+        TANGENT      = 2,
         // 3 保留（原 BITANGENT，已移除，w 分量并入 Tangent.w）
-        COLOR     = 4,
-        TEXCOORD0 = 5,
-        TEXCOORD1 = 6,
-        TEXCOORD2 = 7,
-        TEXCOORD3 = 8,
+        COLOR        = 4,
+        TEXCOORD0    = 5,
+        TEXCOORD1    = 6,
+        TEXCOORD2    = 7,
+        TEXCOORD3    = 8,
+        // TEXCOORD4~12 保留给更多 UV 套数
+        BLENDINDICES = 13, // 骨骼索引 (uint4)
+        BLENDWEIGHT  = 14, // 骨骼权重 (float4)
     };
 
     class Shader final : public AssetObject

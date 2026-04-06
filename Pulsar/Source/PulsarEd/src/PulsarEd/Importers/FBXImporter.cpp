@@ -5,8 +5,10 @@
 
 #include <Pulsar/Assets/NodeCollection.h>
 #include <Pulsar/Assets/StaticMesh.h>
+#include <Pulsar/Assets/SkinnedMesh.h>
 #include <Pulsar/Components/RendererComponent.h>
 #include <Pulsar/Components/StaticMeshRendererComponent.h>
+#include <Pulsar/Components/SkinnedMeshRendererComponent.h>
 #include <PulsarEd/AssetDatabase.h>
 #include <fbxsdk.h>
 
@@ -409,6 +411,280 @@ namespace pulsared
         return {};
     }
 
+    // -----------------------------------------------------------------------
+    // 辅助：检测某个 FbxMesh 是否含有蒙皮（Skin deformer）
+    // -----------------------------------------------------------------------
+    static bool MeshHasSkin(FbxMesh* fbxMesh)
+    {
+        for (int d = 0; d < fbxMesh->GetDeformerCount(FbxDeformer::eSkin); ++d)
+        {
+            auto* skin = static_cast<FbxSkin*>(fbxMesh->GetDeformer(d, FbxDeformer::eSkin));
+            if (skin && skin->GetClusterCount() > 0)
+                return true;
+        }
+        return false;
+    }
+
+    // -----------------------------------------------------------------------
+    // 辅助：FbxAMatrix → Matrix4f（列主序转置）
+    // -----------------------------------------------------------------------
+    static Matrix4f ToMatrix4f(const FbxAMatrix& m)
+    {
+        Matrix4f result;
+        for (int r = 0; r < 4; ++r)
+            for (int c = 0; c < 4; ++c)
+                result[r][c] = (float)m.Get(r, c);
+        return result;
+    }
+
+    // -----------------------------------------------------------------------
+    // 从 FbxSkin 提取完整骨骼层级 + InverseBindMatrix
+    // 返回：骨骼列表（按索引）；out_nodeToIndex 供后续蒙皮权重查表
+    // -----------------------------------------------------------------------
+    static array_list<BoneInfo> ExtractSkeleton(
+        FbxSkin* skin,
+        std::unordered_map<FbxNode*, int>& out_nodeToIndex)
+    {
+        array_list<BoneInfo> bones;
+
+        // 先用 cluster 收集所有骨骼节点
+        const int clusterCount = skin->GetClusterCount();
+        bones.reserve(clusterCount);
+        out_nodeToIndex.reserve(clusterCount);
+
+        for (int ci = 0; ci < clusterCount; ++ci)
+        {
+            FbxCluster* cluster = skin->GetCluster(ci);
+            FbxNode*    boneNode = cluster->GetLink();
+            if (!boneNode) continue;
+
+            // 避免重复
+            if (out_nodeToIndex.count(boneNode)) continue;
+
+            int idx = (int)bones.size();
+            out_nodeToIndex[boneNode] = idx;
+
+            BoneInfo bone;
+            bone.Name        = boneNode->GetName();
+            bone.ParentIndex = -1; // 稍后修正
+
+            // InverseBindMatrix = TransformLinkMatrix^-1 * TransformMatrix
+            FbxAMatrix transformMatrix, transformLinkMatrix;
+            cluster->GetTransformMatrix(transformMatrix);
+            cluster->GetTransformLinkMatrix(transformLinkMatrix);
+            FbxAMatrix globalBindposeInverse = transformLinkMatrix.Inverse() * transformMatrix;
+            bone.InverseBindMatrix = ToMatrix4f(globalBindposeInverse);
+
+            bones.push_back(std::move(bone));
+        }
+
+        // 修正父骨骼索引
+        for (auto& [node, idx] : out_nodeToIndex)
+        {
+            FbxNode* parent = node->GetParent();
+            if (parent && out_nodeToIndex.count(parent))
+            {
+                bones[idx].ParentIndex = out_nodeToIndex[parent];
+            }
+        }
+
+        return bones;
+    }
+
+    // -----------------------------------------------------------------------
+    // 从 FbxSkin 提取每控制点的骨骼权重（最多 4 个，归一化）
+    // 返回 [controlPoint][4] 的 pair(boneIndex, weight)
+    // -----------------------------------------------------------------------
+    using BoneInfluence = std::pair<uint32_t, float>;
+    static array_list<std::array<BoneInfluence, SKINNEDMESH_MAX_BONE_INFLUENCES>>
+    ExtractSkinWeights(FbxSkin* skin, int controlPointCount,
+                       const std::unordered_map<FbxNode*, int>& nodeToIndex)
+    {
+        // [ctrlPt] -> sorted by weight descending
+        array_list<std::vector<BoneInfluence>> raw(controlPointCount);
+
+        const int clusterCount = skin->GetClusterCount();
+        for (int ci = 0; ci < clusterCount; ++ci)
+        {
+            FbxCluster* cluster = skin->GetCluster(ci);
+            FbxNode*    boneNode = cluster->GetLink();
+            if (!boneNode) continue;
+            auto it = nodeToIndex.find(boneNode);
+            if (it == nodeToIndex.end()) continue;
+            int boneIdx = it->second;
+
+            int count = cluster->GetControlPointIndicesCount();
+            int* indices = cluster->GetControlPointIndices();
+            double* weights = cluster->GetControlPointWeights();
+
+            for (int i = 0; i < count; ++i)
+            {
+                int cp = indices[i];
+                raw[cp].emplace_back((uint32_t)boneIdx, (float)weights[i]);
+            }
+        }
+
+        // 每控制点：按权重降序，截取前 4 个，归一化
+        array_list<std::array<BoneInfluence, SKINNEDMESH_MAX_BONE_INFLUENCES>> result(controlPointCount);
+        for (int cp = 0; cp < controlPointCount; ++cp)
+        {
+            auto& influences = raw[cp];
+            std::sort(influences.begin(), influences.end(),
+                [](const BoneInfluence& a, const BoneInfluence& b){ return a.second > b.second; });
+
+            float totalWeight = 0.f;
+            int   take = std::min((int)influences.size(), SKINNEDMESH_MAX_BONE_INFLUENCES);
+            for (int k = 0; k < take; ++k)
+                totalWeight += influences[k].second;
+            if (totalWeight < 1e-6f) totalWeight = 1.f;
+
+            for (int k = 0; k < SKINNEDMESH_MAX_BONE_INFLUENCES; ++k)
+            {
+                if (k < take)
+                    result[cp][k] = {influences[k].first, influences[k].second / totalWeight};
+                else
+                    result[cp][k] = {0, 0.f};
+            }
+        }
+        return result;
+    }
+
+    // -----------------------------------------------------------------------
+    // ProcessSkinnedMesh：提取带蒙皮的网格
+    // -----------------------------------------------------------------------
+    static RCPtr<SkinnedMesh> ProcessSkinnedMesh(FbxNode* fbxNode, bool inverseCoordsystem)
+    {
+        const auto name = fbxNode->GetName();
+
+        array_list<BoneInfo>           allBones;
+        array_list<SkinnedMeshSection> sections;
+        array_list<string>             materialNames;
+
+        bool bonesExtracted = false;
+        std::unordered_map<FbxNode*, int> nodeToIndex;
+
+        materialNames.reserve(fbxNode->GetMaterialCount());
+        for (int i = 0; i < fbxNode->GetMaterialCount(); i++)
+            materialNames.push_back(fbxNode->GetMaterial(i)->GetName());
+
+        const auto attrCount = fbxNode->GetNodeAttributeCount();
+        for (int attrIndex = 0; attrIndex < attrCount; attrIndex++)
+        {
+            auto attr = fbxNode->GetNodeAttributeByIndex(attrIndex);
+            if (attr->GetAttributeType() != FbxNodeAttribute::eMesh)
+                continue;
+
+            auto* fbxMesh = static_cast<FbxMesh*>(attr);
+
+            // 提取骨骼（只做一次）
+            FbxSkin* skin = nullptr;
+            for (int d = 0; d < fbxMesh->GetDeformerCount(FbxDeformer::eSkin); ++d)
+            {
+                skin = static_cast<FbxSkin*>(fbxMesh->GetDeformer(d, FbxDeformer::eSkin));
+                if (skin) break;
+            }
+
+            if (!bonesExtracted && skin)
+            {
+                allBones      = ExtractSkeleton(skin, nodeToIndex);
+                bonesExtracted = true;
+            }
+
+            // 每控制点蒙皮权重
+            array_list<std::array<BoneInfluence, SKINNEDMESH_MAX_BONE_INFLUENCES>> cpWeights;
+            if (skin)
+                cpWeights = ExtractSkinWeights(skin, fbxMesh->GetControlPointsCount(), nodeToIndex);
+
+            constexpr int kPolygonSize = 3;
+            const auto vertexCount  = fbxMesh->GetPolygonVertexCount();
+            const auto polygonCount = fbxMesh->GetPolygonCount();
+            assert(vertexCount == polygonCount * kPolygonSize);
+
+            SkinnedMeshSection section;
+            const uint8_t numUV = (uint8_t)std::min(fbxMesh->GetUVLayerCount(), (int)STATICMESH_MAX_TEXTURE_COORDS);
+            section.NumTexCoords = numUV;
+            section.Positions.resize(vertexCount);
+            section.Normals.resize(vertexCount);
+            section.TexCoords.resize(numUV);
+            for (uint8_t uvIdx = 0; uvIdx < numUV; uvIdx++)
+                section.TexCoords[uvIdx].resize(vertexCount);
+            section.Indices.resize(vertexCount);
+            section.BoneIndices.resize(vertexCount);
+            section.BoneWeights.resize(vertexCount);
+
+            const bool hasColors   = fbxMesh->GetLayer(0) && fbxMesh->GetLayer(0)->GetVertexColors();
+            const bool hasTangents = fbxMesh->GetElementTangentCount() > 0 && fbxMesh->GetElementBinormalCount() > 0;
+            if (hasColors)   section.Colors.resize(vertexCount);
+            if (hasTangents) section.Tangents.resize(vertexCount);
+
+            for (int polyIndex = 0; polyIndex < polygonCount; polyIndex++)
+            {
+                for (int vertInFace = 0; vertInFace < kPolygonSize; vertInFace++)
+                {
+                    const int vertexIndex       = polyIndex * kPolygonSize + vertInFace;
+                    const int controlPointIndex = fbxMesh->GetPolygonVertex(polyIndex, vertInFace);
+
+                    section.Positions[vertexIndex] = ToVector3f(fbxMesh->GetControlPointAt(controlPointIndex));
+
+                    FbxVector4 normal;
+                    fbxMesh->GetPolygonVertexNormal(polyIndex, vertInFace, normal);
+                    section.Normals[vertexIndex] = ToVector3f(normal);
+
+                    if (hasTangents)
+                    {
+                        const Vector3f T = ToVector3f(GetColorLayerElement(fbxMesh->GetElementTangent(0),  controlPointIndex, vertexIndex));
+                        const Vector3f B = ToVector3f(GetColorLayerElement(fbxMesh->GetElementBinormal(0), controlPointIndex, vertexIndex));
+                        const Vector3f N = section.Normals[vertexIndex];
+                        const float    w = Dot(Cross(N, T), B) > 0.0f ? 1.0f : -1.0f;
+                        section.Tangents[vertexIndex] = Vector4f{T.x, T.y, T.z, w};
+                    }
+
+                    for (uint8_t uvIdx = 0; uvIdx < numUV; uvIdx++)
+                    {
+                        auto uv = ToVector2f(GetUVLayerElement(fbxMesh->GetElementUV(uvIdx), controlPointIndex, vertexIndex));
+                        if (inverseCoordsystem) uv.y = 1.0f - uv.y;
+                        section.TexCoords[uvIdx][vertexIndex] = uv;
+                    }
+
+                    if (hasColors)
+                    {
+                        section.Colors[vertexIndex] = ToColor(GetColorLayerElement(
+                            fbxMesh->GetLayer(0)->GetVertexColors(), controlPointIndex, vertexIndex));
+                    }
+
+                    // 蒙皮权重（按控制点索引查表）
+                    if (!cpWeights.empty())
+                    {
+                        for (int k = 0; k < SKINNEDMESH_MAX_BONE_INFLUENCES; ++k)
+                        {
+                            section.BoneIndices[vertexIndex][k] = cpWeights[controlPointIndex][k].first;
+                            section.BoneWeights[vertexIndex][k] = cpWeights[controlPointIndex][k].second;
+                        }
+                    }
+
+                    // 索引（三角形翻转，与 StaticMesh 一致）
+                    int indicesValue = vertexIndex;
+                    {
+                        if (vertInFace == 1) indicesValue += 1;
+                        if (vertInFace == 2) indicesValue -= 1;
+                    }
+                    section.Indices[vertexIndex] = indicesValue;
+                }
+            }
+
+            section.MaterialIndex = attrIndex;
+            sections.push_back(std::move(section));
+        }
+
+        if (sections.empty())
+            return nullptr;
+
+        return SkinnedMesh::StaticCreate(name, std::move(allBones), std::move(sections), std::move(materialNames));
+    }
+
+    // -----------------------------------------------------------------------
+    // ProcessMesh（StaticMesh，原有逻辑不变）
+    // -----------------------------------------------------------------------
     static RCPtr<StaticMesh> ProcessMesh(FbxNode* fbxNode, bool inverseCoordsystem)
     {
         const auto name = fbxNode->GetName();
@@ -521,6 +797,26 @@ namespace pulsared
         return StaticMesh::StaticCreate(name, std::move(sections), std::move(materialNames));
     }
 
+    // -----------------------------------------------------------------------
+    // 辅助：提取节点 TRS 并应用到 transform
+    // -----------------------------------------------------------------------
+    static void ApplyNodeTransform(FbxNode* fbxNode, Node* node)
+    {
+        auto translation = ToVector3f(fbxNode->LclTranslation.Get());
+        auto scaling     = ToVector3f(fbxNode->LclScaling.Get());
+
+        FbxEuler::EOrder order{};
+        fbxNode->GetRotationOrder(FbxNode::EPivotSet::eSourcePivot, order);
+        FbxQuaternion q;
+        q.ComposeSphericalXYZ(FbxVector4(fbxNode->LclRotation.Get()));
+        auto rotation = ToQuat(q);
+
+        auto transform = node->GetTransform();
+        transform->SetPosition(translation);
+        transform->SetRotation(rotation);
+        transform->SetScale(scaling);
+    }
+
     static void ProcessNode(
         FbxNode* fbxNode,
         ObjectPtr<Node> parentNode,
@@ -534,27 +830,42 @@ namespace pulsared
         auto newNodeName = fbxNode->GetName();
         const auto newNode = pscene->NewNode(newNodeName, parentNode);
 
-        if (auto staticMesh = ProcessMesh(fbxNode, inverseCoordsystem))
+        // 检测第一个 eMesh attribute 是否有 Skin
+        bool hasSkin = false;
+        for (int attrIndex = 0; attrIndex < fbxNode->GetNodeAttributeCount(); attrIndex++)
         {
-            const auto meshPath = meshFolder + "/" + staticMesh->GetName();
-            AssetDatabase::CreateAsset(staticMesh, meshPath);
-            newNode->AddComponent<StaticMeshRendererComponent>()->SetStaticMesh(staticMesh);
-            auto translation = ToVector3f(fbxNode->LclTranslation.Get());
-            auto scaling = ToVector3f(fbxNode->LclScaling.Get());
+            auto attr = fbxNode->GetNodeAttributeByIndex(attrIndex);
+            if (attr->GetAttributeType() == FbxNodeAttribute::eMesh)
+            {
+                hasSkin = MeshHasSkin(static_cast<FbxMesh*>(attr));
+                break;
+            }
+        }
 
-            FbxEuler::EOrder order{};
-            fbxNode->GetRotationOrder(FbxNode::EPivotSet::eSourcePivot, order);
-            assert(order == FbxEuler::EOrder::eOrderXYZ);
-            FbxQuaternion q;
-            q.ComposeSphericalXYZ(FbxVector4(fbxNode->LclRotation.Get()));
-            auto rotation = ToQuat(q);
-
-            auto transform = newNode->GetTransform();
-            transform->SetPosition(translation);
-            transform->SetRotation(rotation);
-            transform->SetScale(scaling);
-
-            importedAssets.push_back(staticMesh);
+        if (hasSkin)
+        {
+            // SkinnedMesh 路径
+            if (auto skinnedMesh = ProcessSkinnedMesh(fbxNode, inverseCoordsystem))
+            {
+                const auto meshPath = meshFolder + "/" + skinnedMesh->GetName();
+                AssetDatabase::CreateAsset(skinnedMesh, meshPath);
+                auto* renderer = newNode->AddComponent<SkinnedMeshRendererComponent>();
+                renderer->SetSkinnedMesh(skinnedMesh);
+                ApplyNodeTransform(fbxNode, newNode.get());
+                importedAssets.push_back(skinnedMesh);
+            }
+        }
+        else
+        {
+            // StaticMesh 路径（原有逻辑）
+            if (auto staticMesh = ProcessMesh(fbxNode, inverseCoordsystem))
+            {
+                const auto meshPath = meshFolder + "/" + staticMesh->GetName();
+                AssetDatabase::CreateAsset(staticMesh, meshPath);
+                newNode->AddComponent<StaticMeshRendererComponent>()->SetStaticMesh(staticMesh);
+                ApplyNodeTransform(fbxNode, newNode.get());
+                importedAssets.push_back(staticMesh);
+            }
         }
 
         const auto childCount = fbxNode->GetChildCount();
