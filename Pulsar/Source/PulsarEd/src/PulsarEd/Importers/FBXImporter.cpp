@@ -6,6 +6,7 @@
 #include <Pulsar/Assets/NodeCollection.h>
 #include <Pulsar/Assets/StaticMesh.h>
 #include <Pulsar/Assets/SkinnedMesh.h>
+#include <Pulsar/Assets/AnimationClip.h>
 #include <Pulsar/Components/RendererComponent.h>
 #include <Pulsar/Components/StaticMeshRendererComponent.h>
 #include <Pulsar/Components/SkinnedMeshRendererComponent.h>
@@ -552,7 +553,87 @@ namespace pulsared
     // -----------------------------------------------------------------------
     // ProcessSkinnedMesh：提取带蒙皮的网格
     // -----------------------------------------------------------------------
-    static RCPtr<SkinnedMesh> ProcessSkinnedMesh(FbxNode* fbxNode, bool inverseCoordsystem)
+    // SkeletonCache：以根骨骼 FbxNode* 为 Key，整个 FBX 共享同一套骨骼
+    struct SkeletonCacheEntry
+    {
+        RCPtr<Skeleton>                    Skeleton;
+        std::unordered_map<FbxNode*, int>  NodeToIndex;  // 动画提取时用
+    };
+    using SkeletonCache = std::unordered_map<FbxNode*, SkeletonCacheEntry>;
+
+    // -----------------------------------------------------------------------
+    // ExtractAnimationClips：从 FbxScene 提取所有 AnimStack，按 30fps 采样
+    // -----------------------------------------------------------------------
+    static array_list<pulsar::RCPtr<pulsar::AnimationClip>> ExtractAnimationClips(
+        FbxScene* scene,
+        const SkeletonCacheEntry& entry,
+        const string& meshName)
+    {
+        using namespace pulsar;
+        array_list<RCPtr<AnimationClip>> clips;
+
+        const float sampleFps = 30.0f;
+        const int stackCount = scene->GetSrcObjectCount<FbxAnimStack>();
+
+        for (int si = 0; si < stackCount; ++si)
+        {
+            FbxAnimStack* animStack = scene->GetSrcObject<FbxAnimStack>(si);
+            scene->SetCurrentAnimationStack(animStack);
+
+            FbxTimeSpan span  = animStack->GetLocalTimeSpan();
+            double startSec   = span.GetStart().GetSecondDouble();
+            double endSec     = span.GetStop().GetSecondDouble();
+            float  duration   = (float)(endSec - startSec);
+            if (duration <= 0.f) continue;
+
+            int frameCount = std::max(2, (int)(duration * sampleFps) + 1);
+
+            array_list<BoneAnimTrack> tracks;
+            tracks.reserve(entry.NodeToIndex.size());
+
+            for (auto& [boneNode, boneIdx] : entry.NodeToIndex)
+            {
+                BoneAnimTrack track;
+                track.BoneName = boneNode->GetName();
+                track.PositionKeys.reserve(frameCount);
+                track.RotationKeys.reserve(frameCount);
+                track.ScaleKeys.reserve(frameCount);
+
+                for (int fi = 0; fi < frameCount; ++fi)
+                {
+                    double t = startSec + fi / (double)sampleFps;
+                    FbxTime fbxTime;
+                    fbxTime.SetSecondDouble(t);
+
+                    FbxAMatrix local = boneNode->EvaluateLocalTransform(fbxTime);
+
+                    float keyTime = (float)(t - startSec);
+
+                    auto T = local.GetT();
+                    track.PositionKeys.push_back({keyTime, {(float)T[0], (float)T[1], (float)T[2]}});
+
+                    auto Q = local.GetQ();
+                    // Quat4f 构造：(x, y, z, w)
+                    track.RotationKeys.push_back({keyTime, {(float)Q[0], (float)Q[1], (float)Q[2], (float)Q[3]}});
+
+                    auto S = local.GetS();
+                    track.ScaleKeys.push_back({keyTime, {(float)S[0], (float)S[1], (float)S[2]}});
+                }
+                tracks.push_back(std::move(track));
+            }
+
+            string clipName = meshName + "_" + animStack->GetName();
+            auto clip = AnimationClip::StaticCreate(clipName, entry.Skeleton, duration, sampleFps, std::move(tracks));
+            clips.push_back(clip);
+        }
+        return clips;
+    }
+
+    // -----------------------------------------------------------------------
+    // 返回 {SkinnedMesh, Skeleton}（Skeleton 为独立资产）
+
+    static std::pair<RCPtr<SkinnedMesh>, RCPtr<Skeleton>>
+    ProcessSkinnedMesh(FbxNode* fbxNode, bool inverseCoordsystem, SkeletonCache& skeletonCache)
     {
         const auto name = fbxNode->GetName();
 
@@ -677,9 +758,40 @@ namespace pulsared
         }
 
         if (sections.empty())
-            return nullptr;
+            return {nullptr, nullptr};
 
-        return SkinnedMesh::StaticCreate(name, std::move(allBones), std::move(sections), std::move(materialNames));
+        // 找根骨骼节点（parentIndex == -1 且 FbxNode 父节点不在 nodeToIndex 里）
+        FbxNode* rootBoneNode = nullptr;
+        for (auto& [node, idx] : nodeToIndex)
+        {
+            if (allBones[idx].ParentIndex == -1)
+            {
+                rootBoneNode = node;
+                break;
+            }
+        }
+
+        // 查缓存，相同根骨骼节点复用同一个 Skeleton 资产
+        RCPtr<Skeleton> skeleton;
+        if (rootBoneNode && skeletonCache.count(rootBoneNode))
+        {
+            skeleton = skeletonCache[rootBoneNode].Skeleton;
+        }
+        else
+        {
+            string skeletonName = string(name) + "_Skeleton";
+            skeleton = Skeleton::StaticCreate(skeletonName, std::move(allBones));
+            if (rootBoneNode)
+            {
+                SkeletonCacheEntry entry;
+                entry.Skeleton     = skeleton;
+                entry.NodeToIndex  = std::move(nodeToIndex);
+                skeletonCache[rootBoneNode] = std::move(entry);
+            }
+        }
+
+        auto mesh = SkinnedMesh::StaticCreate(name, skeleton, std::move(sections), std::move(materialNames));
+        return {mesh, skeleton};
     }
 
     // -----------------------------------------------------------------------
@@ -824,7 +936,8 @@ namespace pulsared
         FBXImporterSettings* settings,
         bool inverseCoordsystem,
         const string& meshFolder,
-        array_list<RCPtr<AssetObject>>& importedAssets
+        array_list<RCPtr<AssetObject>>& importedAssets,
+        SkeletonCache& skeletonCache
         )
     {
         auto newNodeName = fbxNode->GetName();
@@ -844,15 +957,30 @@ namespace pulsared
 
         if (hasSkin)
         {
-            // SkinnedMesh 路径
-            if (auto skinnedMesh = ProcessSkinnedMesh(fbxNode, inverseCoordsystem))
+            // SkinnedMesh 路径（传入 skeletonCache，相同骨骼复用同一 Skeleton 资产）
+            auto [skinnedMesh, skeleton] = ProcessSkinnedMesh(fbxNode, inverseCoordsystem, skeletonCache);
+            if (skinnedMesh)
             {
+                // Skeleton：只在第一次出现时（不在 importedAssets 里）才写入资产文件
+                bool skeletonAlreadySaved = false;
+                for (auto& a : importedAssets)
+                    if (a.GetPtr() == skeleton.GetPtr()) { skeletonAlreadySaved = true; break; }
+
+                if (!skeletonAlreadySaved)
+                {
+                    const auto skeletonPath = meshFolder + "/" + skeleton->GetName();
+                    AssetDatabase::CreateAsset(skeleton, skeletonPath);
+                    importedAssets.push_back(skeleton);
+                }
+
+                // SkinnedMesh 每次都保存
                 const auto meshPath = meshFolder + "/" + skinnedMesh->GetName();
                 AssetDatabase::CreateAsset(skinnedMesh, meshPath);
-                auto* renderer = newNode->AddComponent<SkinnedMeshRendererComponent>();
-                renderer->SetSkinnedMesh(skinnedMesh);
-                ApplyNodeTransform(fbxNode, newNode.get());
                 importedAssets.push_back(skinnedMesh);
+
+                auto renderer = newNode->AddComponent<SkinnedMeshRendererComponent>();
+                renderer->SetSkinnedMesh(skinnedMesh);
+                ApplyNodeTransform(fbxNode, newNode.GetPtr());
             }
         }
         else
@@ -863,7 +991,7 @@ namespace pulsared
                 const auto meshPath = meshFolder + "/" + staticMesh->GetName();
                 AssetDatabase::CreateAsset(staticMesh, meshPath);
                 newNode->AddComponent<StaticMeshRendererComponent>()->SetStaticMesh(staticMesh);
-                ApplyNodeTransform(fbxNode, newNode.get());
+                ApplyNodeTransform(fbxNode, newNode.GetPtr());
                 importedAssets.push_back(staticMesh);
             }
         }
@@ -872,7 +1000,7 @@ namespace pulsared
         for (int childIndex = 0; childIndex < childCount; childIndex++)
         {
             const auto childFbxNode = fbxNode->GetChild(childIndex);
-            ProcessNode(childFbxNode, newNode, pscene, settings, inverseCoordsystem, meshFolder, importedAssets);
+            ProcessNode(childFbxNode, newNode, pscene, settings, inverseCoordsystem, meshFolder, importedAssets, skeletonCache);
         }
     }
 
@@ -924,10 +1052,31 @@ namespace pulsared
             auto prefab = Prefab::StaticCreate(filename);
             const auto targetMeshFolder = settings->ImportingTargetFolder + "/" + filename + "_Items";
             const auto rootCount = fbxRootNode->GetChildCount();
+            SkeletonCache skeletonCache; // 整个 FBX 文件共享同一套骨骼缓存
             for (int i = 0; i < rootCount; ++i)
             {
                 auto sceneRootNode = fbxRootNode->GetChild(i);
-                ProcessNode(sceneRootNode, nullptr, prefab, fbxsetting, inverseCoordSystem, targetMeshFolder, importedAssets);
+                ProcessNode(sceneRootNode, nullptr, prefab, fbxsetting, inverseCoordSystem, targetMeshFolder, importedAssets, skeletonCache);
+            }
+
+            // 动画提取：每个 Skeleton 只提取一次
+            for (auto& [rootBone, entry] : skeletonCache)
+            {
+                string skeletonName = entry.Skeleton->GetName();
+                // 去掉 "_Skeleton" 后缀作为 clip 的前缀
+                string baseName = skeletonName;
+                const string suffix = "_Skeleton";
+                if (baseName.size() > suffix.size() &&
+                    baseName.substr(baseName.size() - suffix.size()) == suffix)
+                    baseName = baseName.substr(0, baseName.size() - suffix.size());
+
+                auto clips = ExtractAnimationClips(fbxScene, entry, baseName);
+                for (auto& clip : clips)
+                {
+                    const auto clipPath = targetMeshFolder + "/" + clip->GetName();
+                    AssetDatabase::CreateAsset(clip, clipPath);
+                    importedAssets.push_back(pulsar::RCPtr<pulsar::AssetObject>(clip));
+                }
             }
 
             AssetDatabase::CreateAsset(prefab, settings->ImportingTargetFolder + "/" + filename);

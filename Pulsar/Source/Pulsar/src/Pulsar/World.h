@@ -10,7 +10,7 @@
 
 namespace pulsar
 {
-    class Scene;
+    class NodeCollection;
     class Material;
 
     class PhysicsWorld2D;
@@ -48,8 +48,8 @@ namespace pulsar
         virtual void Tick(float dt);
         virtual void OnWorldBegin();
         virtual void OnWorldEnd();
-        virtual void OnSceneLoading(RCPtr<Scene> scene);
-        virtual void OnSceneUnloading(RCPtr<Scene> scene);
+        virtual void OnSceneLoading(RCPtr<NodeCollection> scene);
+        virtual void OnSceneUnloading(RCPtr<NodeCollection> scene);
         virtual const char* GetWorldTypeName() const { return StaticWorldTypeName(); }
         static const char* StaticWorldTypeName() { return "World"; }
 
@@ -73,23 +73,23 @@ namespace pulsar
         Ticker                      GetTicker() const { return m_ticker; }
         float                       GetTotalTime() const { return m_totalTime; }
         virtual ObjectPtr<CameraComponent> GetCurrentCamera();
-        const RCPtr<Scene>&         GetScene(int index) const { return m_scenes[index]; }
-        RCPtr<Scene>                GetFocusScene() const { return m_focusScene; }
-        void                        SetFocusScene(RCPtr<Scene> scene);
-        size_t                      GetSceneCount() const { return m_scenes.size(); }
-        RCPtr<Scene>                GetResidentScene() const { return m_scenes[0]; }
+        const RCPtr<NodeCollection>& GetScene(int index) const { return m_scenes[index]; }
+        RCPtr<NodeCollection>        GetFocusScene() const { return m_focusScene; }
+        void                         SetFocusScene(RCPtr<NodeCollection> scene);
+        size_t                       GetSceneCount() const { return m_scenes.size(); }
+        RCPtr<NodeCollection>        GetResidentScene() const { return m_scenes[0]; }
 
         bool GetPlaying() const { return m_isPlaying; }
     public: // scene managment
-        void ChangeScene(RCPtr<Scene> scene, bool clearResidentScene = true);
-        void LoadScene(RCPtr<Scene> scene);
-        void UnloadScene(RCPtr<Scene> scene);
+        void ChangeScene(RCPtr<NodeCollection> scene, bool clearResidentScene = true);
+        void LoadScene(RCPtr<NodeCollection> scene);
+        void UnloadScene(RCPtr<NodeCollection> scene);
     private:
         void InitializeResidentScene();
         void UnloadAllScene(bool unloadResidentScene = true);
     protected:
-        virtual void OnLoadingResidentScene(RCPtr<Scene> scene);
-        virtual void OnUnloadingResidentScene(RCPtr<Scene> scene);
+        virtual void OnLoadingResidentScene(RCPtr<NodeCollection> scene);
+        virtual void OnUnloadingResidentScene(RCPtr<NodeCollection> scene);
 
 
     public: //rendering
@@ -113,8 +113,8 @@ namespace pulsar
 
         RCPtr<Material>                       m_defaultMaterial;
         hash_set<rendering::RenderObject_sp>  m_renderObjects;
-        array_list<RCPtr<Scene>>              m_scenes;
-        RCPtr<Scene>                          m_focusScene;
+        array_list<RCPtr<NodeCollection>>     m_scenes;
+        RCPtr<NodeCollection>                 m_focusScene;
         CameraManager                         m_cameraManager;
         SceneCaptureManager                   m_captureManager;
         array_list<ObjectPtrBase>             m_deferredDestroyedQueue;

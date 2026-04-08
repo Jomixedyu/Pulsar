@@ -141,11 +141,21 @@ namespace pulsar
     };
     ENUM_CLASS_FLAGS(DependencyObjectState);
 
+    class AssetIconAttribute : public Attribute
+    {
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::AssetIconAttribute, Attribute);
+    public:
+        explicit AssetIconAttribute(const char* iconPath) : m_iconPath(iconPath){}
+        const char* GetIconPath() const { return m_iconPath; }
+    private:
+        const char* m_iconPath;
+    };
 
     class ObjectBase : public Object
     {
         friend class RuntimeObjectManager;
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::ObjectBase, Object);
+        CORELIB_CLASS_ATTR(new AssetIconAttribute("Editor/Icons/object.png"))
     public:
         ObjectBase();
         ~ObjectBase() noexcept override;

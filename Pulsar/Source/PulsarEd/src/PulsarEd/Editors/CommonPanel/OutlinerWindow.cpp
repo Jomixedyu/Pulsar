@@ -108,7 +108,7 @@ namespace pulsared
                 {
                     if (item)
                     {
-                        item->GetRuntimeOwnerScene()->RemoveNode(item);
+                        item->GetOwnerNodeCollection()->RemoveNode(item);
                     }
                 }
             }

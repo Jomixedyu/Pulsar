@@ -11,7 +11,8 @@ namespace pulsar
         base::BeginComponent();
 
         m_sceneInfo = std::make_unique<SkyLightSceneInfo>();
-        GetRuntimeScene()->GetRuntimeEnvironment().AddSkyLight(m_sceneInfo.get());
+        if (auto* env = GetOwnerNodeCollection()->GetRuntimeEnvironment())
+            env->AddSkyLight(m_sceneInfo.get());
         OnIntensityChanged();
         OnLightColorChanged();
     }
@@ -19,7 +20,8 @@ namespace pulsar
     void SkyLightComponent::EndComponent()
     {
         base::EndComponent();
-        GetRuntimeScene()->GetRuntimeEnvironment().RemoveSkylLight(m_sceneInfo.get());
+        if (auto* env = GetOwnerNodeCollection()->GetRuntimeEnvironment())
+            env->RemoveSkyLight(m_sceneInfo.get());
         m_sceneInfo.reset();
     }
     void SkyLightComponent::OnIntensityChanged()

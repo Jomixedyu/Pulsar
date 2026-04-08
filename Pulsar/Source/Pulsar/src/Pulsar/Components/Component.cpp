@@ -33,28 +33,11 @@ namespace pulsar
     {
         return GetNode()->GetRuntimeWorld();
     }
-    ObjectPtr<Scene> Component::GetRuntimeScene() const
-    {
-        return m_runtimeScene;
-    }
     ObjectPtr<TransformComponent> Component::GetTransform() const
     {
         return m_ownerNode->GetTransform();
     }
-    array_list<ObjectHandle> Component::GetReferenceHandles() const
-    {
-        array_list<ObjectHandle> handles;
-        for (auto fieldInfo : this->GetType()->GetFieldInfos(TypeBinding::NonPublic))
-        {
-            if(fieldInfo->GetWrapType() == cltypeof<BoxingObjectPtrBase>())
-            {
-                auto value = fieldInfo->GetValue(this);
-                auto id = UnboxUtil::Unbox<ObjectPtrBase>(value);
-                handles.push_back(id.GetHandle());
-            }
-        }
-        return handles;
-    }
+
     void Component::OnReceiveMessage(MessageId id)
     {
 
@@ -90,7 +73,7 @@ namespace pulsar
     void Component::BeginComponent()
     {
         m_beginning = true;
-        m_runtimeScene = GetNode()->GetRuntimeOwnerScene();
+        m_runtimeCollection = GetNode()->GetOwnerNodeCollection();
 
         if (m_canDrawGizmo)
         {

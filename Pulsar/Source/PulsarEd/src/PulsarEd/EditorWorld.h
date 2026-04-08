@@ -5,6 +5,7 @@
 #include <Pulsar/Components/CameraComponent.h>
 #include <Pulsar/Node.h>
 #include <Pulsar/World.h>
+#include <Pulsar/Assets/NodeCollection.h>
 #include "EdTools/EdTool.h"
 
 namespace pulsared
@@ -33,10 +34,10 @@ namespace pulsared
         virtual void OnWorldBegin() override;
         virtual void OnWorldEnd() override;
     protected:
-        virtual void OnLoadingResidentScene(RCPtr<Scene> scene) override;
-        virtual void OnUnloadingResidentScene(RCPtr<Scene> scene) override;
-        virtual void OnSceneLoading(RCPtr<Scene> scene) override;
-        virtual void OnSceneUnloading(RCPtr<Scene> scene) override;
+        virtual void OnLoadingResidentScene(RCPtr<NodeCollection> scene) override;
+        virtual void OnUnloadingResidentScene(RCPtr<NodeCollection> scene) override;
+        virtual void OnSceneLoading(RCPtr<NodeCollection> scene) override;
+        virtual void OnSceneUnloading(RCPtr<NodeCollection> scene) override;
         virtual const char* GetWorldTypeName() const { return StaticWorldTypeName(); }
         static const char* StaticWorldTypeName() { return "EditorWorld"; }
     public:

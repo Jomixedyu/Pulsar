@@ -1,0 +1,310 @@
+{
+    "Nodes": [
+        {
+            "Components": [
+                {
+                    "Data": {
+                        "m_children": [],
+                        "m_euler": {
+                            "x": -0.0,
+                            "y": 0.0,
+                            "z": 0.0
+                        },
+                        "m_parent": "",
+                        "m_position": {
+                            "x": 0.0,
+                            "y": 0.0,
+                            "z": 0.0
+                        },
+                        "m_rotation": {
+                            "w": 1.0,
+                            "x": 0.0,
+                            "y": 0.0,
+                            "z": 0.0
+                        },
+                        "m_scale": {
+                            "x": 0.009999999776482582,
+                            "y": 0.009999999776482582,
+                            "z": 0.009999999776482582
+                        }
+                    },
+                    "Id": "c4853506510b8e4484fa68aab7d1a4e0",
+                    "Type": "pulsar::TransformComponent"
+                },
+                {
+                    "Data": {
+                        "m_isCastShadow": true,
+                        "m_materials": [
+                            {
+                                "material": "00000000000000000000000000000000",
+                                "priority": 0
+                            }
+                        ],
+                        "m_skinnedMesh": "f94891398413214b95565ab0cfa93182"
+                    },
+                    "Id": "8ea16ede231e614fa00e90d757978f62",
+                    "Type": "pulsar::SkinnedMeshRendererComponent"
+                }
+            ],
+            "Id": "f1a433f52289844488e669a852e7aee0",
+            "IsActive": true,
+            "Name": "pCube1"
+        },
+        {
+            "Components": [
+                {
+                    "Data": {
+                        "m_children": [],
+                        "m_euler": {
+                            "x": -0.0,
+                            "y": 0.0,
+                            "z": 0.0
+                        },
+                        "m_parent": "",
+                        "m_position": {
+                            "x": 0.0,
+                            "y": 0.0,
+                            "z": 0.0
+                        },
+                        "m_rotation": {
+                            "w": 1.0,
+                            "x": 0.0,
+                            "y": 0.0,
+                            "z": 0.0
+                        },
+                        "m_scale": {
+                            "x": 0.009999999776482582,
+                            "y": 0.009999999776482582,
+                            "z": 0.009999999776482582
+                        }
+                    },
+                    "Id": "0e9c3c537141c4408d4c836fdabf8c11",
+                    "Type": "pulsar::TransformComponent"
+                },
+                {
+                    "Data": {
+                        "m_isCastShadow": true,
+                        "m_materials": [
+                            {
+                                "material": "00000000000000000000000000000000",
+                                "priority": 0
+                            }
+                        ],
+                        "m_skinnedMesh": "1cb69da449dddd4cae6980a6f3cdf599"
+                    },
+                    "Id": "2d4ae3084c1ed14394a4f2f02c22e7a0",
+                    "Type": "pulsar::SkinnedMeshRendererComponent"
+                }
+            ],
+            "Id": "34111a7f11d5cf4fb66efd20ebfff958",
+            "IsActive": true,
+            "Name": "pCube2"
+        },
+        {
+            "Components": [
+                {
+                    "Data": {
+                        "m_children": [],
+                        "m_euler": {
+                            "x": -0.0,
+                            "y": 0.0,
+                            "z": 0.0
+                        },
+                        "m_parent": "",
+                        "m_position": {
+                            "x": 0.0,
+                            "y": 0.0,
+                            "z": 0.0
+                        },
+                        "m_rotation": {
+                            "w": 1.0,
+                            "x": 0.0,
+                            "y": 0.0,
+                            "z": 0.0
+                        },
+                        "m_scale": {
+                            "x": 0.009999999776482582,
+                            "y": 0.009999999776482582,
+                            "z": 0.009999999776482582
+                        }
+                    },
+                    "Id": "30da47d592b87b48a00c6a14bda4807b",
+                    "Type": "pulsar::TransformComponent"
+                },
+                {
+                    "Data": {
+                        "m_isCastShadow": true,
+                        "m_materials": [
+                            {
+                                "material": "00000000000000000000000000000000",
+                                "priority": 0
+                            }
+                        ],
+                        "m_skinnedMesh": "2f26a793b868be478f9867f38bece607"
+                    },
+                    "Id": "d10559a0d86d6a448f242ce59bd67ca9",
+                    "Type": "pulsar::SkinnedMeshRendererComponent"
+                }
+            ],
+            "Id": "bb15d03abf2bb14e95bec677e5a5f4ba",
+            "IsActive": true,
+            "Name": "pCube3"
+        },
+        {
+            "Components": [
+                {
+                    "Data": {
+                        "m_children": [
+                            "9361f6585e69b9428a12dcc08110db6a;a966d84530db70488902a99fac9c6e36"
+                        ],
+                        "m_euler": {
+                            "x": 0.0,
+                            "y": 0.0,
+                            "z": 0.0
+                        },
+                        "m_parent": "",
+                        "m_position": {
+                            "x": 0.0,
+                            "y": 0.0,
+                            "z": 0.0
+                        },
+                        "m_rotation": {
+                            "w": 1.0,
+                            "x": 0.0,
+                            "y": 0.0,
+                            "z": 0.0
+                        },
+                        "m_scale": {
+                            "x": 1.0,
+                            "y": 1.0,
+                            "z": 1.0
+                        }
+                    },
+                    "Id": "3422f557ccf4004eb4b88619229b112f",
+                    "Type": "pulsar::TransformComponent"
+                }
+            ],
+            "Id": "9d19f393bbbb424690481b681d4932cf",
+            "IsActive": true,
+            "Name": "joint1"
+        },
+        {
+            "Components": [
+                {
+                    "Data": {
+                        "m_children": [
+                            "9361f6585e69b9428a12dcc08110db6a;67a8e7284becb54d8243e9a0b566f019"
+                        ],
+                        "m_euler": {
+                            "x": 0.0,
+                            "y": 0.0,
+                            "z": 0.0
+                        },
+                        "m_parent": "9361f6585e69b9428a12dcc08110db6a;3422f557ccf4004eb4b88619229b112f",
+                        "m_position": {
+                            "x": 0.0,
+                            "y": 0.0,
+                            "z": 0.0
+                        },
+                        "m_rotation": {
+                            "w": 1.0,
+                            "x": 0.0,
+                            "y": 0.0,
+                            "z": 0.0
+                        },
+                        "m_scale": {
+                            "x": 1.0,
+                            "y": 1.0,
+                            "z": 1.0
+                        }
+                    },
+                    "Id": "a966d84530db70488902a99fac9c6e36",
+                    "Type": "pulsar::TransformComponent"
+                }
+            ],
+            "Id": "c0a403625b28f849b012bd88e1caae90",
+            "IsActive": true,
+            "Name": "joint2"
+        },
+        {
+            "Components": [
+                {
+                    "Data": {
+                        "m_children": [
+                            "9361f6585e69b9428a12dcc08110db6a;d770b0aba21fbe48be6f91a22f85381c"
+                        ],
+                        "m_euler": {
+                            "x": 0.0,
+                            "y": 0.0,
+                            "z": 0.0
+                        },
+                        "m_parent": "9361f6585e69b9428a12dcc08110db6a;a966d84530db70488902a99fac9c6e36",
+                        "m_position": {
+                            "x": 0.0,
+                            "y": 0.0,
+                            "z": 0.0
+                        },
+                        "m_rotation": {
+                            "w": 1.0,
+                            "x": 0.0,
+                            "y": 0.0,
+                            "z": 0.0
+                        },
+                        "m_scale": {
+                            "x": 1.0,
+                            "y": 1.0,
+                            "z": 1.0
+                        }
+                    },
+                    "Id": "67a8e7284becb54d8243e9a0b566f019",
+                    "Type": "pulsar::TransformComponent"
+                }
+            ],
+            "Id": "d3fabfe23c435b458a06194d4c71d5a6",
+            "IsActive": true,
+            "Name": "joint3"
+        },
+        {
+            "Components": [
+                {
+                    "Data": {
+                        "m_children": [],
+                        "m_euler": {
+                            "x": 0.0,
+                            "y": 0.0,
+                            "z": 0.0
+                        },
+                        "m_parent": "9361f6585e69b9428a12dcc08110db6a;67a8e7284becb54d8243e9a0b566f019",
+                        "m_position": {
+                            "x": 0.0,
+                            "y": 0.0,
+                            "z": 0.0
+                        },
+                        "m_rotation": {
+                            "w": 1.0,
+                            "x": 0.0,
+                            "y": 0.0,
+                            "z": 0.0
+                        },
+                        "m_scale": {
+                            "x": 1.0,
+                            "y": 1.0,
+                            "z": 1.0
+                        }
+                    },
+                    "Id": "d770b0aba21fbe48be6f91a22f85381c",
+                    "Type": "pulsar::TransformComponent"
+                }
+            ],
+            "Id": "fefe56296accd94aafc16191a6ab0f80",
+            "IsActive": true,
+            "Name": "joint4"
+        }
+    ],
+    "RootNodes": [
+        "f1a433f52289844488e669a852e7aee0",
+        "34111a7f11d5cf4fb66efd20ebfff958",
+        "bb15d03abf2bb14e95bec677e5a5f4ba",
+        "9d19f393bbbb424690481b681d4932cf"
+    ]
+}

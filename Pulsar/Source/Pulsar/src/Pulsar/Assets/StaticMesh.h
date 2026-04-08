@@ -40,6 +40,7 @@ namespace pulsar
     {
         friend class StaticMeshAssetSerializer;
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::StaticMesh, Mesh)
+        CORELIB_CLASS_ATTR(new AssetIconAttribute("Editor/Icons/staticmesh.png"))
     public:
         constexpr static int32_t SerializeVersion = 2;
         StaticMesh() = default;

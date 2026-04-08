@@ -19,12 +19,12 @@ namespace pulsar
         
         ObjectPtr<TransformComponent> FindByName(string_view name) const;
         ObjectPtr<TransformComponent> FindByPath(string_view path) const;
-        ObjectPtr<TransformComponent> GetParent() const { return m_parent; }
-        void SetParent(ObjectPtr<TransformComponent> parent);
+        SceneObjectPtr<TransformComponent> GetParent() const { return m_parent; }
+        void SetParent(SceneObjectPtr<TransformComponent> parent);
 
-        const List_sp<ObjectPtr<TransformComponent>>& GetChildren() const noexcept { return m_children; }
+        const List_sp<SceneObjectPtr<TransformComponent>>& GetChildren() const noexcept { return m_children; }
         size_t GetChildCount() const noexcept { return m_children->size(); }
-        ObjectPtr<TransformComponent> GetChild(int32_t index) const noexcept { return m_children->at(index); }
+        SceneObjectPtr<TransformComponent> GetChild(int32_t index) const noexcept { return m_children->at(index); }
 
         void SetPosition(Vector3f value) { m_position = value; MakeTransformChanged(); }
         Vector3f GetPosition() const noexcept { return m_position; }
@@ -79,10 +79,10 @@ namespace pulsar
         Quat4f m_rotation{};
 
         CORELIB_REFL_DECL_FIELD(m_children, new HidePropertyAttribute);
-        List_sp<ObjectPtr<TransformComponent>> m_children{};
+        List_sp<SceneObjectPtr<TransformComponent>> m_children{};
 
         CORELIB_REFL_DECL_FIELD(m_parent, new HidePropertyAttribute);
-        ObjectPtr<TransformComponent> m_parent{};
+        SceneObjectPtr<TransformComponent> m_parent{};
     };
     DECL_PTR(TransformComponent);
 }

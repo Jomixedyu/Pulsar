@@ -49,7 +49,10 @@ namespace pulsar
     class Material final : public AssetObject, public IGPUResource
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::Material, AssetObject);
-        CORELIB_CLASS_ATTR(new CreateAssetAttribute("Engine/Materials/Error"));
+        CORELIB_CLASS_ATTR(
+            new CreateAssetAttribute("Engine/Materials/Error"),
+            new AssetIconAttribute("Editor/Icons/material.png")
+            );
 
     public:
         static RCPtr<Material> StaticCreate(const RCPtr<Shader>& shader, string_view name = {});

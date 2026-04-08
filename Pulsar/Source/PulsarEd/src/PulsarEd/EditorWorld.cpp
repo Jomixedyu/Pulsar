@@ -82,7 +82,7 @@ namespace pulsared
         SetTool(nullptr);
     }
 
-    void EditorWorld::OnLoadingResidentScene(RCPtr<Scene> scene)
+    void EditorWorld::OnLoadingResidentScene(RCPtr<NodeCollection> scene)
     {
         base::OnLoadingResidentScene(scene);
 
@@ -104,19 +104,19 @@ namespace pulsared
         camCtrlNode->AddComponent<StdEditCameraControllerComponent>();
     }
 
-    void EditorWorld::OnUnloadingResidentScene(RCPtr<Scene> scene)
+    void EditorWorld::OnUnloadingResidentScene(RCPtr<NodeCollection> scene)
     {
         base::OnUnloadingResidentScene(scene);
         DestroyObject(m_cam->GetRenderTexture());
         m_cam->SetRenderTexture(nullptr);
     }
 
-    void EditorWorld::OnSceneLoading(RCPtr<Scene> scene)
+    void EditorWorld::OnSceneLoading(RCPtr<NodeCollection> scene)
     {
         base::OnSceneLoading(scene);
     }
 
-    void EditorWorld::OnSceneUnloading(RCPtr<Scene> scene)
+    void EditorWorld::OnSceneUnloading(RCPtr<NodeCollection> scene)
     {
         base::OnSceneUnloading(scene);
     }

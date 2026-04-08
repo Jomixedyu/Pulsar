@@ -14,6 +14,7 @@ namespace pulsar
     class TransformComponent;
     class World;
     class Scene;
+    class NodeCollection;
     class GizmoPainter;
 
     using MessageId = size_t;
@@ -49,9 +50,7 @@ namespace pulsar
         [[always_inline]] Node* GetNodePtr() const noexcept { return m_ownerNodePtr; }
         ObjectPtr<Component> GetMasterComponent() const;
         World* GetWorld() const;
-        ObjectPtr<Scene> GetRuntimeScene() const;
         ObjectPtr<TransformComponent> GetTransform() const;
-        array_list<ObjectHandle> GetReferenceHandles() const;
         void SendMessage(MessageId msgid);
         virtual BoxSphereBounds3f GetBoundsWS() { return {}; }
         virtual bool HasBounds() const { return false; }
@@ -74,6 +73,10 @@ namespace pulsar
         virtual void BeginPlay() {}
         virtual void EndPlay() {}
 
+        virtual NodeCollection* GetOwnerNodeCollection() const override
+        {
+            return m_runtimeCollection;
+        }
     public:
         // ITickable interface
         void OnTick(Ticker ticker) override;
@@ -83,7 +86,7 @@ namespace pulsar
         ObjectPtr<Component> m_masterComponent;
         ObjectPtr<Node> m_ownerNode;
         Node* m_ownerNodePtr = nullptr;
-        ObjectPtr<Scene> m_runtimeScene;
+        NodeCollection* m_runtimeCollection = nullptr;
     protected:
         bool m_beginning = false;
         bool m_canDrawGizmo = false;

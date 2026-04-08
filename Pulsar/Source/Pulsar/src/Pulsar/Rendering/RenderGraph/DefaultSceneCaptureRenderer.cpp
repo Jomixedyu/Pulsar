@@ -65,16 +65,18 @@ namespace pulsar
             worldData.TotalTime  = world->GetTotalTime();
             worldData.DeltaTime  = world->GetTicker().deltatime;
 
-            auto& sceneEnv = world->GetFocusScene()->GetRuntimeEnvironment();
-            if (const auto* dirLight = sceneEnv.GetDirectionalLight())
+            if (auto* env = world->GetFocusScene()->GetRuntimeEnvironment())
             {
-                worldData.WorldSpaceLightVector = -dirLight->Vector;
-                auto& c = dirLight->Color;
-                worldData.WorldSpaceLightColor  = {c.r, c.g, c.b, dirLight->Intensity};
-            }
-            {
-                auto skyLight = sceneEnv.GetSkyLight();
-                worldData.SkyLightColor = {skyLight.Color.r, skyLight.Color.g, skyLight.Color.b, skyLight.Intensity};
+                if (const auto* dirLight = env->GetDirectionalLight())
+                {
+                    worldData.WorldSpaceLightVector = -dirLight->Vector;
+                    auto& c = dirLight->Color;
+                    worldData.WorldSpaceLightColor  = {c.r, c.g, c.b, dirLight->Intensity};
+                }
+                {
+                    auto skyLight = env->GetSkyLight();
+                    worldData.SkyLightColor = {skyLight.Color.r, skyLight.Color.g, skyLight.Color.b, skyLight.Intensity};
+                }
             }
             worldData.LightParameterCount = static_cast<uint32_t>(world->GetLightManager()->GetLightCount());
             perPass->UpdateWorld(worldData);

@@ -1,14 +1,18 @@
 #pragma once
 #include <Pulsar/AssetObject.h>
 #include <Pulsar/SceneObject.h>
+#include <Pulsar/Ticker.h>
+#include <Pulsar/SceneEnvironment.h>
 
 namespace pulsar
 {
     class Node;
+    class World;
     class NodeCollection : public AssetObject, public ISceneObjectFinder
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::NodeCollection, AssetObject)
     public:
+
         virtual ObjectPtr<SceneObject> FindSceneObject(guid_t sceneObjId) const override;
         virtual void AddSceneObjectToFinder(const ObjectPtr<SceneObject>& obj) override;
 
@@ -40,12 +44,24 @@ namespace pulsar
 
         void OnCollectAssetDependencies(array_list<jxcorlib::guid_t> &deps) override;
 
+        // 运行时生命周期
+        virtual void BeginScene(World* world);
+        virtual void EndScene();
+        virtual void Tick(Ticker ticker);
+        virtual void BeginPlay();
+        virtual void EndPlay();
+
+        virtual SceneRuntimeEnvironment* GetRuntimeEnvironment() { return nullptr; }
+
+        World* GetWorld() const { return m_runtimeWorld; }
+
         NodeCollection();
     protected:
         ObjectPtr<Node> BeginNewNode(index_string name = "Node", const ObjectPtr<Node>& parent = nullptr, ObjectFlags flags = 0);
         void EndNewNode(ObjectPtr<Node> node);
         ObjectPtr<Node> ConstructNode(index_string name = "Node", guid_t guid = {}, ObjectFlags flags = 0);
     protected:
+        World* m_runtimeWorld = nullptr;
         CORELIB_REFL_DECL_FIELD(m_rootNodes);
         List_sp<ObjectPtr<Node>> m_rootNodes;
 

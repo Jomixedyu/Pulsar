@@ -1,20 +1,11 @@
 #pragma once
 
-#include "Mesh.h"
+#include "StaticMesh.h"
+#include "Skeleton.h"
 #include <Pulsar/Rendering/PrimitiveStruct.h>
 
 namespace pulsar
 {
-    // 单根骨骼的层级信息（序列化用）
-    struct BoneInfo
-    {
-        string   Name;
-        int32_t  ParentIndex = -1;           // -1 表示根骨骼
-        Matrix4f InverseBindMatrix;          // BindPose 的逆矩阵（Model Space → Bone Space）
-    };
-
-    std::iostream& ReadWriteStream(std::iostream& stream, bool isWrite, BoneInfo& data);
-
     // 序列化层：在 StaticMeshSection 基础上增加蒙皮数据
     struct SkinnedMeshSection
     {
@@ -43,8 +34,9 @@ namespace pulsar
     {
         friend class SkinnedMeshAssetSerializer;
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::SkinnedMesh, Mesh);
+        CORELIB_CLASS_ATTR(new AssetIconAttribute("Editor/Icons/skinnedmesh.png"))
     public:
-        constexpr static int32_t SerializeVersion = 1;
+        constexpr static int32_t SerializeVersion = 2; // v2: 独立 Skeleton 引用
         SkinnedMesh() = default;
         ~SkinnedMesh() override;
     public:
@@ -53,8 +45,8 @@ namespace pulsar
         virtual void Serialize(AssetSerializer* s) override;
 
         static RCPtr<SkinnedMesh> StaticCreate(
-            string_view name,
-            array_list<BoneInfo>&&           bones,
+            string_view                      name,
+            RCPtr<Skeleton>                  skeleton,
             array_list<SkinnedMeshSection>&& sections,
             array_list<string>&&             materialNames);
 
@@ -64,15 +56,14 @@ namespace pulsar
         bool   CreateGPUResource() override;
         void   DestroyGPUResource() override;
 
-        // Accessors
-        const array_list<BoneInfo>&         GetBones()         const { return m_bones; }
-        size_t                              GetBoneCount()     const { return m_bones.size(); }
-        int32_t                             FindBoneIndex(const string& name) const;
+        // Skeleton 访问（通过 Skeleton 资产获取骨骼层级）
+        RCPtr<Skeleton>    GetSkeleton()    const { return m_skeleton; }
+        void               SetSkeleton(RCPtr<Skeleton> sk) { m_skeleton = sk; }
 
-        SkinnedMeshSection&                 GetMeshSection(int i)       { return m_sections[i]; }
-        size_t                              GetMeshSectionCount()  const { return m_sections.size(); }
-        const array_list<string>&           GetMaterialNames()     const { return m_materialNames; }
-        size_t                              GetMaterialCount()     const { return m_materialNames.size(); }
+        SkinnedMeshSection&                  GetMeshSection(int i)       { return m_sections[i]; }
+        size_t                               GetMeshSectionCount()  const { return m_sections.size(); }
+        const array_list<string>&            GetMaterialNames()     const { return m_materialNames; }
+        size_t                               GetMaterialCount()     const { return m_materialNames.size(); }
 
         const array_list<gfx::GFXBuffer_sp>& GetGPUResourceVertexBuffers()  const { return m_vertexBuffers; }
         const array_list<gfx::GFXBuffer_sp>& GetGPUResourceIndicesBuffers() const { return m_indicesBuffers; }
@@ -81,7 +72,7 @@ namespace pulsar
         virtual void OnInstantiateAsset(AssetObject* obj) override;
 
     protected: // serialization data
-        array_list<BoneInfo>          m_bones;
+        RCPtr<Skeleton>               m_skeleton;       // 骨骼层级（独立资产）
         array_list<SkinnedMeshSection> m_sections;
         array_list<string>            m_materialNames;
 

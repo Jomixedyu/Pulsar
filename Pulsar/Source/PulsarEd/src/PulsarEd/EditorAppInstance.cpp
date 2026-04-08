@@ -103,7 +103,7 @@ namespace pulsared
     namespace ShapeMeshUtils
     {
         ObjectPtr<Node> CreateCube(
-            RCPtr<Scene> scene,
+            RCPtr<NodeCollection> scene,
             string name = "Node",
             RCPtr<Material> material = nullptr,
             bool dynamicBody = false,
@@ -133,7 +133,7 @@ namespace pulsared
             return node;
         }
         ObjectPtr<Node> CreateSphere(
-            RCPtr<Scene> scene,
+            RCPtr<NodeCollection> scene,
             string name = "Node",
             RCPtr<Material> material = nullptr,
             bool dynamicBody = false,
@@ -297,6 +297,19 @@ namespace pulsared
     }
 
 
+    static void AutoRegisterAssetIcons()
+    {
+        for (auto asmObj : AssemblyManager::GetAssemblies())
+        {
+            for (const auto& type : asmObj->GetTypes())
+            {
+                if (auto attr = type->GetAttribute<AssetIconAttribute>())
+                {
+                    _RegisterIcon(type, attr->GetIconPath());
+                }
+            }
+        }
+    }
     void EditorAppInstance::OnInitialized()
     {
         pulsar::TransientRTPool::Initialize();
@@ -353,13 +366,7 @@ namespace pulsared
             m_gui->SetLayoutInfo(FileUtil::ReadAllText(defaultLayoutPath));
         }
 
-        _RegisterIcon(cltypeof<FolderAsset>(), "Editor/Icons/folder.png");
-        _RegisterIcon(cltypeof<Shader>(), "Editor/Icons/shader.png");
-        _RegisterIcon(cltypeof<Material>(), "Editor/Icons/material.png");
-        _RegisterIcon(cltypeof<StaticMesh>(), "Editor/Icons/staticmesh.png");
-        _RegisterIcon(cltypeof<Texture2D>(), "Editor/Icons/texture.png");
-        _RegisterIcon(cltypeof<Prefab>(), "Editor/Icons/prefab.png");
-        _RegisterIcon(cltypeof<ObjectBase>(), "Editor/Icons/object.png");
+        AutoRegisterAssetIcons();
         _RegisterIcon("WorkspaceWindow.Dirty", "Editor/Icons/Star.png");
 
 

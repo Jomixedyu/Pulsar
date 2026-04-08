@@ -39,7 +39,7 @@ namespace pulsar
         Vector4f Tangent;   // xyz=切线方向，w=副切线符号(+1/-1)
         Color4b  Color;
         Vector2f TexCoords[STATICMESH_MAX_TEXTURE_COORDS];
-        uint32_t BoneIndices[SKINNEDMESH_MAX_BONE_INFLUENCES]; // 骨骼索引
+        uint8_t  BoneIndices[SKINNEDMESH_MAX_BONE_INFLUENCES]; // 骨骼索引（最多256根骨骼）
         float    BoneWeights[SKINNEDMESH_MAX_BONE_INFLUENCES]; // 骨骼权重（归一化，和为1）
     };
     constexpr inline int kSizeofSkinnedMeshVertex = sizeof(SkinnedMeshVertex);

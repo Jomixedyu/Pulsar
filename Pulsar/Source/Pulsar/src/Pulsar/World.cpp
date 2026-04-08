@@ -3,6 +3,7 @@
 
 #include <Pulsar/Logger.h>
 #include <Pulsar/Scene.h>
+#include <Pulsar/Assets/NodeCollection.h>
 
 #include "Physics2D/PhysicsWorld2D.h"
 #include "Physics3D/PhysicsWorld3D.h"
@@ -167,12 +168,12 @@ namespace pulsar
     {
         return GetCameraManager().GetMainCamera();
     }
-    void World::SetFocusScene(RCPtr<Scene> scene)
+    void World::SetFocusScene(RCPtr<NodeCollection> scene)
     {
         m_focusScene = scene;
     }
 
-    void World::ChangeScene(RCPtr<Scene> scene, bool clearResidentScene)
+    void World::ChangeScene(RCPtr<NodeCollection> scene, bool clearResidentScene)
     {
         if (clearResidentScene)
         {
@@ -186,14 +187,14 @@ namespace pulsar
         LoadScene(scene);
     }
 
-    void World::LoadScene(RCPtr<Scene> scene)
+    void World::LoadScene(RCPtr<NodeCollection> scene)
     {
         m_scenes.push_back(scene);
         this->OnSceneLoading(scene);
         scene->BeginScene(this);
     }
 
-    void World::UnloadScene(RCPtr<Scene> scene)
+    void World::UnloadScene(RCPtr<NodeCollection> scene)
     {
         const auto it = std::ranges::find(m_scenes, scene);
         if (it == m_scenes.end())
@@ -214,7 +215,6 @@ namespace pulsar
         OnSceneUnloading(scene);
         scene->EndScene();
         m_scenes.erase(it);
-        DestroyObject(scene, true);
     }
 
     void World::InitializeResidentScene()
@@ -236,10 +236,10 @@ namespace pulsar
         }
     }
 
-    void World::OnLoadingResidentScene(RCPtr<Scene> scene)
+    void World::OnLoadingResidentScene(RCPtr<NodeCollection> scene)
     {
     }
-    void World::OnUnloadingResidentScene(RCPtr<Scene> scene)
+    void World::OnUnloadingResidentScene(RCPtr<NodeCollection> scene)
     {
     }
     void World::AddRenderObject(const rendering::RenderObject_sp& renderObject)
@@ -314,11 +314,11 @@ namespace pulsar
         m_lightManager = nullptr;
     }
 
-    void World::OnSceneLoading(RCPtr<Scene> scene)
+    void World::OnSceneLoading(RCPtr<NodeCollection> scene)
     {
     }
 
-    void World::OnSceneUnloading(RCPtr<Scene> scene)
+    void World::OnSceneUnloading(RCPtr<NodeCollection> scene)
     {
     }
 

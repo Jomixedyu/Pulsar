@@ -29,6 +29,7 @@ namespace pulsar
     class Texture2D : public Texture
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::Texture2D, Texture);
+        CORELIB_CLASS_ATTR(new AssetIconAttribute("Editor/Icons/texture.png"))
     public:
         Texture2D();
         ~Texture2D() override;

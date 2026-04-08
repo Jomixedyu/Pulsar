@@ -25,7 +25,7 @@ namespace pulsar
                 // add component description
                 auto compObj = s->Object->New(ser::VarientType::Object);
                 compObj->Add("Type", component->GetType()->GetName());
-                compObj->Add("Id", component->GetObjectHandle().to_string());
+                compObj->Add("Id", component->GetSceneObjectGuid().to_string());
 
                 // serialize component
                 {
@@ -58,8 +58,8 @@ namespace pulsar
 
                 if (componentType)
                 {
-                    ConstructComponent(componentType, id);
-
+                    auto comp = ConstructComponent(componentType, id);
+                    s->SceneObjectFinder->AddSceneObjectToFinder(comp);
                 }
             }
         }
@@ -89,7 +89,7 @@ namespace pulsar
                 assert(target);
 
                 auto compData = componentObj->At("Data");
-                SceneObjectSerializer ser {compData, s->IsWrite, s->HasEditorData};
+                SceneObjectSerializer ser {compData, s->IsWrite, s->HasEditorData, s->SceneObjectFinder};
                 target->Serialize(&ser);
             }
 
@@ -164,7 +164,7 @@ namespace pulsar
 
     void Node::OnParentActiveChanged()
     {
-        if (m_runtimeScene)
+        if (m_runtimeCollection)
         {
             if (GetIsActive())
             {
@@ -240,9 +240,9 @@ namespace pulsar
         }
     }
 
-    void Node::BeginNode(ObjectPtr<Scene> scene)
+    void Node::BeginNode(NodeCollection* collection)
     {
-        m_runtimeScene = std::move(scene);
+        m_runtimeCollection = collection;
         if (GetIsActive())
         {
             OnActive();
@@ -255,7 +255,7 @@ namespace pulsar
         {
             OnInactive();
         }
-        m_runtimeScene = nullptr;
+        m_runtimeCollection = nullptr;
     }
 
     void Node::BeginPlay()
@@ -316,7 +316,7 @@ namespace pulsar
     {
         auto component = ConstructComponent(type, {});
 
-        if (m_runtimeScene && m_runtimeScene->GetWorld())
+        if (m_runtimeCollection && m_runtimeCollection->GetWorld())
         {
             BeginComponent(component);
             component->OnTransformChanged();
@@ -336,7 +336,7 @@ namespace pulsar
         {
             return;
         }
-        if (m_runtimeScene)
+        if (m_runtimeCollection)
         {
             if (GetRuntimeWorld()->GetPlaying())
             {
@@ -386,7 +386,7 @@ namespace pulsar
 
     void Node::SendMessage(MessageId id)
     {
-        if (m_runtimeScene == nullptr)
+        if (m_runtimeCollection == nullptr)
         {
             return;
         }
@@ -424,9 +424,9 @@ namespace pulsar
 
     World* Node::GetRuntimeWorld() const
     {
-        if (m_runtimeScene)
+        if (m_runtimeCollection)
         {
-            return m_runtimeScene->GetWorld();
+            return m_runtimeCollection->GetWorld();
         }
         return nullptr;
     }

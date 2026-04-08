@@ -1,6 +1,7 @@
 #include "Components/SkinnedMeshRendererComponent.h"
 
 #include "AssetManager.h"
+#include "Components/RendererComponent.h"
 #include <Pulsar/Application.h>
 #include <Pulsar/Logger.h>
 #include <Pulsar/Rendering/ShaderConfig.h>
@@ -114,7 +115,7 @@ namespace pulsar
             // 默认骨骼矩阵全部为单位矩阵（静止姿势）
             SkinnedRendererData defaultData{};
             for (auto& mat : defaultData.BoneMatrices)
-                mat = Matrix4f::Identity();
+                mat = Matrix4f(1);
             m_skinningBuffer->Fill(&defaultData);
         }
 
@@ -334,6 +335,24 @@ namespace pulsar
         if (m_renderObject)
             m_renderObject->SetMaterials(*m_materials)->SubmitChange();
         RebuildObserver();
+    }
+    void SkinnedMeshRendererComponent::GetDependenciesAsset(array_list<guid_t>& deps) const
+    {
+        SceneObject::GetDependenciesAsset(deps);
+        if (m_skinnedMesh)
+        {
+            deps.push_back(m_skinnedMesh.GetGuid());
+        }
+        if (m_materials)
+        {
+            for (auto& mat : *m_materials)
+            {
+                if (mat && mat->material)
+                {
+                    deps.push_back(mat->material.GetGuid());
+                }
+            }
+        }
     }
 
 } // namespace pulsar

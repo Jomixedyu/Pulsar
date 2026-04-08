@@ -23,4 +23,28 @@ inline float3 TransformObjectNormalToWorld(float3 normal)
 
 #define PRIMITIVE_FLAGS_CAST_SHADOWS 0x1
 
+#ifdef RENDERER_SKINNEDMESH
+// 将顶点位置从 BindPose 空间变换到蒙皮后的局部空间
+inline float3 SkinPosition(float3 position, uint4 boneIndices, float4 boneWeights)
+{
+    float4 pos = float4(position, 1.0);
+    float3 result = float3(0, 0, 0);
+    result += boneWeights.x * mul(SkinningBuffer.BoneMatrices[boneIndices.x], pos).xyz;
+    result += boneWeights.y * mul(SkinningBuffer.BoneMatrices[boneIndices.y], pos).xyz;
+    result += boneWeights.z * mul(SkinningBuffer.BoneMatrices[boneIndices.z], pos).xyz;
+    result += boneWeights.w * mul(SkinningBuffer.BoneMatrices[boneIndices.w], pos).xyz;
+    return result;
+}
+// 将法线从 BindPose 空间变换到蒙皮后的局部空间（不含平移，用 float3x3）
+inline float3 SkinNormal(float3 normal, uint4 boneIndices, float4 boneWeights)
+{
+    float3 result = float3(0, 0, 0);
+    result += boneWeights.x * mul((float3x3)SkinningBuffer.BoneMatrices[boneIndices.x], normal);
+    result += boneWeights.y * mul((float3x3)SkinningBuffer.BoneMatrices[boneIndices.y], normal);
+    result += boneWeights.z * mul((float3x3)SkinningBuffer.BoneMatrices[boneIndices.z], normal);
+    result += boneWeights.w * mul((float3x3)SkinningBuffer.BoneMatrices[boneIndices.w], normal);
+    return normalize(result);
+}
+#endif // RENDERER_SKINNEDMESH
+
 #endif

@@ -70,7 +70,7 @@ namespace pulsar
         virtual void OnConstruct() override;
         virtual void OnDestroy() override;
 
-        void BeginNode(ObjectPtr<Scene> scene);
+        void BeginNode(NodeCollection* collection);
         void EndNode();
 
         void BeginPlay();
@@ -136,9 +136,9 @@ namespace pulsar
         void EndComponent(Component_ref component);
 
     public:
-        ObjectPtr<Scene> GetRuntimeOwnerScene() const
+        virtual NodeCollection* GetOwnerNodeCollection() const override
         {
-            return m_runtimeScene;
+            return m_runtimeCollection;
         }
         World* GetRuntimeWorld() const;
 
@@ -153,7 +153,7 @@ namespace pulsar
 
         bool m_isInitialized = false;
 
-        ObjectPtr<Scene> m_runtimeScene = nullptr;
+        NodeCollection* m_runtimeCollection = nullptr;
 
         ObjectPtr<NodeCollection> m_owner;
 

@@ -8,19 +8,8 @@ namespace pulsar
 {
     void TransformComponent::Serialize(SceneObjectSerializer* s)
     {
+        // m_parent/m_children 是 SceneObjectPtr，自动序列化为 asset_guid;scene_guid
         base::Serialize(s);
-        if (!s->IsWrite)
-        {
-            // if (m_parent)
-            // {
-            //     m_parent = s->MovingTable->at(m_parent.GetHandle());
-            // }
-            // for (auto& child : *m_children)
-            // {
-            //     child = s->MovingTable->at(child.GetHandle());
-            // }
-
-        }
     }
     ObjectPtr<TransformComponent> TransformComponent::FindByName(string_view name) const
     {
@@ -147,7 +136,7 @@ namespace pulsar
         : m_localToWorldMatrix{1.f}, m_worldToLocalMatrix{1.f},
           m_scale(1.f, 1.f, 1.f)
     {
-        m_children = mksptr(new List<ObjectPtr<TransformComponent>>);
+        m_children = mksptr(new List<SceneObjectPtr<TransformComponent>>);
     }
     void TransformComponent::BeginComponent()
     {
@@ -241,7 +230,7 @@ namespace pulsar
         }
     }
 
-    void TransformComponent::SetParent(ObjectPtr<TransformComponent> parent)
+    void TransformComponent::SetParent(SceneObjectPtr<TransformComponent> parent)
     {
         if (m_parent == parent)
         {
@@ -251,14 +240,16 @@ namespace pulsar
         if (parent == nullptr)
         {
             // set empty
-            const auto it = std::ranges::find(*m_parent->m_children, self_ptr());
+            SceneObjectPtr<TransformComponent> selfScenePtr = self_ptr();
+            const auto it = std::ranges::find(*m_parent->m_children, selfScenePtr);
             m_parent->m_children->erase(it);
             m_parent = nullptr;
         }
         else
         {
             m_parent = parent;
-            m_parent->m_children->push_back(self_ptr());
+            SceneObjectPtr<TransformComponent> selfScenePtr = self_ptr();
+            m_parent->m_children->push_back(selfScenePtr);
         }
     }
 } // namespace pulsar

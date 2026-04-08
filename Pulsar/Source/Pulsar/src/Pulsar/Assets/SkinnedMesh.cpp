@@ -3,6 +3,7 @@
 #include "Application.h"
 #include "AssetSerializerUtil.h"
 #include "EngineMath.h"
+#include <Pulsar/AssetObject.h>
 
 namespace pulsar
 {
@@ -18,21 +19,19 @@ namespace pulsar
         {
             SkinnedMeshVertex& v = result[i];
             v.Position = Positions[i];
-            v.Normal   = Normals.empty()  ? Vector3f{0, 1, 0}      : Normals[i];
-            v.Tangent  = Tangents.empty() ? Vector4f{1, 0, 0, 1}   : Tangents[i];
+            v.Normal   = Normals.empty()  ? Vector3f{0, 1, 0}          : Normals[i];
+            v.Tangent  = Tangents.empty() ? Vector4f{1, 0, 0, 1}       : Tangents[i];
             v.Color    = Colors.empty()   ? Color4b{255, 255, 255, 255} : Colors[i];
 
             for (uint8_t uvIdx = 0; uvIdx < NumTexCoords && uvIdx < STATICMESH_MAX_TEXTURE_COORDS; uvIdx++)
-            {
                 v.TexCoords[uvIdx] = TexCoords[uvIdx][i];
-            }
 
             if (!BoneIndices.empty())
             {
-                v.BoneIndices[0] = BoneIndices[i][0];
-                v.BoneIndices[1] = BoneIndices[i][1];
-                v.BoneIndices[2] = BoneIndices[i][2];
-                v.BoneIndices[3] = BoneIndices[i][3];
+                v.BoneIndices[0] = static_cast<uint8_t>(BoneIndices[i][0]);
+                v.BoneIndices[1] = static_cast<uint8_t>(BoneIndices[i][1]);
+                v.BoneIndices[2] = static_cast<uint8_t>(BoneIndices[i][2]);
+                v.BoneIndices[3] = static_cast<uint8_t>(BoneIndices[i][3]);
                 v.BoneWeights[0] = BoneWeights[i][0];
                 v.BoneWeights[1] = BoneWeights[i][1];
                 v.BoneWeights[2] = BoneWeights[i][2];
@@ -43,16 +42,8 @@ namespace pulsar
     }
 
     // -----------------------------------------------------------------------
-    // Serialization helpers
+    // Serialization helper for SkinnedMeshSection
     // -----------------------------------------------------------------------
-    std::iostream& ReadWriteStream(std::iostream& stream, bool isWrite, BoneInfo& data)
-    {
-        sser::ReadWriteStream(stream, isWrite, data.Name);
-        sser::ReadWriteStream(stream, isWrite, data.ParentIndex);
-        sser::ReadWriteStream(stream, isWrite, data.InverseBindMatrix);
-        return stream;
-    }
-
     std::iostream& ReadWriteStream(std::iostream& stream, bool isWrite, SkinnedMeshSection& data)
     {
         sser::ReadWriteStream(stream, isWrite, data.NumTexCoords);
@@ -63,13 +54,25 @@ namespace pulsar
         sser::ReadWriteStream(stream, isWrite, data.TexCoords);
         sser::ReadWriteStream(stream, isWrite, data.Indices);
         sser::ReadWriteStream(stream, isWrite, data.MaterialIndex);
-        sser::ReadWriteStream(stream, isWrite, data.BoneIndices);
-        sser::ReadWriteStream(stream, isWrite, data.BoneWeights);
+
+        // BoneIndices / BoneWeights 手动展开（sser vector 模板无法推导 std::array<T,N>）
+        uint32_t vertCount = static_cast<uint32_t>(data.Positions.size());
+        if (!isWrite)
+        {
+            data.BoneIndices.resize(vertCount);
+            data.BoneWeights.resize(vertCount);
+        }
+        for (uint32_t vi = 0; vi < vertCount; ++vi)
+            for (uint32_t bi = 0; bi < SKINNEDMESH_MAX_BONE_INFLUENCES; ++bi)
+                sser::ReadWriteStream(stream, isWrite, data.BoneIndices[vi][bi]);
+        for (uint32_t vi = 0; vi < vertCount; ++vi)
+            for (uint32_t bi = 0; bi < SKINNEDMESH_MAX_BONE_INFLUENCES; ++bi)
+                sser::ReadWriteStream(stream, isWrite, data.BoneWeights[vi][bi]);
         return stream;
     }
 
     // -----------------------------------------------------------------------
-    // Vertex layout（SkinnedMesh 专用，额外带 BoneIndices / BoneWeights）
+    // Vertex layout
     // -----------------------------------------------------------------------
     static auto _GetSkinnedVertexLayout()
     {
@@ -82,14 +85,16 @@ namespace pulsar
         layout->Attributes.push_back({(int)EngineInputSemantic::TANGENT,   gfx::GFXVertexInputDataFormat::R32G32B32A32_SFloat, offsetof(SkinnedMeshVertex, Tangent)});
         layout->Attributes.push_back({(int)EngineInputSemantic::COLOR,     gfx::GFXVertexInputDataFormat::R8G8B8A8_UNorm,     offsetof(SkinnedMeshVertex, Color)});
 
-        for (size_t i = 0; i < STATICMESH_MAX_TEXTURE_COORDS; i++)
-        {
-            layout->Attributes.push_back({(int)EngineInputSemantic::TEXCOORD0 + i, gfx::GFXVertexInputDataFormat::R32G32_SFloat, offsetof(SkinnedMeshVertex, TexCoords[i])});
-        }
+        layout->Attributes.push_back({(int)EngineInputSemantic::TEXCOORD0 + 0, gfx::GFXVertexInputDataFormat::R32G32_SFloat, offsetof(SkinnedMeshVertex, TexCoords[0])});
+        layout->Attributes.push_back({(int)EngineInputSemantic::TEXCOORD0 + 1, gfx::GFXVertexInputDataFormat::R32G32_SFloat, offsetof(SkinnedMeshVertex, TexCoords[1])});
+        layout->Attributes.push_back({(int)EngineInputSemantic::TEXCOORD0 + 2, gfx::GFXVertexInputDataFormat::R32G32_SFloat, offsetof(SkinnedMeshVertex, TexCoords[2])});
+        layout->Attributes.push_back({(int)EngineInputSemantic::TEXCOORD0 + 3, gfx::GFXVertexInputDataFormat::R32G32_SFloat, offsetof(SkinnedMeshVertex, TexCoords[3])});
+        layout->Attributes.push_back({(int)EngineInputSemantic::TEXCOORD0 + 4, gfx::GFXVertexInputDataFormat::R32G32_SFloat, offsetof(SkinnedMeshVertex, TexCoords[4])});
+        layout->Attributes.push_back({(int)EngineInputSemantic::TEXCOORD0 + 5, gfx::GFXVertexInputDataFormat::R32G32_SFloat, offsetof(SkinnedMeshVertex, TexCoords[5])});
+        layout->Attributes.push_back({(int)EngineInputSemantic::TEXCOORD0 + 6, gfx::GFXVertexInputDataFormat::R32G32_SFloat, offsetof(SkinnedMeshVertex, TexCoords[6])});
+        layout->Attributes.push_back({(int)EngineInputSemantic::TEXCOORD0 + 7, gfx::GFXVertexInputDataFormat::R32G32_SFloat, offsetof(SkinnedMeshVertex, TexCoords[7])});
 
-        // BoneIndices: uint4（用 R32G32B32A32_UInt 语义）
-        layout->Attributes.push_back({(int)EngineInputSemantic::BLENDINDICES, gfx::GFXVertexInputDataFormat::R32G32B32A32_UInt,  offsetof(SkinnedMeshVertex, BoneIndices)});
-        // BoneWeights: float4
+        layout->Attributes.push_back({(int)EngineInputSemantic::BLENDINDICES, gfx::GFXVertexInputDataFormat::R8G8B8A8_UInt,       offsetof(SkinnedMeshVertex, BoneIndices)});
         layout->Attributes.push_back({(int)EngineInputSemantic::BLENDWEIGHT,  gfx::GFXVertexInputDataFormat::R32G32B32A32_SFloat, offsetof(SkinnedMeshVertex, BoneWeights)});
 
         return layout;
@@ -112,86 +117,94 @@ namespace pulsar
     // -----------------------------------------------------------------------
     bool SkinnedMesh::CreateGPUResource()
     {
-        if (m_isCreatedResource)
-            return true;
+        if (m_isCreatedResource) return true;
         m_isCreatedResource = true;
 
         for (auto& section : m_sections)
         {
-            auto interleavedVerts = section.BuildInterleavedVertices();
-            const size_t vertSize = interleavedVerts.size() * sizeof(SkinnedMeshVertex);
+            auto verts = section.BuildInterleavedVertices();
 
-            {
-                gfx::GFXBufferDesc vertexDesc{};
-                vertexDesc.Usage       = gfx::GFXBufferUsage::Vertex;
-                vertexDesc.StorageType = gfx::GFXBufferMemoryPosition::DeviceLocal;
-                vertexDesc.BufferSize  = vertSize;
-                vertexDesc.ElementSize = sizeof(SkinnedMeshVertex);
+            gfx::GFXBufferDesc vDesc{};
+            vDesc.Usage       = gfx::GFXBufferUsage::Vertex;
+            vDesc.StorageType = gfx::GFXBufferMemoryPosition::DeviceLocal;
+            vDesc.BufferSize  = verts.size() * sizeof(SkinnedMeshVertex);
+            vDesc.ElementSize = sizeof(SkinnedMeshVertex);
+            auto vb = Application::GetGfxApp()->CreateBuffer(vDesc);
+            vb->Fill(verts.data());
+            m_vertexBuffers.push_back(vb);
 
-                auto vertBuffer = Application::GetGfxApp()->CreateBuffer(vertexDesc);
-                vertBuffer->Fill(interleavedVerts.data());
-                m_vertexBuffers.push_back(vertBuffer);
-            }
-
-            {
-                gfx::GFXBufferDesc indicesDesc{};
-                indicesDesc.Usage       = gfx::GFXBufferUsage::Indices;
-                indicesDesc.StorageType = gfx::GFXBufferMemoryPosition::DeviceLocal;
-                indicesDesc.BufferSize  = section.GetIndicesAllocSize();
-                indicesDesc.ElementSize = sizeof(MeshIndicesType);
-
-                auto indicesBuffer = Application::GetGfxApp()->CreateBuffer(indicesDesc);
-                indicesBuffer->Fill(section.Indices.data());
-                m_indicesBuffers.push_back(indicesBuffer);
-            }
+            gfx::GFXBufferDesc iDesc{};
+            iDesc.Usage       = gfx::GFXBufferUsage::Indices;
+            iDesc.StorageType = gfx::GFXBufferMemoryPosition::DeviceLocal;
+            iDesc.BufferSize  = section.GetIndicesAllocSize();
+            iDesc.ElementSize = sizeof(MeshIndicesType);
+            auto ib = Application::GetGfxApp()->CreateBuffer(iDesc);
+            ib->Fill(section.Indices.data());
+            m_indicesBuffers.push_back(ib);
         }
         return true;
     }
 
     void SkinnedMesh::DestroyGPUResource()
     {
-        if (!m_isCreatedResource)
-            return;
+        if (!m_isCreatedResource) return;
         m_isCreatedResource = false;
         m_vertexBuffers.clear();
         m_indicesBuffers.clear();
     }
 
-    bool SkinnedMesh::IsCreatedGPUResource() const
-    {
-        return m_isCreatedResource;
-    }
+    bool SkinnedMesh::IsCreatedGPUResource() const { return m_isCreatedResource; }
 
     // -----------------------------------------------------------------------
-    // Serialize
+    // Serialize  （v2: Skeleton 以 GUID 引用方式存储）
     // -----------------------------------------------------------------------
     void SkinnedMesh::Serialize(AssetSerializer* s)
     {
         base::Serialize(s);
-        if (!s->IsWrite)
+        auto& stream  = s->GetStream();
+        bool  isWrite = s->IsWrite;
+
+        if (!isWrite)
         {
-            m_bones.clear();
             m_sections.clear();
             m_materialNames.clear();
         }
 
-        sser::ReadWriteStream(s->GetStream(), s->IsWrite, m_bones);
-        sser::ReadWriteStream(s->GetStream(), s->IsWrite, m_sections);
-
+        // --- Skeleton 引用（JSON 侧存 GUID 字符串）---
         if (s->IsWrite)
         {
-            auto materialNames = s->Object->New(ser::VarientType::Array);
-            for (auto& name : m_materialNames)
-                materialNames->Push(name);
-            s->Object->Add("MaterialNames", materialNames);
+            auto guidStr = s->Object->New(ser::VarientType::String);
+            guidStr->Assign(m_skeleton ? m_skeleton->GetAssetGuid().to_string() : "");
+            s->Object->Add("Skeleton", guidStr);
         }
         else
         {
-            if (auto materialNames = s->Object->At("MaterialNames"))
+            if (auto skObj = s->Object->At("Skeleton"))
             {
-                for (int i = 0; i < materialNames->GetCount(); ++i)
-                    m_materialNames.push_back(materialNames->At(i)->AsString());
+                auto guid = guid_t::parse(skObj->AsString());
+                m_skeleton = RuntimeAssetManager::GetLoadedAssetByGuid<Skeleton>(guid);
             }
+        }
+
+        // --- Sections（二进制流）---
+        uint32_t sectionCount = static_cast<uint32_t>(m_sections.size());
+        sser::ReadWriteStream(stream, isWrite, sectionCount);
+        if (!isWrite) m_sections.resize(sectionCount);
+        for (auto& section : m_sections)
+            ReadWriteStream(stream, isWrite, section);
+
+        // --- MaterialNames（JSON 侧）---
+        if (s->IsWrite)
+        {
+            auto arr = s->Object->New(ser::VarientType::Array);
+            for (auto& name : m_materialNames) arr->Push(name);
+            s->Object->Add("MaterialNames", arr);
+        }
+        else
+        {
+            if (auto arr = s->Object->At("MaterialNames"))
+                for (int i = 0; i < arr->GetCount(); ++i)
+                    m_materialNames.push_back(arr->At(i)->AsString());
         }
     }
 
@@ -200,34 +213,24 @@ namespace pulsar
     // -----------------------------------------------------------------------
     RCPtr<SkinnedMesh> SkinnedMesh::StaticCreate(
         string_view                      name,
-        array_list<BoneInfo>&&           bones,
+        RCPtr<Skeleton>                  skeleton,
         array_list<SkinnedMeshSection>&& sections,
         array_list<string>&&             materialNames)
     {
         auto self = NewAssetObject<SkinnedMesh>();
         self->SetIndexName(name);
-        self->m_bones         = std::move(bones);
+        self->m_skeleton      = skeleton;
         self->m_sections      = std::move(sections);
         self->m_materialNames = std::move(materialNames);
         return self;
-    }
-
-    int32_t SkinnedMesh::FindBoneIndex(const string& name) const
-    {
-        for (int32_t i = 0; i < (int32_t)m_bones.size(); ++i)
-        {
-            if (m_bones[i].Name == name)
-                return i;
-        }
-        return -1;
     }
 
     void SkinnedMesh::OnInstantiateAsset(AssetObject* obj)
     {
         base::OnInstantiateAsset(obj);
         auto mesh = static_cast<ThisClass*>(obj);
-        mesh->m_bones    = m_bones;
-        mesh->m_sections = m_sections;
+        mesh->m_skeleton  = m_skeleton;
+        mesh->m_sections  = m_sections;
     }
 
     SkinnedMesh::~SkinnedMesh() = default;

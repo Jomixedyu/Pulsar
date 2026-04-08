@@ -21,6 +21,10 @@ endif ()
 file(GLOB_RECURSE Pulsared_SRC "src/*.h" "src/*.hpp" "src/*.cpp")
 add_executable(${PROJECT_NAME} ${Pulsared_SRC})
 
+if(MSVC)
+    target_compile_options(${PROJECT_NAME} PRIVATE /bigobj)
+endif()
+
 target_include_directories(${PROJECT_NAME} PUBLIC "./src")
 target_include_directories(${PROJECT_NAME} PRIVATE "./src/PulsarEd")
 

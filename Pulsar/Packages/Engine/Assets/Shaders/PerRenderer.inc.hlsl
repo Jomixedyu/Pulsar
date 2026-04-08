@@ -19,7 +19,14 @@ struct RendererData
 
 ConstantBuffer<RendererData> RendererBuffer : register(b0, space2);
 
-// Legacy aliases
-#define PerObjectBuffer RendererBuffer
+
+#ifdef RENDERER_SKINNEDMESH
+// GPU Skinning: 最多 256 根骨骼矩阵 (set2 binding1)
+struct SkinnedRendererData
+{
+    float4x4 BoneMatrices[256];
+};
+ConstantBuffer<SkinnedRendererData> SkinningBuffer : register(b1, space2);
+#endif // RENDERER_SKINNEDMESH
 
 #endif // _ENGINE_PER_RENDERER_INC

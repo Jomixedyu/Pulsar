@@ -1,7 +1,8 @@
 #pragma once
 
-#include "Assets/SkinnedMesh.h"
+#include <Pulsar/Assets/SkinnedMesh.h>
 #include "RendererComponent.h"
+#include <Pulsar/Node.h>
 #include <Pulsar/Assets/Material.h>
 
 namespace pulsar
@@ -43,7 +44,7 @@ namespace pulsar
         void OnTransformChanged() override;
         void OnMeshChanged();
         void OnMaterialChanged();
-
+        void GetDependenciesAsset(array_list<jxcorlib::guid_t> &deps) const override;
     protected:
         CORELIB_REFL_DECL_FIELD(m_materials, new ListItemAttribute(cltypeof<MaterialSlot>()));
         List_sp<SPtr<MaterialSlot>> m_materials;
@@ -57,5 +58,5 @@ namespace pulsar
 
         SPtr<SkinnedMeshRenderObject> m_renderObject;
     };
-    DECL_PTR(SkinnedMeshRendererComponent);
+
 }

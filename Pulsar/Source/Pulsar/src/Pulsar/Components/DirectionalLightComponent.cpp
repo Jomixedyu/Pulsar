@@ -46,7 +46,8 @@ namespace pulsar
         GetWorld()->AddRenderObject(m_gizmos);
 
         m_sceneInfo = std::make_unique<DirectionalLightSceneInfo>();
-        GetRuntimeScene()->GetRuntimeEnvironment().AddDirectionalLight(m_sceneInfo.get());
+        if (auto* env = GetOwnerNodeCollection()->GetRuntimeEnvironment())
+            env->AddDirectionalLight(m_sceneInfo.get());
         OnIntensityChanged();
         OnLightColorChanged();
     }
@@ -55,7 +56,8 @@ namespace pulsar
     {
         base::EndComponent();
         GetWorld()->RemoveRenderObject(m_gizmos);
-        GetRuntimeScene()->GetRuntimeEnvironment().RemoveDirectionalLight(m_sceneInfo.get());
+        if (auto* env = GetOwnerNodeCollection()->GetRuntimeEnvironment())
+            env->RemoveDirectionalLight(m_sceneInfo.get());
         m_sceneInfo.reset();
         m_gizmos.reset();
     }

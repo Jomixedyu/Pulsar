@@ -6,7 +6,7 @@
 #define CORELIB_CLASS_ATTR(...) static inline struct __corelib_attr_t \
 { \
     __corelib_attr_t() { \
-         ::jxcorlib::TypeBuilder::RegisterAttributes(StaticType(), __VA_ARGS__);\
+         ::jxcorlib::TypeBuilder::RegisterAttributes(StaticType(), {__VA_ARGS__});\
     } \
 } __corelib_attr_;
 

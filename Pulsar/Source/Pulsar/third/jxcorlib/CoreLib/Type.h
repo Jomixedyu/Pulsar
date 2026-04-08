@@ -692,10 +692,10 @@ namespace jxcorlib
             type->m_enumGetter = enum_getter;
         }
 
-        template<typename... TArgs>
-        static void RegisterAttributes(Type* type, TArgs&&... args)
+        //template<typename... TArgs>
+        static void RegisterAttributes(Type* type, std::initializer_list<Attribute*> args)
         {
-            for (auto& i : std::initializer_list{ args... })
+            for (auto& i : args)
             {
                 type->m_attributes.push_back(mksptr(i));
             }
