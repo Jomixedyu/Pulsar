@@ -69,6 +69,7 @@ namespace pulsar
         const array_list<gfx::GFXBuffer_sp>& GetGPUResourceIndicesBuffers() const { return m_indicesBuffers; }
 
     protected:
+        void OnCollectAssetDependencies(array_list<jxcorlib::guid_t>& deps) override;
         virtual void OnInstantiateAsset(AssetObject* obj) override;
 
     protected: // serialization data

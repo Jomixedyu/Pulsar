@@ -30,6 +30,7 @@ namespace pulsar
 
         void Serialize(AssetSerializer* s) override;
         void OnInstantiateAsset(AssetObject* obj) override;
+        // Skeleton 不引用其他资产，无需 override OnCollectAssetDependencies
 
     private:
         array_list<BoneInfo> m_bones;

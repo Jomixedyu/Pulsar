@@ -1053,10 +1053,13 @@ namespace pulsared
             const auto targetMeshFolder = settings->ImportingTargetFolder + "/" + filename + "_Items";
             const auto rootCount = fbxRootNode->GetChildCount();
             SkeletonCache skeletonCache; // 整个 FBX 文件共享同一套骨骼缓存
+
+            // Prefab 只有一个根节点，所有 FBX 节点都挂在它下面
+            auto prefabRoot = prefab->NewNode(filename, nullptr);
             for (int i = 0; i < rootCount; ++i)
             {
                 auto sceneRootNode = fbxRootNode->GetChild(i);
-                ProcessNode(sceneRootNode, nullptr, prefab, fbxsetting, inverseCoordSystem, targetMeshFolder, importedAssets, skeletonCache);
+                ProcessNode(sceneRootNode, prefabRoot, prefab, fbxsetting, inverseCoordSystem, targetMeshFolder, importedAssets, skeletonCache);
             }
 
             // 动画提取：每个 Skeleton 只提取一次

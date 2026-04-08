@@ -3,6 +3,7 @@
 #include <algorithm>
 #include "Components/CameraComponent.h"
 #include "Components/StaticMeshRendererComponent.h"
+#include "Components/AnimatorComponent.h"
 #include "Node.h"
 #include "Rendering/LightingData.h"
 #include "Rendering/PerPassResources.h"

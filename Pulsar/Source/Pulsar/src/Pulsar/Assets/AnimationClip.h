@@ -43,6 +43,7 @@ namespace pulsar
         const BoneAnimTrack* FindTrack(const string& boneName) const;
 
         void Serialize(AssetSerializer* s) override;
+        void OnCollectAssetDependencies(array_list<jxcorlib::guid_t>& deps) override;
         void OnInstantiateAsset(AssetObject* obj) override;
 
     private:

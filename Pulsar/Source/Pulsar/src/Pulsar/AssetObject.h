@@ -142,9 +142,7 @@ namespace pulsar
         virtual void OnCollectAssetDependencies(array_list<guid_t>& deps)
         {
         }
-        virtual void OnCollectAssetWeakDependencies(array_list<guid_t>& deps)
-        {
-        }
+
 
     protected:
         void Destroy() override;

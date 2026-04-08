@@ -156,7 +156,7 @@ namespace pulsar
     bool SkinnedMesh::IsCreatedGPUResource() const { return m_isCreatedResource; }
 
     // -----------------------------------------------------------------------
-    // Serialize  （v2: Skeleton 以 GUID 引用方式存储）
+    // Serialize  （v2: SkeletonSerialize 以 GUID 引用方式存储）
     // -----------------------------------------------------------------------
     void SkinnedMesh::Serialize(AssetSerializer* s)
     {
@@ -223,6 +223,13 @@ namespace pulsar
         self->m_sections      = std::move(sections);
         self->m_materialNames = std::move(materialNames);
         return self;
+    }
+
+    void SkinnedMesh::OnCollectAssetDependencies(array_list<guid_t>& deps)
+    {
+        base::OnCollectAssetDependencies(deps);
+        if (m_skeleton)
+            deps.push_back(m_skeleton.GetGuid());
     }
 
     void SkinnedMesh::OnInstantiateAsset(AssetObject* obj)

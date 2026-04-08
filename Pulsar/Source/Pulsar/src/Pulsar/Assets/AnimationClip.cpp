@@ -103,6 +103,13 @@ namespace pulsar
             SerializeBoneAnimTrack(stream, isWrite, t);
     }
 
+    void AnimationClip::OnCollectAssetDependencies(array_list<guid_t>& deps)
+    {
+        base::OnCollectAssetDependencies(deps);
+        if (m_skeleton)
+            deps.push_back(m_skeleton.GetGuid());
+    }
+
     void AnimationClip::OnInstantiateAsset(AssetObject* obj)
     {
         base::OnInstantiateAsset(obj);
