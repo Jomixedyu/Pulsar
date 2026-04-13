@@ -76,10 +76,6 @@ namespace jxcorlib
                     last = (int)i;
                 }
             }
-            if (last < 0)
-            {
-                return std::string{path};
-            }
             return std::string{path.substr(static_cast<size_t>(last) + 1, path.find_last_of('.') - last - 1)};
         }
         std::string GetFilename(std::string_view path)
