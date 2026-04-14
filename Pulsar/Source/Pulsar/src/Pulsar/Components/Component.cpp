@@ -17,9 +17,11 @@ namespace pulsar
     public:
         ComponentSerializeHook(SceneObjectSerializer* s) : s(s) {}
 
-        void IStringify_Parse(Object* object, const string& value) override
+        bool IStringify_Parse(Object* object, const string& value) override
         {
-            auto* boxing = static_cast<BoxingSceneObjectPtrBase*>(object);
+            auto* boxing = dynamic_cast<BoxingSceneObjectPtrBase*>(object);
+            if (!boxing)
+                return false;
 
             // 优先用 finder 重定向（CombineFrom 时注入临时 finder）
             if (s->SceneObjectFinder)
@@ -31,12 +33,12 @@ namespace pulsar
                 if (auto found = s->SceneObjectFinder->FindSceneObject(sceneObjId))
                 {
                     boxing->ptr = SceneObjectPtrBase::UnsafeCreate(found.GetHandle());
-                    return;
+                    return true;
                 }
             }
 
-            // 回退：走默认的全局资产查找
-            boxing->IStringify_Parse(value);
+            // finder 中找不到，返回 false 走默认的全局资产查找
+            return false;
         }
 
         SceneObjectSerializer* s;

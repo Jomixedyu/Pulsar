@@ -284,11 +284,7 @@ namespace jxcorlib::ser
             if (!js.is_string()) return nullptr;
             SPtr<Object> obj = type->CreateSharedInstance({});
 
-            if (hook)
-            {
-                hook->IStringify_Parse(obj.get(), js.get<string>());
-            }
-            else
+            if (!hook || !hook->IStringify_Parse(obj.get(), js.get<string>()))
             {
                 interface_cast<IStringify>(obj.get())->IStringify_Parse(js.get<string>());
             }

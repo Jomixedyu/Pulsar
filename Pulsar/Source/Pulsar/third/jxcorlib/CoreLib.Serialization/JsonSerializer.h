@@ -32,7 +32,8 @@ namespace jxcorlib::ser
     class ISerializeObjectHook
     {
     public:
-        virtual void IStringify_Parse(Object* object, const string& value) = 0;
+        // 返回 true 表示已处理，返回 false 则序列化器使用默认解析路径
+        virtual bool IStringify_Parse(Object* object, const string& value) = 0;
     };
 
     class JsonSerializer
