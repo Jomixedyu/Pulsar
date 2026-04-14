@@ -177,9 +177,9 @@ namespace jxcorlib::ser
     }
 
 
-    static Object_sp _DeserializeObject(const json& js, Type* type, FieldInfo* fieldInfo = nullptr, Object_sp defaultObj = nullptr);
+    static Object_sp _DeserializeObject(const json& js, Type* type, FieldInfo* fieldInfo = nullptr, Object_sp defaultObj = nullptr, ISerializeObjectHook* hook = nullptr);
 
-    static Object_sp _DeserializeArray(const json& js, Type* type, FieldInfo* fieldInfo = nullptr)
+    static Object_sp _DeserializeArray(const json& js, Type* type, FieldInfo* fieldInfo = nullptr, ISerializeObjectHook* hook = nullptr)
     {
         Type* realListType = type;
         bool isSavedType = js.contains("$type");
@@ -222,7 +222,7 @@ namespace jxcorlib::ser
         return list_sp;
     }
     
-    static Object_sp _DeserializeClassObject(const json& js, Type* type, Object_sp defaultObj = nullptr)
+    static Object_sp _DeserializeClassObject(const json& js, Type* type, Object_sp defaultObj = nullptr, ISerializeObjectHook* hook = nullptr)
     {
         Type* realtype = type;
         if (js.contains("$type"))
@@ -249,7 +249,7 @@ namespace jxcorlib::ser
         return obj;
     }
 
-    static Object_sp _DeserializeEnum(const json& js, Type* type)
+    static Object_sp _DeserializeEnum(const json& js, Type* type, ISerializeObjectHook* hook)
     {
         Enum_sp ptr = sptr_cast<Enum>(type->CreateSharedInstance({}));
         uint32_t value = 0;
@@ -267,7 +267,7 @@ namespace jxcorlib::ser
         return ptr;
     }
 
-    static Object_sp _DeserializeObject(const json& js, Type* type, FieldInfo* fieldInfo, Object_sp defaultObj)
+    static Object_sp _DeserializeObject(const json& js, Type* type, FieldInfo* fieldInfo, Object_sp defaultObj, ISerializeObjectHook* hook)
     {
         if (type->IsPrimitiveType())
         {
@@ -276,7 +276,7 @@ namespace jxcorlib::ser
 
         if (type->IsEnum())
         {
-            return _DeserializeEnum(js, type);
+            return _DeserializeEnum(js, type, hook);
         }
 
         if (type->IsImplementedInterface(cltypeof<IStringify>()))
@@ -284,24 +284,31 @@ namespace jxcorlib::ser
             if (!js.is_string()) return nullptr;
             SPtr<Object> obj = type->CreateSharedInstance({});
 
-            interface_cast<IStringify>(obj.get())->IStringify_Parse(js.get<string>());
+            if (hook)
+            {
+                hook->IStringify_Parse(obj.get(), js.get<string>());
+            }
+            else
+            {
+                interface_cast<IStringify>(obj.get())->IStringify_Parse(js.get<string>());
+            }
             return obj;
         }
 
 
         if (type->IsImplementedInterface(cltypeof<IList>()))
         {
-            return _DeserializeArray(js, type, fieldInfo);
+            return _DeserializeArray(js, type, fieldInfo, hook);
         }
 
         //other
-        return _DeserializeClassObject(js, type, std::move(defaultObj));
+        return _DeserializeClassObject(js, type, std::move(defaultObj), hook);
     }
 
 
-    SPtr<Object> JsonSerializer::Deserialize(const string& jstr, Type* type, Object_sp defaultObject)
+    SPtr<Object> JsonSerializer::Deserialize(const string& jstr, Type* type, Object_sp defaultObject, ISerializeObjectHook* hook)
     {
-        return _DeserializeObject(nlohmann::json::parse(jstr), type, nullptr, std::move(defaultObject));
+        return _DeserializeObject(nlohmann::json::parse(jstr), type, nullptr, std::move(defaultObject), hook);
     }
 
 }

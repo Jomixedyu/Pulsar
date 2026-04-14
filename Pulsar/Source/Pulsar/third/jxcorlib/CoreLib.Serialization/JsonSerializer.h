@@ -29,12 +29,23 @@ namespace jxcorlib::ser
         Type* m_itemType;
     };
 
+    class ISerializeObjectHook
+    {
+    public:
+        virtual void IStringify_Parse(Object* object, const string& value) = 0;
+    };
+
     class JsonSerializer
     {
     public:
         static string Serialize(Object* obj, const JsonSerializerSettings& settings);
     public:
-        static SPtr<Object> Deserialize(const string& jstr, Type* type, Object_sp defaultObject = nullptr);
+        static SPtr<Object> Deserialize(
+            const string& jstr,
+            Type* type,
+            Object_sp defaultObject = nullptr,
+            ISerializeObjectHook* hook = nullptr);
+
         template<typename T, typename O = Object>
         static SPtr<T> Deserialize(const string& str)
         {
