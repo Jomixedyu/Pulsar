@@ -31,7 +31,7 @@ namespace pulsared
                 base_flags |= ImGuiTreeNodeFlags_Selected;
             }
             bool is_editor_node = false;
-            bool is_prefab_node = !node->GetSourceGuidInTemplate().is_empty();
+            bool is_prefab_node = node->IsTemplateInstance();
 
             if (node->HasObjectFlags(OF_NoPack))
             {
@@ -169,7 +169,7 @@ namespace pulsared
                 {
                     if (!item) continue;
                     auto collection = item->GetOwnerNodeCollection();
-                    if (!item->GetSourceGuidInTemplate().is_empty())
+                    if (item->IsTemplateInstance())
                     {
                         // 删除整个 template 实例
                         collection->RemoveTemplateInstanceByNode(item);

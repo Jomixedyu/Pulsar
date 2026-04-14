@@ -23,7 +23,7 @@ namespace pulsar
                     continue;
                 }
                 // 来自 Prefab 实例化的节点不保存，BeginComponent 时重新实例化
-                if (!node->GetSourceGuidInTemplate().is_empty())
+                if (node->IsTemplateInstance())
                 {
                     continue;
                 }
@@ -267,7 +267,7 @@ namespace pulsar
 
     int NodeCollection::FindTemplateInstanceIndex(ObjectPtr<Node> node) const
     {
-        if (node->GetSourceGuidInTemplate().is_empty())
+        if (!node->IsTemplateInstance())
             return -1;
 
         // 向上找到最顶层的 template 节点（parent 不再是 template 节点时即为根）
@@ -278,7 +278,7 @@ namespace pulsar
             if (!parentTransform)
                 break;
             auto parentNode = parentTransform->GetNode();
-            if (parentNode->GetSourceGuidInTemplate().is_empty())
+            if (!parentNode->IsTemplateInstance())
                 break;
             root = parentNode;
         }

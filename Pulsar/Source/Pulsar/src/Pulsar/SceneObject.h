@@ -22,9 +22,10 @@ namespace pulsar
         virtual NodeCollection* GetOwnerNodeCollection() const = 0;
     protected:
         guid_t m_sceneObjectGuid;
-    public:
         guid_t m_sourceGuidInTemplate; // 在模板（prefab）里对应的源对象 GUID，为空表示不是实例化对象
+    public:
         const guid_t& GetSourceGuidInTemplate() const { return m_sourceGuidInTemplate; }
+        bool IsTemplateInstance() const { return !m_sourceGuidInTemplate.is_empty(); }
     };
 
 
