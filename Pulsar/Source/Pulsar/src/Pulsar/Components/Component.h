@@ -73,10 +73,7 @@ namespace pulsar
         virtual void BeginPlay() {}
         virtual void EndPlay() {}
 
-        virtual NodeCollection* GetOwnerNodeCollection() const override
-        {
-            return m_runtimeCollection;
-        }
+        virtual NodeCollection* GetOwnerNodeCollection() const override;
     public:
         // ITickable interface
         void OnTick(Ticker ticker) override;
@@ -86,9 +83,8 @@ namespace pulsar
         ObjectPtr<Component> m_masterComponent;
         ObjectPtr<Node> m_ownerNode;
         Node* m_ownerNodePtr = nullptr;
-        NodeCollection* m_runtimeCollection = nullptr;
     protected:
-        bool m_beginning = false;
+        bool m_isBegun = false;
         bool m_canDrawGizmo = false;
     public:
         bool IsCollapsing = false;

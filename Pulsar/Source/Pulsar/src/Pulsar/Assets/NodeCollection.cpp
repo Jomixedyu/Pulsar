@@ -1,6 +1,7 @@
 #include "Assets/NodeCollection.h"
 #include <Pulsar/Node.h>
 #include <Pulsar/World.h>
+#include <Pulsar/AssetManager.h>
 
 #include <utility>
 #include <sstream>
@@ -21,7 +22,11 @@ namespace pulsar
                 {
                     continue;
                 }
-
+                // 来自 Prefab 实例化的节点不保存，BeginComponent 时重新实例化
+                if (!node->GetSourceGuidInTemplate().is_empty())
+                {
+                    continue;
+                }
                 auto nodeObj = s->Object->New(ser::VarientType::Object);
                 nodeObj->Add("Id", node->GetSceneObjectGuid().to_string());
 
@@ -37,6 +42,15 @@ namespace pulsar
                 rootNodes->Push(node->GetSceneObjectGuid().to_string());
             }
             s->Object->Add("RootNodes", rootNodes);
+
+            // 保存模板实例列表（只存 asset GUID）
+            auto templatesArr = s->Object->New(ser::VarientType::Array);
+            for (auto& inst : m_templateInstances)
+            {
+                if (inst.Template)
+                    templatesArr->Push(inst.Template.GetGuid().to_string());
+            }
+            s->Object->Add("TemplateInstances", templatesArr);
         }
         else
         {
@@ -53,7 +67,7 @@ namespace pulsar
                 auto serNode = nodesArr->At(i);
                 auto nodeId = guid_t::parse(serNode->At("Id")->AsString());
                 auto newNode = ConstructNode("Node", nodeId);
-                AddSceneObjectToFinder(newNode);
+                AddSceneObjectToFinder(nodeId, newNode);
                 nodes.push_back({ newNode, serNode });
             }
 
@@ -74,6 +88,24 @@ namespace pulsar
                 auto node = rootNodeArr->At(i);
                 auto sceneGuid = guid_t::parse(node->AsString());
                 RegisterRootNode(cast<Node>(FindSceneObject(sceneGuid)));
+            }
+
+            // 读取模板实例列表，并在此处直接展开（迭代外，安全）
+            if (auto templatesArr = s->Object->At("TemplateInstances"))
+            {
+                for (int i = 0; i < templatesArr->GetCount(); ++i)
+                {
+                    auto tmplGuidStr = templatesArr->At(i)->AsString();
+                    auto tmplGuid = guid_t::parse(tmplGuidStr);
+                    auto tmpl = AssetManager::Get()->LoadAssetById<NodeCollection>(tmplGuid);
+                    if (tmpl)
+                    {
+                        TemplateInstanceInfo info;
+                        info.Template = tmpl;
+                        info.RootNodes = CombineFrom(tmpl);
+                        m_templateInstances.push_back(std::move(info));
+                    }
+                }
             }
         }
     }
@@ -155,9 +187,6 @@ namespace pulsar
         std::erase(*m_rootNodes, node);
     }
 
-    void NodeCollection::CopyFrom(ObjectPtr<NodeCollection> nc)
-    {
-    }
 
     NodeCollection::NodeCollection()
     {
@@ -194,6 +223,7 @@ namespace pulsar
         newNode->SceneObjectConstruct(guid);
 
         auto node = cast<Node>(ObjectPtrBase{newNode->GetObjectHandle()});
+        node->m_ownerCollection = this;   // 设置静态归属，IStringify_Stringify 能正确找到资产 GUID
         m_nodes->push_back(node);
         return node;
     }
@@ -208,65 +238,153 @@ namespace pulsar
         return {};
     }
 
-    void NodeCollection::AddSceneObjectToFinder(const ObjectPtr<SceneObject>& obj)
+    void NodeCollection::AddSceneObjectToFinder(const guid_t& guid, const ObjectPtr<SceneObject>& obj)
     {
-        m_guidToNode.insert({obj->GetSceneObjectGuid(), obj});
+        m_guidToNode.insert({guid, obj});
     }
 
-    void NodeCollection::CombineFrom(RCPtr<NodeCollection> collection)
+
+
+    void NodeCollection::AddTemplateInstance(RCPtr<NodeCollection> tmpl)
     {
-        // 1. 把源 NodeCollection 序列化为 JSON + 二进制流
-        const ser::VarientRef writeJsonRoot = ser::CreateVarient("json");
-        std::stringstream writeBinary(std::ios::in | std::ios::out | std::ios::binary);
+        TemplateInstanceInfo info;
+        info.Template = tmpl;
+        info.RootNodes = CombineFrom(tmpl);
+        m_templateInstances.push_back(std::move(info));
+    }
+
+    void NodeCollection::RemoveTemplateInstance(int index)
+    {
+        assert(index >= 0 && index < (int)m_templateInstances.size());
+        auto& info = m_templateInstances[index];
+        for (auto& root : info.RootNodes)
         {
-            AssetSerializer writeS{writeJsonRoot, writeBinary, true, false};
-            collection->Serialize(&writeS);
+            if (root)
+                RemoveNode(root);
+        }
+        m_templateInstances.erase(m_templateInstances.begin() + index);
+    }
+
+    int NodeCollection::FindTemplateInstanceIndex(ObjectPtr<Node> node) const
+    {
+        if (node->GetSourceGuidInTemplate().is_empty())
+            return -1;
+
+        // 向上找到最顶层的 template 节点（parent 不再是 template 节点时即为根）
+        ObjectPtr<Node> root = node;
+        while (true)
+        {
+            auto parentTransform = root->GetTransform()->GetParent();
+            if (!parentTransform)
+                break;
+            auto parentNode = parentTransform->GetNode();
+            if (parentNode->GetSourceGuidInTemplate().is_empty())
+                break;
+            root = parentNode;
         }
 
-        // 2. 构建 oldGuid -> newGuid 映射，做字符串级替换
-        hash_map<string, string> guidRemap;
-        auto nodesArr = writeJsonRoot->At("Nodes");
-        if (nodesArr)
+        // 在 m_templateInstances 里找哪个实例的 RootNodes 包含这个根节点
+        for (int i = 0; i < (int)m_templateInstances.size(); ++i)
         {
-            for (int i = 0; i < nodesArr->GetCount(); ++i)
+            for (auto& r : m_templateInstances[i].RootNodes)
             {
-                auto nodeObj = nodesArr->At(i);
-                if (auto idObj = nodeObj->At("Id"))
-                {
-                    string oldGuid = idObj->AsString();
-                    string newGuid = guid_t::create_new().to_string();
-                    guidRemap[oldGuid] = newGuid;
-                }
+                if (r.GetHandle() == root.GetHandle())
+                    return i;
+            }
+        }
+        return -1;
+    }
+
+    void NodeCollection::RemoveTemplateInstanceByNode(ObjectPtr<Node> node)
+    {
+        int index = FindTemplateInstanceIndex(node);
+        if (index >= 0)
+            RemoveTemplateInstance(index);
+    }
+
+    array_list<ObjectPtr<Node>> NodeCollection::CombineFrom(RCPtr<NodeCollection> collection)
+    {
+        // 临时 finder：oldGuid → 新建对象（节点和组件）
+        struct TempFinder : ISceneObjectFinder
+        {
+            hash_map<guid_t, ObjectPtr<SceneObject>> map;
+
+            ObjectPtr<SceneObject> FindSceneObject(guid_t id) const override
+            {
+                auto it = map.find(id);
+                return it != map.end() ? it->second : ObjectPtr<SceneObject>{};
+            }
+            void AddSceneObjectToFinder(const guid_t& guid, const ObjectPtr<SceneObject>& obj) override
+            {
+                map[guid] = obj;
+            }
+        } tempFinder;
+
+        // Step 1: 预构建所有新节点和组件，建立 oldGuid → 新对象 的映射
+        struct NodePair
+        {
+            ObjectPtr<Node> SrcNode;
+            ObjectPtr<Node> NewNode;
+        };
+        array_list<NodePair> pairs;
+
+        for (auto& srcNode : *collection->GetNodes())
+        {
+            // 创建新节点（新 GUID，自动加入 m_nodes）
+            auto newNode = ConstructNode(srcNode->GetName());
+            newNode->m_sourceGuidInTemplate = srcNode->GetSceneObjectGuid();
+
+            // 映射：旧节点 GUID → 新节点
+            tempFinder.AddSceneObjectToFinder(srcNode->GetSceneObjectGuid(), newNode);
+
+            pairs.push_back({ srcNode, newNode });
+        }
+
+        // Step 2: 复制节点字段 + 创建组件，注册进 tempFinder
+        for (auto& [srcNode, newNode] : pairs)
+            newNode->BeginInstantiate(srcNode, &tempFinder);
+
+        // Step 3: 反序列化 component 数据（需要完整映射表）
+        for (auto& [srcNode, newNode] : pairs)
+            newNode->EndInstantiate(srcNode, &tempFinder);
+
+        // Step 4: 注册所有新节点进 this 的 finder，确定 rootNodes
+        for (auto& [srcNode, newNode] : pairs)
+        {
+            AddSceneObjectToFinder(newNode->GetSceneObjectGuid(), newNode);
+
+            // 同时注册该节点的组件
+            for (auto& comp : newNode->GetAllComponentArray())
+            {
+                AddSceneObjectToFinder(comp->GetSceneObjectGuid(), comp);
             }
         }
 
-        // JSON 转字符串后做字符串级 GUID 全量替换
-        string jsonStr = writeJsonRoot->ToString();
-        for (auto& [oldG, newG] : guidRemap)
+        // 没有 parent 的节点作为 root
+        for (auto& [srcNode, newNode] : pairs)
         {
-            size_t pos = 0;
-            while ((pos = jsonStr.find(oldG, pos)) != string::npos)
+            if (newNode->GetTransform()->GetParent() == nullptr)
             {
-                jsonStr.replace(pos, oldG.size(), newG);
-                pos += newG.size();
+                RegisterRootNode(newNode);
             }
         }
 
-        // 3. 把替换后的 JSON 反序列化进 this
-        const ser::VarientRef readJsonRoot = ser::CreateVarient("json");
-        readJsonRoot->AssignParse(jsonStr);
-        writeBinary.seekg(0);
-        AssetSerializer readS{readJsonRoot, writeBinary, false, false};
-        Serialize(&readS);
-
-        // 4. 记录 m_sourceSceneObjectGuid（Prefab 实例追踪来源）
-        for (auto& [oldGuidStr, newGuidStr] : guidRemap)
+        // 收集本次展开的根节点
+        array_list<ObjectPtr<Node>> newRoots;
+        for (auto& [srcNode, newNode] : pairs)
         {
-            auto newGuid = guid_t::parse(newGuidStr);
-            auto oldGuid = guid_t::parse(oldGuidStr);
-            if (auto obj = FindSceneObject(newGuid))
-                obj->m_sourceSceneObjectGuid = oldGuid;
+            if (newNode->GetTransform()->GetParent() == nullptr)
+                newRoots.push_back(newNode);
         }
+
+        // Step 5: 如果场景正在运行，启动所有新节点（BeginNode → BeginComponent → 渲染注册）
+        // 所有节点都处理完后再统一 Begin，确保组件初始化时引用已全部就绪
+        for (auto& [srcNode, newNode] : pairs)
+        {
+            OnAddNode(newNode);
+        }
+
+        return newRoots;
     }
 
     void NodeCollection::OnCollectAssetDependencies(array_list<guid_t>& deps)
@@ -274,6 +392,12 @@ namespace pulsar
         for (auto& node : *m_nodes)
         {
             node->GetDependenciesAsset(deps);
+        }
+        // 模板资产依赖
+        for (auto& inst : m_templateInstances)
+        {
+            if (inst.Template)
+                deps.push_back(inst.Template.GetGuid());
         }
     }
 
@@ -292,7 +416,9 @@ namespace pulsar
 
     void NodeCollection::EndScene()
     {
-        for (auto& node : *m_nodes)
+        // 拷贝后再遍历，防止 EndComponent 回调链中修改 m_nodes 导致迭代器失效
+        auto nodesCopy = *m_nodes;
+        for (auto& node : nodesCopy)
         {
             node->EndNode();
         }
@@ -336,7 +462,7 @@ namespace pulsar
     {
         if (m_runtimeWorld)
         {
-            if (!node->GetOwnerNodeCollection())
+            if (!node->m_isBegun)  // 检查是否已经 Begin，而非是否有归属
             {
                 node->BeginNode(this);
             }

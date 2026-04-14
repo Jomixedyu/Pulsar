@@ -12,6 +12,36 @@
 namespace pulsar
 {
 
+    class ComponentSerializeHook : public ser::ISerializeObjectHook
+    {
+    public:
+        ComponentSerializeHook(SceneObjectSerializer* s) : s(s) {}
+
+        void IStringify_Parse(Object* object, const string& value) override
+        {
+            auto* boxing = static_cast<BoxingSceneObjectPtrBase*>(object);
+
+            // 优先用 finder 重定向（CombineFrom 时注入临时 finder）
+            if (s->SceneObjectFinder)
+            {
+                guid_t collectionGuid;
+                guid_t sceneObjId;
+                BoxingSceneObjectPtrBase::Parse(value, collectionGuid, sceneObjId);
+
+                if (auto found = s->SceneObjectFinder->FindSceneObject(sceneObjId))
+                {
+                    boxing->ptr = SceneObjectPtrBase::UnsafeCreate(found.GetHandle());
+                    return;
+                }
+            }
+
+            // 回退：走默认的全局资产查找
+            boxing->IStringify_Parse(value);
+        }
+
+        SceneObjectSerializer* s;
+    };
+
     void Component::Serialize(SceneObjectSerializer* s)
     {
         if (s->IsWrite)
@@ -21,7 +51,8 @@ namespace pulsar
         }
         else // read
         {
-            ser::JsonSerializer::Deserialize(s->Object->ToString(false), GetType(), self());
+            ComponentSerializeHook hook{s};
+            ser::JsonSerializer::Deserialize(s->Object->ToString(false), GetType(), self(), &hook);
         }
     }
 
@@ -70,10 +101,16 @@ namespace pulsar
         return StringUtil::FriendlyName(name);
     }
 
+    NodeCollection* Component::GetOwnerNodeCollection() const
+    {
+        if (m_ownerNode)
+            return m_ownerNode->GetOwnerNodeCollection();
+        return nullptr;
+    }
+
     void Component::BeginComponent()
     {
-        m_beginning = true;
-        m_runtimeCollection = GetNode()->GetOwnerNodeCollection();
+        m_isBegun = true;
 
         if (m_canDrawGizmo)
         {
@@ -82,7 +119,7 @@ namespace pulsar
     }
     void Component::EndComponent()
     {
-        m_beginning = false;
+        m_isBegun = false;
 
         if (m_canDrawGizmo)
         {

@@ -215,7 +215,7 @@ namespace jxcorlib::ser
         {
             for (auto& item : arr_json)
             {
-                list->Add(_DeserializeObject(item, elementType));
+                list->Add(_DeserializeObject(item, elementType, nullptr, nullptr, hook));
             }
         }
 
@@ -242,7 +242,7 @@ namespace jxcorlib::ser
 
             if (!item.empty())
             {
-                fieldInfo->SetValue(obj.get(), _DeserializeObject(item, fieldInfo->GetFieldType(), fieldInfo));
+                fieldInfo->SetValue(obj.get(), _DeserializeObject(item, fieldInfo->GetFieldType(), fieldInfo, nullptr, hook));
             }
         }
 

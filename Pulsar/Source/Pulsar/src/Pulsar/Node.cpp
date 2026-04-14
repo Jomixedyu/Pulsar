@@ -59,9 +59,43 @@ namespace pulsar
                 if (componentType)
                 {
                     auto comp = ConstructComponent(componentType, id);
-                    s->SceneObjectFinder->AddSceneObjectToFinder(comp);
+                    s->SceneObjectFinder->AddSceneObjectToFinder(comp->GetSceneObjectGuid(), comp);
                 }
             }
+        }
+    }
+
+    void Node::BeginInstantiate(const ObjectPtr<Node>& src, ISceneObjectFinder* finder)
+    {
+        // 复制节点级别的纯值字段，不触发任何生命周期回调
+        m_active = src->m_active;
+
+        // 为每个 srcComp 创建对应新组件（新 GUID），并注册进 finder（用 srcComp 旧 GUID 作为 key）
+        for (auto& srcComp : src->GetAllComponentArray())
+        {
+            auto newComp = ConstructComponent(srcComp->GetType());
+            finder->AddSceneObjectToFinder(srcComp->GetSceneObjectGuid(), newComp);
+        }
+    }
+
+    void Node::EndInstantiate(const ObjectPtr<Node>& src, ISceneObjectFinder* finder)
+    {
+        // 反序列化每个 component 的数据，SceneObjectPtr 引用通过 finder 重定向
+        auto& srcComps = src->GetAllComponentArray();
+        auto& newComps = GetAllComponentArray();
+        assert(srcComps.size() == newComps.size());
+
+        for (size_t i = 0; i < srcComps.size(); ++i)
+        {
+            auto varient = ser::CreateVarient("json");
+
+            // 用 srcComp 自己的 Serialize 写出数据
+            SceneObjectSerializer writeS{varient, true, false, nullptr};
+            srcComps[i]->Serialize(&writeS);
+
+            // 用 finder 重定向引用，反序列化到 newComp
+            SceneObjectSerializer readS{varient, false, false, finder};
+            newComps[i]->Serialize(&readS);
         }
     }
 
@@ -95,6 +129,7 @@ namespace pulsar
 
         }
     }
+
     bool Node::GetIsActive() const
     {
         ObjectPtr<Node> node = self_ptr();
@@ -145,6 +180,12 @@ namespace pulsar
     }
     void Node::SetParent(ObjectPtr<Node> parent)
     {
+        // 如果当前是 root 节点，从 collection 的 rootNodes 里移除
+        auto collection = GetOwnerNodeCollection();
+        if (collection && !GetTransform()->GetParent())
+        {
+            collection->UnregisterRootNode(self_ptr());
+        }
         GetTransform()->SetParent(parent->GetTransform());
     }
     void Node::OnActive()
@@ -164,7 +205,7 @@ namespace pulsar
 
     void Node::OnParentActiveChanged()
     {
-        if (m_runtimeCollection)
+        if (m_isBegun)
         {
             if (GetIsActive())
             {
@@ -242,7 +283,8 @@ namespace pulsar
 
     void Node::BeginNode(NodeCollection* collection)
     {
-        m_runtimeCollection = collection;
+        m_ownerCollection = collection;
+        m_isBegun = true;
         if (GetIsActive())
         {
             OnActive();
@@ -255,7 +297,7 @@ namespace pulsar
         {
             OnInactive();
         }
-        m_runtimeCollection = nullptr;
+        m_isBegun = false;
     }
 
     void Node::BeginPlay()
@@ -316,7 +358,7 @@ namespace pulsar
     {
         auto component = ConstructComponent(type, {});
 
-        if (m_runtimeCollection && m_runtimeCollection->GetWorld())
+        if (m_isBegun && GetOwnerNodeCollection()->GetWorld())
         {
             BeginComponent(component);
             component->OnTransformChanged();
@@ -336,7 +378,7 @@ namespace pulsar
         {
             return;
         }
-        if (m_runtimeCollection)
+        if (m_isBegun)
         {
             if (GetRuntimeWorld()->GetPlaying())
             {
@@ -386,12 +428,10 @@ namespace pulsar
 
     void Node::SendMessage(MessageId id)
     {
-        if (m_runtimeCollection == nullptr)
+        if (!m_isBegun)
         {
             return;
         }
-
-
     }
 
     void Node::OnTick(Ticker ticker)
@@ -424,9 +464,9 @@ namespace pulsar
 
     World* Node::GetRuntimeWorld() const
     {
-        if (m_runtimeCollection)
+        if (m_isBegun && m_ownerCollection)
         {
-            return m_runtimeCollection->GetWorld();
+            return m_ownerCollection->GetWorld();
         }
         return nullptr;
     }

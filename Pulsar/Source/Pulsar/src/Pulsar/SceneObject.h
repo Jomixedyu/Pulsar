@@ -23,7 +23,8 @@ namespace pulsar
     protected:
         guid_t m_sceneObjectGuid;
     public:
-        guid_t m_sourceSceneObjectGuid; //in prefab
+        guid_t m_sourceGuidInTemplate; // 在模板（prefab）里对应的源对象 GUID，为空表示不是实例化对象
+        const guid_t& GetSourceGuidInTemplate() const { return m_sourceGuidInTemplate; }
     };
 
 
@@ -32,8 +33,14 @@ namespace pulsar
     public:
         virtual ~ISceneObjectFinder() = default;
         virtual ObjectPtr<SceneObject> FindSceneObject(guid_t sceneObjId) const = 0;
-        virtual void AddSceneObjectToFinder(const ObjectPtr<SceneObject>& obj) = 0;
+        virtual void AddSceneObjectToFinder(const guid_t& guid, const ObjectPtr<SceneObject>& obj) = 0;
+
+        void AddSceneObjectToFinder(const ObjectPtr<SceneObject>& obj)
+        {
+            AddSceneObjectToFinder(obj->GetSceneObjectGuid(), obj);
+        }
     };
+
 
     struct SceneObjectSerializer
     {
@@ -225,8 +232,9 @@ namespace pulsar
 
         SceneObject* GetPointer() const override { return ptr.GetObjectPointer(); }
 
-        void IStringify_Parse(const string& value) override;
+        static void Parse(const string& value, guid_t& collection, guid_t& sceneObjId);
 
+        void IStringify_Parse(const string& value) override;
         string IStringify_Stringify() override;
 
         SceneObjectPtrBase ptr;

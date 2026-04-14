@@ -36,6 +36,10 @@ namespace pulsar
     public:
         void BeginSerialize(SceneObjectSerializer* s);
         void EndSerialize(SceneObjectSerializer* s);
+
+        // 深拷贝实例化（供 CombineFrom 使用）
+        void BeginInstantiate(const ObjectPtr<Node>& src, ISceneObjectFinder* finder);
+        void EndInstantiate(const ObjectPtr<Node>& src, ISceneObjectFinder* finder);
         bool GetIsActive() const;
         bool GetIsActiveSelf() const
         {
@@ -138,8 +142,9 @@ namespace pulsar
     public:
         virtual NodeCollection* GetOwnerNodeCollection() const override
         {
-            return m_runtimeCollection;
+            return m_ownerCollection;
         }
+        bool IsBegun() const { return m_isBegun; }
         World* GetRuntimeWorld() const;
 
     private:
@@ -151,11 +156,8 @@ namespace pulsar
 
         ObjectPtr<TransformComponent> m_transform = nullptr;
 
-        bool m_isInitialized = false;
-
-        NodeCollection* m_runtimeCollection = nullptr;
-
-        ObjectPtr<NodeCollection> m_owner;
+        bool m_isBegun = false;
+        NodeCollection* m_ownerCollection = nullptr;   // 静态归属，ConstructNode 时设置
 
         int32_t m_layer = 0;
     };

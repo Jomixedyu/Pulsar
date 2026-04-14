@@ -1048,13 +1048,15 @@ namespace pulsared
             geomConverter.SplitMeshesPerMaterial(fbxScene, true);
 
             const auto fbxRootNode = fbxScene->GetRootNode();
+            // Prefab 资产名 = 纯文件名 + "Prefab"（如 TestSkinnedPrefab）
             const auto filename = PathUtil::GetFilenameWithoutExt(importFile.filename().string());
-            auto prefab = Prefab::StaticCreate(filename);
+            // Prefab 内根节点名 = 纯文件名（如 TestSkinned），两者不同名
+            auto prefab = Prefab::StaticCreate(filename + "Prefab");
             const auto targetMeshFolder = settings->ImportingTargetFolder + "/" + filename + "_Items";
             const auto rootCount = fbxRootNode->GetChildCount();
             SkeletonCache skeletonCache; // 整个 FBX 文件共享同一套骨骼缓存
 
-            // Prefab 只有一个根节点，所有 FBX 节点都挂在它下面
+            // Prefab 只有一个根节点，名字为纯文件名
             auto prefabRoot = prefab->NewNode(filename, nullptr);
             for (int i = 0; i < rootCount; ++i)
             {
@@ -1082,7 +1084,7 @@ namespace pulsared
                 }
             }
 
-            AssetDatabase::CreateAsset(prefab, settings->ImportingTargetFolder + "/" + filename);
+            AssetDatabase::CreateAsset(prefab, settings->ImportingTargetFolder + "/" + filename + "Prefab");
             importedAssets.push_back(prefab);
 
             DestroySdkObjects(fbxManager, 0);

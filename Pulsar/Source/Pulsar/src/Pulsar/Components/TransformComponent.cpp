@@ -224,7 +224,7 @@ namespace pulsar
     void TransformComponent::MakeTransformChanged()
     {
         m_isDirtyMatrix = true;
-        if (m_beginning)
+        if (m_isBegun)
         {
             GetNode()->OnTransformChanged();
         }

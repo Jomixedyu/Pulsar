@@ -56,7 +56,7 @@ namespace pulsar
 
     void CameraComponent::ResizeManagedRenderTexture(int width, int height)
     {
-        if (!m_beginning)
+        if (!m_isBegun)
             return;
         if (!m_managedRT)
             return;
@@ -141,7 +141,7 @@ namespace pulsar
 
     void CameraComponent::BeginRT()
     {
-        if (m_beginning && m_renderTarget)
+        if (m_isBegun && m_renderTarget)
         {
             auto& refData = m_renderTarget->GetGfxFrameBufferObject()->RefData;
             refData.clear();
