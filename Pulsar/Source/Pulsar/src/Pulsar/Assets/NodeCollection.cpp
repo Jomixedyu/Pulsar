@@ -348,6 +348,15 @@ namespace pulsar
         for (auto& [srcNode, newNode] : pairs)
             newNode->EndInstantiate(srcNode, &tempFinder);
 
+        // Step 3.5: 反序列化完成后，标记所有 transform matrix 为 dirty
+        // 因为 m_isDirtyMatrix 默认为 false，反序列化不会改变它，
+        // 导致 GetLocalToWorldMatrix() 返回未初始化的 identity 矩阵
+        for (auto& [srcNode, newNode] : pairs)
+        {
+            if (auto t = newNode->GetTransform())
+                t->MakeTransformChanged();
+        }
+
         // Step 4: 注册所有新节点进 this 的 finder，确定 rootNodes
         for (auto& [srcNode, newNode] : pairs)
         {
