@@ -7,13 +7,23 @@ SamplerState Sampler__BaseColorMap;
 
 
 
-StandardVaryings VSMain(StandardAttributes a)
+StandardVaryings VSMain(StandardAttributes a2v)
 {
-    StandardVaryings v = (StandardVaryings)0;
-    v.Position = TransformObjectToClip(a.Position);
-    v.TexCoord0 = a.TexCoord0;
-    v.WorldNormal = TransformObjectNormalToWorld(a.Normal);
-    return v;
+    StandardVaryings v2f = (StandardVaryings)0;
+
+    v2f.TexCoord0 = a2v.TexCoord0;
+    
+    #if defined(RENDERER_SKINNEDMESH)
+        float3 skinnedPosition = SkinPosition(a2v.Position, a2v.BlendIndices, a2v.BlendWeights);
+        float3 skinnedNormal   = SkinNormal(a2v.Normal, a2v.BlendIndices, a2v.BlendWeights);
+        v2f.Position    = TransformObjectToClip(skinnedPosition);
+        v2f.WorldNormal = TransformObjectNormalToWorld(skinnedNormal);
+    #else
+        v2f.Position    = TransformObjectToClip(a2v.Position);
+        v2f.WorldNormal = TransformObjectNormalToWorld(a2v.Normal);
+    #endif
+    
+    return v2f;
 }
 
 float4 PSMain(StandardVaryings v) : SV_Target
