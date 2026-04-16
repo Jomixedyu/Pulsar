@@ -289,7 +289,8 @@ namespace jxcorlib
         bool                   m_isGeneric;
 
         array_list<SPtr<Attribute>>    m_attributes;
-        std::map<string, SPtr<MemberInfo>>  m_memberInfos;
+        // 使用 vector 保持插入顺序（按 m_order 有序插入），替代 map 的字典序
+        array_list<std::pair<string, SPtr<MemberInfo>>>  m_memberInfos;
         array_list<std::tuple<Type*, InterfaceGetter, SharedInterfaceGetter>> m_interfaces;
 
     private:

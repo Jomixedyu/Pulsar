@@ -179,29 +179,28 @@ namespace jxcorlib
 
     MemberInfo* Type::GetMemberInfo(const string& name)
     {
-        if (this->m_memberInfos.find(name) == this->m_memberInfos.end())
-        {
-            return nullptr;
-        }
-        return this->m_memberInfos.at(name).get();
+        for (auto& [n, info] : this->m_memberInfos)
+            if (n == name) return info.get();
+        return nullptr;
     }
 
     void Type::GetFieldInfos(array_list<FieldInfo*>& out, TypeBinding attr)
     {
         Type* fieldinfo_type = cltypeof<FieldInfo>();
 
+        // m_memberInfos 已在 _AddMemberInfo 时按 m_order 有序插入，直接遍历即可
         for (auto& [name, info] : this->m_memberInfos)
         {
             if (!fieldinfo_type->IsInstanceOfType(info.get()))
-            {
                 continue;
-            }
             if (!EnumHasFlag(attr, TypeBinding::NonPublic))
             {
                 if (!info->m_isPublic) continue;
             }
             out.push_back(static_cast<FieldInfo*>(info.get()));
         }
+
+        // 父类字段追加在后面
         if (this->GetBase())
         {
             this->GetBase()->GetFieldInfos(out, attr);
@@ -217,16 +216,15 @@ namespace jxcorlib
 
     FieldInfo* Type::GetFieldInfo(const string& name)
     {
-        if (this->m_memberInfos.find(name) == this->m_memberInfos.end())
+        for (auto& [n, info] : this->m_memberInfos)
         {
-            return nullptr;
+            if (n == name)
+            {
+                if (!info->GetType()->IsSubclassOf(cltypeof<FieldInfo>())) return nullptr;
+                return static_cast<FieldInfo*>(info.get());
+            }
         }
-        MemberInfo* info = this->m_memberInfos.at(name).get();
-        if (!info->GetType()->IsSubclassOf(cltypeof<FieldInfo>()))
-        {
-            return nullptr;
-        }
-        return static_cast<FieldInfo*>(info);
+        return nullptr;
     }
 
     void Type::GetMethodInfos(array_list<MethodInfo*>& out, TypeBinding attr)
@@ -260,16 +258,15 @@ namespace jxcorlib
 
     MethodInfo* Type::GetMethodInfo(const string& name)
     {
-        if (this->m_memberInfos.find(name) == this->m_memberInfos.end())
+        for (auto& [n, info] : this->m_memberInfos)
         {
-            return nullptr;
+            if (n == name)
+            {
+                if (!info->GetType()->IsSubclassOf(cltypeof<MethodInfo>())) return nullptr;
+                return static_cast<MethodInfo*>(info.get());
+            }
         }
-        auto info = this->m_memberInfos.at(name);
-        if (!info->GetType()->IsSubclassOf(cltypeof<MethodInfo>()))
-        {
-            return nullptr;
-        }
-        return static_cast<MethodInfo*>(info.get());
+        return nullptr;
     }
     const Type::EnumAccessor* Type::GetEnumAccessors()
     {
@@ -287,7 +284,16 @@ namespace jxcorlib
     }
     void Type::_AddMemberInfo(MemberInfo* info)
     {
-        this->m_memberInfos.insert({ info->GetName(), mksptr(info) });
+        // 按 m_order 升序插入，保证遍历时顺序与源码声明顺序一致
+        auto sptr = mksptr(info);
+        auto it = std::lower_bound(
+            m_memberInfos.begin(), m_memberInfos.end(),
+            info->m_order,
+            [](const std::pair<string, SPtr<MemberInfo>>& elem, int order)
+            {
+                return elem.second->m_order < order;
+            });
+        m_memberInfos.insert(it, { info->GetName(), std::move(sptr) });
     }
 
     IInterface_sp Type::GetSharedInterface(Object_rsp instance, Type* type)
