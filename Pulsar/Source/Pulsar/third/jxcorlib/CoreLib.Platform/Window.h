@@ -43,6 +43,15 @@ namespace jxcorlib::platform::window
      */
     bool OpenFileDialogMulti(intptr_t owner, std::string_view filter, const std::filesystem::path& default_path, std::vector<std::filesystem::path>* out_select);
 
+    /**
+     * Show a Save File dialog.
+     * @param owner: window handle
+     * @param filter: same format as OpenFileDialog, eg: PngFile(*.png)|*.png
+     * @param default_path: default directory or file path
+     * @param out_select: the selected save path
+     */
+    bool SaveFileDialog(intptr_t owner, std::string_view filter, const std::filesystem::path& default_path, std::filesystem::path* out_select);
+
     float GetUIScaling();
 
     intptr_t FindWindow(std::string_view title);

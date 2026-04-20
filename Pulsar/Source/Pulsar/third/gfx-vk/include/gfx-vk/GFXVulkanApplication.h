@@ -76,6 +76,8 @@ namespace gfx
 
         virtual array_list<GFXTextureFormat> GetSupportedDepthFormats() override;
 
+        virtual std::vector<uint8_t> ReadbackTexture(GFXTexture* texture, int32_t width, int32_t height) override;
+
         class GFXVulkanDescriptorManager* GetVulkanDescriptorManager() const { return m_descriptorManager; }
         virtual GFXExtensions GetExtensionNames() override;
         virtual intptr_t GetWindowHandle() override;

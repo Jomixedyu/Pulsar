@@ -212,6 +212,34 @@ namespace jxcorlib::platform::window
         return true;
     }
 
+    bool SaveFileDialog(intptr_t owner, std::string_view _filter, const std::filesystem::path& default_path, std::filesystem::path* out_select)
+    {
+        OPENFILENAME ofn = { 0 };
+        ofn.lStructSize = sizeof(ofn);
+        ofn.hwndOwner = (HWND)owner;
+
+        char* filter_str = BuildFilterStr(_filter);
+        auto default_dir = UTF8ToANSI(default_path.string().c_str());
+
+        TCHAR szBuffer[MAX_PATH] = { 0 };
+        ofn.lpstrFilter     = filter_str;
+        ofn.lpstrInitialDir  = default_dir.c_str();
+        ofn.lpstrFile        = szBuffer;
+        ofn.nMaxFile         = sizeof(szBuffer) / sizeof(*szBuffer);
+        ofn.nFilterIndex     = 0;
+        ofn.Flags            = OFN_PATHMUSTEXIST | OFN_OVERWRITEPROMPT | OFN_EXPLORER | OFN_NOCHANGEDIR;
+
+        BOOL bSel = GetSaveFileName(&ofn);
+        delete[] filter_str;
+
+        if (bSel)
+        {
+            if (out_select) *out_select = szBuffer;
+            return true;
+        }
+        return false;
+    }
+
     float GetUIScaling()
     {
         const HDC hDC = ::GetDC(nullptr);

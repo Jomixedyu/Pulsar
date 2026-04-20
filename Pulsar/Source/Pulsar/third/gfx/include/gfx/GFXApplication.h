@@ -100,6 +100,8 @@ namespace gfx
 
         virtual array_list<GFXTextureFormat> GetSupportedDepthFormats() = 0;
 
+        virtual std::vector<uint8_t> ReadbackTexture(GFXTexture* texture, int32_t width, int32_t height) = 0;
+
         virtual intptr_t GetWindowHandle() = 0;
 
         virtual GFXSwapchain* GetViewport() = 0;
