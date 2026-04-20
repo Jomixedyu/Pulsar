@@ -10,6 +10,7 @@ namespace gfx
 
 namespace pulsar
 {
+    class CameraComponent;
     class RenderTexture;
     class Texture2D;
 
@@ -33,6 +34,14 @@ namespace pulsar
          * @return true on success
          */
         static bool SaveRenderTextureToPng(RenderTexture* renderTexture, const std::string& outputPath);
+
+        /**
+         * @brief Capture a camera's render texture and save to Saved/Screenshots/ as PNG.
+         * File name format: Screenshot_YYYYMMDD_HHmmss.png
+         * @param camera The camera to capture from
+         * @return The output file path on success, empty string on failure
+         */
+        static std::string CaptureCameraScreenshot(CameraComponent* camera);
 
         /**
          * @brief Save raw RGBA8 pixel data to PNG file.

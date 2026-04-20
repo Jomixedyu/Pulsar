@@ -12,7 +12,7 @@
 #include <Pulsar/Components/CameraComponent.h>
 #include <Pulsar/Logger.h>
 #include <Pulsar/Scene.h>
-#include <Pulsar/Util/TextureSaveUtil.h>
+#include <PulsarEd/Utils/EditorFunctionLibrary.h>
 #include <PulsarEd/Assembly.h>
 #include <PulsarEd/Components/Grid3DComponent.h>
 #include <PulsarEd/Components/StdEditCameraControllerComponent.h>
@@ -24,10 +24,6 @@
 
 #include <PulsarEd/ExclusiveTask.h>
 #include <PulsarEd/Workspace.h>
-
-#include <chrono>
-#include <ctime>
-#include <filesystem>
 
 namespace pulsared
 {
@@ -262,49 +258,7 @@ namespace pulsared
 
     void SceneWindow::CaptureScreenshot()
     {
-        auto world = dynamic_cast<EditorWorld*>(EditorWorld::GetPreviewWorld());
-        if (!world)
-        {
-            pulsar::Logger::Log("CaptureScreenshot: no active world", pulsar::LogLevel::Warning);
-            return;
-        }
-
-        auto cam = world->GetCurrentCamera();
-        if (!cam)
-        {
-            pulsar::Logger::Log("CaptureScreenshot: no camera", pulsar::LogLevel::Warning);
-            return;
-        }
-
-        auto rt = cam->GetRenderTexture();
-        if (!rt)
-        {
-            pulsar::Logger::Log("CaptureScreenshot: no render texture", pulsar::LogLevel::Warning);
-            return;
-        }
-
-        // Build output path: Saved/Screenshots/Screenshot_YYYYMMDD_HHmmss.png
-        auto savedDir = std::filesystem::current_path() / "Saved" / "Screenshots";
-        std::filesystem::create_directories(savedDir);
-
-        auto now = std::chrono::system_clock::now();
-        auto time_t_val = std::chrono::system_clock::to_time_t(now);
-        std::tm* tm_ptr = std::localtime(&time_t_val);
-        char timeStr[32];
-        std::strftime(timeStr, sizeof(timeStr), "%Y%m%d_%H%M%S", tm_ptr);
-
-        auto outPath = savedDir / (std::string("Screenshot_") + timeStr + ".png");
-        std::string pathStr = outPath.string();
-
-        bool success = pulsar::TextureSaveUtil::SaveRenderTextureToPng(rt.GetPtr(), pathStr);
-        if (success)
-        {
-            pulsar::Logger::Log(std::format("Screenshot saved to '{}'", pathStr));
-        }
-        else
-        {
-            pulsar::Logger::Log(std::format("Failed to save screenshot to '{}'", pathStr), pulsar::LogLevel::Error);
-        }
+        EditorFunctionLibrary::CaptureScreenshot();
     }
 
     void SceneWindow::OnWindowResize()

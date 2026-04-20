@@ -3,10 +3,15 @@
 #include <Pulsar/Assets/Texture2D.h>
 #include <Pulsar/Assets/RenderTexture.h>
 #include <Pulsar/Application.h>
+#include <Pulsar/Components/CameraComponent.h>
 #include <Pulsar/Logger.h>
 #include <gfx/GFXImage.h>
 #include <gfx/GFXTexture.h>
 #include <CoreLib/File.h>
+
+#include <chrono>
+#include <ctime>
+#include <filesystem>
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #define STBI_WRITE_NO_STDIO
@@ -68,13 +73,10 @@ namespace pulsar
         const int32_t width = texture->GetWidth();
         const int32_t height = texture->GetHeight();
 
-        // Decode the origin memory to RGBA8 pixels
         std::vector<uint8_t> rgbaData;
 
-        // Use the GFX image loader to decode compressed origin data
         if (texture->GetCompressedFormat() == TextureCompressionFormat::HDR_Compressed)
         {
-            // For HDR textures, read back from GPU
             auto gfxTex = texture->GetGFXTexture();
             if (!gfxTex)
             {
@@ -86,10 +88,6 @@ namespace pulsar
         }
         else
         {
-            // For non-HDR textures, we need to get the uncompressed pixel data.
-            // The Texture2D stores m_originMemory which may be compressed (e.g. PNG/JPEG on disk)
-            // or uncompressed raw data. We use LoadImageFromMemory to decode it.
-            // However, m_originMemory is protected. We'll use the GPU readback path instead.
             auto gfxTex = texture->GetGFXTexture();
             if (gfxTex)
             {
@@ -104,11 +102,10 @@ namespace pulsar
             return false;
         }
 
-        // Determine channel count from the readback data
         int32_t channelCount = static_cast<int32_t>(rgbaData.size()) / (width * height);
         if (channelCount < 1 || channelCount > 4)
         {
-            channelCount = 4; // Default to RGBA
+            channelCount = 4;
         }
 
         return SavePixelDataToPng(width, height, channelCount, rgbaData.data(), outputPath);
@@ -125,7 +122,6 @@ namespace pulsar
         const int32_t width = renderTexture->GetWidth();
         const int32_t height = renderTexture->GetHeight();
 
-        // Get the first render target (color attachment)
         auto& renderTargets = renderTexture->GetRenderTargets();
         if (renderTargets.empty())
         {
@@ -179,6 +175,47 @@ namespace pulsar
         if (outHeight) *outHeight = height;
 
         return gfxApp->ReadbackTexture(texture, width, height);
+    }
+
+    std::string TextureSaveUtil::CaptureCameraScreenshot(CameraComponent* camera)
+    {
+        if (!camera)
+        {
+            Logger::Log("TextureSaveUtil::CaptureCameraScreenshot: camera is null", LogLevel::Warning);
+            return "";
+        }
+
+        auto rt = camera->GetRenderTexture();
+        if (!rt)
+        {
+            Logger::Log("TextureSaveUtil::CaptureCameraScreenshot: no render texture", LogLevel::Warning);
+            return "";
+        }
+
+        // Build output path: Saved/Screenshots/Screenshot_YYYYMMDD_HHmmss.png
+        auto savedDir = std::filesystem::current_path() / "Saved" / "Screenshots";
+        std::filesystem::create_directories(savedDir);
+
+        auto now = std::chrono::system_clock::now();
+        auto time_t_val = std::chrono::system_clock::to_time_t(now);
+        std::tm* tm_ptr = std::localtime(&time_t_val);
+        char timeStr[32];
+        std::strftime(timeStr, sizeof(timeStr), "%Y%m%d_%H%M%S", tm_ptr);
+
+        auto outPath = savedDir / (std::string("Screenshot_") + timeStr + ".png");
+        std::string pathStr = outPath.string();
+
+        bool success = SaveRenderTextureToPng(rt.GetPtr(), pathStr);
+        if (success)
+        {
+            Logger::Log(std::format("Screenshot saved to '{}'", pathStr));
+            return pathStr;
+        }
+        else
+        {
+            Logger::Log(std::format("Failed to save screenshot to '{}'", pathStr), LogLevel::Error);
+            return "";
+        }
     }
 
 } // namespace pulsar
