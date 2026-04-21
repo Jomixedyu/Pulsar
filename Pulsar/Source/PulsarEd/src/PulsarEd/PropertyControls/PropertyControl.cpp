@@ -35,13 +35,13 @@ namespace pulsared
         return nullptr;
     }
 
-    bool PropertyControlManager::ShowProperty(const string& name, Type* type, Object* obj)
+    bool PropertyControlManager::ShowProperty(const string& name, Type* type, Object* obj, std::span<Attribute*> attrs)
     {
         auto ctrl = FindControl(type);
         bool changed = false;
         if (ctrl)
         {
-            changed |= ctrl->OnDrawImGui(name, type, obj);
+            changed |= ctrl->OnDrawImGui(name, type, obj, attrs);
         }
         else
         {
@@ -61,7 +61,8 @@ namespace pulsared
         const string& name, Type* type, Type* innerType,
         Object* obj,
         ObjectBase* receiver, FieldInfo* receiverField = nullptr,
-        bool ignore = false, bool showDebug = false)
+        bool ignore = false, bool showDebug = false,
+        std::span<Attribute*> attrs = {})
     {
         ImGui::TableNextRow();
         ImGui::TableSetColumnIndex(0);
@@ -158,7 +159,7 @@ namespace pulsared
             const bool opened = ImGui::TreeNodeEx(StringUtil::FriendlyName(name).c_str(), ImGuiTreeNodeFlags_Leaf);
             ImGui::TableSetColumnIndex(1);
 
-            isChanged |= PropertyControlManager::ShowProperty(name, innerType, obj);
+            isChanged |= PropertyControlManager::ShowProperty(name, innerType, obj, attrs);
 
             if (opened)
             {
@@ -216,10 +217,17 @@ namespace pulsared
                         ImGui::BeginDisabled();
                     }
 
+                    // collect field attributes for property controls
+                    auto fieldAttrsSptr = field->GetAllAttributes();
+                    std::vector<Attribute*> fieldAttrs;
+                    fieldAttrs.reserve(fieldAttrsSptr.size());
+                    for (auto& a : fieldAttrsSptr)
+                        fieldAttrs.push_back(a.get());
+
                     bool curFieldChanged = false;
                     if (curFieldChanged |= _ObjectFieldPropertyLine(
                             field->GetName(), field->GetFieldType(), fieldInnerType,
-                            fieldInstSptr.get(), receiver, receiverField, false, showDebug))
+                            fieldInstSptr.get(), receiver, receiverField, false, showDebug, fieldAttrs))
                     {
                         if (fieldType->IsBoxingType())
                         {

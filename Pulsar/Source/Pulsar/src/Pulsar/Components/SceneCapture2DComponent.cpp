@@ -57,7 +57,7 @@ namespace pulsar
     Matrix4f SceneCapture2DComponent::GetProjectionMat() const
     {
         const Vector2f& size = this->m_renderTarget->GetSize2df();
-        Matrix4f ret{1};
+        Matrix4f ret{};
         if (this->m_projectionMode == CaptureProjectionMode::Perspective)
         {
             math::Perspective_LHZO(ret,

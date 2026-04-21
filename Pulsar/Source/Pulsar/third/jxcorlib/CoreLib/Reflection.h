@@ -127,6 +127,7 @@ namespace jxcorlib
     public:
         SPtr<Attribute> GetAttribute(Type* type);
         array_list<SPtr<Attribute>> GetAttributes(Type* type);
+        const array_list<SPtr<Attribute>>& GetAllAttributes() const { return m_attributes; }
         bool IsDefinedAttribute(Type* type);
 
         template <typename T>

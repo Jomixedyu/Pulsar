@@ -8,6 +8,6 @@ namespace pulsared
     {
         EDITOR_IMPL_PROPERTY_CONTROL(cltypeof<jxcorlib::Path>(), new PathPropertyControl);
     public:
-        virtual bool OnDrawImGui(const string& name, Type* type, Object* prop) override;
+        virtual bool OnDrawImGui(const string& name, Type* type, Object* prop, std::span<Attribute*> attrs = {}) override;
     };
 }

@@ -1,5 +1,6 @@
 #pragma once
 #include "SceneCaptureComponent.h"
+#include <CoreLib/Attribute.h>
 
 namespace pulsar
 {
@@ -46,10 +47,10 @@ namespace pulsar
         CORELIB_REFL_DECL_FIELD(m_fov);
         float m_fov{};
 
-        CORELIB_REFL_DECL_FIELD(m_near);
+        CORELIB_REFL_DECL_FIELD(m_near, new PrecisionAttribute(5));
         float m_near{};
 
-        CORELIB_REFL_DECL_FIELD(m_far);
+        CORELIB_REFL_DECL_FIELD(m_far, new PrecisionAttribute(1));
         float m_far{};
 
         CORELIB_REFL_DECL_FIELD(m_projectionMode);

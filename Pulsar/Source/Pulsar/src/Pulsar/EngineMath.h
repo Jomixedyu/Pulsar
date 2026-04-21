@@ -20,6 +20,7 @@ namespace pulsar::math
     inline void Perspective(Matrix4f& result, const float& fovy, const float& aspect, const float& zNear, const float& zFar)
     {
         float const tanHalfFovy = tan(fovy / 2);
+        result = Matrix4f{0};
         result[0][0] = 1 / (aspect * tanHalfFovy);
         result[1][1] = 1 / (tanHalfFovy);
         result[2][3] = -1;
@@ -30,6 +31,7 @@ namespace pulsar::math
     inline void Perspective_LHZO(Matrix4f& result, const float& fovy, const float& aspect, const float& zNear, const float& zFar)
     {
         float const tanHalfFovy = tan(fovy / 2);
+        result = Matrix4f{0};
         result[0][0] = 1 / (aspect * tanHalfFovy);
         result[1][1] = 1 / (tanHalfFovy);
         result[2][2] = zFar / (zFar - zNear);

@@ -114,7 +114,7 @@ namespace pulsared
                 auto dtDistance = (newpos.x - m_latestMousePos.x) * m_scaleSpeed;
                 if (cam->GetProjectionMode() == CaptureProjectionMode::Perspective)
                 {
-                    if (tr->GetPosition().z + dtDistance > -0.2f)
+                    if (tr->GetPosition().z + dtDistance > -cam->GetNear())
                     {
                         // nothing
                     }
@@ -153,7 +153,7 @@ namespace pulsared
                 auto dtDistance = io.MouseWheel * m_scaleSpeed * 10;
                 if (cam->GetProjectionMode() == CaptureProjectionMode::Perspective)
                 {
-                    if (tr->GetPosition().z + dtDistance > -0.2f)
+                    if (tr->GetPosition().z + dtDistance > -cam->GetNear())
                     {
                         // nothing
                     }

@@ -2,6 +2,7 @@
 #include "DragInfo.h"
 #include "PropertyControls/ObjectPropertyControl.h"
 #include <Pulsar/AssetManager.h>
+#include <Pulsar/Node.h>
 #include <Pulsar/IconsForkAwesome.h>
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
@@ -61,7 +62,7 @@ namespace pulsared
         }
         return isChanged;
     }
-    static bool SceneObjectControl(BoxingObjectPtrBase* obj, Type* type)
+    static bool SceneObjectControl(BoxingSceneObjectPtrBase* obj, Type* type)
     {
         auto ptr = cast<SceneObject>(obj->ptr);
 
@@ -72,7 +73,20 @@ namespace pulsared
         {
             auto guid = ptr->GetSceneObjectGuid();
             auto shortGuid = guid.to_string().substr(24, 8);
-            objectName = StringUtil::Concat(ptr->GetName(), " (", shortGuid, ")");
+
+            if (auto component = dynamic_cast<Component*>(ptr.GetPtr()))
+            {
+                auto node = component->GetNode();
+                string nodeName = node ? node->GetName() : string("<No Node>");
+                string nodeShortGuid = node ? node->GetSceneObjectGuid().to_string().substr(24, 8) : string("--------");
+                string componentShortGuid = component->GetSceneObjectGuid().to_string().substr(24, 8);
+                string friendlyComponentName = ComponentInfoManager::GetFriendlyComponentName(component->GetType());
+                objectName = StringUtil::Concat(nodeName, " (", nodeShortGuid, ") | ", friendlyComponentName, " (", componentShortGuid, ")");
+            }
+            else
+            {
+                objectName = StringUtil::Concat(ptr->GetName(), " (", shortGuid, ")");
+            }
 
             StringUtil::strcpy(buf, objectName);
         }
@@ -109,11 +123,16 @@ namespace pulsared
         return isChanged;
     }
 
-    bool ObjectPropertyControl::OnDrawImGui(const string& name, Type* type, Object* prop)
+    bool ObjectPropertyControl::OnDrawImGui(const string& name, Type* type, Object* prop, std::span<Attribute*> attrs)
     {
-        if (auto objectPtr = dynamic_cast<BoxingObjectPtrBase*>(prop))
+        if (auto sceneObjectPtr = dynamic_cast<BoxingSceneObjectPtrBase*>(prop))
         {
-            return SceneObjectControl(objectPtr, type);
+            return SceneObjectControl(sceneObjectPtr, type);
+        }
+
+        if (dynamic_cast<BoxingObjectPtrBase*>(prop))
+        {
+            return false;
         }
 
         if (auto rcobjPtr = dynamic_cast<BoxingRCPtrBase*>(prop))
@@ -121,7 +140,6 @@ namespace pulsared
             return AssetObjectControl(rcobjPtr, type);
         }
 
-        assert(false);
-
+        return false;
     }
 } // namespace pulsared

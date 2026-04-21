@@ -6,7 +6,7 @@ namespace pulsared
 {
     static char s_pathBuf[2048];
 
-    bool PathPropertyControl::OnDrawImGui(const string& name, Type* type, Object* prop)
+    bool PathPropertyControl::OnDrawImGui(const string& name, Type* type, Object* prop, std::span<Attribute*> attrs)
     {
         assert(prop && prop->GetType() == GetPropertyType());
 

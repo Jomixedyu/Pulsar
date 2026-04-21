@@ -3,7 +3,7 @@
 
 namespace pulsared
 {
-    bool Mask8PropertyControl::OnDrawImGui(const jxcorlib::string& name, jxcorlib::Type* type, jxcorlib::Object* prop)
+    bool Mask8PropertyControl::OnDrawImGui(const jxcorlib::string& name, jxcorlib::Type* type, jxcorlib::Object* prop, std::span<Attribute*> attrs)
     {
         assert(prop && prop->GetType() == GetPropertyType());
 

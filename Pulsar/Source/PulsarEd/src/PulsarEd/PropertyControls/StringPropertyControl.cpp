@@ -4,7 +4,7 @@
 namespace pulsared
 {
     static char tempString[1024];
-    bool StringPropertyControl::OnDrawImGui(const string& name, Type* type, Object* prop)
+    bool StringPropertyControl::OnDrawImGui(const string& name, Type* type, Object* prop, std::span<Attribute*> attrs)
     {
         assert(prop && prop->GetType() == GetPropertyType());
 

@@ -98,8 +98,8 @@ namespace pulsared
         m_cam->SetProjectionMode(CaptureProjectionMode::Perspective);
         m_cam->SetBackgroundColor(Color4f{0.3f, 0.3f, 0.3f, 1.0f});
         m_cam->SetFOV(45.f);
-        m_cam->SetNear(0.01f);
-        m_cam->SetFar(10000.f);
+        m_cam->SetNear(0.1f);
+        m_cam->SetFar(2000.f);
 
         camCtrlNode->AddComponent<StdEditCameraControllerComponent>();
     }

@@ -73,4 +73,14 @@ namespace jxcorlib
 
     };
 
+    class PrecisionAttribute final : public Attribute
+    {
+        CORELIB_DEF_TYPE(AssemblyObject_jxcorlib, jxcorlib::PrecisionAttribute, Attribute);
+    public:
+        explicit PrecisionAttribute(int precision) : m_precision(precision) {}
+        int GetPrecision() const { return m_precision; }
+    private:
+        int m_precision;
+    };
+
 }

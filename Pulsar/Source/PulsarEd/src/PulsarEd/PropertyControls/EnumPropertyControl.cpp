@@ -4,7 +4,7 @@
 
 namespace pulsared
 {
-    bool EnumPropertyControl::OnDrawImGui(const string& name, Type* type, Object* prop)
+    bool EnumPropertyControl::OnDrawImGui(const string& name, Type* type, Object* prop, std::span<Attribute*> attrs)
     {
         assert(prop && prop->GetType()->IsSubclassOf(GetPropertyType()));
 

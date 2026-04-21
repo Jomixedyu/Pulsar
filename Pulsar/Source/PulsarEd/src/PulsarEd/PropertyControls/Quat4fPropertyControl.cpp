@@ -3,7 +3,7 @@
 
 namespace pulsared
 {
-    bool Quat4fPropertyControl::OnDrawImGui(const string& name, Type* type, Object* prop)
+    bool Quat4fPropertyControl::OnDrawImGui(const string& name, Type* type, Object* prop, std::span<Attribute*> attrs)
     {
         assert(prop && prop->GetType() == GetPropertyType());
 
