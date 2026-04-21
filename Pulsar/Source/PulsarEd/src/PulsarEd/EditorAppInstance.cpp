@@ -62,6 +62,8 @@ namespace pulsared
         Application::inst()->QuittingEvents.Invoke();
     }
 
+
+
     void EditorAppInstance::OnCreateEditors()
     {
         m_editors.push_back(std::make_unique<SceneEditor>());
@@ -73,7 +75,7 @@ namespace pulsared
 
     void EditorAppInstance::RequestQuit()
     {
-        // SystemInterface::RequestQuitEvents();
+        m_shouldQuit = true;
     }
 
     Vector2f EditorAppInstance::GetOutputScreenSize()
@@ -200,6 +202,11 @@ namespace pulsared
     {
 
         auto scene = World::Current()->GetResidentScene();
+
+        auto cam = World::Current()->GetCurrentCamera();
+        cam->GetTransform()->SetPosition({0,0,-50});
+        cam->GetTransform()->GetParent()->SetEuler({});
+        return;
         // light
         {
             auto dlight = scene->NewNode("Directional Light");
@@ -324,6 +331,7 @@ namespace pulsared
         // add package
         AssetDatabase::AddPackage("Engine");
         AssetDatabase::AddPackage("Editor");
+        AssetDatabase::AddPackage("Project");
 
         // 注册 Shader 编译服务
         static EditorShaderCompileService s_shaderCompileService;
@@ -386,6 +394,8 @@ namespace pulsared
         SetupDefaultResidentScene();
 
         uinput::InputManager::GetInstance()->Initialize();
+
+
     }
 
     void EditorAppInstance::OnTerminate()
@@ -470,7 +480,7 @@ namespace pulsared
     bool EditorAppInstance::IsQuit()
     {
         // return SystemInterface::GetIsQuit();
-        return false;
+        return m_shouldQuit;
     }
 
 

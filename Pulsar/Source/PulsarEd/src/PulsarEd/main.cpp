@@ -28,12 +28,12 @@ std::wstring String2Wstring(std::string wstr)
     return res;
 }
 
-int main()
+int main(int argc, char** argv)
 {
     int code = 0;
 //    try
 //    {
-        code = Application::Exec(new EditorAppInstance, "Pulsar Editor", { 1280,720 });
+        code = Application::Exec(new EditorAppInstance, "Pulsar Editor", { 1280,720 }, argc, argv);
 //    }
 //    catch(std::exception& e)
 //    {

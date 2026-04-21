@@ -31,31 +31,17 @@ namespace pulsar
         array_list<string> paths = StringUtil::Split(path, u8char('/'));
 
         auto target = self_ptr();
-
-        for (auto& comp : *m_children)
+        for (size_t i = 0; i < paths.size(); ++i)
         {
-            auto targetComp = comp;
-            bool success = true;
-            for (size_t i = 0; i < paths.size(); i++)
-            {
-                if (auto find = target->FindByName(paths[i]))
-                {
-                    targetComp = find;
-                }
-                else
-                {
-                    success = false;
-                    break;
-                }
-            }
-            if (!success)
-            {
-                break;
-            }
-            return targetComp;
+            if (!target)
+                return nullptr;
+
+            target = target->FindByName(paths[i]);
+            if (!target)
+                return nullptr;
         }
 
-        return nullptr;
+        return target;
     }
 
     Vector3f TransformComponent::GetWorldPosition()

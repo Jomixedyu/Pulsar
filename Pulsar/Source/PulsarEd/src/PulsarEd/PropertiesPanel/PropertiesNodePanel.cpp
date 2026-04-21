@@ -4,7 +4,6 @@
 #include "Menus/Menu.h"
 #include "Menus/MenuRenderer.h"
 
-
 #include <PulsarEd/PropertyControls/PropertyControl.h>
 
 namespace pulsared
@@ -151,6 +150,8 @@ namespace pulsared
                     if (PImGui::BeginPropertyLines())
                     {
                         PImGui::PropertyLineText("Handle", comp.GetHandle().to_string());
+                        PImGui::PropertyLineText("SceneObjectId", comp->GetSceneObjectGuid().to_string());
+                        PImGui::PropertyLineText("InTemplateGuid", comp->GetSourceGuidInTemplate().to_string());
                         PImGui::EndPropertyLines();
                     }
                 }
@@ -168,6 +169,8 @@ namespace pulsared
             if (PImGui::BeginPropertyLines())
             {
                 PImGui::PropertyLineText("Handle", selected->GetObjectHandle().to_string().c_str());
+                PImGui::PropertyLineText("SceneObjectId", selected->GetSceneObjectGuid().to_string().c_str());
+                PImGui::PropertyLineText("InTemplateGuid", selected->GetSourceGuidInTemplate().to_string().c_str());
                 PImGui::EndPropertyLines();
             }
         }

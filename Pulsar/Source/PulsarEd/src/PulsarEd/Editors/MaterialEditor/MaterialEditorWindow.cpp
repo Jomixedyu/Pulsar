@@ -33,6 +33,7 @@ namespace pulsared
             if (m_shader != material->GetShader())
             {
                 OnShaderChanged(material->GetShader());
+                AssetDatabase::MarkDirty(m_assetObject);
             }
             m_shader = material->GetShader();
         }

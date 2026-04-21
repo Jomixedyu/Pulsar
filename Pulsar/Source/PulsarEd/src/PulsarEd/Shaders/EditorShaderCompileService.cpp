@@ -1,6 +1,7 @@
 #include "EditorShaderCompileService.h"
 
 #include <PulsarEd/AssetDatabase.h>
+#include <PulsarEd/Workspace.h>
 #include <Pulsar/Logger.h>
 #include <Pulsar/Application.h>
 
@@ -12,6 +13,7 @@
 #include <fstream>
 #include <sstream>
 #include <iomanip>
+#include <unordered_set>
 
 namespace pulsared
 {
@@ -45,8 +47,15 @@ namespace pulsared
 
     EditorShaderCompileService::EditorShaderCompileService()
     {
-        // 默认缓存目录: 项目根目录下的 .shader_cache
-        m_cacheDir = std::filesystem::current_path() / ".shader_cache";
+        // 默认缓存目录: 当前 workspace 根目录下的 .shader_cache；未打开 workspace 时回退到当前工作目录
+        if (Workspace::IsOpened())
+        {
+            m_cacheDir = std::filesystem::path(Workspace::WorkspacePath()).parent_path() / ".shader_cache";
+        }
+        else
+        {
+            m_cacheDir = std::filesystem::current_path() / ".shader_cache";
+        }
         m_workerThread = std::thread(&EditorShaderCompileService::WorkerThread, this);
     }
 
@@ -339,6 +348,22 @@ namespace pulsared
 
             auto includeDir = hlslPhysicsPath.parent_path();
 
+            // 收集所有 Package 的父目录作为额外的 include 路径，
+            // 使得 #include "Engine/Assets/Shaders/..." 形式的引用可以跨 Package 解析
+            std::vector<std::filesystem::path> includePaths = { includeDir };
+            {
+                auto packages = AssetDatabase::GetPackageInfos();
+                std::unordered_set<std::string> seen;
+                for (const auto& pkg : packages)
+                {
+                    auto parentDir = pkg.Path.parent_path().generic_string();
+                    if (seen.insert(parentDir).second)
+                    {
+                        includePaths.push_back(pkg.Path.parent_path());
+                    }
+                }
+            }
+
             // 读取 HLSL 源码
             std::ifstream hlslFile(hlslPhysicsPath);
             auto hlslSource = std::string(
@@ -358,7 +383,7 @@ namespace pulsared
             passInfo.vsEntry = task.m_entries.m_vertex;
             passInfo.psEntry = task.m_entries.m_fragment;
             passInfo.PreDefines = defines;
-            passInfo.IncludePaths = { includeDir };
+            passInfo.IncludePaths = includePaths;
             passInfo.Debug = false;
 
             auto passResult = pscCompiler->CompilePass(passInfo, hlslAssetPath.c_str());

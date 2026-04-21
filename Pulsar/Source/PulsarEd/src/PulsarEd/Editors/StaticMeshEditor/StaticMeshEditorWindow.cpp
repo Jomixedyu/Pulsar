@@ -22,15 +22,58 @@ namespace pulsared
         {
             if (PImGui::BeginPropertyLines())
             {
-                auto info = std::format("extent: {}, radius: {}",
-                    to_string(m_staticmesh->GetBounds().Extent),
-                    to_string(m_staticmesh->GetBounds().Radius));
-
-                PImGui::PropertyLineText("Boudning Box", info);
+                PImGui::PropertyLineText("Extent", to_string(m_staticmesh->GetBounds().Extent));
+                PImGui::PropertyLineText("Radius", std::to_string(m_staticmesh->GetBounds().Radius));
                 if (ImGui::Button("Calc"))
                 {
                     m_staticmesh->CalcBounds();
                     AssetDatabase::MarkDirty(m_assetObject);
+                }
+
+                size_t totalVertices = 0;
+                size_t totalIndices = 0;
+                for (size_t i = 0; i < m_staticmesh->GetMeshSectionCount(); i++)
+                {
+                    auto& section = m_staticmesh->GetMeshSection(i);
+                    totalVertices += section.Positions.size();
+                    totalIndices += section.Indices.size();
+                }
+                PImGui::PropertyLineText("Sections", std::to_string(m_staticmesh->GetMeshSectionCount()));
+                PImGui::PropertyLineText("Vertices", std::to_string(totalVertices));
+                PImGui::PropertyLineText("Indices", std::to_string(totalIndices));
+
+                PImGui::EndPropertyLines();
+            }
+        }
+
+        if (PImGui::PropertyGroup("Vertex Attributes"))
+        {
+            if (PImGui::BeginPropertyLines())
+            {
+                for (size_t i = 0; i < m_staticmesh->GetMeshSectionCount(); i++)
+                {
+                    auto& section = m_staticmesh->GetMeshSection(i);
+                    if (m_staticmesh->GetMeshSectionCount() > 1)
+                    {
+                        ImGui::SeparatorText(std::format("Section {}", i).c_str());
+                    }
+
+                    bool hasPosition = !section.Positions.empty();
+                    bool hasNormal   = !section.Normals.empty();
+                    bool hasTangent  = !section.Tangents.empty();
+                    bool hasColor    = !section.Colors.empty();
+                    int   uvCount   = 0;
+                    for (size_t uv = 0; uv < section.TexCoords.size(); uv++)
+                    {
+                        if (!section.TexCoords[uv].empty())
+                            uvCount = (int)uv + 1;
+                    }
+
+                    PImGui::PropertyLineText("Position", hasPosition ? "Yes" : "No");
+                    PImGui::PropertyLineText("Normal",   hasNormal   ? "Yes" : "No");
+                    PImGui::PropertyLineText("Tangent",  hasTangent  ? "Yes" : "No");
+                    PImGui::PropertyLineText("Color",    hasColor    ? "Yes" : "No");
+                    PImGui::PropertyLineText("UV Sets",  uvCount > 0 ? std::to_string(uvCount) : "No");
                 }
                 PImGui::EndPropertyLines();
             }

@@ -14,8 +14,11 @@ namespace pulsar
     public:
         static AppInstance* inst();
         static gfx::GFXApplication* GetGfxApp();
+        static int argc();
+        static const char* const* argv();
+        static bool TryGetCommandLineArg(string_view prefix, string* outValue);
         //start
-        static int Exec(AppInstance* instance, string_view title, Vector2f size);
+        static int Exec(AppInstance* instance, string_view title, Vector2f size, int argc = 0, const char* const* argv = nullptr);
         
         static inline jxcorlib::StopWatch Watch {"syswatch"};
 

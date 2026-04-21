@@ -97,6 +97,7 @@ namespace pulsared
         ExclusiveTaskQueue m_exclusiveTaskQueue;
 
         bool m_isPlaying = false;
+        bool m_shouldQuit = false;
     };
 
     inline EditorAppInstance* GetEdApp()
