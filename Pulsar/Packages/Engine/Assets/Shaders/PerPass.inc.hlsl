@@ -51,4 +51,9 @@ ConstantBuffer<WorldData>       WorldBuffer  : register(b1, space1);
 ConstantBuffer<LightsBufferData> LightBuffer : register(b2, space1);
 
 
+float3 GetDirectionalLightDir()
+{
+    return WorldBuffer.WorldSpaceLightVector.xyz;
+}
+
 #endif // _ENGINE_PER_PASS_INC

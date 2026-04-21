@@ -21,6 +21,14 @@ inline float3 TransformObjectNormalToWorld(float3 normal)
     return mul((float3x3)RendererBuffer.NormalLocalToWorldMatrix, normal);
 }
 
+float3 TransformTangentToWorld(float3 dirTS, float3 normalWS, float4 tangentWS)
+{
+    float3 T = tangentWS.xyz;
+    float3 B = cross(normalWS, T) * tangentWS.w;
+    float3x3 TBN = float3x3(T, B, normalWS);
+    return mul(TBN, dirTS);
+}
+
 #define PRIMITIVE_FLAGS_CAST_SHADOWS 0x1
 
 #ifdef RENDERER_SKINNEDMESH

@@ -12,13 +12,15 @@ StandardVaryings main(StandardAttributes a2v)
     StandardVaryings v2f = (StandardVaryings) 0;
 
 #ifdef RENDERER_SKINNEDMESH
-    // GPU Skinning：先把位置和法线变换到蒙皮后的局部空间，再走 ObjectToWorld
     float3 skinnedPosition = SkinPosition(a2v.Position,    a2v.BlendIndices, a2v.BlendWeights);
     float3 skinnedNormal   = SkinNormal  (a2v.Normal,      a2v.BlendIndices, a2v.BlendWeights);
+    float3 skinnedTangent  = SkinNormal  (a2v.Tangent.xyz, a2v.BlendIndices, a2v.BlendWeights);
     v2f.WorldNormal   = TransformObjectNormalToWorld(skinnedNormal);
+    v2f.WorldTangent  = float4(TransformObjectNormalToWorld(skinnedTangent), a2v.Tangent.w);
     v2f.WorldPosition = TransformObjectToWorld(skinnedPosition);
 #else
     v2f.WorldNormal   = TransformObjectNormalToWorld(a2v.Normal);
+    v2f.WorldTangent  = float4(TransformObjectNormalToWorld(a2v.Tangent.xyz), a2v.Tangent.w);
     v2f.WorldPosition = TransformObjectToWorld(a2v.Position);
 #endif
 

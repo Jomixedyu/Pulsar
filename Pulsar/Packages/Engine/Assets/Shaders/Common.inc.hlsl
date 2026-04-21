@@ -46,6 +46,7 @@ struct StandardVaryings
     float4 Position : SV_POSITION;
     float4 WorldPosition : POSITION;
     float3 WorldNormal : NORMAL0;
+    float4 WorldTangent : TANGENT0;
     float4 Color : COLOR0;
     float2 TexCoord0 : TEXCOORD0;
     float2 TexCoord1 : TEXCOORD1;
