@@ -421,10 +421,14 @@ namespace gfx
     {
         static auto ptr = new std::unordered_map<GFXTextureFormat, VkFormat>{
             {gfx::GFXTextureFormat::R8_UNorm, VK_FORMAT_R8_UNORM},
+            {gfx::GFXTextureFormat::R16_UNorm, VK_FORMAT_R16_UNORM},
+            {gfx::GFXTextureFormat::R32_SFloat, VK_FORMAT_R32_SFLOAT},
             {gfx::GFXTextureFormat::R8G8B8A8_UNorm, VK_FORMAT_R8G8B8A8_UNORM},
             {gfx::GFXTextureFormat::R8G8B8A8_SRGB, VK_FORMAT_R8G8B8A8_SRGB},
             {gfx::GFXTextureFormat::B8G8R8A8_UNorm, VK_FORMAT_B8G8R8A8_UNORM},
             {gfx::GFXTextureFormat::BC3_SRGB , VK_FORMAT_BC3_SRGB_BLOCK},
+            {gfx::GFXTextureFormat::BC3_UNorm, VK_FORMAT_BC3_UNORM_BLOCK},
+            {gfx::GFXTextureFormat::BC4_UNorm, VK_FORMAT_BC4_UNORM_BLOCK},
             {gfx::GFXTextureFormat::BC5_UNorm, VK_FORMAT_BC5_UNORM_BLOCK},
             {gfx::GFXTextureFormat::BC6H_RGB_SFloat, VK_FORMAT_BC6H_SFLOAT_BLOCK},
             {gfx::GFXTextureFormat::D32_SFloat, VK_FORMAT_D32_SFLOAT},

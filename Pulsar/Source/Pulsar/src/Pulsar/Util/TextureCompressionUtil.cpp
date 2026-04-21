@@ -99,6 +99,52 @@ namespace pulsar
             std::memcpy(ret.data(), SImg.GetPixels(), SImg.GetPixelsSize());
             break;
         }
+        case gfx::GFXTextureFormat::BC3_UNorm: {
+
+            if (channel != 4)
+            {
+                data = _ResizeChannel<uint8_t>(std::move(data), width, height, 3, 4, 255);
+            }
+
+            DirectX::Image img{
+                .width = width,
+                .height = height,
+                .format = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM,
+                .rowPitch = width * 4,
+                .slicePitch = width * height * 4,
+                .pixels = data.data()
+            };
+            DirectX::ScratchImage SImg;
+            DirectX::Compress(
+                img,
+                DXGI_FORMAT_BC3_UNORM,
+                DirectX::TEX_COMPRESS_DEFAULT,
+                DirectX::TEX_THRESHOLD_DEFAULT,
+                SImg);
+            ret.resize(SImg.GetPixelsSize());
+            std::memcpy(ret.data(), SImg.GetPixels(), SImg.GetPixelsSize());
+            break;
+        }
+        case gfx::GFXTextureFormat::BC4_UNorm: {
+            data = _ResizeChannel<uint8_t>(std::move(data), width, height, channel, 1, 0);
+            DirectX::Image img{
+                .width = width,
+                .height = height,
+                .format = DXGI_FORMAT::DXGI_FORMAT_R8_UNORM,
+                .rowPitch = width,
+                .slicePitch = width * height,
+                .pixels = data.data()
+            };
+            DirectX::ScratchImage SImg;
+            DirectX::Compress(
+                img, DXGI_FORMAT_BC4_UNORM,
+                DirectX::TEX_COMPRESS_DEFAULT,
+                DirectX::TEX_THRESHOLD_DEFAULT,
+                SImg);
+            ret.resize(SImg.GetPixelsSize());
+            std::memcpy(ret.data(), SImg.GetPixels(), SImg.GetPixelsSize());
+            break;
+        }
         case gfx::GFXTextureFormat::BC5_UNorm: {
             data = _ResizeChannel<uint8_t>(std::move(data), width, height, channel, 4, 255);
             DirectX::Image img{
@@ -144,8 +190,17 @@ namespace pulsar
         case gfx::GFXTextureFormat::R8G8B8A8_SRGB:
             ret = _ResizeChannel<uint8_t>(std::move(data), width, height, channel, 4, 255);
             break;
+        case gfx::GFXTextureFormat::R16G16B16A16_SFloat:
+            ret = _ResizeChannel<uint16_t>(std::move(data), width, height, channel, 4, 0x3C00);
+            break;
         case gfx::GFXTextureFormat::R8_UNorm:
             ret = _ResizeChannel<uint8_t>(std::move(data), width, height, channel, 1, 255);
+            break;
+        case gfx::GFXTextureFormat::R16_UNorm:
+            ret = _ResizeChannel<uint16_t>(std::move(data), width, height, channel, 1, 65535);
+            break;
+        case gfx::GFXTextureFormat::R32_SFloat:
+            ret = _ResizeChannel<float>(std::move(data), width, height, channel, 1, 1);
             break;
         case gfx::GFXTextureFormat::R32G32B32A32_SFloat:
 

@@ -7,11 +7,17 @@ namespace pulsar
 {
     CORELIB_DEF_ENUM(AssemblyObject_pulsar, pulsar,
         TextureCompressionFormat,
-        ColorSRGB_Compressed,
-        BitmapRGBA,
-        Gray,
+        ColorSRGBA_Compressed,
+        MaskRGBA_Compressed,
+        Alpha_Compressed,
         NormalMap_Compressed,
-        HDR_Compressed
+        HDR_Compressed,
+        BitmapRGBA8,
+        BitmapRGBA16,
+        BitmapRGBA32,
+        BitmapR8,
+        BitmapR16,
+        BitmapR32
         );
 
     using SamplerFilter = gfx::GFXSamplerFilter;
@@ -41,7 +47,7 @@ namespace pulsar
         virtual Vector2i GetSize2di() const { return { this->GetWidth(), this->GetHeight() }; }
         virtual Vector2f GetSize2df() const { return Vector2f((float)this->GetWidth(), (float)this->GetHeight()); }
         virtual std::shared_ptr<gfx::GFXTexture> GetGFXTexture() const { return nullptr; }
-        virtual TextureCompressionFormat GetCompressedFormat() const { return TextureCompressionFormat::BitmapRGBA; }
+        virtual TextureCompressionFormat GetCompressedFormat() const { return TextureCompressionFormat::BitmapRGBA8; }
         virtual size_t GetOriginCompressedBinarySize() const { return 0; }
         virtual size_t GetRawBinarySize() const { return 0; }
         virtual size_t GetNativeBinarySize() const { return 0; }

@@ -309,6 +309,7 @@ namespace pulsared
             m_ppMat->SetIntScalar("_Flags", flags);
             if (changed)
             {
+                AssetDatabase::MarkDirty(m_assetObject);
                 m_ppMat->SubmitParameters(true);
             }
 
