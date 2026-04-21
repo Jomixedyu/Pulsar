@@ -14,17 +14,6 @@ namespace pulsar
         virtual SPtr<rendering::RenderObject> CreateRenderObject() = 0;
     };
 
-    class MaterialSlot : public Object
-    {
-        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::MaterialSlot, Object);
-    public:
-        CORELIB_REFL_DECL_FIELD(material)
-        RCPtr<Material> material {};
-
-        CORELIB_REFL_DECL_FIELD(priority)
-        int32_t priority {};
-    };
-
     class RendererComponent : public Component, public IRendererComponent
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::RendererComponent, Component);

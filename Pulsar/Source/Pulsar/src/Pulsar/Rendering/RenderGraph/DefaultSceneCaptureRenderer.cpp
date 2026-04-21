@@ -199,9 +199,15 @@ namespace pulsar
                                 psoParams.CullMode          = gp->CullMode;
                                 psoParams.DepthCompareOp    = gp->ZTestOp;
                                 psoParams.DepthWriteEnable  = gp->ZWriteEnabled;
-                                psoParams.DepthTestEnable   = true;
+                                psoParams.DepthTestEnable   = !pb.batch.IsDepthTestDisabled;
                                 psoParams.StencilTestEnable = gp->Stencil_Enabled;
                             }
+                        }
+                        // IsDepthTestDisabled 时强制关闭 depth write 和 test
+                        if (pb.batch.IsDepthTestDisabled)
+                        {
+                            psoParams.DepthTestEnable  = false;
+                            psoParams.DepthWriteEnable = false;
                         }
 
                         array_list<gfx::GFXDescriptorSetLayout_sp> descLayouts;

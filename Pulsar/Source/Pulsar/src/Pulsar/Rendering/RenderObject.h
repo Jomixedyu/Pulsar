@@ -28,12 +28,13 @@ namespace pulsar::rendering
         bool IsUsedIndices{};
         bool IsWireframe{};
         bool IsCastShadow{};
+        bool IsDepthTestDisabled{false};  // Gizmo 等需要始终可见的线条
         gfx::GFXCullMode CullMode{};
         bool IsReverseCulling{false};
 
         // Sorting metadata (filled by RenderObject or pipeline)
         ShaderPassRenderQueueType Queue = ShaderPassRenderQueueType::Opaque;
-        int32_t Priority = 0;   // from MaterialSlot::priority
+        int32_t Priority = 0;   // per-material render priority
         float   Depth    = 0.f; // signed camera-space depth, filled by pipeline
 
         size_t GetRenderState() const

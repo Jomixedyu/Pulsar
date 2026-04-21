@@ -18,7 +18,8 @@ namespace pulsar
     public:
         array_list<rendering::MeshBatch> m_batches;
         RCPtr<StaticMesh> m_staticMesh;
-        array_list<SPtr<MaterialSlot>> m_materials;
+        array_list<RCPtr<Material>> m_materials;
+        array_list<int32_t> m_priorities;
 
         gfx::GFXBuffer_sp m_meshConstantBuffer;
         gfx::GFXDescriptorSet_sp m_meshObjDescriptorSet;
@@ -30,9 +31,10 @@ namespace pulsar
             m_staticMesh = std::move(mesh);
             return this;
         }
-        StaticMeshRenderObject* SetMaterials(const array_list<SPtr<MaterialSlot>>& materials)
+        StaticMeshRenderObject* SetMaterials(const array_list<RCPtr<Material>>& materials, const array_list<int32_t>& priorities)
         {
             m_materials = materials;
+            m_priorities = priorities;
             return this;
         }
         void SubmitChange();
@@ -81,9 +83,8 @@ namespace pulsar
             batch.IsUsedIndices = true;
             batch.IsCastShadow = true;
 
-            // Fill sorting metadata from MaterialSlot
-            batch.Material  = (slot ? slot->material : nullptr);
-            batch.Priority  = (slot ? slot->priority : 0);
+            batch.Material  = slot;
+            batch.Priority  = (matIndex < (int)m_priorities.size()) ? m_priorities.at(matIndex) : 0;
 
             // null / invalid material → fallback to Error material
             bool isInvalidMaterial = !batch.Material
@@ -186,13 +187,11 @@ namespace pulsar
             m_staticMesh->CreateGPUResource();
             for (const auto& mat : *m_materials)
             {
-                if (mat && mat->material)
-                {
-                    mat->material->CreateGPUResource();
-                }
+                if (mat)
+                    mat->CreateGPUResource();
             }
             ro->SetStaticMesh(m_staticMesh)
-                ->SetMaterials(*m_materials)
+                ->SetMaterials(*m_materials, *m_priorities)
                 ->SubmitChange();
         }
         return ro;
@@ -205,8 +204,7 @@ namespace pulsar
         {
             if (mat)
             {
-                auto h = mat->material.GetHandle();
-                out.push_back(h);
+                out.push_back(mat.GetHandle());
             }
         }
     }
@@ -230,6 +228,7 @@ namespace pulsar
     StaticMeshRendererComponent::StaticMeshRendererComponent()
     {
         init_sptr_member(m_materials);
+        init_sptr_member(m_priorities);
     }
 
     BoxSphereBounds3f StaticMeshRendererComponent::GetBoundsWS()
@@ -259,7 +258,7 @@ namespace pulsar
     }
     RCPtr<Material> StaticMeshRendererComponent::GetMaterial(int index) const
     {
-        return m_materials->at(index)->material;
+        return m_materials->at(index);
     }
 
     void StaticMeshRendererComponent::SetMaterial(int index, RCPtr<Material> material)
@@ -270,7 +269,7 @@ namespace pulsar
             return;
         }
 
-        m_materials->at(index)->material = std::move(material);
+        m_materials->at(index) = std::move(material);
 
         OnMaterialChanged();
     }
@@ -360,17 +359,8 @@ namespace pulsar
     }
     void StaticMeshRendererComponent::ResizeMaterials(size_t size)
     {
-        size_t oldSize = m_materials->size();
         m_materialsSize = size;
         m_materials->resize(size);
-        // 为新增的槽位创建 MaterialSlot 对象
-        for (size_t i = oldSize; i < size; ++i)
-        {
-            if (!m_materials->at(i))
-            {
-                m_materials->at(i) = mksptr(new MaterialSlot());
-            }
-        }
         RebuildObserver();
     }
 
@@ -401,7 +391,7 @@ namespace pulsar
     {
         if (m_renderObject)
         {
-            m_renderObject->SetMaterials(*m_materials)->SubmitChange();
+            m_renderObject->SetMaterials(*m_materials, *m_priorities)->SubmitChange();
         }
         RebuildObserver();
     }

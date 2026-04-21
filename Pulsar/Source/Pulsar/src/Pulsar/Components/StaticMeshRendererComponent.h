@@ -26,7 +26,7 @@ namespace pulsar
         SPtr<rendering::RenderObject> CreateRenderObject() override;
     public:
         void GetSubscribeObserverHandles(array_list<ObjectHandle>& out) override;
-        List_sp<SPtr<MaterialSlot>> GetMaterials() const { return this->m_materials; }
+        List_sp<RCPtr<Material>> GetMaterials() const { return this->m_materials; }
 
         void PostEditChange(FieldInfo* info) override;
 
@@ -59,8 +59,11 @@ namespace pulsar
         void OnMeshChanged();
         void OnMaterialChanged();
     protected:
-        CORELIB_REFL_DECL_FIELD(m_materials, new ListItemAttribute(cltypeof<MaterialSlot>()));
-        List_sp<SPtr<MaterialSlot>> m_materials;
+        CORELIB_REFL_DECL_FIELD(m_materials, new ListItemAttribute(cltypeof<Material>()));
+        List_sp<RCPtr<Material>> m_materials;
+
+        CORELIB_REFL_DECL_FIELD(m_priorities);
+        List_sp<int32_t> m_priorities;
 
         size_t m_materialsSize = 0;
 
