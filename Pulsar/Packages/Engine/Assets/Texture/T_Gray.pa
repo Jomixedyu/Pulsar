@@ -1,6 +1,6 @@
 {
     "ChannelCount": 3,
-    "CompressedFormat": "BitmapRGBA",
+    "CompressedFormat": "MaskRGBA_Compressed",
     "IsCompressedNativeData": true,
     "IsSRGB": false,
     "Size": {
