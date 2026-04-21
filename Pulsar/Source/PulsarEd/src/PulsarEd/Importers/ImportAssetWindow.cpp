@@ -1,5 +1,6 @@
 #include "ImportAssetWindow.h"
 
+#include <CoreLib.Platform/Window.h>
 #include <PulsarEd/PropertyControls/PropertyControl.h>
 #include <imgui/imgui.h>
 
@@ -65,6 +66,23 @@ namespace pulsared
         ImGui::BeginChild("##Settings", ImVec2(rightW, contentH), true);
         if (m_currentSettings)
         {
+            // ── Add Files button ────────────────────────────────────────────
+            if (ImGui::Button("Add Files..."))
+            {
+                using namespace jxcorlib::platform;
+                std::vector<std::filesystem::path> selected;
+                // Build filter from current factory's supported extensions
+                string filter = "All Files(*.*)|*.*;";
+                if (window::OpenFileDialogMulti(window::GetMainWindowHandle(), filter, "", &selected))
+                {
+                    for (auto& p : selected)
+                    {
+                        m_currentSettings->ImportFiles->Add(mksptr(new jxcorlib::Path(p)));
+                    }
+                }
+            }
+            ImGui::Separator();
+
             auto* type = m_currentSettings->GetType();
             PImGui::ObjectFieldProperties(type, type, m_currentSettings.get(), nullptr, false);
         }

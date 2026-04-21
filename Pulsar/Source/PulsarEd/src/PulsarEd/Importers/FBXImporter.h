@@ -15,6 +15,9 @@ namespace pulsared
 
         CORELIB_REFL_DECL_FIELD(ConvertAxisSystem);
         bool ConvertAxisSystem = true;
+
+        CORELIB_REFL_DECL_FIELD(ImportAnimationClips);
+        bool ImportAnimationClips = true;
     };
 
     class PULSARED_API FBXImporter : public AssetImporter
