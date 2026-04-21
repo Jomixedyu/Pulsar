@@ -1,7 +1,6 @@
 #pragma once
 #include "Component.h"
-#include "Assets/AnimationClip.h"
-#include "Assets/Skeleton.h"
+#include "../Assets/AnimatorController.h"
 
 namespace pulsar
 {
@@ -16,32 +15,52 @@ namespace pulsar
 
         void BeginComponent() override;
         void EndComponent() override;
+        void BeginPlay() override;
+        void EndPlay() override;
         void OnTick(Ticker ticker) override;
+        void PostEditChange(FieldInfo* info) override;
         void GetDependenciesAsset(array_list<jxcorlib::guid_t>& deps) const override;
 
-        // 播放控制
-        void Play(RCPtr<AnimationClip> clip, bool loop = true);
-        void Stop();
-        void SetSpeed(float speed) { m_speed = speed; }
-        float GetSpeed() const { return m_speed; }
-        bool IsPlaying() const { return m_isPlaying; }
-        float GetCurrentTime() const { return m_currentTime; }
+        // --- Controller ---
+        RCPtr<AnimatorController> GetController() const { return m_controller; }
+        void SetController(RCPtr<AnimatorController> ctrl);
 
-        RCPtr<AnimationClip> GetCurrentClip() const { return m_currentClip; }
+        // --- 参数设置（运行时调用，驱动状态切换）---
+        void SetBool   (const string& name, bool  value);
+        void SetInt    (const string& name, int   value);
+        void SetFloat  (const string& name, float value);
+        void SetTrigger(const string& name);
+
+        bool  GetBool (const string& name) const;
+        int   GetInt  (const string& name) const;
+        float GetFloat(const string& name) const;
+
+        // --- 状态查询 ---
+        const string&              GetCurrentStateName() const { return m_currentStateName; }
+        float                      GetNormalizedTime()   const;
+        bool                       IsPlaying()           const { return m_isPlaying; }
+        // 供 SkinnedMeshRendererComponent 每帧拉取
+        const array_list<Matrix4f>& GetBoneMatrices()    const { return m_boneMatrices; }
+
+        // --- 编辑器预览用：手动采样（直接传 renderer）---
+        void SampleAt(float time);
+
+        // --- 编辑器预览快捷接口 ---
+        void EnterDefaultState();  // 进入 Controller 的默认状态并开始播放
+        void StopPreview();        // 停止预览，清空当前状态
 
     protected:
-        void SampleAndUpload(float time);
-
-        // 线性插值工具
         static Vector3f SampleVector3(const array_list<AnimVector3Key>& keys, float time);
-        static Quat4f   SampleQuat(const array_list<AnimQuatKey>& keys, float time);
+        static Quat4f   SampleQuat   (const array_list<AnimQuatKey>& keys,    float time);
+
+    private:
+        void EnterState(const string& name);
+        bool EvaluateConditions(const AnimatorTransition& transition) const;
+        void ConsumeTriggersOfTransition(const AnimatorTransition& transition);
 
     protected:
-        CORELIB_REFL_DECL_FIELD(m_defaultClip);
-        RCPtr<AnimationClip> m_defaultClip;   // 编辑器设置，BeginPlay 时自动播放
-
-        CORELIB_REFL_DECL_FIELD(m_loop);
-        bool m_loop = true;
+        CORELIB_REFL_DECL_FIELD(m_controller);
+        RCPtr<AnimatorController> m_controller;
 
         CORELIB_REFL_DECL_FIELD(m_playOnStart);
         bool m_playOnStart = true;
@@ -50,12 +69,17 @@ namespace pulsar
         float m_speed = 1.0f;
 
     private:
-        RCPtr<AnimationClip>          m_currentClip;
-        float                         m_currentTime = 0.f;
-        bool                          m_isPlaying   = false;
+        array_list<AnimatorParam> m_runtimeParams;
+        array_list<Matrix4f>      m_boneMatrices;
 
-        // 缓存同节点上的 SkinnedMeshRendererComponent
-        ObjectPtr<SkinnedMeshRendererComponent> m_renderer;
+        CORELIB_REFL_DECL_FIELD(m_currentStateName, new DebugPropertyAttribute(), new ReadOnlyPropertyAttribute(), new NoSerializableAttribtue());
+        string  m_currentStateName;
+
+        CORELIB_REFL_DECL_FIELD(m_currentTime, new DebugPropertyAttribute(), new ReadOnlyPropertyAttribute(), new NoSerializableAttribtue());
+        float   m_currentTime = 0.f;
+
+        CORELIB_REFL_DECL_FIELD(m_isPlaying, new DebugPropertyAttribute(), new ReadOnlyPropertyAttribute(), new NoSerializableAttribtue());
+        bool    m_isPlaying   = false;
     };
 
 } // namespace pulsar

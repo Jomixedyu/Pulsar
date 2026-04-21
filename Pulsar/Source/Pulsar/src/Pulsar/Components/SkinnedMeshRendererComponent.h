@@ -20,12 +20,17 @@ namespace pulsar
 
         void BeginComponent() override;
         void EndComponent() override;
+        void OnTick(Ticker ticker) override;
 
         void PostEditChange(FieldInfo* info) override;
         void OnDrawGizmo(GizmoPainter* painter, bool selected) override;
 
         void SetSkinnedMesh(const RCPtr<SkinnedMesh>& mesh);
         RCPtr<SkinnedMesh> GetSkinnedMesh() const { return m_skinnedMesh; }
+
+        void SetRoot(SceneObjectPtr<TransformComponent> root);
+        SceneObjectPtr<TransformComponent> GetRoot() const { return m_root; }
+        const List_sp<SceneObjectPtr<TransformComponent>>& GetBones() const { return m_bones; }
 
         RCPtr<Material> GetMaterial(int index) const;
         void            SetMaterial(int index, RCPtr<Material> material);
@@ -44,19 +49,30 @@ namespace pulsar
         void OnTransformChanged() override;
         void OnMeshChanged();
         void OnMaterialChanged();
+        void RebuildBoneReferences();
         void GetDependenciesAsset(array_list<jxcorlib::guid_t> &deps) const override;
     protected:
-        CORELIB_REFL_DECL_FIELD(m_materials, new ListItemAttribute(cltypeof<MaterialSlot>()));
-        List_sp<SPtr<MaterialSlot>> m_materials;
+        CORELIB_REFL_DECL_FIELD(m_materials, new ListItemAttribute(cltypeof<Material>()));
+        List_sp<RCPtr<Material>> m_materials;
+
+        CORELIB_REFL_DECL_FIELD(m_priorities);
+        List_sp<int32_t> m_priorities;
+
         size_t m_materialsSize = 0;
 
         CORELIB_REFL_DECL_FIELD(m_skinnedMesh);
         RCPtr<SkinnedMesh> m_skinnedMesh;
 
+        CORELIB_REFL_DECL_FIELD(m_root);
+        SceneObjectPtr<TransformComponent> m_root;
+
+        CORELIB_REFL_DECL_FIELD(m_bones, new HidePropertyAttribute, new NoSerializableAttribtue());
+        List_sp<SceneObjectPtr<TransformComponent>> m_bones = mksptr(new List<SceneObjectPtr<TransformComponent>>);
+
         CORELIB_REFL_DECL_FIELD(m_isCastShadow);
         bool m_isCastShadow = true;
 
-        SPtr<SkinnedMeshRenderObject> m_renderObject;
+        SPtr<SkinnedMeshRenderObject>    m_renderObject;
     };
 
 }

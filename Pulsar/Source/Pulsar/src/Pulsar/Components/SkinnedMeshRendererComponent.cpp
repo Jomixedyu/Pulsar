@@ -1,4 +1,5 @@
 #include "Components/SkinnedMeshRendererComponent.h"
+#include "Rendering/SimplePrimitiveUtils.h"
 
 #include "AssetManager.h"
 #include "Components/RendererComponent.h"
@@ -19,7 +20,8 @@ namespace pulsar
     public:
         array_list<rendering::MeshBatch> m_batches;
         RCPtr<SkinnedMesh>               m_skinnedMesh;
-        array_list<SPtr<MaterialSlot>>   m_materials;
+        array_list<RCPtr<Material>>   m_materials;
+        array_list<int32_t>           m_priorities;
 
         // set2 binding0: PerRendererData
         gfx::GFXBuffer_sp             m_perRendererBuffer;
@@ -34,9 +36,10 @@ namespace pulsar
             m_skinnedMesh = std::move(mesh);
             return this;
         }
-        SkinnedMeshRenderObject* SetMaterials(const array_list<SPtr<MaterialSlot>>& mats)
+        SkinnedMeshRenderObject* SetMaterials(const array_list<RCPtr<Material>>& mats, const array_list<int32_t>& priorities)
         {
             m_materials = mats;
+            m_priorities = priorities;
             return this;
         }
 
@@ -143,8 +146,8 @@ namespace pulsar
             batch.State.VertexLayouts = {SkinnedMesh::StaticGetVertexLayout()};
             batch.IsUsedIndices   = true;
             batch.IsCastShadow    = true;
-            batch.Material        = (slot ? slot->material : nullptr);
-            batch.Priority        = (slot ? slot->priority : 0);
+            batch.Material        = slot;
+            batch.Priority        = (matIndex < (int)m_priorities.size()) ? m_priorities.at(matIndex) : 0;
 
             bool isInvalidMaterial = !batch.Material
                 || !batch.Material->GetShader()
@@ -196,6 +199,7 @@ namespace pulsar
     {
         m_canDrawGizmo = true;
         init_sptr_member(m_materials);
+        init_sptr_member(m_priorities);
     }
 
     SPtr<rendering::RenderObject> SkinnedMeshRendererComponent::CreateRenderObject()
@@ -206,11 +210,11 @@ namespace pulsar
             m_skinnedMesh->CreateGPUResource();
             for (const auto& mat : *m_materials)
             {
-                if (mat && mat->material)
-                    mat->material->CreateGPUResource();
+                if (mat)
+                    mat->CreateGPUResource();
             }
             ro->SetSkinnedMesh(m_skinnedMesh)
-              ->SetMaterials(*m_materials)
+              ->SetMaterials(*m_materials, *m_priorities)
               ->SubmitChange();
         }
         return ro;
@@ -222,6 +226,7 @@ namespace pulsar
         m_renderObject = sptr_static_cast<SkinnedMeshRenderObject>(CreateRenderObject());
         GetWorld()->AddRenderObject(m_renderObject);
         ResizeMaterials(m_materials->size());
+        RebuildBoneReferences();
         OnTransformChanged();
     }
 
@@ -230,6 +235,88 @@ namespace pulsar
         base::EndComponent();
         GetWorld()->RemoveRenderObject(m_renderObject);
         m_renderObject.reset();
+    }
+
+    void SkinnedMeshRendererComponent::OnTick(Ticker ticker)
+    {
+        base::OnTick(ticker);
+
+        if (!m_skinnedMesh || !m_skinnedMesh->GetSkeleton()) return;
+        if (!m_root) return;
+
+        const auto& skeletonBones = m_skinnedMesh->GetSkeleton()->GetBones();
+        if (skeletonBones.empty()) return;
+        if (m_bones->size() != skeletonBones.size()) return;
+        if (!m_bones->at(0)) return;
+
+        static bool s_loggedSkinningDebug = false;
+        static bool s_loggedSkinMatrices = false;
+        if (!s_loggedSkinningDebug)
+        {
+            for (int i = 0; i < (int)skeletonBones.size() && i < 4; ++i)
+            {
+                auto boneTransform = m_bones->at(i);
+                Logger::Log(
+                    "SkinnedMeshRendererComponent::OnTick bone bind debug - bone=" + skeletonBones[i].Name +
+                    ", path=" + skeletonBones[i].Path +
+                    ", parent=" + std::to_string(skeletonBones[i].ParentIndex) +
+                    ", resolved=" + string(boneTransform ? boneTransform->GetNode()->GetName() : "<null>") +
+                    ", invBindT=(" + std::to_string(skeletonBones[i].InverseBindMatrix[3][0]) + "," + std::to_string(skeletonBones[i].InverseBindMatrix[3][1]) + "," + std::to_string(skeletonBones[i].InverseBindMatrix[3][2]) + ")",
+                    LogLevel::Warning);
+            }
+            s_loggedSkinningDebug = true;
+        }
+
+        const int rootBoneIndex = m_skinnedMesh->GetSkeleton()->GetRootBoneIndex();
+        if (rootBoneIndex < 0 || rootBoneIndex >= (int)m_bones->size() || !m_bones->at(rootBoneIndex))
+            return;
+
+        const Matrix4f rendererRootWorldInv = jmath::Inverse(m_root->GetLocalToWorldMatrix());
+
+        array_list<Matrix4f> boneMatrices(skeletonBones.size(), Matrix4f(1.f));
+        for (int i = 0; i < (int)skeletonBones.size(); ++i)
+        {
+            auto boneTransform = m_bones->at(i);
+            if (!boneTransform) continue;
+
+            const Matrix4f boneModelMatrix = rendererRootWorldInv * boneTransform->GetLocalToWorldMatrix();
+            boneMatrices[i] = boneModelMatrix * skeletonBones[i].InverseBindMatrix;
+
+            if (i < 4 && !s_loggedSkinMatrices)
+            {
+                const auto& finalMat = boneMatrices[i];
+                const float diag0 = finalMat[0][0];
+                const float diag1 = finalMat[1][1];
+                const float diag2 = finalMat[2][2];
+                const float offDiag =
+                    std::abs(finalMat[0][1]) + std::abs(finalMat[0][2]) +
+                    std::abs(finalMat[1][0]) + std::abs(finalMat[1][2]) +
+                    std::abs(finalMat[2][0]) + std::abs(finalMat[2][1]);
+                const float translationAbs =
+                    std::abs(finalMat[3][0]) + std::abs(finalMat[3][1]) + std::abs(finalMat[3][2]);
+                const bool nearIdentity =
+                    std::abs(diag0 - 1.f) < 0.05f &&
+                    std::abs(diag1 - 1.f) < 0.05f &&
+                    std::abs(diag2 - 1.f) < 0.05f &&
+                    offDiag < 0.05f &&
+                    translationAbs < 0.05f;
+
+                Logger::Log(
+                    "SkinnedMeshRendererComponent::OnTick skin matrix debug - bone=" + skeletonBones[i].Name +
+                    ", modelT=(" + std::to_string(boneModelMatrix[3][0]) + "," + std::to_string(boneModelMatrix[3][1]) + "," + std::to_string(boneModelMatrix[3][2]) + ")" +
+                    ", finalT=(" + std::to_string(finalMat[3][0]) + "," + std::to_string(finalMat[3][1]) + "," + std::to_string(finalMat[3][2]) + ")" +
+                    ", diag=(" + std::to_string(diag0) + "," + std::to_string(diag1) + "," + std::to_string(diag2) + ")" +
+                    ", offDiagSum=" + std::to_string(offDiag) +
+                    ", nearIdentity=" + string(nearIdentity ? "true" : "false"),
+                    LogLevel::Warning);
+                if (i == std::min(3, (int)skeletonBones.size() - 1))
+                {
+                    s_loggedSkinMatrices = true;
+                }
+            }
+        }
+
+        UpdateBoneMatrices(boneMatrices);
     }
 
     void SkinnedMeshRendererComponent::PostEditChange(FieldInfo* info)
@@ -245,17 +332,154 @@ namespace pulsar
                 ResizeMaterials(m_materials->size());
             OnMaterialChanged();
         }
+        else if (info->GetName() == NAMEOF(m_root))
+        {
+            RebuildBoneReferences();
+        }
+        else if (info->GetName() == NAMEOF(m_bones))
+        {
+            RebuildBoneReferences();
+        }
     }
 
     void SkinnedMeshRendererComponent::OnDrawGizmo(GizmoPainter* painter, bool selected)
     {
         base::OnDrawGizmo(painter, selected);
+
+        if (!m_skinnedMesh || !m_skinnedMesh->GetSkeleton()) return;
+
+        const auto& bones = m_skinnedMesh->GetSkeleton()->GetBones();
+        if (bones.empty()) return;
+
+            painter->Context.LineTint = selected
+                ? Color4f{0.2f, 1.f, 0.4f, 1.f}
+                : Color4f{0.2f, 0.6f, 1.f, 0.8f};
+            painter->Context.LineModelMatrix = Matrix4f(1.f);
+
+            static array_list<Vector3f> jointSphere = []()
+            {
+                auto sphere = SimplePrimitiveUtils::CreateSphere<Vector3f>(12);
+                return array_list<Vector3f>(sphere.begin(), sphere.end());
+            }();
+
+        const bool hasBoneRefs = m_root
+            && m_bones
+            && m_bones->size() == bones.size();
+
+        auto getBoneWorldPos = [&](int i) -> Vector3f
+        {
+            if (hasBoneRefs)
+            {
+                auto boneTransform = m_bones->at(i);
+                if (boneTransform)
+                {
+                    const Matrix4f& wm = boneTransform->GetLocalToWorldMatrix();
+                    return { wm[3][0], wm[3][1], wm[3][2] };
+                }
+            }
+
+            // Fallback：bind pose 位置（相对 Skeleton 显式记录的根骨骼；若缺失则退回小场景根）
+            Matrix4f bindMat = jmath::Inverse(bones[i].InverseBindMatrix);
+            const Matrix4f& rootWorld = m_root
+                ? m_root->GetLocalToWorldMatrix()
+                : GetNode()->GetTransform()->GetLocalToWorldMatrix();
+            Vector4f wp = rootWorld * Vector4f(bindMat[3][0], bindMat[3][1], bindMat[3][2], 1.f);
+            return { wp.x, wp.y, wp.z };
+        };
+
+        for (int i = 0; i < (int)bones.size(); ++i)
+        {
+            int parentIdx = bones[i].ParentIndex;
+            Vector3f bonePos = getBoneWorldPos(i);
+
+            const Color4b jointColor = hasBoneRefs
+                ? (selected ? Color4b{ 120, 255, 170, 255 } : Color4b{ 90, 220, 255, 220 })
+                : (selected ? Color4b{ 255, 220, 120, 255 } : Color4b{ 180, 210, 255, 200 });
+            const Color4b connectorColor = hasBoneRefs
+                ? (selected ? Color4b{ 120, 255, 170, 255 } : Color4b{ 90, 220, 255, 220 })
+                : (selected ? Color4b{ 255, 220, 120, 255 } : Color4b{ 180, 210, 255, 200 });
+
+            const float jointRadius = 0.18f;
+
+            if (parentIdx >= 0)
+            {
+                Vector3f parentPos = getBoneWorldPos(parentIdx);
+                Vector3f axis = bonePos - parentPos;
+                float boneLen = Magnitude(axis);
+                if (boneLen > 0.0001f)
+                {
+                    Vector3f dir = axis / boneLen;
+                    float clampedRadius = std::min(jointRadius, boneLen * 0.2f);
+                    Vector3f start = parentPos + dir * clampedRadius;
+                    Vector3f end = bonePos - dir * clampedRadius;
+
+                    Vector3f basisHint = fabsf(dir.y) < 0.95f ? Vector3f{0.f, 1.f, 0.f} : Vector3f{1.f, 0.f, 0.f};
+                    Vector3f sideA = Normalize(Cross(dir, basisHint));
+                    Vector3f sideB = Normalize(Cross(dir, sideA));
+                    float baseRadius = std::min(jointRadius * 0.8f, boneLen * 0.16f);
+                    float tipRadius = std::min(jointRadius * 0.28f, boneLen * 0.06f);
+
+                    Vector3f startA = start + sideA * baseRadius;
+                    Vector3f startB = start - sideA * baseRadius;
+                    Vector3f startC = start + sideB * baseRadius;
+                    Vector3f startD = start - sideB * baseRadius;
+                    Vector3f endA = end + sideA * tipRadius;
+                    Vector3f endB = end - sideA * tipRadius;
+                    Vector3f endC = end + sideB * tipRadius;
+                    Vector3f endD = end - sideB * tipRadius;
+
+                    auto drawBoneEdge = [&](const Vector3f& p0, const Vector3f& p1)
+                    {
+                        StaticMeshVertex a{}, b{};
+                        a.Position = p0;
+                        b.Position = p1;
+                        a.Color = b.Color = connectorColor;
+                        painter->DrawLine(a, b);
+                    };
+
+                    drawBoneEdge(startA, endA);
+                    drawBoneEdge(startB, endB);
+                    drawBoneEdge(startC, endC);
+                    drawBoneEdge(startD, endD);
+                    drawBoneEdge(startA, startC);
+                    drawBoneEdge(startC, startB);
+                    drawBoneEdge(startB, startD);
+                    drawBoneEdge(startD, startA);
+                    drawBoneEdge(endA, endC);
+                    drawBoneEdge(endC, endB);
+                    drawBoneEdge(endB, endD);
+                    drawBoneEdge(endD, endA);
+                }
+            }
+
+            auto drawSphere = [&](const Vector3f& center, float radius, Color4b color)
+            {
+                array_list<StaticMeshVertex> sphereVerts;
+                sphereVerts.reserve(jointSphere.size());
+                for (auto p : jointSphere)
+                {
+                    auto& v = sphereVerts.emplace_back();
+                    v.Position = center + p * radius;
+                    v.Color = color;
+                }
+                painter->DrawLineArray(sphereVerts);
+            };
+
+            drawSphere(bonePos, jointRadius, jointColor);
+        }
     }
 
     void SkinnedMeshRendererComponent::SetSkinnedMesh(const RCPtr<SkinnedMesh>& mesh)
     {
         m_skinnedMesh = mesh;
+        RebuildBoneReferences();
         OnMeshChanged();
+    }
+
+    void SkinnedMeshRendererComponent::SetRoot(SceneObjectPtr<TransformComponent> root)
+    {
+        m_root = std::move(root);
+        RebuildBoneReferences();
     }
 
     void SkinnedMeshRendererComponent::UpdateBoneMatrices(const array_list<Matrix4f>& boneMatrices)
@@ -266,13 +490,13 @@ namespace pulsar
 
     RCPtr<Material> SkinnedMeshRendererComponent::GetMaterial(int index) const
     {
-        return m_materials->at(index)->material;
+        return m_materials->at(index);
     }
 
     void SkinnedMeshRendererComponent::SetMaterial(int index, RCPtr<Material> material)
     {
         if (index >= (int)m_materials->size()) return;
-        m_materials->at(index)->material = std::move(material);
+        m_materials->at(index) = std::move(material);
         OnMaterialChanged();
     }
 
@@ -289,7 +513,7 @@ namespace pulsar
         out.push_back(m_skinnedMesh.GetHandle());
         for (auto& mat : *m_materials)
         {
-            if (mat) out.push_back(mat->material.GetHandle());
+            if (mat) out.push_back(mat.GetHandle());
         }
     }
 
@@ -300,14 +524,8 @@ namespace pulsar
 
     void SkinnedMeshRendererComponent::ResizeMaterials(size_t size)
     {
-        size_t oldSize = m_materials->size();
         m_materialsSize = size;
         m_materials->resize(size);
-        for (size_t i = oldSize; i < size; ++i)
-        {
-            if (!m_materials->at(i))
-                m_materials->at(i) = mksptr(new MaterialSlot());
-        }
         RebuildObserver();
     }
 
@@ -333,9 +551,40 @@ namespace pulsar
     void SkinnedMeshRendererComponent::OnMaterialChanged()
     {
         if (m_renderObject)
-            m_renderObject->SetMaterials(*m_materials)->SubmitChange();
+            m_renderObject->SetMaterials(*m_materials, *m_priorities)->SubmitChange();
         RebuildObserver();
     }
+
+    void SkinnedMeshRendererComponent::RebuildBoneReferences()
+    {
+        if (!m_bones)
+        {
+            m_bones = mksptr(new List<SceneObjectPtr<TransformComponent>>);
+        }
+        m_bones->clear();
+
+        if (!m_root || !m_skinnedMesh || !m_skinnedMesh->GetSkeleton())
+            return;
+
+        const auto& skeletonBones = m_skinnedMesh->GetSkeleton()->GetBones();
+        m_bones->resize(skeletonBones.size());
+
+        auto sceneRoot = m_root;
+
+        for (int i = 0; i < (int)skeletonBones.size(); ++i)
+        {
+            const auto& bone = skeletonBones[i];
+            SceneObjectPtr<TransformComponent> resolvedBone;
+            if (sceneRoot)
+            {
+                resolvedBone = !bone.Path.empty()
+                    ? SceneObjectPtr<TransformComponent>(sceneRoot->FindByPath(bone.Path))
+                    : SceneObjectPtr<TransformComponent>(sceneRoot->FindByName(bone.Name));
+            }
+            m_bones->at(i) = resolvedBone;
+        }
+    }
+
     void SkinnedMeshRendererComponent::GetDependenciesAsset(array_list<guid_t>& deps) const
     {
         SceneObject::GetDependenciesAsset(deps);
@@ -347,9 +596,9 @@ namespace pulsar
         {
             for (auto& mat : *m_materials)
             {
-                if (mat && mat->material)
+                if (mat)
                 {
-                    deps.push_back(mat->material.GetGuid());
+                    deps.push_back(mat.GetGuid());
                 }
             }
         }
