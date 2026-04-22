@@ -953,9 +953,13 @@ namespace pulsared
         case FbxGeometryElement::EMappingMode::eByPolygonVertex: {
             switch (referenceMode)
             {
-            case FbxGeometryElement::EReferenceMode::eDirect:
-            case FbxGeometryElement::EReferenceMode::eIndexToDirect: {
+            case FbxGeometryElement::EReferenceMode::eDirect: {
                 return layer->GetDirectArray().GetAt(vertIndex);
+                break;
+            }
+            case FbxGeometryElement::EReferenceMode::eIndexToDirect: {
+                auto index = layer->GetIndexArray().GetAt(vertIndex);
+                return layer->GetDirectArray().GetAt(index);
                 break;
             }
             default:

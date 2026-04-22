@@ -294,11 +294,19 @@ namespace pulsar
         GetWorld()->AddRenderObject(m_renderObject);
         ResizeMaterials(m_materials->size());
 
+        m_canDrawGizmo = true;
+        GetWorld()->GetGizmosManager().AddGizmoComponent(self_ptr());
+
         OnTransformChanged();
     }
     void StaticMeshRendererComponent::EndComponent()
     {
         base::EndComponent();
+
+        if (m_canDrawGizmo)
+        {
+            GetWorld()->GetGizmosManager().RemoveGizmoComponent(self_ptr());
+        }
 
         GetWorld()->RemoveRenderObject(m_renderObject);
         m_renderObject.reset();
@@ -328,6 +336,79 @@ namespace pulsar
     void StaticMeshRendererComponent::OnMaterialStateChanged()
     {
         this->OnMaterialChanged();
+    }
+
+    void StaticMeshRendererComponent::OnDrawGizmo(GizmoPainter* painter, bool selected)
+    {
+        base::OnDrawGizmo(painter, selected);
+
+        if (!m_staticMesh) return;
+        if (!m_showNormalGizmo && !m_showTangentGizmo && !m_showBitangentGizmo) return;
+
+        const Matrix4f localToWorld = GetNode()->GetTransform()->GetLocalToWorldMatrix();
+        const float worldScale = jmath::MaxComponent(jmath::Abs(GetNode()->GetTransform()->GetWorldScale()));
+
+        for (int si = 0; si < (int)m_staticMesh->GetMeshSectionCount(); ++si)
+        {
+            auto& section = m_staticMesh->GetMeshSection(si);
+            if (section.Positions.empty()) continue;
+
+            bool hasNormal  = !section.Normals.empty();
+            bool hasTangent = !section.Tangents.empty();
+
+            const float baseLen = m_staticMesh->GetBounds().Radius * 0.05f * worldScale;
+
+            // 稀疏采样：顶点太多时跳过一些
+            const size_t vertCount = section.Positions.size();
+            const int step = std::max(1, static_cast<int>(vertCount / 2000));
+
+            for (size_t vi = 0; vi < vertCount; vi += step)
+            {
+                Vector3f localPos = section.Positions[vi];
+                Vector4f worldPos4 = localToWorld * Vector4f(localPos.x, localPos.y, localPos.z, 1.0f);
+                Vector3f worldPos{ worldPos4.x, worldPos4.y, worldPos4.z };
+
+                if (m_showNormalGizmo && hasNormal)
+                {
+                    Vector3f localEnd = localPos + section.Normals[vi] * baseLen;
+                    Vector4f worldEnd4 = localToWorld * Vector4f(localEnd.x, localEnd.y, localEnd.z, 1.0f);
+                    Vector3f worldEnd{ worldEnd4.x, worldEnd4.y, worldEnd4.z };
+
+                    StaticMeshVertex a{}, b{};
+                    a.Position = worldPos; a.Color = { 0, 80, 255, 255 };
+                    b.Position = worldEnd; b.Color = { 0, 80, 255, 255 };
+                    painter->DrawLine(a, b);
+                }
+
+                if (m_showTangentGizmo && hasTangent)
+                {
+                    Vector3f t = section.Tangents[vi].xyz();
+                    Vector3f localEnd = localPos + t * baseLen;
+                    Vector4f worldEnd4 = localToWorld * Vector4f(localEnd.x, localEnd.y, localEnd.z, 1.0f);
+                    Vector3f worldEnd{ worldEnd4.x, worldEnd4.y, worldEnd4.z };
+
+                    StaticMeshVertex a{}, b{};
+                    a.Position = worldPos; a.Color = { 255, 40, 40, 255 };
+                    b.Position = worldEnd; b.Color = { 255, 40, 40, 255 };
+                    painter->DrawLine(a, b);
+                }
+
+                if (m_showBitangentGizmo && hasNormal && hasTangent)
+                {
+                    Vector3f t = section.Tangents[vi].xyz();
+                    float w = section.Tangents[vi].w;
+                    Vector3f bitangent = Cross(section.Normals[vi], t) * w;
+                    Vector3f localEnd = localPos + bitangent * baseLen;
+                    Vector4f worldEnd4 = localToWorld * Vector4f(localEnd.x, localEnd.y, localEnd.z, 1.0f);
+                    Vector3f worldEnd{ worldEnd4.x, worldEnd4.y, worldEnd4.z };
+
+                    StaticMeshVertex a{}, b{};
+                    a.Position = worldPos; a.Color = { 40, 220, 40, 255 };
+                    b.Position = worldEnd; b.Color = { 40, 220, 40, 255 };
+                    painter->DrawLine(a, b);
+                }
+            }
+        }
     }
 
     void StaticMeshRendererComponent::OnReceiveMessage(MessageId id)

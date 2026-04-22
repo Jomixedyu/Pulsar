@@ -22,6 +22,7 @@ namespace pulsar
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::StaticMeshRendererComponent, RendererComponent);
         CORELIB_CLASS_ATTR(new CategoryAttribute("Renderer"));
+        DECL_OBJECTPTR_SELF
     public:
         SPtr<rendering::RenderObject> CreateRenderObject() override;
     public:
@@ -46,8 +47,16 @@ namespace pulsar
 
         void BeginComponent() override;
         void EndComponent() override;
+        void OnDrawGizmo(GizmoPainter* painter, bool selected) override;
 
         void OnReceiveMessage(MessageId id) override;
+
+        bool GetShowNormalGizmo() const { return m_showNormalGizmo; }
+        void SetShowNormalGizmo(bool v) { m_showNormalGizmo = v; }
+        bool GetShowTangentGizmo() const { return m_showTangentGizmo; }
+        void SetShowTangentGizmo(bool v) { m_showTangentGizmo = v; }
+        bool GetShowBitangentGizmo() const { return m_showBitangentGizmo; }
+        void SetShowBitangentGizmo(bool v) { m_showBitangentGizmo = v; }
 
     protected:
         void OnNotifyObserver(ObjectHandle inDependency, DependencyObjectState msg) override;
@@ -75,6 +84,15 @@ namespace pulsar
 
         CORELIB_REFL_DECL_FIELD(m_boundsScale, new RangePropertyAttribute(0.1f, 10.f));
         float m_boundsScale = 1;
+
+        CORELIB_REFL_DECL_FIELD(m_showNormalGizmo);
+        bool m_showNormalGizmo = false;
+
+        CORELIB_REFL_DECL_FIELD(m_showTangentGizmo);
+        bool m_showTangentGizmo = false;
+
+        CORELIB_REFL_DECL_FIELD(m_showBitangentGizmo);
+        bool m_showBitangentGizmo = false;
 
         SPtr<StaticMeshRenderObject> m_renderObject;
 

@@ -19,5 +19,6 @@ namespace pulsared
 
     protected:
         RCPtr<StaticMesh> m_staticmesh;
+        int m_uvPreviewChannel = 0;
     };
 }
