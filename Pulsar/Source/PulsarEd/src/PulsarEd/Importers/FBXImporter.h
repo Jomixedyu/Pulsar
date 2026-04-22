@@ -18,6 +18,12 @@ namespace pulsared
 
         CORELIB_REFL_DECL_FIELD(ImportAnimationClips);
         bool ImportAnimationClips = true;
+
+        CORELIB_REFL_DECL_FIELD(RecomputeTangents);
+        bool RecomputeTangents = true;
+
+        CORELIB_REFL_DECL_FIELD(UseMikktspace);
+        bool UseMikktspace = true;
     };
 
     class PULSARED_API FBXImporter : public AssetImporter

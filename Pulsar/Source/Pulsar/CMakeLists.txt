@@ -10,6 +10,7 @@ set(PUBLIC_MODULE
         imext
         jaudio
         uinput
+        mikktspace
 )
 set(PRIVATE_MODULE
         DirectXTex
