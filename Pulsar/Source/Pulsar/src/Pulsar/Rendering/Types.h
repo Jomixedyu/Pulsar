@@ -32,7 +32,6 @@ namespace pulsar
                      Int,
                      Float,
                      Float4,
-                     Color,
                      Texture2D,
                      TextureCube
     )

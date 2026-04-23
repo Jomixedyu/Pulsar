@@ -265,7 +265,7 @@ namespace pulsared
         }
         return b;
     }
-    bool PImGui::PropertyLine(const string& name, Type* type, Object* obj)
+    bool PImGui::PropertyLine(const string& name, Type* type, Object* obj, std::span<Attribute*> attrs)
     {
         bool changed = false;
 
@@ -278,7 +278,7 @@ namespace pulsared
         ImGui::TableSetColumnIndex(1);
         ImGui::AlignTextToFramePadding();
 
-        changed = PropertyControlManager::ShowProperty(name, type, obj);
+        changed = PropertyControlManager::ShowProperty(name, type, obj, attrs);
 
         if (treeOpened)
         {

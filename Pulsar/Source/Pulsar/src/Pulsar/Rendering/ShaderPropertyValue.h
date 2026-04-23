@@ -30,11 +30,7 @@ namespace pulsar
             Value = value;
             Type = ShaderPropertyType::Float4;
         }
-        void SetValue(Color4f value)
-        {
-            Value = value;
-            Type = ShaderPropertyType::Color;
-        }
+
         void SetValue(const RCPtr<Texture>& value)
         {
             Value = value;
@@ -42,7 +38,7 @@ namespace pulsar
         }
 
     private:
-        std::variant<int, float, Vector4f, Color4f, RCPtr<Texture>> Value;
+        std::variant<int, float, Vector4f, RCPtr<Texture>> Value;
 
     public:
         int AsInt() const
@@ -57,10 +53,7 @@ namespace pulsar
         {
             return std::get<Vector4f>(Value);
         }
-        Color4f AsColor() const
-        {
-            return std::get<Color4f>(Value);
-        }
+
         RCPtr<Texture> AsTexture2D() const
         {
             return std::get<RCPtr<Texture>>(Value);
@@ -75,8 +68,6 @@ namespace pulsar
                 return sizeof(float);
             case ShaderPropertyType::Float4:
                 return sizeof(Vector4f);
-            case ShaderPropertyType::Color:
-                return sizeof(Color4f);
             default:
                 break;
             }

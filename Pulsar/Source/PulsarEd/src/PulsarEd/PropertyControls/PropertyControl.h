@@ -13,6 +13,18 @@ public: virtual Type* GetPropertyType() override { \
 
 namespace pulsared
 {
+    class SliderPropertyAttribute final : public jxcorlib::Attribute
+    {
+        CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::SliderPropertyAttribute, jxcorlib::Attribute);
+    public:
+    };
+
+    class IntegerEditAttribute final : public jxcorlib::Attribute
+    {
+        CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::IntegerEditAttribute, jxcorlib::Attribute);
+    public:
+    };
+
     class PropertyControl
     {
     public:
@@ -36,7 +48,7 @@ namespace pulsared
     {
         bool PropertyGroup(const char* label);
         bool BeginPropertyLines();
-        bool PropertyLine(const string& name, Type* type, Object* obj);
+        bool PropertyLine(const string& name, Type* type, Object* obj, std::span<Attribute*> attrs = {});
         void PropertyLineText(const string& name, string_view str);
         void EndPropertyLines();
 

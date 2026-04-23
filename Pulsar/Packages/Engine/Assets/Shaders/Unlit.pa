@@ -25,8 +25,9 @@
         {
             "Label": "Tint",
             "Name": "_TintColor",
-            "Type": "Color",
-            "DefaultValue": "1,1,1,1"
+            "Type": "Float4",
+            "DefaultValue": "1,1,1,1",
+            "Style": "Color"
         },
         {
             "Label": "Base Color Map",

@@ -52,6 +52,45 @@ namespace pulsared
                         const auto paramType = prop->Type;
                         Object_sp obj;
                         Type* objType{};
+
+                        // 从 Style 构建 attrs
+                        std::vector<Attribute*> attrs;
+                        std::vector<SPtr<Attribute>> attrStorage;
+                        if (!prop->Style.empty())
+                        {
+                            ShaderPropertyStyle style(prop->Style);
+                            float rmin = 0, rmax = 0;
+                            int irmin = 0, irmax = 0;
+                            int prec = 0;
+
+                            if (style.IsSlider())
+                            {
+                                attrStorage.push_back(mksptr(new SliderPropertyAttribute()));
+                            }
+                            else if (style.IsInteger())
+                            {
+                                attrStorage.push_back(mksptr(new IntegerEditAttribute()));
+                            }
+                            else if (style.IsRange(rmin, rmax))
+                            {
+                                attrStorage.push_back(mksptr(new RangePropertyAttribute(rmin, rmax)));
+                            }
+                            else if (style.IsIntRange(irmin, irmax))
+                            {
+                                attrStorage.push_back(mksptr(new IntegerEditAttribute()));
+                                attrStorage.push_back(mksptr(new RangePropertyAttribute(
+                                    static_cast<float>(irmin), static_cast<float>(irmax))));
+                            }
+
+                            if (style.GetPrecision(prec))
+                            {
+                                attrStorage.push_back(mksptr(new PrecisionAttribute(prec)));
+                            }
+
+                            for (auto& a : attrStorage)
+                                attrs.push_back(a.get());
+                        }
+
                         switch (paramType)
                         {
                         case ShaderPropertyType::Int: {
@@ -64,14 +103,23 @@ namespace pulsared
                             objType = obj->GetType();
                             break;
                         }
-                        case ShaderPropertyType::Float4:
-                        case ShaderPropertyType::Color: {
-                            const auto vec = material->GetVector4(name);
-                            obj = mkbox(Color4f{vec.x, vec.y, vec.z, vec.w});
-                            objType = obj->GetType();
+                        case ShaderPropertyType::Float4: {
+                            auto vec = material->GetVector4(name);
+                            ShaderPropertyStyle style(prop->Style);
+                            if (!prop->Style.empty() && (style.IsColor() || style.IsHDR()))
+                            {
+                                obj = mkbox(Color4f{vec.x, vec.y, vec.z, vec.w});
+                                objType = pulsar::math::BoxingColor4f::StaticType();
+                            }
+                            else
+                            {
+                                obj = mkbox(vec);
+                                objType = pulsar::math::BoxingVector4f::StaticType();
+                            }
                             break;
                         }
-                        case ShaderPropertyType::Texture2D: {
+                        case ShaderPropertyType::Texture2D:
+                        case ShaderPropertyType::TextureCube: {
                             auto tex = material->GetTexture(name);
                             objType = Texture::StaticType();
                             obj = mkbox((RCPtrBase&)tex);
@@ -82,7 +130,7 @@ namespace pulsared
                         }
 
                         const auto& label = !prop->Label.empty() ? prop->Label : prop->Name;
-                        if (obj && PImGui::PropertyLine(label, objType, obj.get()))
+                        if (obj && PImGui::PropertyLine(label, objType, obj.get(), attrs))
                         {
                             AssetDatabase::MarkDirty(m_assetObject);
                             switch (paramType)
@@ -93,13 +141,21 @@ namespace pulsared
                             case ShaderPropertyType::Float:
                                 material->SetFloat(name, UnboxUtil::Unbox<float>(obj));
                                 break;
-                            case ShaderPropertyType::Float4:
-                            case ShaderPropertyType::Color: {
-                                auto color = UnboxUtil::Unbox<Color4f>(obj);
-                                material->SetVector4(name, {color.r, color.g, color.b, color.a});
+                            case ShaderPropertyType::Float4: {
+                                ShaderPropertyStyle style(prop->Style);
+                                if (!prop->Style.empty() && (style.IsColor() || style.IsHDR()))
+                                {
+                                    auto c = UnboxUtil::Unbox<Color4f>(obj);
+                                    material->SetVector4(name, {c.r, c.g, c.b, c.a});
+                                }
+                                else
+                                {
+                                    material->SetVector4(name, UnboxUtil::Unbox<Vector4f>(obj));
+                                }
                                 break;
                             }
-                            case ShaderPropertyType::Texture2D: {
+                            case ShaderPropertyType::Texture2D:
+                            case ShaderPropertyType::TextureCube: {
                                 auto objptr = UnboxUtil::Unbox<RCPtrBase>(obj);
                                 RCPtr<Texture> tex = cast<Texture>(objptr);
                                 material->SetTexture(name, tex);
@@ -122,6 +178,7 @@ namespace pulsared
         base::OnOpen();
         RCPtr<Material> material = cast<Material>(m_assetObject);
         material->CreateGPUResource();
+        m_shader = material->GetShader();
 
         auto previewMesh =m_world->GetResidentScene()->NewNode("PreviewMesh");
         m_previewMeshRenderer = previewMesh->AddComponent<StaticMeshRendererComponent>();

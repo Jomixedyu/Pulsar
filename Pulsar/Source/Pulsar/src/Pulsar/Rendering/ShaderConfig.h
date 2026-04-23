@@ -17,6 +17,24 @@ CORELIB_DECL_BOXING(pulsar::ShaderPassRenderQueueType, pulsar::BoxingShaderPassR
 
 namespace pulsar
 {
+    struct ShaderPropertyStyle
+    {
+        string Hint;
+
+        ShaderPropertyStyle() = default;
+        explicit ShaderPropertyStyle(const string& hint) : Hint(hint) {}
+
+        bool IsColor() const;
+        bool IsHDR() const;
+        bool IsSlider() const;
+        bool IsInteger() const;
+        bool IsIntRange(int& min, int& max) const;
+        bool IsRange(float& min, float& max) const;
+        bool IsNormal() const;
+        bool IsVector() const;
+        bool GetPrecision(int& precision) const;
+    };
+
     class ShaderConfigProperty : public Object
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::ShaderConfigProperty, Object);
@@ -32,6 +50,9 @@ namespace pulsar
 
         CORELIB_REFL_DECL_FIELD(DefaultValue);
         string DefaultValue;
+
+        CORELIB_REFL_DECL_FIELD(Style);
+        string Style;
 
     };
 

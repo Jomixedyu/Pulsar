@@ -38,12 +38,7 @@ namespace pulsar
             const ShaderPropertyValue* prop = sheet.FindProperty(entry.m_name);
 
             auto isCompatible = [](ShaderPropertyType a, ShaderPropertyType b) {
-                if (a == b) return true;
-                // Float4 和 Color 内存布局相同，互相兼容
-                if ((a == ShaderPropertyType::Float4 || a == ShaderPropertyType::Color) &&
-                    (b == ShaderPropertyType::Float4 || b == ShaderPropertyType::Color))
-                    return true;
-                return false;
+                return a == b;
             };
 
             if (prop && isCompatible(entry.m_type, prop->Type))
@@ -114,17 +109,9 @@ namespace pulsar
             std::memcpy(buffer + entry.m_offset, &val, sizeof(float));
             break;
         }
-        case ShaderPropertyType::Float4:
-        case ShaderPropertyType::Color: {
-            float vals[4] = {};
-            if (prop.Type == ShaderPropertyType::Color) {
-                Color4f val = prop.AsColor();
-                vals[0] = val.r; vals[1] = val.g; vals[2] = val.b; vals[3] = val.a;
-            } else {
-                Vector4f val = prop.AsFloat4();
-                vals[0] = val.x; vals[1] = val.y; vals[2] = val.z; vals[3] = val.w;
-            }
-            std::memcpy(buffer + entry.m_offset, vals, sizeof(vals));
+        case ShaderPropertyType::Float4: {
+            Vector4f val = prop.AsFloat4();
+            std::memcpy(buffer + entry.m_offset, &val, sizeof(Vector4f));
             break;
         }
         default:

@@ -25,11 +25,6 @@ namespace pulsar
             m_properties[name].SetValue(value);
         }
 
-        void SetColor(const std::string& name, Color4f value)
-        {
-            m_properties[name].SetValue(value);
-        }
-
         void SetTexture(const std::string& name, const RCPtr<Texture>& value)
         {
             m_properties[name].SetValue(value);
@@ -59,15 +54,6 @@ namespace pulsar
             if (it == m_properties.end()) return false;
             if (it->second.Type != ShaderPropertyType::Float4) return false;
             outValue = it->second.AsFloat4();
-            return true;
-        }
-
-        bool GetColor(const std::string& name, Color4f& outValue) const
-        {
-            auto it = m_properties.find(name);
-            if (it == m_properties.end()) return false;
-            if (it->second.Type != ShaderPropertyType::Color) return false;
-            outValue = it->second.AsColor();
             return true;
         }
 

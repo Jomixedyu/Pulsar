@@ -284,10 +284,6 @@ namespace pulsar
         Vector4f val{};
         if (m_sheet.GetFloat4(name.to_string(), val))
             return val;
-        // 也尝试 Color 类型（Color4f 和 Vector4f 内存布局相同）
-        Color4f col{};
-        if (m_sheet.GetColor(name.to_string(), col))
-            return {col.r, col.g, col.b, col.a};
         return {};
     }
 
@@ -552,17 +548,13 @@ namespace pulsar
                     m_sheet.SetFloat(prop->Name, static_cast<float>(std::atof(prop->DefaultValue.c_str())));
                 break;
             case ShaderPropertyType::Float4:
-            case ShaderPropertyType::Color:
             {
                 if (!m_sheet.HasProperty(prop->Name))
                 {
                     // 格式 "r,g,b,a"
                     float r = 0, g = 0, b = 0, a = 1;
                     sscanf_s(prop->DefaultValue.c_str(), "%f,%f,%f,%f", &r, &g, &b, &a);
-                    if (prop->Type == ShaderPropertyType::Color)
-                        m_sheet.SetColor(prop->Name, Color4f{r, g, b, a});
-                    else
-                        m_sheet.SetFloat4(prop->Name, Vector4f{r, g, b, a});
+                    m_sheet.SetFloat4(prop->Name, Vector4f{r, g, b, a});
                 }
                 break;
             }

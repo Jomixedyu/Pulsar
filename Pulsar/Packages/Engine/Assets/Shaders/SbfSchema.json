@@ -273,25 +273,16 @@
                             "Int",
                             "Float",
                             "Float4",
-                            "Color",
                             "Texture2D",
                             "TextureCube"
                         ]
                     },
                     "DefaultValue": {
+                        "type": "string"
+                    },
+                    "Style": {
                         "type": "string",
-                        "enum": [
-                            "0",
-                            "1",
-                            "0,0",
-                            "1,1",
-                            "0,0,0,0",
-                            "0,0,0,1",
-                            "1,1,1,1",
-                            "T2D_WHITE",
-                            "T2D_BLACK",
-                            "T2D_NORMAL_TS"
-                        ]
+                        "description": "UI hint: Color, HDR, Vector, Slider, Integer, Range(min,max), IntRange(min,max), Precision(n), Normal"
                     }
                 },
                 "required": [
