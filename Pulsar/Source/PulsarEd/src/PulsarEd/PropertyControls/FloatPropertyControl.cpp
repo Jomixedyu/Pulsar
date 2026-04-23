@@ -30,6 +30,7 @@ namespace pulsared
         bool hasRange = false;
         bool isSlider = false;
         bool isInteger = false;
+        bool isCheckBox = false;
         for (auto* attr : attrs)
         {
             if (attr->GetType() == cltypeof<pulsar::FloatRangeEditAttribute>() || attr->GetType()->IsSubclassOf(cltypeof<pulsar::FloatRangeEditAttribute>()))
@@ -55,11 +56,21 @@ namespace pulsared
                 rangeMax = intRange->m_max;
                 hasRange = true;
             }
+            else if (attr->GetType() == cltypeof<pulsar::CheckBoxEditAttribute>() || attr->GetType()->IsSubclassOf(cltypeof<pulsar::CheckBoxEditAttribute>()))
+            {
+                isCheckBox = true;
+            }
         }
 
         ImGui::PushItemWidth(-1);
         bool changed = false;
-        if (isSlider && hasRange)
+        if (isCheckBox)
+        {
+            bool bv = f->value != 0.0f;
+            changed = ImGui::Checkbox(("##" + name).c_str(), &bv);
+            if (changed) f->value = bv ? 1.0f : 0.0f;
+        }
+        else if (isSlider && hasRange)
         {
             changed = ImGui::SliderFloat(("##" + name).c_str(), &f->value, rangeMin, rangeMax, format);
         }

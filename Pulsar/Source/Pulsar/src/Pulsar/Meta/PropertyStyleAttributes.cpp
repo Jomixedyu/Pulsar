@@ -33,6 +33,16 @@ namespace pulsar
         return mksptr(new IntegerEditAttribute());
     }
 
+    bool CheckBoxEditAttribute::TryParse(const string& style) const
+    {
+        return style == "CheckBox";
+    }
+
+    SPtr<EditStyleAttribute> CheckBoxEditAttribute::Parse(const string&) const
+    {
+        return mksptr(new CheckBoxEditAttribute());
+    }
+
     bool IntRangeEditAttribute::TryParse(const string& style) const
     {
         return style == "IntRange" ||

@@ -282,7 +282,7 @@
                     },
                     "Style": {
                         "type": "string",
-                        "description": "UI hint: Color, FloatSlider, Integer, FloatRange(min,max), IntRange(min,max), Precision(n)"
+                        "description": "UI hint: Color, FloatSlider, Integer, CheckBox, FloatRange(min,max), IntRange(min,max), Precision(n)"
                     }
                 },
                 "required": [

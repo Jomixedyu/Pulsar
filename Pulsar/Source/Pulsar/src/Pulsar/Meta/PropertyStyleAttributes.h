@@ -36,6 +36,14 @@ namespace pulsar
         SPtr<EditStyleAttribute> Parse(const string& style) const override;
     };
 
+    class CheckBoxEditAttribute final : public EditStyleAttribute
+    {
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::CheckBoxEditAttribute, EditStyleAttribute);
+    public:
+        bool TryParse(const string& style) const override;
+        SPtr<EditStyleAttribute> Parse(const string& style) const override;
+    };
+
     class IntRangeEditAttribute final : public EditStyleAttribute
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::IntRangeEditAttribute, EditStyleAttribute);
