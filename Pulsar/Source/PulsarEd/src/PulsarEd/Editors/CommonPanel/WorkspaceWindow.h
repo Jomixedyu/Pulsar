@@ -49,6 +49,7 @@ namespace pulsared
         void OnDrawContent();
         void RenderFolderTree(SPtr<AssetFileNode> node);
         void RenderFileContent();
+        void ProcessThumbnailRequests();
         MenuContextBase_sp MakeMenuContext();
     private:
         void OnClick_Import();
@@ -65,6 +66,10 @@ namespace pulsared
         std::optional<float> m_layoutColumnOffset;
 
         std::shared_ptr<struct AssetTypeTreeNode> m_rootAddAssetContextTreeNode;
+
+        array_list<jxcorlib::guid_t> m_pendingThumbnailRequests;
+        size_t m_maxThumbnailsPerFrame = 1;
+        uint32_t m_thumbnailFrameSkip = 0;
     };
 }
 

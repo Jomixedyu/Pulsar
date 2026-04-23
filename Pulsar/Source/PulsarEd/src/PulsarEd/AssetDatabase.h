@@ -2,6 +2,7 @@
 #include "Assembly.h"
 #include "Common/FileTreeNode.hpp"
 #include "Common/PersistentImagePool.h"
+#include "Common/ThumbnailCache.h"
 #include "Workspace.h"
 #include <Pulsar/AssetObject.h>
 #include <filesystem>
@@ -133,6 +134,7 @@ namespace pulsared
 
         static inline std::shared_ptr<AssetFileNode> FileTree;
         static inline std::unique_ptr<PersistentImagePool> IconPool;
+        static inline std::unique_ptr<pulsared::ThumbnailCache> ThumbnailCacheInst;
 
     protected:
         static void OnAddPackage(ProgramPackage* package);

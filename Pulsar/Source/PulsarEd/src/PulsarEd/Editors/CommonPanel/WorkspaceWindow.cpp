@@ -20,6 +20,7 @@
 
 #include <PulsarEd/Menus/MenuRenderer.h>
 #include <imgui/imgui_internal.h>
+#include <Pulsar/Assets/Texture2D.h>
 
 namespace pulsared
 {
@@ -234,6 +235,8 @@ namespace pulsared
             ImGui::Text("no project");
             return;
         }
+
+        ProcessThumbnailRequests();
 
         OnDrawBar();
 
@@ -674,14 +677,47 @@ namespace pulsared
             ImGui::PushStyleColor(ImGuiCol_Button, {});
 
             Type* assetType = child->GetAssetType();
-            gfx::GFXDescriptorSet_wp descSet = AssetDatabase::IconPool->GetDescriptorSet({assetType->GetName()});
+            const bool isFolder = child->IsFolder;
+
+            // Try content thumbnail first
+            gfx::GFXDescriptorSet_wp descSet;
+            if (!isFolder && child->AssetMeta && child->AssetMeta->Guid)
+            {
+                descSet = AssetDatabase::ThumbnailCacheInst->GetThumbnail(child->AssetMeta->Guid);
+            }
+
+            // Fallback to type icon
             if (descSet.expired())
             {
-                descSet = AssetDatabase::IconPool->GetDescriptorSet(cltypeof<ObjectBase>()->GetName());
+                if (assetType)
+                {
+                    descSet = AssetDatabase::IconPool->GetDescriptorSet({assetType->GetName()});
+                }
+                if (descSet.expired())
+                {
+                    descSet = AssetDatabase::IconPool->GetDescriptorSet(cltypeof<ObjectBase>()->GetName());
+                }
+
+                // Queue thumbnail generation for supported types
+                if (!isFolder && child->AssetMeta && child->AssetMeta->Guid && assetType)
+                {
+                    if (assetType->IsSubclassOf(cltypeof<pulsar::Texture2D>()))
+                    {
+                        const auto& guid = child->AssetMeta->Guid;
+                        if (!AssetDatabase::ThumbnailCacheInst->IsFailed(guid))
+                        {
+                            auto it = std::find(m_pendingThumbnailRequests.begin(), m_pendingThumbnailRequests.end(), guid);
+                            if (it == m_pendingThumbnailRequests.end())
+                            {
+                                m_pendingThumbnailRequests.push_back(guid);
+                            }
+                        }
+                    }
+                }
             }
+
             gfx::GFXDescriptorSet_wp dirtySet = AssetDatabase::IconPool->GetDescriptorSet("WorkspaceWindow.Dirty");
 
-            const bool isFolder = child->IsFolder;
             const auto isSelected = weaks_find(m_selectedFiles.begin(), m_selectedFiles.end(), std::weak_ptr{child}) != m_selectedFiles.end();
             const bool isDirty = isFolder ? false : AssetDatabase::IsDirtyHandle(child->AssetMeta->Guid);
 
@@ -781,6 +817,40 @@ namespace pulsared
             ImGui::EndPopup();
         }
     }
+    void WorkspaceWindow::ProcessThumbnailRequests()
+    {
+        if (m_pendingThumbnailRequests.empty())
+            return;
+
+        // Skip every other frame to spread CPU load
+        if (++m_thumbnailFrameSkip < 2)
+            return;
+        m_thumbnailFrameSkip = 0;
+
+        size_t count = 0;
+        while (!m_pendingThumbnailRequests.empty() && count < m_maxThumbnailsPerFrame)
+        {
+            jxcorlib::guid_t guid = m_pendingThumbnailRequests.front();
+            m_pendingThumbnailRequests.erase(m_pendingThumbnailRequests.begin());
+
+            // Skip if already cached
+            if (!AssetDatabase::ThumbnailCacheInst->GetThumbnail(guid).expired())
+                continue;
+
+            // Skip if already failed (don't waste time on LoadAssetById)
+            if (AssetDatabase::ThumbnailCacheInst->IsFailed(guid))
+                continue;
+
+            // Load asset and generate thumbnail
+            auto asset = AssetDatabase::LoadAssetById(guid);
+            if (asset)
+            {
+                AssetDatabase::ThumbnailCacheInst->GenerateThumbnail(guid, asset.GetPtr());
+            }
+            count++;
+        }
+    }
+
     MenuContextBase_sp WorkspaceWindow::MakeMenuContext()
     {
         auto ctx = mksptr(new AssetsMenuContext{m_currentFolder});

@@ -64,7 +64,10 @@ namespace pulsared
 
     static void _OnWorkspaceOpened()
     {
-
+        if (AssetDatabase::ThumbnailCacheInst)
+        {
+            AssetDatabase::ThumbnailCacheInst->ClearCache();
+        }
     }
 
     static std::array<std::filesystem::path, 3> _GetClusterPhysicPath(const std::filesystem::path path)
@@ -621,6 +624,7 @@ namespace pulsared
     void AssetDatabase::Initialize()
     {
         IconPool = std::make_unique<PersistentImagePool>(Application::GetGfxApp());
+        ThumbnailCacheInst = std::make_unique<ThumbnailCache>(Application::GetGfxApp());
 
         FileTree = mksptr(new AssetFileNode);
         FileTree->IsFolder = true;
@@ -638,6 +642,7 @@ namespace pulsared
         Workspace::OnWorkspaceOpened -= _OnWorkspaceOpened;
         RuntimeObjectManager::OnPostEditChanged -= _OnPostEditChanged;
         IconPool.reset();
+        ThumbnailCacheInst.reset();
 
         auto& set = _DirtyObjects();
         set.clear();

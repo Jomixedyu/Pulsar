@@ -66,6 +66,10 @@ namespace pulsar
         size_t GetOriginCompressedBinarySize() const override { return m_originMemory.size(); }
         size_t GetRawBinarySize() const override { return m_cachedUncompressedRawSize; }
         size_t GetNativeBinarySize() const override { return m_cachedNativeSize; }
+
+        const uint8_t* GetOriginMemoryData() const { return m_originMemory.data(); }
+        bool IsOriginMemoryCompressed() const { return m_compressedOriginImage; }
+        bool IsOriginMemoryLoaded() const { return m_loadedOriginMemory; }
     protected:
 
         bool m_isSRGB{}; // 已废弃，保留字段以兼容旧资产序列化
