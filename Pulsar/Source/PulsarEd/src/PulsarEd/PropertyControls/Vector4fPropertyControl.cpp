@@ -25,7 +25,20 @@ namespace pulsared
         if (isColor)
         {
             float color[4] = { f->x, f->y, f->z, f->w };
-            changed = ImGui::ColorEdit4(("##" + name).c_str(), color);
+            auto popupId = "ColorPopup_" + name;
+            if (ImGui::ColorButton(("##btn_" + name).c_str(), ImVec4{color[0], color[1], color[2], color[3]}, 0, ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetFrameHeight())))
+            {
+                ImGui::OpenPopup(popupId.c_str());
+            }
+            if (ImGui::BeginPopup(popupId.c_str()))
+            {
+                if (ImGui::ColorPicker4(("##picker_" + name).c_str(), color,
+                    ImGuiColorEditFlags_NoSidePreview | ImGuiColorEditFlags_NoSmallPreview))
+                {
+                    changed = true;
+                }
+                ImGui::EndPopup();
+            }
             if (changed)
             {
                 f->x = color[0];

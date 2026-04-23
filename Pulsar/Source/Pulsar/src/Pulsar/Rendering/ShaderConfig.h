@@ -36,7 +36,7 @@ namespace pulsar
         CORELIB_REFL_DECL_FIELD(Style);
         string Style;
 
-        std::vector<SPtr<jxcorlib::Attribute>> GetStyleAttributes() const;
+        SPtr<jxcorlib::Attribute> GetStyleAttribute() const;
 
     };
 

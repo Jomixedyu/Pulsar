@@ -7,11 +7,10 @@
 
 namespace pulsar
 {
-    std::vector<SPtr<jxcorlib::Attribute>> ShaderConfigProperty::GetStyleAttributes() const
+    SPtr<jxcorlib::Attribute> ShaderConfigProperty::GetStyleAttribute() const
     {
-        std::vector<SPtr<jxcorlib::Attribute>> result;
         if (Style.empty())
-            return result;
+            return nullptr;
 
         static const auto editStyleTypes = []() {
             return jxcorlib::AssemblyManager::GlobalSearchType(cltypeof<EditStyleAttribute>());
@@ -22,10 +21,9 @@ namespace pulsar
             auto temp = jxcorlib::sptr_static_cast<EditStyleAttribute>(type->CreateSharedInstance({}));
             if (temp && temp->TryParse(Style))
             {
-                auto attrs = temp->Parse(Style);
-                result.insert(result.end(), attrs.begin(), attrs.end());
+                return temp->Parse(Style);
             }
         }
-        return result;
+        return nullptr;
     }
 }

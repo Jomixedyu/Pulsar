@@ -47,6 +47,14 @@ namespace pulsared
             {
                 isInteger = true;
             }
+            else if (attr->GetType() == cltypeof<pulsar::IntRangeEditAttribute>() || attr->GetType()->IsSubclassOf(cltypeof<pulsar::IntRangeEditAttribute>()))
+            {
+                auto* intRange = static_cast<pulsar::IntRangeEditAttribute*>(attr);
+                isInteger = true;
+                rangeMin = intRange->m_min;
+                rangeMax = intRange->m_max;
+                hasRange = true;
+            }
         }
 
         ImGui::PushItemWidth(-1);
@@ -58,7 +66,9 @@ namespace pulsared
         else if (isInteger)
         {
             int iv = static_cast<int>(f->value);
-            changed = ImGui::DragInt(("##" + name).c_str(), &iv);
+            changed = ImGui::DragInt(("##" + name).c_str(), &iv, 1.0f,
+                hasRange ? static_cast<int>(rangeMin) : 0,
+                hasRange ? static_cast<int>(rangeMax) : 0);
             if (changed) f->value = static_cast<float>(iv);
         }
         else

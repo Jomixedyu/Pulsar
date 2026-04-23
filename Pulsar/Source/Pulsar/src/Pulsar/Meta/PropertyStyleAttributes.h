@@ -9,7 +9,7 @@ namespace pulsar
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::EditStyleAttribute, jxcorlib::Attribute);
     public:
         virtual bool TryParse(const string& style) const { return false; }
-        virtual std::vector<SPtr<jxcorlib::Attribute>> Parse(const string& style) const { return {}; }
+        virtual SPtr<EditStyleAttribute> Parse(const string& style) const { return nullptr; }
     };
 
     class ColorEditAttribute final : public EditStyleAttribute
@@ -17,7 +17,7 @@ namespace pulsar
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::ColorEditAttribute, EditStyleAttribute);
     public:
         bool TryParse(const string& style) const override;
-        std::vector<SPtr<jxcorlib::Attribute>> Parse(const string& style) const override;
+        SPtr<EditStyleAttribute> Parse(const string& style) const override;
     };
 
     class FloatSliderEditAttribute final : public EditStyleAttribute
@@ -25,7 +25,7 @@ namespace pulsar
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::FloatSliderEditAttribute, EditStyleAttribute);
     public:
         bool TryParse(const string& style) const override;
-        std::vector<SPtr<jxcorlib::Attribute>> Parse(const string& style) const override;
+        SPtr<EditStyleAttribute> Parse(const string& style) const override;
     };
 
     class IntegerEditAttribute final : public EditStyleAttribute
@@ -33,15 +33,21 @@ namespace pulsar
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::IntegerEditAttribute, EditStyleAttribute);
     public:
         bool TryParse(const string& style) const override;
-        std::vector<SPtr<jxcorlib::Attribute>> Parse(const string& style) const override;
+        SPtr<EditStyleAttribute> Parse(const string& style) const override;
     };
 
     class IntRangeEditAttribute final : public EditStyleAttribute
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::IntRangeEditAttribute, EditStyleAttribute);
     public:
+        IntRangeEditAttribute() = default;
+        IntRangeEditAttribute(float min, float max) : m_min(min), m_max(max) {}
+
         bool TryParse(const string& style) const override;
-        std::vector<SPtr<jxcorlib::Attribute>> Parse(const string& style) const override;
+        SPtr<EditStyleAttribute> Parse(const string& style) const override;
+
+        float m_min = 0.0f;
+        float m_max = 1.0f;
     };
 
     class FloatRangeEditAttribute final : public EditStyleAttribute
@@ -52,7 +58,7 @@ namespace pulsar
         FloatRangeEditAttribute(float min, float max) : m_min(min), m_max(max) {}
 
         bool TryParse(const string& style) const override;
-        std::vector<SPtr<jxcorlib::Attribute>> Parse(const string& style) const override;
+        SPtr<EditStyleAttribute> Parse(const string& style) const override;
 
         float m_min = 0.0f;
         float m_max = 1.0f;
@@ -66,7 +72,7 @@ namespace pulsar
         explicit PrecisionEditAttribute(int precision) : m_precision(precision) {}
 
         bool TryParse(const string& style) const override;
-        std::vector<SPtr<jxcorlib::Attribute>> Parse(const string& style) const override;
+        SPtr<EditStyleAttribute> Parse(const string& style) const override;
 
         int m_precision = 3;
     };

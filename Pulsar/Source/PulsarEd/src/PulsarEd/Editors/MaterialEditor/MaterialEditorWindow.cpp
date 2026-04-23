@@ -54,12 +54,11 @@ namespace pulsared
                         Object_sp obj;
                         Type* objType{};
 
-                        // 从 Style 构建 attrs
+                        // 从 Style 构建 attr
                         std::vector<Attribute*> attrs;
-                        std::vector<SPtr<Attribute>> attrStorage;
-                        attrStorage = prop->GetStyleAttributes();
-                        for (auto& a : attrStorage)
-                            attrs.push_back(a.get());
+                        auto attrStorage = prop->GetStyleAttribute();
+                        if (attrStorage)
+                            attrs.push_back(attrStorage.get());
 
                         switch (paramType)
                         {
