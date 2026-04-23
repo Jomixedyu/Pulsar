@@ -36,7 +36,6 @@ namespace pulsar
 
             s->Object->Add("ChannelCount", m_channelCount);
 
-            s->Object->Add("IsSRGB", m_isSRGB);
             s->Object->Add("CompressedFormat", mkbox(m_compressionFormat)->GetName());
         }
         else // read
@@ -51,7 +50,6 @@ namespace pulsar
 
             m_channelCount = s->Object->At("ChannelCount")->AsInt();
 
-            m_isSRGB = s->Object->At("IsSRGB")->AsBool();
             auto compressedFormat = s->Object->At("CompressedFormat")->AsString();
             AssignEnum(m_compressionFormat, compressedFormat);
 
@@ -72,7 +70,6 @@ namespace pulsar
     {
         m_originMemory.resize(length);
         std::memcpy(m_originMemory.data(), data, length);
-        m_isSRGB = true;
         m_compressedOriginImage = compressed;
         m_textureSize.x = width;
         m_textureSize.y = height;
@@ -84,7 +81,6 @@ namespace pulsar
         base::PostEditChange(info);
         auto name = info->GetName();
         if (name == NAMEOF(m_compressionFormat) ||
-            name == NAMEOF(m_isSRGB) ||
             name == NAMEOF(m_samplerFilter) ||
             name == NAMEOF(m_samplerAddressMode))
         {
@@ -118,7 +114,7 @@ namespace pulsar
             if (m_compressedOriginImage)
             {
                 uncompressedData = gfx::LoadImageFromMemory(m_originMemory.data(), m_originMemory.size(),
-                                                               nullptr, nullptr, nullptr, m_channelCount, m_isSRGB);
+                                                               nullptr, nullptr, nullptr, m_channelCount);
             }
             else
             {

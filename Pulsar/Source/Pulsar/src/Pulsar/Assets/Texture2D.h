@@ -55,16 +55,20 @@ namespace pulsar
         std::shared_ptr<gfx::GFXTexture> GetGFXTexture() const override { return m_tex; }
 
     public:
-        bool IsSRGB() const { return m_isSRGB; }
-        void SetIsSRGB(bool value) { m_isSRGB = value; }
+        bool IsSRGB() const
+        {
+            auto fmt = StaticGetFormatMapping(OSPlatform::Windows64)->at(m_compressionFormat);
+            return fmt == gfx::GFXTextureFormat::BC3_SRGB || fmt == gfx::GFXTextureFormat::R8G8B8A8_SRGB;
+        }
+        void SetIsSRGB(bool) {} // 已废弃，CompressionFormat 决定 sRGB/Linear
         TextureCompressionFormat GetCompressedFormat() const override { return m_compressionFormat; }
+        void SetCompressedFormat(TextureCompressionFormat value) { m_compressionFormat = value; }
         size_t GetOriginCompressedBinarySize() const override { return m_originMemory.size(); }
         size_t GetRawBinarySize() const override { return m_cachedUncompressedRawSize; }
         size_t GetNativeBinarySize() const override { return m_cachedNativeSize; }
     protected:
 
-        CORELIB_REFL_DECL_FIELD(m_isSRGB);
-        bool m_isSRGB;
+        bool m_isSRGB{}; // 已废弃，保留字段以兼容旧资产序列化
 
         array_list<uint8_t> m_originMemory;
         bool m_compressedOriginImage = false;

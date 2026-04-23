@@ -10,7 +10,7 @@ namespace pulsared
         config.Filter = gfx::GFXSamplerFilter::Linear;
 
         int32_t width, height, channel;
-        auto iconData = gfx::LoadImageFromMemory(iconBuf, length, &width, &height, &channel, 4, true);
+        auto iconData = gfx::LoadImageFromMemory(iconBuf, length, &width, &height, &channel, 4);
 
         auto tex2d = m_app->CreateTexture2DFromMemory(iconData.data(), iconData.size(), width, height, gfx::GFXTextureFormat::R8G8B8A8_UNorm, config);
         m_textures.emplace(id, tex2d);
