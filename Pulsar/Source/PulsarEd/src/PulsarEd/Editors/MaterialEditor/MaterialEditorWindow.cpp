@@ -9,6 +9,7 @@
 #include <PulsarEd/Menus/MenuEntrySubMenu.h>
 #include <PulsarEd/Menus/MenuRenderer.h>
 #include <PulsarEd/PropertyControls/PropertyControl.h>
+#include <Pulsar/Meta/PropertyStyleAttributes.h>
 #include <PulsarEd/Editors/MaterialEditor//MaterialEditorWindow.h>
 
 namespace pulsared
@@ -56,40 +57,9 @@ namespace pulsared
                         // 从 Style 构建 attrs
                         std::vector<Attribute*> attrs;
                         std::vector<SPtr<Attribute>> attrStorage;
-                        if (!prop->Style.empty())
-                        {
-                            ShaderPropertyStyle style(prop->Style);
-                            float rmin = 0, rmax = 0;
-                            int irmin = 0, irmax = 0;
-                            int prec = 0;
-
-                            if (style.IsSlider())
-                            {
-                                attrStorage.push_back(mksptr(new SliderPropertyAttribute()));
-                            }
-                            else if (style.IsInteger())
-                            {
-                                attrStorage.push_back(mksptr(new IntegerEditAttribute()));
-                            }
-                            else if (style.IsRange(rmin, rmax))
-                            {
-                                attrStorage.push_back(mksptr(new RangePropertyAttribute(rmin, rmax)));
-                            }
-                            else if (style.IsIntRange(irmin, irmax))
-                            {
-                                attrStorage.push_back(mksptr(new IntegerEditAttribute()));
-                                attrStorage.push_back(mksptr(new RangePropertyAttribute(
-                                    static_cast<float>(irmin), static_cast<float>(irmax))));
-                            }
-
-                            if (style.GetPrecision(prec))
-                            {
-                                attrStorage.push_back(mksptr(new PrecisionAttribute(prec)));
-                            }
-
-                            for (auto& a : attrStorage)
-                                attrs.push_back(a.get());
-                        }
+                        attrStorage = prop->GetStyleAttributes();
+                        for (auto& a : attrStorage)
+                            attrs.push_back(a.get());
 
                         switch (paramType)
                         {
@@ -104,18 +74,8 @@ namespace pulsared
                             break;
                         }
                         case ShaderPropertyType::Float4: {
-                            auto vec = material->GetVector4(name);
-                            ShaderPropertyStyle style(prop->Style);
-                            if (!prop->Style.empty() && (style.IsColor() || style.IsHDR()))
-                            {
-                                obj = mkbox(Color4f{vec.x, vec.y, vec.z, vec.w});
-                                objType = pulsar::math::BoxingColor4f::StaticType();
-                            }
-                            else
-                            {
-                                obj = mkbox(vec);
-                                objType = pulsar::math::BoxingVector4f::StaticType();
-                            }
+                            obj = mkbox(material->GetVector4(name));
+                            objType = pulsar::math::BoxingVector4f::StaticType();
                             break;
                         }
                         case ShaderPropertyType::Texture2D:
@@ -141,19 +101,9 @@ namespace pulsared
                             case ShaderPropertyType::Float:
                                 material->SetFloat(name, UnboxUtil::Unbox<float>(obj));
                                 break;
-                            case ShaderPropertyType::Float4: {
-                                ShaderPropertyStyle style(prop->Style);
-                                if (!prop->Style.empty() && (style.IsColor() || style.IsHDR()))
-                                {
-                                    auto c = UnboxUtil::Unbox<Color4f>(obj);
-                                    material->SetVector4(name, {c.r, c.g, c.b, c.a});
-                                }
-                                else
-                                {
-                                    material->SetVector4(name, UnboxUtil::Unbox<Vector4f>(obj));
-                                }
+                            case ShaderPropertyType::Float4:
+                                material->SetVector4(name, UnboxUtil::Unbox<Vector4f>(obj));
                                 break;
-                            }
                             case ShaderPropertyType::Texture2D:
                             case ShaderPropertyType::TextureCube: {
                                 auto objptr = UnboxUtil::Unbox<RCPtrBase>(obj);
@@ -183,6 +133,7 @@ namespace pulsared
         auto previewMesh =m_world->GetResidentScene()->NewNode("PreviewMesh");
         m_previewMeshRenderer = previewMesh->AddComponent<StaticMeshRendererComponent>();
         m_previewMeshRenderer->SetStaticMesh(AssetManager::Get()->LoadAsset<StaticMesh>(BuiltinAsset::Shapes_Sphere));
+        m_previewMeshRenderer->SetMaterial(0, material);
 
     }
     void MaterialEditorWindow::OnClose()

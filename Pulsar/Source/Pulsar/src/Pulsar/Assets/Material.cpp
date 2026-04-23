@@ -606,6 +606,19 @@ namespace pulsar
     {
         base::OnCollectAssetDependencies(deps);
         deps.push_back(m_shader.GetGuid());
+
+        // 收集参数中的纹理引用
+        for (const auto& [name, value] : m_sheet.GetAllProperties())
+        {
+            if (value.GetType() == ShaderPropertyType::Texture2D ||
+                value.GetType() == ShaderPropertyType::TextureCube)
+            {
+                if (auto tex = value.AsTexture2D())
+                {
+                    deps.push_back(tex->GetAssetGuid());
+                }
+            }
+        }
     }
 
 } // namespace pulsar

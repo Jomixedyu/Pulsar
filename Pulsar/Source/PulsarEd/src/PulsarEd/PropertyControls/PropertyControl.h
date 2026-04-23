@@ -13,18 +13,6 @@ public: virtual Type* GetPropertyType() override { \
 
 namespace pulsared
 {
-    class SliderPropertyAttribute final : public jxcorlib::Attribute
-    {
-        CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::SliderPropertyAttribute, jxcorlib::Attribute);
-    public:
-    };
-
-    class IntegerEditAttribute final : public jxcorlib::Attribute
-    {
-        CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::IntegerEditAttribute, jxcorlib::Attribute);
-    public:
-    };
-
     class PropertyControl
     {
     public:

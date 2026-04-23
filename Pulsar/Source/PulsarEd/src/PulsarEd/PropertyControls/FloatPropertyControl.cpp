@@ -1,5 +1,6 @@
 #include "PropertyControls/FloatPropertyControl.h"
 #include <CoreLib/Attribute.h>
+#include <Pulsar/Meta/PropertyStyleAttributes.h>
 #include <imgui/imgui.h>
 
 namespace pulsared
@@ -10,39 +11,39 @@ namespace pulsared
 
         auto f = static_cast<Single32*>(prop);
 
-        // check for PrecisionAttribute
+        // check for PrecisionEditAttribute
         const char* format = "%.3f";
         for (auto* attr : attrs)
         {
-            if (attr->GetType() == cltypeof<PrecisionAttribute>() || attr->GetType()->IsSubclassOf(cltypeof<PrecisionAttribute>()))
+            if (attr->GetType() == cltypeof<pulsar::PrecisionEditAttribute>() || attr->GetType()->IsSubclassOf(cltypeof<pulsar::PrecisionEditAttribute>()))
             {
-                auto* precAttr = static_cast<PrecisionAttribute*>(attr);
+                auto* precAttr = static_cast<pulsar::PrecisionEditAttribute*>(attr);
                 static char formatBuf[16];
-                snprintf(formatBuf, sizeof(formatBuf), "%%.%df", precAttr->GetPrecision());
+                snprintf(formatBuf, sizeof(formatBuf), "%%.%df", precAttr->m_precision);
                 format = formatBuf;
                 break;
             }
         }
 
-        // check for RangeAttribute and Slider/Integer hints via custom attributes
+        // check for RangeEditAttribute and Slider/Integer hints via custom attributes
         float rangeMin = 0.f, rangeMax = 0.f;
         bool hasRange = false;
         bool isSlider = false;
         bool isInteger = false;
         for (auto* attr : attrs)
         {
-            if (attr->GetType() == cltypeof<RangePropertyAttribute>() || attr->GetType()->IsSubclassOf(cltypeof<RangePropertyAttribute>()))
+            if (attr->GetType() == cltypeof<pulsar::FloatRangeEditAttribute>() || attr->GetType()->IsSubclassOf(cltypeof<pulsar::FloatRangeEditAttribute>()))
             {
-                auto* rangeAttr = static_cast<RangePropertyAttribute*>(attr);
+                auto* rangeAttr = static_cast<pulsar::FloatRangeEditAttribute*>(attr);
                 rangeMin = rangeAttr->m_min;
                 rangeMax = rangeAttr->m_max;
                 hasRange = true;
             }
-            else if (attr->GetType() == cltypeof<SliderPropertyAttribute>() || attr->GetType()->IsSubclassOf(cltypeof<SliderPropertyAttribute>()))
+            else if (attr->GetType() == cltypeof<pulsar::FloatSliderEditAttribute>() || attr->GetType()->IsSubclassOf(cltypeof<pulsar::FloatSliderEditAttribute>()))
             {
                 isSlider = true;
             }
-            else if (attr->GetType() == cltypeof<IntegerEditAttribute>() || attr->GetType()->IsSubclassOf(cltypeof<IntegerEditAttribute>()))
+            else if (attr->GetType() == cltypeof<pulsar::IntegerEditAttribute>() || attr->GetType()->IsSubclassOf(cltypeof<pulsar::IntegerEditAttribute>()))
             {
                 isInteger = true;
             }
