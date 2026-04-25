@@ -3,6 +3,7 @@
 #include "AssetDatabase.h"
 #include "DragInfo.h"
 #include "PropertyControls/PropertyControl.h"
+#include <Pulsar/Assets/ColorGradingSettings.h>
 #include <Pulsar/IconsForkAwesome.h>
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
@@ -44,23 +45,23 @@ namespace pulsared
 
         if (ImGui::BeginPopup("AddEffectPopup"))
         {
-            if (ImGui::MenuItem("Tonemapping"))
+            auto* baseType = ::pulsar::VolumeSettings::StaticType();
+            auto derivedTypes = ::jxcorlib::AssemblyManager::GlobalSearchType(baseType);
+
+            for (auto* type : derivedTypes)
             {
-                auto tm = mksptr(new TonemappingSettings());
-                effects.push_back(tm);
-                AssetDatabase::MarkDirty(m_assetObject);
-            }
-            if (ImGui::MenuItem("Gamma Correction"))
-            {
-                auto gamma = mksptr(new GammaCorrectionSettings());
-                effects.push_back(gamma);
-                AssetDatabase::MarkDirty(m_assetObject);
-            }
-            if (ImGui::MenuItem("Post Process Material"))
-            {
-                auto ppMat = mksptr(new PostProcessMaterialSettings());
-                effects.push_back(ppMat);
-                AssetDatabase::MarkDirty(m_assetObject);
+                if (type == baseType)
+                    continue;
+
+                if (ImGui::MenuItem(type->GetName().c_str()))
+                {
+                    auto obj = type->CreateSharedInstance({});
+                    if (auto settings = ::jxcorlib::sptr_cast<::pulsar::VolumeSettings>(obj))
+                    {
+                        effects.push_back(settings);
+                        AssetDatabase::MarkDirty(m_assetObject);
+                    }
+                }
             }
 
             ImGui::EndPopup();

@@ -2,6 +2,7 @@
 
 #include <CoreLib/Assembly.h>
 #include <CoreLib.Serialization/JsonSerializer.h>
+#include <Pulsar/Assets/ColorGradingSettings.h>
 
 namespace pulsar
 {
@@ -75,6 +76,15 @@ namespace pulsar
                         if (!guid.is_empty())
                             deps.push_back(guid);
                     }
+                }
+            }
+            else if (auto* lut = dynamic_cast<ColorGradingSettings*>(effect.get()))
+            {
+                if (lut->m_lutTexture)
+                {
+                    auto guid = lut->m_lutTexture.GetGuid();
+                    if (!guid.is_empty())
+                        deps.push_back(guid);
                 }
             }
         }

@@ -1,6 +1,7 @@
 #pragma once
 #include "WorldSubsystem.h"
 #include "Pulsar/Assets/VolumeProfile.h"
+#include <Pulsar/Assets/Texture2D.h>
 
 namespace pulsar
 {
@@ -11,6 +12,12 @@ namespace pulsar
         int   tonemappingMode = 1;   // default: ACES
         float gamma = 2.2f;
         bool  applyGamma = false;
+
+        bool  hasColorGrading = false;
+        float colorGradingIntensity = 1.0f;
+        int   colorGradingLUTSize = 16;
+        int   colorGradingColorSpace = 0;
+        RCPtr<Texture2D> colorGradingLUT;
     };
 
     class PostProcessSubsystem : public WorldSubsystem

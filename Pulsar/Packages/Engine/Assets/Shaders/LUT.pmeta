@@ -1,0 +1,9 @@
+{
+    "ExtraFiles": {},
+    "Guid": "5870feb9c59e4c79bd7a2b2521fd4714",
+    "Tags": {},
+    "Type": "pulsar::Shader",
+	"Dependencies": [
+		
+	]
+}

@@ -1,6 +1,7 @@
 #include "Subsystems/PostProcessSubsystem.h"
 #include "Pulsar/Components/VolumeComponent.h"
 #include "Pulsar/Assets/VolumeProfile.h"
+#include "Pulsar/Assets/ColorGradingSettings.h"
 
 namespace pulsar
 {
@@ -43,6 +44,14 @@ namespace pulsar
             bool  applyGamma = false;
             float gammaWeight = 0.0f;
             float gammaSum = 0.0f;
+
+            bool  hasColorGrading = false;
+            float colorGradingWeight = 0.0f;
+            float colorGradingIntensitySum = 0.0f;
+            float dominantColorGradingWeight = 0.0f;
+            RCPtr<Texture2D> dominantLUT;
+            int   dominantLUTSize = 16;
+            int   dominantColorSpace = 0;
         };
 
         EffectWeights acc;
@@ -91,6 +100,24 @@ namespace pulsar
                         acc.applyGamma = true;
                     }
                 }
+                else if (auto* lut = dynamic_cast<ColorGradingSettings*>(effect.get()))
+                {
+                    if (lut->m_enabled && lut->m_lutTexture)
+                    {
+                        acc.colorGradingWeight += weight;
+                        acc.colorGradingIntensitySum += lut->m_intensity * weight;
+                        totalEffectWeight += weight;
+                        acc.hasColorGrading = true;
+
+                        if (weight > acc.dominantColorGradingWeight)
+                        {
+                            acc.dominantColorGradingWeight = weight;
+                            acc.dominantLUT = lut->m_lutTexture;
+                            acc.dominantLUTSize = lut->m_lutSize;
+                            acc.dominantColorSpace = static_cast<int>(lut->m_colorSpace);
+                        }
+                    }
+                }
             }
         }
 
@@ -112,6 +139,15 @@ namespace pulsar
             {
                 result.gamma = acc.gammaSum / acc.gammaWeight;
                 result.applyGamma = acc.applyGamma;
+            }
+
+            if (acc.colorGradingWeight > 0.0f)
+            {
+                result.hasColorGrading = true;
+                result.colorGradingIntensity = acc.colorGradingIntensitySum / acc.colorGradingWeight;
+                result.colorGradingLUT = acc.dominantLUT;
+                result.colorGradingLUTSize = acc.dominantLUTSize;
+                result.colorGradingColorSpace = acc.dominantColorSpace;
             }
         }
 

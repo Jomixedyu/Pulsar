@@ -19,12 +19,21 @@
     ],
     "Properties": [
         {
-            "Name": "_TonemappingMode",
-            "Type": "Int",
-            "DefaultValue": "1"
+            "Name": "_LUTTex",
+            "Type": "Texture2D"
         },
         {
-            "Name": "_Exposure",
+            "Name": "_LUTSize",
+            "Type": "Int",
+            "DefaultValue": "16"
+        },
+        {
+            "Name": "_ColorSpace",
+            "Type": "Int",
+            "DefaultValue": "0"
+        },
+        {
+            "Name": "_Intensity",
             "Type": "Float",
             "DefaultValue": "1"
         }

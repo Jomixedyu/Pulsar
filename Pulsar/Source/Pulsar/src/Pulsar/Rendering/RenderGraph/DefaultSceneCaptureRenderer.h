@@ -21,6 +21,7 @@ namespace pulsar
     private:
         void EnsureTonemapMaterial();
         void EnsureGammaMaterial();
+        void EnsureLUTMaterial();
 
     private:
         PerPassResources m_perPassResources;
@@ -28,11 +29,13 @@ namespace pulsar
         // Built-in post-process materials
         RCPtr<Material> m_tonemapMaterial;
         RCPtr<Material> m_gammaMaterial;
+        RCPtr<Material> m_lutMaterial;
 
         gfx::GFXDescriptorSetLayout_sp m_ppRendererLayout;
         gfx::GFXDescriptorSet_sp m_ppTonemapSet;
         gfx::GFXDescriptorSet_sp m_ppGammaSet;
         gfx::GFXDescriptorSet_sp m_ppCustomSet;
+        gfx::GFXDescriptorSet_sp m_ppLUTSet;
     };
 
 } // namespace pulsar

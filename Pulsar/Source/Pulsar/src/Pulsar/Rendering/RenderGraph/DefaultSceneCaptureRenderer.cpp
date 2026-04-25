@@ -63,6 +63,22 @@ namespace pulsar
         m_gammaMaterial->CreateGPUResource();
     }
 
+    void DefaultSceneCaptureRenderer::EnsureLUTMaterial()
+    {
+        if (m_lutMaterial)
+            return;
+
+        auto shader = AssetManager::Get()->LoadAsset<Shader>("Engine/Shaders/LUT");
+        if (!shader)
+        {
+            Logger::Log("DefaultSceneCaptureRenderer: failed to load LUT shader", LogLevel::Warning);
+            return;
+        }
+
+        m_lutMaterial = Material::StaticCreate(shader);
+        m_lutMaterial->CreateGPUResource();
+    }
+
     void DefaultSceneCaptureRenderer::Render(RenderGraph& graph, const RenderCaptureContext& ctx)
     {
         auto* cam   = dynamic_cast<CameraComponent*>(ctx.capture);
@@ -282,6 +298,7 @@ namespace pulsar
         // ---- Post-Process Passes ----
         EnsureTonemapMaterial();
         EnsureGammaMaterial();
+        EnsureLUTMaterial();
 
         BlendedPostProcessSettings ppSettings{};
         if (auto* ppSub = world->GetSubsystem<PostProcessSubsystem>())
@@ -406,7 +423,6 @@ namespace pulsar
             if (ppSettings.enabled && ppSettings.hasTonemapping)
             {
                 m_tonemapMaterial->SetIntScalar("_TonemappingMode", ppSettings.tonemappingMode);
-                m_tonemapMaterial->SetIntScalar("_Enabled", 1);
                 m_tonemapMaterial->SubmitParameters();
 
                 auto curSrc = hSrc;
@@ -461,11 +477,42 @@ namespace pulsar
                 std::swap(hSrc, hDst);
             }
 
-            // 3. Gamma correction pass (last step before output)
+            // 3. Color grading / LUT pass
+            if (ppSettings.enabled && ppSettings.hasColorGrading && m_lutMaterial)
+            {
+                m_lutMaterial->SetTexture("_LUTTex", ppSettings.colorGradingLUT);
+                m_lutMaterial->SetFloat("_Intensity", ppSettings.colorGradingIntensity);
+                m_lutMaterial->SetIntScalar("_LUTSize", ppSettings.colorGradingLUTSize);
+                m_lutMaterial->SetIntScalar("_ColorSpace", ppSettings.colorGradingColorSpace);
+                m_lutMaterial->SubmitParameters();
+
+                auto curSrc = hSrc;
+                auto curDst = hDst;
+                graph.AddPass("PostProcess_LUT")
+                    .Read(curSrc)
+                    .Write(curDst, RGAttachmentDesc{
+                        .colorLoadOp  = gfx::GFXRenderPassLoadOp::DontCare,
+                        .colorStoreOp = gfx::GFXRenderPassStoreOp::Store,
+                    })
+                    .WithPerPass(perPass)
+                    .Prepare([this](RGPassContext&)
+                    {
+                        if (m_lutMaterial)
+                            m_lutMaterial->PrepareForRendering("PostProcess", "RENDERER_IMAGEPROCESS");
+                    })
+                    .Execute([this, ExecutePPMaterial, curSrc, curDst]
+                             (RGPassContext& passCtx, gfx::GFXCommandBuffer& cmdBuffer)
+                    {
+                        ExecutePPMaterial(m_lutMaterial.GetPtr(), passCtx, cmdBuffer, curSrc, curDst, m_ppLUTSet);
+                    });
+
+                std::swap(hSrc, hDst);
+            }
+
+            // 4. Gamma correction pass (last step before output)
             if (ppSettings.applyGamma)
             {
                 m_gammaMaterial->SetFloat("_Gamma", ppSettings.gamma);
-                m_gammaMaterial->SetIntScalar("_Enabled", 1);
                 m_gammaMaterial->SubmitParameters();
 
                 auto curSrc = hSrc;
