@@ -148,18 +148,8 @@ namespace pulsared
     void MaterialEditorWindow::OnShaderChanged(const RCPtr<Shader>& newShader)
     {
         RCPtr<Material> material = cast<Material>(m_assetObject);
-        if (newShader == nullptr)
-        {
-            m_world->GetCurrentCamera()->ClearPostProcess();
-            m_previewMeshRenderer->SetMaterial(0, material);
-        }
-        else
-        {
-            // TODO: 通过 ShaderConfigPass::Queue 判断 PostProcess
-            m_world->GetCurrentCamera()->ClearPostProcess();
-            m_previewMeshRenderer->SetMaterial(0, material);
-        }
-
+        m_previewMeshRenderer->SetMaterial(0, material);
+        (void)newShader;
     }
 
 } // namespace pulsared
