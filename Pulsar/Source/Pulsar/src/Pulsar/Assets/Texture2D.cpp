@@ -89,6 +89,7 @@ namespace pulsar
                 DestroyGPUResource();
                 CreateGPUResource();
             }
+            SendOuterDependencyMsg(DependencyObjectState::Modified);
         }
 
     }

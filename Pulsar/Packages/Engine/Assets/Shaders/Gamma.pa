@@ -1,0 +1,32 @@
+{
+    "$schema": "SbfSchema.json",
+    "Interfaces": [
+        "RENDERER_IMAGEPROCESS"
+    ],
+    "Passes": [
+        {
+            "Name": "PostProcess",
+            "Entry": {
+                "Vertex": "BlitVSMain",
+                "Fragment": "PSMain"
+            },
+            "GraphicsPipeline": {
+                "CullMode": "None",
+                "DepthTest": false,
+                "DepthWrite": false
+            }
+        }
+    ],
+    "Properties": [
+        {
+            "Name": "_Gamma",
+            "Type": "Float",
+            "DefaultValue": "2.2"
+        },
+        {
+            "Name": "_Enabled",
+            "Type": "Int",
+            "DefaultValue": "1"
+        }
+    ]
+}

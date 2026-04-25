@@ -1,6 +1,7 @@
 #pragma once
 #include "ScriptableCaptureRenderer.h"
 #include "../PerPassResources.h"
+#include <Pulsar/Assets/Material.h>
 #include <gfx/GFXDescriptorSet.h>
 #include <unordered_map>
 
@@ -18,17 +19,20 @@ namespace pulsar
         void Render(RenderGraph& graph, const RenderCaptureContext& ctx) override;
 
     private:
+        void EnsureTonemapMaterial();
+        void EnsureGammaMaterial();
+
+    private:
         PerPassResources m_perPassResources;
 
-        // Cached per-Renderer (set2) resources for PP_InColor binding.
-        // One slot per post-process index (not keyed by material pointer to avoid
-        // stale-pointer issues when materials are replaced).
-        struct PPRendererResources
-        {
-            gfx::GFXDescriptorSetLayout_sp layout;
-            gfx::GFXDescriptorSet_sp       set;
-        };
-        std::vector<PPRendererResources> m_ppRendererCache;
+        // Built-in post-process materials
+        RCPtr<Material> m_tonemapMaterial;
+        RCPtr<Material> m_gammaMaterial;
+
+        gfx::GFXDescriptorSetLayout_sp m_ppRendererLayout;
+        gfx::GFXDescriptorSet_sp m_ppTonemapSet;
+        gfx::GFXDescriptorSet_sp m_ppGammaSet;
+        gfx::GFXDescriptorSet_sp m_ppCustomSet;
     };
 
 } // namespace pulsar

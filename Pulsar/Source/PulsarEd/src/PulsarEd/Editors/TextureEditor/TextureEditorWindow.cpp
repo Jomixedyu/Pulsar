@@ -1,7 +1,13 @@
 #include "Editors/TextureEditor/TextureEditorWindow.h"
 
+#include "Pulsar/AssetManager.h"
+#include "Pulsar/Assets/Material.h"
+#include "Pulsar/Assets/Shader.h"
 #include "Pulsar/Components/CameraComponent.h"
 #include "Pulsar/Components/StaticMeshRendererComponent.h"
+#include "Pulsar/Components/VolumeComponent.h"
+#include "Pulsar/Assets/VolumeProfile.h"
+#include "Pulsar/Node.h"
 #include "Pulsar/Scene.h"
 
 #include <PulsarEd/Menus/Menu.h>
@@ -39,7 +45,6 @@ namespace pulsared
         m_ppMat->SetTexture("_Image", tex);
 
         int32_t flags{};
-        flags |= FLAGS_GAMMA;
         flags |= FLAGS_CHANNEL_R | FLAGS_CHANNEL_G | FLAGS_CHANNEL_B | FLAGS_CHANNEL_A;
         if (tex->GetCompressedFormat() == TextureCompressionFormat::NormalMap_Compressed)
         {
@@ -48,16 +53,31 @@ namespace pulsared
         m_ppMat->SetIntScalar("_Flags", flags);
         m_ppMat->CreateGPUResource();
 
-        auto camera = m_viewportFrame.GetWorld()->GetCurrentCamera();
-        camera->AddPostProcess(m_ppMat);
-
-        m_enableGamma = true;
+        if (auto* world = m_viewportFrame.GetWorld())
+        {
+            m_previewVolumeNode = world->GetResidentScene()->NewNode("TexturePreviewPP");
+            auto volComp = m_previewVolumeNode->AddComponent<VolumeComponent>();
+            volComp->SetIsGlobal(true);
+            m_previewProfile = NewAssetObject<VolumeProfile>();
+            auto ppMatSettings = mksptr(new PostProcessMaterialSettings());
+            ppMatSettings->m_materials->push_back(m_ppMat);
+            m_previewProfile->GetEffects()->push_back(ppMatSettings);
+            m_gammaSettings = mksptr(new GammaCorrectionSettings());
+            m_gammaSettings->m_enabled = true;
+            m_previewProfile->GetEffects()->push_back(m_gammaSettings);
+            volComp->SetProfile(m_previewProfile);
+        }
     }
 
     void TextureEditorWindow::OnClose()
     {
-        base::OnClose();
+        if (m_previewVolumeNode && m_world)
+        {
+            m_world->GetResidentScene()->RemoveNode(m_previewVolumeNode);
+            m_previewVolumeNode.Reset();
+        }
         m_ppMat.Reset();
+        base::OnClose();
     }
 
     void TextureEditorWindow::OnRefreshMenuContexts()
@@ -217,16 +237,7 @@ namespace pulsared
             }
             m_ppMat->SetIntScalar("_Flags", flag);
         }
-        ImGui::SameLine();
-        if (ImGui::Checkbox("Gamma", &m_enableGamma))
-        {
-            int flag = m_ppMat->GetIntScalar("_Flags");
-            if (m_enableGamma)
-                flag |= FLAGS_GAMMA;
-            else
-                flag &= ~FLAGS_GAMMA;
-            m_ppMat->SetIntScalar("_Flags", flag);
-        }
+
         ImGui::SameLine();
         if (ImGui::Checkbox("bg", &m_enableTransparency))
         {
@@ -236,7 +247,6 @@ namespace pulsared
             else
                 flag &= ~FLAGS_EnableCheckerBackground;
             m_ppMat->SetIntScalar("_Flags", flag);
-
         }
 
 
@@ -250,8 +260,11 @@ namespace pulsared
             m_imageScale = std::min(rateX, rateY);
         }
 
-        m_ppMat->SetFloat("_Zoom", m_imageScale);
-        m_ppMat->SetVector4("_TexSize", Vector4f(width, height, size.x, size.y));
+        if (m_ppMat)
+        {
+            m_ppMat->SetFloat("_Zoom", m_imageScale);
+            m_ppMat->SetVector4("_TexSize", Vector4f(width, height, size.x, size.y));
+        }
 
         ImGui::BeginChild("picframe", size);
 
@@ -278,7 +291,10 @@ namespace pulsared
 
         ImGui::EndChild();
 
-        m_ppMat->SubmitParameters();
+        if (m_ppMat)
+        {
+            m_ppMat->SubmitParameters();
+        }
     }
 
     void TextureEditorWindow::OnDrawAssetPropertiesUI(float dt)
@@ -297,20 +313,9 @@ namespace pulsared
                 m_assetObject.GetPtr());
 
 
-            auto flags = m_ppMat->GetIntScalar("_Flags");
-            if(tex->GetCompressedFormat() == TextureCompressionFormat::NormalMap_Compressed)
-            {
-                flags |= FLAGS_NORMALMAP;
-            }
-            else
-            {
-                flags &= ~FLAGS_NORMALMAP;
-            }
-            m_ppMat->SetIntScalar("_Flags", flags);
             if (changed)
             {
                 AssetDatabase::MarkDirty(m_assetObject);
-                m_ppMat->SubmitParameters(true);
             }
 
         }

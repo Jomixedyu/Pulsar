@@ -60,7 +60,6 @@ namespace pulsar
             auto fmt = StaticGetFormatMapping(OSPlatform::Windows64)->at(m_compressionFormat);
             return fmt == gfx::GFXTextureFormat::BC3_SRGB || fmt == gfx::GFXTextureFormat::R8G8B8A8_SRGB;
         }
-        void SetIsSRGB(bool) {} // 已废弃，CompressionFormat 决定 sRGB/Linear
         TextureCompressionFormat GetCompressedFormat() const override { return m_compressionFormat; }
         void SetCompressedFormat(TextureCompressionFormat value) { m_compressionFormat = value; }
         size_t GetOriginCompressedBinarySize() const override { return m_originMemory.size(); }
@@ -71,8 +70,6 @@ namespace pulsar
         bool IsOriginMemoryCompressed() const { return m_compressedOriginImage; }
         bool IsOriginMemoryLoaded() const { return m_loadedOriginMemory; }
     protected:
-
-        bool m_isSRGB{}; // 已废弃，保留字段以兼容旧资产序列化
 
         array_list<uint8_t> m_originMemory;
         bool m_compressedOriginImage = false;

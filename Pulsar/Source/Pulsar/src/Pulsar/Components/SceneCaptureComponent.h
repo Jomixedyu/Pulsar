@@ -62,20 +62,10 @@ namespace pulsar
         void BeginComponent() override;
         void EndComponent() override;
 
-        RCPtr<Material> GetPostprocess(size_t index) const { return m_postProcessMaterials->at(index); }
-        void SetPostProcess(size_t index, const RCPtr<Material>& value) const;
-        void AddPostProcess(const RCPtr<Material>& material);
-        void RemovePostProcessAt(size_t index);
-        void ClearPostProcess();
-        size_t GetPostProcessCount() const { return m_postProcessMaterials->size(); }
-
         virtual void Render(array_list<RenderCapturePassInfo*>& passes) { }
         virtual bool CanRender() const { return true; }
 
     protected:
-        CORELIB_REFL_DECL_FIELD(m_postProcessMaterials, new ListItemAttribute(cltypeof<Material>()));
-        List_sp<RCPtr<Material>> m_postProcessMaterials;
-
         CORELIB_REFL_DECL_FIELD(m_enabledCapture)
         bool m_enabledCapture = true;
 

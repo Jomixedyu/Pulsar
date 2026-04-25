@@ -3,12 +3,16 @@
 #include <Pulsar/Node.h>
 #include <Pulsar/Components/CameraComponent.h>
 #include <Pulsar/Components/SceneCaptureComponent.h>
+#include <Pulsar/Components/VolumeComponent.h>
+
 #include <Pulsar/World.h>
 #include <Pulsar/Scene.h>
 #include <Pulsar/Rendering/RenderObject.h>
 #include <Pulsar/Rendering/ShaderPass.h>
 #include <Pulsar/Assets/Material.h>
+#include <Pulsar/AssetManager.h>
 #include <Pulsar/Application.h>
+#include <Pulsar/Subsystems/PostProcessSubsystem.h>
 #include <gfx/GFXCommandBuffer.h>
 #include <gfx/GFXApplication.h>
 #include <gfx/GFXGraphicsPipelineManager.h>
@@ -27,23 +31,49 @@ namespace pulsar
         m_perPassResources.Destroy();
     }
 
+    void DefaultSceneCaptureRenderer::EnsureTonemapMaterial()
+    {
+        if (m_tonemapMaterial)
+            return;
+
+        auto shader = AssetManager::Get()->LoadAsset<Shader>("Engine/Shaders/Tonemap");
+        if (!shader)
+        {
+            Logger::Log("DefaultSceneCaptureRenderer: failed to load Tonemap shader", LogLevel::Warning);
+            return;
+        }
+
+        m_tonemapMaterial = Material::StaticCreate(shader);
+        m_tonemapMaterial->CreateGPUResource();
+    }
+
+    void DefaultSceneCaptureRenderer::EnsureGammaMaterial()
+    {
+        if (m_gammaMaterial)
+            return;
+
+        auto shader = AssetManager::Get()->LoadAsset<Shader>("Engine/Shaders/Gamma");
+        if (!shader)
+        {
+            Logger::Log("DefaultSceneCaptureRenderer: failed to load Gamma shader", LogLevel::Warning);
+            return;
+        }
+
+        m_gammaMaterial = Material::StaticCreate(shader);
+        m_gammaMaterial->CreateGPUResource();
+    }
+
     void DefaultSceneCaptureRenderer::Render(RenderGraph& graph, const RenderCaptureContext& ctx)
     {
         auto* cam   = dynamic_cast<CameraComponent*>(ctx.capture);
         auto* world = ctx.world;
 
         if (!cam || !world)
-        {
-            Logger::Log("DefaultSceneCaptureRenderer: invalid capture context (cam or world is null)", LogLevel::Error);
             return;
-        }
 
         auto* camRenderTexture = cam->GetRenderTexture().GetPtr();
         if (!camRenderTexture)
-        {
-            Logger::Log("DefaultSceneCaptureRenderer: camera has no render texture", LogLevel::Error);
             return;
-        }
 
         auto* perPass = &m_perPassResources;
 
@@ -250,172 +280,220 @@ namespace pulsar
             });
 
         // ---- Post-Process Passes ----
-        // Collect valid post-process materials from the capture component
-        const size_t ppCount = ctx.capture ? ctx.capture->GetPostProcessCount() : 0;
+        EnsureTonemapMaterial();
+        EnsureGammaMaterial();
 
-        if (ppCount > 0)
+        BlendedPostProcessSettings ppSettings{};
+        if (auto* ppSub = world->GetSubsystem<PostProcessSubsystem>())
         {
-            auto* camRT  = cam->GetRenderTexture().GetPtr();
+            auto camPos = cam->GetNode()->GetTransform()->GetWorldPosition();
+            ppSettings = ppSub->QuerySettings(camPos);
+        }
 
+        array_list<RCPtr<Material>> ppMaterials;
+        if (auto* ppSub = world->GetSubsystem<PostProcessSubsystem>())
+        {
+            auto camPos = cam->GetNode()->GetTransform()->GetWorldPosition();
+            ppMaterials = ppSub->QueryPostProcessMaterials(camPos);
+        }
+
+        bool doPostProcess = ppSettings.enabled || !ppMaterials.empty();
+
+        if (doPostProcess)
+        {
+            auto* camRT = cam->GetRenderTexture().GetPtr();
             RGTextureDesc pingPongDesc{};
             pingPongDesc.Width  = camRT->GetWidth();
             pingPongDesc.Height = camRT->GetHeight();
             auto format = camRT->GetRenderTargets()[0]->GetFormat();
             pingPongDesc.TargetInfos.push_back({ gfx::GFXTextureTargetType::ColorTarget, format });
 
-            {
             RGTextureHandle hPingPong = graph.CreateTransient("PostProcessPingPong", pingPongDesc);
-
-            // hSrc: 当前读取源（初始为 BasePass 的输出 hFinal）
-            // hDst: 当前写入目标（初始为 hPingPong）
-            // 每个 Pass 结束后交换 hSrc/hDst，绝不在 Read 和 Write 使用同一张纹理。
-            // 若最终结果落在 hPingPong（奇数个 Pass），额外追加一个 CopyToFinal Pass。
             RGTextureHandle hSrc = hFinal;
             RGTextureHandle hDst = hPingPong;
 
-            size_t passIdx = 0;
-            for (size_t i = 0; i < ppCount; ++i)
+            if (!m_ppRendererLayout)
             {
-                RCPtr<Material> ppMat = ctx.capture->GetPostprocess(i);
-                if (!ppMat) continue;
+                auto* gfxApp = Application::GetGfxApp();
+                gfx::GFXDescriptorSetLayoutDesc desc{
+                    gfx::GFXDescriptorType::CombinedImageSampler,
+                    gfx::GFXGpuProgramStageFlags::Fragment,
+                    0, 1
+                };
+                m_ppRendererLayout = gfxApp->CreateDescriptorSetLayout(&desc, 1);
+            }
 
-                const size_t curIdx = passIdx++;
-                std::string passName = "PostProcessMaterial_" + std::to_string(curIdx);
+            auto  ppRendererLayout = m_ppRendererLayout;
 
-                // 在 build 阶段提前获取或创建 per-Renderer (set2) 资源（layout+set），
-                // 缓存到 m_ppRendererCache，避免在 execute lambda 里每帧动态分配。
-                // 以 curIdx 为下标（不以材质指针为 key，避免材质析构后地址复用导致缓存污染）
-                if (curIdx >= m_ppRendererCache.size())
-                    m_ppRendererCache.resize(curIdx + 1);
-                auto& ppRes = m_ppRendererCache[curIdx];
-                if (!ppRes.layout)
+            auto ExecutePPMaterial = [hFinal, cam, perPass, ppRendererLayout]
+                (Material* mat, RGPassContext& passCtx, gfx::GFXCommandBuffer& cmdBuffer,
+                 RGTextureHandle srcHandle, RGTextureHandle dstHandle,
+                 gfx::GFXDescriptorSet_sp& ppSet)
+            {
+                if (!mat) return;
+                auto shader = mat->GetShader();
+                if (!shader || !shader->GetConfig()) return;
+
+                const auto* ppPassBinding = mat->GetPassBinding("PostProcess", "RENDERER_IMAGEPROCESS")
+                                                .m_gpuResourcesInitialized
+                                            ? &mat->GetPassBinding("PostProcess", "RENDERER_IMAGEPROCESS")
+                                            : nullptr;
+                if (!ppPassBinding) return;
+
+                auto program = ppPassBinding->GetCurrentProgram();
+                if (!program) return;
+
+                auto* gfxApp = cmdBuffer.GetApplication();
+                if (!ppSet)
+                    ppSet = gfxApp->GetDescriptorManager()->GetDescriptorSet(ppRendererLayout);
+                if (!ppSet) return;
+                auto* ppRendererSet = ppSet.get();
+
+                RenderTexture* dstRT = passCtx.Get(dstHandle);
+                if (!dstRT && dstHandle == hFinal)
+                    dstRT = cam->GetRenderTexture().GetPtr();
+                if (!dstRT) return;
+                auto* dstFBO = dstRT->GetGfxFrameBufferObject().get();
+                if (!dstFBO) return;
+
+                RenderTexture* srcRT = passCtx.Get(srcHandle);
+                if (!srcRT && srcHandle == hFinal)
+                    srcRT = cam->GetRenderTexture().GetPtr();
+                if (srcRT)
                 {
-                    auto* gfxApp = Application::GetGfxApp();
-                    gfx::GFXDescriptorSetLayoutDesc desc{
-                        gfx::GFXDescriptorType::CombinedImageSampler,
-                        gfx::GFXGpuProgramStageFlags::Fragment,
-                        0, 1
-                    };
-                    ppRes.layout = gfxApp->CreateDescriptorSetLayout(&desc, 1);
-                    ppRes.set    = gfxApp->GetDescriptorManager()->GetDescriptorSet(ppRes.layout);
+                    auto srcView = srcRT->GetGfxRenderTarget0();
+                    if (srcView)
+                    {
+                        auto* desc = ppRendererSet->FindByBinding(0);
+                        if (!desc)
+                            desc = ppRendererSet->AddDescriptor("PP_InColor", 0);
+                        desc->SetTextureSampler2D(srcView.get());
+                    }
                 }
+                ppRendererSet->Submit();
 
-                auto* ppRendererSet    = ppRes.set.get();
-                auto  ppRendererLayout = ppRes.layout;
+                auto* pipelineMgr = gfxApp->GetGraphicsPipelineManager();
+                array_list<gfx::GFXDescriptorSetLayout_sp> descLayouts;
+                descLayouts.push_back(ppPassBinding->m_descriptorSetLayout);
+                descLayouts.push_back(perPass->GetDescriptorSetLayout());
+                descLayouts.push_back(ppRendererLayout);
 
-                graph.AddPass(passName)
-                    .Read(hSrc)
-                    .Write(hDst, RGAttachmentDesc{
+                auto& gpuPrograms = program->GetGpuPrograms();
+
+                gfx::GFXGraphicsPipelineStateParams psoParams{};
+                psoParams.DepthTestEnable  = false;
+                psoParams.DepthWriteEnable = false;
+                psoParams.CullMode         = gfx::GFXCullMode::None;
+
+                auto gfxPipeline = pipelineMgr->GetGraphicsPipeline(
+                    gpuPrograms, psoParams, descLayouts,
+                    dstFBO->GetRenderTargetDesc(), {});
+                if (!gfxPipeline) return;
+
+                cmdBuffer.CmdSetViewport(0, 0, (float)dstFBO->GetWidth(), (float)dstFBO->GetHeight());
+                cmdBuffer.CmdBindGraphicsPipeline(gfxPipeline.get());
+
+                array_list<gfx::GFXDescriptorSet*> descSets;
+                descSets.push_back(ppPassBinding->m_descriptorSet.get());
+                descSets.push_back(perPass->GetDescriptorSet().get());
+                descSets.push_back(ppRendererSet);
+                cmdBuffer.CmdBindDescriptorSets(descSets, gfxPipeline.get());
+
+                cmdBuffer.CmdDraw(3);
+            };
+
+            // 1. Tonemap pass (HDR -> LDR linear)
+            if (ppSettings.enabled && ppSettings.hasTonemapping)
+            {
+                m_tonemapMaterial->SetIntScalar("_TonemappingMode", ppSettings.tonemappingMode);
+                m_tonemapMaterial->SetIntScalar("_Enabled", 1);
+                m_tonemapMaterial->SubmitParameters();
+
+                auto curSrc = hSrc;
+                auto curDst = hDst;
+                graph.AddPass("PostProcess_Tonemap")
+                    .Read(curSrc)
+                    .Write(curDst, RGAttachmentDesc{
                         .colorLoadOp  = gfx::GFXRenderPassLoadOp::DontCare,
                         .colorStoreOp = gfx::GFXRenderPassStoreOp::Store,
                     })
                     .WithPerPass(perPass)
-                    .Prepare([ppMat, ppRendererSet](RGPassContext&)
+                    .Prepare([this](RGPassContext&)
                     {
-                        // PrepareForRendering must run before BeginRenderPass (resource creation + descriptor updates)
-                        if (ppMat)
-                            ppMat->PrepareForRendering("PostProcess", "RENDERER_IMAGEPROCESS");
-                        (void)ppRendererSet;
+                        if (m_tonemapMaterial)
+                            m_tonemapMaterial->PrepareForRendering("PostProcess", "RENDERER_IMAGEPROCESS");
                     })
-                    .Execute([ppMat, hSrc, hDst, hFinal, cam, perPass, ppRendererSet, ppRendererLayout](RGPassContext& passCtx, gfx::GFXCommandBuffer& cmdBuffer)
+                    .Execute([this, ExecutePPMaterial, curSrc, curDst]
+                             (RGPassContext& passCtx, gfx::GFXCommandBuffer& cmdBuffer)
                     {
-                        auto* mat = ppMat.GetPtr();
-                        if (!mat) return;
-
-                        auto shader = mat->GetShader();
-                        if (!shader || !shader->GetConfig()) return;
-
-                        // set 0: per-Material (user params)
-                        // set 1: per-Pass (camera / lights)
-                        // set 2: per-Renderer — PP_InColor (t0/s0, space2)
-                        // PrepareForRendering was already called in Prepare; here we just fetch the result.
-                        const auto* ppPassBinding = mat->GetPassBinding("PostProcess", "RENDERER_IMAGEPROCESS")
-                                                        .m_gpuResourcesInitialized
-                                                    ? &mat->GetPassBinding("PostProcess", "RENDERER_IMAGEPROCESS")
-                                                    : nullptr;
-                        if (!ppPassBinding) return;
-
-                        auto program = ppPassBinding->GetCurrentProgram();
-                        if (!program) return;
-
-                        if (!ppRendererSet) return;
-
-                        // ping-pong RT 只有 color，FBO 在 execute 时可以正常取到
-                        // hDst 是 transient，通过 passCtx.Get 取；若是 hFinal（imported）则直接用 cam RT
-                        RenderTexture* dstRT = passCtx.Get(hDst);
-                        if (!dstRT && hDst == hFinal)
-                            dstRT = cam->GetRenderTexture().GetPtr();
-                        if (!dstRT) return;
-                        auto* dstFBO = dstRT->GetGfxFrameBufferObject().get();
-                        if (!dstFBO) return;
-
-                        // 每帧更新 PP_InColor 绑定（场景颜色来源变化时需要重新 Submit）
-                        // hSrc 首次是 hFinal（imported），passCtx.Get 可能对 imported 资源返回 null，fallback 到 cam RT
-                        RenderTexture* srcRT = passCtx.Get(hSrc);
-                        if (!srcRT && hSrc == hFinal)
-                            srcRT = cam->GetRenderTexture().GetPtr();
-                        if (srcRT)
-                        {
-                            auto srcView = srcRT->GetGfxRenderTarget0();
-                            if (srcView)
-                            {
-                                // FindByBinding 找已有的 descriptor，没有才 Add，避免每帧重复追加
-                                auto* desc = ppRendererSet->FindByBinding(0);
-                                if (!desc)
-                                    desc = ppRendererSet->AddDescriptor("PP_InColor", 0);
-                                desc->SetTextureSampler2D(srcView.get());
-                            }
-                        }
-                        ppRendererSet->Submit();
-
-                        auto* gfxApp          = cmdBuffer.GetApplication();
-                        auto* pipelineMgr     = gfxApp->GetGraphicsPipelineManager();
-                        array_list<gfx::GFXDescriptorSetLayout_sp> descLayouts;
-                        descLayouts.push_back(ppPassBinding->m_descriptorSetLayout); // set 0
-                        descLayouts.push_back(perPass->GetDescriptorSetLayout());   // set 1
-                        descLayouts.push_back(ppRendererLayout);                    // set 2
-
-                        auto& gpuPrograms = program->GetGpuPrograms();
-
-                        gfx::GFXGraphicsPipelineStateParams psoParams{};
-                        psoParams.DepthTestEnable  = false;
-                        psoParams.DepthWriteEnable = false;
-                        psoParams.CullMode         = gfx::GFXCullMode::None;
-
-                        auto gfxPipeline = pipelineMgr->GetGraphicsPipeline(
-                            gpuPrograms, psoParams, descLayouts,
-                            dstFBO->GetRenderTargetDesc(), {});
-                        if (!gfxPipeline) return;
-
-                        cmdBuffer.CmdSetViewport(0, 0, (float)dstFBO->GetWidth(), (float)dstFBO->GetHeight());
-                        cmdBuffer.CmdBindGraphicsPipeline(gfxPipeline.get());
-
-                        array_list<gfx::GFXDescriptorSet*> descSets;
-                        descSets.push_back(ppPassBinding->m_descriptorSet.get());   // set 0
-                        descSets.push_back(perPass->GetDescriptorSet().get());      // set 1
-                        descSets.push_back(ppRendererSet);                          // set 2
-                        cmdBuffer.CmdBindDescriptorSets(descSets, gfxPipeline.get());
-
-                        // Full-screen triangle
-                        cmdBuffer.CmdDraw(3);
+                        ExecutePPMaterial(m_tonemapMaterial.GetPtr(), passCtx, cmdBuffer, curSrc, curDst, m_ppTonemapSet);
                     });
 
-                // 每次 pass 后交换，保证下一个 pass 的 Read 和 Write 始终是不同纹理
                 std::swap(hSrc, hDst);
             }
 
-            // 经过奇数个 pass 后，最终结果在 hPingPong（此时 hSrc == hPingPong）
-            // 需要再做一次 Blit 把结果写回 hFinal
+            // 2. VolumeProfile custom post-process materials (LDR linear space)
+            for (int i = 0; i < static_cast<int>(ppMaterials.size()); ++i)
+            {
+                auto* mat = ppMaterials[i].GetPtr();
+                std::string passName = StringUtil::Concat("PostProcess_PPCompMat_", std::to_string(i));
+                auto curSrc = hSrc;
+                auto curDst = hDst;
+
+                graph.AddPass(passName)
+                    .Read(curSrc)
+                    .Write(curDst, RGAttachmentDesc{
+                        .colorLoadOp  = gfx::GFXRenderPassLoadOp::DontCare,
+                        .colorStoreOp = gfx::GFXRenderPassStoreOp::Store,
+                    })
+                    .WithPerPass(perPass)
+                    .Prepare([mat](RGPassContext&)
+                    {
+                        if (mat)
+                            mat->PrepareForRendering("PostProcess", "RENDERER_IMAGEPROCESS");
+                    })
+                    .Execute([this, ExecutePPMaterial, mat, curSrc, curDst]
+                             (RGPassContext& passCtx, gfx::GFXCommandBuffer& cmdBuffer)
+                    {
+                        ExecutePPMaterial(mat, passCtx, cmdBuffer, curSrc, curDst, m_ppCustomSet);
+                    });
+
+                std::swap(hSrc, hDst);
+            }
+
+            // 3. Gamma correction pass (last step before output)
+            if (ppSettings.applyGamma)
+            {
+                m_gammaMaterial->SetFloat("_Gamma", ppSettings.gamma);
+                m_gammaMaterial->SetIntScalar("_Enabled", 1);
+                m_gammaMaterial->SubmitParameters();
+
+                auto curSrc = hSrc;
+                auto curDst = hDst;
+                graph.AddPass("PostProcess_Gamma")
+                    .Read(curSrc)
+                    .Write(curDst, RGAttachmentDesc{
+                        .colorLoadOp  = gfx::GFXRenderPassLoadOp::DontCare,
+                        .colorStoreOp = gfx::GFXRenderPassStoreOp::Store,
+                    })
+                    .WithPerPass(perPass)
+                    .Prepare([this](RGPassContext&)
+                    {
+                        if (m_gammaMaterial)
+                            m_gammaMaterial->PrepareForRendering("PostProcess", "RENDERER_IMAGEPROCESS");
+                    })
+                    .Execute([this, ExecutePPMaterial, curSrc, curDst]
+                             (RGPassContext& passCtx, gfx::GFXCommandBuffer& cmdBuffer)
+                    {
+                        ExecutePPMaterial(m_gammaMaterial.GetPtr(), passCtx, cmdBuffer, curSrc, curDst, m_ppGammaSet);
+                    });
+
+                std::swap(hSrc, hDst);
+            }
+
+            // 4. Copy final result back to camera RT if needed
             if (hSrc != hFinal)
             {
-                // hFinal 是 Write 资源，passCtx.Get 取不到；提前拿好 dstView
-//                auto* camFinalRT  = cam->GetRenderTexture().GetPtr();
-//                auto  capturedDstView = camFinalRT ? camFinalRT->GetGfxRenderTarget0() : nullptr;
-
-                // CopyToFinal is a transfer-only (blit) pass.
-                // Write(hFinal) is declared for correct resource barrier and lifetime tracking,
-                // but NoRenderPass() prevents BeginRenderPass/EndRenderPass from being called,
-                // so CmdBlit (and its internal layout transitions) run safely outside a render pass.
                 graph.AddPass("PostProcess_CopyToFinal")
                     .Read(hSrc)
                     .Write(hFinal)
@@ -423,7 +501,6 @@ namespace pulsar
                     .Execute([hSrc, hFinal, cam](RGPassContext& passCtx, gfx::GFXCommandBuffer& cmdBuffer)
                     {
                         auto* srcRT   = passCtx.Get(hSrc);
-                        // hFinal is imported; passCtx.Get works even without declaring Write(hFinal)
                         auto* finalRT = passCtx.Get(hFinal);
                         if (!finalRT)
                             finalRT = cam->GetRenderTexture().GetPtr();
@@ -435,7 +512,6 @@ namespace pulsar
 
                         cmdBuffer.CmdBlit(srcView.get(), finalView.get());
                     });
-            }
             }
         }
     }

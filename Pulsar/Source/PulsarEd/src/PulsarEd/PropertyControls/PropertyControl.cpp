@@ -60,7 +60,7 @@ namespace pulsared
     static bool _ObjectFieldPropertyLine(
         const string& name, Type* type, Type* innerType,
         Object* obj,
-        ObjectBase* receiver, FieldInfo* receiverField = nullptr,
+        Object* receiver, FieldInfo* receiverField = nullptr,
         bool ignore = false, bool showDebug = false,
         std::span<Attribute*> attrs = {})
     {
@@ -168,87 +168,126 @@ namespace pulsared
         }
         else
         {
-            // read fields
-
-            bool opened = ignore ? true : ImGui::TreeNodeEx(StringUtil::FriendlyName(name).c_str());
-
-            if (opened)
+            bool isInline = false;
+            for (auto* attr : attrs)
             {
-                const auto fieldInfos = innerType->GetFieldInfos(TypeBinding::NonPublic);
-                for (int i = 0; i < fieldInfos.size(); ++i)
+                if (attr && attr->GetType()->IsSubclassOf(cltypeof<InlineObjectAttribute>()))
                 {
-                    const auto& field = fieldInfos[i];
-                    Type* fieldType = field->GetFieldType();
-                    if (field->IsDefinedAttribute(cltypeof<HidePropertyAttribute>()))
-                    {
-                        continue;
-                    }
-                    if (!showDebug && field->IsDefinedAttribute(cltypeof<DebugPropertyAttribute>()))
-                    {
-                        continue;
-                    }
-
-                    ImGui::PushID(i);
-
-                    Object* parentObj = obj;
-                    if (type->IsSubclassOf(cltypeof<PointerBoxingObject>()))
-                    {
-                        auto pointer = dynamic_cast<PointerBoxingObject*>(obj);
-                        parentObj = pointer->GetPointer();
-                    }
-                    Object_sp fieldInstSptr = field->GetValue(parentObj);
-
-                    Type* fieldInnerType = field->GetWrapType() ? field->GetWrapType() : field->GetFieldType();
-                    if (const auto attr = field->GetAttribute<ListItemAttribute>())
-                    {
-                        fieldInnerType = attr->GetItemType();
-                    }
-                    else if (const auto* list = interface_cast<IList>(fieldInstSptr.get()))
-                    {
-                        fieldInnerType = list->GetIListElementType();
-                    }
-
-                    receiverField = ignore ? field : receiverField;
-
-                    const bool isReadOnly = field->IsDefinedAttribute(cltypeof<ReadOnlyPropertyAttribute>());
-
-                    if (isReadOnly)
-                    {
-                        ImGui::BeginDisabled();
-                    }
-
-                    // collect field attributes for property controls
-                    auto fieldAttrsSptr = field->GetAllAttributes();
-                    std::vector<Attribute*> fieldAttrs;
-                    fieldAttrs.reserve(fieldAttrsSptr.size());
-                    for (auto& a : fieldAttrsSptr)
-                        fieldAttrs.push_back(a.get());
-
-                    bool curFieldChanged = false;
-                    if (curFieldChanged |= _ObjectFieldPropertyLine(
-                            field->GetName(), field->GetFieldType(), fieldInnerType,
-                            fieldInstSptr.get(), receiver, receiverField, false, showDebug, fieldAttrs))
-                    {
-                        if (fieldType->IsBoxingType())
-                        {
-                            field->SetValue(parentObj, fieldInstSptr);
-                        }
-                        if (receiver)
-                            receiver->PostEditChange(receiverField);
-                    }
-                    isChanged |= curFieldChanged;
-
-                    if (isReadOnly)
-                    {
-                        ImGui::EndDisabled();
-                    }
-
-                    ImGui::PopID();
+                    isInline = true;
+                    break;
                 }
             }
-            if (opened && !ignore)
+
+            if (!ignore && isInline && type->IsSubclassOf(cltypeof<PointerBoxingObject>()))
             {
-                ImGui::TreePop();
+                auto* boxing = dynamic_cast<PointerBoxingObject*>(obj);
+                Object* innerObj = boxing ? boxing->GetPointer() : nullptr;
+                if (innerObj)
+                {
+                    bool opened = ImGui::TreeNodeEx(StringUtil::FriendlyName(name).c_str());
+                    ImGui::TableSetColumnIndex(1);
+                    auto* innerBase = dynamic_cast<ObjectBase*>(innerObj);
+                    ImGui::Text("%s", innerBase ? innerBase->GetName().c_str() : innerObj->GetType()->GetName().c_str());
+                    if (opened)
+                    {
+                        isChanged |= _ObjectFieldPropertyLine(
+                            name, innerObj->GetType(), innerObj->GetType(),
+                            innerObj, receiver, receiverField, true, showDebug, attrs);
+                    }
+                    if (opened)
+                    {
+                        ImGui::TreePop();
+                    }
+                }
+                else
+                {
+                    ImGui::TreeNodeEx(StringUtil::FriendlyName(name).c_str(), ImGuiTreeNodeFlags_Leaf);
+                    ImGui::TableSetColumnIndex(1);
+                    ImGui::Text("[Null]");
+                    ImGui::TreePop();
+                }
+            }
+            else
+            {
+                bool opened = ignore ? true : ImGui::TreeNodeEx(StringUtil::FriendlyName(name).c_str());
+
+                if (opened)
+                {
+                    const auto fieldInfos = innerType->GetFieldInfos(TypeBinding::NonPublic);
+                    for (int i = 0; i < fieldInfos.size(); ++i)
+                    {
+                        const auto& field = fieldInfos[i];
+                        Type* fieldType = field->GetFieldType();
+                        if (field->IsDefinedAttribute(cltypeof<HidePropertyAttribute>()))
+                        {
+                            continue;
+                        }
+                        if (!showDebug && field->IsDefinedAttribute(cltypeof<DebugPropertyAttribute>()))
+                        {
+                            continue;
+                        }
+
+                        ImGui::PushID(i);
+
+                        Object* parentObj = obj;
+                        if (type->IsSubclassOf(cltypeof<PointerBoxingObject>()))
+                        {
+                            auto pointer = dynamic_cast<PointerBoxingObject*>(obj);
+                            parentObj = pointer->GetPointer();
+                        }
+                        Object_sp fieldInstSptr = field->GetValue(parentObj);
+
+                        Type* fieldInnerType = field->GetWrapType() ? field->GetWrapType() : field->GetFieldType();
+                        if (const auto attr = field->GetAttribute<ListItemAttribute>())
+                        {
+                            fieldInnerType = attr->GetItemType();
+                        }
+                        else if (const auto* list = interface_cast<IList>(fieldInstSptr.get()))
+                        {
+                            fieldInnerType = list->GetIListElementType();
+                        }
+
+                        receiverField = ignore ? field : receiverField;
+
+                        const bool isReadOnly = field->IsDefinedAttribute(cltypeof<ReadOnlyPropertyAttribute>());
+
+                        if (isReadOnly)
+                        {
+                            ImGui::BeginDisabled();
+                        }
+
+                        auto fieldAttrsSptr = field->GetAllAttributes();
+                        std::vector<Attribute*> fieldAttrs;
+                        fieldAttrs.reserve(fieldAttrsSptr.size());
+                        for (auto& a : fieldAttrsSptr)
+                            fieldAttrs.push_back(a.get());
+
+                        bool curFieldChanged = false;
+                        if (curFieldChanged |= _ObjectFieldPropertyLine(
+                                field->GetName(), field->GetFieldType(), fieldInnerType,
+                                fieldInstSptr.get(), receiver, receiverField, false, showDebug, fieldAttrs))
+                        {
+                            if (fieldType->IsBoxingType())
+                            {
+                                field->SetValue(parentObj, fieldInstSptr);
+                            }
+                            if (auto* receiverBase = dynamic_cast<ObjectBase*>(receiver))
+                                receiverBase->PostEditChange(receiverField);
+                        }
+                        isChanged |= curFieldChanged;
+
+                        if (isReadOnly)
+                        {
+                            ImGui::EndDisabled();
+                        }
+
+                        ImGui::PopID();
+                    }
+                }
+                if (opened && !ignore)
+                {
+                    ImGui::TreePop();
+                }
             }
         }
         return isChanged;
@@ -309,7 +348,7 @@ namespace pulsared
         ImGui::EndTable();
     }
 
-    bool PImGui::ObjectFieldProperties(Type* type, Type* inner, Object* obj, ObjectBase* receiver, bool showDebug)
+    bool PImGui::ObjectFieldProperties(Type* type, Type* inner, Object* obj, Object* receiver, bool showDebug)
     {
         bool changed = false;
         if (ImGui::BeginTable("ss", 2, _TableBorderFlags))

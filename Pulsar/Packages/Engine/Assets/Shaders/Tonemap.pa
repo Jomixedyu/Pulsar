@@ -1,0 +1,37 @@
+{
+    "$schema": "SbfSchema.json",
+    "Interfaces": [
+        "RENDERER_IMAGEPROCESS"
+    ],
+    "Passes": [
+        {
+            "Name": "PostProcess",
+            "Entry": {
+                "Vertex": "BlitVSMain",
+                "Fragment": "PSMain"
+            },
+            "GraphicsPipeline": {
+                "CullMode": "None",
+                "DepthTest": false,
+                "DepthWrite": false
+            }
+        }
+    ],
+    "Properties": [
+        {
+            "Name": "_TonemappingMode",
+            "Type": "Int",
+            "DefaultValue": "1"
+        },
+        {
+            "Name": "_Exposure",
+            "Type": "Float",
+            "DefaultValue": "1"
+        },
+        {
+            "Name": "_Enabled",
+            "Type": "Int",
+            "DefaultValue": "1"
+        }
+    ]
+}

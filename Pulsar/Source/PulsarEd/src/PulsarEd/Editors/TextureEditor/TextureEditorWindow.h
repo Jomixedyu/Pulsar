@@ -1,6 +1,7 @@
 #pragma once
 #include "Editors/AssetEditor/AssetPreviewEditorWindow.h"
 #include "Pulsar/Assets/RenderTexture.h"
+#include "Pulsar/Assets/VolumeProfile.h"
 
 #include <Pulsar/Assets/Texture2D.h>
 
@@ -23,7 +24,6 @@ namespace pulsared
         void OnDrawAssetPreviewUI(float dt) override;
 
         float m_imageScale{1};
-        bool m_enableGamma{};
         bool m_enableTransparency{};
         bool m_enableChannelR{true};
         bool m_enableChannelG{true};
@@ -31,5 +31,8 @@ namespace pulsared
         bool m_enableChannelA{true};
 
         RCPtr<Material> m_ppMat;
+        ObjectPtr<Node> m_previewVolumeNode;
+        RCPtr<VolumeProfile> m_previewProfile;
+        SPtr<GammaCorrectionSettings> m_gammaSettings;
     };
 }

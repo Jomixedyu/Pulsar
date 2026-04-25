@@ -41,7 +41,7 @@ namespace pulsared
         void EndPropertyLines();
 
         // object field properties
-        bool ObjectFieldProperties(Type* type, Type* inner, Object* obj, ObjectBase* receiver, bool showDebug = false);
+        bool ObjectFieldProperties(Type* type, Type* inner, Object* obj, Object* receiver, bool showDebug = false);
     }
 
 }

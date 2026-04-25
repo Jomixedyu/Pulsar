@@ -41,16 +41,6 @@ namespace pulsar
             auto height = GetRenderTexture()->GetHeight();
             ResizeManagedRenderTexture(width, height);
         }
-        else if(name == NAMEOF(m_postProcessMaterials))
-        {
-            for (auto& item : *m_postProcessMaterials)
-            {
-                if (item)
-                {
-                    item->CreateGPUResource();
-                }
-            }
-        }
         UpdateCBuffer();
     }
 
