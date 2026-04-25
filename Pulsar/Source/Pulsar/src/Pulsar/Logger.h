@@ -3,6 +3,8 @@
 #include "ObjectBase.h"
 #include <CoreLib/Events.hpp>
 #include <stacktrace>
+#include <fstream>
+#include <mutex>
 
 namespace pulsar
 {
@@ -31,6 +33,18 @@ namespace pulsar
         static const char* GetLevelHead(LogLevel level);
 
         static inline Action<const LogRecord&> LogListener;
+
+        // Initialize file logging. Writes to the specified path (append mode).
+        // Each log entry is flushed immediately so crash logs are preserved.
+        static void InitializeFileLogging(const string& logFilePath);
+
+        // Shut down file logging and close the file stream.
+        static void ShutdownFileLogging();
+
+    private:
+        static std::ofstream& GetLogFileStream();
+        static std::mutex& GetLogFileMutex();
+        static bool& GetFileLoggingEnabled();
     };
 
 }
