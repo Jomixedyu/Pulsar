@@ -172,6 +172,12 @@ namespace pulsar
     {
         return StringUtil::StringCast(std::filesystem::current_path().generic_u8string());
     }
+    std::filesystem::path EngineAppInstance::GetTempDirectory()
+    {
+        auto tempDir = AppRootDir() / "Temp";
+        std::filesystem::create_directories(tempDir);
+        return tempDir;
+    }
 
     AssetManager* EngineAppInstance::GetAssetManager()
     {

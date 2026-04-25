@@ -24,6 +24,7 @@ namespace pulsar
         virtual string GetTitle() = 0;
         virtual void SetTitle(string_view title) = 0;
         virtual std::filesystem::path AppRootDir() = 0;
+        virtual std::filesystem::path GetTempDirectory() = 0;
 
         virtual array_list<gfx::GFXApi> GetSupportedApis();
 

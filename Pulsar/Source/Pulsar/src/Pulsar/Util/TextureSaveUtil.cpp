@@ -192,8 +192,8 @@ namespace pulsar
             return "";
         }
 
-        // Build output path: Saved/Screenshots/Screenshot_YYYYMMDD_HHmmss.png
-        auto savedDir = std::filesystem::current_path() / "Saved" / "Screenshots";
+        // Build output path: Temp/Screenshots/Screenshot_YYYYMMDD_HHmmss.png
+        auto savedDir = Application::inst()->GetTempDirectory() / "Screenshots";
         std::filesystem::create_directories(savedDir);
 
         auto now = std::chrono::system_clock::now();

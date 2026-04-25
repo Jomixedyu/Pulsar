@@ -56,6 +56,7 @@ namespace pulsared
         virtual string GetTitle() override;
         virtual void SetTitle(string_view title) override;
         virtual std::filesystem::path AppRootDir() override;
+        virtual std::filesystem::path GetTempDirectory() override;
         virtual void OnPreInitialize(gfx::GFXGlobalConfig* config) override;
         virtual void OnInitialized() override;
         virtual void OnTerminate() override;

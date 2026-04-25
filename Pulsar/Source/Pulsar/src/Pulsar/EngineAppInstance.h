@@ -34,6 +34,7 @@ namespace pulsar
         virtual string GetTitle() override;
         virtual void SetTitle(string_view title) override;
         virtual std::filesystem::path AppRootDir() override;
+        virtual std::filesystem::path GetTempDirectory() override;
         virtual AssetManager* GetAssetManager() override;
 
         virtual void OnPreInitialize(gfx::GFXGlobalConfig* cfg) override;

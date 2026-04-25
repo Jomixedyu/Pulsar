@@ -47,14 +47,14 @@ namespace pulsared
 
     EditorShaderCompileService::EditorShaderCompileService()
     {
-        // 默认缓存目录: 当前 workspace 根目录下的 .shader_cache；未打开 workspace 时回退到当前工作目录
-        if (Workspace::IsOpened())
+        // 统一缓存目录到 AppRootDir/Temp/ShaderCache
+        if (pulsar::Application::inst())
         {
-            m_cacheDir = std::filesystem::path(Workspace::WorkspacePath()).parent_path() / ".shader_cache";
+            m_cacheDir = pulsar::Application::inst()->GetTempDirectory() / "ShaderCache";
         }
         else
         {
-            m_cacheDir = std::filesystem::current_path() / ".shader_cache";
+            m_cacheDir = std::filesystem::current_path() / "Temp" / "ShaderCache";
         }
         m_workerThread = std::thread(&EditorShaderCompileService::WorkerThread, this);
     }

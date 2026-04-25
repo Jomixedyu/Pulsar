@@ -3,7 +3,6 @@
 #include "EditorRenderPipeline.h"
 #include "Editors/EditorWindow.h"
 #include "Editors/SceneEditor/SceneEditor.h"
-#include "Importers/FBXImporter.h"
 #include "Pulsar/Components/PointLightComponent.h"
 
 #include "Shaders/EditorShaderCompileService.h"
@@ -44,6 +43,7 @@
 #include <Pulsar/Assets/Shader.h>
 #include <Pulsar/Assets/StaticMesh.h>
 #include <Pulsar/Assets/Texture2D.h>
+
 
 namespace pulsared
 {
@@ -100,6 +100,12 @@ namespace pulsared
     std::filesystem::path EditorAppInstance::AppRootDir()
     {
         return std::filesystem::current_path();
+    }
+    std::filesystem::path EditorAppInstance::GetTempDirectory()
+    {
+        auto tempDir = AppRootDir() / "Temp";
+        std::filesystem::create_directories(tempDir);
+        return tempDir;
     }
 
     namespace ShapeMeshUtils
@@ -206,7 +212,7 @@ namespace pulsared
         auto cam = World::Current()->GetCurrentCamera();
         cam->GetTransform()->SetPosition({0,0,-50});
         cam->GetTransform()->GetParent()->SetEuler({});
-        return;
+
         // light
         {
             auto dlight = scene->NewNode("Directional Light");
@@ -243,10 +249,6 @@ namespace pulsared
         }
         return;
 
-        {
-//            auto gamma = AssetManager::Get()->LoadAsset<Material>("Engine/Materials/GammaCorrection", true);
-//            World::Current()->GetCurrentCamera()->AddPostProcess(gamma);
-        }
         {
             auto p1 = scene->NewNode("PointLight");
             auto light = p1->AddComponent<PointLightComponent>();

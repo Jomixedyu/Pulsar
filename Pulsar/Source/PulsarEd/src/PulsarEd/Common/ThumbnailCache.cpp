@@ -206,7 +206,7 @@ namespace pulsared
         if (!Workspace::IsOpened())
             return {};
 
-        std::filesystem::path thumbDir = jxcorlib::StrToU8Path(Workspace::LibraryPath()) / "Thumbnails";
+        std::filesystem::path thumbDir = pulsar::Application::inst()->GetTempDirectory() / "Thumbnails";
 
         // Try new raw format first
         std::filesystem::path thumbPath = thumbDir / (assetGuid.to_string() + ThumbnailExt);
@@ -298,7 +298,7 @@ namespace pulsared
         if (!Workspace::IsOpened())
             return;
 
-        std::filesystem::path thumbDir = jxcorlib::StrToU8Path(Workspace::LibraryPath()) / "Thumbnails";
+        std::filesystem::path thumbDir = pulsar::Application::inst()->GetTempDirectory() / "Thumbnails";
         std::filesystem::create_directories(thumbDir);
 
         std::filesystem::path thumbPath = thumbDir / (assetGuid.to_string() + ThumbnailExt);
