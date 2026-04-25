@@ -16,9 +16,6 @@ namespace pulsared
         CORELIB_REFL_DECL_FIELD(ConvertAxisSystem);
         bool ConvertAxisSystem = true;
 
-        CORELIB_REFL_DECL_FIELD(ImportAnimationClips);
-        bool ImportAnimationClips = true;
-
         CORELIB_REFL_DECL_FIELD(RecomputeTangents);
         bool RecomputeTangents = true;
 
