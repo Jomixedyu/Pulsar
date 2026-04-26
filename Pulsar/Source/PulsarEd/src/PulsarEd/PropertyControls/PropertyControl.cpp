@@ -154,18 +154,6 @@ namespace pulsared
                 ImGui::TreePop();
             }
         }
-        else if (PropertyControlManager::FindControl(innerType) && !ignore)
-        {
-            const bool opened = ImGui::TreeNodeEx(StringUtil::FriendlyName(name).c_str(), ImGuiTreeNodeFlags_Leaf);
-            ImGui::TableSetColumnIndex(1);
-
-            isChanged |= PropertyControlManager::ShowProperty(name, innerType, obj, attrs);
-
-            if (opened)
-            {
-                ImGui::TreePop();
-            }
-        }
         else
         {
             bool isInline = false;
@@ -204,6 +192,18 @@ namespace pulsared
                     ImGui::TreeNodeEx(StringUtil::FriendlyName(name).c_str(), ImGuiTreeNodeFlags_Leaf);
                     ImGui::TableSetColumnIndex(1);
                     ImGui::Text("[Null]");
+                    ImGui::TreePop();
+                }
+            }
+            else if (PropertyControlManager::FindControl(innerType) && !ignore)
+            {
+                const bool opened = ImGui::TreeNodeEx(StringUtil::FriendlyName(name).c_str(), ImGuiTreeNodeFlags_Leaf);
+                ImGui::TableSetColumnIndex(1);
+
+                isChanged |= PropertyControlManager::ShowProperty(name, innerType, obj, attrs);
+
+                if (opened)
+                {
                     ImGui::TreePop();
                 }
             }
