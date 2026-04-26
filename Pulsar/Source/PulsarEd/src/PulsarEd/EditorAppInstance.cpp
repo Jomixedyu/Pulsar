@@ -19,6 +19,10 @@
 #include <Pulsar/Components/DirectionalLightComponent.h>
 #include <Pulsar/Components/SphereShape3DComponent.h>
 #include <Pulsar/Components/StaticMeshRendererComponent.h>
+#include <Pulsar/Components/VolumeComponent.h>
+#include <Pulsar/Assets/VolumeProfile.h>
+#include <Pulsar/Assets/TonemappingSettings.h>
+#include <Pulsar/Assets/GammaCorrectionSettings.h>
 #include <Pulsar/ImGuiImpl.h>
 #include <Pulsar/Logger.h>
 #include <Pulsar/Physics3D/RigidBodyDynamics3DComponent.h>
@@ -218,6 +222,18 @@ namespace pulsared
             auto dlight = scene->NewNode("Directional Light");
             dlight->AddComponent<DirectionalLightComponent>();
             dlight->GetTransform()->TranslateRotateEuler({-3,3,-3}, {45,45,0});
+        }
+
+        // postprocess volume
+        {
+            auto ppVolume = scene->NewNode("PostProcess Volume");
+            auto volComp = ppVolume->AddComponent<VolumeComponent>();
+            volComp->SetIsGlobal(true);
+
+            auto profile = NewAssetObject<VolumeProfile>();
+            profile->GetEffects()->push_back(mksptr(new TonemappingSettings()));
+            profile->GetEffects()->push_back(mksptr(new GammaCorrectionSettings()));
+            volComp->SetProfile(profile);
         }
 
 
