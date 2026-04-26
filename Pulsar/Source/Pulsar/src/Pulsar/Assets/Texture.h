@@ -60,7 +60,7 @@ namespace pulsar
         SamplerAddressMode m_samplerAddressMode{};
 
         CORELIB_REFL_DECL_FIELD(m_samplerFilter);
-        SamplerFilter m_samplerFilter{};
+        SamplerFilter m_samplerFilter = gfx::GFXSamplerFilter::Linear;
     };
     DECL_PTR(Texture);
 }
