@@ -13,7 +13,7 @@ namespace pulsared
         void OnOpen() override;
         void OnDrawAssetEditor(float dt) override;
 
-    private:
-        void DrawEffectsList(VolumeProfile* profile);
+    public:
+        static void DrawEffectsList(const pulsar::RCPtr<pulsar::VolumeProfile>& profile);
     };
 }

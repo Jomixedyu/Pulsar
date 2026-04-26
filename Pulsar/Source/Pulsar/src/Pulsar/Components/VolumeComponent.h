@@ -47,7 +47,7 @@ namespace pulsar
         CORELIB_REFL_DECL_FIELD(m_priority);
         int m_priority = 0;
 
-        CORELIB_REFL_DECL_FIELD(m_profile, new InlineObjectAttribute);
+        CORELIB_REFL_DECL_FIELD(m_profile);
         RCPtr<VolumeProfile> m_profile;
 
 

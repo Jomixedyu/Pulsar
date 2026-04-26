@@ -5,6 +5,7 @@
 #include "Menus/MenuRenderer.h"
 
 #include <PulsarEd/PropertyControls/PropertyControl.h>
+#include <PulsarEd/PropertyControls/ComponentInspector.h>
 
 namespace pulsared
 {
@@ -139,11 +140,18 @@ namespace pulsared
                 Type* componentType = comp->GetType();
                 auto fields = componentType->GetFieldInfos(TypeBinding::NonPublic);
 
-                PImGui::ObjectFieldProperties(
-                    comp->GetType(),
-                    comp->GetType(),
-                    comp.GetPtr(),
-                    comp.GetPtr(), m_debugMode);
+                if (auto* inspector = ComponentInspectorManager::FindInspector(comp->GetType()))
+                {
+                    inspector->OnDrawImGui(comp.GetPtr(), m_debugMode);
+                }
+                else
+                {
+                    PImGui::ObjectFieldProperties(
+                        comp->GetType(),
+                        comp->GetType(),
+                        comp.GetPtr(),
+                        comp.GetPtr(), m_debugMode);
+                }
 
                 if (m_debugMode)
                 {
