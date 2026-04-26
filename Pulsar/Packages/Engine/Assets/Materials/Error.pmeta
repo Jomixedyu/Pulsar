@@ -1,0 +1,8 @@
+{
+    "Type": "pulsar::Material",
+	"Guid": "D84A9E20-859A-A171-1D15-D20DFFE7A7FD",
+	"ImportFiles": [],
+	"Dependencies": [
+		"d84cd443a99b59c9e18f0f917d50a951"
+	]
+}

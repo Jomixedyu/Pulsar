@@ -19,7 +19,8 @@ namespace jxcorlib
     namespace fs = std::filesystem;
 
 
-    fs::path u8path(std::string_view u8str);
+    fs::path StrToU8Path(std::string_view u8str);
+    std::string PathToU8Str(const fs::path& path);
 
     namespace FileUtil
     {

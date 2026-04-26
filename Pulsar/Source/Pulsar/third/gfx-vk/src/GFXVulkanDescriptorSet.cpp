@@ -4,6 +4,7 @@
 #include <gfx-vk/GFXVulkanDescriptorPool.h>
 #include <gfx-vk/GFXVulkanDescriptorSet.h>
 #include <gfx-vk/GFXVulkanTexture.h>
+#include <gfx-vk/GFXVulkanTextureView.h>
 #include <stdexcept>
 
 namespace gfx
@@ -42,14 +43,14 @@ namespace gfx
         }
         return {};
     }
-    static VkShaderStageFlagBits _GetShaderStage(GFXShaderStageFlags flags)
+    static VkShaderStageFlagBits _GetShaderStage(GFXGpuProgramStageFlags flags)
     {
         std::underlying_type_t<VkShaderStageFlagBits> stage{};
-        if (HasFlag(flags, GFXShaderStageFlags::Vertex))
+        if (HasFlag(flags, GFXGpuProgramStageFlags::Vertex))
         {
             stage |= VK_SHADER_STAGE_VERTEX_BIT;
         }
-        if (HasFlag(flags, GFXShaderStageFlags::Fragment))
+        if (HasFlag(flags, GFXGpuProgramStageFlags::Fragment))
         {
             stage |= VK_SHADER_STAGE_FRAGMENT_BIT;
         }
@@ -59,7 +60,7 @@ namespace gfx
 
     GFXVulkanDescriptorSetLayout::GFXVulkanDescriptorSetLayout(
         GFXVulkanApplication* app,
-        const GFXDescriptorSetLayoutInfo* layouts,
+        const GFXDescriptorSetLayoutDesc* layouts,
         size_t layoutCount)
         : m_app(app)
     {
@@ -70,11 +71,15 @@ namespace gfx
             m_debugInfo.push_back(layoutInfo);
 
             VkDescriptorSetLayoutBinding& binding = bindings.emplace_back();
-            binding.binding = layoutInfo.BindingPoint;
-            binding.descriptorType = _GetDescriptorType(layoutInfo.Type);
+            binding.binding         = layoutInfo.BindingPoint;
+            binding.descriptorType  = _GetDescriptorType(layoutInfo.Type);
             binding.descriptorCount = 1;
-            binding.stageFlags = _GetShaderStage(layoutInfo.Stage);
+            binding.stageFlags      = _GetShaderStage(layoutInfo.Stage);
             binding.pImmutableSamplers = nullptr;
+
+            // Sanity-check: log if a CombinedImageSampler layout ends up mapped to UNIFORM_BUFFER
+            assert(!(layoutInfo.Type == GFXDescriptorType::CombinedImageSampler &&
+                     binding.descriptorType != VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER));
         }
         VkDescriptorSetLayoutCreateInfo layoutCreateInfo{};
         layoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -213,6 +218,7 @@ namespace gfx
         m_descriptors.push_back(std::unique_ptr<GFXVulkanDescriptor>{descriptor});
         return descriptor;
     }
+
     GFXDescriptor* GFXVulkanDescriptorSet::GetDescriptorAt(int index)
     {
         if (index >= m_descriptors.size())

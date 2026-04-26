@@ -1,3 +1,16 @@
 {
-    "Passes": "Engine/Shaders/VertexColor.sh.json"
+    "$schema": "SbfSchema.json",
+    "Interfaces": [
+        "RENDERER_STATICMESH"
+    ],
+    "Passes": [
+        {
+            "Name": "Forward",
+            "Queue": "Opaque",
+            "Entry": {
+                "Vertex": "VSMain",
+                "Fragment": "PSMain"
+            }
+        }
+    ]
 }

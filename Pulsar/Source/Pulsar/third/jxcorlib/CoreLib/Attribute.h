@@ -6,7 +6,7 @@
 #define CORELIB_CLASS_ATTR(...) static inline struct __corelib_attr_t \
 { \
     __corelib_attr_t() { \
-         ::jxcorlib::TypeBuilder::RegisterAttributes(StaticType(), __VA_ARGS__);\
+         ::jxcorlib::TypeBuilder::RegisterAttributes(StaticType(), {__VA_ARGS__});\
     } \
 } __corelib_attr_;
 
@@ -71,6 +71,16 @@ namespace jxcorlib
         CORELIB_DEF_TYPE(AssemblyObject_jxcorlib, jxcorlib::DebugPropertyAttribute, Attribute);
     public:
 
+    };
+
+    class PrecisionAttribute final : public Attribute
+    {
+        CORELIB_DEF_TYPE(AssemblyObject_jxcorlib, jxcorlib::PrecisionAttribute, Attribute);
+    public:
+        explicit PrecisionAttribute(int precision) : m_precision(precision) {}
+        int GetPrecision() const { return m_precision; }
+    private:
+        int m_precision;
     };
 
 }

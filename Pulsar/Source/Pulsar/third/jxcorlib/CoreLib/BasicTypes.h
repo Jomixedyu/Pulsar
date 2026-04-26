@@ -11,6 +11,13 @@ namespace jxcorlib
 
     };
 
+    class PointerBoxingObject : public BoxingObject
+    {
+        CORELIB_DEF_TYPE(AssemblyObject_jxcorlib, jxcorlib::PointerBoxingObject, BoxingObject);
+    public:
+        virtual Object* GetPointer() const = 0;
+    };
+
     class IStringify : public IInterface
     {
         CORELIB_DEF_INTERFACE(AssemblyObject_jxcorlib, jxcorlib::IStringify, IInterface);

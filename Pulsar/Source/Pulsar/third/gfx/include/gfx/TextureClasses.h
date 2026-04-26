@@ -1,5 +1,4 @@
 #pragma once
-#include "TextureClasses.h"
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -9,12 +8,17 @@ namespace gfx
     enum class GFXTextureFormat
     {
         R8_UNorm,
+        R16_UNorm,
+        R32_SFloat,
         R8G8B8A8_UNorm,
         R8G8B8A8_SRGB,
+        B8G8R8A8_UNorm,
         R16G16B16A16_SFloat,
         R32G32B32A32_SFloat,
         B10G11R11_UFloat,
         BC3_SRGB,
+        BC3_UNorm,
+        BC4_UNorm,
         BC5_UNorm,
         BC6H_RGB_SFloat,
         D32_SFloat,
@@ -27,10 +31,16 @@ namespace gfx
         {
         case GFXTextureFormat::R8_UNorm:
             return "R8_UNorm";
+        case GFXTextureFormat::R16_UNorm:
+            return "R16_UNorm";
+        case GFXTextureFormat::R32_SFloat:
+            return "R32_SFloat";
         case GFXTextureFormat::R8G8B8A8_UNorm:
             return "R8G8B8A8_UNorm";
         case GFXTextureFormat::R8G8B8A8_SRGB:
             return "R8G8B8A8_SRGB";
+        case GFXTextureFormat::B8G8R8A8_UNorm:
+            return "B8G8R8A8_UNorm";
         case GFXTextureFormat::R16G16B16A16_SFloat:
             return "R16G16B16A16_SFloat";
         case GFXTextureFormat::R32G32B32A32_SFloat:
@@ -39,6 +49,10 @@ namespace gfx
             return "B10G11R11_UFloat";
         case GFXTextureFormat::BC3_SRGB:
             return "BC3_SRGB";
+        case GFXTextureFormat::BC3_UNorm:
+            return "BC3_UNorm";
+        case GFXTextureFormat::BC4_UNorm:
+            return "BC4_UNorm";
         case GFXTextureFormat::BC5_UNorm:
             return "BC5_UNorm";
         case GFXTextureFormat::BC6H_RGB_SFloat:

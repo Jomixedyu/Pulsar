@@ -4,7 +4,6 @@
 #include <vector>
 #include <cstdint>
 #include <unordered_map>
-#include <gfx/GFXShaderPass.h>
 #include <map>
 
 namespace gfx
@@ -16,21 +15,20 @@ namespace gfx
         using base = GFXGpuProgram;
     public:
 
-        GFXVulkanGpuProgram(GFXVulkanApplication* app, const std::unordered_map<gfx::GFXShaderStageFlags, array_list<char>>& codes);
+        GFXVulkanGpuProgram(GFXVulkanApplication* app, GFXGpuProgramStageFlags stage, const uint8_t* codes, size_t len);
         GFXVulkanGpuProgram(const GFXVulkanGpuProgram&) = delete;
         GFXVulkanGpuProgram(GFXVulkanGpuProgram&&) = delete;
         virtual ~GFXVulkanGpuProgram() override;
 
     public:
-        const VkShaderModule& GetVkShaderModule(GFXShaderStageFlags stage) const
-        {
-            return m_shaderModules.at(stage);
-        }
-        const VkShaderModule& GetVkVertShaderModule() const { return GetVkShaderModule(GFXShaderStageFlags::Vertex); }
-        const VkShaderModule& GetVkPixelShaderModule() const { return GetVkShaderModule(GFXShaderStageFlags::Fragment); }
-    protected:
-        std::unordered_map<GFXShaderStageFlags, VkShaderModule> m_shaderModules;
 
+        GFXGpuProgramStageFlags GetStage() const override { return m_stage; }
+        VkShaderStageFlagBits GetVkStage() const;
+        VkPipelineShaderStageCreateInfo GetCreateInfo() const;
+
+    protected:
+        GFXGpuProgramStageFlags m_stage;
+        VkShaderModule m_shader;
         GFXVulkanApplication* m_app;
     };
     GFX_DECL_SPTR(GFXVulkanGpuProgram);

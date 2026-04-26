@@ -1,5 +1,6 @@
 #include "GFXVulkanApplication.h"
 #include "BufferHelper.h"
+#include "ImageHelper.h"
 #include "GFXSurfaceSDL2.h"
 #include "GFXVulkanBuffer.h"
 #include "GFXVulkanCommandBuffer.h"
@@ -8,12 +9,10 @@
 #include "GFXVulkanGpuProgram.h"
 #include "GFXVulkanGraphicsPipeline.h"
 #include "GFXVulkanGraphicsPipelineManager.h"
-#include "GFXVulkanRenderPass.h"
 #include "GFXVulkanRenderer.h"
-#include "GFXVulkanShaderPass.h"
+#include "GFXVulkanSwapchain.h"
 #include "GFXVulkanTexture.h"
 #include "GFXVulkanVertexLayoutDescription.h"
-#include "GFXVulkanViewport.h"
 #include "PhysicalDeviceHelper.h"
 
 #include <SDL_vulkan.h>
@@ -224,7 +223,7 @@ namespace gfx
         appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
         appInfo.pEngineName = m_config.ProgramName;
         appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-        appInfo.apiVersion = VK_API_VERSION_1_3;
+        appInfo.apiVersion = VK_API_VERSION_1_4;
 
         VkInstanceCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -310,13 +309,24 @@ namespace gfx
         VkPhysicalDeviceFeatures deviceFeatures{};
         deviceFeatures.samplerAnisotropy = VK_TRUE;
 
+        VkPhysicalDeviceVulkan13Features features13{};
+        features13.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
+        features13.dynamicRendering = VK_TRUE;
+        features13.synchronization2 = VK_TRUE;
+
+        VkPhysicalDeviceFeatures2 features2{};
+        features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        features2.features = deviceFeatures;
+        features2.pNext = &features13;
+
         VkDeviceCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 
         createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
         createInfo.pQueueCreateInfos = queueCreateInfos.data();
 
-        createInfo.pEnabledFeatures = &deviceFeatures;
+        createInfo.pEnabledFeatures = nullptr;
+        createInfo.pNext = &features2;
 
         createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
         createInfo.ppEnabledExtensionNames = deviceExtensions.data();
@@ -400,7 +410,7 @@ namespace gfx
 
         m_descriptorManager = new GFXVulkanDescriptorManager(this);
 
-        m_viewport = new GFXVulkanViewport(this, m_window);
+        m_viewport = new GFXVulkanSwapchain(this, m_window);
 
         m_renderer = new GFXVulkanRenderer(this);
 
@@ -439,6 +449,10 @@ namespace gfx
             {
                 OnPreRender(deltaTime);
             }
+            if (m_isAppEnding)
+            {
+                break;
+            }
             TickRender(deltaTime);
             if (OnPostRender)
             {
@@ -463,6 +477,8 @@ namespace gfx
 
     void GFXVulkanApplication::Terminate()
     {
+        base::Terminate();
+
         delete m_renderer;
         delete m_viewport;
         delete m_graphicsPipelineManager;
@@ -492,9 +508,9 @@ namespace gfx
         m_window = nullptr;
     }
 
-    GFXBuffer_sp GFXVulkanApplication::CreateBuffer(GFXBufferUsage usage, size_t bufferSize)
+    GFXBuffer_sp GFXVulkanApplication::CreateBuffer(const GFXBufferDesc& desc)
     {
-        return gfxmksptr(new GFXVulkanBuffer(this, usage, bufferSize));
+        return gfxmksptr(new GFXVulkanBuffer(this, desc));
     }
     GFXCommandBuffer_sp gfx::GFXVulkanApplication::CreateCommandBuffer()
     {
@@ -509,74 +525,55 @@ namespace gfx
     std::shared_ptr<GFXTexture> gfx::GFXVulkanApplication::CreateTexture2DFromMemory(
         const uint8_t* imageData, size_t length, int width, int height, GFXTextureFormat format, const GFXSamplerConfig& samplerConfig)
     {
-        GFXTextureCreateInfo info{};
-        info.imageData = imageData;
-        info.dataLength = length;
-        info.width = width;
-        info.height = height;
-        info.depth = 1;
-        info.format = format;
-        info.samplerCfg = samplerConfig;
-        info.dataType = GFXTextureDataType::Texture2D;
+        GFXTextureCreateDesc info{};
+        info.ImageData = imageData;
+        info.DataLength = length;
+        info.Width = width;
+        info.Height = height;
+        info.Depth = 1;
+        info.Format = format;
+        info.SamplerCfg = samplerConfig;
+        info.DataType = GFXTextureDataType::Texture2D;
 
         return gfxmksptr(new GFXVulkanTexture(this, info));
     }
 
     std::shared_ptr<GFXFrameBufferObject> GFXVulkanApplication::CreateFrameBufferObject(
-        const std::vector<GFXTexture2DView_sp>& renderTargets,
-        const std::shared_ptr<GFXRenderPassLayout>& renderPassLayout)
+        const std::vector<GFXTexture2DView_sp>& renderTargets)
     {
-        auto buf = new GFXVulkanFrameBufferObject(this, renderTargets, std::static_pointer_cast<GFXVulkanRenderPass>(renderPassLayout));
+        auto buf = new GFXVulkanFrameBufferObject(this, renderTargets);
         return gfxmksptr(buf);
     }
 
-    GFXGpuProgram_sp GFXVulkanApplication::CreateGpuProgram(const std::unordered_map<gfx::GFXShaderStageFlags, array_list<char>>& codes)
+    GFXGpuProgram_sp GFXVulkanApplication::CreateGpuProgram(GFXGpuProgramStageFlags stage, const uint8_t* code, size_t length)
     {
-        return gfxmksptr(new GFXVulkanGpuProgram(this, codes));
+        return gfxmksptr(new GFXVulkanGpuProgram(this, stage, code, length));
     }
 
-    GFXShaderPass_sp GFXVulkanApplication::CreateShaderPass(
-        const GFXShaderPassConfig& config,
-        const GFXGpuProgram_sp& gpuProgram)
-    {
-        auto pass = new GFXVulkanShaderPass(this, config,
-                                            std::static_pointer_cast<GFXVulkanGpuProgram>(gpuProgram));
-        return gfxmksptr(pass);
-    }
-
-    GFXRenderPassLayout_sp GFXVulkanApplication::CreateRenderPassLayout(const std::vector<GFXTexture2DView*>& renderTargets)
-    {
-        array_list<GFXVulkanTexture2DView*> rt;
-        for (auto i : renderTargets)
-        {
-            rt.push_back(static_cast<GFXVulkanTexture2DView*>(i));
-        }
-        return gfxmksptr(new GFXVulkanRenderPass(this, rt));
-    }
 
     GFXTexture_sp GFXVulkanApplication::CreateTextureCube(int32_t size)
     {
-        GFXTextureCreateInfo info{};
-        info.width = size;
-        info.height = size;
-        info.depth = 1;
-        info.arrayLayers = 6;
-        info.format = GFXTextureFormat::R16G16B16A16_SFloat;
-        info.targetType = GFXTextureTargetType::ColorTarget;
-        info.dataType = GFXTextureDataType::TextureCube;
+        GFXTextureCreateDesc info{};
+        info.Width = size;
+        info.Height = size;
+        info.Depth = 1;
+        info.ArrayLayers = 6;
+        info.Format = GFXTextureFormat::R16G16B16A16_SFloat;
+        info.TargetType = GFXTextureTargetType::ColorTarget;
+        info.DataType = GFXTextureDataType::TextureCube;
         return gfxmksptr(new GFXVulkanTexture(this, info));
     }
 
     GFXTexture_sp GFXVulkanApplication::CreateRenderTarget(
         int32_t width, int32_t height, GFXTextureTargetType type, GFXTextureFormat format, const GFXSamplerConfig& samplerCfg)
     {
-        GFXTextureCreateInfo info{};
-        info.width = width;
-        info.height = height;
-        info.depth = 1;
-        info.format = format;
-        info.targetType = type;
-        info.dataType = GFXTextureDataType::Texture2D;
+        GFXTextureCreateDesc info{};
+        info.Width = width;
+        info.Height = height;
+        info.Depth = 1;
+        info.Format = format;
+        info.TargetType = type;
+        info.DataType = GFXTextureDataType::Texture2D;
 
         auto rt = new GFXVulkanTexture(this, info);
         return gfxmksptr(rt);
@@ -588,7 +585,7 @@ namespace gfx
     }
 
     GFXDescriptorSetLayout_sp GFXVulkanApplication::CreateDescriptorSetLayout(
-        const GFXDescriptorSetLayoutInfo* layouts,
+        const GFXDescriptorSetLayoutDesc* layouts,
         size_t layoutCount)
     {
         return gfxmksptr(new GFXVulkanDescriptorSetLayout(this, layouts, layoutCount));
@@ -604,5 +601,301 @@ namespace gfx
             }
         }
         return m_depthFormatCache;
+    }
+
+    std::vector<uint8_t> GFXVulkanApplication::ReadbackTexture(GFXTexture* texture, int32_t width, int32_t height)
+    {
+        std::vector<uint8_t> result;
+
+        auto* vkTex = dynamic_cast<GFXVulkanTexture*>(texture);
+        if (!vkTex)
+        {
+            return result;
+        }
+
+        VkImage srcImage = vkTex->GetVkImage();
+        VkFormat srcFormat = vkTex->GetVkImageFormat();
+        VkImageLayout currentLayout = vkTex->GetVkImageLayout();
+
+        // Determine the bytes per pixel for the source format
+        // We always convert to R8G8B8A8 on readback for PNG compatibility
+        const VkFormat readbackFormat = VK_FORMAT_R8G8B8A8_UNORM;
+        const size_t pixelSize = 4; // RGBA8
+        const VkDeviceSize bufferSize = VkDeviceSize(width) * height * pixelSize;
+
+        // Create the readback buffer (host visible, coherent)
+        VkBuffer stagingBuffer;
+        VkDeviceMemory stagingBufferMemory;
+        BufferHelper::CreateBuffer(this, bufferSize,
+            VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            stagingBuffer, stagingBufferMemory);
+
+        // Create a command buffer for the copy
+        VkCommandBufferAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        allocInfo.commandPool = m_cmdPool->GetVkCommandPool();
+        allocInfo.commandBufferCount = 1;
+
+        VkCommandBuffer commandBuffer;
+        vkAllocateCommandBuffers(m_device, &allocInfo, &commandBuffer);
+
+        VkCommandBufferBeginInfo beginInfo{};
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+        vkBeginCommandBuffer(commandBuffer, &beginInfo);
+
+        // Transition source image to transfer src layout
+        VkImageMemoryBarrier barrier{};
+        barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        barrier.oldLayout = currentLayout;
+        barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.image = srcImage;
+        barrier.subresourceRange.aspectMask = vkTex->GetVkAspectFlags();
+        barrier.subresourceRange.baseMipLevel = 0;
+        barrier.subresourceRange.levelCount = 1;
+        barrier.subresourceRange.baseArrayLayer = 0;
+        barrier.subresourceRange.layerCount = 1;
+        barrier.srcAccessMask = BufferHelper::GetAccessMaskForLayout(currentLayout);
+        barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+
+        vkCmdPipelineBarrier(commandBuffer,
+            BufferHelper::GetStageFlagsForLayout(currentLayout),
+            VK_PIPELINE_STAGE_TRANSFER_BIT,
+            0,
+            0, nullptr,
+            0, nullptr,
+            1, &barrier);
+
+        // If the source format needs conversion, use vkCmdBlitImage with a intermediate image
+        // For simplicity, we use vkCmdCopyImageToBuffer for same-format, or blit for conversion
+        bool needsConversion = (srcFormat != readbackFormat);
+
+        if (needsConversion)
+        {
+            // Create a temporary R8G8B8A8_UNORM image as blit destination
+            VkImage blitImage;
+            VkDeviceMemory blitImageMemory;
+            VkImageCreateInfo blitImageInfo{};
+            blitImageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+            blitImageInfo.imageType = VK_IMAGE_TYPE_2D;
+            blitImageInfo.extent.width = width;
+            blitImageInfo.extent.height = height;
+            blitImageInfo.extent.depth = 1;
+            blitImageInfo.mipLevels = 1;
+            blitImageInfo.arrayLayers = 1;
+            blitImageInfo.format = readbackFormat;
+            blitImageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+            blitImageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            blitImageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+            blitImageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+            blitImageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+            ImageHelper::CreateImage(this, &blitImageInfo,
+                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, blitImage, blitImageMemory);
+
+            // Transition blit destination to transfer dst
+            VkImageMemoryBarrier blitDstBarrier{};
+            blitDstBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+            blitDstBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            blitDstBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+            blitDstBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            blitDstBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            blitDstBarrier.image = blitImage;
+            blitDstBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            blitDstBarrier.subresourceRange.baseMipLevel = 0;
+            blitDstBarrier.subresourceRange.levelCount = 1;
+            blitDstBarrier.subresourceRange.baseArrayLayer = 0;
+            blitDstBarrier.subresourceRange.layerCount = 1;
+            blitDstBarrier.srcAccessMask = 0;
+            blitDstBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+            vkCmdPipelineBarrier(commandBuffer,
+                VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                VK_PIPELINE_STAGE_TRANSFER_BIT,
+                0,
+                0, nullptr,
+                0, nullptr,
+                1, &blitDstBarrier);
+
+            // Blit (with format conversion)
+            VkOffset3D blitSize{ width, height, 1 };
+            VkImageBlit blitRegion{};
+            blitRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            blitRegion.srcSubresource.layerCount = 1;
+            blitRegion.srcOffsets[0] = { 0, 0, 0 };
+            blitRegion.srcOffsets[1] = blitSize;
+            blitRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            blitRegion.dstSubresource.layerCount = 1;
+            blitRegion.dstOffsets[0] = { 0, 0, 0 };
+            blitRegion.dstOffsets[1] = blitSize;
+
+            vkCmdBlitImage(commandBuffer,
+                srcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                blitImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                1, &blitRegion,
+                VK_FILTER_NEAREST);
+
+            // Transition blit image to transfer src for copy to buffer
+            VkImageMemoryBarrier blitSrcBarrier{};
+            blitSrcBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+            blitSrcBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+            blitSrcBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+            blitSrcBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            blitSrcBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            blitSrcBarrier.image = blitImage;
+            blitSrcBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            blitSrcBarrier.subresourceRange.baseMipLevel = 0;
+            blitSrcBarrier.subresourceRange.levelCount = 1;
+            blitSrcBarrier.subresourceRange.baseArrayLayer = 0;
+            blitSrcBarrier.subresourceRange.layerCount = 1;
+            blitSrcBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+            blitSrcBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+
+            vkCmdPipelineBarrier(commandBuffer,
+                VK_PIPELINE_STAGE_TRANSFER_BIT,
+                VK_PIPELINE_STAGE_TRANSFER_BIT,
+                0,
+                0, nullptr,
+                0, nullptr,
+                1, &blitSrcBarrier);
+
+            // Copy blit image to buffer
+            VkBufferImageCopy copyRegion{};
+            copyRegion.bufferOffset = 0;
+            copyRegion.bufferRowLength = 0;
+            copyRegion.bufferImageHeight = 0;
+            copyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            copyRegion.imageSubresource.mipLevel = 0;
+            copyRegion.imageSubresource.baseArrayLayer = 0;
+            copyRegion.imageSubresource.layerCount = 1;
+            copyRegion.imageOffset = { 0, 0, 0 };
+            copyRegion.imageExtent = { (uint32_t)width, (uint32_t)height, 1 };
+
+            vkCmdCopyImageToBuffer(commandBuffer,
+                blitImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                stagingBuffer, 1, &copyRegion);
+
+            // End command buffer and submit
+            vkEndCommandBuffer(commandBuffer);
+
+            VkSubmitInfo submitInfo{};
+            submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+            submitInfo.commandBufferCount = 1;
+            submitInfo.pCommandBuffers = &commandBuffer;
+
+            vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+            vkQueueWaitIdle(m_graphicsQueue);
+
+            // Read back from staging buffer
+            void* data;
+            vkMapMemory(m_device, stagingBufferMemory, 0, bufferSize, 0, &data);
+            result.resize(bufferSize);
+            memcpy(result.data(), data, bufferSize);
+            vkUnmapMemory(m_device, stagingBufferMemory);
+
+            // Cleanup temporary blit image
+            vkDestroyImage(m_device, blitImage, nullptr);
+            vkFreeMemory(m_device, blitImageMemory, nullptr);
+        }
+        else
+        {
+            // Direct copy from image to buffer (same format)
+            VkBufferImageCopy copyRegion{};
+            copyRegion.bufferOffset = 0;
+            copyRegion.bufferRowLength = 0;
+            copyRegion.bufferImageHeight = 0;
+            copyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            copyRegion.imageSubresource.mipLevel = 0;
+            copyRegion.imageSubresource.baseArrayLayer = 0;
+            copyRegion.imageSubresource.layerCount = 1;
+            copyRegion.imageOffset = { 0, 0, 0 };
+            copyRegion.imageExtent = { (uint32_t)width, (uint32_t)height, 1 };
+
+            vkCmdCopyImageToBuffer(commandBuffer,
+                srcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                stagingBuffer, 1, &copyRegion);
+
+            vkEndCommandBuffer(commandBuffer);
+
+            VkSubmitInfo submitInfo{};
+            submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+            submitInfo.commandBufferCount = 1;
+            submitInfo.pCommandBuffers = &commandBuffer;
+
+            vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+            vkQueueWaitIdle(m_graphicsQueue);
+
+            // Read back from staging buffer
+            void* data;
+            vkMapMemory(m_device, stagingBufferMemory, 0, bufferSize, 0, &data);
+            result.resize(bufferSize);
+            memcpy(result.data(), data, bufferSize);
+            vkUnmapMemory(m_device, stagingBufferMemory);
+        }
+
+        // Restore the source image layout
+        {
+            VkCommandBuffer restoreCmdBuf;
+            vkAllocateCommandBuffers(m_device, &allocInfo, &restoreCmdBuf);
+            vkBeginCommandBuffer(restoreCmdBuf, &beginInfo);
+
+            VkImageMemoryBarrier restoreBarrier{};
+            restoreBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+            restoreBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+            restoreBarrier.newLayout = vkTex->GetVkTargetFinalLayout();
+            restoreBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            restoreBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            restoreBarrier.image = srcImage;
+            restoreBarrier.subresourceRange.aspectMask = vkTex->GetVkAspectFlags();
+            restoreBarrier.subresourceRange.baseMipLevel = 0;
+            restoreBarrier.subresourceRange.levelCount = 1;
+            restoreBarrier.subresourceRange.baseArrayLayer = 0;
+            restoreBarrier.subresourceRange.layerCount = 1;
+            restoreBarrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+            restoreBarrier.dstAccessMask = BufferHelper::GetAccessMaskForLayout(vkTex->GetVkTargetFinalLayout());
+
+            vkCmdPipelineBarrier(restoreCmdBuf,
+                VK_PIPELINE_STAGE_TRANSFER_BIT,
+                BufferHelper::GetStageFlagsForLayout(vkTex->GetVkTargetFinalLayout()),
+                0,
+                0, nullptr,
+                0, nullptr,
+                1, &restoreBarrier);
+
+            vkEndCommandBuffer(restoreCmdBuf);
+
+            VkSubmitInfo restoreSubmit{};
+            restoreSubmit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+            restoreSubmit.commandBufferCount = 1;
+            restoreSubmit.pCommandBuffers = &restoreCmdBuf;
+            vkQueueSubmit(m_graphicsQueue, 1, &restoreSubmit, VK_NULL_HANDLE);
+            vkQueueWaitIdle(m_graphicsQueue);
+
+            vkFreeCommandBuffers(m_device, m_cmdPool->GetVkCommandPool(), 1, &restoreCmdBuf);
+        }
+
+        // Cleanup
+        vkFreeCommandBuffers(m_device, m_cmdPool->GetVkCommandPool(), 1, &commandBuffer);
+        vkDestroyBuffer(m_device, stagingBuffer, nullptr);
+        vkFreeMemory(m_device, stagingBufferMemory, nullptr);
+
+        // Update the tracked layout
+        vkTex->SetImageLayout(vkTex->GetVkTargetFinalLayout());
+
+        // Handle B8G8R8A8 -> R8G8B8A8 swizzle if needed
+        if (srcFormat == VK_FORMAT_B8G8R8A8_UNORM || srcFormat == VK_FORMAT_B8G8R8A8_SRGB)
+        {
+            for (size_t i = 0; i < result.size(); i += 4)
+            {
+                std::swap(result[i + 0], result[i + 2]); // B <-> R
+            }
+        }
+
+        return result;
     }
 } // namespace gfx

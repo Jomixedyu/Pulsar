@@ -55,10 +55,11 @@ namespace jxcorlib
     {
         CORELIB_DEF_TEMPLATE_TYPE(AssemblyObject_jxcorlib, jxcorlib::List, Object, T);
         CORELIB_IMPL_INTERFACES(IList);
+    public:
         using RealT = typename type_redirect<T>::type;
         static_assert((cltype_concept<RealT>&& is_shared_ptr<RealT>::value) || !cltype_concept<RealT>, "");
         constexpr static bool is_shared_cltype = cltype_concept<RealT> && is_shared_ptr<RealT>::value;
-    public:
+
         List() : CORELIB_INIT_INTERFACE(IList) {}
         List(std::initializer_list<T> list) : CORELIB_INIT_INTERFACE(IList)
         {

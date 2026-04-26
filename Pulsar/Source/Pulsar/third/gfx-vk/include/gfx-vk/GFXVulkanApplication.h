@@ -9,8 +9,7 @@
 // #include <glfw/include/GLFW/glfw3native.h>
 
 #include "GFXVulkanCommandBuffer.h"
-#include "GFXVulkanRenderPass.h"
-#include "GFXVulkanViewport.h"
+#include "GFXVulkanSwapchain.h"
 #include "gfx/GFXTextureView.h"
 #include <chrono>
 
@@ -20,6 +19,8 @@ namespace gfx
     class GFXVulkanApplication : public GFXApplication
     {
     public:
+        using base = GFXApplication;
+
         explicit GFXVulkanApplication(GFXGlobalConfig config)
         {
             m_config = config;
@@ -39,13 +40,11 @@ namespace gfx
         virtual const char* GetApiLevelName() const override { return "Vulkan 1.3"; }
 
         void TickRender(float deltaTime);
-        virtual GFXBuffer_sp CreateBuffer(GFXBufferUsage usage, size_t bufferSize) override;
+        virtual GFXBuffer_sp CreateBuffer(const GFXBufferDesc& desc) override;
         virtual GFXCommandBuffer_sp CreateCommandBuffer() override;
         virtual GFXVertexLayoutDescription_sp CreateVertexLayoutDescription() override;
-        virtual GFXGpuProgram_sp CreateGpuProgram(const std::unordered_map<gfx::GFXShaderStageFlags, array_list<char>>& codes) override;
-        virtual GFXShaderPass_sp CreateShaderPass(
-            const GFXShaderPassConfig& config,
-            const GFXGpuProgram_sp& gpuProgram) override;
+        virtual GFXGpuProgram_sp CreateGpuProgram(GFXGpuProgramStageFlags stage, const uint8_t* code, size_t length) override;
+
 
         virtual GFXGraphicsPipelineManager* GetGraphicsPipelineManager() const override
         {
@@ -61,10 +60,7 @@ namespace gfx
 
 
         virtual GFXFrameBufferObject_sp CreateFrameBufferObject(
-            const array_list<GFXTexture2DView_sp>& renderTargets,
-            const GFXRenderPassLayout_sp& renderPassLayout) override;
-
-        virtual GFXRenderPassLayout_sp CreateRenderPassLayout(const std::vector<GFXTexture2DView*>& renderTargets) override;
+            const array_list<GFXTexture2DView_sp>& renderTargets) override;
 
         virtual GFXTexture_sp CreateTextureCube(int32_t size) override;
 
@@ -75,10 +71,12 @@ namespace gfx
         virtual GFXDescriptorManager* GetDescriptorManager() override;
 
         virtual GFXDescriptorSetLayout_sp CreateDescriptorSetLayout(
-            const GFXDescriptorSetLayoutInfo* layouts,
+            const GFXDescriptorSetLayoutDesc* layouts,
             size_t layoutCount) override;
 
         virtual array_list<GFXTextureFormat> GetSupportedDepthFormats() override;
+
+        virtual std::vector<uint8_t> ReadbackTexture(GFXTexture* texture, int32_t width, int32_t height) override;
 
         class GFXVulkanDescriptorManager* GetVulkanDescriptorManager() const { return m_descriptorManager; }
         virtual GFXExtensions GetExtensionNames() override;
@@ -94,8 +92,8 @@ namespace gfx
         const VkQueue& GetVkPresentQueue() const { return m_presentQueue; }
         //const VkCommandPool& GetVkCommandPool() const { return m_commandPool; }
 
-        virtual GFXViewport* GetViewport() override { return m_viewport; }
-        GFXVulkanViewport* GetVulkanViewport() { return m_viewport; }
+        virtual GFXSwapchain* GetViewport() override { return m_viewport; }
+        GFXVulkanSwapchain* GetVulkanViewport() { return m_viewport; }
 
         virtual void SetRenderPipeline(GFXRenderPipeline* pipeline) override
         {
@@ -132,7 +130,7 @@ namespace gfx
         VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
         VkDevice m_device = VK_NULL_HANDLE;
 
-        GFXVulkanViewport* m_viewport = nullptr;
+        GFXVulkanSwapchain* m_viewport = nullptr;
 
         GFXRenderPipeline* m_renderPipeline = nullptr;
 

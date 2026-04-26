@@ -1,6 +1,5 @@
 #include "GFXVulkanRenderer.h"
 #include "GFXVulkanApplication.h"
-#include "GFXVulkanRenderPass.h"
 #include "GFXVulkanCommandBuffer.h"
 #include "GFXVulkanQueue.h"
 #include "GFXVulkanFrameBufferObject.h"

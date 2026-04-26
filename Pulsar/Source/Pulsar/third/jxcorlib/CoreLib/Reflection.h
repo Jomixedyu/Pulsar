@@ -44,7 +44,7 @@
                     auto rawptr = (ThisClass*)p; \
                     object_assign<CleanType>::assign(&rawptr->NAME, value); \
                 }, \
-            {__VA_ARGS__} ); \
+            {__VA_ARGS__}, __LINE__ ); \
         } \
     } __corelib_refl_##NAME##_;
 
@@ -127,6 +127,7 @@ namespace jxcorlib
     public:
         SPtr<Attribute> GetAttribute(Type* type);
         array_list<SPtr<Attribute>> GetAttributes(Type* type);
+        const array_list<SPtr<Attribute>>& GetAllAttributes() const { return m_attributes; }
         bool IsDefinedAttribute(Type* type);
 
         template <typename T>
@@ -145,10 +146,12 @@ namespace jxcorlib
         string m_name;
         bool   m_isPublic;
         Type*  m_parentType;
+        int    m_order = 0;   // 源码行号，用于 Inspector 字段顺序排序
     public:
         Type* GetParentType() const { return this->m_parentType; }
         const string& GetName() const { return this->m_name; }
         bool IsPublic() const { return this->m_isPublic; }
+        int  GetOrder()  const { return this->m_order; }
 
     public:
         MemberInfo(const string& name, bool is_public, Type* parentType);
@@ -295,7 +298,8 @@ namespace jxcorlib
             Type* typeWrapper,
             FieldInfo::GetterFunction&& getter,
             FieldInfo::SetterFunction&& setter,
-            std::initializer_list<class Attribute*> attributeList
+            std::initializer_list<class Attribute*> attributeList,
+            int order = 0
             )
         {
             FieldInfo::FieldTypeInfo info{};
@@ -307,6 +311,7 @@ namespace jxcorlib
             Type* fieldType = cltypeof<ClType>();
 
             auto* fieldInfo = new FieldInfo{name, is_public, info, cltypeof<T>(), fieldType, typeWrapper, std::move(getter), std::move(setter) };
+            fieldInfo->m_order = order;
 
             for (auto& attr : attributeList)
             {

@@ -1166,7 +1166,7 @@ struct IMGUI_API ImGuiInputTextState
     int         GetSelectionEnd() const     { return Stb.select_end; }
     void        SelectAll()                 { Stb.select_start = 0; Stb.cursor = Stb.select_end = CurLenW; Stb.has_preferred_x = 0; }
 
-    // Reload user buf (WIP #2890)
+    // Modified user buf (WIP #2890)
     // If you modify underlying user-passed const char* while active you need to call this (InputText V2 may lift this)
     //   strcpy(my_buf, "hello");
     //   if (ImGuiInputTextState* state = ImGui::GetInputTextState(id)) // id may be ImGui::GetItemID() is last item

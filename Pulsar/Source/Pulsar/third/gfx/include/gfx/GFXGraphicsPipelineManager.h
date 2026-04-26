@@ -1,8 +1,9 @@
 #pragma once
 #include "GFXGraphicsPipeline.h"
 #include "GFXInclude.h"
-#include "GFXShaderPass.h"
 #include "GFXRenderPass.h"
+#include "GFXGpuProgram.h"
+#include "GFXDescriptorSet.h"
 
 namespace gfx
 {
@@ -16,9 +17,10 @@ namespace gfx
         virtual ~GFXGraphicsPipelineManager() {}
     public:
         virtual std::shared_ptr<GFXGraphicsPipeline> GetGraphicsPipeline(
-            const std::shared_ptr<GFXShaderPass>& shaderPass,
+            const array_list<GFXGpuProgram_sp>& gpuPrograms,
+            GFXGraphicsPipelineStateParams stateParams,
             const array_list<GFXDescriptorSetLayout_sp>& descriptorSetLayouts,
-            const std::shared_ptr<GFXRenderPassLayout>& renderPass,
+            const GFXRenderTargetDesc& renderTargetDesc,
             const GFXGraphicsPipelineState& gpInfo) = 0;
 
         virtual void GCollect() = 0;

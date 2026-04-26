@@ -142,12 +142,30 @@ public:
         {
             return {};
         }
-        auto block = __index_string_manager::GetIndexStringMap()->find(index)->second;
-
-        std::basic_string<char_t> str = reinterpret_cast<char_t*>(block.bytes);
-        return str;
+        auto map = __index_string_manager::GetIndexStringMap();
+        auto block = map->find(index);
+        if (block != map->end())
+        {
+            std::basic_string<char_t> str = reinterpret_cast<char_t*>(block->second.bytes);
+            return str;
+        }
+        return {};
     }
 
+    const char_t* c_str() const
+    {
+        if (index == index_t{})
+        {
+            return {};
+        }
+        auto map = __index_string_manager::GetIndexStringMap();
+        auto block = map->find(index);
+        if (block != map->end())
+        {
+            return reinterpret_cast<char_t*>(block->second.bytes);
+        }
+        return {};
+    }
 
     bool empty() const { return index == none; }
 

@@ -1,3 +1,39 @@
 {
-    "Passes": "Engine/Shaders/Unlit.sh.json"
+    "$schema": "SbfSchema.json",
+    "Interfaces": [
+        "RENDERER_STATICMESH"
+    ],
+    "Passes": [
+        {
+            "Name": "Forward",
+            "Entry": {
+                "Vertex": "VSMain",
+                "Fragment": "PSMain"
+            },
+            "Features": [
+                "FEATURE_ALPHATEST"
+            ],
+            "Queue": "Opaque",
+            "GraphicsPipeline": {
+                "CullMode": "Back",
+                "ZWriteEnabled": true,
+                "ZTestOp": "Less"
+            }
+        }
+    ],
+    "Properties": [
+        {
+            "Label": "Tint",
+            "Name": "_TintColor",
+            "Type": "Float4",
+            "DefaultValue": "1,1,1,1",
+            "Style": "Color"
+        },
+        {
+            "Label": "Base Color Map",
+            "Name": "_BaseColorMap",
+            "Type": "Texture2D",
+            "DefaultValue": "T2D_WHITE"
+        }
+    ]
 }

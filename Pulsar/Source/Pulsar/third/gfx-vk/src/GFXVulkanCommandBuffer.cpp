@@ -1,9 +1,9 @@
 #include "GFXVulkanCommandBuffer.h"
-#include "GFXVulkanCommandBuffer.h"
 #include "GFXVulkanApplication.h"
 #include "GFXVulkanCommandBufferPool.h"
-#include "GFXVulkanShaderPass.h"
 #include "GFXVulkanGraphicsPipeline.h"
+#include "GFXVulkanTextureView.h"
+#include "BufferHelper.h"
 
 namespace gfx
 {
@@ -29,15 +29,7 @@ namespace gfx
         r.m_cmdBuffer = VK_NULL_HANDLE;
     }
 
-    void GFXVulkanCommandBuffer::CmdEndFrameBuffer()
-    {
-        for (auto& rt : m_fbo->GetRenderTargets())
-        {
-            auto vkrt = dynamic_cast<GFXVulkanTexture2DView*>(rt.get());
-            vkrt->GetVkTexture()->SetImageLayout(vkrt->GetVkTexture()->GetVkTargetFinalLayout());
-        }
-        vkCmdEndRenderPass(m_cmdBuffer);
-    }
+
 
     void GFXVulkanCommandBuffer::CmdSetViewport(float x, float y, float width, float height)
     {
@@ -232,13 +224,36 @@ namespace gfx
 
         const auto vkGpipeline = static_cast<GFXVulkanGraphicsPipeline*>(pipeline);
         vkCmdBindDescriptorSets(m_cmdBuffer,
-            VK_PIPELINE_BIND_POINT_GRAPHICS,
-            vkGpipeline->GetVkPipelineLayout(),
-            0,
-            descriptorSet.size(),
-            sets,
-            0,
-            nullptr);
+                                VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                vkGpipeline->GetVkPipelineLayout(),
+                                0,
+                                descriptorSet.size(),
+                                sets,
+                                0,
+                                nullptr);
+    }
+    void GFXVulkanCommandBuffer::CmdPushDebugInfo(std::string_view label, const std::array<float, 4>& color)
+    {
+        static auto vkCmdBeginDebugUtilsLabelEXT = (PFN_vkCmdBeginDebugUtilsLabelEXT)vkGetInstanceProcAddr(m_app->GetVkInstance(), "vkCmdBeginDebugUtilsLabelEXT");
+
+        VkDebugUtilsLabelEXT debugLabel{};
+        debugLabel.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
+        debugLabel.pLabelName = label.data();
+
+        if (vkCmdBeginDebugUtilsLabelEXT)
+        {
+            vkCmdBeginDebugUtilsLabelEXT(m_cmdBuffer, &debugLabel);
+        }
+    }
+
+    void GFXVulkanCommandBuffer::CmdPopDebugInfo()
+    {
+        static auto vkCmdEndDebugUtilsLabelEXT = (PFN_vkCmdEndDebugUtilsLabelEXT)vkGetInstanceProcAddr(m_app->GetVkInstance(), "vkCmdEndDebugUtilsLabelEXT");
+        if (vkCmdEndDebugUtilsLabelEXT)
+        {
+            vkCmdEndDebugUtilsLabelEXT(m_cmdBuffer);
+        }
+
     }
 
     void GFXVulkanCommandBuffer::CmdDrawIndexed(size_t indicesCount)
@@ -303,6 +318,7 @@ namespace gfx
                 barrier.subresourceRange.baseArrayLayer = 0;
                 barrier.subresourceRange.layerCount = rtv->GetArrayCount();
 
+
                 vkCmdPipelineBarrier(
                     m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
                     0, 0, nullptr, 0, nullptr, 1, &barrier);
@@ -356,27 +372,126 @@ namespace gfx
         CmdClearColor(rt, color[0], color[1], color[2], color[3]);
     }
 
-    void GFXVulkanCommandBuffer::CmdBeginFrameBuffer()
+    static VkAttachmentLoadOp ToVkLoadOp(GFXRenderPassLoadOp op)
     {
-        bool isClear = false;
-
-        VkRenderPassBeginInfo renderPassInfo{};
-        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        renderPassInfo.renderPass = m_fbo->GetVkRenderPass();
-        renderPassInfo.framebuffer = m_fbo->GetVkFrameBuffer();
-        renderPassInfo.renderArea.offset = { 0, 0 };
-        renderPassInfo.renderArea.extent = m_fbo->GetVkExtent();
-
-        std::array<VkClearValue, 2> clearValues{};
-        clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
-        clearValues[1].depthStencil = { 1.0f, 0 };
-
-        renderPassInfo.clearValueCount = isClear ? static_cast<uint32_t>(clearValues.size()) : 0;
-        renderPassInfo.pClearValues = clearValues.data();
-
-        vkCmdBeginRenderPass(m_cmdBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+        switch (op)
+        {
+        case GFXRenderPassLoadOp::Load:     return VK_ATTACHMENT_LOAD_OP_LOAD;
+        case GFXRenderPassLoadOp::Clear:    return VK_ATTACHMENT_LOAD_OP_CLEAR;
+        case GFXRenderPassLoadOp::DontCare: return VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        default:                            return VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        }
     }
 
+    static VkAttachmentStoreOp ToVkStoreOp(GFXRenderPassStoreOp op)
+    {
+        switch (op)
+        {
+        case GFXRenderPassStoreOp::Store:    return VK_ATTACHMENT_STORE_OP_STORE;
+        case GFXRenderPassStoreOp::DontCare: return VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        default:                             return VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        }
+    }
+
+    void GFXVulkanCommandBuffer::CmdBeginRenderPass(std::string_view name,
+                                                    const GFXRenderPassBeginInfo& info)
+    {
+        auto& renderTargets = m_fbo->GetRenderTargets();
+        auto extent = m_fbo->GetVkExtent();
+
+        const VkAttachmentLoadOp  vkColorLoadOp  = ToVkLoadOp(info.colorLoadOp);
+        const VkAttachmentStoreOp vkColorStoreOp = ToVkStoreOp(info.colorStoreOp);
+        const VkAttachmentLoadOp  vkDepthLoadOp  = ToVkLoadOp(info.depthLoadOp);
+        const VkAttachmentStoreOp vkDepthStoreOp = ToVkStoreOp(info.depthStoreOp);
+
+        array_list<VkRenderingAttachmentInfo> colorAttachments;
+        VkRenderingAttachmentInfo depthAttachment{};
+        bool hasDepth = false;
+
+        for (auto& rt : renderTargets)
+        {
+            auto vkrt = static_cast<GFXVulkanTexture2DView*>(rt.get());
+            auto targetType = rt->GetTargetType();
+
+            if (targetType == GFXTextureTargetType::ColorTarget)
+            {
+                vkrt->GetVkTexture()->TransitionLayout(m_cmdBuffer, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+                VkRenderingAttachmentInfo colorInfo{};
+                colorInfo.sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+                colorInfo.imageView   = vkrt->GetVkImageView();
+                colorInfo.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                colorInfo.loadOp      = vkColorLoadOp;
+                colorInfo.storeOp     = vkColorStoreOp;
+                if (info.colorLoadOp == GFXRenderPassLoadOp::Clear)
+                {
+                    colorInfo.clearValue.color = {{
+                        info.clearColor[0], info.clearColor[1],
+                        info.clearColor[2], info.clearColor[3]
+                    }};
+                }
+                colorAttachments.push_back(colorInfo);
+            }
+            else if (targetType == GFXTextureTargetType::DepthStencilTarget ||
+                     targetType == GFXTextureTargetType::DepthTarget)
+            {
+                vkrt->GetVkTexture()->TransitionLayout(m_cmdBuffer, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+
+                depthAttachment.sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+                depthAttachment.imageView   = vkrt->GetVkImageView();
+                depthAttachment.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+                depthAttachment.loadOp      = vkDepthLoadOp;
+                depthAttachment.storeOp     = vkDepthStoreOp;
+                if (info.depthLoadOp == GFXRenderPassLoadOp::Clear)
+                {
+                    depthAttachment.clearValue.depthStencil = {info.clearDepth, info.clearStencil};
+                }
+                hasDepth = true;
+            }
+        }
+
+        VkRenderingInfo renderingInfo{};
+        renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+        renderingInfo.renderArea.offset = { 0, 0 };
+        renderingInfo.renderArea.extent = extent;
+        renderingInfo.layerCount = 1;
+        renderingInfo.colorAttachmentCount = static_cast<uint32_t>(colorAttachments.size());
+        renderingInfo.pColorAttachments = colorAttachments.data();
+        renderingInfo.pDepthAttachment = hasDepth ? &depthAttachment : nullptr;
+
+        vkCmdBeginRendering(m_cmdBuffer, &renderingInfo);
+    }
+    void GFXVulkanCommandBuffer::CmdEndRenderPass()
+    {
+        vkCmdEndRendering(m_cmdBuffer);
+
+        // Dynamic Rendering does not perform automatic layout transitions.
+        // After rendering, images are still in their attachment layout.
+        // Transition each render target to its final target layout (e.g. PRESENT_SRC_KHR for swapchain).
+        for (auto& rt : m_fbo->GetRenderTargets())
+        {
+            auto vkrt = dynamic_cast<GFXVulkanTexture2DView*>(rt.get());
+            auto targetType = rt->GetTargetType();
+
+            // First update tracking to reflect the actual layout after rendering
+            if (targetType == GFXTextureTargetType::ColorTarget)
+            {
+                vkrt->GetVkTexture()->SetImageLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+            }
+            else if (targetType == GFXTextureTargetType::DepthStencilTarget ||
+                     targetType == GFXTextureTargetType::DepthTarget)
+            {
+                vkrt->GetVkTexture()->SetImageLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+            }
+
+            // Then transition to final layout if it differs from the attachment layout
+            VkImageLayout finalLayout = vkrt->GetVkTexture()->GetVkTargetFinalLayout();
+            if (finalLayout != vkrt->GetVkTexture()->GetVkImageLayout())
+            {
+                vkrt->GetVkTexture()->TransitionLayout(m_cmdBuffer, finalLayout);
+            }
+        }
+    }
 
     GFXVulkanCommandBufferScope::GFXVulkanCommandBufferScope(GFXVulkanApplication* app)
         : m_app(app)

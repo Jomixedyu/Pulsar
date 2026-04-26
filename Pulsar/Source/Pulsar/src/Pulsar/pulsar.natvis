@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+    <Type Name="basic_index_string&lt;*&gt;">
+        <DisplayString>{{value = {to_string().c_str()}}}</DisplayString>
+    </Type>
+    <Type Name="jxcorlib::guid_t">
+        <DisplayString>{{value = {to_string(false).c_str()}}}</DisplayString>
+    </Type>
+    <Type Name="pulsar::ObjectPtr&lt;*&gt;">
+        <DisplayString>{{ptr = {GetPtr() ? GetPtr()->GetIndexName().c_str() : GetHandle().is_empty() ? "/*NULL*/" : "/*UNLOAD*/"}}}</DisplayString>
+        <Expand>
+            <Item Name="[Ptr]">GetPtr()</Item>
+        </Expand>
+    </Type>
+    <Type Name="pulsar::RCPtr&lt;*&gt;">
+        <DisplayString>{{ptr = {GetPtr() ? GetPtr()->GetIndexName().c_str() : GetHandle().is_empty() ? "/*NULL*/" : "/*UNLOAD*/"}}}</DisplayString>
+        <Expand>
+            <Item Name="[Ptr]">
+                GetPtr()
+            </Item>
+        </Expand>
+    </Type>
+</AutoVisualizer>

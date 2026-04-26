@@ -1,8 +1,8 @@
 {
     "ChannelCount": 4,
-    "CompressedFormat": "ColorSRGB_Compressed",
+    "CompressedFormat": "MaskRGBA_Compressed",
     "IsCompressedNativeData": true,
-    "IsSRGB": true,
+    "IsSRGB": false,
     "Size": {
         "x": 16,
         "y": 16

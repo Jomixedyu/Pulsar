@@ -1,0 +1,136 @@
+#include "EditorWorld.h"
+
+#include "Pulsar/Components/DirectionalLightComponent.h"
+#include "Pulsar/EngineAppInstance.h"
+
+#include "EdTools/EdTool.h"
+#include "EdTools/MoveEdTool.h"
+#include "EdTools/SelectorEdTool.h"
+#include <Pulsar/Scene.h>
+#include <PulsarEd/Components/Grid3DComponent.h>
+#include <PulsarEd/Components/StdEditCameraControllerComponent.h>
+#include <stack>
+
+namespace pulsared
+{
+    static std::stack<std::unique_ptr<World>> _worldStack;
+    void EditorWorld::PushPreviewWorld(std::unique_ptr<World> world)
+    {
+        world->OnWorldBegin();
+        auto pipeline = static_cast<EngineRenderPipeline*>(Application::GetGfxApp()->GetRenderPipeline());
+        pipeline->AddWorld(world.get());
+        _worldStack.push(std::move(world));
+    }
+    bool EditorWorld::PreviewWorldStackEmpty()
+    {
+        return _worldStack.empty();
+    }
+    void EditorWorld::PopPreviewWorld()
+    {
+        auto world = _worldStack.top().get();
+
+        auto pipeline = static_cast<EngineRenderPipeline*>(Application::GetGfxApp()->GetRenderPipeline());
+        pipeline->RemoveWorld(world);
+
+        world->OnWorldEnd();
+        _worldStack.pop();
+    }
+    World* EditorWorld::GetPreviewWorld()
+    {
+        if (!_worldStack.empty())
+        {
+            return _worldStack.top().get();
+        }
+        return base::Current();
+    }
+
+    EditorWorld* EditorWorld::DuplicateAndBeginPlay()
+    {
+        return {};
+    }
+
+    void EditorWorld::EndPlayAndRestore()
+    {
+    }
+
+
+    void EditorWorld::Tick(float dt)
+    {
+        base::Tick(dt);
+    }
+
+    void EditorWorld::AddDirectionalLight()
+    {
+        auto dlight = GetResidentScene()->NewNode("Directional Light");
+        dlight->AddComponent<DirectionalLightComponent>();
+        dlight->GetTransform()->TranslateRotateEuler({-3, 3, -3}, {45, 45, 0});
+    }
+
+    CameraComponent_ref EditorWorld::GetCurrentCamera()
+    {
+        return base::GetCurrentCamera();
+    }
+
+    void EditorWorld::OnWorldBegin()
+    {
+        base::OnWorldBegin();
+        SetTool(std::make_unique<MoveEdTool>());
+    }
+    void EditorWorld::OnWorldEnd()
+    {
+        base::OnWorldEnd();
+        SetTool(nullptr);
+    }
+
+    void EditorWorld::OnLoadingResidentScene(RCPtr<NodeCollection> scene)
+    {
+        base::OnLoadingResidentScene(scene);
+
+        auto camCtrlNode = scene->NewNode("EdCameraController", nullptr, OF_NoPack);
+        auto camNode = scene->NewNode("EdCamera", camCtrlNode, OF_NoPack);
+        camNode->GetTransform()->Translate({0, 0, -1});
+        this->m_camNode = camNode;
+
+        m_cam = camNode->AddComponent<CameraComponent>();
+        auto ctrl = camNode->AddComponent<StdEditCameraControllerComponent>();
+        ctrl->m_targetTransform = camCtrlNode->GetTransform();
+
+        m_cam->SetProjectionMode(CaptureProjectionMode::Perspective);
+        m_cam->SetBackgroundColor(Color4f{0.3f, 0.3f, 0.3f, 1.0f});
+        m_cam->SetFOV(45.f);
+        m_cam->SetNear(0.0001f);
+        m_cam->SetFar(1000.f);
+
+        camCtrlNode->AddComponent<StdEditCameraControllerComponent>();
+    }
+
+    void EditorWorld::OnUnloadingResidentScene(RCPtr<NodeCollection> scene)
+    {
+        base::OnUnloadingResidentScene(scene);
+        DestroyObject(m_cam->GetRenderTexture());
+        m_cam->SetRenderTexture(nullptr);
+    }
+
+    void EditorWorld::OnSceneLoading(RCPtr<NodeCollection> scene)
+    {
+        base::OnSceneLoading(scene);
+    }
+
+    void EditorWorld::OnSceneUnloading(RCPtr<NodeCollection> scene)
+    {
+        base::OnSceneUnloading(scene);
+    }
+    void EditorWorld::SetTool(std::unique_ptr<EdTool>&& tool)
+    {
+        if (m_tool)
+        {
+            m_tool->End();
+        }
+        m_tool = std::move(tool);
+        if (m_tool)
+        {
+            m_tool->Initialize(this);
+            m_tool->Begin();
+        }
+    }
+} // namespace pulsared

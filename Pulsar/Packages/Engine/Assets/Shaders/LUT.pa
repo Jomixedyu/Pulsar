@@ -1,0 +1,41 @@
+{
+    "$schema": "SbfSchema.json",
+    "Interfaces": [
+        "RENDERER_IMAGEPROCESS"
+    ],
+    "Passes": [
+        {
+            "Name": "PostProcess",
+            "Entry": {
+                "Vertex": "BlitVSMain",
+                "Fragment": "PSMain"
+            },
+            "GraphicsPipeline": {
+                "CullMode": "None",
+                "DepthTest": false,
+                "DepthWrite": false
+            }
+        }
+    ],
+    "Properties": [
+        {
+            "Name": "_LUTTex",
+            "Type": "Texture2D"
+        },
+        {
+            "Name": "_LUTSize",
+            "Type": "Int",
+            "DefaultValue": "16"
+        },
+        {
+            "Name": "_ColorSpace",
+            "Type": "Int",
+            "DefaultValue": "0"
+        },
+        {
+            "Name": "_Intensity",
+            "Type": "Float",
+            "DefaultValue": "1"
+        }
+    ]
+}

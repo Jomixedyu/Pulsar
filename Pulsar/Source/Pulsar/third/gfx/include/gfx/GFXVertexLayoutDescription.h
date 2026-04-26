@@ -8,6 +8,7 @@ namespace gfx
     enum class GFXVertexInputDataFormat
     {
         R8G8B8A8_UInt,
+        R8G8B8A8_UNorm,
         R32_SFloat,
         R32G32_SFloat,
         R32G32B32_SFloat,

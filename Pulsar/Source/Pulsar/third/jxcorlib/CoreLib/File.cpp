@@ -1,12 +1,14 @@
 #include "File.h"
 
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <filesystem>
-#include <memory>
-#include <cstring>
+#include "UString.h"
+
 #include <algorithm>
+#include <cstring>
+#include <filesystem>
+#include <fstream>
+#include <iostream>
+#include <memory>
+#include <sstream>
 
 namespace jxcorlib
 {
@@ -73,10 +75,6 @@ namespace jxcorlib
                 {
                     last = (int)i;
                 }
-            }
-            if (last < 0)
-            {
-                return std::string{path};
             }
             return std::string{path.substr(static_cast<size_t>(last) + 1, path.find_last_of('.') - last - 1)};
         }
@@ -212,9 +210,13 @@ namespace jxcorlib
         }
     } // namespace PathUtil
 
-    fs::path u8path(std::string_view u8str)
+    fs::path StrToU8Path(std::string_view u8str)
     {
         return std::u8string((char8_t*)u8str.data());
+    }
+    std::string PathToU8Str(const fs::path& path)
+    {
+        return StringUtil::StringCast(path.generic_u8string());
     }
 }
 

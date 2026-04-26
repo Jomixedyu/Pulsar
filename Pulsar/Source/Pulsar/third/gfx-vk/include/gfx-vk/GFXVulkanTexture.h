@@ -21,6 +21,8 @@ namespace gfx
         GFXTextureDataType dataType;
     };
 
+
+
     class GFXVulkanTexture : public GFXTexture
     {
         using base = GFXTexture;
@@ -32,7 +34,7 @@ namespace gfx
         virtual ~GFXVulkanTexture() override;
 
         //create by pic data
-        GFXVulkanTexture(GFXVulkanApplication* app, const GFXTextureCreateInfo& info);
+        GFXVulkanTexture(GFXVulkanApplication* app, const GFXTextureCreateDesc& info);
 
         //view
         GFXVulkanTexture(GFXVulkanApplication* app, const GFXVulkanTextureProxyCreateInfo& info);
@@ -40,6 +42,7 @@ namespace gfx
         GFXVulkanTexture(const GFXVulkanTexture&) = delete;
     public:
 
+        void UpdateTextureResource(const GFXTextureUpdateDesc& desc);
         GFXTexture2DView_sp Get2DView(size_t index) override;
 
         VkImage GetVkImage() const { return m_textureImage; }

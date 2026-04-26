@@ -1,6 +1,9 @@
 {
     "ExtraFiles": {},
-    "Handle": "78c30046ed52cc49958153642d70db29",
+    "Guid": "78c30046ed52cc49958153642d70db29",
     "Tags": {},
-    "Type": "pulsar::CurveLinearColor"
+    "Type": "pulsar::CurveLinearColor",
+	"Dependencies": [
+		
+	]
 }

@@ -1,8 +1,0 @@
-{
-	"CullMode": "None",
-	"DepthTestEnable": true,
-	"DepthWriteEnable": true,
-	"DepthCompareOp": "Less",
-	"StencilTestEnable": false,
-	"RenderingType": "OpaqueForward"
-}

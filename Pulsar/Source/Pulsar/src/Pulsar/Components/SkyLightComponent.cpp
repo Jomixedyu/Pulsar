@@ -1,0 +1,61 @@
+#include "Components/SkyLightComponent.h"
+
+#include "AssetManager.h"
+#include "Scene.h"
+
+namespace pulsar
+{
+
+    void SkyLightComponent::BeginComponent()
+    {
+        base::BeginComponent();
+
+        m_sceneInfo = std::make_unique<SkyLightSceneInfo>();
+        if (auto* env = GetOwnerNodeCollection()->GetRuntimeEnvironment())
+            env->AddSkyLight(m_sceneInfo.get());
+        OnIntensityChanged();
+        OnLightColorChanged();
+    }
+
+    void SkyLightComponent::EndComponent()
+    {
+        base::EndComponent();
+        if (auto* env = GetOwnerNodeCollection()->GetRuntimeEnvironment())
+            env->RemoveSkyLight(m_sceneInfo.get());
+        m_sceneInfo.reset();
+    }
+    void SkyLightComponent::OnIntensityChanged()
+    {
+        base::OnIntensityChanged();
+        m_sceneInfo->Intensity = m_intensity;
+    }
+    void SkyLightComponent::OnLightColorChanged()
+    {
+        base::OnLightColorChanged();
+        m_sceneInfo->Color = m_lightColor;
+    }
+    void SkyLightComponent::OnEnvironmentChanged()
+    {
+        if (!m_environment)
+        {
+            return;
+        }
+    }
+
+    void SkyLightComponent::PostEditChange(FieldInfo* info)
+    {
+        base::PostEditChange(info);
+        if (info->GetName() == NAMEOF(m_environment))
+        {
+            OnEnvironmentChanged();
+        }
+    }
+    void SkyLightComponent::GetDependenciesAsset(array_list<guid_t>& deps) const
+    {
+        base::GetDependenciesAsset(deps);
+        if (m_environment)
+        {
+            deps.push_back(m_environment.GetGuid());
+        }
+    }
+} // namespace pulsar

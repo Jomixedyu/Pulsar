@@ -7,13 +7,12 @@ namespace psc
 {
     enum class FilePartialType : uint32_t
     {
-        Sh, Vert, Pixel, Compute, Geometry, TessControl, TessEval,
+        Vert, Pixel, Compute, Geometry, TessControl, TessEval,
     };
     inline const char* to_string(FilePartialType type)
     {
         switch (type)
         {
-        case psc::FilePartialType::Sh: return "sh";
         case psc::FilePartialType::Vert: return "vs";
         case psc::FilePartialType::Pixel: return "ps";
         case psc::FilePartialType::Compute: return "cs";

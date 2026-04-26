@@ -6,21 +6,31 @@ namespace gfx
     enum class GFXBufferUsage
     {
         Vertex,
-        Index,
+        Indices,
         ConstantBuffer,
         StructuredBuffer,
     };
-    enum class GFXBufferStorageState
+
+    enum class GFXBufferMemoryPosition
     {
-        Default,
-        Staging,
-        GpuLocal,
+        VisibleOnHost,
+        VisibleOnDevice,
+        DeviceLocal,
     };
+
+    struct GFXBufferDesc
+    {
+        GFXBufferUsage Usage;
+        GFXBufferMemoryPosition StorageType;
+        size_t BufferSize;
+        size_t ElementSize;
+    };
+
     class GFXBuffer
     {
     public:
-        GFXBuffer(GFXBufferUsage usage, size_t bufferSize)
-            : m_usage(usage), m_bufferSize(bufferSize), m_elementCount(1) {}
+        explicit GFXBuffer(const GFXBufferDesc& desc)
+            : m_desc(desc) {}
         GFXBuffer(const GFXBuffer&) = delete;
         GFXBuffer(GFXBuffer&&) = delete;
         virtual ~GFXBuffer() = default;
@@ -30,13 +40,11 @@ namespace gfx
     public:
         virtual size_t GetSize() const = 0;
         virtual bool IsValid() const = 0;
-        size_t GetElementCount() const { return m_elementCount; }
-        void SetElementCount(size_t itemCount) { m_elementCount = itemCount; }
-        size_t GetElementSize() const { return m_bufferSize / m_elementCount; }
+        size_t GetElementCount() const { return m_desc.BufferSize / m_desc.ElementSize; }
+        size_t GetElementSize() const { return m_desc.ElementSize; }
+        const GFXBufferDesc& GetDesc() const { return m_desc; }
     protected:
-        GFXBufferUsage m_usage;
-        size_t m_bufferSize;
-        size_t m_elementCount;
+        GFXBufferDesc m_desc;
     };
     GFX_DECL_SPTR(GFXBuffer);
 }

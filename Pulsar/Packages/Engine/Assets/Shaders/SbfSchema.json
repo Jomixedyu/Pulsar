@@ -1,0 +1,296 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+        "PreDefines": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "Tag": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "Interfaces": {
+            "type": "array",
+            "items": {
+                "type": "string",
+                "enum": [
+                    "RENDERER_STATICMESH",
+                    "RENDERER_INSTANCING",
+                    "RENDERER_SKINNEDMESH",
+                    "RENDERER_PARTICLE",
+                    "RENDERER_IMAGEPROCESS",
+                    "RENDERER_UI"
+                ]
+            }
+        },
+        "Passes": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "Name": {
+                        "type": "string",
+                        "enum": [
+                            "Forward",
+                            "DeferredGeometry",
+                            "DeferredLighting",
+                            "ShadowCaster",
+                            "Outline",
+                            "PostProcess"
+                        ]
+                    },
+                    "Queue": {
+                        "type": "string",
+                        "enum": [
+                            "Opaque",
+                            "AlphaTest",
+                            "Transparency"
+                        ]
+                    },
+                    "GraphicsPipeline": {
+                        "type": "object",
+                        "properties": {
+                            "CullMode": {
+                                "type": "string",
+                                "enum": [
+                                    "None",
+                                    "Front",
+                                    "Back",
+                                    "FrontAndBack"
+                                ]
+                            },
+                            "ZTestOp": {
+                                "type": "string",
+                                "enum": [
+                                    "Never",
+                                    "Less",
+                                    "Equal",
+                                    "LessOrEqual",
+                                    "Greater",
+                                    "NotEqual",
+                                    "GreaterOrEqual",
+                                    "Always"
+                                ]
+                            },
+                            "ZWriteEnabled": {
+                                "type": "boolean"
+                            },
+                            "ZClipEnabled": {
+                                "type": "boolean"
+                            },
+                            "Stencil_Enabled": {
+                                "type": "boolean"
+                            },
+                            "Stencil_Ref": {
+                                "type": "string",
+                                "enum": [
+                                    "0xFF",
+                                    "255",
+                                    "0b11111111"
+                                ]
+                            },
+                            "Stencil_ReadMask": {
+                                "type": "string",
+                                "enum": [
+                                    "0xFF",
+                                    "255",
+                                    "0b11111111"
+                                ]
+                            },
+                            "Stencil_WriteMask": {
+                                "type": "string",
+                                "enum": [
+                                    "0xFF",
+                                    "255",
+                                    "0b11111111"
+                                ]
+                            },
+                            "Stencil_CompareOp": {
+                                "type": "string",
+                                "enum": [
+                                    "Never",
+                                    "Less",
+                                    "Equal",
+                                    "LessEqual",
+                                    "Greater",
+                                    "NotEqual",
+                                    "GreaterEqual",
+                                    "Always"
+                                ]
+                            },
+                            "Stencil_PassOp": {
+                                "type": "string",
+                                "enum": [
+                                    "Keep",
+                                    "Zero",
+                                    "Replace",
+                                    "IncrSat",
+                                    "DecrSat",
+                                    "Invert",
+                                    "IncrWrap",
+                                    "DecrWrap"
+                                ]
+                            },
+                            "Stencil_FailOp": {
+                                "type": "string",
+                                "enum": [
+                                    "Keep",
+                                    "Zero",
+                                    "Replace",
+                                    "IncrSat",
+                                    "DecrSat",
+                                    "Invert",
+                                    "IncrWrap",
+                                    "DecrWrap"
+                                ]
+                            },
+                            "Stencil_ZFailOp": {
+                                "type": "string",
+                                "enum": [
+                                    "Keep",
+                                    "Zero",
+                                    "Replace",
+                                    "IncrSat",
+                                    "DecrSat",
+                                    "Invert",
+                                    "IncrWrap",
+                                    "DecrWrap"
+                                ]
+                            }
+                        },
+                        "Blend_Enabled": {
+                            "type": "boolean"
+                        },
+                        "Blend_AlphaEnabled": {
+                            "type": "boolean"
+                        },
+                        "Blend_Src": {
+                            "type": "string",
+                            "enum": [
+                                "One",
+                                "Zero",
+                                "SrcColor",
+                                "SrcAlpha",
+                                "DstColor",
+                                "DstAlpha",
+                                "OneMinusSrcColor",
+                                "OneMinusSrcAlpha",
+                                "OneMinusDstColor",
+                                "OneMinusDstAlpha"
+                            ]
+                        },
+                        "Blend_Dst": {
+                            "type": "string",
+                            "enum": [
+                                "One",
+                                "Zero",
+                                "SrcColor",
+                                "SrcAlpha",
+                                "DstColor",
+                                "DstAlpha",
+                                "OneMinusSrcColor",
+                                "OneMinusSrcAlpha",
+                                "OneMinusDstColor",
+                                "OneMinusDstAlpha"
+                            ]
+                        },
+                        "Blend_SrcAlpha": {
+                            "type": "string",
+                            "enum": [
+                                "One",
+                                "Zero",
+                                "SrcColor",
+                                "SrcAlpha",
+                                "DstColor",
+                                "DstAlpha",
+                                "OneMinusSrcColor",
+                                "OneMinusSrcAlpha",
+                                "OneMinusDstColor",
+                                "OneMinusDstAlpha"
+                            ]
+                        },
+                        "Blend_DstAlpha": {
+                            "type": "string",
+                            "enum": [
+                                "One",
+                                "Zero",
+                                "SrcColor",
+                                "SrcAlpha",
+                                "DstColor",
+                                "DstAlpha",
+                                "OneMinusSrcColor",
+                                "OneMinusSrcAlpha",
+                                "OneMinusDstColor",
+                                "OneMinusDstAlpha"
+                            ]
+                        }
+                    },
+                    "Entry": {
+                        "type": "object",
+                        "properties": {
+                            "Vertex": {
+                                "type": "string"
+                            },
+                            "Fragment": {
+                                "type": "string"
+                            },
+                            "TessControl": {
+                                "type": "string"
+                            },
+                            "TessEval": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "Features": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "Properties": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "Label": {
+                        "type": "string"
+                    },
+                    "Name": {
+                        "type": "string"
+                    },
+                    "Type": {
+                        "type": "string",
+                        "enum": [
+                            "Int",
+                            "Float",
+                            "Float4",
+                            "Texture2D",
+                            "TextureCube"
+                        ]
+                    },
+                    "DefaultValue": {
+                        "type": "string"
+                    },
+                    "Style": {
+                        "type": "string",
+                        "description": "UI hint: Color, FloatSlider, Integer, CheckBox, FloatRange(min,max), IntRange(min,max), Precision(n)"
+                    }
+                },
+                "required": [
+                    "Name",
+                    "Type",
+                    "DefaultValue"
+                ]
+            }
+        }
+    }
+}

@@ -11,10 +11,10 @@
 #include "GFXRenderPass.h"
 #include "GFXRenderPipeline.h"
 #include "GFXRenderer.h"
-#include "GFXShaderPass.h"
+#include "GFXSwapchain.h"
 #include "GFXTextureView.h"
 #include "GFXVertexLayoutDescription.h"
-#include "GFXViewport.h"
+#include "GFXGlobalShaderManager.h"
 #include <functional>
 
 namespace gfx
@@ -44,6 +44,7 @@ namespace gfx
         }
         virtual void Terminate()
         {
+            m_shaderManager.Clear();
         }
 
         const GFXGlobalConfig& GetConfig() const
@@ -65,21 +66,18 @@ namespace gfx
 
         virtual GFXRenderer* GetRenderer() = 0;
 
-        virtual GFXBuffer_sp CreateBuffer(GFXBufferUsage usage, size_t bufferSize) = 0;
+        virtual GFXBuffer_sp CreateBuffer(const GFXBufferDesc& desc) = 0;
         virtual GFXCommandBuffer_sp CreateCommandBuffer() = 0;
         virtual GFXVertexLayoutDescription_sp CreateVertexLayoutDescription() = 0;
-        virtual GFXGpuProgram_sp CreateGpuProgram(const std::unordered_map<gfx::GFXShaderStageFlags, array_list<char>>& codes) = 0;
-        virtual GFXShaderPass_sp CreateShaderPass(
-            const GFXShaderPassConfig& config,
-            const GFXGpuProgram_sp& gpuProgram) = 0;
+        virtual GFXGpuProgram_sp CreateGpuProgram(GFXGpuProgramStageFlags stage, const uint8_t* code, size_t length) = 0;
 
         virtual GFXDescriptorManager* GetDescriptorManager() = 0;
 
         virtual GFXDescriptorSetLayout_sp CreateDescriptorSetLayout(
-            const GFXDescriptorSetLayoutInfo* layouts,
+            const GFXDescriptorSetLayoutDesc* layouts,
             size_t layoutCount) = 0;
         virtual GFXDescriptorSetLayout_sp CreateDescriptorSetLayout(
-            std::initializer_list<GFXDescriptorSetLayoutInfo> layouts);
+            std::initializer_list<GFXDescriptorSetLayoutDesc> layouts);
 
         virtual GFXGraphicsPipelineManager* GetGraphicsPipelineManager() const = 0;
 
@@ -98,22 +96,24 @@ namespace gfx
             GFXTextureFormat format, const GFXSamplerConfig& samplerCfg) = 0;
 
         virtual GFXFrameBufferObject_sp CreateFrameBufferObject(
-            const array_list<GFXTexture2DView_sp>& renderTargets,
-            const GFXRenderPassLayout_sp& renderPassLayout) = 0;
-
-        virtual GFXRenderPassLayout_sp CreateRenderPassLayout(const array_list<GFXTexture2DView*>& renderTargets) = 0;
+            const array_list<GFXTexture2DView_sp>& renderTargets) = 0;
 
         virtual array_list<GFXTextureFormat> GetSupportedDepthFormats() = 0;
 
+        virtual std::vector<uint8_t> ReadbackTexture(GFXTexture* texture, int32_t width, int32_t height) = 0;
+
         virtual intptr_t GetWindowHandle() = 0;
 
-        virtual GFXViewport* GetViewport() = 0;
+        virtual GFXSwapchain* GetViewport() = 0;
+
+        GFXGlobalShaderManager& GetGlobalShaderManager() { return m_shaderManager; }
 
     protected:
         GFXApplication() = default;
 
     protected:
         GFXGlobalConfig m_config{};
+        GFXGlobalShaderManager m_shaderManager;
     };
 
 } // namespace gfx

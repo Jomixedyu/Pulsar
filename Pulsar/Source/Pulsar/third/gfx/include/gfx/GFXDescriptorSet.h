@@ -2,6 +2,7 @@
 #include "GFXBuffer.h"
 #include "GFXTexture.h"
 #include "GFXInclude.h"
+#include "GFXGpuProgram.h"
 #include <string_view>
 
 namespace gfx
@@ -13,36 +14,24 @@ namespace gfx
         CombinedImageSampler,
         Texture2D
     };
-    enum class GFXShaderStageFlags : uint32_t
-    {
-        Vertex = 1,
-        Fragment = 1 << 1,
-        VertexFragment = Vertex | Fragment,
-    };
-    inline const char* to_string(GFXShaderStageFlags stage)
-    {
-        switch (stage)
-        {
-        case GFXShaderStageFlags::Vertex: return "Vertex";
-        case GFXShaderStageFlags::Fragment: return "Fragment";
-        case GFXShaderStageFlags::VertexFragment: return "VertexFragment";
-        }
-        return nullptr;
-    }
 
-    struct GFXDescriptorSetLayoutInfo final
+
+    struct GFXDescriptorSetLayoutDesc final
     {
     public:
         uint32_t BindingPoint;
         GFXDescriptorType Type;
-        GFXShaderStageFlags Stage;
-
-        GFXDescriptorSetLayoutInfo(
+        GFXGpuProgramStageFlags Stage;
+        GFXDescriptorSetLayoutDesc()
+            : BindingPoint(0), Type(), Stage()
+        {
+        }
+        GFXDescriptorSetLayoutDesc(
             GFXDescriptorType type,
-            GFXShaderStageFlags stage,
+            GFXGpuProgramStageFlags stage,
             uint32_t bindingPoint = 0,
             uint32_t spacePoint = 0)
-            : Type(type), Stage(stage), BindingPoint(bindingPoint)
+            : BindingPoint(bindingPoint), Type(type), Stage(stage)   // fix: match field declaration order
         {
         }
     };
@@ -69,7 +58,7 @@ namespace gfx
         virtual void SetTextureSampler2D(GFXTexture2DView* texture) = 0;
         virtual void SetTexture2D(GFXTexture* texture) = 0;
 
-        bool IsDirty;
+        bool IsDirty = false;
         std::string name;
     };
     GFX_DECL_SPTR(GFXDescriptor);

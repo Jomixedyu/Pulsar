@@ -10,7 +10,7 @@ namespace gfx
     {
         using base = GFXBuffer;
     public:
-        GFXVulkanBuffer(GFXVulkanApplication* app, GFXBufferUsage usage, size_t bufferSize);
+        GFXVulkanBuffer(GFXVulkanApplication* app, const GFXBufferDesc& desc);
         virtual ~GFXVulkanBuffer() override;
     public:
         virtual void Fill(const void* data) override;
@@ -22,7 +22,7 @@ namespace gfx
     public:
         /* GFXBuffer */
         virtual bool IsValid() const override;
-        virtual size_t GetSize() const override { return this->m_bufferSize; }
+        virtual size_t GetSize() const override { return this->m_desc.BufferSize; }
     public:
 
     protected:

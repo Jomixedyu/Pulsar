@@ -5,7 +5,6 @@
 #include <vector>
 #include <cstdint>
 #include <filesystem>
-#include "BinaryFileHeader.h"
 #include "Classes.hpp"
 
 #ifdef _WIN32
@@ -24,34 +23,45 @@ namespace psc
 
     struct CompileInfo
     {
+        const char* code;
+        ApiPlatformType platform;
+        FilePartialType Stage;
         bool Debug = false;
         IncludePaths IncludePaths;
         std::string EntryName;
         std::vector<std::string> PreDefines;
     };
 
+    // Multi-stage pass compile: VS + PS compiled together in one TProgram
+    // so binding numbers are consistent across stages.
+    struct PassCompileInfo
+    {
+        const char* code = nullptr;
+        ApiPlatformType platform = ApiPlatformType::None;
+        bool Debug = false;
+        IncludePaths IncludePaths;
+        std::vector<std::string> PreDefines;
+        std::string vsEntry;   // vertex shader entry point (empty = skip)
+        std::string psEntry;   // pixel/fragment shader entry point (empty = skip)
+    };
+
+    struct PassCompileResult
+    {
+        std::vector<char> vsSpirv;  // empty if vsEntry was empty
+        std::vector<char> psSpirv;  // empty if psEntry was empty
+    };
+
     class PSC_API ShaderCompiler
     {
     public:
         virtual std::vector<char> CompileStage(
-            const char* code, 
-            ApiPlatformType platform, 
-            FilePartialType Stage, 
             const CompileInfo& compileInfo,
             const char* extraDebugPath = nullptr) = 0;
 
-        virtual std::vector<TargetShader> CompilePSH(
-            std::filesystem::path shPath,
-            CompileInfo compileInfo,
-            const std::vector<ApiPlatformType>& TargetPlatforms) = 0;
-
-        virtual void CompileBinaryPSH(
-            std::filesystem::path shPath,
-            CompileInfo compileInfo,
-            const std::vector<ApiPlatformType>& TargetPlatforms,
-            std::ostream& out) = 0;
-
-
+        // Compile all stages in one TProgram with unified binding assignment.
+        virtual PassCompileResult CompilePass(
+            const PassCompileInfo& passInfo,
+            const char* extraDebugPath = nullptr) = 0;
     };
 
     extern PSC_API std::shared_ptr<ShaderCompiler> CreateShaderCompiler(ApiPlatformType platform);

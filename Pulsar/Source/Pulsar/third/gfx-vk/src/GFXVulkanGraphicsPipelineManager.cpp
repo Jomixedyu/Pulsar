@@ -1,4 +1,6 @@
 #include "GFXVulkanGraphicsPipelineManager.h"
+
+#include "GFXVulkanGpuProgram.h"
 #include "GFXVulkanGraphicsPipeline.h"
 
 namespace gfx
@@ -22,19 +24,29 @@ namespace gfx
     }
 
     std::shared_ptr<GFXGraphicsPipeline> GFXVulkanGraphicsPipelineManager::GetGraphicsPipeline(
-        const std::shared_ptr<GFXShaderPass>& shaderPass,
+        const array_list<GFXGpuProgram_sp>& gpuPrograms,
+        GFXGraphicsPipelineStateParams stateParams,
         const array_list<GFXDescriptorSetLayout_sp>& descriptorSetLayouts,
-        const std::shared_ptr<GFXRenderPassLayout>& renderPass,
+        const GFXRenderTargetDesc& renderTargetDesc,
         const GFXGraphicsPipelineState& gpInfo)
     {
-        auto hash = (HashPointer2(shaderPass.get(), renderPass.get()) ^ gpInfo.GetHashCode()) * 16777619;
+        constexpr intptr_t HashS0 = 2166136261;
+        constexpr intptr_t HashS1 = 16777619;
+
+        uint64_t hash = stateParams.GetHashCode();
+        for (auto& gpuProgram : gpuPrograms)
+        {
+            hash = hash * HashS1 ^ (uintptr_t)gpuProgram.get();
+        }
+        hash = hash * HashS1 ^ renderTargetDesc.GetHashCode();
+        hash = hash * HashS1 ^ gpInfo.GetHashCode(); // must include topology & vertex layout
 
         auto v = m_caches.find(hash);
         if (v != m_caches.end())
         {
             return v->second;
         }
-        auto pipeline = new GFXVulkanGraphicsPipeline(m_app, shaderPass, descriptorSetLayouts, *renderPass, gpInfo);
+        auto pipeline = new GFXVulkanGraphicsPipeline(m_app, gpuPrograms, stateParams, descriptorSetLayouts, renderTargetDesc, gpInfo);
         auto gpipeline = gfxmksptr(pipeline);
 
         m_caches.insert({ hash, gpipeline });

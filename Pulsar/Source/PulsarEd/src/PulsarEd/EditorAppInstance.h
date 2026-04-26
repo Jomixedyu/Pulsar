@@ -1,0 +1,108 @@
+#pragma once
+#include "Assembly.h"
+#include "Editors/Editor.h"
+#include "ExclusiveTask.h"
+
+#include <Pulsar/AppInstance.h>
+#include <Pulsar/EngineAppInstance.h>
+#include <Pulsar/ImGuiImpl.h>
+
+namespace pulsared
+{
+    struct ModalDialog
+    {
+        std::shared_ptr<ModalDialog> m_childModal;
+        bool m_shouldClose = false;
+        string m_name;
+        explicit ModalDialog(const char* name)
+        {
+            m_name = name;
+        }
+        void Tick(float dt)
+        {
+            ImGui::OpenPopup(m_name.c_str());
+            auto size = GetWindowSize();
+            if (size.x > 0 && size.y > 0)
+                ImGui::SetNextWindowSize(size, ImGuiCond_Always);
+            ImGuiWindowFlags flags = (size.x > 0) ? ImGuiWindowFlags_None : ImGuiWindowFlags_AlwaysAutoResize;
+            if (ImGui::BeginPopupModal(m_name.c_str(), nullptr, flags))
+            {
+                OnDraw(dt);
+                if (m_childModal)
+                {
+                    m_childModal->Tick(dt);
+                }
+                if(m_shouldClose)
+                {
+                    ImGui::CloseCurrentPopup();
+                }
+                ImGui::EndPopup();
+            }
+        }
+        virtual void OnDraw(float dt) = 0;
+        // Override to return a fixed window size; return {0,0} for auto-resize (default)
+        virtual ImVec2 GetWindowSize() const { return {0, 0}; }
+        virtual ~ModalDialog() = default;
+    };
+
+    class EditorAppInstance : public AppInstance
+    {
+    public:
+        virtual void OnCreateEditors();
+        virtual const char* AppType() override;
+        virtual void RequestQuit() override;
+        virtual Vector2f GetOutputScreenSize() override;
+        virtual void SetOutputScreenSize(Vector2f size) override;
+        virtual string GetTitle() override;
+        virtual void SetTitle(string_view title) override;
+        virtual std::filesystem::path AppRootDir() override;
+        virtual std::filesystem::path GetTempDirectory() override;
+        virtual void OnPreInitialize(gfx::GFXGlobalConfig* config) override;
+        virtual void OnInitialized() override;
+        virtual void OnTerminate() override;
+        virtual void OnBeginRender(float dt) override;
+        virtual void OnEndRender(float dt) override;
+        virtual bool IsQuit() override;
+        World* GetEditorWorld() const
+        {
+            return m_world;
+        }
+        virtual AssetManager* GetAssetManager() override
+        {
+            return m_assetManager;
+        }
+
+        virtual Vector2f GetAppSize();
+        virtual void SetAppSize(Vector2f size);
+
+        virtual bool IsInteractiveRendering() const;
+
+        void StartInteractiveRendering();
+        void StopInteractiveRendering();
+
+        ExclusiveTaskQueue& GetTaskQueue()
+        {
+            return m_exclusiveTaskQueue;
+        }
+
+        void ShowModalDialog(SPtr<ModalDialog> dialog);
+
+    protected:
+        array_list<std::unique_ptr<Editor>> m_editors;
+        SPtr<ModalDialog> m_modalDialog;
+        std::shared_ptr<ImGuiObject> m_gui = nullptr;
+
+        AssetManager* m_assetManager{};
+        World* m_world{};
+        Vector2f m_outputSize{};
+        ExclusiveTaskQueue m_exclusiveTaskQueue;
+
+        bool m_isPlaying = false;
+        bool m_shouldQuit = false;
+    };
+
+    inline EditorAppInstance* GetEdApp()
+    {
+        return static_cast<EditorAppInstance*>(Application::inst());
+    }
+} // namespace pulsared

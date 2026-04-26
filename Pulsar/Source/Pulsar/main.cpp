@@ -3,9 +3,9 @@
 
 
 
-int main()
+int main(int argc, char** argv)
 {
     using namespace pulsar;
-    Application::Exec(new EngineAppInstance(), "Pulsar", { 1280,720 });
+    Application::Exec(new EngineAppInstance(), "Pulsar", { 1280,720 }, argc, argv);
     return 0;
 }

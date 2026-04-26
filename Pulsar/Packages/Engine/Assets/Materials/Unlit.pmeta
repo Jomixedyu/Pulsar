@@ -1,6 +1,10 @@
 {
+    "Dependencies": [
+        "7d9f570d7e7df543b2654e81fbe01c5b"
+    ],
     "ExtraFiles": {},
-    "Handle": "2066dd594bd9cd41b407fe65f6ed957e",
+    "Guid": "8c46e7037d2c084589812520a753e261",
     "Tags": {},
-    "Type": "pulsar::Material"
+    "Type": "pulsar::Material",
+    "WeakDependencies": {}
 }
