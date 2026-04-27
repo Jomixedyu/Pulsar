@@ -411,6 +411,25 @@ namespace pulsar
         }
     }
 
+    void StaticMeshRendererComponent::GetDependenciesAsset(array_list<guid_t>& deps) const
+    {
+        base::GetDependenciesAsset(deps);
+        if (m_staticMesh)
+        {
+            deps.push_back(m_staticMesh.GetGuid());
+        }
+        if (m_materials)
+        {
+            for (auto& mat : *m_materials)
+            {
+                if (mat)
+                {
+                    deps.push_back(mat.GetGuid());
+                }
+            }
+        }
+    }
+
     void StaticMeshRendererComponent::OnReceiveMessage(MessageId id)
     {
         base::OnReceiveMessage(id);

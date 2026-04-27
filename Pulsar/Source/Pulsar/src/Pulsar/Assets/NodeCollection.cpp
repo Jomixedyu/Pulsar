@@ -400,6 +400,14 @@ namespace pulsar
     {
         for (auto& node : *m_nodes)
         {
+            if (node->IsTransientObject())
+            {
+                continue;
+            }
+            if (node->IsTemplateInstance())
+            {
+                continue;
+            }
             node->GetDependenciesAsset(deps);
         }
         // 模板资产依赖
