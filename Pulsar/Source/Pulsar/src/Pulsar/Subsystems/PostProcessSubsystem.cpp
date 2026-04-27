@@ -2,6 +2,9 @@
 #include "Pulsar/Components/VolumeComponent.h"
 #include "Pulsar/Assets/VolumeProfile.h"
 #include "Pulsar/Assets/ColorGradingSettings.h"
+#include "Pulsar/Assets/PostProcessMaterialSettings.h"
+#include <unordered_map>
+#include <algorithm>
 
 namespace pulsar
 {
@@ -32,30 +35,9 @@ namespace pulsar
             m_volumes.erase(it);
     }
 
-    BlendedPostProcessSettings PostProcessSubsystem::QuerySettings(const Vector3f& worldPos) const
+    VolumeStack PostProcessSubsystem::QuerySettings(const Vector3f& worldPos) const
     {
-        struct EffectWeights
-        {
-            float tonemappingWeight = 0.0f;
-            int   dominantMode = 1;   // ACES
-            float dominantModeWeight = 0.0f;
-            bool  hasTonemapping = false;
-
-            bool  applyGamma = false;
-            float gammaWeight = 0.0f;
-            float gammaSum = 0.0f;
-
-            bool  hasColorGrading = false;
-            float colorGradingWeight = 0.0f;
-            float colorGradingIntensitySum = 0.0f;
-            float dominantColorGradingWeight = 0.0f;
-            RCPtr<Texture2D> dominantLUT;
-            int   dominantLUTSize = 16;
-            int   dominantColorSpace = 0;
-        };
-
-        EffectWeights acc;
-        float totalEffectWeight = 0.0f;
+        std::unordered_map<Type*, SPtr<VolumeSettings>> accumulators;
 
         for (auto* vol : m_volumes)
         {
@@ -72,86 +54,34 @@ namespace pulsar
 
             for (auto& effect : *profile->GetEffects())
             {
-                if (!effect)
+                if (!effect || !effect->SupportsBlending() || !effect->IsEnabled())
                     continue;
 
-                if (auto* tm = dynamic_cast<TonemappingSettings*>(effect.get()))
+                Type* effectType = effect->GetType();
+                auto it = accumulators.find(effectType);
+                if (it == accumulators.end())
                 {
-                    if (tm->m_enabled)
+                    auto acc = std::static_pointer_cast<VolumeSettings>(effectType->CreateSharedInstance({}));
+                    if (acc)
                     {
-                        acc.tonemappingWeight += weight;
-                        totalEffectWeight += weight;
-                        acc.hasTonemapping = true;
-
-                        if (weight > acc.dominantModeWeight)
-                        {
-                            acc.dominantMode = static_cast<int>(tm->m_mode);
-                            acc.dominantModeWeight = weight;
-                        }
+                        effect->Blend(weight, acc.get());
+                        accumulators[effectType] = acc;
                     }
                 }
-                else if (auto* gamma = dynamic_cast<GammaCorrectionSettings*>(effect.get()))
+                else
                 {
-                    if (gamma->m_enabled)
-                    {
-                        acc.gammaWeight += weight;
-                        acc.gammaSum += gamma->m_gamma * weight;
-                        totalEffectWeight += weight;
-                        acc.applyGamma = true;
-                    }
-                }
-                else if (auto* lut = dynamic_cast<ColorGradingSettings*>(effect.get()))
-                {
-                    if (lut->m_enabled && lut->m_lutTexture)
-                    {
-                        acc.colorGradingWeight += weight;
-                        acc.colorGradingIntensitySum += lut->m_intensity * weight;
-                        totalEffectWeight += weight;
-                        acc.hasColorGrading = true;
-
-                        if (weight > acc.dominantColorGradingWeight)
-                        {
-                            acc.dominantColorGradingWeight = weight;
-                            acc.dominantLUT = lut->m_lutTexture;
-                            acc.dominantLUTSize = lut->m_lutSize;
-                            acc.dominantColorSpace = static_cast<int>(lut->m_colorSpace);
-                        }
-                    }
+                    effect->Blend(weight, it->second.get());
                 }
             }
         }
 
-        BlendedPostProcessSettings result{};
-        result.gamma = 2.2f;
-
-        if (totalEffectWeight > 0.0f)
+        VolumeStack stack;
+        for (auto& pair : accumulators)
         {
-            result.enabled = true;
-
-            result.hasTonemapping = acc.hasTonemapping;
-
-            if (acc.tonemappingWeight > 0.0f)
-            {
-                result.tonemappingMode = acc.dominantMode;
-            }
-
-            if (acc.gammaWeight > 0.0f)
-            {
-                result.gamma = acc.gammaSum / acc.gammaWeight;
-                result.applyGamma = acc.applyGamma;
-            }
-
-            if (acc.colorGradingWeight > 0.0f)
-            {
-                result.hasColorGrading = true;
-                result.colorGradingIntensity = acc.colorGradingIntensitySum / acc.colorGradingWeight;
-                result.colorGradingLUT = acc.dominantLUT;
-                result.colorGradingLUTSize = acc.dominantLUTSize;
-                result.colorGradingColorSpace = acc.dominantColorSpace;
-            }
+            if (pair.second)
+                stack.AddComponent(pair.first, pair.second);
         }
-
-        return result;
+        return stack;
     }
 
     array_list<VolumeComponent*> PostProcessSubsystem::QueryVolumes(const Vector3f& worldPos) const

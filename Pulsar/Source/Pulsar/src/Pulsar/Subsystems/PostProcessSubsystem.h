@@ -1,25 +1,11 @@
 #pragma once
 #include "WorldSubsystem.h"
 #include "Pulsar/Assets/VolumeProfile.h"
+#include "VolumeStack.h"
 #include <Pulsar/Assets/Texture2D.h>
 
 namespace pulsar
 {
-    struct BlendedPostProcessSettings
-    {
-        bool  enabled = false;       // post-processing is off unless a volume enables it
-        bool  hasTonemapping = false;
-        int   tonemappingMode = 1;   // default: ACES
-        float gamma = 2.2f;
-        bool  applyGamma = false;
-
-        bool  hasColorGrading = false;
-        float colorGradingIntensity = 1.0f;
-        int   colorGradingLUTSize = 16;
-        int   colorGradingColorSpace = 0;
-        RCPtr<Texture2D> colorGradingLUT;
-    };
-
     class PostProcessSubsystem : public WorldSubsystem
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::PostProcessSubsystem, WorldSubsystem);
@@ -32,7 +18,8 @@ namespace pulsar
         void UnregisterVolume(class VolumeComponent* volume);
 
         // Query blended post-process settings for a given world position.
-        BlendedPostProcessSettings QuerySettings(const Vector3f& worldPos) const;
+        // Returns a VolumeStack where each component type holds the blended result.
+        VolumeStack QuerySettings(const Vector3f& worldPos) const;
 
         // Query all active volumes affecting the given world position.
         array_list<class VolumeComponent*> QueryVolumes(const Vector3f& worldPos) const;
