@@ -34,6 +34,10 @@ namespace gfx
                 m_renderTargetDesc.HasDepthStencil = true;
             }
         }
+        if (!m_renderTargets.empty())
+        {
+            m_renderTargetDesc.SampleCount = m_renderTargets[0]->GetTexture()->GetSampleCount();
+        }
     }
 
     GFXVulkanFrameBufferObject::~GFXVulkanFrameBufferObject()

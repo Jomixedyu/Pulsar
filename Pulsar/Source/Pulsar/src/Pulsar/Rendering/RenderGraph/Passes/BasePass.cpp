@@ -21,7 +21,8 @@ namespace pulsar
 
     RGTextureHandle BasePass::AddToGraph(RenderGraph& graph, RGTextureHandle hFinal,
                                          CameraComponent* cam, World* world,
-                                         PerPassResources* perPass)
+                                         PerPassResources* perPass,
+                                         gfx::GFXTexture2DView* resolveTargetView)
     {
         auto preparedOpaque      = std::make_shared<array_list<PreparedBatch>>();
         auto preparedAlphaTest   = std::make_shared<array_list<PreparedBatch>>();
@@ -30,11 +31,12 @@ namespace pulsar
         graph.AddPass("BasePass")
             .Write(hFinal, RGAttachmentDesc{
                 .colorLoadOp  = gfx::GFXRenderPassLoadOp::Clear,
-                .colorStoreOp = gfx::GFXRenderPassStoreOp::Store,
+                .colorStoreOp = resolveTargetView ? gfx::GFXRenderPassStoreOp::DontCare : gfx::GFXRenderPassStoreOp::Store,
                 .clearColor   = {0.3f, 0.3f, 0.3f, 1.f},
                 .depthLoadOp  = gfx::GFXRenderPassLoadOp::Clear,
                 .depthStoreOp = gfx::GFXRenderPassStoreOp::DontCare,
                 .clearDepth   = 1.f,
+                .resolveTargetView = resolveTargetView,
             })
             .WithPerPass(perPass)
             .Prepare([cam, world, preparedOpaque, preparedAlphaTest, preparedTransparent](RGPassContext&)
@@ -85,7 +87,7 @@ namespace pulsar
             .Execute([cam, perPass, preparedOpaque, preparedAlphaTest, preparedTransparent]
                      (RGPassContext& ctx, gfx::GFXCommandBuffer& cmdBuffer)
             {
-                auto* targetFBO = cam->GetRenderTexture()->GetGfxFrameBufferObject().get();
+                auto* targetFBO = cmdBuffer.GetFrameBuffer();
                 if (!targetFBO) return;
 
                 auto* pipelineMgr = cmdBuffer.GetApplication()->GetGraphicsPipelineManager();

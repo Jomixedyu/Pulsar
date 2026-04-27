@@ -95,6 +95,40 @@ namespace gfx
         vkCmdBlitImage2(m_cmdBuffer, &info);
     }
 
+    void GFXVulkanCommandBuffer::CmdResolve(GFXTextureView* src, GFXTextureView* dest)
+    {
+        auto _src = static_cast<GFXVulkanTexture2DView*>(src);
+        auto _dest = static_cast<GFXVulkanTexture2DView*>(dest);
+
+        _src->GetVkTexture()->TransitionLayout(m_cmdBuffer, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+        _dest->GetVkTexture()->TransitionLayout(m_cmdBuffer, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+        VkImageResolve resolve{};
+        resolve.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        resolve.srcSubresource.mipLevel = 0;
+        resolve.srcSubresource.baseArrayLayer = 0;
+        resolve.srcSubresource.layerCount = 1;
+        resolve.srcOffset = {0, 0, 0};
+        resolve.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        resolve.dstSubresource.mipLevel = 0;
+        resolve.dstSubresource.baseArrayLayer = 0;
+        resolve.dstSubresource.layerCount = 1;
+        resolve.dstOffset = {0, 0, 0};
+        resolve.extent.width = static_cast<uint32_t>(_src->GetWidth());
+        resolve.extent.height = static_cast<uint32_t>(_src->GetHeight());
+        resolve.extent.depth = 1;
+
+        vkCmdResolveImage(m_cmdBuffer,
+            _src->GetVkImage(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+            _dest->GetVkImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            1, &resolve);
+    }
+
+    GFXFrameBufferObject* GFXVulkanCommandBuffer::GetFrameBuffer() const
+    {
+        return m_fbo;
+    }
+
     void GFXVulkanCommandBuffer::CmdImageTransitionBarrier(GFXTextureView* rt, GFXResourceLayout layout)
     {
         auto vkrt = static_cast<GFXVulkanTexture2DView*>(rt);
@@ -429,6 +463,14 @@ namespace gfx
                         info.clearColor[0], info.clearColor[1],
                         info.clearColor[2], info.clearColor[3]
                     }};
+                }
+                if (info.resolveTargetView)
+                {
+                    auto resolveVkrt = static_cast<GFXVulkanTexture2DView*>(info.resolveTargetView);
+                    resolveVkrt->GetVkTexture()->TransitionLayout(m_cmdBuffer, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+                    colorInfo.resolveMode = VK_RESOLVE_MODE_AVERAGE_BIT;
+                    colorInfo.resolveImageView = resolveVkrt->GetVkImageView();
+                    colorInfo.resolveImageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
                 }
                 colorAttachments.push_back(colorInfo);
             }

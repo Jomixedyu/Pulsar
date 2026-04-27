@@ -2,6 +2,8 @@
 #include <Pulsar/Rendering/RenderGraph/RenderGraph.h>
 #include <Pulsar/EngineMath.h>
 
+namespace gfx { class GFXTexture2DView; }
+
 namespace pulsar
 {
     class CameraComponent;
@@ -13,6 +15,7 @@ namespace pulsar
     public:
         RGTextureHandle AddToGraph(RenderGraph& graph, RGTextureHandle hFinal,
                                    CameraComponent* cam, World* world,
-                                   PerPassResources* perPass);
+                                   PerPassResources* perPass,
+                                   gfx::GFXTexture2DView* resolveTargetView = nullptr);
     };
 }

@@ -10,7 +10,8 @@ namespace gfx
         static VkImageCreateInfo ImageCreateInfo();
 
         static VkImageCreateInfo ImageCreateInfoTexture2D(
-            int32_t width, int32_t height, VkFormat format, VkImageUsageFlags usage);
+            int32_t width, int32_t height, VkFormat format, VkImageUsageFlags usage,
+            VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT);
 
         static VkImageCreateInfo ImageCreateInfoCube(
             int32_t size, VkFormat format, VkImageUsageFlags usage);

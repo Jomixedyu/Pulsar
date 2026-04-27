@@ -19,7 +19,8 @@ namespace gfx
     }
 
     VkImageCreateInfo ImageHelper::ImageCreateInfoTexture2D(
-        int32_t width, int32_t height, VkFormat format, VkImageUsageFlags usage)
+        int32_t width, int32_t height, VkFormat format, VkImageUsageFlags usage,
+        VkSampleCountFlagBits samples)
     {
         auto info = ImageCreateInfo();
         info.imageType = VK_IMAGE_TYPE_2D;
@@ -28,6 +29,7 @@ namespace gfx
         info.format = format;
         info.usage = usage;
         info.arrayLayers = 1;
+        info.samples = samples;
         return info;
     }
 

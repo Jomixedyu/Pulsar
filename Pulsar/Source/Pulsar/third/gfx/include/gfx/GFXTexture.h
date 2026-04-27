@@ -27,6 +27,8 @@ namespace gfx
         GFXTextureTargetType TargetType{};
         uint32_t MipLevels{1};
         uint32_t ArrayLayers{1};
+        uint32_t SampleCount{1};
+        bool IsTransientAttachment = false;
     };
 
     struct GFXTextureUpdateDesc
@@ -54,6 +56,7 @@ namespace gfx
         virtual GFXTextureTargetType GetTargetType() const = 0;
         virtual GFXTextureFormat GetFormat() const = 0;
         virtual GFXTexture2DView_sp Get2DView(size_t index = 0) = 0;
+        virtual uint32_t GetSampleCount() const { return 1; }
 
     public:
         std::array<float, 4> TargetClearColor;

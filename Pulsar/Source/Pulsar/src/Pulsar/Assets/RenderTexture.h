@@ -16,6 +16,8 @@ namespace pulsar
     {
         gfx::GFXTextureTargetType TargetType;
         gfx::GFXTextureFormat Format;
+        uint32_t SampleCount = 1;
+        bool IsTransientAttachment = false;
     };
 
     class RenderTexture : public Texture

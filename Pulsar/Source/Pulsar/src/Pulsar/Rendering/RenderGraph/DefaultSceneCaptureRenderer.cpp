@@ -3,6 +3,7 @@
 #include <Pulsar/Node.h>
 #include <Pulsar/Components/CameraComponent.h>
 #include <Pulsar/Components/SceneCaptureComponent.h>
+#include <Pulsar/Components/SceneCapture2DComponent.h>
 #include <Pulsar/Components/VolumeComponent.h>
 #include <Pulsar/World.h>
 #include <Pulsar/Scene.h>
@@ -96,8 +97,31 @@ namespace pulsar
 
         RGTextureHandle hFinal = graph.ImportTexture("FinalOutput", camRenderTexture);
 
-        // BasePass
-        hFinal = m_basePass.AddToGraph(graph, hFinal, cam, world, perPass);
+        uint32_t msaaSamples = 1;
+        if (auto* capture2D = dynamic_cast<SceneCapture2DComponent*>(ctx.capture))
+        {
+            msaaSamples = std::max(1u, capture2D->GetMSAASamples());
+        }
+
+        RGTextureHandle hBasePassOutput = hFinal;
+        gfx::GFXTexture2DView* resolveTargetView = nullptr;
+        if (msaaSamples > 1)
+        {
+            RGTextureDesc msDesc{};
+            msDesc.Width = camRenderTexture->GetWidth();
+            msDesc.Height = camRenderTexture->GetHeight();
+            msDesc.SampleCount = msaaSamples;
+            for (auto& rt : camRenderTexture->GetRenderTargets())
+            {
+                bool isTransient = (rt->GetTargetType() == gfx::GFXTextureTargetType::ColorTarget);
+                msDesc.TargetInfos.push_back({ rt->GetTargetType(), rt->GetFormat(), msaaSamples, isTransient });
+            }
+            hBasePassOutput = graph.CreateTransient("MSBasePass", msDesc);
+            resolveTargetView = camRenderTexture->GetGfxRenderTarget0().get();
+        }
+
+        // BasePass (auto-resolve to final RT if MSAA is enabled)
+        hBasePassOutput = m_basePass.AddToGraph(graph, hBasePassOutput, cam, world, perPass, resolveTargetView);
 
         // ---- Post-Process Features ----
         VolumeStack stack;

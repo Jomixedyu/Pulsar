@@ -62,7 +62,7 @@ namespace pulsar
 
         for (auto& info : targetInfo)
         {
-            auto rt = gfx->CreateRenderTarget(width, height, info.TargetType, info.Format, {});
+            auto rt = gfx->CreateRenderTarget(width, height, info.TargetType, info.Format, {}, info.SampleCount, info.IsTransientAttachment);
             self->m_renderTargets.push_back(rt);
         }
 

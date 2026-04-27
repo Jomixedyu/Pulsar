@@ -93,7 +93,8 @@ namespace gfx
 
         virtual GFXTexture_sp CreateRenderTarget(
             int32_t width, int32_t height, GFXTextureTargetType type,
-            GFXTextureFormat format, const GFXSamplerConfig& samplerCfg) = 0;
+            GFXTextureFormat format, const GFXSamplerConfig& samplerCfg,
+            uint32_t sampleCount = 1, bool isTransientAttachment = false) = 0;
 
         virtual GFXFrameBufferObject_sp CreateFrameBufferObject(
             const array_list<GFXTexture2DView_sp>& renderTargets) = 0;

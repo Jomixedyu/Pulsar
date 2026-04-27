@@ -33,6 +33,9 @@ namespace pulsar
         float GetOrthoSize() const { return m_orthoSize; }
         void SetOrthoSize(float value);
 
+        uint32_t GetMSAASamples() const { return m_msaaSamples; }
+        void SetMSAASamples(uint32_t value) { m_msaaSamples = value; }
+
         void OnTransformChanged() override;
 
     protected:
@@ -67,6 +70,9 @@ namespace pulsar
 
         CORELIB_REFL_DECL_FIELD(m_renderingPath);
         RenderingPathMode m_renderingPath;
+
+        CORELIB_REFL_DECL_FIELD(m_msaaSamples);
+        int32_t m_msaaSamples = 1;
 
         bool m_managedRT{false};
         #ifdef WITH_EDITOR
