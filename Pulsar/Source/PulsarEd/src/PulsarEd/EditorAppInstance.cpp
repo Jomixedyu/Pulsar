@@ -6,6 +6,7 @@
 #include "Pulsar/Components/PointLightComponent.h"
 
 #include "Shaders/EditorShaderCompileService.h"
+#include "Shaders/ShaderHotReloadWatcher.h"
 #include "Utils/PrefabUtil.h"
 
 #include <Pulsar/Rendering/ShaderInstanceCache.h>
@@ -413,6 +414,8 @@ namespace pulsared
 
         uinput::InputManager::GetInstance()->Initialize();
 
+        m_shaderHotReloadWatcher = new ShaderHotReloadWatcher();
+        m_shaderHotReloadWatcher->Initialize();
 
     }
 
@@ -427,6 +430,13 @@ namespace pulsared
         m_editors.clear();
 
         PrefabUtil::ClosePrefabMode();
+
+        if (m_shaderHotReloadWatcher)
+        {
+            m_shaderHotReloadWatcher->Terminate();
+            delete m_shaderHotReloadWatcher;
+            m_shaderHotReloadWatcher = nullptr;
+        }
 
         // 在 World 和 GFX Device 销毁前清理 ShaderInstanceCache，
         // 否则 GpuProgram 析构时 VkDevice 已经无效
@@ -466,6 +476,11 @@ namespace pulsared
         if (auto* compileService = dynamic_cast<EditorShaderCompileService*>(pulsar::ShaderCompileServiceLocator::Get()))
         {
             compileService->FlushCallbacks();
+        }
+
+        if (m_shaderHotReloadWatcher)
+        {
+            m_shaderHotReloadWatcher->Tick(dt);
         }
 
         if (!m_gui->IsMinimized())
