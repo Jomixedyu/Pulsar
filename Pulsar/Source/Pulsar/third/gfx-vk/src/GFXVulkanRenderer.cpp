@@ -3,6 +3,7 @@
 #include "GFXVulkanCommandBuffer.h"
 #include "GFXVulkanQueue.h"
 #include "GFXVulkanFrameBufferObject.h"
+#include <SDL_vulkan.h>
 #include <array>
 
 namespace gfx
@@ -16,6 +17,11 @@ namespace gfx
     void GFXVulkanRenderer::Render(float deltaTime)
     {
         const auto viewport = m_app->GetVulkanViewport();
+
+        if (SDL_GetWindowFlags((SDL_Window*)m_app->GetWindow()->GetUserPoint()) & SDL_WINDOW_MINIMIZED)
+        {
+            return;
+        }
 
         vkWaitForFences(m_app->GetVkDevice(), 1, &viewport->GetQueue()->GetVkFence(), VK_TRUE, UINT64_MAX);
 
@@ -39,6 +45,10 @@ namespace gfx
         renderContext.DeltaTime = deltaTime;
 
         const auto renderTargets = viewport->GetFrameBufferObject();
+        if (!renderTargets)
+        {
+            return;
+        }
         m_app->GetRenderPipeline()->OnRender(&renderContext, renderTargets);
         renderContext.Submit();
 

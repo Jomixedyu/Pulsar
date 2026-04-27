@@ -468,26 +468,35 @@ namespace pulsared
             compileService->FlushCallbacks();
         }
 
-        m_gui->NewFrame();
-
-        uinput::InputManager::GetInstance()->ProcessEvents();
-
-        EditorWorld::GetPreviewWorld()->Tick(dt);
-        //World::Current()->Tick(dt);
-
-        pulsared::EditorWindowManager::Draw(dt);
-        pulsared::EditorTickerManager::Ticker.Invoke(dt);
-
-        if (m_modalDialog)
+        if (!m_gui->IsMinimized())
         {
-            m_modalDialog->Tick(dt);
-            if (m_modalDialog->m_shouldClose)
-                m_modalDialog.reset();
+            m_gui->NewFrame();
+
+            uinput::InputManager::GetInstance()->ProcessEvents();
+
+            EditorWorld::GetPreviewWorld()->Tick(dt);
+            //World::Current()->Tick(dt);
+
+            pulsared::EditorWindowManager::Draw(dt);
+            pulsared::EditorTickerManager::Ticker.Invoke(dt);
+
+            if (m_modalDialog)
+            {
+                m_modalDialog->Tick(dt);
+                if (m_modalDialog->m_shouldClose)
+                    m_modalDialog.reset();
+            }
+
+            OnRenderTick.Invoke(dt);
+
+            m_gui->EndFrame();
         }
-
-        OnRenderTick.Invoke(dt);
-
-        m_gui->EndFrame();
+        else
+        {
+            uinput::InputManager::GetInstance()->ProcessEvents();
+            EditorWorld::GetPreviewWorld()->Tick(dt);
+            pulsared::EditorTickerManager::Ticker.Invoke(dt);
+        }
     }
 
     void EditorAppInstance::OnEndRender(float dt)

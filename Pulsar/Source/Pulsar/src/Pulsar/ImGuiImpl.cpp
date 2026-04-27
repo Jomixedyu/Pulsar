@@ -2,6 +2,7 @@
 #include <Pulsar/ImGuiImpl.h>
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_sdl2.h>
+#include <SDL_vulkan.h>
 
 #include "DroidSans.ttf.h"
 #include "forkawesome-webfont.ttf.h"
@@ -205,6 +206,10 @@ namespace pulsar
         virtual void EndFrame() override
         {
             ImGui::EndFrame();
+        }
+        virtual bool IsMinimized() const override
+        {
+            return SDL_GetWindowFlags((SDL_Window*)m_app->GetWindow()->GetUserPoint()) & SDL_WINDOW_MINIMIZED;
         }
         virtual void Terminate() override
         {
