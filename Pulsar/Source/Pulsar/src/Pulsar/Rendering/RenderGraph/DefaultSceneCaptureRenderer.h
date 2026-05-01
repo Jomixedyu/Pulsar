@@ -1,7 +1,9 @@
 #pragma once
 #include "ScriptableCaptureRenderer.h"
-#include "Passes/BasePass.h"
+#include "Passes/OpaquePass.h"
+#include "Passes/TranslucencyPass.h"
 #include "Passes/RenderFeature.h"
+#include "Passes/GizmoOverlayPass.h"
 #include "../PerPassResources.h"
 #include <memory>
 #include <vector>
@@ -20,8 +22,10 @@ namespace pulsar
 
     private:
         PerPassResources m_perPassResources;
-        BasePass m_basePass;
-        std::vector<std::unique_ptr<RenderFeature>> m_features;
+        OpaquePass m_opaquePass;
+        TranslucencyPass m_translucencyPass;
+        std::vector<std::unique_ptr<RenderFeature>> m_postProcessFeatures;
+        GizmoOverlayPass m_gizmoOverlayPass;
     };
 
 } // namespace pulsar

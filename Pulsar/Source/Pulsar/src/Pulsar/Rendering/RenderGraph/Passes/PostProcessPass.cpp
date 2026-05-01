@@ -15,6 +15,16 @@ namespace pulsar
     {
     }
 
+    void PostProcessPass::Initialize(PerPassResources* perPass)
+    {
+        m_perPassSet = perPass->AllocateSet(perPass->GetLayout("PostProcess"));
+    }
+
+    void PostProcessPass::Destroy()
+    {
+        m_perPassSet.reset();
+    }
+
     gfx::GFXDescriptorSetLayout_sp PostProcessPass::GetInputSamplerLayout()
     {
         if (!m_inputSamplerLayout)
@@ -54,7 +64,7 @@ namespace pulsar
                 .colorStoreOp = gfx::GFXRenderPassStoreOp::Store,
             })
             .WithPerPass(perPass)
-            .Prepare([this](RGPassContext&)
+            .Prepare([this, perPass](RGPassContext&)
             {
                 if (m_material)
                     m_material->PrepareForRendering("PostProcess", "RENDERER_IMAGEPROCESS");
@@ -85,18 +95,16 @@ namespace pulsar
         auto program = ppPassBinding->GetCurrentProgram();
         if (!program) return;
 
-        auto* gfxApp = cmdBuffer.GetApplication();
-        if (!m_descriptorSet)
-            m_descriptorSet = gfxApp->GetDescriptorManager()->GetDescriptorSet(GetInputSamplerLayout());
-        if (!m_descriptorSet) return;
-        auto* ppRendererSet = m_descriptorSet.get();
-
         RenderTexture* dstRT = passCtx.Get(hDst);
         if (!dstRT)
             dstRT = cam->GetRenderTexture().GetPtr();
         if (!dstRT) return;
         auto* dstFBO = dstRT->GetGfxFrameBufferObject().get();
         if (!dstFBO) return;
+
+        // Write per-pass data (Camera + World + SourceTexture) into set 1
+        perPass->WriteCameraToSet(m_perPassSet.get());
+        perPass->WriteWorldToSet(m_perPassSet.get());
 
         RenderTexture* srcRT = passCtx.Get(hSrc);
         if (!srcRT)
@@ -105,20 +113,15 @@ namespace pulsar
         {
             auto srcView = srcRT->GetGfxRenderTarget0();
             if (srcView)
-            {
-                auto* desc = ppRendererSet->FindByBinding(0);
-                if (!desc)
-                    desc = ppRendererSet->AddDescriptor("PP_InColor", 0);
-                desc->SetTextureSampler2D(srcView.get());
-            }
+                perPass->WriteTexture(m_perPassSet.get(), 3, srcView.get());
         }
-        ppRendererSet->Submit();
+        perPass->Submit(m_perPassSet.get());
 
+        auto* gfxApp = cmdBuffer.GetApplication();
         auto* pipelineMgr = gfxApp->GetGraphicsPipelineManager();
         array_list<gfx::GFXDescriptorSetLayout_sp> descLayouts;
-        descLayouts.push_back(ppPassBinding->m_descriptorSetLayout);
-        descLayouts.push_back(perPass->GetDescriptorSetLayout());
-        descLayouts.push_back(GetInputSamplerLayout());
+        descLayouts.push_back(ppPassBinding->m_descriptorSetLayout);   // set 0: material
+        descLayouts.push_back(m_perPassSet->GetDescriptorSetLayout()); // set 1: per-pass (Camera/World/Source)
 
         auto& gpuPrograms = program->GetGpuPrograms();
 
@@ -136,9 +139,8 @@ namespace pulsar
         cmdBuffer.CmdBindGraphicsPipeline(gfxPipeline.get());
 
         array_list<gfx::GFXDescriptorSet*> descSets;
-        descSets.push_back(ppPassBinding->m_descriptorSet.get());
-        descSets.push_back(perPass->GetDescriptorSet().get());
-        descSets.push_back(ppRendererSet);
+        descSets.push_back(ppPassBinding->m_descriptorSet.get()); // set 0
+        descSets.push_back(m_perPassSet.get());                    // set 1
         cmdBuffer.CmdBindDescriptorSets(descSets, gfxPipeline.get());
 
         cmdBuffer.CmdDraw(3);

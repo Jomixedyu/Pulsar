@@ -79,26 +79,20 @@ CORELIB_DECL_BOXING(pulsar::CurveKey, pulsar::BoxingCurveKey);
 
 namespace pulsar
 {
-    class CurveData final : public Object
+    struct CurveKeyCollection
     {
-        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::CurveData, Object);
     public:
-        CurveData() : DefaultValue(0)
+        CurveKeyCollection() : DefaultValue(0)
         {
-            init_sptr_member(Keys);
         }
         float Sample(float X, float InDefaultValue = 0.0f) const;
 
-        size_t GetKeyCount() const { return Keys->size(); }
-        CurveKey GetKey(size_t index) const { return Keys->at(index); }
-        void SetKey(size_t index, CurveKey key) { Keys->at(index) = key; }
-        void AddKey(CurveKey key) { Keys->push_back(key); }
+        size_t GetKeyCount() const { return Keys.size(); }
+        CurveKey GetKey(size_t index) const { return Keys.at(index); }
+        void SetKey(size_t index, CurveKey key) { Keys.at(index) = key; }
+        void AddKey(CurveKey key) { Keys.push_back(key); }
 
-    protected:
-        CORELIB_REFL_DECL_FIELD(Keys);
-        SPtr<List<CurveKey>> Keys;
-
-        CORELIB_REFL_DECL_FIELD(DefaultValue);
+        array_list<CurveKey> Keys;
         float DefaultValue;
     };
 

@@ -27,21 +27,6 @@ namespace pulsar
             m_lightsBuffer = gfxApp->CreateBuffer(desc);
         }
 
-        // 创建 descriptor set layout: 3 个 ConstantBuffer binding (0, 1, 2)，全部在同一个 set
-        gfx::GFXDescriptorSetLayoutDesc layoutDescs[3] = {
-            {gfx::GFXDescriptorType::ConstantBuffer, gfx::GFXGpuProgramStageFlags::VertexFragment, 0, 1},
-            {gfx::GFXDescriptorType::ConstantBuffer, gfx::GFXGpuProgramStageFlags::VertexFragment, 1, 1},
-            {gfx::GFXDescriptorType::ConstantBuffer, gfx::GFXGpuProgramStageFlags::VertexFragment, 2, 1},
-        };
-
-        m_descriptorSetLayout = gfxApp->CreateDescriptorSetLayout(layoutDescs, 3);
-        m_descriptorSet = gfxApp->GetDescriptorManager()->GetDescriptorSet(m_descriptorSetLayout);
-
-        m_descriptorSet->AddDescriptor("CameraBuffer", 0)->SetConstantBuffer(m_cameraBuffer.get());
-        m_descriptorSet->AddDescriptor("WorldBuffer", 1)->SetConstantBuffer(m_worldBuffer.get());
-        m_descriptorSet->AddDescriptor("LightBuffer", 2)->SetConstantBuffer(m_lightsBuffer.get());
-        m_descriptorSet->Submit();
-
         m_initialized = true;
     }
 
@@ -50,8 +35,7 @@ namespace pulsar
         if (!m_initialized)
             return;
 
-        m_descriptorSet.reset();
-        m_descriptorSetLayout.reset();
+        m_layoutCache.clear();
         m_cameraBuffer.reset();
         m_worldBuffer.reset();
         m_lightsBuffer.reset();
@@ -61,32 +45,119 @@ namespace pulsar
     void PerPassResources::UpdateCamera(const PerPassCameraData& data)
     {
         if (m_cameraBuffer)
-        {
             m_cameraBuffer->Fill(&data);
-        }
     }
 
     void PerPassResources::UpdateWorld(const PerPassWorldData& data)
     {
         if (m_worldBuffer)
-        {
             m_worldBuffer->Fill(&data);
-        }
     }
 
     void PerPassResources::UpdateLights(const PerPassLightsBufferData& data)
     {
         if (m_lightsBuffer)
-        {
             m_lightsBuffer->Fill(&data);
-        }
     }
 
-    void PerPassResources::Submit()
+    gfx::GFXDescriptorSetLayout_sp PerPassResources::GetLayout(const std::string& passName)
     {
-        if (m_descriptorSet)
+        auto it = m_layoutCache.find(passName);
+        if (it != m_layoutCache.end())
+            return it->second;
+
+        auto gfxApp = Application::GetGfxApp();
+        std::vector<gfx::GFXDescriptorSetLayoutDesc> descs;
+
+        if (passName == "Forward")
         {
-            m_descriptorSet->Submit();
+            descs = {
+                {gfx::GFXDescriptorType::ConstantBuffer,       gfx::GFXGpuProgramStageFlags::VertexFragment, 0, 1},
+                {gfx::GFXDescriptorType::ConstantBuffer,       gfx::GFXGpuProgramStageFlags::VertexFragment, 1, 1},
+                {gfx::GFXDescriptorType::ConstantBuffer,       gfx::GFXGpuProgramStageFlags::VertexFragment, 2, 1},
+                {gfx::GFXDescriptorType::CombinedImageSampler, gfx::GFXGpuProgramStageFlags::Fragment,       3, 1},
+                {gfx::GFXDescriptorType::CombinedImageSampler, gfx::GFXGpuProgramStageFlags::Fragment,       4, 1},
+            };
         }
+        else if (passName == "PostProcess")
+        {
+            descs = {
+                {gfx::GFXDescriptorType::ConstantBuffer,       gfx::GFXGpuProgramStageFlags::VertexFragment, 0, 1},
+                {gfx::GFXDescriptorType::ConstantBuffer,       gfx::GFXGpuProgramStageFlags::VertexFragment, 1, 1},
+                {gfx::GFXDescriptorType::CombinedImageSampler, gfx::GFXGpuProgramStageFlags::Fragment,       3, 1},
+            };
+        }
+        else if (passName == "ShadowCaster")
+        {
+            descs = {
+                {gfx::GFXDescriptorType::ConstantBuffer, gfx::GFXGpuProgramStageFlags::VertexFragment, 0, 1},
+                {gfx::GFXDescriptorType::ConstantBuffer, gfx::GFXGpuProgramStageFlags::VertexFragment, 1, 1},
+            };
+        }
+        else
+        {
+            // 默认：标准 3 CBV
+            descs = {
+                {gfx::GFXDescriptorType::ConstantBuffer, gfx::GFXGpuProgramStageFlags::VertexFragment, 0, 1},
+                {gfx::GFXDescriptorType::ConstantBuffer, gfx::GFXGpuProgramStageFlags::VertexFragment, 1, 1},
+                {gfx::GFXDescriptorType::ConstantBuffer, gfx::GFXGpuProgramStageFlags::VertexFragment, 2, 1},
+            };
+        }
+
+        auto layout = gfxApp->CreateDescriptorSetLayout(descs.data(), static_cast<uint32_t>(descs.size()));
+        m_layoutCache[passName] = layout;
+        return layout;
+    }
+
+    gfx::GFXDescriptorSet_sp PerPassResources::AllocateSet(gfx::GFXDescriptorSetLayout_sp layout) const
+    {
+        auto gfxApp = Application::GetGfxApp();
+        return gfxApp->GetDescriptorManager()->GetDescriptorSet(layout);
+    }
+
+    void PerPassResources::WriteCameraToSet(gfx::GFXDescriptorSet* set) const
+    {
+        if (!set) return;
+        auto* camDesc = set->FindByBinding(0);
+        if (!camDesc) camDesc = set->AddDescriptor("CameraBuffer", 0);
+        if (camDesc) camDesc->SetConstantBuffer(m_cameraBuffer.get());
+    }
+
+    void PerPassResources::WriteWorldToSet(gfx::GFXDescriptorSet* set) const
+    {
+        if (!set) return;
+        auto* worldDesc = set->FindByBinding(1);
+        if (!worldDesc) worldDesc = set->AddDescriptor("WorldBuffer", 1);
+        if (worldDesc) worldDesc->SetConstantBuffer(m_worldBuffer.get());
+    }
+
+    void PerPassResources::WriteLightsToSet(gfx::GFXDescriptorSet* set) const
+    {
+        if (!set) return;
+        auto* lightDesc = set->FindByBinding(2);
+        if (!lightDesc) lightDesc = set->AddDescriptor("LightBuffer", 2);
+        if (lightDesc) lightDesc->SetConstantBuffer(m_lightsBuffer.get());
+    }
+
+    void PerPassResources::WriteStandardBuffers(gfx::GFXDescriptorSet* set) const
+    {
+        WriteCameraToSet(set);
+        WriteWorldToSet(set);
+        WriteLightsToSet(set);
+    }
+
+    void PerPassResources::WriteTexture(gfx::GFXDescriptorSet* set, uint32_t binding, gfx::GFXTexture2DView* view) const
+    {
+        if (!set) return;
+        auto* desc = set->FindByBinding(binding);
+        if (!desc) desc = set->AddDescriptor("Texture", binding);
+        if (view && desc)
+            desc->SetTextureSampler2D(view);
+    }
+
+    void PerPassResources::Submit(gfx::GFXDescriptorSet* set) const
+    {
+        if (set)
+            set->Submit();
     }
 }

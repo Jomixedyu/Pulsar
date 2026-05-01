@@ -1,4 +1,4 @@
-#include "BasePass.h"
+#include "OpaquePass.h"
 #include <Pulsar/Components/CameraComponent.h>
 #include <Pulsar/World.h>
 #include <Pulsar/Scene.h>
@@ -19,14 +19,23 @@ namespace pulsar
         const MaterialPassBinding* binding = nullptr;
     };
 
-    RGTextureHandle BasePass::AddToGraph(RenderGraph& graph, RGTextureHandle hFinal,
+    void OpaquePass::Initialize(PerPassResources* perPass)
+    {
+        m_perPassSet = perPass->AllocateSet(perPass->GetLayout("Forward"));
+    }
+
+    void OpaquePass::Destroy()
+    {
+        m_perPassSet.reset();
+    }
+
+    RGTextureHandle OpaquePass::AddToGraph(RenderGraph& graph, RGTextureHandle hFinal,
                                          CameraComponent* cam, World* world,
                                          PerPassResources* perPass,
                                          gfx::GFXTexture2DView* resolveTargetView)
     {
         auto preparedOpaque      = std::make_shared<array_list<PreparedBatch>>();
         auto preparedAlphaTest   = std::make_shared<array_list<PreparedBatch>>();
-        auto preparedTransparent = std::make_shared<array_list<PreparedBatch>>();
 
         graph.AddPass("BasePass")
             .Write(hFinal, RGAttachmentDesc{
@@ -39,8 +48,11 @@ namespace pulsar
                 .resolveTargetView = resolveTargetView,
             })
             .WithPerPass(perPass)
-            .Prepare([cam, world, preparedOpaque, preparedAlphaTest, preparedTransparent](RGPassContext&)
+            .Prepare([cam, world, preparedOpaque, preparedAlphaTest, perPass, this](RGPassContext&)
             {
+                perPass->WriteStandardBuffers(this->m_perPassSet.get());
+                perPass->Submit(this->m_perPassSet.get());
+
                 const Vector3f camPos     = cam->GetNode()->GetTransform()->GetWorldPosition();
                 const Vector3f camForward = cam->GetNode()->GetTransform()->GetForward();
 
@@ -61,7 +73,10 @@ namespace pulsar
                             preparedAlphaTest->push_back(std::move(pb));
                             break;
                         case ShaderPassRenderQueueType::Transparency:
-                            preparedTransparent->push_back(std::move(pb));
+                            // Transparency is handled by TranslucencyPass
+                            break;
+                        case ShaderPassRenderQueueType::Overlay:
+                            // Overlay batches are drawn after post-processing in GizmoOverlayPass
                             break;
                         default:
                             preparedOpaque->push_back(std::move(pb));
@@ -75,16 +90,10 @@ namespace pulsar
                     if (a.batch.Priority != b.batch.Priority) return a.batch.Priority < b.batch.Priority;
                     return a.batch.Depth < b.batch.Depth;
                 };
-                auto sortDesc = [](const PreparedBatch& a, const PreparedBatch& b)
-                {
-                    if (a.batch.Priority != b.batch.Priority) return a.batch.Priority < b.batch.Priority;
-                    return a.batch.Depth > b.batch.Depth;
-                };
                 std::sort(preparedOpaque->begin(),      preparedOpaque->end(),      sortAsc);
                 std::sort(preparedAlphaTest->begin(),   preparedAlphaTest->end(),   sortAsc);
-                std::sort(preparedTransparent->begin(), preparedTransparent->end(), sortDesc);
             })
-            .Execute([cam, perPass, preparedOpaque, preparedAlphaTest, preparedTransparent]
+            .Execute([cam, perPass, preparedOpaque, preparedAlphaTest, this]
                      (RGPassContext& ctx, gfx::GFXCommandBuffer& cmdBuffer)
             {
                 auto* targetFBO = cmdBuffer.GetFrameBuffer();
@@ -130,7 +139,7 @@ namespace pulsar
 
                         array_list<gfx::GFXDescriptorSetLayout_sp> descLayouts;
                         descLayouts.push_back(pb.binding->m_descriptorSetLayout);
-                        descLayouts.push_back(perPass->GetDescriptorSetLayout());
+                        descLayouts.push_back(this->m_perPassSet->GetDescriptorSetLayout());
                         descLayouts.push_back(pb.batch.DescriptorSetLayout);
 
                         auto gfxPipeline = pipelineMgr->GetGraphicsPipeline(
@@ -144,7 +153,7 @@ namespace pulsar
                         {
                             array_list<gfx::GFXDescriptorSet*> descSets;
                             descSets.push_back(pb.binding->m_descriptorSet.get());
-                            descSets.push_back(perPass->GetDescriptorSet().get());
+                            descSets.push_back(this->m_perPassSet.get());
                             descSets.push_back(element.ModelDescriptor.get());
                             cmdBuffer.CmdBindDescriptorSets(descSets, gfxPipeline.get());
 
@@ -164,7 +173,6 @@ namespace pulsar
 
                 DrawBatchList(*preparedOpaque);
                 DrawBatchList(*preparedAlphaTest);
-                DrawBatchList(*preparedTransparent);
             });
 
         return hFinal;

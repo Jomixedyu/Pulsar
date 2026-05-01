@@ -14,21 +14,39 @@
 #include "Passes/GammaCorrectionPass.h"
 #include "Passes/ColorGradingPass.h"
 #include "Passes/CustomPostProcessChain.h"
+#include "Passes/GizmoOverlayPass.h"
 
 namespace pulsar
 {
     DefaultSceneCaptureRenderer::DefaultSceneCaptureRenderer()
     {
         m_perPassResources.Initialize();
+        m_opaquePass.Initialize(&m_perPassResources);
+        m_translucencyPass.Initialize(&m_perPassResources);
+        m_gizmoOverlayPass.Initialize(&m_perPassResources);
 
-        m_features.push_back(std::make_unique<TonemapPass>());
-        m_features.push_back(std::make_unique<CustomPostProcessChain>());
-        m_features.push_back(std::make_unique<ColorGradingPass>());
-        m_features.push_back(std::make_unique<GammaCorrectionPass>());
+        m_postProcessFeatures.push_back(std::make_unique<TonemapPass>());
+        m_postProcessFeatures.push_back(std::make_unique<CustomPostProcessChain>());
+        m_postProcessFeatures.push_back(std::make_unique<ColorGradingPass>());
+        m_postProcessFeatures.push_back(std::make_unique<GammaCorrectionPass>());
+
+        for (auto& feature : m_postProcessFeatures)
+        {
+            if (auto* pp = dynamic_cast<PostProcessPass*>(feature.get()))
+                pp->Initialize(&m_perPassResources);
+        }
     }
 
     DefaultSceneCaptureRenderer::~DefaultSceneCaptureRenderer()
     {
+        for (auto& feature : m_postProcessFeatures)
+        {
+            if (auto* pp = dynamic_cast<PostProcessPass*>(feature.get()))
+                pp->Destroy();
+        }
+        m_gizmoOverlayPass.Destroy();
+        m_translucencyPass.Destroy();
+        m_opaquePass.Destroy();
         m_perPassResources.Destroy();
     }
 
@@ -93,8 +111,6 @@ namespace pulsar
             perPass->UpdateLights(lightsData);
         }
 
-        perPass->Submit();
-
         RGTextureHandle hFinal = graph.ImportTexture("FinalOutput", camRenderTexture);
 
         uint32_t msaaSamples = 1;
@@ -103,7 +119,7 @@ namespace pulsar
             msaaSamples = std::max(1u, capture2D->GetMSAASamples());
         }
 
-        RGTextureHandle hBasePassOutput = hFinal;
+        RGTextureHandle hSceneColor = hFinal;
         gfx::GFXTexture2DView* resolveTargetView = nullptr;
         if (msaaSamples > 1)
         {
@@ -116,12 +132,40 @@ namespace pulsar
                 bool isTransient = (rt->GetTargetType() == gfx::GFXTextureTargetType::ColorTarget);
                 msDesc.TargetInfos.push_back({ rt->GetTargetType(), rt->GetFormat(), msaaSamples, isTransient });
             }
-            hBasePassOutput = graph.CreateTransient("MSBasePass", msDesc);
+            hSceneColor = graph.CreateTransient("MSSceneColor", msDesc);
             resolveTargetView = camRenderTexture->GetGfxRenderTarget0().get();
         }
 
-        // BasePass (auto-resolve to final RT if MSAA is enabled)
-        hBasePassOutput = m_basePass.AddToGraph(graph, hBasePassOutput, cam, world, perPass, resolveTargetView);
+        // OpaquePass (auto-resolve to final RT if MSAA is enabled)
+        hSceneColor = m_opaquePass.AddToGraph(graph, hSceneColor, cam, world, perPass, resolveTargetView);
+
+        // ---- Translucency: copy opaque scene color for refraction/distortion sampling ----
+        auto* camRT = cam->GetRenderTexture().GetPtr();
+        auto format = camRT->GetRenderTargets()[0]->GetFormat();
+
+        RGTextureDesc opaqueColorDesc{};
+        opaqueColorDesc.Width  = camRT->GetWidth();
+        opaqueColorDesc.Height = camRT->GetHeight();
+        opaqueColorDesc.TargetInfos.push_back({ gfx::GFXTextureTargetType::ColorTarget, format });
+        auto hOpaqueColor = graph.CreateTransient("OpaqueColorTexture", opaqueColorDesc);
+
+        graph.AddPass("CopyOpaqueColor")
+            .Read(hSceneColor)
+            .Write(hOpaqueColor)
+            .NoRenderPass()
+            .Execute([hSceneColor, hOpaqueColor](RGPassContext& passCtx, gfx::GFXCommandBuffer& cmdBuffer)
+            {
+                auto* srcRT = passCtx.Get(hSceneColor);
+                auto* dstRT = passCtx.Get(hOpaqueColor);
+                if (!srcRT || !dstRT) return;
+                auto srcView = srcRT->GetGfxRenderTarget0();
+                auto dstView = dstRT->GetGfxRenderTarget0();
+                if (!srcView || !dstView) return;
+                cmdBuffer.CmdBlit(srcView.get(), dstView.get());
+            });
+
+        // TranslucencyPass continues drawing onto the final target
+        hSceneColor = m_translucencyPass.AddToGraph(graph, hSceneColor, cam, world, perPass, hOpaqueColor);
 
         // ---- Post-Process Features ----
         VolumeStack stack;
@@ -131,18 +175,16 @@ namespace pulsar
             stack = ppSub->QuerySettings(camPos);
         }
 
-        auto* camRT = cam->GetRenderTexture().GetPtr();
         RGTextureDesc pingPongDesc{};
         pingPongDesc.Width  = camRT->GetWidth();
         pingPongDesc.Height = camRT->GetHeight();
-        auto format = camRT->GetRenderTargets()[0]->GetFormat();
         pingPongDesc.TargetInfos.push_back({ gfx::GFXTextureTargetType::ColorTarget, format });
 
         RGTextureHandle hPingPong = graph.CreateTransient("PostProcessPingPong", pingPongDesc);
         RGTextureHandle hSrc = hFinal;
         RGTextureHandle hDst = hPingPong;
 
-        for (auto& feature : m_features)
+        for (auto& feature : m_postProcessFeatures)
         {
             feature->OnSetup(ctx);
             feature->ReadSettings(stack);
@@ -175,6 +217,10 @@ namespace pulsar
                     cmdBuffer.CmdBlit(srcView.get(), finalView.get());
                 });
         }
+
+        // Draw gizmos after all post-processing so they remain unaffected
+        m_gizmoOverlayPass.OnSetup(ctx);
+        m_gizmoOverlayPass.AddToGraph(graph, hFinal, hFinal, cam, perPass);
     }
 
 } // namespace pulsar

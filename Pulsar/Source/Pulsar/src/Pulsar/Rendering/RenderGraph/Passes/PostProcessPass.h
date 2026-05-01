@@ -14,6 +14,9 @@ namespace pulsar
         explicit PostProcessPass(RCPtr<Material> material);
         virtual ~PostProcessPass() = default;
 
+        void Initialize(PerPassResources* perPass);
+        void Destroy();
+
         RGTextureHandle AddToGraph(RenderGraph& graph,
                                    RGTextureHandle hSrc,
                                    RGTextureHandle hDst,
@@ -38,6 +41,7 @@ namespace pulsar
 
         RCPtr<Material> m_material;
         gfx::GFXDescriptorSet_sp m_descriptorSet;
+        gfx::GFXDescriptorSet_sp m_perPassSet;
         gfx::GFXDescriptorSetLayout_sp m_inputSamplerLayout;
     };
 }
