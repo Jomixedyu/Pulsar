@@ -20,6 +20,7 @@ namespace pulsar
         CurveKeyCollection GetCurveData(size_t index) const;
 
         int GetKeyCount() const { return (int)m_R.GetKeyCount(); }
+        int GetKeyCountA() const { return (int)m_A.GetKeyCount(); }
 
         void SetKeyR(int index, CurveKey r);
         void SetKeyG(int index, CurveKey g);
@@ -27,6 +28,11 @@ namespace pulsar
         void SetKeyA(int index, CurveKey a);
 
         void SetAllColorKey(int index, CurveKey all);
+        void ClearKeys();
+        void AddKeyR(CurveKey key);
+        void AddKeyG(CurveKey key);
+        void AddKeyB(CurveKey key);
+        void AddKeyA(CurveKey key);
 
         CurveKey GetKeyR(int index) const;
         CurveKey GetKeyG(int index) const;

@@ -82,9 +82,6 @@ namespace pulsar
     struct CurveKeyCollection
     {
     public:
-        CurveKeyCollection() : DefaultValue(0)
-        {
-        }
         float Sample(float X, float InDefaultValue = 0.0f) const;
 
         size_t GetKeyCount() const { return Keys.size(); }
@@ -93,7 +90,6 @@ namespace pulsar
         void AddKey(CurveKey key) { Keys.push_back(key); }
 
         array_list<CurveKey> Keys;
-        float DefaultValue;
     };
 
     class Curve : public AssetObject

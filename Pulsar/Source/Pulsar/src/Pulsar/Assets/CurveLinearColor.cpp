@@ -40,9 +40,9 @@ namespace pulsar
             auto curvesArray = s->Object->New(ser::VarientType::Object);
 
             curvesArray->Add("R", SaveCollection(curvesArray, m_R));
-            curvesArray->Add("G", SaveCollection(curvesArray, m_R));
-            curvesArray->Add("B", SaveCollection(curvesArray, m_R));
-            curvesArray->Add("A", SaveCollection(curvesArray, m_R));
+            curvesArray->Add("G", SaveCollection(curvesArray, m_G));
+            curvesArray->Add("B", SaveCollection(curvesArray, m_B));
+            curvesArray->Add("A", SaveCollection(curvesArray, m_A));
 
             s->Object->Add("Curves", curvesArray);
         }
@@ -53,10 +53,11 @@ namespace pulsar
             m_B = {};
             m_A = {};
 
-            LoadCollection(s->Object->At("R"), m_R);
-            LoadCollection(s->Object->At("G"), m_G);
-            LoadCollection(s->Object->At("B"), m_B);
-            LoadCollection(s->Object->At("A"), m_A);
+            auto obj = s->Object->At("Curves");
+            LoadCollection(obj->At("R"), m_R);
+            LoadCollection(obj->At("G"), m_G);
+            LoadCollection(obj->At("B"), m_B);
+            LoadCollection(obj->At("A"), m_A);
 
         }
     }
@@ -137,6 +138,30 @@ namespace pulsar
         m_R.AddKey(key);
         m_G.AddKey(key);
         m_B.AddKey(key);
+        m_A.AddKey(key);
+    }
+
+    void CurveLinearColor::ClearKeys()
+    {
+        m_R.Keys.clear();
+        m_G.Keys.clear();
+        m_B.Keys.clear();
+        m_A.Keys.clear();
+    }
+    void CurveLinearColor::AddKeyR(CurveKey key)
+    {
+        m_R.AddKey(key);
+    }
+    void CurveLinearColor::AddKeyG(CurveKey key)
+    {
+        m_G.AddKey(key);
+    }
+    void CurveLinearColor::AddKeyB(CurveKey key)
+    {
+        m_B.AddKey(key);
+    }
+    void CurveLinearColor::AddKeyA(CurveKey key)
+    {
         m_A.AddKey(key);
     }
 
