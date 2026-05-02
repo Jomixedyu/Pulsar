@@ -45,7 +45,10 @@ namespace pulsar
             size_t oldSize = m_passPool.size();
             m_passPool.resize(m_materials.size());
             for (size_t i = oldSize; i < m_passPool.size(); ++i)
+            {
                 m_passPool[i] = std::make_unique<CustomPostProcessPass>();
+                m_passPool[i]->Initialize(perPass);
+            }
         }
 
         RGTextureHandle curSrc = input;
