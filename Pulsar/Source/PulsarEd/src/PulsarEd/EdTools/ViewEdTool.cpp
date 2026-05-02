@@ -111,7 +111,21 @@ namespace pulsared
             {
                 auto cam = m_world->GetCurrentCamera();
                 auto tr = cam->GetNode()->GetTransform();
-                auto dtDistance = (newpos.x - m_latestMousePos.x) * m_scaleSpeed;
+
+                float scaleFactor = m_scaleSpeed;
+                if (cam->GetProjectionMode() == CaptureProjectionMode::Perspective)
+                {
+                    float camZ = tr->GetPosition().z;
+                    float distance = camZ < 0 ? -camZ : camZ;
+                    if (distance < 0.01f) distance = 0.01f;
+                    scaleFactor = distance * 0.01f;
+                }
+                else
+                {
+                    scaleFactor = cam->GetOrthoSize() * 0.02f;
+                }
+
+                auto dtDistance = (newpos.x - m_latestMousePos.x) * scaleFactor;
                 if (cam->GetProjectionMode() == CaptureProjectionMode::Perspective)
                 {
                     if (tr->GetPosition().z + dtDistance > -0.01f)
@@ -135,11 +149,27 @@ namespace pulsared
             else if (m_middleMousePressed)
             {
                 auto tr = camCtrl->GetTargetTransform();
+                auto cam = m_world->GetCurrentCamera();
+                auto camTr = cam->GetNode()->GetTransform();
+
+                float panSpeed = 0.01f;
+                if (cam->GetProjectionMode() == CaptureProjectionMode::Perspective)
+                {
+                    float camZ = camTr->GetPosition().z;
+                    float distance = camZ < 0 ? -camZ : camZ;
+                    if (distance < 0.01f) distance = 0.01f;
+                    panSpeed = distance * 0.01f;
+                }
+                else
+                {
+                    panSpeed = cam->GetOrthoSize() * 0.02f;
+                }
+
                 auto dtX = newpos.x - m_latestMousePos.x;
                 auto dtY = newpos.y - m_latestMousePos.y;
 
-                tr->Translate(tr->GetRight() * -dtX * 0.1f);
-                tr->Translate(tr->GetUp() * dtY * 0.1f);
+                tr->Translate(tr->GetRight() * -dtX * panSpeed);
+                tr->Translate(tr->GetUp() * dtY * panSpeed);
             }
         }
 
