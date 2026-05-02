@@ -136,4 +136,15 @@ namespace pulsar
             out.push_back(curve.GetHandle());
         }
     }
+    void CurveLinearColorAtlas::OnCollectAssetDependencies(array_list<guid_t>& deps)
+    {
+        base::OnCollectAssetDependencies(deps);
+        if (m_colorCurveAssets)
+        {
+            for (auto& curve : *m_colorCurveAssets)
+            {
+                deps.push_back(curve.GetGuid());
+            }
+        }
+    }
 } // namespace pulsar

@@ -22,6 +22,8 @@ namespace pulsar
         void PostEditChange(FieldInfo* info) override;
         void OnNotifyObserver(ObjectHandle inDependency, DependencyObjectState msg) override;
         void GetSubscribeObserverHandles(array_list<ObjectHandle>& out) override;
+
+        void OnCollectAssetDependencies(array_list<guid_t>& deps) override;
     protected:
 
         CORELIB_REFL_DECL_FIELD(m_width, new RangePropertyAttribute(4, 2048))

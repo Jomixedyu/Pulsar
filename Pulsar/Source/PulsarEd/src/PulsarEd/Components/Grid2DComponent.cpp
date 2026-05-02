@@ -95,6 +95,8 @@ namespace pulsared
     SPtr<rendering::RenderObject> Grid2DComponent::CreateRenderObject()
     {
         auto ro = new LineRenderObject();
+        ro->SetDepthTestEnabled(true);
+        ro->SetQueue(ShaderPassRenderQueueType::Opaque);
         ro->SetPoints(m_vert, m_colors);
 
         return mksptr(ro);

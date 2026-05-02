@@ -10,10 +10,10 @@ namespace pulsar
         return a + t * (b - a);
     }
 
-    float CurveData::Sample(float InTime, float InDefaultValue) const
+    float CurveKeyCollection::Sample(float InTime, float InDefaultValue) const
     {
-        auto keyA = Keys->at(0);
-        auto keyB = Keys->at(1);
+        auto keyA = Keys.at(0);
+        auto keyB = Keys.at(1);
 
         if (InTime < keyA.Time)
         {

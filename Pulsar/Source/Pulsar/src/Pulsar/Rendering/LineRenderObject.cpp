@@ -93,8 +93,8 @@ namespace pulsar
         batch.State.LineWidth = 1.f;
         batch.State.VertexLayouts = {StaticMesh::StaticGetVertexLayout()};
         batch.IsUsedIndices = false;
-        batch.IsDepthTestDisabled = true;  // Gizmo 线条始终可见，不被模型遮挡
-        batch.Queue = ShaderPassRenderQueueType::Overlay; // 在所有后处理之后绘制
+        batch.IsDepthTestDisabled = !m_depthTestEnabled;
+        batch.Queue = m_renderQueue;
         batch.Material = AssetManager::Get()->LoadAsset<Material>("Engine/Materials/VertexColor");
     }
 

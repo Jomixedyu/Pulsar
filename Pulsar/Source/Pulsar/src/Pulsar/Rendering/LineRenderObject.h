@@ -17,6 +17,8 @@ namespace pulsar
         gfx::GFXDescriptorSetLayout_sp m_meshDescriptorSetLayout;
 
         array_list<rendering::MeshBatch> m_batchs;
+        bool m_depthTestEnabled = false;
+        ShaderPassRenderQueueType m_renderQueue = ShaderPassRenderQueueType::Overlay;
 
     public:
         LineRenderObject() = default;
@@ -25,6 +27,9 @@ namespace pulsar
         void SetVerties(const array_list<StaticMeshVertex>& verties);
         size_t GetPointCount() const { return m_verties.size(); }
         void Fill();
+
+        void SetDepthTestEnabled(bool enabled) { m_depthTestEnabled = enabled; }
+        void SetQueue(ShaderPassRenderQueueType queue) { m_renderQueue = queue; }
 
         void OnCreateResource() override;
         void OnDestroyResource() override;

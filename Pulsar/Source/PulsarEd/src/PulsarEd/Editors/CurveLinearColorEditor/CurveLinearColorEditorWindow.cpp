@@ -29,16 +29,15 @@ namespace pulsared
         auto id = ImGui::GetID("cx");
         ImGradientHDRState state;
 
-        auto keyCount = m_colorCurve->GetCurveData(0)->GetKeyCount();
-        auto curveCount = m_colorCurve->GetCurveCount();
+        auto keyCount = m_colorCurve->GetKeyCount();
 
         for (int i = 0; i < keyCount; ++i)
         {
-            auto time = m_colorCurve->GetCurveData(0)->GetKey(i).Time;
+            auto time = m_colorCurve->GetKeyR(i).Time;
             std::array<float, 3> color{};
-            color[0] = m_colorCurve->GetCurveData(0)->GetKey(i).Value;
-            color[1] = m_colorCurve->GetCurveData(1)->GetKey(i).Value;
-            color[2] = m_colorCurve->GetCurveData(2)->GetKey(i).Value;
+            color[0] = m_colorCurve->GetKeyR(i).Value;
+            color[1] = m_colorCurve->GetKeyG(i).Value;
+            color[2] = m_colorCurve->GetKeyB(i).Value;
             state.AddColorMarker(time, color, 1);;
         }
 
@@ -49,7 +48,7 @@ namespace pulsared
             auto newKeyCount = state.ColorCount;
             for (int i = oldKeyCount; i < newKeyCount; ++i)
             {
-                m_colorCurve->InsertColorKey();
+                m_colorCurve->AddKey({});
             }
 
             for (int keyIndex = 0; keyIndex < state.ColorCount; ++keyIndex)
