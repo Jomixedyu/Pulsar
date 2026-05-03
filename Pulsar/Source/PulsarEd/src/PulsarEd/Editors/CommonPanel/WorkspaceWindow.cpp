@@ -56,8 +56,15 @@ namespace pulsared
 
             const ImVec2 padding = g.Style.FramePadding;
 
+            // 计算文本在按钮宽度内需要的高度，限制最多3行
+            const float wrap_width = ctx->size.x;
+            const ImVec2 text_size = CalcTextSize(ctx->str, nullptr, false, wrap_width);
+            const float line_height = GetTextLineHeight();
+            const float max_label_height = line_height * 3.0f;
+            const float label_height = ImClamp(text_size.y, ctx->label_height, max_label_height);
+
             ImVec2 offset = ctx->size;
-            offset.y += ctx->label_height;
+            offset.y += label_height;
 
             ImRect pic_bb(window->DC.CursorPos, window->DC.CursorPos + ctx->size + padding * 2.0f);
             ImRect dirty_bb(window->DC.CursorPos, window->DC.CursorPos + ImVec2{16, 16});
@@ -101,7 +108,18 @@ namespace pulsared
 
             auto label_pos = bb.Min + padding;
             label_pos.y += ctx->size.y;
-            RenderText(label_pos, ctx->str);
+
+            // 如果实际高度被限制，需要裁剪
+            if (text_size.y > max_label_height)
+            {
+                PushClipRect(label_pos, label_pos + ImVec2(wrap_width, max_label_height), true);
+                RenderTextWrapped(label_pos, ctx->str, nullptr, wrap_width);
+                PopClipRect();
+            }
+            else
+            {
+                RenderTextWrapped(label_pos, ctx->str, nullptr, wrap_width);
+            }
 
             if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort | ImGuiHoveredFlags_NoSharedDelay))
             {
