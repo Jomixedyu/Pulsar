@@ -35,6 +35,8 @@ namespace pulsar
                 WeakAssetPtr<CurveLinearColor> curve = curves->At(i)->AsString();
                 m_colorCurveAssets->push_back(curve.Get());
             }
+            RebuildObserver();
+            Generate();
         }
     }
 
