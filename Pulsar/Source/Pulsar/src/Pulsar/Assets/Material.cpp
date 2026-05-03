@@ -185,7 +185,7 @@ namespace pulsar
                         break;
                     case ShaderPropertyType::Texture2D: {
                         guid_t guid = guid_t::parse(valueObject->AsString());
-                        RCPtr<Texture2D> tex = RuntimeAssetManager::GetLoadedAssetByGuid<Texture2D>(guid);
+                        RCPtr<Texture> tex = RuntimeAssetManager::GetLoadedAssetByGuid<Texture>(guid);
                         m_sheet.SetTexture(name, tex);
                         break;
                     }
