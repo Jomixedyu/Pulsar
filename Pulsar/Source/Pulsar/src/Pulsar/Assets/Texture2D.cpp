@@ -168,4 +168,10 @@ namespace pulsar
         return m_isCreatedGPUResource;
     }
 
+    bool Texture2D::IsSRGB() const
+    {
+        auto fmt = StaticGetFormatMapping(OSPlatform::Windows64)->at(m_compressionFormat);
+        return fmt == gfx::GFXTextureFormat::BC3_SRGB || fmt == gfx::GFXTextureFormat::BC7_SRGB || fmt == gfx::GFXTextureFormat::R8G8B8A8_SRGB;
+    }
+
 } // namespace pulsar

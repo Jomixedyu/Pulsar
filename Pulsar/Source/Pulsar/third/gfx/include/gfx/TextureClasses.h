@@ -18,6 +18,8 @@ namespace gfx
         B10G11R11_UFloat,
         BC3_SRGB,
         BC3_UNorm,
+        BC7_SRGB,
+        BC7_UNorm,
         BC4_UNorm,
         BC5_UNorm,
         BC6H_RGB_SFloat,
@@ -51,6 +53,10 @@ namespace gfx
             return "BC3_SRGB";
         case GFXTextureFormat::BC3_UNorm:
             return "BC3_UNorm";
+        case GFXTextureFormat::BC7_SRGB:
+            return "BC7_SRGB";
+        case GFXTextureFormat::BC7_UNorm:
+            return "BC7_UNorm";
         case GFXTextureFormat::BC4_UNorm:
             return "BC4_UNorm";
         case GFXTextureFormat::BC5_UNorm:
