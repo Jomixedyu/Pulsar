@@ -33,6 +33,6 @@ namespace pulsared
         RCPtr<Material> m_ppMat;
         ObjectPtr<Node> m_previewVolumeNode;
         RCPtr<VolumeProfile> m_previewProfile;
-        SPtr<GammaCorrectionSettings> m_gammaSettings;
+        SPtr<DisplayEncodingSettings> m_displayEncodingSettings;
     };
 }

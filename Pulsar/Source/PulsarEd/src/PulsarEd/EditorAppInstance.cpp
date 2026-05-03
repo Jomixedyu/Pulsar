@@ -23,7 +23,7 @@
 #include <Pulsar/Components/VolumeComponent.h>
 #include <Pulsar/Assets/VolumeProfile.h>
 #include <Pulsar/Assets/TonemappingSettings.h>
-#include <Pulsar/Assets/GammaCorrectionSettings.h>
+#include <Pulsar/Assets/DisplayEncodingSettings.h>
 #include <Pulsar/ImGuiImpl.h>
 #include <Pulsar/Logger.h>
 #include <Pulsar/Physics3D/RigidBodyDynamics3DComponent.h>
@@ -233,7 +233,7 @@ namespace pulsared
 
             auto profile = NewAssetObject<VolumeProfile>();
             profile->GetEffects()->push_back(mksptr(new TonemappingSettings()));
-            profile->GetEffects()->push_back(mksptr(new GammaCorrectionSettings()));
+            profile->GetEffects()->push_back(mksptr(new DisplayEncodingSettings()));
             volComp->SetProfile(profile);
         }
 

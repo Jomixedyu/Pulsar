@@ -11,7 +11,7 @@
 #include <gfx/GFXCommandBuffer.h>
 
 #include "Passes/TonemapPass.h"
-#include "Passes/GammaCorrectionPass.h"
+#include "Passes/DisplayEncodingPass.h"
 #include "Passes/ColorGradingPass.h"
 #include "Passes/CustomPostProcessChain.h"
 #include "Passes/GizmoOverlayPass.h"
@@ -28,7 +28,7 @@ namespace pulsar
         m_postProcessFeatures.push_back(std::make_unique<TonemapPass>());
         m_postProcessFeatures.push_back(std::make_unique<CustomPostProcessChain>());
         m_postProcessFeatures.push_back(std::make_unique<ColorGradingPass>());
-        m_postProcessFeatures.push_back(std::make_unique<GammaCorrectionPass>());
+        m_postProcessFeatures.push_back(std::make_unique<DisplayEncodingPass>());
 
         for (auto& feature : m_postProcessFeatures)
         {
