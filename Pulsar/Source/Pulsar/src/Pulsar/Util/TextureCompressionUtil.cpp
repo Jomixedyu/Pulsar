@@ -8,6 +8,34 @@
     #include <DirectXTex/BC.h>
 #endif
 
+#ifdef _OPENMP
+    #include <omp.h>
+#endif
+
+namespace
+{
+    class ScopedOmpThreadLimit
+    {
+    public:
+        ScopedOmpThreadLimit()
+        {
+#ifdef _OPENMP
+            m_oldThreads = omp_get_max_threads();
+            int maxThreads = (std::max)(1, m_oldThreads - 2);
+            omp_set_num_threads(maxThreads);
+#endif
+        }
+        ~ScopedOmpThreadLimit()
+        {
+#ifdef _OPENMP
+            omp_set_num_threads(m_oldThreads);
+#endif
+        }
+    private:
+        int m_oldThreads = 1;
+    };
+}
+
 namespace pulsar
 {
     template <typename _TyData>
@@ -141,10 +169,11 @@ namespace pulsar
                 .pixels = data.data()
             };
             DirectX::ScratchImage SImg;
+            ScopedOmpThreadLimit ompLimit;
             DirectX::Compress(
                 img,
                 DXGI_FORMAT_BC7_UNORM_SRGB,
-                DirectX::TEX_COMPRESS_SRGB,
+                DirectX::TEX_COMPRESS_SRGB | DirectX::TEX_COMPRESS_PARALLEL | DirectX::TEX_COMPRESS_BC7_QUICK,
                 DirectX::TEX_THRESHOLD_DEFAULT,
                 SImg);
             ret.resize(SImg.GetPixelsSize());
@@ -167,10 +196,11 @@ namespace pulsar
                 .pixels = data.data()
             };
             DirectX::ScratchImage SImg;
+            ScopedOmpThreadLimit ompLimit;
             DirectX::Compress(
                 img,
                 DXGI_FORMAT_BC7_UNORM,
-                DirectX::TEX_COMPRESS_DEFAULT,
+                DirectX::TEX_COMPRESS_DEFAULT | DirectX::TEX_COMPRESS_PARALLEL | DirectX::TEX_COMPRESS_BC7_QUICK,
                 DirectX::TEX_THRESHOLD_DEFAULT,
                 SImg);
             ret.resize(SImg.GetPixelsSize());
@@ -255,7 +285,6 @@ namespace pulsar
             ret = _ResizeChannel<float>(std::move(data), width, height, channel, 1, 1);
             break;
         case gfx::GFXTextureFormat::R32G32B32A32_SFloat:
-
             ret = _ResizeChannel<float>(std::move(data), width, height, channel, 4, 1);
             break;
         default:
