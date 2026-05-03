@@ -21,6 +21,9 @@ namespace pulsared
 
         CORELIB_REFL_DECL_FIELD(UseMikktspace);
         bool UseMikktspace = true;
+
+        CORELIB_REFL_DECL_FIELD(SkinnedMeshToStaticMesh);
+        bool SkinnedMeshToStaticMesh = false;
     };
 
     class PULSARED_API FBXImporter : public AssetImporter

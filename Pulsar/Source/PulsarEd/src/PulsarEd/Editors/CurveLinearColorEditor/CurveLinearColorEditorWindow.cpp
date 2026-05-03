@@ -11,6 +11,8 @@
 
 namespace pulsared
 {
+    using pulsar::math::LinearToSRGB;
+    using pulsar::math::SRGBToLinear;
 
     void CurveLinearColorEditorWindow::OnOpen()
     {
@@ -112,15 +114,15 @@ namespace pulsared
         auto id = ImGui::GetID("cx");
         ImGradientHDRState state;
 
-        // Load RGB color markers
+        // Load RGB color markers (Linear -> sRGB for display)
         auto keyCount = m_colorCurve->GetKeyCount();
         for (int i = 0; i < keyCount; ++i)
         {
             auto time = m_colorCurve->GetKeyR(i).Time;
             std::array<float, 3> color{};
-            color[0] = m_colorCurve->GetKeyR(i).Value;
-            color[1] = m_colorCurve->GetKeyG(i).Value;
-            color[2] = m_colorCurve->GetKeyB(i).Value;
+            color[0] = LinearToSRGB(m_colorCurve->GetKeyR(i).Value);
+            color[1] = LinearToSRGB(m_colorCurve->GetKeyG(i).Value);
+            color[2] = LinearToSRGB(m_colorCurve->GetKeyB(i).Value);
             state.AddColorMarker(time, color, 1);
         }
 
@@ -158,9 +160,9 @@ namespace pulsared
             {
                 CurveKey r{}, g{}, b{};
                 r.Time = g.Time = b.Time = state.Colors[i].Position;
-                r.Value = state.Colors[i].Color[0];
-                g.Value = state.Colors[i].Color[1];
-                b.Value = state.Colors[i].Color[2];
+                r.Value = SRGBToLinear(state.Colors[i].Color[0]);
+                g.Value = SRGBToLinear(state.Colors[i].Color[1]);
+                b.Value = SRGBToLinear(state.Colors[i].Color[2]);
                 m_colorCurve->AddKeyR(r);
                 m_colorCurve->AddKeyG(g);
                 m_colorCurve->AddKeyB(b);
@@ -197,12 +199,12 @@ namespace pulsared
                     AssetDatabase::MarkDirty(m_assetObject);
                 }
 
-                float color3[3] = { r.Value, g.Value, b.Value };
+                float color3[3] = { LinearToSRGB(r.Value), LinearToSRGB(g.Value), LinearToSRGB(b.Value) };
                 if (ImGui::ColorEdit3("color", color3, ImGuiColorEditFlags_Float | ImGuiColorEditFlags_HDR))
                 {
-                    r.Value = color3[0];
-                    g.Value = color3[1];
-                    b.Value = color3[2];
+                    r.Value = SRGBToLinear(color3[0]);
+                    g.Value = SRGBToLinear(color3[1]);
+                    b.Value = SRGBToLinear(color3[2]);
                     m_colorCurve->SetKeyR(temporaryState.selectedIndex, r);
                     m_colorCurve->SetKeyG(temporaryState.selectedIndex, g);
                     m_colorCurve->SetKeyB(temporaryState.selectedIndex, b);

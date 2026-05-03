@@ -255,6 +255,7 @@ namespace pulsared
         auto gridMat = AssetManager::Get()->LoadAsset<Material>("Engine/Materials/WorldGrid", true);
         auto litMat = AssetManager::Get()->LoadAsset<Material>("Engine/Materials/Lambert", true);
         ShapeMeshUtils::CreateCube(scene, "floor", gridMat, false, {0, -0.25f, 0},{}, { 10.f, 0.5f, 10.f});
+        return;
         {
 
             ShapeMeshUtils::CreateCube(scene, "cube", gridMat,true, {-2.f,0.5f,2.f},{0.0f, -35.0f,0.0f});
@@ -264,7 +265,7 @@ namespace pulsared
             ShapeMeshUtils::CreateSphere(scene, "sphere", gridMat, true, {-0.3f, 5.f, 1.3f});
 
         }
-        return;
+
 
         {
             auto p1 = scene->NewNode("PointLight");
