@@ -17,6 +17,7 @@ namespace pulsar
     class Scene : public NodeCollection
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::Scene, NodeCollection);
+        CORELIB_CLASS_ATTR(new AssetIconAttribute("Editor/Icons/scene.png"));
         DECL_OBJECTPTR_SELF
     public:
         Scene();
