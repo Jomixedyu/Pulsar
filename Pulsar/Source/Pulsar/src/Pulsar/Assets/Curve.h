@@ -95,6 +95,7 @@ namespace pulsar
     class Curve : public AssetObject
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::Curve, AssetObject);
+        CORELIB_CLASS_ATTR(new AssetIconAttribute("Editor/Icons/curve.png"))
     public:
         virtual size_t GetCurveCount() const = 0;
 
