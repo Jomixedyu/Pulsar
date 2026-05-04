@@ -15,6 +15,15 @@ namespace pulsar
         m_canDrawGizmo = true;
     }
 
+    void VolumeComponent::GetDependenciesAsset(array_list<guid_t>& deps) const
+    {
+        base::GetDependenciesAsset(deps);
+        if (m_profile)
+        {
+            deps.push_back(m_profile.GetGuid());
+        }
+    }
+
     void VolumeComponent::OnDrawGizmo(GizmoPainter* painter, bool selected)
     {
         static auto boxArray = SimplePrimitiveUtils::CreateBox<Vector3f>();

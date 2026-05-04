@@ -32,6 +32,7 @@ namespace pulsar
 
         bool IsEnabled() const override { return m_enabled; }
         void Blend(float weight, VolumeSettings* accumulator) override;
+        void CollectAssetDependencies(array_list<guid_t>& deps) override;
 
     private:
         float m_blendWeight       = 0.0f; // transient

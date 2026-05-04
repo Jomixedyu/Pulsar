@@ -21,4 +21,14 @@ namespace pulsar
             acc->m_dominantLUTWeight = weight;
         }
     }
+
+    void ColorGradingSettings::CollectAssetDependencies(array_list<guid_t>& deps)
+    {
+        if (m_lutTexture)
+        {
+            auto guid = m_lutTexture.GetGuid();
+            if (!guid.is_empty())
+                deps.push_back(guid);
+        }
+    }
 }

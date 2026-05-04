@@ -66,27 +66,7 @@ namespace pulsar
     {
         for (auto& effect : *m_effects)
         {
-            if (auto* ppMat = dynamic_cast<PostProcessMaterialSettings*>(effect.get()))
-            {
-                for (auto& mat : *ppMat->m_materials)
-                {
-                    if (mat)
-                    {
-                        auto guid = mat.GetGuid();
-                        if (!guid.is_empty())
-                            deps.push_back(guid);
-                    }
-                }
-            }
-            else if (auto* lut = dynamic_cast<ColorGradingSettings*>(effect.get()))
-            {
-                if (lut->m_lutTexture)
-                {
-                    auto guid = lut->m_lutTexture.GetGuid();
-                    if (!guid.is_empty())
-                        deps.push_back(guid);
-                }
-            }
+            effect->CollectAssetDependencies(deps);
         }
     }
 

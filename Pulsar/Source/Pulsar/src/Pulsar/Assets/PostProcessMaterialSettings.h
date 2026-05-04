@@ -16,6 +16,7 @@ namespace pulsar
 
         bool SupportsBlending() const override { return false; }
         void Blend(float weight, VolumeSettings* accumulator) override;
+        void CollectAssetDependencies(array_list<guid_t>& deps) override;
 
         CORELIB_REFL_DECL_FIELD(m_materials, new ListItemAttribute(cltypeof<Material>()));
         List_sp<RCPtr<Material>> m_materials;

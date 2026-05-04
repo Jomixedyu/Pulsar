@@ -35,6 +35,8 @@ namespace pulsar
         // Returns 1.0 for global volumes, or a 0~1 blend based on distance to box bounds.
         float ComputeBlendWeight(const Vector3f& worldPos) const;
 
+        void GetDependenciesAsset(array_list<guid_t>& deps) const override;
+
         void OnDrawGizmo(GizmoPainter* painter, bool selected) override;
 
     protected:
