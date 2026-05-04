@@ -86,8 +86,8 @@ namespace pulsared
     {
         base::OnLoadingResidentScene(scene);
 
-        auto camCtrlNode = scene->NewNode("EdCameraController", nullptr, OF_NoPack);
-        auto camNode = scene->NewNode("EdCamera", camCtrlNode, OF_NoPack);
+        auto camCtrlNode = scene->NewNode("EdCameraController", nullptr, OF_Transient | OF_NoPack);
+        auto camNode = scene->NewNode("EdCamera", camCtrlNode, OF_Transient | OF_NoPack);
         camNode->GetTransform()->Translate({0, 0, -1});
         this->m_camNode = camNode;
 

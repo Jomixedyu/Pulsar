@@ -6,6 +6,7 @@
 #include "ImGuizmo.h"
 #include "Pulsar/Components/CameraComponent.h"
 #include "Pulsar/Node.h"
+#include <PulsarEd/AssetDatabase.h>
 
 namespace pulsared
 {
@@ -125,6 +126,13 @@ namespace pulsared
             auto parentWorldQuat = MatToQuat(parentRotMat);
 
             transform->SetRotation(jmath::Inverse(parentWorldQuat) * worldQuat);
+            if (auto focusScene = m_world->GetFocusScene())
+            {
+                if (auto asset = cast<AssetObject>(focusScene))
+                {
+                    AssetDatabase::MarkDirty(asset);
+                }
+            }
         }
 
 

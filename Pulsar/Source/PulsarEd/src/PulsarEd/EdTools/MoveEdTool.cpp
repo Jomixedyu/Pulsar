@@ -7,6 +7,7 @@
 
 #include "Pulsar/Components/CameraComponent.h"
 #include "Pulsar/Node.h"
+#include <PulsarEd/AssetDatabase.h>
 
 
 namespace pulsared
@@ -49,6 +50,13 @@ namespace pulsared
             nullptr, nullptr, nullptr, nullptr))
         {
             node->GetTransform()->SetWorldPosition(matrix[3].xyz());
+            if (auto focusScene = m_world->GetFocusScene())
+            {
+                if (auto asset = cast<AssetObject>(focusScene))
+                {
+                    AssetDatabase::MarkDirty(asset);
+                }
+            }
         }
 
         // ImGuizmo::Manipulate(

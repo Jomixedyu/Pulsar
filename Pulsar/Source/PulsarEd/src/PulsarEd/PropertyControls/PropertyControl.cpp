@@ -1,4 +1,7 @@
 #include "PropertyControls/PropertyControl.h"
+#include <Pulsar/SceneObject.h>
+#include <Pulsar/Assets/NodeCollection.h>
+#include <PulsarEd/AssetDatabase.h>
 #include <PulsarEd/EditorUI.h>
 #include <imgui/imgui.h>
 
@@ -272,7 +275,22 @@ namespace pulsared
                                 field->SetValue(parentObj, fieldInstSptr);
                             }
                             if (auto* receiverBase = dynamic_cast<ObjectBase*>(receiver))
+                            {
                                 receiverBase->PostEditChange(receiverField);
+
+                                // Mark owning scene dirty when editing scene objects
+                                if (auto* sceneObj = dynamic_cast<SceneObject*>(receiverBase))
+                                {
+                                    if (auto* collection = sceneObj->GetOwnerNodeCollection())
+                                    {
+                                        if (auto* asset = ptr_cast<AssetObject>(collection))
+                                        {
+                                            auto rc = RCPtr<AssetObject>::UnsafeCreate(asset->GetObjectHandle());
+                                            AssetDatabase::MarkDirty(rc);
+                                        }
+                                    }
+                                }
+                            }
                         }
                         isChanged |= curFieldChanged;
 

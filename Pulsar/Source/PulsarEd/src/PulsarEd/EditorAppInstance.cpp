@@ -209,10 +209,14 @@ namespace pulsared
         Logger::Log("pre intialized");
     }
 
-    static void SetupDefaultResidentScene()
+    void EditorAppInstance::SetupDefaultResidentScene()
     {
 
-        auto scene = World::Current()->GetResidentScene();
+        auto scene = World::Current()->GetFocusScene();
+        if (!scene)
+        {
+            scene = World::Current()->GetResidentScene();
+        }
 
         auto cam = World::Current()->GetCurrentCamera();
         cam->GetTransform()->SetPosition({0,0,-50});
@@ -411,6 +415,16 @@ namespace pulsared
         m_editors[0]->CreateEditorWindow()->Open();
 
         Workspace::OpenWorkspace(_SearchUpFolder("Project") / "Project.peproj");
+
+        // Create initial editing scene as focus scene
+        {
+            auto world = GetEditorWorld();
+            auto scene = Scene::StaticCreate("NewScene");
+            scene->SetObjectFlags(scene->GetObjectFlags() & ~OF_Transient);
+            world->LoadScene(scene);
+            world->SetFocusScene(scene);
+        }
+
         SetupDefaultResidentScene();
 
         uinput::InputManager::GetInstance()->Initialize();

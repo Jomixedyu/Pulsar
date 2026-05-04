@@ -7,6 +7,7 @@
 
 #include "Pulsar/Components/CameraComponent.h"
 #include "Pulsar/Node.h"
+#include <PulsarEd/AssetDatabase.h>
 
 
 namespace pulsared
@@ -55,6 +56,13 @@ namespace pulsared
             auto S = R_i * T_i * matrix;
             Vector3f scale {S[0][0], S[1][1], S[2][2]};
             node->GetTransform()->SetScale(scale);
+            if (auto focusScene = m_world->GetFocusScene())
+            {
+                if (auto asset = cast<AssetObject>(focusScene))
+                {
+                    AssetDatabase::MarkDirty(asset);
+                }
+            }
         }
 
 

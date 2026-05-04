@@ -1,6 +1,8 @@
 #include "Editors/SceneEditor/SceneEditor.h"
 
+#include "EditorAppInstance.h"
 #include "EditorWorld.h"
+#include <CoreLib.Platform/Window.h>
 #include "Editors/SceneEditor/SceneEditorWindow.h"
 #include "Menus/Menu.h"
 #include "Menus/MenuEntrySubMenu.h"
@@ -40,6 +42,32 @@ namespace pulsared
                 Workspace::OpenDialogUserWorkspace();
             });
             file->AddEntry(openWorkSpace);
+
+            file->AddEntry(mksptr(new MenuEntrySeparate("")));
+
+            auto newScene = mksptr(new MenuEntryButton("New Scene"));
+            newScene->Action = MenuAction::FromLambda([editor](SPtr<MenuContexts> ctx) {
+                editor->NewScene();
+            });
+            file->AddEntry(newScene);
+
+            auto openScene = mksptr(new MenuEntryButton("Open Scene"));
+            openScene->Action = MenuAction::FromLambda([editor](SPtr<MenuContexts> ctx) {
+                editor->OpenScene();
+            });
+            file->AddEntry(openScene);
+
+            auto saveScene = mksptr(new MenuEntryButton("Save Scene"));
+            saveScene->Action = MenuAction::FromLambda([editor](SPtr<MenuContexts> ctx) {
+                editor->SaveScene();
+            });
+            file->AddEntry(saveScene);
+
+            auto saveSceneAs = mksptr(new MenuEntryButton("Save Scene As"));
+            saveSceneAs->Action = MenuAction::FromLambda([editor](SPtr<MenuContexts> ctx) {
+                editor->SaveSceneAs();
+            });
+            file->AddEntry(saveSceneAs);
         }
         {
             MenuEntrySubMenu_sp menu = mksptr(new MenuEntrySubMenu("Edit"));
@@ -54,7 +82,7 @@ namespace pulsared
                 auto entry = mksptr(new MenuEntryButton("Create Node"));
                 menu->AddEntry(entry);
                 entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
-                    auto newNode = World::Current()->GetResidentScene()->NewNode("New Node");
+                    auto newNode = World::Current()->GetFocusScene()->NewNode("New Node");
                     World::Current()->GetSelection().Clear();
                     World::Current()->GetSelection().Select(newNode);
                 });
@@ -66,7 +94,7 @@ namespace pulsared
                 auto entry = mksptr(new MenuEntryButton("Create Sphere"));
                 shapeMenu->AddEntry(entry);
                 entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
-                    auto newNode = World::Current()->GetResidentScene()->NewNode("New Sphere");
+                    auto newNode = World::Current()->GetFocusScene()->NewNode("New Sphere");
                     newNode->AddComponent<SphereShape3DComponent>();
 
                     auto renderer = newNode->AddComponent<StaticMeshRendererComponent>();
@@ -79,7 +107,7 @@ namespace pulsared
                 auto entry = mksptr(new MenuEntryButton("Create Cube"));
                 shapeMenu->AddEntry(entry);
                 entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
-                    auto newNode = World::Current()->GetResidentScene()->NewNode("New Cube");
+                    auto newNode = World::Current()->GetFocusScene()->NewNode("New Cube");
                     newNode->AddComponent<BoxShape3DComponent>();
 
                     auto renderer = newNode->AddComponent<StaticMeshRendererComponent>();
@@ -93,7 +121,7 @@ namespace pulsared
                 auto entry = mksptr(new MenuEntryButton("Create Plane"));
                 shapeMenu->AddEntry(entry);
                 entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
-                    auto renderer = World::Current()->GetResidentScene()->NewNode("New Plane")
+                    auto renderer = World::Current()->GetFocusScene()->NewNode("New Plane")
                         ->AddComponent<StaticMeshRendererComponent>();
                     renderer->SetStaticMesh(AssetManager::Get()->LoadAsset<StaticMesh>(BuiltinAsset::Shapes_Plane));
                     renderer->SetMaterial(0, AssetManager::Get()->LoadAsset<Material>(BuiltinAsset::Material_Lambert));
@@ -107,7 +135,7 @@ namespace pulsared
                 auto entry = mksptr(new MenuEntryButton("Create Sky Light"));
                 light3dMenu->AddEntry(entry);
                 entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
-                    World::Current()->GetResidentScene()->NewNode("New Sky Light")
+                    World::Current()->GetFocusScene()->NewNode("New Sky Light")
                         ->AddComponent<SkyLightComponent>();
                 });
             }
@@ -115,7 +143,7 @@ namespace pulsared
                 auto entry = mksptr(new MenuEntryButton("Create Directional Light"));
                 light3dMenu->AddEntry(entry);
                 entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
-                    World::Current()->GetResidentScene()->NewNode("New Directional Light")
+                    World::Current()->GetFocusScene()->NewNode("New Directional Light")
                         ->AddComponent<DirectionalLightComponent>();
                 });
             }
@@ -123,7 +151,7 @@ namespace pulsared
                 auto entry = mksptr(new MenuEntryButton("Create Point Light"));
                 light3dMenu->AddEntry(entry);
                 entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
-                    World::Current()->GetResidentScene()->NewNode("New Point Light")
+                    World::Current()->GetFocusScene()->NewNode("New Point Light")
                         ->AddComponent<PointLightComponent>();
                 });
             }
@@ -261,5 +289,155 @@ namespace pulsared
     SPtr<EditorWindow> SceneEditor::OnCreateEditorWindow()
     {
         return mksptr(new SceneEditorWindow);
+    }
+
+    static string PhysicsPathToAssetPath(const std::filesystem::path& physicsPath)
+    {
+        auto absPath = std::filesystem::absolute(physicsPath).generic_string();
+
+        for (auto& package : AssetDatabase::GetPackageInfos())
+        {
+            auto packageAssetsPath = std::filesystem::absolute(package.Path / "Assets").generic_string();
+            if (absPath.size() <= packageAssetsPath.size())
+                continue;
+
+            if (absPath.substr(0, packageAssetsPath.size()) != packageAssetsPath)
+                continue;
+
+            auto relPath = absPath.substr(packageAssetsPath.size());
+            if (!relPath.empty() && (relPath[0] == '/' || relPath[0] == '\\'))
+                relPath = relPath.substr(1);
+
+            auto dotPos = relPath.rfind('.');
+            if (dotPos != string::npos)
+                relPath = relPath.substr(0, dotPos);
+
+            return package.Name + "/" + relPath;
+        }
+        return {};
+    }
+
+    void SceneEditor::NewScene()
+    {
+        auto world = GetEdApp()->GetEditorWorld();
+
+        if (auto oldScene = world->GetFocusScene())
+        {
+            world->UnloadScene(oldScene);
+        }
+
+        auto scene = Scene::StaticCreate("NewScene");
+        scene->SetObjectFlags(scene->GetObjectFlags() & ~OF_Transient);
+        world->LoadScene(scene);
+        world->SetFocusScene(scene);
+
+        GetEdApp()->SetupDefaultResidentScene();
+    }
+
+    void SceneEditor::OpenScene()
+    {
+        std::filesystem::path selectedPath;
+        if (!platform::window::OpenFileDialog(platform::window::GetMainWindowHandle(),
+            "Scene(*.pa)|*.pa;", "", &selectedPath))
+        {
+            return;
+        }
+
+        auto assetPath = PhysicsPathToAssetPath(selectedPath);
+        if (assetPath.empty())
+        {
+            Logger::Log("Selected path is not inside a package Assets folder.", LogLevel::Error);
+            return;
+        }
+
+        auto asset = AssetDatabase::LoadAssetAtPath(assetPath);
+        if (!asset)
+        {
+            Logger::Log("Failed to load scene asset.", LogLevel::Error);
+            return;
+        }
+
+        auto scene = cast<Scene>(asset);
+        if (!scene)
+        {
+            Logger::Log("Selected asset is not a Scene.", LogLevel::Error);
+            return;
+        }
+
+        auto world = GetEdApp()->GetEditorWorld();
+        if (auto oldScene = world->GetFocusScene())
+        {
+            world->UnloadScene(oldScene);
+        }
+
+        scene->SetObjectFlags(scene->GetObjectFlags() & ~OF_Transient);
+        world->LoadScene(scene);
+        world->SetFocusScene(scene);
+    }
+
+    void SceneEditor::SaveScene()
+    {
+        auto focusScene = GetEdApp()->GetEditorWorld()->GetFocusScene();
+        if (!focusScene)
+        {
+            Logger::Log("No active scene to save.", LogLevel::Warning);
+            return;
+        }
+
+        auto path = AssetDatabase::GetPathByAsset(focusScene);
+        if (path.empty())
+        {
+            SaveSceneAs();
+        }
+        else
+        {
+            AssetDatabase::MarkDirty(focusScene);
+            AssetDatabase::Save(focusScene);
+        }
+    }
+
+    bool SceneEditor::SaveSceneAs()
+    {
+        auto focusScene = GetEdApp()->GetEditorWorld()->GetFocusScene();
+        if (!focusScene)
+        {
+            Logger::Log("No active scene to save.", LogLevel::Warning);
+            return false;
+        }
+
+        std::filesystem::path selectedPath;
+        if (!platform::window::SaveFileDialog(platform::window::GetMainWindowHandle(),
+            "Scene(*.pa)|*.pa;", "", &selectedPath))
+        {
+            return false;
+        }
+
+        auto assetPath = PhysicsPathToAssetPath(selectedPath);
+        if (assetPath.empty())
+        {
+            Logger::Log("Selected path is not inside a package Assets folder.", LogLevel::Error);
+            return false;
+        }
+
+        auto oldPath = AssetDatabase::GetPathByAsset(focusScene);
+        if (!oldPath.empty())
+        {
+            if (oldPath != assetPath)
+            {
+                AssetDatabase::Rename(oldPath, assetPath);
+            }
+        }
+        else
+        {
+            if (!AssetDatabase::CreateAsset(focusScene, assetPath))
+            {
+                Logger::Log("Failed to create asset at path: " + assetPath, LogLevel::Warning);
+                return false;
+            }
+        }
+
+        AssetDatabase::MarkDirty(focusScene);
+        AssetDatabase::Save(focusScene);
+        return true;
     }
 } // namespace pulsared

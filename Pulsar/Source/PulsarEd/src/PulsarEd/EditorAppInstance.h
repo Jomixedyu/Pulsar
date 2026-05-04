@@ -86,6 +86,7 @@ namespace pulsared
         }
 
         void ShowModalDialog(SPtr<ModalDialog> dialog);
+        void SetupDefaultResidentScene();
 
     protected:
         array_list<std::unique_ptr<Editor>> m_editors;

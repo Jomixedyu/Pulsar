@@ -1,4 +1,6 @@
 #include "Pulsar/Prefab.h"
+#include "Pulsar/Scene.h"
+#include "Pulsar/World.h"
 
 #include "Utils/PrefabUtil.h"
 #include <PulsarEd/EditorAssetManager.h>
@@ -14,6 +16,19 @@ namespace pulsared
         if (auto prefab = cast<Prefab>(asset))
         {
             PrefabUtil::OpenPrefab(prefab);
+            return;
+        }
+
+        if (auto scene = cast<pulsar::Scene>(asset))
+        {
+            auto world = pulsar::World::Current();
+            if (auto oldScene = world->GetFocusScene())
+            {
+                world->UnloadScene(oldScene);
+            }
+            scene->SetObjectFlags(scene->GetObjectFlags() & ~pulsar::OF_Transient);
+            world->LoadScene(scene);
+            world->SetFocusScene(scene);
             return;
         }
 
