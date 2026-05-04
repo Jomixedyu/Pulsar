@@ -83,13 +83,13 @@ namespace pulsared
         auto node = GetSelection().GetSelected();
         auto matrix = node->GetTransform()->GetLocalToWorldMatrix();
 
-        static ImGuizmo::MODE CurrentGizmoMode(ImGuizmo::LOCAL);
+        auto mode = static_cast<ImGuizmo::MODE>(m_world->GetGizmoSpace());
 
         if (ImGuizmo::Manipulate(
             viewMat.get_value_ptr(),
             projMat.get_value_ptr(),
             ImGuizmo::ROTATE,
-            CurrentGizmoMode,
+            mode,
             matrix.get_value_ptr(),
             nullptr, nullptr, nullptr, nullptr))
         {

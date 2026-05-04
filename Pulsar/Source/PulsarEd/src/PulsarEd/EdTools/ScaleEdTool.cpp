@@ -43,13 +43,13 @@ namespace pulsared
         auto T_i = jmath::Inverse(jmath::Translate(node->GetTransform()->GetWorldPosition()));
         auto R_i = jmath::Inverse(jmath::Rotate(node->GetTransform()->GetRotation()));
 
-        static ImGuizmo::MODE CurrentGizmoMode(ImGuizmo::LOCAL);
+        auto mode = static_cast<ImGuizmo::MODE>(m_world->GetGizmoSpace());
 
         if (ImGuizmo::Manipulate(
             viewMat.get_value_ptr(),
             projMat.get_value_ptr(),
             ImGuizmo::SCALE,
-            CurrentGizmoMode,
+            mode,
             matrix.get_value_ptr(),
             nullptr, nullptr, nullptr, nullptr))
         {

@@ -182,6 +182,12 @@ namespace pulsared
                 grid->SetVisible(!grid->IsVisible());
             }
 
+            const char* coordLabel = (world->GetGizmoSpace() == 0) ? ICON_FK_HOME " Local###Coord" : ICON_FK_GLOBE " World###Coord";
+            if (ImGui::Button(coordLabel))
+            {
+                world->SetGizmoSpace(world->GetGizmoSpace() == 0 ? 1 : 0);
+            }
+
             ImGui::EndMenuBar();
         }
 
@@ -212,6 +218,10 @@ namespace pulsared
             else if (ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_B, false))
             {
                 world->SetTool(std::make_unique<MeshVertexBrush>());
+            }
+            if (ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_T, false))
+            {
+                world->SetGizmoSpace(world->GetGizmoSpace() == 0 ? 1 : 0);
             }
             if (ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_F, false))
             {
