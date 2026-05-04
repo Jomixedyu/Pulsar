@@ -28,6 +28,9 @@ namespace gfx
         GFXRenderPassStoreOp depthStoreOp   = GFXRenderPassStoreOp::Store;
         float                clearDepth     = 1.f;
         uint32_t             clearStencil   = 0;
+
+        // Resolve target for MSAA auto-resolve (TBR-friendly)
+        class GFXTexture2DView* resolveTargetView = nullptr;
     };
 
     struct GFXRenderTargetDesc
@@ -35,6 +38,7 @@ namespace gfx
         array_list<GFXTextureFormat> ColorFormats;
         GFXTextureFormat DepthStencilFormat{};
         bool HasDepthStencil = false;
+        uint32_t SampleCount = 1;
 
         uint64_t GetHashCode() const
         {
@@ -50,6 +54,7 @@ namespace gfx
             {
                 hash = hash * HashS1 ^ static_cast<uint64_t>(DepthStencilFormat);
             }
+            hash = hash * HashS1 ^ static_cast<uint64_t>(SampleCount);
             return hash;
         }
     };

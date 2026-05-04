@@ -39,6 +39,14 @@ namespace pulsar
             auto rootNodes = s->Object->New(ser::VarientType::Array);
             for (auto node : *m_rootNodes)
             {
+                if (node->IsTransientObject())
+                {
+                    continue;
+                }
+                if (node->IsTemplateInstance())
+                {
+                    continue;
+                }
                 rootNodes->Push(node->GetSceneObjectGuid().to_string());
             }
             s->Object->Add("RootNodes", rootNodes);
@@ -87,7 +95,10 @@ namespace pulsar
             {
                 auto node = rootNodeArr->At(i);
                 auto sceneGuid = guid_t::parse(node->AsString());
-                RegisterRootNode(cast<Node>(FindSceneObject(sceneGuid)));
+                if (auto foundNode = cast<Node>(FindSceneObject(sceneGuid)))
+                {
+                    RegisterRootNode(foundNode);
+                }
             }
 
             // 读取模板实例列表，并在此处直接展开（迭代外，安全）
@@ -116,7 +127,11 @@ namespace pulsar
         const auto count = m_rootNodes->size();
         for (int i = count - 1; i >= 0; --i)
         {
-            RemoveNode(m_rootNodes->at(i));
+            auto node = m_rootNodes->at(i);
+            if (node)
+            {
+                RemoveNode(node);
+            }
         }
     }
 
@@ -400,6 +415,14 @@ namespace pulsar
     {
         for (auto& node : *m_nodes)
         {
+            if (node->IsTransientObject())
+            {
+                continue;
+            }
+            if (node->IsTemplateInstance())
+            {
+                continue;
+            }
             node->GetDependenciesAsset(deps);
         }
         // 模板资产依赖

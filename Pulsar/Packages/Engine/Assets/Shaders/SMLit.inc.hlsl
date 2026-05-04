@@ -5,13 +5,15 @@
 #include "Common.inc.hlsl"
 #include "MeshRenderer.inc.hlsl"
 
+#ifndef PI
 #define PI 3.14159265358979
+#endif
 
-float DistributionGGX(float3 N, float3 H, float roughness)
+float DistributionGGX(float NoH, float roughness)
 {
     float a = roughness*roughness;
     float a2 = a*a;
-    float NdotH = max(dot(N, H), 0.0);
+    float NdotH = max(NoH, 0.0);
     float NdotH2 = NdotH*NdotH;
     float nom   = a2;
     float denom = (NdotH2 * (a2 - 1.0) + 1.0);
@@ -78,7 +80,7 @@ float4 ShadingModel_Lit(
         float3 H = normalize(V + L);
         float3 dirLightRadiance = WorldBuffer.WorldSpaceLightColor.xyz * WorldBuffer.WorldSpaceLightColor.w;
 
-        float  D = DistributionGGX(N, H, attr.Roughness);   
+        float  D = DistributionGGX(dot(N, H), attr.Roughness);   
         float  G = GeometrySmith(N, V, L, attr.Roughness);      
         float3 F = FresnelSchlick(clamp(dot(H, V), 0.0, 1.0), F0);
 
@@ -104,7 +106,7 @@ float4 ShadingModel_Lit(
         float  attenuation = 1.0 / (distance * distance);
         float3 radiance = lightData.Color.xyz * lightData.Color.w * attenuation;
 
-        float  D = DistributionGGX(N, H, attr.Roughness);   
+        float  D = DistributionGGX(dot(N, H), attr.Roughness);   
         float  G = GeometrySmith(N, V, L, attr.Roughness);      
         float3 F = FresnelSchlick(clamp(dot(H, V), 0.0, 1.0), F0);
 

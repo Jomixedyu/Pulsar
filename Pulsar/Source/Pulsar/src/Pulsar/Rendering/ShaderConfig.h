@@ -9,7 +9,8 @@ namespace pulsar
                      ShaderPassRenderQueueType,
                      Opaque,
                      AlphaTest,
-                     Transparency);
+                     Transparency,
+                     Overlay);
 }
 CORELIB_DECL_BOXING(pulsar::ShaderPassRenderQueueType, pulsar::BoxingShaderPassRenderQueueType);
 

@@ -616,10 +616,10 @@ namespace pulsared
     }
     static void _OnPostEditChanged(ObjectBase* object)
     {
-//        if(cltypeof<AssetObject>()->IsInstanceOfType(object))
-//        {
-//            AssetDatabase::MarkDirty(object->GetObjectHandle());
-//        }
+        if (auto asset = ptr_cast<AssetObject>(object))
+        {
+            AssetDatabase::MarkDirty(RCPtr<AssetObject>::UnsafeCreate(asset->GetObjectHandle()));
+        }
     }
     void AssetDatabase::Initialize()
     {

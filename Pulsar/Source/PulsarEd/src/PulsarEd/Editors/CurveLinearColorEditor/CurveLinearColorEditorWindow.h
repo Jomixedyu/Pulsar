@@ -16,8 +16,11 @@ namespace pulsared
         void OnClose() override;
 
         void OnDrawImGui(float dt) override;
+        ImGuiWindowClass GetGuiWindowClass() const override;
 
     private:
+        void ImportFromUEJson();
+
         RCPtr<CurveLinearColor> m_colorCurve;
         ImGradientHDRTemporaryState temporaryState{};
     };

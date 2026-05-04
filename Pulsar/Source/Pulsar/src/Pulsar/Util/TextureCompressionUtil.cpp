@@ -8,6 +8,34 @@
     #include <DirectXTex/BC.h>
 #endif
 
+#ifdef _OPENMP
+    #include <omp.h>
+#endif
+
+namespace
+{
+    class ScopedOmpThreadLimit
+    {
+    public:
+        ScopedOmpThreadLimit()
+        {
+#ifdef _OPENMP
+            m_oldThreads = omp_get_max_threads();
+            int maxThreads = (std::max)(1, m_oldThreads - 2);
+            omp_set_num_threads(maxThreads);
+#endif
+        }
+        ~ScopedOmpThreadLimit()
+        {
+#ifdef _OPENMP
+            omp_set_num_threads(m_oldThreads);
+#endif
+        }
+    private:
+        int m_oldThreads = 1;
+    };
+}
+
 namespace pulsar
 {
     template <typename _TyData>
@@ -125,6 +153,60 @@ namespace pulsar
             std::memcpy(ret.data(), SImg.GetPixels(), SImg.GetPixelsSize());
             break;
         }
+        case gfx::GFXTextureFormat::BC7_SRGB: {
+
+            if (channel != 4)
+            {
+                data = _ResizeChannel<uint8_t>(std::move(data), width, height, 3, 4, 255);
+            }
+
+            DirectX::Image img{
+                .width = width,
+                .height = height,
+                .format = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,
+                .rowPitch = width * 4,
+                .slicePitch = width * height * 4,
+                .pixels = data.data()
+            };
+            DirectX::ScratchImage SImg;
+            ScopedOmpThreadLimit ompLimit;
+            DirectX::Compress(
+                img,
+                DXGI_FORMAT_BC7_UNORM_SRGB,
+                DirectX::TEX_COMPRESS_SRGB | DirectX::TEX_COMPRESS_PARALLEL | DirectX::TEX_COMPRESS_BC7_QUICK,
+                DirectX::TEX_THRESHOLD_DEFAULT,
+                SImg);
+            ret.resize(SImg.GetPixelsSize());
+            std::memcpy(ret.data(), SImg.GetPixels(), SImg.GetPixelsSize());
+            break;
+        }
+        case gfx::GFXTextureFormat::BC7_UNorm: {
+
+            if (channel != 4)
+            {
+                data = _ResizeChannel<uint8_t>(std::move(data), width, height, 3, 4, 255);
+            }
+
+            DirectX::Image img{
+                .width = width,
+                .height = height,
+                .format = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM,
+                .rowPitch = width * 4,
+                .slicePitch = width * height * 4,
+                .pixels = data.data()
+            };
+            DirectX::ScratchImage SImg;
+            ScopedOmpThreadLimit ompLimit;
+            DirectX::Compress(
+                img,
+                DXGI_FORMAT_BC7_UNORM,
+                DirectX::TEX_COMPRESS_DEFAULT | DirectX::TEX_COMPRESS_PARALLEL | DirectX::TEX_COMPRESS_BC7_QUICK,
+                DirectX::TEX_THRESHOLD_DEFAULT,
+                SImg);
+            ret.resize(SImg.GetPixelsSize());
+            std::memcpy(ret.data(), SImg.GetPixels(), SImg.GetPixelsSize());
+            break;
+        }
         case gfx::GFXTextureFormat::BC4_UNorm: {
             data = _ResizeChannel<uint8_t>(std::move(data), width, height, channel, 1, 0);
             DirectX::Image img{
@@ -203,7 +285,6 @@ namespace pulsar
             ret = _ResizeChannel<float>(std::move(data), width, height, channel, 1, 1);
             break;
         case gfx::GFXTextureFormat::R32G32B32A32_SFloat:
-
             ret = _ResizeChannel<float>(std::move(data), width, height, channel, 4, 1);
             break;
         default:

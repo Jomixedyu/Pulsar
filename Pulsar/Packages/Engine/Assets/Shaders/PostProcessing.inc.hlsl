@@ -3,8 +3,8 @@
 
 #include "Blit.inc.hlsl"
 
-Texture2D PP_InColor    	     : register(t0, space2);
-SamplerState Sampler_PP_InColor  : register(s0, space2);
+Texture2D PP_InColor    	     : register(t3, space1);
+SamplerState Sampler_PP_InColor  : register(s3, space1);
 
 
 

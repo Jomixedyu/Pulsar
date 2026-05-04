@@ -157,6 +157,11 @@ namespace gfx
         VkPresentModeKHR presentMode = _ChooseSwapPresentMode(swapChainSupport.presentModes);
         VkExtent2D extent = _ChooseSwapExtent(m_app, swapChainSupport.capabilities);
 
+        if (extent.width == 0 || extent.height == 0)
+        {
+            return;
+        }
+
         uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
         if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount)
         {
@@ -298,14 +303,19 @@ namespace gfx
 
     void GFXVulkanSwapchain::ReInitSwapChain()
     {
+        VkSurfaceCapabilitiesKHR capabilities;
+        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_app->GetVkPhysicalDevice(), m_app->GetVkSurface(), &capabilities);
+        if (capabilities.currentExtent.width == 0 || capabilities.currentExtent.height == 0)
+        {
+            return;
+        }
+
         int width = 0, height = 0;
-        // SDL_Vulkan_GetDrawableSize((SDL_Window*)m_app->GetWindow()->GetUserPoint(), &width, &height);
-        //
-        // glfwGetFramebufferSize(m_window, &width, &height);
-        // while (width == 0 || height == 0)
-        // {
-        //     glfwWaitEvents();
-        // }
+        SDL_Vulkan_GetDrawableSize((SDL_Window*)m_app->GetWindow()->GetUserPoint(), &width, &height);
+        if (width == 0 || height == 0)
+        {
+            return;
+        }
 
         vkDeviceWaitIdle(m_app->GetVkDevice());
 
@@ -327,6 +337,10 @@ namespace gfx
     }
     VkResult GFXVulkanSwapchain::AcquireNextImage(uint32_t* outIndex)
     {
+        if (m_swapChain == VK_NULL_HANDLE)
+        {
+            return VK_ERROR_OUT_OF_DATE_KHR;
+        }
         m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
         auto result = vkAcquireNextImageKHR(m_app->GetVkDevice(), GetVkSwapChain(), UINT64_MAX, m_imageAvailableSemaphores[m_currentFrame], VK_NULL_HANDLE, &m_imageIndex);
         *outIndex = m_imageIndex;
@@ -335,6 +349,8 @@ namespace gfx
 
     GFXFrameBufferObject* gfx::GFXVulkanSwapchain::GetFrameBufferObject()
     {
+        if (m_framebuffer.empty())
+            return nullptr;
         return m_framebuffer[m_imageIndex].get();
     }
 }

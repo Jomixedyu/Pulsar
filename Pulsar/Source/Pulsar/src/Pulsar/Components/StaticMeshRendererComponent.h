@@ -49,6 +49,7 @@ namespace pulsar
         void EndComponent() override;
         void OnDrawGizmo(GizmoPainter* painter, bool selected) override;
 
+        void GetDependenciesAsset(array_list<jxcorlib::guid_t>& deps) const override;
         void OnReceiveMessage(MessageId id) override;
 
         bool GetShowNormalGizmo() const { return m_showNormalGizmo; }

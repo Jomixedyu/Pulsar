@@ -131,4 +131,16 @@ namespace pulsar
         m_errorByInterface.clear();
     }
 
+    void ShaderInstanceCache::InvalidateShader(const guid_t& shaderGuid)
+    {
+        std::lock_guard lock(m_mutex);
+        for (auto it = m_cache.begin(); it != m_cache.end(); )
+        {
+            if (it->first.m_shaderGuid == shaderGuid)
+                it = m_cache.erase(it);
+            else
+                ++it;
+        }
+    }
+
 }

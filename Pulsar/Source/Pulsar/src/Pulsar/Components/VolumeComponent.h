@@ -35,6 +35,8 @@ namespace pulsar
         // Returns 1.0 for global volumes, or a 0~1 blend based on distance to box bounds.
         float ComputeBlendWeight(const Vector3f& worldPos) const;
 
+        void GetDependenciesAsset(array_list<guid_t>& deps) const override;
+
         void OnDrawGizmo(GizmoPainter* painter, bool selected) override;
 
     protected:
@@ -47,7 +49,7 @@ namespace pulsar
         CORELIB_REFL_DECL_FIELD(m_priority);
         int m_priority = 0;
 
-        CORELIB_REFL_DECL_FIELD(m_profile, new InlineObjectAttribute);
+        CORELIB_REFL_DECL_FIELD(m_profile);
         RCPtr<VolumeProfile> m_profile;
 
 

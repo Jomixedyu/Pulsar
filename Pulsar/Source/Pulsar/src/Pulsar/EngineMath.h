@@ -17,6 +17,23 @@ namespace pulsar::math
     using namespace jxcorlib;
     using namespace jxcorlib::math;
 
+    inline float LinearToSRGB(float x)
+    {
+        return x < 0.0031308f ? 12.92f * x : 1.055f * powf(x, 1.0f / 2.4f) - 0.055f;
+    }
+    inline float SRGBToLinear(float x)
+    {
+        return x < 0.04045f ? x / 12.92f : powf((x + 0.055f) / 1.055f, 2.4f);
+    }
+    inline Vector3f LinearToSRGB(Vector3f c)
+    {
+        return { LinearToSRGB(c.x), LinearToSRGB(c.y), LinearToSRGB(c.z) };
+    }
+    inline Vector3f SRGBToLinear(Vector3f c)
+    {
+        return { SRGBToLinear(c.x), SRGBToLinear(c.y), SRGBToLinear(c.z) };
+    }
+
     inline void Perspective(Matrix4f& result, const float& fovy, const float& aspect, const float& zNear, const float& zFar)
     {
         float const tanHalfFovy = tan(fovy / 2);

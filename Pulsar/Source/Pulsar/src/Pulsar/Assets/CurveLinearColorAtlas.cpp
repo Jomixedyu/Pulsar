@@ -35,6 +35,8 @@ namespace pulsar
                 WeakAssetPtr<CurveLinearColor> curve = curves->At(i)->AsString();
                 m_colorCurveAssets->push_back(curve.Get());
             }
+            RebuildObserver();
+            Generate();
         }
     }
 
@@ -134,6 +136,17 @@ namespace pulsar
         for (auto& curve : *m_colorCurveAssets)
         {
             out.push_back(curve.GetHandle());
+        }
+    }
+    void CurveLinearColorAtlas::OnCollectAssetDependencies(array_list<guid_t>& deps)
+    {
+        base::OnCollectAssetDependencies(deps);
+        if (m_colorCurveAssets)
+        {
+            for (auto& curve : *m_colorCurveAssets)
+            {
+                deps.push_back(curve.GetGuid());
+            }
         }
     }
 } // namespace pulsar

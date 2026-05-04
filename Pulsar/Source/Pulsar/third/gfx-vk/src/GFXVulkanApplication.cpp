@@ -565,7 +565,8 @@ namespace gfx
     }
 
     GFXTexture_sp GFXVulkanApplication::CreateRenderTarget(
-        int32_t width, int32_t height, GFXTextureTargetType type, GFXTextureFormat format, const GFXSamplerConfig& samplerCfg)
+        int32_t width, int32_t height, GFXTextureTargetType type, GFXTextureFormat format, const GFXSamplerConfig& samplerCfg,
+        uint32_t sampleCount, bool isTransientAttachment)
     {
         GFXTextureCreateDesc info{};
         info.Width = width;
@@ -574,6 +575,8 @@ namespace gfx
         info.Format = format;
         info.TargetType = type;
         info.DataType = GFXTextureDataType::Texture2D;
+        info.SampleCount = sampleCount;
+        info.IsTransientAttachment = isTransientAttachment;
 
         auto rt = new GFXVulkanTexture(this, info);
         return gfxmksptr(rt);

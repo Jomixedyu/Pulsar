@@ -56,11 +56,23 @@ namespace gfx
         m_dataType = info.DataType;
         m_imageFormat = BufferHelper::GetVkFormat(info.Format);
         m_targetType = info.TargetType;
+        m_samples = static_cast<VkSampleCountFlagBits>(info.SampleCount);
 
-        m_usageFlags = ImageHelper::GetImageUsageFlags(m_targetType);
+        if (info.IsTransientAttachment)
+        {
+            m_usageFlags = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT;
+            if (m_targetType == GFXTextureTargetType::ColorTarget)
+                m_usageFlags |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+            else if (m_targetType == GFXTextureTargetType::DepthTarget || m_targetType == GFXTextureTargetType::DepthStencilTarget)
+                m_usageFlags |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+        }
+        else
+        {
+            m_usageFlags = ImageHelper::GetImageUsageFlags(m_targetType);
+        }
         m_aspectFlags = ImageHelper::GetAspectFlags(m_targetType);
 
-        auto createInfo = ImageHelper::ImageCreateInfoTexture2D(m_width, m_height, m_imageFormat, m_usageFlags);
+        auto createInfo = ImageHelper::ImageCreateInfoTexture2D(m_width, m_height, m_imageFormat, m_usageFlags, m_samples);
         ImageHelper::CreateImage(app, &createInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_textureImage, m_textureImageMemory);
 
         auto currentLayout = VK_IMAGE_LAYOUT_UNDEFINED;

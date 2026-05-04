@@ -90,6 +90,17 @@ namespace pulsar
         return Mgr;
     }
 
+    static auto& _depends()
+    {
+        static hash_map<ObjectHandle, array_list<ObjectHandle>> map;
+        return map;
+    }
+    static auto& _refs()
+    {
+        static hash_map<ObjectHandle, array_list<ObjectHandle>> map;
+        return map;
+    }
+
     Action<ObjectBase*> RuntimeObjectManager::OnPostEditChanged{};
 
     static inline ObjectHandle _NewId()
@@ -168,6 +179,50 @@ namespace pulsar
             const bool dontDestory = obj->HasObjectFlags(OF_LifecycleManaged);
             if (!dontDestory || (dontDestory && isForce))
             {
+                // Clean up observer/dependency relations before destroying
+                {
+                    auto& deps = _depends();
+                    auto& refs = _refs();
+
+                    // id was a source: remove its subscriptions to dependencies
+                    auto refIt = refs.find(id);
+                    if (refIt != refs.end())
+                    {
+                        for (auto& depHandle : refIt->second)
+                        {
+                            auto depIt = deps.find(depHandle);
+                            if (depIt != deps.end())
+                            {
+                                erase(depIt->second, id);
+                                if (depIt->second.empty())
+                                {
+                                    deps.erase(depIt);
+                                }
+                            }
+                        }
+                        refs.erase(refIt);
+                    }
+
+                    // id was a dependency: remove it from other sources' subscriptions
+                    auto depIt = deps.find(id);
+                    if (depIt != deps.end())
+                    {
+                        for (auto& srcHandle : depIt->second)
+                        {
+                            auto srcRefIt = refs.find(srcHandle);
+                            if (srcRefIt != refs.end())
+                            {
+                                erase(srcRefIt->second, id);
+                                if (srcRefIt->second.empty())
+                                {
+                                    refs.erase(srcRefIt);
+                                }
+                            }
+                        }
+                        deps.erase(depIt);
+                    }
+                }
+
                 obj->Destroy(); // set object handle to empty
 
                 ptr->OriginalObject.reset(); // destructor, release object and memory
@@ -245,17 +300,6 @@ namespace pulsar
         }
     }
 
-    static auto& _depends()
-    {
-        static hash_map<ObjectHandle, array_list<ObjectHandle>> map;
-        return map;
-    }
-    static auto& _refs()
-    {
-        static hash_map<ObjectHandle, array_list<ObjectHandle>> map;
-        return map;
-    }
-
     void RuntimeObjectManager::NotifyDependencySource(ObjectHandle dest, DependencyObjectState id)
     {
         auto it = _depends().find(dest);
@@ -278,19 +322,34 @@ namespace pulsar
 
         auto sourceHandle = obj->GetObjectHandle();
 
-        for (auto& ref : refs[sourceHandle])
+        auto it = refs.find(sourceHandle);
+        if (it != refs.end())
         {
-            erase(deps[ref], sourceHandle);
+            for (auto& ref : it->second)
+            {
+                auto depIt = deps.find(ref);
+                if (depIt != deps.end())
+                {
+                    erase(depIt->second, sourceHandle);
+                    if (depIt->second.empty())
+                    {
+                        deps.erase(depIt);
+                    }
+                }
+            }
+            refs.erase(it);
         }
-        refs.clear();
 
         array_list<ObjectHandle> dependencies;
         obj->GetSubscribeObserverHandles(dependencies);
 
-        refs[sourceHandle] = dependencies;
-        for (auto& dependency : dependencies)
+        if (!dependencies.empty())
         {
-            deps[dependency].push_back(sourceHandle);
+            refs[sourceHandle] = dependencies;
+            for (auto& dependency : dependencies)
+            {
+                deps[dependency].push_back(sourceHandle);
+            }
         }
     }
 

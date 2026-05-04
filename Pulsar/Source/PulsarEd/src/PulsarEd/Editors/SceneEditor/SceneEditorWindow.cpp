@@ -1,6 +1,7 @@
 #include "Editors/SceneEditor/SceneEditorWindow.h"
 
 #include "EditorAppInstance.h"
+#include "Editors/SceneEditor/SceneEditor.h"
 #include "Editors/CommonPanel/OutlinerWindow.h"
 #include "Editors/CommonPanel/PropertiesWindow.h"
 #include "Editors/CommonPanel/SceneWindow.h"
@@ -26,10 +27,23 @@ namespace pulsared
     void SceneEditorWindow::OnDrawImGui(float dt)
     {
         base::OnDrawImGui(dt);
+        if (ImGui::IsKeyDown(ImGuiKey::ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_S, false))
+        {
+            if (auto sceneEditor = dynamic_cast<SceneEditor*>(GetEditor()))
+            {
+                sceneEditor->SaveScene();
+            }
+        }
         if (ImGui::BeginMenuBar())
         {
             ImGui::Separator();
-            ImGui::Button(ICON_FK_FLOPPY_O); // save button
+            if (ImGui::Button(ICON_FK_FLOPPY_O)) // save button
+            {
+                if (auto sceneEditor = dynamic_cast<SceneEditor*>(GetEditor()))
+                {
+                    sceneEditor->SaveScene();
+                }
+            }
 
             auto world = GetEdApp()->GetEditorWorld();
             bool isPlaying = world->GetPlaying();

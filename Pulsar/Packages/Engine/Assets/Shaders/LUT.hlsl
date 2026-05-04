@@ -1,5 +1,6 @@
 #include "Blit.inc.hlsl"
 #include "PostProcessing.inc.hlsl"
+#include "ShaderLibrary/ColorSpace.inc.hlsl"
 
 Texture2D    _LUTTex;
 SamplerState Sampler__LUTTex;
@@ -7,24 +8,6 @@ SamplerState Sampler__LUTTex;
 float _Intensity;
 int   _LUTSize;
 int   _ColorSpace;
-
-// Unity-style LogC encoding (simplified ARRI curve)
-float3 LinearToLogC(float3 linearColor)
-{
-    const float a = 5.5555558;
-    const float d = 0.047996;
-    const float b = 0.0734998;
-    const float c = 0.386036;
-
-    float3 x = linearColor * a + d;
-    float3 logC = c + b * log2(x);
-    return saturate(logC);
-}
-
-float3 LinearToSRGB(float3 lin)
-{
-    return lin <= 0.0031308 ? lin * 12.92 : pow(lin, 1.0 / 2.4) * 1.055 - 0.055;
-}
 
 void GetLut2dUV(float3 uvw, float size, float depth, out float2 outUV0, out float2 outUV1, out float outFrac)
 {
@@ -61,8 +44,8 @@ float3 SampleLUT(float3 color)
     float frac;
     GetLut2dUV(color, size, depth, uv0, uv1, frac);
 
-    float3 sample0 = _LUTTex.Sample(Sampler__LUTTex, uv0).rgb;
-    float3 sample1 = _LUTTex.Sample(Sampler__LUTTex, uv1).rgb;
+    float3 sample0 = _LUTTex.SampleLevel(Sampler__LUTTex, uv0, 0).rgb;
+    float3 sample1 = _LUTTex.SampleLevel(Sampler__LUTTex, uv1, 0).rgb;
 
     return lerp(sample0, sample1, frac);
 }

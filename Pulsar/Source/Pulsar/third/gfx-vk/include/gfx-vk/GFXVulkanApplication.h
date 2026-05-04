@@ -66,7 +66,8 @@ namespace gfx
 
         virtual GFXTexture_sp CreateRenderTarget(
             int32_t width, int32_t height, GFXTextureTargetType type,
-            GFXTextureFormat format, const GFXSamplerConfig& samplerCfg) override;
+            GFXTextureFormat format, const GFXSamplerConfig& samplerCfg,
+            uint32_t sampleCount = 1, bool isTransientAttachment = false) override;
 
         virtual GFXDescriptorManager* GetDescriptorManager() override;
 

@@ -12,6 +12,12 @@ namespace pulsar
 
         CORELIB_REFL_DECL_FIELD(m_mode);
         TonemappingMode m_mode = TonemappingMode::ACES;
+
+        bool IsEnabled() const override { return m_enabled; }
+        void Blend(float weight, VolumeSettings* accumulator) override;
+
+    private:
+        float m_blendWeight = 0.0f; // transient: dominant weight seen so far
     };
 
 } // namespace pulsar

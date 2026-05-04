@@ -7,85 +7,171 @@ namespace pulsar
 
     CurveLinearColor::CurveLinearColor()
     {
-        init_sptr_member(m_curvesData);
-        for (int i = 0; i < 4; ++i)
-        {
-            auto& curve = m_curvesData->emplace_back(mksptr(new CurveData));
-            CurveKey key0{};
-            key0.Time = 0;
-            key0.Value = 0;
-            curve->AddKey(key0);
 
-            CurveKey key1{};
-            key1.Time = 1;
-            key1.Value = 1;
-            curve->AddKey(key1);
+    }
+
+    static ser::VarientRef SaveCollection(ser::VarientRef dat, CurveKeyCollection& collection)
+    {
+        auto keysArr = dat->New(ser::VarientType::Array);
+        for (auto& key : collection.Keys)
+        {
+            auto collectionObj = dat->New(ser::VarientType::Object);
+            auto serialized = ser::JsonSerializer::Serialize(mkbox(key).get(), {});
+            collectionObj->AssignParse(serialized);
+            keysArr->Push(collectionObj);
+        }
+        return keysArr;
+    }
+    static void LoadCollection(ser::VarientRef keys, CurveKeyCollection& collection)
+    {
+        for (auto i = 0; i < keys->GetCount(); ++i)
+        {
+            auto curveObj = keys->At(i);
+            auto key = ser::JsonSerializer::Deserialize<BoxingCurveKey>(curveObj->ToString())->get_unboxing_value();
+            collection.AddKey(key);
         }
     }
+
     void CurveLinearColor::Serialize(AssetSerializer* s)
     {
         base::Serialize(s);
         if (s->IsWrite)
         {
-            auto curvesArray = s->Object->New(ser::VarientType::Array);
+            auto curvesArray = s->Object->New(ser::VarientType::Object);
 
-            for (auto& curve : *m_curvesData)
-            {
-                auto curveObj = curvesArray->New(ser::VarientType::Object);
-
-                auto js = ser::JsonSerializer::Serialize(curve.get(), {});
-                curveObj->AssignParse(js);
-
-                curvesArray->Push(curveObj);
-            }
+            curvesArray->Add("R", SaveCollection(curvesArray, m_R));
+            curvesArray->Add("G", SaveCollection(curvesArray, m_G));
+            curvesArray->Add("B", SaveCollection(curvesArray, m_B));
+            curvesArray->Add("A", SaveCollection(curvesArray, m_A));
 
             s->Object->Add("Curves", curvesArray);
         }
         else
         {
-            m_curvesData->clear();
-            auto curvesArray = s->Object->At("Curves");
-            for (int i = 0; i < curvesArray->GetCount(); ++i)
-            {
-                auto curveObj = curvesArray->At(i);
-                auto curveData = ser::JsonSerializer::Deserialize<CurveData>(curveObj->ToString());
-                m_curvesData->push_back(curveData);
-            }
+            m_R = {};
+            m_G = {};
+            m_B = {};
+            m_A = {};
+
+            auto obj = s->Object->At("Curves");
+            LoadCollection(obj->At("R"), m_R);
+            LoadCollection(obj->At("G"), m_G);
+            LoadCollection(obj->At("B"), m_B);
+            LoadCollection(obj->At("A"), m_A);
+
         }
     }
 
-    void CurveLinearColor::SetColorsKey(int index, std::array<CurveKey, 4> keys)
+    CurveKeyCollection CurveLinearColor::GetCurveData(size_t index) const
     {
-        m_curvesData->at(0)->SetKey(index, keys[0]);
-        m_curvesData->at(1)->SetKey(index, keys[1]);
-        m_curvesData->at(2)->SetKey(index, keys[2]);
-        m_curvesData->at(3)->SetKey(index, keys[3]);
+        if (index == 0)
+            return m_R;
+        if (index == 1)
+            return m_G;
+        if (index == 2)
+            return m_B;
+        if (index == 3)
+            return m_A;
+        return {};
+    }
+
+    void CurveLinearColor::SetKeyR(int index, CurveKey r)
+    {
+        m_R.SetKey(index, r);
+    }
+    void CurveLinearColor::SetKeyG(int index, CurveKey g)
+    {
+        m_G.SetKey(index, g);
+    }
+    void CurveLinearColor::SetKeyB(int index, CurveKey b)
+    {
+        m_B.SetKey(index, b);
+    }
+    void CurveLinearColor::SetKeyA(int index, CurveKey a)
+    {
+        m_A.SetKey(index, a);
+    }
+
+    void CurveLinearColor::SetAllColorKey(int index, CurveKey all)
+    {
+        SetKeyR(index, all);
+        SetKeyG(index, all);
+        SetKeyB(index, all);
+        SetKeyA(index, all);
+    }
+
+    CurveKey CurveLinearColor::GetKeyR(int index) const
+    {
+        return m_R.GetKey(index);
+    }
+    CurveKey CurveLinearColor::GetKeyG(int index) const
+    {
+        return m_G.GetKey(index);
+    }
+    CurveKey CurveLinearColor::GetKeyB(int index) const
+    {
+        return m_B.GetKey(index);
+    }
+    CurveKey CurveLinearColor::GetKeyA(int index) const
+    {
+        return m_A.GetKey(index);
     }
 
     std::array<CurveKey, 4> CurveLinearColor::GetColorsKey(int index) const
     {
         return std::array<CurveKey, 4>{
-            m_curvesData->at(0)->GetKey(index),
-            m_curvesData->at(1)->GetKey(index),
-            m_curvesData->at(2)->GetKey(index),
-            m_curvesData->at(3)->GetKey(index),
+            GetKeyR(index),
+            GetKeyG(index),
+            GetKeyB(index),
+            GetKeyA(index),
         };
     }
-    void CurveLinearColor::InsertColorKey()
+    void CurveLinearColor::SetColorsKey(int index, const std::array<CurveKey, 4>& colors)
     {
-        m_curvesData->at(0)->AddKey({});
-        m_curvesData->at(1)->AddKey({});
-        m_curvesData->at(2)->AddKey({});
-        m_curvesData->at(3)->AddKey({});
+        SetKeyR(index, colors[0]);
+        SetKeyG(index, colors[1]);
+        SetKeyB(index, colors[2]);
+        SetKeyA(index, colors[3]);
+    }
+    void CurveLinearColor::AddKey(CurveKey key)
+    {
+        m_R.AddKey(key);
+        m_G.AddKey(key);
+        m_B.AddKey(key);
+        m_A.AddKey(key);
+    }
+
+    void CurveLinearColor::ClearKeys()
+    {
+        m_R.Keys.clear();
+        m_G.Keys.clear();
+        m_B.Keys.clear();
+        m_A.Keys.clear();
+    }
+    void CurveLinearColor::AddKeyR(CurveKey key)
+    {
+        m_R.AddKey(key);
+    }
+    void CurveLinearColor::AddKeyG(CurveKey key)
+    {
+        m_G.AddKey(key);
+    }
+    void CurveLinearColor::AddKeyB(CurveKey key)
+    {
+        m_B.AddKey(key);
+    }
+    void CurveLinearColor::AddKeyA(CurveKey key)
+    {
+        m_A.AddKey(key);
     }
 
     Color4f CurveLinearColor::SampleColor(float t) const
     {
         Color4f color;
-        color.r = m_curvesData->at(0)->Sample(t);
-        color.g = m_curvesData->at(1)->Sample(t);
-        color.b = m_curvesData->at(2)->Sample(t);
-        color.a = m_curvesData->at(3)->Sample(t);
+        color.r = m_R.Sample(t);
+        color.g = m_G.Sample(t);
+        color.b = m_B.Sample(t);
+        color.a = m_A.Sample(t);
 
         return color;
     }

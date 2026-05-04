@@ -2,7 +2,7 @@
 #include "Pulsar/AssetObject.h"
 #include "Pulsar/Assets/VolumeSettings.h"
 #include "Pulsar/Assets/TonemappingSettings.h"
-#include "Pulsar/Assets/GammaCorrectionSettings.h"
+#include "Pulsar/Assets/DisplayEncodingSettings.h"
 #include "Pulsar/Assets/PostProcessMaterialSettings.h"
 
 namespace pulsar

@@ -29,6 +29,15 @@ namespace pulsar
 
         CORELIB_REFL_DECL_FIELD(m_lutTexture);
         RCPtr<Texture2D> m_lutTexture;
+
+        bool IsEnabled() const override { return m_enabled; }
+        void Blend(float weight, VolumeSettings* accumulator) override;
+        void CollectAssetDependencies(array_list<guid_t>& deps) override;
+
+    private:
+        float m_blendWeight       = 0.0f; // transient
+        float m_intensitySum      = 0.0f; // transient
+        float m_dominantLUTWeight = 0.0f; // transient
     };
 
 } // namespace pulsar

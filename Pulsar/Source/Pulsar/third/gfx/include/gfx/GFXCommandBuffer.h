@@ -47,6 +47,8 @@ namespace gfx
         virtual void CmdSetViewport(float x, float y, float width, float height) = 0;
         virtual void CmdSetCullMode(GFXCullMode mode) = 0;
         virtual void CmdBlit(GFXTextureView* src, GFXTextureView* dest) = 0;
+        virtual void CmdResolve(GFXTextureView* src, GFXTextureView* dest) = 0;
+        virtual GFXFrameBufferObject* GetFrameBuffer() const = 0;
 
         virtual void CmdImageTransitionBarrier(GFXTextureView* rt, GFXResourceLayout layout) = 0;
     public:

@@ -428,6 +428,8 @@ namespace gfx
             {gfx::GFXTextureFormat::B8G8R8A8_UNorm, VK_FORMAT_B8G8R8A8_UNORM},
             {gfx::GFXTextureFormat::BC3_SRGB , VK_FORMAT_BC3_SRGB_BLOCK},
             {gfx::GFXTextureFormat::BC3_UNorm, VK_FORMAT_BC3_UNORM_BLOCK},
+            {gfx::GFXTextureFormat::BC7_SRGB , VK_FORMAT_BC7_SRGB_BLOCK},
+            {gfx::GFXTextureFormat::BC7_UNorm, VK_FORMAT_BC7_UNORM_BLOCK},
             {gfx::GFXTextureFormat::BC4_UNorm, VK_FORMAT_BC4_UNORM_BLOCK},
             {gfx::GFXTextureFormat::BC5_UNorm, VK_FORMAT_BC5_UNORM_BLOCK},
             {gfx::GFXTextureFormat::BC6H_RGB_SFloat, VK_FORMAT_BC6H_SFLOAT_BLOCK},

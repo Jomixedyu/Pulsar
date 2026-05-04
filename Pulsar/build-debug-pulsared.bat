@@ -6,7 +6,7 @@ for %%I in ("%SCRIPT_DIR%.") do set "ROOT_DIR=%%~fI"
 set "BUILD_DIR=%ROOT_DIR%\BuildNinja"
 set "CONFIG=Debug"
 set "TARGET=PulsarEd"
-set "VSDEVCMD=C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools\VsDevCmd.bat"
+set "VSDEVCMD=C:\Program Files\Microsoft Visual Studio\18\Community\Common7\Tools\VsDevCmd.bat"
 
 echo [Pulsar] Root: %ROOT_DIR%
 echo [Pulsar] Build: %BUILD_DIR%

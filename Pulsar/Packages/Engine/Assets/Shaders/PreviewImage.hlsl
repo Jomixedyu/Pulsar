@@ -27,7 +27,7 @@ SamplerState Sampler__Image ;
 
 float4 PSMain(float4 position : SV_Position, float2 texcoord) : SV_TARGET
 {
-    float3 backColor = 0;
+    float4 backColor = float4(0.01, 0.01, 0.01, 1);
 
     float4 output = float4(0,0,0,1);
     if (_Flags & FLAGS_NORMALMAP) output.b = 1;
@@ -41,10 +41,10 @@ float4 PSMain(float4 position : SV_Position, float2 texcoord) : SV_TARGET
 
     float4 imgColor = _Image.Sample(Sampler__Image, uv);
 
-    imgColor.rgb = lerp(imgColor.rgb, backColor.rgb, uv.x > 1);
-    imgColor.rgb = lerp(imgColor.rgb, backColor.rgb, uv.y > 1);
-    imgColor.rgb = lerp(imgColor.rgb, backColor.rgb, uv.x < 0);
-    imgColor.rgb = lerp(imgColor.rgb, backColor.rgb, uv.y < 0);
+    imgColor.rgba = lerp(imgColor.rgba, backColor.rgba, uv.x > 1);
+    imgColor.rgba = lerp(imgColor.rgba, backColor.rgba, uv.y > 1);
+    imgColor.rgba = lerp(imgColor.rgba, backColor.rgba, uv.x < 0);
+    imgColor.rgba = lerp(imgColor.rgba, backColor.rgba, uv.y < 0);
 
     if (_Flags & FLAGS_CHANNEL_R) output.x = imgColor.x;
     if (_Flags & FLAGS_CHANNEL_G) output.y = imgColor.y;

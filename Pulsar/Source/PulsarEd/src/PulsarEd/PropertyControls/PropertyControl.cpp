@@ -1,4 +1,7 @@
 #include "PropertyControls/PropertyControl.h"
+#include <Pulsar/SceneObject.h>
+#include <Pulsar/Assets/NodeCollection.h>
+#include <PulsarEd/AssetDatabase.h>
 #include <PulsarEd/EditorUI.h>
 #include <imgui/imgui.h>
 
@@ -154,18 +157,6 @@ namespace pulsared
                 ImGui::TreePop();
             }
         }
-        else if (PropertyControlManager::FindControl(innerType) && !ignore)
-        {
-            const bool opened = ImGui::TreeNodeEx(StringUtil::FriendlyName(name).c_str(), ImGuiTreeNodeFlags_Leaf);
-            ImGui::TableSetColumnIndex(1);
-
-            isChanged |= PropertyControlManager::ShowProperty(name, innerType, obj, attrs);
-
-            if (opened)
-            {
-                ImGui::TreePop();
-            }
-        }
         else
         {
             bool isInline = false;
@@ -204,6 +195,18 @@ namespace pulsared
                     ImGui::TreeNodeEx(StringUtil::FriendlyName(name).c_str(), ImGuiTreeNodeFlags_Leaf);
                     ImGui::TableSetColumnIndex(1);
                     ImGui::Text("[Null]");
+                    ImGui::TreePop();
+                }
+            }
+            else if (PropertyControlManager::FindControl(innerType) && !ignore)
+            {
+                const bool opened = ImGui::TreeNodeEx(StringUtil::FriendlyName(name).c_str(), ImGuiTreeNodeFlags_Leaf);
+                ImGui::TableSetColumnIndex(1);
+
+                isChanged |= PropertyControlManager::ShowProperty(name, innerType, obj, attrs);
+
+                if (opened)
+                {
                     ImGui::TreePop();
                 }
             }
@@ -272,7 +275,22 @@ namespace pulsared
                                 field->SetValue(parentObj, fieldInstSptr);
                             }
                             if (auto* receiverBase = dynamic_cast<ObjectBase*>(receiver))
+                            {
                                 receiverBase->PostEditChange(receiverField);
+
+                                // Mark owning scene dirty when editing scene objects
+                                if (auto* sceneObj = dynamic_cast<SceneObject*>(receiverBase))
+                                {
+                                    if (auto* collection = sceneObj->GetOwnerNodeCollection())
+                                    {
+                                        if (auto* asset = ptr_cast<AssetObject>(collection))
+                                        {
+                                            auto rc = RCPtr<AssetObject>::UnsafeCreate(asset->GetObjectHandle());
+                                            AssetDatabase::MarkDirty(rc);
+                                        }
+                                    }
+                                }
+                            }
                         }
                         isChanged |= curFieldChanged;
 

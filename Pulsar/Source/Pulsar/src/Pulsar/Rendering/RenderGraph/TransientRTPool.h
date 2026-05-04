@@ -12,15 +12,17 @@ namespace pulsar
         int32_t Width = 0;
         int32_t Height = 0;
         array_list<RenderTargetInfo> TargetInfos;
+        uint32_t SampleCount = 1;
 
         bool operator==(const RGTextureDesc& o) const
         {
-            if (Width != o.Width || Height != o.Height) return false;
+            if (Width != o.Width || Height != o.Height || SampleCount != o.SampleCount) return false;
             if (TargetInfos.size() != o.TargetInfos.size()) return false;
             for (size_t i = 0; i < TargetInfos.size(); ++i)
             {
                 if (TargetInfos[i].Format != o.TargetInfos[i].Format) return false;
                 if (TargetInfos[i].TargetType != o.TargetInfos[i].TargetType) return false;
+                if (TargetInfos[i].SampleCount != o.TargetInfos[i].SampleCount) return false;
             }
             return true;
         }
@@ -35,7 +37,9 @@ namespace pulsar
             {
                 h ^= std::hash<int32_t>{}(static_cast<int32_t>(t.Format)) * 2654435761u;
                 h ^= std::hash<int32_t>{}(static_cast<int32_t>(t.TargetType)) * 40503u;
+                h ^= std::hash<uint32_t>{}(t.SampleCount) * 101u;
             }
+            h ^= std::hash<uint32_t>{}(d.SampleCount) * 7919u;
             return h;
         }
     };

@@ -58,6 +58,7 @@ namespace gfx
         bool IsTarget() const { return m_targetType != GFXTextureTargetType::None; }
         GFXTextureTargetType GetTargetType() const override { return m_targetType; }
         void TransitionLayout(VkCommandBuffer cmd, VkImageLayout layout);
+        uint32_t GetSampleCount() const override { return static_cast<uint32_t>(m_samples); }
 
     protected:
         GFXVulkanApplication* m_app;
@@ -73,6 +74,7 @@ namespace gfx
         VkImageUsageFlags m_usageFlags{};
         GFXTextureDataType m_dataType;
         GFXTextureTargetType m_targetType;
+        VkSampleCountFlagBits m_samples = VK_SAMPLE_COUNT_1_BIT;
 
         std::map<size_t, GFXTexture2DView_sp> m_2dviews;
 

@@ -124,8 +124,22 @@ namespace pulsared
         for (int i = 0; i < world->GetSceneCount(); i++)
         {
             auto currentScene = world->GetScene(i);
+            bool isFocus = (currentScene == world->GetFocusScene());
+
+            string label = currentScene->GetName();
+            if (auto asset = cast<AssetObject>(currentScene))
+            {
+                if (AssetDatabase::IsDirty(asset))
+                {
+                    label += " *";
+                }
+            }
+            if (isFocus)
+            {
+                label += "  (Focus Scene)";
+            }
             ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4{0,0,0,1});
-            bool opened = ImGui::TreeNodeEx(currentScene->GetName().c_str(), base_flags);
+            bool opened = ImGui::TreeNodeEx(label.c_str(), base_flags);
             ImGui::PopStyleColor();
 
             // drop target：挂在 scene TreeNode header 上

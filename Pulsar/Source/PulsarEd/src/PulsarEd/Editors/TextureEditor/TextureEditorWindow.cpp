@@ -62,9 +62,9 @@ namespace pulsared
             auto ppMatSettings = mksptr(new PostProcessMaterialSettings());
             ppMatSettings->m_materials->push_back(m_ppMat);
             m_previewProfile->GetEffects()->push_back(ppMatSettings);
-            m_gammaSettings = mksptr(new GammaCorrectionSettings());
-            m_gammaSettings->m_enabled = true;
-            m_previewProfile->GetEffects()->push_back(m_gammaSettings);
+            m_displayEncodingSettings = mksptr(new DisplayEncodingSettings());
+            m_displayEncodingSettings->m_enabled = true;
+            m_previewProfile->GetEffects()->push_back(m_displayEncodingSettings);
             volComp->SetProfile(m_previewProfile);
         }
     }

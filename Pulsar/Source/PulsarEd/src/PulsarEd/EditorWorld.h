@@ -43,12 +43,16 @@ namespace pulsared
     public:
         EdTool* GetTool() const { return m_tool.get(); }
         void SetTool(std::unique_ptr<EdTool>&& tool);
+
+        int GetGizmoSpace() const { return m_gizmoSpace; }
+        void SetGizmoSpace(int space) { m_gizmoSpace = space; }
     private:
         ObjectPtr<Node> m_camNode;
         CameraComponent_ref m_cam;
 
 
         std::unique_ptr<EdTool> m_tool = nullptr;
+        int m_gizmoSpace = 0; // 0 = Local (ImGuizmo::LOCAL), 1 = World (ImGuizmo::WORLD)
     };
 }
 

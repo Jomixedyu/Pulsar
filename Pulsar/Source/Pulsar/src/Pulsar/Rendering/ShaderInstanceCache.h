@@ -25,6 +25,10 @@ namespace pulsar
 
         void Clear();
 
+        // Remove all cached ShaderInstances for a specific shader asset (by GUID).
+        // Call this before notifying Materials so they re-request compilation.
+        void InvalidateShader(const guid_t& shaderGuid);
+
     private:
         ShaderInstanceCache() = default;
 

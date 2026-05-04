@@ -55,11 +55,7 @@ namespace pulsar
         std::shared_ptr<gfx::GFXTexture> GetGFXTexture() const override { return m_tex; }
 
     public:
-        bool IsSRGB() const
-        {
-            auto fmt = StaticGetFormatMapping(OSPlatform::Windows64)->at(m_compressionFormat);
-            return fmt == gfx::GFXTextureFormat::BC3_SRGB || fmt == gfx::GFXTextureFormat::R8G8B8A8_SRGB;
-        }
+        bool IsSRGB() const;
         TextureCompressionFormat GetCompressedFormat() const override { return m_compressionFormat; }
         void SetCompressedFormat(TextureCompressionFormat value) { m_compressionFormat = value; }
         size_t GetOriginCompressedBinarySize() const override { return m_originMemory.size(); }

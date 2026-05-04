@@ -11,5 +11,10 @@ namespace pulsared
         void Terminate() override;
         SPtr<EditorWindow> OnCreateEditorWindow() override;
         string_view GetMenuName() const override { return "SceneEditor";}
+
+        void NewScene();
+        void OpenScene();
+        void SaveScene();
+        bool SaveSceneAs();
     };
 } // namespace pulsared

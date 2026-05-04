@@ -13,6 +13,7 @@ namespace pulsar
         NormalMap_Compressed,
         HDR_Compressed,
         BitmapRGBA8,
+        BitmapSRGBA8,
         BitmapRGBA16,
         BitmapRGBA32,
         BitmapR8,

@@ -10,23 +10,43 @@ namespace pulsar
         return a + t * (b - a);
     }
 
-    float CurveData::Sample(float InTime, float InDefaultValue) const
+    float CurveKeyCollection::Sample(float InTime, float InDefaultValue) const
     {
-        auto keyA = Keys->at(0);
-        auto keyB = Keys->at(1);
-
-        if (InTime < keyA.Time)
+        if (Keys.empty())
         {
-            return keyA.Value;
+            return InDefaultValue;
         }
-        if (InTime > keyB.Time)
+        if (Keys.size() == 1)
         {
-            return keyB.Value;
+            return Keys[0].Value;
         }
 
-        auto dt = keyB.Time - keyA.Time;
-        auto t = (InTime - keyA.Time) / dt;
-        return Lerp(keyA.Value, keyB.Value, t);
+        if (InTime <= Keys.front().Time)
+        {
+            return Keys.front().Value;
+        }
+        if (InTime >= Keys.back().Time)
+        {
+            return Keys.back().Value;
+        }
+
+        for (size_t i = 0; i < Keys.size() - 1; ++i)
+        {
+            if (InTime >= Keys[i].Time && InTime <= Keys[i + 1].Time)
+            {
+                auto keyA = Keys[i];
+                auto keyB = Keys[i + 1];
+                auto dt = keyB.Time - keyA.Time;
+                if (dt == 0)
+                {
+                    return keyA.Value;
+                }
+                auto t = (InTime - keyA.Time) / dt;
+                return Lerp(keyA.Value, keyB.Value, t);
+            }
+        }
+
+        return InDefaultValue;
     }
 
 } // namespace pulsar

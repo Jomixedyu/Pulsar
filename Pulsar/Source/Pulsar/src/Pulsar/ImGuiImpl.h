@@ -17,6 +17,7 @@ namespace pulsar
         virtual void Render(gfx::GFXCommandBuffer* cmd) = 0;
         virtual void EndFrame() = 0;
         virtual void Terminate() = 0;
+        virtual bool IsMinimized() const { return false; }
         virtual ~ImGuiObject() = default;
     };
     extern void ImGui_Style_Initialize();

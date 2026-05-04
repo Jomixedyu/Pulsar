@@ -16,12 +16,5 @@
                 "DepthWrite": false
             }
         }
-    ],
-    "Properties": [
-        {
-            "Name": "_Gamma",
-            "Type": "Float",
-            "DefaultValue": "2.2"
-        }
     ]
 }

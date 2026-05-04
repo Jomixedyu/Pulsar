@@ -2,6 +2,7 @@
 #include <Pulsar/ImGuiImpl.h>
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_sdl2.h>
+#include <SDL_vulkan.h>
 
 #include "DroidSans.ttf.h"
 #include "forkawesome-webfont.ttf.h"
@@ -40,6 +41,8 @@ namespace pulsar
         io.ConfigWindowsMoveFromTitleBarOnly = true;
         //io.MouseDrawCursor = true;
 
+        const float dpiScale = jxcorlib::platform::window::GetUIScaling();
+
         {
             ImFontConfig fontConfig{};
             fontConfig.FontDataOwnedByAtlas = false;
@@ -49,7 +52,7 @@ namespace pulsar
             fontConfig.GlyphExtraSpacing.x = 0.5f;
             strcpy(fontConfig.Name, "ForkAwesome");
             static const ImWchar icon_ranges[] = { ICON_MIN_FK, ICON_MAX_FK, 0 };
-            io.Fonts->AddFontFromMemoryTTF(FILE_forkawesome_webfont_ttf, sizeof(FILE_forkawesome_webfont_ttf), 13, &fontConfig, icon_ranges);
+            io.Fonts->AddFontFromMemoryTTF(FILE_forkawesome_webfont_ttf, sizeof(FILE_forkawesome_webfont_ttf), 13 * dpiScale, &fontConfig, icon_ranges);
         }
         {
             ImFontConfig fontConfig{};
@@ -59,7 +62,7 @@ namespace pulsar
             fontConfig.OversampleV = 2;
             fontConfig.GlyphExtraSpacing.x = 0.5f;
             strcpy(fontConfig.Name, "DroidSans");
-            io.Fonts->AddFontFromMemoryTTF(FILE_DroidSans_ttf, sizeof(FILE_DroidSans_ttf), 14.f, &fontConfig);
+            io.Fonts->AddFontFromMemoryTTF(FILE_DroidSans_ttf, sizeof(FILE_DroidSans_ttf), 14.f * dpiScale, &fontConfig);
         }
 
         {
@@ -69,12 +72,10 @@ namespace pulsar
             //fontConfig.OversampleH = 2;
             //fontConfig.OversampleV = 2;
             //strcpy(fontConfig.Name, "YaHei");
-            io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\msyh.ttc", 16.f, &fontConfig, io.Fonts->GetGlyphRangesChineseSimplifiedCommon());
+            io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\msyh.ttc", 16.f * dpiScale, &fontConfig, io.Fonts->GetGlyphRangesChineseSimplifiedCommon());
         }
 
-       
-
-        io.FontGlobalScale = jxcorlib::platform::window::GetUIScaling();
+        io.FontGlobalScale = 1.0f / dpiScale;  // Texture was generated at high-res (size*dpiScale), so scale down logically
         //io.Fonts->AddFontFromFileTTF("DroidSans.ttf", 14.4f);
         ImGui::StyleColorsDark();
 
@@ -205,6 +206,10 @@ namespace pulsar
         virtual void EndFrame() override
         {
             ImGui::EndFrame();
+        }
+        virtual bool IsMinimized() const override
+        {
+            return SDL_GetWindowFlags((SDL_Window*)m_app->GetWindow()->GetUserPoint()) & SDL_WINDOW_MINIMIZED;
         }
         virtual void Terminate() override
         {

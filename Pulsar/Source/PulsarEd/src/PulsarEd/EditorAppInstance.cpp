@@ -6,6 +6,7 @@
 #include "Pulsar/Components/PointLightComponent.h"
 
 #include "Shaders/EditorShaderCompileService.h"
+#include "Shaders/ShaderHotReloadWatcher.h"
 #include "Utils/PrefabUtil.h"
 
 #include <Pulsar/Rendering/ShaderInstanceCache.h>
@@ -19,6 +20,10 @@
 #include <Pulsar/Components/DirectionalLightComponent.h>
 #include <Pulsar/Components/SphereShape3DComponent.h>
 #include <Pulsar/Components/StaticMeshRendererComponent.h>
+#include <Pulsar/Components/VolumeComponent.h>
+#include <Pulsar/Assets/VolumeProfile.h>
+#include <Pulsar/Assets/TonemappingSettings.h>
+#include <Pulsar/Assets/DisplayEncodingSettings.h>
 #include <Pulsar/ImGuiImpl.h>
 #include <Pulsar/Logger.h>
 #include <Pulsar/Physics3D/RigidBodyDynamics3DComponent.h>
@@ -204,10 +209,14 @@ namespace pulsared
         Logger::Log("pre intialized");
     }
 
-    static void SetupDefaultResidentScene()
+    void EditorAppInstance::SetupDefaultResidentScene()
     {
 
-        auto scene = World::Current()->GetResidentScene();
+        auto scene = World::Current()->GetFocusScene();
+        if (!scene)
+        {
+            scene = World::Current()->GetResidentScene();
+        }
 
         auto cam = World::Current()->GetCurrentCamera();
         cam->GetTransform()->SetPosition({0,0,-50});
@@ -218,6 +227,18 @@ namespace pulsared
             auto dlight = scene->NewNode("Directional Light");
             dlight->AddComponent<DirectionalLightComponent>();
             dlight->GetTransform()->TranslateRotateEuler({-3,3,-3}, {45,45,0});
+        }
+
+        // postprocess volume
+        {
+            auto ppVolume = scene->NewNode("PostProcess Volume");
+            auto volComp = ppVolume->AddComponent<VolumeComponent>();
+            volComp->SetIsGlobal(true);
+
+            auto profile = NewAssetObject<VolumeProfile>();
+            profile->GetEffects()->push_back(mksptr(new TonemappingSettings()));
+            profile->GetEffects()->push_back(mksptr(new DisplayEncodingSettings()));
+            volComp->SetProfile(profile);
         }
 
 
@@ -238,6 +259,7 @@ namespace pulsared
         auto gridMat = AssetManager::Get()->LoadAsset<Material>("Engine/Materials/WorldGrid", true);
         auto litMat = AssetManager::Get()->LoadAsset<Material>("Engine/Materials/Lambert", true);
         ShapeMeshUtils::CreateCube(scene, "floor", gridMat, false, {0, -0.25f, 0},{}, { 10.f, 0.5f, 10.f});
+        return;
         {
 
             ShapeMeshUtils::CreateCube(scene, "cube", gridMat,true, {-2.f,0.5f,2.f},{0.0f, -35.0f,0.0f});
@@ -247,7 +269,7 @@ namespace pulsared
             ShapeMeshUtils::CreateSphere(scene, "sphere", gridMat, true, {-0.3f, 5.f, 1.3f});
 
         }
-        return;
+
 
         {
             auto p1 = scene->NewNode("PointLight");
@@ -393,10 +415,22 @@ namespace pulsared
         m_editors[0]->CreateEditorWindow()->Open();
 
         Workspace::OpenWorkspace(_SearchUpFolder("Project") / "Project.peproj");
+
+        // Create initial editing scene as focus scene
+        {
+            auto world = GetEditorWorld();
+            auto scene = Scene::StaticCreate("NewScene");
+            scene->SetObjectFlags(scene->GetObjectFlags() & ~OF_Transient);
+            world->LoadScene(scene);
+            world->SetFocusScene(scene);
+        }
+
         SetupDefaultResidentScene();
 
         uinput::InputManager::GetInstance()->Initialize();
 
+        m_shaderHotReloadWatcher = new ShaderHotReloadWatcher();
+        m_shaderHotReloadWatcher->Initialize();
 
     }
 
@@ -411,6 +445,13 @@ namespace pulsared
         m_editors.clear();
 
         PrefabUtil::ClosePrefabMode();
+
+        if (m_shaderHotReloadWatcher)
+        {
+            m_shaderHotReloadWatcher->Terminate();
+            delete m_shaderHotReloadWatcher;
+            m_shaderHotReloadWatcher = nullptr;
+        }
 
         // 在 World 和 GFX Device 销毁前清理 ShaderInstanceCache，
         // 否则 GpuProgram 析构时 VkDevice 已经无效
@@ -452,26 +493,40 @@ namespace pulsared
             compileService->FlushCallbacks();
         }
 
-        m_gui->NewFrame();
-
-        uinput::InputManager::GetInstance()->ProcessEvents();
-
-        EditorWorld::GetPreviewWorld()->Tick(dt);
-        //World::Current()->Tick(dt);
-
-        pulsared::EditorWindowManager::Draw(dt);
-        pulsared::EditorTickerManager::Ticker.Invoke(dt);
-
-        if (m_modalDialog)
+        if (m_shaderHotReloadWatcher)
         {
-            m_modalDialog->Tick(dt);
-            if (m_modalDialog->m_shouldClose)
-                m_modalDialog.reset();
+            m_shaderHotReloadWatcher->Tick(dt);
         }
 
-        OnRenderTick.Invoke(dt);
+        if (!m_gui->IsMinimized())
+        {
+            m_gui->NewFrame();
 
-        m_gui->EndFrame();
+            uinput::InputManager::GetInstance()->ProcessEvents();
+
+            EditorWorld::GetPreviewWorld()->Tick(dt);
+            //World::Current()->Tick(dt);
+
+            pulsared::EditorWindowManager::Draw(dt);
+            pulsared::EditorTickerManager::Ticker.Invoke(dt);
+
+            if (m_modalDialog)
+            {
+                m_modalDialog->Tick(dt);
+                if (m_modalDialog->m_shouldClose)
+                    m_modalDialog.reset();
+            }
+
+            OnRenderTick.Invoke(dt);
+
+            m_gui->EndFrame();
+        }
+        else
+        {
+            uinput::InputManager::GetInstance()->ProcessEvents();
+            EditorWorld::GetPreviewWorld()->Tick(dt);
+            pulsared::EditorTickerManager::Ticker.Invoke(dt);
+        }
     }
 
     void EditorAppInstance::OnEndRender(float dt)

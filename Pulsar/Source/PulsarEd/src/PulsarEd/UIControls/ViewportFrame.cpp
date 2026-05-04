@@ -32,11 +32,17 @@ namespace pulsared
         bool isResize = false;
 
         const auto contentSize = Vector2f { ImGuiExt::GetContentSize() };
-        if (*viewportSize != contentSize || forceResize)
+        const auto& io = ImGui::GetIO();
+        const Vector2f pixelSize = {
+            contentSize.x * io.DisplayFramebufferScale.x,
+            contentSize.y * io.DisplayFramebufferScale.y
+        };
+
+        if (*viewportSize != pixelSize || forceResize)
         {
             isResize = true;
-            viewportSize->x = (int)contentSize.x > 0 ? contentSize.x : 1;
-            viewportSize->y = (int)contentSize.y > 0 ? contentSize.y : 1;
+            viewportSize->x = (int)pixelSize.x > 0 ? pixelSize.x : 1;
+            viewportSize->y = (int)pixelSize.y > 0 ? pixelSize.y : 1;
 
             cam->ResizeManagedRenderTexture((int)viewportSize->x, (int)viewportSize->y);
         }

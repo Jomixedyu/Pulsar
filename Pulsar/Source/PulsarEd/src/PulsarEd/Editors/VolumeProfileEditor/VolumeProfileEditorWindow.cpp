@@ -27,10 +27,10 @@ namespace pulsared
         if (!profile)
             return;
 
-        DrawEffectsList(profile.GetPtr());
+        DrawEffectsList(profile);
     }
 
-    void VolumeProfileEditorWindow::DrawEffectsList(VolumeProfile* profile)
+    void VolumeProfileEditorWindow::DrawEffectsList(const pulsar::RCPtr<pulsar::VolumeProfile>& profile)
     {
         auto& effects = *profile->GetEffects();
 
@@ -59,7 +59,7 @@ namespace pulsared
                     if (auto settings = ::jxcorlib::sptr_cast<::pulsar::VolumeSettings>(obj))
                     {
                         effects.push_back(settings);
-                        AssetDatabase::MarkDirty(m_assetObject);
+                        AssetDatabase::MarkDirty(profile);
                     }
                 }
             }
@@ -82,7 +82,7 @@ namespace pulsared
             if (ImGui::SmallButton(ICON_FK_TRASH))
             {
                 effects.erase(effects.begin() + i);
-                AssetDatabase::MarkDirty(m_assetObject);
+                AssetDatabase::MarkDirty(profile);
                 ImGui::PopID();
                 if (opened)
                     ImGui::TreePop();
@@ -92,11 +92,13 @@ namespace pulsared
 
             if (opened)
             {
-                PImGui::ObjectFieldProperties(
+                bool changed = PImGui::ObjectFieldProperties(
                     effectType,
                     effectType,
                     effect.get(),
                     effect.get());
+                if (changed)
+                    AssetDatabase::MarkDirty(profile);
                 ImGui::TreePop();
             }
 

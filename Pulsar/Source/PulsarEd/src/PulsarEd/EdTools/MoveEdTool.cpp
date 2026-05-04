@@ -7,6 +7,7 @@
 
 #include "Pulsar/Components/CameraComponent.h"
 #include "Pulsar/Node.h"
+#include <PulsarEd/AssetDatabase.h>
 
 
 namespace pulsared
@@ -37,18 +38,24 @@ namespace pulsared
         auto node = GetSelection().GetSelected();
         auto matrix = node->GetTransform()->GetLocalToWorldMatrix();
 
-        static ImGuizmo::MODE CurrentGizmoMode(ImGuizmo::LOCAL);
-
+        auto mode = static_cast<ImGuizmo::MODE>(m_world->GetGizmoSpace());
 
         if (ImGuizmo::Manipulate(
             viewMat.get_value_ptr(),
             projMat.get_value_ptr(),
             ImGuizmo::TRANSLATE,
-            CurrentGizmoMode,
+            mode,
             matrix.get_value_ptr(),
             nullptr, nullptr, nullptr, nullptr))
         {
             node->GetTransform()->SetWorldPosition(matrix[3].xyz());
+            if (auto focusScene = m_world->GetFocusScene())
+            {
+                if (auto asset = cast<AssetObject>(focusScene))
+                {
+                    AssetDatabase::MarkDirty(asset);
+                }
+            }
         }
 
         // ImGuizmo::Manipulate(

@@ -5,7 +5,7 @@ set "SCRIPT_DIR=%~dp0"
 for %%I in ("%SCRIPT_DIR%.") do set "ROOT_DIR=%%~fI"
 set "BUILD_DIR=%ROOT_DIR%\BuildNinja"
 set "GENERATOR=Ninja"
-set "VSDEVCMD=C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools\VsDevCmd.bat"
+set "VSDEVCMD=C:\Program Files\Microsoft Visual Studio\18\Community\Common7\Tools\VsDevCmd.bat"
 
 if not exist "%VSDEVCMD%" (
     echo [Pulsar] VS developer environment script not found:

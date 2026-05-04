@@ -1,6 +1,7 @@
 #include "PropertyControls/Vector4fPropertyControl.h"
 #include <Pulsar/Meta/PropertyStyleAttributes.h>
 #include <imgui/imgui.h>
+#include <Pulsar/EngineMath.h>
 
 namespace pulsared
 {
@@ -24,7 +25,7 @@ namespace pulsared
         bool changed = false;
         if (isColor)
         {
-            float color[4] = { f->x, f->y, f->z, f->w };
+            float color[4] = { pulsar::math::LinearToSRGB(f->x), pulsar::math::LinearToSRGB(f->y), pulsar::math::LinearToSRGB(f->z), f->w };
             auto popupId = "ColorPopup_" + name;
             if (ImGui::ColorButton(("##btn_" + name).c_str(), ImVec4{color[0], color[1], color[2], color[3]}, 0, ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetFrameHeight())))
             {
@@ -41,9 +42,9 @@ namespace pulsared
             }
             if (changed)
             {
-                f->x = color[0];
-                f->y = color[1];
-                f->z = color[2];
+                f->x = pulsar::math::SRGBToLinear(color[0]);
+                f->y = pulsar::math::SRGBToLinear(color[1]);
+                f->z = pulsar::math::SRGBToLinear(color[2]);
                 f->w = color[3];
             }
         }

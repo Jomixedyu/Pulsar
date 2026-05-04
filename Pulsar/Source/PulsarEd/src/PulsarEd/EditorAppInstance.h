@@ -86,6 +86,7 @@ namespace pulsared
         }
 
         void ShowModalDialog(SPtr<ModalDialog> dialog);
+        void SetupDefaultResidentScene();
 
     protected:
         array_list<std::unique_ptr<Editor>> m_editors;
@@ -96,6 +97,7 @@ namespace pulsared
         World* m_world{};
         Vector2f m_outputSize{};
         ExclusiveTaskQueue m_exclusiveTaskQueue;
+        class ShaderHotReloadWatcher* m_shaderHotReloadWatcher = nullptr;
 
         bool m_isPlaying = false;
         bool m_shouldQuit = false;
