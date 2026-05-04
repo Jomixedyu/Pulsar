@@ -92,11 +92,13 @@ namespace pulsared
 
             if (opened)
             {
-                PImGui::ObjectFieldProperties(
+                bool changed = PImGui::ObjectFieldProperties(
                     effectType,
                     effectType,
                     effect.get(),
                     effect.get());
+                if (changed)
+                    AssetDatabase::MarkDirty(profile);
                 ImGui::TreePop();
             }
 

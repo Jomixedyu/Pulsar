@@ -107,7 +107,7 @@ namespace pulsared
             }
 
             auto label_pos = bb.Min + padding;
-            label_pos.y += ctx->size.y;
+            label_pos.y += ctx->size.y + 4.0f;
 
             // 如果实际高度被限制，需要裁剪
             if (text_size.y > max_label_height)
