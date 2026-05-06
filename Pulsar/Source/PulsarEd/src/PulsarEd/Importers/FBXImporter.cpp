@@ -329,12 +329,14 @@ namespace pulsared
     // -----------------------------------------------------------------------
     // 辅助：提取节点 TRS 并应用到 transform
     // -----------------------------------------------------------------------
-    static void ApplyNodeTransform(FbxNode* fbxNode, Node* node)
+    static void ApplyNodeTransform(FbxNode* fbxNode, Node* node, bool inverseCoordsystem)
     {
         auto transform = node->GetTransform();
         // 使用 EvaluateLocalTransform 获取完整的 local 变换（包含 PreRotation/PostRotation/RotationOrder）
         const FbxAMatrix localMatrix = fbxNode->EvaluateLocalTransform(FBXSDK_TIME_ZERO);
-        transform->SetPosition(ToVector3f(localMatrix.GetT()));
+        auto pos = ToVector3f(localMatrix.GetT());
+        if (inverseCoordsystem) pos.x = -pos.x;
+        transform->SetPosition(pos);
         transform->SetRotation(ToQuat(localMatrix.GetQ()));
         transform->SetScale(ToVector3f(localMatrix.GetS()));
     }
@@ -382,12 +384,12 @@ namespace pulsared
             }
             else
             {
-                ApplyNodeTransform(fbxNode, newNode.GetPtr());
+                ApplyNodeTransform(fbxNode, newNode.GetPtr(), inverseCoordsystem);
             }
         }
         else
         {
-            ApplyNodeTransform(fbxNode, newNode.GetPtr());
+            ApplyNodeTransform(fbxNode, newNode.GetPtr(), inverseCoordsystem);
         }
 
         // 检查 mesh 是否有 skin deformer
@@ -492,30 +494,40 @@ namespace pulsared
 
             if (fbxsetting->ConvertAxisSystem)
             {
-                const auto axisSystem = fbxScene->GetGlobalSettings().GetAxisSystem();
-                if (axisSystem.GetCoorSystem() == FbxAxisSystem::eRightHanded)
+                const auto fileAxisSystem = fbxScene->GetGlobalSettings().GetAxisSystem();
+                
+                // 检查是否需要手性翻转（RH → LH）
+                if (fileAxisSystem.GetCoorSystem() == FbxAxisSystem::eRightHanded)
                 {
                     inverseCoordSystem = true;
                 }
-                const auto ourAxisSystem = FbxAxisSystem(FbxAxisSystem::eYAxis, FbxAxisSystem::eParityOdd, FbxAxisSystem::eLeftHanded);
+                
+                // 构建与源文件同手性、但 up/front 和目标一致的中间轴系。
+                // ConvertScene 官方文档明确说明：它只能做旋转（同手性轴转换），
+                // cannot represent changes in handedness（不能处理手性变化）。
+                const auto intermediateAxis = FbxAxisSystem(
+                    FbxAxisSystem::eYAxis,
+                    FbxAxisSystem::eParityOdd,
+                    fileAxisSystem.GetCoorSystem()
+                );
                 
                 int upSign = 0, frontSign = 0;
-                auto upVec = axisSystem.GetUpVector(upSign);
-                auto frontVec = axisSystem.GetFrontVector(frontSign);
-                auto coordSystem = axisSystem.GetCoorSystem();
+                auto upVec = fileAxisSystem.GetUpVector(upSign);
+                auto frontVec = fileAxisSystem.GetFrontVector(frontSign);
+                auto coordSystem = fileAxisSystem.GetCoorSystem();
                 Logger::Log(StringUtil::Concat("FBX Original AxisSystem: Up=", std::to_string((int)upVec), " Sign=", std::to_string(upSign), 
                     " Front=", std::to_string((int)frontVec), " Sign=", std::to_string(frontSign), 
                     " CoordSystem=", std::to_string((int)coordSystem),
                     " (0=RH, 1=LH)"));
                 
-                if (axisSystem != ourAxisSystem)
+                if (fileAxisSystem != intermediateAxis)
                 {
-                    ourAxisSystem.ConvertScene(fbxScene);
-                    Logger::Log("ConvertScene executed.");
+                    intermediateAxis.ConvertScene(fbxScene);
+                    Logger::Log("ConvertScene executed (same-handedness axis conversion).");
                 }
                 else
                 {
-                    Logger::Log("AxisSystem already matches, no conversion.");
+                    Logger::Log("AxisSystem already matches target up/front, no conversion.");
                 }
             }
 

@@ -130,18 +130,27 @@ namespace pulsared
                         const auto controlPointIndex = fbxMesh->GetPolygonVertex(polyIndex, vertIndexInFace);
 
                         // position
-                        section.Positions[vertexIndex] = ToVector3f(fbxMesh->GetControlPointAt(controlPointIndex));
+                        auto pos = ToVector3f(fbxMesh->GetControlPointAt(controlPointIndex));
+                        if (inverseCoordsystem) pos.x = -pos.x;
+                        section.Positions[vertexIndex] = pos;
 
                         // normal
                         FbxVector4 normal;
                         fbxMesh->GetPolygonVertexNormal(polyIndex, vertIndexInFace, normal);
-                        section.Normals[vertexIndex] = ToVector3f(normal);
+                        auto nrm = ToVector3f(normal);
+                        if (inverseCoordsystem) nrm.x = -nrm.x;
+                        section.Normals[vertexIndex] = nrm;
 
                         // tangent + bitangent sign (w)
                         if (!recomputeTangents && hasTangents)
                         {
-                            const Vector3f T = ToVector3f(GetColorLayerElement(fbxMesh->GetElementTangent(0),  controlPointIndex, vertexIndex));
-                            const Vector3f B = ToVector3f(GetColorLayerElement(fbxMesh->GetElementBinormal(0), controlPointIndex, vertexIndex));
+                            Vector3f T = ToVector3f(GetColorLayerElement(fbxMesh->GetElementTangent(0),  controlPointIndex, vertexIndex));
+                            Vector3f B = ToVector3f(GetColorLayerElement(fbxMesh->GetElementBinormal(0), controlPointIndex, vertexIndex));
+                            if (inverseCoordsystem)
+                            {
+                                T.x = -T.x;
+                                B.x = -B.x;
+                            }
                             const Vector3f N = section.Normals[vertexIndex];
                             const float w = Dot(Cross(N, T), B) > 0.0f ? 1.0f : -1.0f;
                             section.Tangents[vertexIndex] = Vector4f{T.x, T.y, T.z, w};
@@ -162,16 +171,7 @@ namespace pulsared
                                 fbxMesh->GetLayer(0)->GetVertexColors(), controlPointIndex, vertexIndex));
                         }
 
-                        // indices
-                        auto indicesValue = vertexIndex;
-                        if (inverseCoordsystem)
-                        {
-                            if (vertIndexInFace == 1)
-                                indicesValue += 1;
-                            if (vertIndexInFace == 2)
-                                indicesValue -= 1;
-                        }
-                        section.Indices[vertexIndex] = indicesValue;
+                        section.Indices[vertexIndex] = vertexIndex;
 
                         // skinning data
                         const auto& influences = cpInfluences[controlPointIndex];
@@ -248,9 +248,8 @@ namespace pulsared
     }
 
     // ConvertScene 通过翻转一个轴实现 RH->LH，导致提取出的旋转四元数在 Pulsar 的
-    // 左手系中看起来反向。此修正仅对旋转四元数做符号调整：
-    // 对于 X 轴反射（或等效操作），四元数修正为 (-x, y, -z, w)。
-    // 我们不在矩阵层面做反射，因为那会把平移也翻转到错误的方向。
+    // 采用 X 轴反射方案消除 RH->LH 的手性差异。
+    // X 轴反射下，旋转四元数的修正为 (-x, y, -z, w)。
     static inline Quat4f FixRotationForLH(const Quat4f& q)
     {
         return Quat4f{-q.x, q.y, -q.z, q.w};
@@ -327,13 +326,14 @@ namespace pulsared
                 localMatrix = bindModelMatrixFbx;
             }
 
-            bone.LocalTranslation = ToVector3f(localMatrix.GetT());
+            auto localTrans = ToVector3f(localMatrix.GetT());
+            if (inverseCoordSystem) localTrans.x = -localTrans.x;
+            bone.LocalTranslation = localTrans;
             bone.LocalRotation = ToQuat(localMatrix.GetQ());
             bone.LocalScale = ToVector3f(localMatrix.GetS());
 
             // 如果进行了 RH->LH 坐标系转换，对局部旋转做修正。
-            // ConvertScene 在改变 handness 时会翻转一个轴，导致提取出的旋转
-            // 在 Pulsar 的左手系中看起来反向。修正为 (-x, y, -z, w)。
+            // 采用 X 轴反射方案，四元数修正为 (-x, y, -z, w)。
             if (inverseCoordSystem)
             {
                 bone.LocalRotation = FixRotationForLH(bone.LocalRotation);

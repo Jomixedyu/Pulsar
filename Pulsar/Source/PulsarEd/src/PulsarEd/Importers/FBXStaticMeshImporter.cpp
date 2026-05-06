@@ -200,18 +200,27 @@ namespace pulsared
                         const auto controlPointIndex = fbxMesh->GetPolygonVertex(polyIndex, vertIndexInFace);
 
                         // position
-                        section.Positions[vertexIndex] = ToVector3f(fbxMesh->GetControlPointAt(controlPointIndex));
+                        auto pos = ToVector3f(fbxMesh->GetControlPointAt(controlPointIndex));
+                        if (inverseCoordsystem) pos.x = -pos.x;
+                        section.Positions[vertexIndex] = pos;
 
                         // normal
                         FbxVector4 normal;
                         fbxMesh->GetPolygonVertexNormal(polyIndex, vertIndexInFace, normal);
-                        section.Normals[vertexIndex] = ToVector3f(normal);
+                        auto nrm = ToVector3f(normal);
+                        if (inverseCoordsystem) nrm.x = -nrm.x;
+                        section.Normals[vertexIndex] = nrm;
 
                         // tangent + bitangent sign (w)
                         if (!recomputeTangents && hasTangents)
                         {
-                            const Vector3f T = ToVector3f(GetColorLayerElement(fbxMesh->GetElementTangent(0),  controlPointIndex, vertexIndex));
-                            const Vector3f B = ToVector3f(GetColorLayerElement(fbxMesh->GetElementBinormal(0), controlPointIndex, vertexIndex));
+                            Vector3f T = ToVector3f(GetColorLayerElement(fbxMesh->GetElementTangent(0),  controlPointIndex, vertexIndex));
+                            Vector3f B = ToVector3f(GetColorLayerElement(fbxMesh->GetElementBinormal(0), controlPointIndex, vertexIndex));
+                            if (inverseCoordsystem)
+                            {
+                                T.x = -T.x;
+                                B.x = -B.x;
+                            }
                             const Vector3f N = section.Normals[vertexIndex];
                             // cross(N,T) 与 FBX 提供的 B 方向一致则 w=+1，否则 w=-1
                             const float w = Dot(Cross(N, T), B) > 0.0f ? 1.0f : -1.0f;
@@ -233,15 +242,7 @@ namespace pulsared
                                 fbxMesh->GetLayer(0)->GetVertexColors(), controlPointIndex, vertexIndex));
                         }
 
-                        auto indicesValue = vertexIndex;
-                        if (inverseCoordsystem)
-                        {
-                            if (vertIndexInFace == 1)
-                                indicesValue += 1;
-                            if (vertIndexInFace == 2)
-                                indicesValue -= 1;
-                        }
-                        section.Indices[vertexIndex] = indicesValue;
+                        section.Indices[vertexIndex] = vertexIndex;
                     }
                 }
 
