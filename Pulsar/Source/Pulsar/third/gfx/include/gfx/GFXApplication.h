@@ -15,6 +15,7 @@
 #include "GFXTextureView.h"
 #include "GFXVertexLayoutDescription.h"
 #include "GFXGlobalShaderManager.h"
+#include "GFXSurface.h"
 #include <functional>
 
 namespace gfx
@@ -104,6 +105,7 @@ namespace gfx
         virtual std::vector<uint8_t> ReadbackTexture(GFXTexture* texture, int32_t width, int32_t height) = 0;
 
         virtual intptr_t GetWindowHandle() = 0;
+        virtual GFXSurface* GetWindow() = 0;
 
         virtual GFXSwapchain* GetViewport() = 0;
 

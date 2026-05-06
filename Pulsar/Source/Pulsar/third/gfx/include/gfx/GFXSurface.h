@@ -16,6 +16,8 @@ namespace gfx
         virtual void PollEvent() {}
         virtual void EnumEvents(void(*func)(void*)) {}
         virtual bool WantToClose() = 0;
+        virtual void GetWindowSize(int* width, int* height) const {}
+        virtual void SetWindowSize(int width, int height) {}
     };
 
 }
