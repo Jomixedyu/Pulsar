@@ -28,7 +28,8 @@ StandardVaryings VSMain(StandardAttributes a2v)
 
 float4 PSMain(StandardVaryings v) : SV_Target
 {
-    float NoL = dot(v.WorldNormal, WorldBuffer.WorldSpaceLightVector.xyz);
+    float3 worldNormal = normalize(v.WorldNormal);
+    float NoL = dot(worldNormal, WorldBuffer.WorldSpaceLightVector.xyz);
 
     float4 tex = _BaseColorMap.Sample(Sampler__BaseColorMap, v.TexCoord0);
     float3 final = WorldBuffer.WorldSpaceLightColor.rgb * tex.rgb * NoL;

@@ -223,7 +223,9 @@ namespace pulsared
                             }
                             const Vector3f N = section.Normals[vertexIndex];
                             // cross(N,T) 与 FBX 提供的 B 方向一致则 w=+1，否则 w=-1
-                            const float w = Dot(Cross(N, T), B) > 0.0f ? 1.0f : -1.0f;
+                            float w = Dot(Cross(N, T), B) > 0.0f ? 1.0f : -1.0f;
+                            // UV V 翻转后，副切线方向需取反以保持与 UV 自洽
+                            if (inverseCoordsystem) w = -w;
                             section.Tangents[vertexIndex] = Vector4f{T.x, T.y, T.z, w};
                         }
 
