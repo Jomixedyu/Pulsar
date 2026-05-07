@@ -1,4 +1,5 @@
 ﻿#include "EditorAppInstance.h"
+#include <Pulsar/Input.h>
 #include "EditorAssetManager.h"
 #include "EditorRenderPipeline.h"
 #include "Editors/EditorWindow.h"
@@ -428,6 +429,7 @@ namespace pulsared
         SetupDefaultResidentScene();
 
         uinput::InputManager::GetInstance()->Initialize();
+        pulsar::Input::Initialize();
 
         m_shaderHotReloadWatcher = new ShaderHotReloadWatcher();
         m_shaderHotReloadWatcher->Initialize();
@@ -436,6 +438,7 @@ namespace pulsared
 
     void EditorAppInstance::OnTerminate()
     {
+        pulsar::Input::Shutdown();
         uinput::InputManager::GetInstance()->Terminate();
 
         for (auto& editor : m_editors)
@@ -502,6 +505,7 @@ namespace pulsared
         {
             m_gui->NewFrame();
 
+            pulsar::Input::Update();
             uinput::InputManager::GetInstance()->ProcessEvents();
 
             EditorWorld::GetPreviewWorld()->Tick(dt);
@@ -523,6 +527,7 @@ namespace pulsared
         }
         else
         {
+            pulsar::Input::Update();
             uinput::InputManager::GetInstance()->ProcessEvents();
             EditorWorld::GetPreviewWorld()->Tick(dt);
             pulsared::EditorTickerManager::Ticker.Invoke(dt);
