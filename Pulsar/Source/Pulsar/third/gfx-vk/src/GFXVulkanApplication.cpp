@@ -577,6 +577,7 @@ namespace gfx
         info.DataType = GFXTextureDataType::Texture2D;
         info.SampleCount = sampleCount;
         info.IsTransientAttachment = isTransientAttachment;
+        info.SamplerCfg = samplerCfg;
 
         auto rt = new GFXVulkanTexture(this, info);
         return gfxmksptr(rt);

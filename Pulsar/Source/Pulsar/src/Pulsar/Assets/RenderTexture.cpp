@@ -62,7 +62,10 @@ namespace pulsar
 
         for (auto& info : targetInfo)
         {
-            auto rt = gfx->CreateRenderTarget(width, height, info.TargetType, info.Format, {}, info.SampleCount, info.IsTransientAttachment);
+            gfx::GFXSamplerConfig samplerCfg{};
+            samplerCfg.Filter = gfx::GFXSamplerFilter::Linear;
+            samplerCfg.AddressMode = gfx::GFXSamplerAddressMode::ClampToEdge;
+            auto rt = gfx->CreateRenderTarget(width, height, info.TargetType, info.Format, samplerCfg, info.SampleCount, info.IsTransientAttachment);
             self->m_renderTargets.push_back(rt);
         }
 

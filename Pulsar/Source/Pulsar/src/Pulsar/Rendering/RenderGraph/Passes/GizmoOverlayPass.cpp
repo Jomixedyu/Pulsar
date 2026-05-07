@@ -44,6 +44,8 @@ namespace pulsar
             .Write(output, RGAttachmentDesc{
                 .colorLoadOp  = gfx::GFXRenderPassLoadOp::Load,
                 .colorStoreOp = gfx::GFXRenderPassStoreOp::Store,
+                .depthLoadOp  = gfx::GFXRenderPassLoadOp::Load,
+                .depthStoreOp = gfx::GFXRenderPassStoreOp::DontCare,
             })
             .WithPerPass(perPass)
             .Prepare([cam, world, preparedOverlay, perPass, this](RGPassContext&)

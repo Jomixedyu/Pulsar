@@ -3,6 +3,7 @@
 #include "Passes/OpaquePass.h"
 #include "Passes/TranslucencyPass.h"
 #include "Passes/OutlinePass.h"
+#include "Passes/BloomPass.h"
 #include "Passes/RenderFeature.h"
 #include "Passes/GizmoOverlayPass.h"
 #include "../PerPassResources.h"

@@ -37,13 +37,13 @@ namespace pulsar
         auto preparedOpaque      = std::make_shared<array_list<PreparedBatch>>();
         auto preparedAlphaTest   = std::make_shared<array_list<PreparedBatch>>();
 
-        graph.AddPass("BasePass")
+        graph.AddPass("Opaque")
             .Write(hFinal, RGAttachmentDesc{
                 .colorLoadOp  = gfx::GFXRenderPassLoadOp::Clear,
                 .colorStoreOp = resolveTargetView ? gfx::GFXRenderPassStoreOp::DontCare : gfx::GFXRenderPassStoreOp::Store,
                 .clearColor   = {0.3f, 0.3f, 0.3f, 1.f},
                 .depthLoadOp  = gfx::GFXRenderPassLoadOp::Clear,
-                .depthStoreOp = gfx::GFXRenderPassStoreOp::DontCare,
+                .depthStoreOp = gfx::GFXRenderPassStoreOp::Store,
                 .clearDepth   = 1.f,
                 .resolveTargetView = resolveTargetView,
             })

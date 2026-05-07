@@ -9,6 +9,7 @@
 #include <Pulsar/Scene.h>
 #include <Pulsar/Subsystems/PostProcessSubsystem.h>
 #include <gfx/GFXCommandBuffer.h>
+#include <gfx/TextureClasses.h>
 
 #include "Passes/TonemapPass.h"
 #include "Passes/DisplayEncodingPass.h"
@@ -29,6 +30,11 @@ namespace pulsar
         m_postProcessFeatures.push_back(std::make_unique<TonemapPass>());
         m_postProcessFeatures.push_back(std::make_unique<CustomPostProcessChain>());
         m_postProcessFeatures.push_back(std::make_unique<ColorGradingPass>());
+        {
+            auto bloom = std::make_unique<BloomPass>();
+            bloom->Initialize();
+            m_postProcessFeatures.push_back(std::move(bloom));
+        }
         m_postProcessFeatures.push_back(std::make_unique<DisplayEncodingPass>());
 
         for (auto& feature : m_postProcessFeatures)
@@ -44,6 +50,8 @@ namespace pulsar
         {
             if (auto* pp = dynamic_cast<PostProcessPass*>(feature.get()))
                 pp->Destroy();
+            else if (auto* bloom = dynamic_cast<BloomPass*>(feature.get()))
+                bloom->Destroy();
         }
         m_gizmoOverlayPass.Destroy();
         m_translucencyPass.Destroy();
@@ -146,12 +154,12 @@ namespace pulsar
 
         // ---- Translucency: copy opaque scene color for refraction/distortion sampling ----
         auto* camRT = cam->GetRenderTexture().GetPtr();
-        auto format = camRT->GetRenderTargets()[0]->GetFormat();
+        auto hdrFormat = gfx::GFXTextureFormat::R16G16B16A16_SFloat;
 
         RGTextureDesc opaqueColorDesc{};
         opaqueColorDesc.Width  = camRT->GetWidth();
         opaqueColorDesc.Height = camRT->GetHeight();
-        opaqueColorDesc.TargetInfos.push_back({ gfx::GFXTextureTargetType::ColorTarget, format });
+        opaqueColorDesc.TargetInfos.push_back({ gfx::GFXTextureTargetType::ColorTarget, hdrFormat });
         auto hOpaqueColor = graph.CreateTransient("OpaqueColorTexture", opaqueColorDesc);
 
         graph.AddPass("CopyOpaqueColor")
@@ -183,11 +191,13 @@ namespace pulsar
         RGTextureDesc pingPongDesc{};
         pingPongDesc.Width  = camRT->GetWidth();
         pingPongDesc.Height = camRT->GetHeight();
-        pingPongDesc.TargetInfos.push_back({ gfx::GFXTextureTargetType::ColorTarget, format });
+        pingPongDesc.TargetInfos.push_back({ gfx::GFXTextureTargetType::ColorTarget, hdrFormat });
 
-        RGTextureHandle hPingPong = graph.CreateTransient("PostProcessPingPong", pingPongDesc);
+        RGTextureHandle hPingPongA = graph.CreateTransient("PostProcessPingPongA", pingPongDesc);
+        RGTextureHandle hPingPongB = graph.CreateTransient("PostProcessPingPongB", pingPongDesc);
+
         RGTextureHandle hSrc = hFinal;
-        RGTextureHandle hDst = hPingPong;
+        RGTextureHandle hDst = hPingPongA;
 
         for (auto& feature : m_postProcessFeatures)
         {
@@ -197,6 +207,8 @@ namespace pulsar
             {
                 hDst = feature->AddToGraph(graph, hSrc, hDst, cam, perPass);
                 std::swap(hSrc, hDst);
+                if (hDst == hFinal)
+                    hDst = (hSrc == hPingPongA) ? hPingPongB : hPingPongA;
             }
         }
 

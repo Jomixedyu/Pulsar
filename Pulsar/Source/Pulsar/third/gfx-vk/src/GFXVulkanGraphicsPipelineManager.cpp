@@ -40,6 +40,10 @@ namespace gfx
         }
         hash = hash * HashS1 ^ renderTargetDesc.GetHashCode();
         hash = hash * HashS1 ^ gpInfo.GetHashCode(); // must include topology & vertex layout
+        for (auto& layout : descriptorSetLayouts)
+        {
+            hash = hash * HashS1 ^ (uintptr_t)layout.get();
+        }
 
         auto v = m_caches.find(hash);
         if (v != m_caches.end())
