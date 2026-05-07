@@ -42,13 +42,25 @@ namespace util
         float alpha = saturate(depthDiff / distance) * opacity;
         return alpha;
     }
-    
-    void Dither(float4 positionCS, half opacity)
+    float DitherMask(float4 positionCS, half opacity)
     {
         const float3 magic = float3(0.06711056, 0.00583715, 52.9829189);
-        half dither = 1 - saturate(opacity);
+        half dither = 1 - saturate(opacity * 2);
         float pattern = frac(magic.z * frac(dot(positionCS.xy + positionCS.z, magic.xy)));
-        clip(pattern - dither);
+        return (pattern - dither);
+    }
+    void Dither(float4 positionCS, half opacity)
+    {
+        clip(DitherMask(positionCS, opacity));
+    }
+    float DitherViewFaceMask(float4 positionCS, float3 posWS, float3 viewWS, float minThreshould, float maxThreshould)
+    {
+        float3 dy = ddy(posWS);
+        float3 dx = ddx(posWS);
+        float3 fnorm = normalize(cross(dx, dy));
+        float d = saturate(dot(fnorm, viewWS));
+        float opacity = smoothstep(minThreshould, maxThreshould, d);
+        return DitherMask(positionCS, opacity);
     }
 
     float3 BezierQuadraticLerp(float3 p0, float3 p1, float3 p2, float t)
