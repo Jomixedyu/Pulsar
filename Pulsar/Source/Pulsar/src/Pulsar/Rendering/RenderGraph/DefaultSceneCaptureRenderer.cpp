@@ -22,6 +22,7 @@ namespace pulsar
     {
         m_perPassResources.Initialize();
         m_opaquePass.Initialize(&m_perPassResources);
+        m_outlinePass.Initialize(&m_perPassResources);
         m_translucencyPass.Initialize(&m_perPassResources);
         m_gizmoOverlayPass.Initialize(&m_perPassResources);
 
@@ -46,6 +47,7 @@ namespace pulsar
         }
         m_gizmoOverlayPass.Destroy();
         m_translucencyPass.Destroy();
+        m_outlinePass.Destroy();
         m_opaquePass.Destroy();
         m_perPassResources.Destroy();
     }
@@ -138,6 +140,9 @@ namespace pulsar
 
         // OpaquePass (auto-resolve to final RT if MSAA is enabled)
         hSceneColor = m_opaquePass.AddToGraph(graph, hSceneColor, cam, world, perPass, resolveTargetView);
+
+        // OutlinePass: draws vertex-expanded back-faces for materials with a VertexOutline pass
+        hSceneColor = m_outlinePass.AddToGraph(graph, hSceneColor, cam, world, perPass);
 
         // ---- Translucency: copy opaque scene color for refraction/distortion sampling ----
         auto* camRT = cam->GetRenderTexture().GetPtr();

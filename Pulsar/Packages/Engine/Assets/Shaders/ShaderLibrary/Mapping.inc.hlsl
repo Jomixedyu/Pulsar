@@ -32,7 +32,7 @@ float3 map_DecodeNormalMapRG_OpenGL(float2 normalMapSample)
 float2 map_MatCapMapping(float3 normalVS)
 {
     float2 uv = normalVS.xy * 0.5 + 0.5;
-    uv.y = 1 - uv.y;
+    uv.y = 1 - uv.y; //directX
     return uv;
 }
 
