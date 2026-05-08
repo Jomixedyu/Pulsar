@@ -10,6 +10,18 @@
 
 namespace pulsared
 {
+    static const char* _GetNodeIcon(pulsar::Node* node)
+    {
+        for (auto& comp : node->GetAllComponentArray())
+        {
+            if (auto attr = comp->GetType()->GetAttribute<pulsar::ComponentIconAttribute>())
+            {
+                return attr->GetIcon();
+            }
+        }
+        return ICON_FK_CIRCLE_O;
+    }
+
     static void _Show(EditorWorld* world, List_sp<ObjectPtr<Node>> nodes)
     {
         for (auto& node : *nodes)
@@ -47,7 +59,7 @@ namespace pulsared
             {
                 ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Text, ImVec4(0.5f, 0.5f, 0.5f, 1.f));
             }
-            string name = node->GetName();
+            string name = string(_GetNodeIcon(node.GetPtr())) + " " + node->GetName();
             if (is_editor_node)
                 name.append(" (EditorOnly)");
 
@@ -90,7 +102,7 @@ namespace pulsared
             }
         }
     }
-    // 处理从 WorkspaceWindow 拖来的 Prefab，放入指定 scene
+    // 处理�?WorkspaceWindow 拖来�?Prefab，放入指�?scene
     static void _HandlePrefabDrop(pulsar::NodeCollection* scene)
     {
         const ImGuiPayload* peekPayload = ImGui::GetDragDropPayload();
@@ -112,7 +124,7 @@ namespace pulsared
         if (!prefab)
             return;
 
-        // 直接通过 NodeCollection 实例化 Prefab
+        // 直接通过 NodeCollection 实例�?Prefab
         scene->AddTemplateInstance(prefab);
     }
 
@@ -131,7 +143,7 @@ namespace pulsared
             auto currentScene = world->GetScene(i);
             bool isFocus = (currentScene == world->GetFocusScene());
 
-            string label = currentScene->GetName();
+            string label = string(ICON_FK_MAP) + " " + currentScene->GetName();
             if (auto asset = cast<AssetObject>(currentScene))
             {
                 if (AssetDatabase::IsDirty(asset))
@@ -147,8 +159,7 @@ namespace pulsared
             bool opened = ImGui::TreeNodeEx(label.c_str(), base_flags);
             ImGui::PopStyleColor();
 
-            // drop target：挂在 scene TreeNode header 上
-            if (ImGui::BeginDragDropTarget())
+            // drop target：挂�?scene TreeNode header �?            if (ImGui::BeginDragDropTarget())
             {
                 _HandlePrefabDrop(currentScene.GetPtr());
                 ImGui::EndDragDropTarget();

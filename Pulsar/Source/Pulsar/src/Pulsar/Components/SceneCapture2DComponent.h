@@ -1,4 +1,5 @@
 #pragma once
+#include <Pulsar/IconsForkAwesome.h>
 #include "SceneCaptureComponent.h"
 #include <CoreLib/Attribute.h>
 
@@ -8,7 +9,7 @@ namespace pulsar
     class SceneCapture2DComponent : public SceneCaptureComponent
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::SceneCapture2DComponent, SceneCaptureComponent);
-        CORELIB_CLASS_ATTR(new CategoryAttribute("Capture"));
+        CORELIB_CLASS_ATTR(new CategoryAttribute("Capture"), new ComponentIconAttribute(ICON_FK_TELEVISION));
     public:
         SceneCapture2DComponent();
 

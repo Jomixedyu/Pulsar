@@ -1,4 +1,5 @@
 #pragma once
+#include <Pulsar/IconsForkAwesome.h>
 #include "Component.h"
 #include "Pulsar/Assets/VolumeProfile.h"
 
@@ -7,7 +8,7 @@ namespace pulsar
     class VolumeComponent : public Component
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::VolumeComponent, Component);
-        CORELIB_CLASS_ATTR(new CategoryAttribute("Rendering"));
+        CORELIB_CLASS_ATTR(new CategoryAttribute("Rendering"), new ComponentIconAttribute(ICON_FK_CLOUD));
 
     public:
         VolumeComponent();

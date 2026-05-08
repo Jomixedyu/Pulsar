@@ -1,4 +1,5 @@
 #pragma once
+#include <Pulsar/IconsForkAwesome.h>
 #include "CanvasComponent.h"
 
 namespace pulsar::ui
@@ -6,7 +7,7 @@ namespace pulsar::ui
     class TextComponent : public CanvasElement
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::ui::TextComponent, CanvasElement);
-        CORELIB_CLASS_ATTR(new CategoryAttribute("UI"));
+        CORELIB_CLASS_ATTR(new CategoryAttribute("UI"), new ComponentIconAttribute(ICON_FK_DESKTOP));
     public:
 
         void OnImmediateRender();

@@ -1,4 +1,5 @@
 #pragma once
+#include <Pulsar/IconsForkAwesome.h>
 #include "Components/Component.h"
 #include "InputValueType.h"
 #include "InputActionMap.h"
@@ -37,7 +38,7 @@ namespace pulsar
     class InputComponent : public Component
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::InputComponent, Component);
-        CORELIB_CLASS_ATTR(new CategoryAttribute("Input"));
+        CORELIB_CLASS_ATTR(new CategoryAttribute("Input"), new ComponentIconAttribute(ICON_FK_GAMEPAD));
     public:
         using InputEventDelegate = FunctionDelegate<void, SPtr<InputContext>>;
         virtual void Bind(string_view name, SPtr<InputEventDelegate> callback);

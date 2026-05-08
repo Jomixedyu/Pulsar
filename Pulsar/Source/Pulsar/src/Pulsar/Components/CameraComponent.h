@@ -1,4 +1,5 @@
 #pragma once
+#include <Pulsar/IconsForkAwesome.h>
 #include "Component.h"
 #include "Pulsar/Raycast.h"
 #include "SceneCapture2DComponent.h"
@@ -14,7 +15,7 @@ namespace pulsar
     class CameraComponent : public SceneCapture2DComponent
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::CameraComponent, SceneCapture2DComponent);
-        CORELIB_CLASS_ATTR(new CategoryAttribute("Capture"));
+        CORELIB_CLASS_ATTR(new CategoryAttribute("Capture"), new ComponentIconAttribute(ICON_FK_CAMERA));
         DECL_OBJECTPTR_SELF
     public:
         CameraComponent();
