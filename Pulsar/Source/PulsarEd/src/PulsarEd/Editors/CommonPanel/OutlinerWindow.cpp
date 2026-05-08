@@ -32,6 +32,7 @@ namespace pulsared
             }
             bool is_editor_node = false;
             bool is_prefab_node = node->IsTemplateInstance();
+            bool is_inactive = !node->GetIsActive();
 
             if (node->HasObjectFlags(OF_NoPack))
             {
@@ -41,6 +42,10 @@ namespace pulsared
             else if (is_prefab_node)
             {
                 ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Text, ImVec4(0.4f, 0.7f, 1.0f, 1.f));
+            }
+            else if (is_inactive)
+            {
+                ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Text, ImVec4(0.5f, 0.5f, 0.5f, 1.f));
             }
             string name = node->GetName();
             if (is_editor_node)
@@ -79,7 +84,7 @@ namespace pulsared
                 ImGui::TreePop();
             }
             ImGui::PopID();
-            if (is_editor_node || is_prefab_node)
+            if (is_editor_node || is_prefab_node || is_inactive)
             {
                 ImGui::PopStyleColor();
             }
@@ -119,7 +124,7 @@ namespace pulsared
             return;
         }
 
-        ImGuiTreeNodeFlags base_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_DefaultOpen;
+        ImGuiTreeNodeFlags base_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed;
 
         for (int i = 0; i < world->GetSceneCount(); i++)
         {
@@ -138,7 +143,7 @@ namespace pulsared
             {
                 label += "  (Focus Scene)";
             }
-            ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4{0,0,0,1});
+            ImGui::PushStyleColor(ImGuiCol_Header, ImVec4{0.08f, 0.08f, 0.10f, 1.0f});
             bool opened = ImGui::TreeNodeEx(label.c_str(), base_flags);
             ImGui::PopStyleColor();
 
