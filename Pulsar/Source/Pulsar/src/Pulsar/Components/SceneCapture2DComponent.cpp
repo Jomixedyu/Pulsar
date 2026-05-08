@@ -9,6 +9,11 @@ namespace pulsar
         : m_debugViewMat({})
     {
         m_renderingPath = RenderingPathMode::Deferred;
+        m_projectionMode = CaptureProjectionMode::Perspective;
+        m_fov = 60.0f;
+        m_near = 0.3f;
+        m_far = 1000.0f;
+        m_backgroundColor = Color4f{0.1f, 0.1f, 0.1f, 1.0f};
     }
 
     static gfx::GFXDescriptorSetLayout_wp _CameraDescriptorLayout;
