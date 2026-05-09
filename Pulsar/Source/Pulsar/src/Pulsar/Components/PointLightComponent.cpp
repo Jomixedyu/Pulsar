@@ -55,7 +55,7 @@ namespace pulsar
 
     void PointLightComponent::BeginComponent()
     {
-        m_canDrawGizmo = true;
+        m_gizmoPassEnabled = true;
         base::BeginComponent();
 
         OnTransformChanged();

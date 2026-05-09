@@ -14,7 +14,7 @@ namespace pulsar
 
     CameraComponent::CameraComponent()
     {
-        m_canDrawGizmo = true;
+        m_gizmoPassEnabled = true;
     }
     CameraComponent::~CameraComponent() = default;
 

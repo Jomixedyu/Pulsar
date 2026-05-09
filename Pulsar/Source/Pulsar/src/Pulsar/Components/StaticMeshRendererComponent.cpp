@@ -294,7 +294,7 @@ namespace pulsar
         GetWorld()->AddRenderObject(m_renderObject);
         ResizeMaterials(m_materials->size());
 
-        m_canDrawGizmo = true;
+        m_gizmoPassEnabled = true;
         GetWorld()->GetGizmosManager().AddGizmoComponent(self_ptr());
 
         OnTransformChanged();
@@ -303,7 +303,7 @@ namespace pulsar
     {
         base::EndComponent();
 
-        if (m_canDrawGizmo)
+        if (m_gizmoPassEnabled)
         {
             GetWorld()->GetGizmosManager().RemoveGizmoComponent(self_ptr());
         }

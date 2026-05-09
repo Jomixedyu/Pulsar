@@ -114,7 +114,7 @@ namespace pulsar
     {
         m_isBegun = true;
 
-        if (m_canDrawGizmo)
+        if (m_gizmoPassEnabled && !HasObjectFlags(OF_Preview))
         {
             GetWorld()->GetGizmosManager().AddGizmoComponent(self_ptr());
         }
@@ -123,7 +123,7 @@ namespace pulsar
     {
         m_isBegun = false;
 
-        if (m_canDrawGizmo)
+        if (m_gizmoPassEnabled && !HasObjectFlags(OF_Preview))
         {
             GetWorld()->GetGizmosManager().RemoveGizmoComponent(self_ptr());
         }

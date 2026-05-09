@@ -197,7 +197,7 @@ namespace pulsar
     // -----------------------------------------------------------------------
     SkinnedMeshRendererComponent::SkinnedMeshRendererComponent()
     {
-        m_canDrawGizmo = true;
+        m_gizmoPassEnabled = true;
         init_sptr_member(m_materials);
         init_sptr_member(m_priorities);
     }
