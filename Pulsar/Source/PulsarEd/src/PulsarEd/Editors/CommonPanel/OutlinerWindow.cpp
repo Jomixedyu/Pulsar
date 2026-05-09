@@ -160,7 +160,8 @@ namespace pulsared
             bool opened = ImGui::TreeNodeEx(label.c_str(), base_flags);
             ImGui::PopStyleColor();
 
-            // drop target：挂在 scene TreeNode header 上            if (ImGui::BeginDragDropTarget())
+            // drop target：挂在 scene TreeNode header 上
+            if (ImGui::BeginDragDropTarget())
             {
                 _HandlePrefabDrop(currentScene.GetPtr());
                 ImGui::EndDragDropTarget();
