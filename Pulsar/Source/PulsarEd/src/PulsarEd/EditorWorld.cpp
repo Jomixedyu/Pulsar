@@ -91,7 +91,7 @@ namespace pulsared
         camNode->GetTransform()->Translate({0, 0, -1});
         this->m_camNode = camNode;
 
-        m_cam = camNode->AddComponent<CameraComponent>();
+        m_cam = camNode->AddComponent<CameraComponent>(OF_Preview);
         auto ctrl = camNode->AddComponent<StdEditCameraControllerComponent>();
         ctrl->m_targetTransform = camCtrlNode->GetTransform();
 
@@ -102,8 +102,6 @@ namespace pulsared
         m_cam->SetFar(1000.f);
 
         camCtrlNode->AddComponent<StdEditCameraControllerComponent>();
-
-        GetCameraManager().SetMainCamera(nullptr);
     }
 
     void EditorWorld::OnUnloadingResidentScene(RCPtr<NodeCollection> scene)
