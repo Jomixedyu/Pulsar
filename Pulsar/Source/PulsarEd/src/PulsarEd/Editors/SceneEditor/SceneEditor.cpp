@@ -9,6 +9,7 @@
 #include "Pulsar/AssetManager.h"
 #include "Pulsar/Components/BoxShape3DComponent.h"
 #include "Pulsar/Components/DirectionalLightComponent.h"
+#include "Pulsar/Components/CameraComponent.h"
 #include "Pulsar/Components/PointLightComponent.h"
 #include "Pulsar/Components/SkyLightComponent.h"
 #include "Pulsar/Components/SphereShape3DComponent.h"
@@ -25,6 +26,7 @@
 #include "Editors/CommonPanel/PropertiesWindow.h"
 #include "Editors/CommonPanel/SceneWindow.h"
 #include "Editors/CommonPanel/WorkspaceWindow.h"
+#include "Editors/CommonPanel/OutputWindow.h"
 #include "Workspace.h"
 
 namespace pulsared
@@ -155,6 +157,19 @@ namespace pulsared
                         ->AddComponent<PointLightComponent>();
                 });
             }
+
+            auto cameraMenu = mksptr(new MenuEntrySubMenu("Camera"));
+            menu->AddEntry(cameraMenu);
+            {
+                auto entry = mksptr(new MenuEntryButton("Create Camera"));
+                cameraMenu->AddEntry(entry);
+                entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
+                    auto newNode = World::Current()->GetFocusScene()->NewNode("New Camera");
+                    newNode->AddComponent<CameraComponent>();
+                    World::Current()->GetSelection().Clear();
+                    World::Current()->GetSelection().Select(newNode);
+                });
+            }
         }
 
         {
@@ -278,6 +293,7 @@ namespace pulsared
         RegisterPanelType(cltypeof<ConsoleWindow>());
         RegisterPanelType(cltypeof<WorkspaceWindow>());
         RegisterPanelType(cltypeof<OutlinerWindow>());
+        RegisterPanelType(cltypeof<OutputWindow>());
 
     }
 

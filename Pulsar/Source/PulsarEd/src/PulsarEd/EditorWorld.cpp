@@ -68,7 +68,7 @@ namespace pulsared
 
     CameraComponent_ref EditorWorld::GetCurrentCamera()
     {
-        return base::GetCurrentCamera();
+        return m_cam;
     }
 
     void EditorWorld::OnWorldBegin()
@@ -102,6 +102,8 @@ namespace pulsared
         m_cam->SetFar(1000.f);
 
         camCtrlNode->AddComponent<StdEditCameraControllerComponent>();
+
+        GetCameraManager().SetMainCamera(nullptr);
     }
 
     void EditorWorld::OnUnloadingResidentScene(RCPtr<NodeCollection> scene)

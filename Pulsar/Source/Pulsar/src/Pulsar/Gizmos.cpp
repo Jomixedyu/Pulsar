@@ -28,7 +28,7 @@ namespace pulsar
         Context.LinePoints.push_back(b);
     }
 
-    GizmosManager::GizmosManager() : m_enabledDraw(true)
+    GizmosManager::GizmosManager()
     {
     }
     GizmosManager::GizmosManager(World* world)
@@ -39,25 +39,8 @@ namespace pulsar
     {
     }
 
-    void GizmosManager::SetEnabled(bool value)
-    {
-        if (m_enabledDraw == value)
-        {
-            return;
-        }
-        m_enabledDraw = value;
-        if (!value)
-        {
-            OnEndDraw();
-        }
-    }
-
     void GizmosManager::Draw()
     {
-        if (!m_enabledDraw)
-        {
-            return;
-        }
         GizmoPainter gizmoPainter{};
         array_list<GizmoContext> ctxs;
 
@@ -102,14 +85,4 @@ namespace pulsar
             }
         }
     }
-
-    void GizmosManager::OnEndDraw()
-    {
-        if (m_lineRenderObject)
-        {
-            m_world->RemoveRenderObject(m_lineRenderObject);
-            m_lineRenderObject.reset();
-        }
-    }
-
 } // namespace pulsar

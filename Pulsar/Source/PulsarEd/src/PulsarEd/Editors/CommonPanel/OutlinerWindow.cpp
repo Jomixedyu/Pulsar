@@ -3,6 +3,7 @@
 #include <Pulsar/Scene.h>
 #include <Pulsar/World.h>
 #include <Pulsar/Prefab.h>
+#include <Pulsar/Components/CameraComponent.h>
 #include <PulsarEd/EditorNode.h>
 #include <PulsarEd/Editors/CommonPanel/OutlinerWindow.h>
 #include <PulsarEd/DragInfo.h>
@@ -102,7 +103,7 @@ namespace pulsared
             }
         }
     }
-    // 处理�?WorkspaceWindow 拖来�?Prefab，放入指�?scene
+    // 处理 WorkspaceWindow 拖来的 Prefab，放入指定 scene
     static void _HandlePrefabDrop(pulsar::NodeCollection* scene)
     {
         const ImGuiPayload* peekPayload = ImGui::GetDragDropPayload();
@@ -124,7 +125,7 @@ namespace pulsared
         if (!prefab)
             return;
 
-        // 直接通过 NodeCollection 实例�?Prefab
+        // 直接通过 NodeCollection 实例化 Prefab
         scene->AddTemplateInstance(prefab);
     }
 
@@ -159,7 +160,7 @@ namespace pulsared
             bool opened = ImGui::TreeNodeEx(label.c_str(), base_flags);
             ImGui::PopStyleColor();
 
-            // drop target：挂�?scene TreeNode header �?            if (ImGui::BeginDragDropTarget())
+            // drop target：挂在 scene TreeNode header 上            if (ImGui::BeginDragDropTarget())
             {
                 _HandlePrefabDrop(currentScene.GetPtr());
                 ImGui::EndDragDropTarget();

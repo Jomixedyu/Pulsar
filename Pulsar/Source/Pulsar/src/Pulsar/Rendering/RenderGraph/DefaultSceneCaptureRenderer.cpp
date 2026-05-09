@@ -236,8 +236,14 @@ namespace pulsar
         }
 
         // Draw gizmos after all post-processing so they remain unaffected
-        m_gizmoOverlayPass.OnSetup(ctx);
-        m_gizmoOverlayPass.AddToGraph(graph, hFinal, hFinal, cam, perPass);
+        if (auto* camera = dynamic_cast<CameraComponent*>(ctx.capture))
+        {
+            if (camera->GetDrawGizmoOverlay())
+            {
+                m_gizmoOverlayPass.OnSetup(ctx);
+                m_gizmoOverlayPass.AddToGraph(graph, hFinal, hFinal, cam, perPass);
+            }
+        }
     }
 
 } // namespace pulsar

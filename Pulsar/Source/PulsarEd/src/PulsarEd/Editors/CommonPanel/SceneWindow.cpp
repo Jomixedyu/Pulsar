@@ -115,7 +115,10 @@ namespace pulsared
 
             if (ImGui::Button(ICON_FK_ARROWS " Gizmos###Gizmos"))
             {
-                world->GetGizmosManager().SetEnabled(!world->GetGizmosManager().GetEnabled());
+                if (auto cam = world->GetCurrentCamera())
+                {
+                    cam->SetDrawGizmoOverlay(!cam->GetDrawGizmoOverlay());
+                }
             }
 
             if (ImGui::Button(ICON_FK_CUBE " 2D###2D"))

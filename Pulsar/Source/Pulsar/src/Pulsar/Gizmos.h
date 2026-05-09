@@ -61,14 +61,10 @@ namespace pulsar
         }
 
 
-        bool GetEnabled() const { return m_enabledDraw; }
-        void SetEnabled(bool value);
         void Draw();
-        void OnEndDraw();
 
     private:
         SPtr<LineRenderObject> m_lineRenderObject;
         class World* m_world = nullptr;
-        bool m_enabledDraw;
     };
 }

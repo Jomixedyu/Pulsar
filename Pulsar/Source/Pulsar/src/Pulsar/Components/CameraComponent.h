@@ -29,6 +29,7 @@ namespace pulsar
         void EndComponent() override;
 
         void PostEditChange(FieldInfo* info) override;
+        void OnDrawGizmo(GizmoPainter* painter, bool selected) override;
 
         void ResizeManagedRenderTexture(int width, int height);
     public:
@@ -38,10 +39,14 @@ namespace pulsar
 
         Ray ScreenPointToRay(Vector2f mousePosition) const;
 
+        bool GetDrawGizmoOverlay() const { return m_drawGizmoOverlay; }
+        void SetDrawGizmoOverlay(bool value) { m_drawGizmoOverlay = value; }
+
     protected:
         void BeginRT();
         void UpdateRT();
     protected:
+        bool m_drawGizmoOverlay = true;
 
     };
     DECL_PTR(CameraComponent);
