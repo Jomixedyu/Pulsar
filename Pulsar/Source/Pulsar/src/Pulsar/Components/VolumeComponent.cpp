@@ -12,7 +12,7 @@ namespace pulsar
 
     VolumeComponent::VolumeComponent()
     {
-        m_gizmoPassEnabled = true;
+        m_canDrawGizmo = true;
     }
 
     void VolumeComponent::GetDependenciesAsset(array_list<guid_t>& deps) const

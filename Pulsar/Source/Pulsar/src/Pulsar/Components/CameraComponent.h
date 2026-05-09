@@ -40,14 +40,14 @@ namespace pulsar
 
         Ray ScreenPointToRay(Vector2f mousePosition) const;
 
-        bool GetDrawGizmoOverlay() const { return m_drawGizmoOverlay; }
-        void SetDrawGizmoOverlay(bool value) { m_drawGizmoOverlay = value; }
+        bool IsGizmoPassEnabled() const { return m_gizmoPassEnabled; }
+        void SetGizmoPassEnabled(bool value) { m_gizmoPassEnabled = value; }
 
     protected:
         void BeginRT();
         void UpdateRT();
     protected:
-        bool m_drawGizmoOverlay = true;
+        bool m_gizmoPassEnabled = true;
 
     };
     DECL_PTR(CameraComponent);
