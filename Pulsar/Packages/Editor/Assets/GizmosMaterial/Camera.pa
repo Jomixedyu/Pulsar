@@ -1,0 +1,21 @@
+{
+    "Features": [],
+    "Parameters": [
+        {
+            "Name": "_BaseColorMap",
+            "Type": "Texture2D",
+            "Value": "b03e465eefa343448b2d18dfd90e4a7f"
+        },
+        {
+            "Name": "_TintColor",
+            "Type": "Float4",
+            "Value": {
+                "w": 1.0,
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0
+            }
+        }
+    ],
+    "Shader": "b8bb34362e234f55ba0470d18e0aed80"
+}
