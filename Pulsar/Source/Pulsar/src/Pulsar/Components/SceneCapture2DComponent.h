@@ -2,6 +2,7 @@
 #include <Pulsar/IconsForkAwesome.h>
 #include "SceneCaptureComponent.h"
 #include <CoreLib/Attribute.h>
+#include <Pulsar/Rendering/GizmoIconRenderObject.h>
 
 namespace pulsar
 {
@@ -38,6 +39,8 @@ namespace pulsar
         void SetMSAASamples(uint32_t value) { m_msaaSamples = value; }
 
         void OnTransformChanged() override;
+
+        const SPtr<GizmoIconRenderObject>& GetIconRenderObject() const { return m_iconRenderObject; }
 
     protected:
         void UpdateRTBackgroundColor();
@@ -84,6 +87,7 @@ namespace pulsar
     protected:
 
         PerCaptureShaderParameter m_targetBuffer{};
+        SPtr<GizmoIconRenderObject> m_iconRenderObject;
         // Task 7.5: m_sceneColor removed (was unused)
     };
 } // namespace pulsar

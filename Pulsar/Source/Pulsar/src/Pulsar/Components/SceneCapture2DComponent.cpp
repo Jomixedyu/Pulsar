@@ -2,6 +2,8 @@
 
 #include "Application.h"
 #include "Node.h"
+#include "AssetManager.h"
+#include "Assets/StaticMesh.h"
 
 namespace pulsar
 {
@@ -23,6 +25,12 @@ namespace pulsar
     void SceneCapture2DComponent::BeginComponent()
     {
         base::BeginComponent();
+
+        auto icon = mksptr(new GizmoIconRenderObject);
+        icon->SetMesh(AssetManager::Get()->LoadAsset<StaticMesh>("Engine/Shapes/Plane"));
+        icon->SetMaterial(AssetManager::Get()->LoadAsset<Material>("Editor/GizmosMaterial/Camera"));
+        GetWorld()->AddRenderObject(icon);
+        m_iconRenderObject = icon;
 
         if (_CameraDescriptorLayout.expired())
         {
@@ -52,6 +60,11 @@ namespace pulsar
     }
     void SceneCapture2DComponent::EndComponent()
     {
+        if (m_iconRenderObject)
+        {
+            GetWorld()->RemoveRenderObject(m_iconRenderObject);
+            m_iconRenderObject.reset();
+        }
         SceneCaptureComponent::EndComponent();
     }
     Matrix4f SceneCapture2DComponent::GetViewMat() const
@@ -125,6 +138,14 @@ namespace pulsar
     {
         base::OnTransformChanged();
         UpdateCBuffer();
+        if (m_iconRenderObject)
+        {
+            auto pos = GetNode()->GetTransform()->GetWorldPosition();
+            Matrix4f mat{0};
+            mat[0][0] = 0.5f; mat[1][1] = 0.5f; mat[2][2] = 0.5f;
+            mat[3][0] = pos.x; mat[3][1] = pos.y; mat[3][2] = pos.z; mat[3][3] = 1.0f;
+            m_iconRenderObject->SetTransform(mat);
+        }
     }
 
 

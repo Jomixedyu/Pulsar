@@ -222,23 +222,12 @@ namespace pulsar
 
         GetNode()->GetRuntimeWorld()->GetCameraManager().AddCamera(self_ptr(), true);
 
-        auto icon = mksptr(new GizmoIconRenderObject);
-        icon->SetMesh(AssetManager::Get()->LoadAsset<StaticMesh>("Engine/Shapes/Plane"));
-        icon->SetMaterial(AssetManager::Get()->LoadAsset<Material>("Editor/GizmosMaterial/Camera"));
-        GetWorld()->AddRenderObject(icon);
-        m_iconRenderObject = icon;
-
         BeginRT();
         OnTransformChanged();
     }
 
     void CameraComponent::EndComponent()
     {
-        if (m_iconRenderObject)
-        {
-            GetWorld()->RemoveRenderObject(m_iconRenderObject);
-            m_iconRenderObject.reset();
-        }
         base::EndComponent();
         GetNode()->GetRuntimeWorld()->GetCameraManager().RemoveCamera(self_ptr());
         if (m_managedRT && m_renderTarget)
