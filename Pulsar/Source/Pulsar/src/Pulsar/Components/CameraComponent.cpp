@@ -242,18 +242,5 @@ namespace pulsar
     void CameraComponent::OnTransformChanged()
     {
         base::OnTransformChanged();
-        if (m_iconRenderObject)
-        {
-            auto pos = GetNode()->GetTransform()->GetWorldPosition();
-            Matrix4f mat{0};
-            mat[0][0] = 0.5f;
-            mat[1][1] = 0.5f;
-            mat[2][2] = 0.5f;
-            mat[3][0] = pos.x;
-            mat[3][1] = pos.y;
-            mat[3][2] = pos.z;
-            mat[3][3] = 1.0f;
-            m_iconRenderObject->SetTransform(mat);
-        }
     }
 } // namespace pulsar

@@ -2,7 +2,7 @@
 #include <Pulsar/IconsForkAwesome.h>
 #include "SceneCaptureComponent.h"
 #include <CoreLib/Attribute.h>
-#include <Pulsar/Rendering/GizmoIconRenderObject.h>
+#include <Pulsar/Assets/Material.h>
 
 namespace pulsar
 {
@@ -13,6 +13,8 @@ namespace pulsar
         CORELIB_CLASS_ATTR(new CategoryAttribute("Capture"), new ComponentIconAttribute(ICON_FK_TELEVISION));
     public:
         SceneCapture2DComponent();
+
+        void OnDrawGizmo(GizmoPainter* painter, bool selected) override;
 
         void BeginComponent() override;
         void EndComponent() override;
@@ -40,7 +42,6 @@ namespace pulsar
 
         void OnTransformChanged() override;
 
-        const SPtr<GizmoIconRenderObject>& GetIconRenderObject() const { return m_iconRenderObject; }
 
     protected:
         void UpdateRTBackgroundColor();
@@ -85,9 +86,9 @@ namespace pulsar
         #endif
 
     protected:
+        RCPtr<class Material> m_gizmoMaterial;
 
         PerCaptureShaderParameter m_targetBuffer{};
-        SPtr<GizmoIconRenderObject> m_iconRenderObject;
         // Task 7.5: m_sceneColor removed (was unused)
     };
 } // namespace pulsar

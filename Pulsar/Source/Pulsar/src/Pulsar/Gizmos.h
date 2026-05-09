@@ -14,6 +14,14 @@ namespace pulsar
         Image
     };
 
+    struct GizmoIconRequest
+    {
+        Vector3f WorldPos;
+        float Size = 1.0f;
+        Color4f Tint = Color4f{1, 1, 1, 1};
+        RCPtr<class Material> Material;
+    };
+
     struct GizmoContext
     {
         string Category;
@@ -22,6 +30,8 @@ namespace pulsar
         Matrix4f LineModelMatrix{};
         array_list<StaticMeshVertex> LinePoints;
         int LineWidth = 1;
+
+        array_list<GizmoIconRequest> IconRequests;
 
         void SetPointsColor(Color4f color);
     };
@@ -32,6 +42,8 @@ namespace pulsar
         void DrawLineArray(const array_list<StaticMeshVertex>& points);
         void DrawLines(const StaticMeshVertex* points, size_t count);
         void DrawLine(const StaticMeshVertex& a, const StaticMeshVertex& b);
+
+        void DrawTexture(const Vector3f& worldPos, float size, const RCPtr<Material>& material, const Color4f& tint = Color4f{1, 1, 1, 1});
 
         GizmoContext Context;
 
@@ -65,6 +77,7 @@ namespace pulsar
 
     private:
         SPtr<LineRenderObject> m_lineRenderObject;
+        SPtr<class GizmoIconBatchRenderObject> m_iconBatchRenderObject;
         class World* m_world = nullptr;
     };
 }
