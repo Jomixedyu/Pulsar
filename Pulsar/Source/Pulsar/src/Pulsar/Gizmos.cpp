@@ -108,15 +108,15 @@ namespace pulsar
         }
 
         // Icons
+        if (!m_iconBatchRenderObject)
+        {
+            m_iconBatchRenderObject = mksptr(new GizmoIconBatchRenderObject);
+            m_iconBatchRenderObject->SetMesh(AssetManager::Get()->LoadAsset<StaticMesh>("Engine/Shapes/Plane"));
+            m_world->AddRenderObject(m_iconBatchRenderObject);
+        }
+
         if (!iconRequests.empty())
         {
-            if (!m_iconBatchRenderObject)
-            {
-                m_iconBatchRenderObject = mksptr(new GizmoIconBatchRenderObject);
-                m_iconBatchRenderObject->SetMesh(AssetManager::Get()->LoadAsset<StaticMesh>("Engine/Shapes/Plane"));
-                m_world->AddRenderObject(m_iconBatchRenderObject);
-            }
-
             // Ensure billboard shader ready
             if (!m_billboardShader)
             {
@@ -160,11 +160,7 @@ namespace pulsar
         }
         else
         {
-            if (m_iconBatchRenderObject)
-            {
-                m_world->RemoveRenderObject(m_iconBatchRenderObject);
-                m_iconBatchRenderObject.reset();
-            }
+            m_iconBatchRenderObject->SetItems({});
         }
     }
 } // namespace pulsar
