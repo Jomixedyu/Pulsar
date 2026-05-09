@@ -4,6 +4,8 @@
 #include "Rendering/LineRenderObject.h"
 #include "Rendering/GizmoIconBatchRenderObject.h"
 #include "Assets/StaticMesh.h"
+#include "Assets/Shader.h"
+#include "Assets/Material.h"
 #include "AssetManager.h"
 #include "World.h"
 
@@ -31,13 +33,13 @@ namespace pulsar
         Context.LinePoints.push_back(b);
     }
 
-    void GizmoPainter::DrawTexture(const Vector3f& worldPos, float size, const RCPtr<Material>& material, const Color4f& tint)
+    void GizmoPainter::DrawTexture(const Vector3f& worldPos, float size, const RCPtr<Texture2D>& texture, const Color4f& tint)
     {
         GizmoIconRequest req{};
         req.WorldPos = worldPos;
         req.Size = size;
         req.Tint = tint;
-        req.Material = material;
+        req.Texture = texture;
         Context.IconRequests.push_back(std::move(req));
     }
 
@@ -59,7 +61,7 @@ namespace pulsar
 
         size_t totalPoint = 0;
         array_list<StaticMeshVertex> linePoints;
-        array_list<GizmoIconBatchRenderObject::IconItem> iconItems;
+        array_list<GizmoIconRequest> iconRequests;
 
         for (auto& comp : m_gizmoComponents)
         {
@@ -73,15 +75,7 @@ namespace pulsar
 
             for (auto& req : gizmoPainter.Context.IconRequests)
             {
-                Matrix4f mat{0};
-                mat[0][0] = req.Size;
-                mat[1][1] = req.Size;
-                mat[2][2] = req.Size;
-                mat[3][0] = req.WorldPos.x;
-                mat[3][1] = req.WorldPos.y;
-                mat[3][2] = req.WorldPos.z;
-                mat[3][3] = 1.0f;
-                iconItems.push_back(GizmoIconBatchRenderObject::IconItem{mat, req.Material});
+                iconRequests.push_back(req);
             }
         }
 
@@ -114,7 +108,7 @@ namespace pulsar
         }
 
         // Icons
-        if (!iconItems.empty())
+        if (!iconRequests.empty())
         {
             if (!m_iconBatchRenderObject)
             {
@@ -122,7 +116,47 @@ namespace pulsar
                 m_iconBatchRenderObject->SetMesh(AssetManager::Get()->LoadAsset<StaticMesh>("Engine/Shapes/Plane"));
                 m_world->AddRenderObject(m_iconBatchRenderObject);
             }
-            m_iconBatchRenderObject->SetItems(iconItems);
+
+            // Ensure billboard shader ready
+            if (!m_billboardShader)
+            {
+                m_billboardShader = AssetManager::Get()->LoadAsset<Shader>("Engine/Shaders/UnlitBillboard");
+            }
+
+            // Expand material pool if needed
+            while (m_iconMaterialPool.size() < iconRequests.size())
+            {
+                auto mat = Material::StaticCreate(m_billboardShader);
+                mat->CreateGPUResource();
+                m_iconMaterialPool.push_back(mat);
+            }
+
+            // Assign texture/tint per icon
+            array_list<GizmoIconBatchRenderObject::IconItem> batchItems;
+            batchItems.reserve(iconRequests.size());
+            for (size_t i = 0; i < iconRequests.size(); ++i)
+            {
+                auto& req = iconRequests[i];
+                auto& mat = m_iconMaterialPool[i];
+                if (req.Texture)
+                {
+                    mat->SetTexture("_BaseColorMap", req.Texture);
+                }
+                mat->SetVector4("_TintColor", Vector4f{req.Tint.r, req.Tint.g, req.Tint.b, req.Tint.a});
+                mat->SubmitParameters();
+
+                Matrix4f matx{0};
+                matx[0][0] = req.Size;
+                matx[1][1] = req.Size;
+                matx[2][2] = req.Size;
+                matx[3][0] = req.WorldPos.x;
+                matx[3][1] = req.WorldPos.y;
+                matx[3][2] = req.WorldPos.z;
+                matx[3][3] = 1.0f;
+                batchItems.push_back(GizmoIconBatchRenderObject::IconItem{matx, mat});
+            }
+
+            m_iconBatchRenderObject->SetItems(batchItems);
         }
         else
         {

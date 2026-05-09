@@ -4,6 +4,7 @@
 #include "Rendering/LineRenderObject.h"
 #include "Rendering/PrimitiveStruct.h"
 #include "Rendering/RenderObject.h"
+#include <Pulsar/Assets/Material.h>
 
 namespace pulsar
 {
@@ -19,7 +20,7 @@ namespace pulsar
         Vector3f WorldPos;
         float Size = 1.0f;
         Color4f Tint = Color4f{1, 1, 1, 1};
-        RCPtr<class Material> Material;
+        RCPtr<class Texture2D> Texture;
     };
 
     struct GizmoContext
@@ -43,7 +44,7 @@ namespace pulsar
         void DrawLines(const StaticMeshVertex* points, size_t count);
         void DrawLine(const StaticMeshVertex& a, const StaticMeshVertex& b);
 
-        void DrawTexture(const Vector3f& worldPos, float size, const RCPtr<Material>& material, const Color4f& tint = Color4f{1, 1, 1, 1});
+        void DrawTexture(const Vector3f& worldPos, float size, const RCPtr<class Texture2D>& texture, const Color4f& tint = Color4f{1, 1, 1, 1});
 
         GizmoContext Context;
 
@@ -78,6 +79,8 @@ namespace pulsar
     private:
         SPtr<LineRenderObject> m_lineRenderObject;
         SPtr<class GizmoIconBatchRenderObject> m_iconBatchRenderObject;
+        RCPtr<class Shader> m_billboardShader;
+        array_list<RCPtr<class Material>> m_iconMaterialPool;
         class World* m_world = nullptr;
     };
 }

@@ -2,7 +2,7 @@
 #include <Pulsar/IconsForkAwesome.h>
 #include "SceneCaptureComponent.h"
 #include <CoreLib/Attribute.h>
-#include <Pulsar/Assets/Material.h>
+#include <Pulsar/Assets/Texture2D.h>
 
 namespace pulsar
 {
@@ -86,7 +86,7 @@ namespace pulsar
         #endif
 
     protected:
-        RCPtr<class Material> m_gizmoMaterial;
+        RCPtr<class Texture2D> m_gizmoTexture;
 
         PerCaptureShaderParameter m_targetBuffer{};
         // Task 7.5: m_sceneColor removed (was unused)

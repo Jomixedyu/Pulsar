@@ -17,7 +17,7 @@ namespace pulsar
         m_far = 1000.0f;
         m_backgroundColor = Color4f{0.1f, 0.1f, 0.1f, 1.0f};
         m_canDrawGizmo = true;
-        m_gizmoMaterial = AssetManager::Get()->LoadAsset<Material>("Editor/GizmosMaterial/Camera");
+        m_gizmoTexture = AssetManager::Get()->LoadAsset<Texture2D>("Editor/Gizmos/cinema");
     }
 
     static gfx::GFXDescriptorSetLayout_wp _CameraDescriptorLayout;
@@ -134,7 +134,7 @@ namespace pulsar
     void SceneCapture2DComponent::OnDrawGizmo(GizmoPainter* painter, bool selected)
     {
         auto pos = GetNode()->GetTransform()->GetWorldPosition();
-        painter->DrawTexture(pos, 0.5f, m_gizmoMaterial);
+        painter->DrawTexture(pos, 0.5f, m_gizmoTexture);
     }
 
 
