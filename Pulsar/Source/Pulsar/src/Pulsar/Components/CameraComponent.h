@@ -8,6 +8,7 @@
 #include "gfx/GFXDescriptorSet.h"
 #include <Pulsar/Assets/Material.h>
 #include <Pulsar/Assets/RenderTexture.h>
+#include <Pulsar/Rendering/GizmoIconRenderObject.h>
 
 namespace pulsar
 {
@@ -30,6 +31,7 @@ namespace pulsar
 
         void PostEditChange(FieldInfo* info) override;
         void OnDrawGizmo(GizmoPainter* painter, bool selected) override;
+        void OnTransformChanged() override;
 
         void ResizeManagedRenderTexture(int width, int height);
     public:
@@ -47,6 +49,7 @@ namespace pulsar
         void UpdateRT();
     protected:
         bool m_drawGizmoOverlay = true;
+        SPtr<rendering::RenderObject> m_iconRenderObject;
 
     };
     DECL_PTR(CameraComponent);

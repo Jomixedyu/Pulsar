@@ -3,6 +3,7 @@
 #include "AssetManager.h"
 #include "Logger.h"
 #include "Scene.h"
+#include "Assets/StaticMesh.h"
 #include <Pulsar/AppInstance.h>
 #include <Pulsar/Application.h>
 #include <Pulsar/Node.h>
@@ -221,23 +222,49 @@ namespace pulsar
 
         GetNode()->GetRuntimeWorld()->GetCameraManager().AddCamera(self_ptr(), true);
 
+        auto icon = mksptr(new GizmoIconRenderObject);
+        icon->SetMesh(AssetManager::Get()->LoadAsset<StaticMesh>("Engine/Shapes/Plane"));
+        icon->SetMaterial(AssetManager::Get()->LoadAsset<Material>("Editor/GizmosMaterial/Camera"));
+        GetWorld()->AddRenderObject(icon);
+        m_iconRenderObject = icon;
+
         BeginRT();
+        OnTransformChanged();
     }
 
     void CameraComponent::EndComponent()
     {
+        if (m_iconRenderObject)
+        {
+            GetWorld()->RemoveRenderObject(m_iconRenderObject);
+            m_iconRenderObject.reset();
+        }
         base::EndComponent();
         GetNode()->GetRuntimeWorld()->GetCameraManager().RemoveCamera(self_ptr());
         if (m_managedRT && m_renderTarget)
         {
             DestroyObject(m_renderTarget);
         }
-        if (m_managedRT)
-        {
-
-        }
         m_camDescriptorLayout.reset();
         m_cameraDescriptorSet.reset();
         m_cameraDataBuffer.reset();
+    }
+
+    void CameraComponent::OnTransformChanged()
+    {
+        base::OnTransformChanged();
+        if (m_iconRenderObject)
+        {
+            auto pos = GetNode()->GetTransform()->GetWorldPosition();
+            Matrix4f mat{0};
+            mat[0][0] = 0.5f;
+            mat[1][1] = 0.5f;
+            mat[2][2] = 0.5f;
+            mat[3][0] = pos.x;
+            mat[3][1] = pos.y;
+            mat[3][2] = pos.z;
+            mat[3][3] = 1.0f;
+            m_iconRenderObject->SetTransform(mat);
+        }
     }
 } // namespace pulsar
