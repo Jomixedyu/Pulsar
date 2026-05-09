@@ -50,6 +50,8 @@ namespace pulsar
 
     void CameraComponent::OnDrawGizmo(GizmoPainter* painter, bool selected)
     {
+        base::OnDrawGizmo(painter, selected);
+
         auto color = selected ? GizmoPainter::DefaultSelectedLineColor : GizmoPainter::DefaultLineColor;
 
         Matrix4f invVP = GetInvViewProjectionMat();
