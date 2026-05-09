@@ -56,13 +56,18 @@ namespace gfx
     struct GFXGraphicsPipelineStateParams
     {
     public:
-        bool DepthTestEnable;
-        bool DepthWriteEnable;
-        bool StencilTestEnable;
+        bool DepthTestEnable = false;
+        bool DepthWriteEnable = false;
+        bool StencilTestEnable = false;
 
-        GFXCullMode CullMode;
-        GFXCompareMode DepthCompareOp;
+        bool BlendEnable = false;
+        GFXBlendFactor BlendSrcColor = GFXBlendFactor::One;
+        GFXBlendFactor BlendDstColor = GFXBlendFactor::Zero;
+        GFXBlendFactor BlendSrcAlpha = GFXBlendFactor::Zero;
+        GFXBlendFactor BlendDstAlpha = GFXBlendFactor::One;
 
+        GFXCullMode CullMode = GFXCullMode::None;
+        GFXCompareMode DepthCompareOp = GFXCompareMode::Never;
 
         uint64_t GetHashCode() const
         {
@@ -74,7 +79,11 @@ namespace gfx
             hashCode = hashCode * HashS1 ^ (uint64_t)DepthTestEnable;
             hashCode = hashCode * HashS1 ^ (uint64_t)DepthWriteEnable;
             hashCode = hashCode * HashS1 ^ (uint64_t)StencilTestEnable;
-
+            hashCode = hashCode * HashS1 ^ (uint64_t)BlendEnable;
+            hashCode = hashCode * HashS1 ^ (uint64_t)BlendSrcColor;
+            hashCode = hashCode * HashS1 ^ (uint64_t)BlendDstColor;
+            hashCode = hashCode * HashS1 ^ (uint64_t)BlendSrcAlpha;
+            hashCode = hashCode * HashS1 ^ (uint64_t)BlendDstAlpha;
             return hashCode;
         }
     };

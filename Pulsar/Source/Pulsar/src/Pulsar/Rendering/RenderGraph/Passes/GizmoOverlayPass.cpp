@@ -114,6 +114,11 @@ namespace pulsar
                             psoParams.DepthWriteEnable  = gp->ZWriteEnabled;
                             psoParams.DepthTestEnable   = !pb.batch.IsDepthTestDisabled;
                             psoParams.StencilTestEnable = gp->Stencil_Enabled;
+                            psoParams.BlendEnable       = gp->Blend_Enabled;
+                            psoParams.BlendSrcColor     = gp->Blend_Src;
+                            psoParams.BlendDstColor     = gp->Blend_Dst;
+                            psoParams.BlendSrcAlpha     = gp->Blend_SrcAlpha;
+                            psoParams.BlendDstAlpha     = gp->Blend_DstAlpha;
                         }
                     }
                     if (pb.batch.IsDepthTestDisabled)

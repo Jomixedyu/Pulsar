@@ -11,19 +11,15 @@
                 "Fragment": "PSMain"
             },
             "Features": [
-                "FEATURE_ALPHATEST"
             ],
             "Queue": "Overlay",
             "GraphicsPipeline": {
                 "CullMode": "None",
                 "ZWriteEnabled": false,
-                "ZTestOp": "LessOrEqual",
+                "ZTestOp": "Always",
                 "Blend_Enabled": true,
-                "Blend_AlphaEnabled": true,
                 "Blend_Src": "SrcAlpha",
-                "Blend_Dst": "OneMinusSrcAlpha",
-                "Blend_SrcAlpha": "One",
-                "Blend_DstAlpha": "OneMinusSrcAlpha"
+                "Blend_Dst": "OneMinusSrcAlpha"
             }
         }
     ],
