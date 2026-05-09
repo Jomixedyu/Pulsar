@@ -88,7 +88,12 @@ namespace pulsar
         {
             return cast<T>( this->AddComponent(cltypeof<T>()) );
         }
-        ObjectPtr<Component> AddComponent(Type* type);
+        template <baseof_component_concept T>
+        ObjectPtr<T> AddComponent(ObjectFlags flags)
+        {
+            return cast<T>( this->AddComponent(cltypeof<T>(), flags) );
+        }
+        ObjectPtr<Component> AddComponent(Type* type, ObjectFlags flags = OF_NoFlag);
         void DestroyComponent(ObjectPtr<Component> component);
         int IndexOf(ObjectPtr<Component> component) const;
 

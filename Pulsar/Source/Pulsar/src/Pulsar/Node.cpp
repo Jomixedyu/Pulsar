@@ -354,9 +354,13 @@ namespace pulsar
         return component;
     }
 
-    ObjectPtr<Component> Node::AddComponent(Type* type)
+    ObjectPtr<Component> Node::AddComponent(Type* type, ObjectFlags flags)
     {
         auto component = ConstructComponent(type, {});
+        if (flags != OF_NoFlag)
+        {
+            component->SetObjectFlags(component->GetObjectFlags() | flags);
+        }
 
         if (m_isBegun && GetOwnerNodeCollection()->GetWorld())
         {

@@ -132,6 +132,7 @@ namespace pulsar
         OF_Instantiable     = 1 << 2,
         OF_NoPack           = 1 << 3,
         OF_LifecycleManaged = 1 << 4,
+        OF_PreviewCamera    = 1 << 5,
     };
 
     enum class DependencyObjectState
