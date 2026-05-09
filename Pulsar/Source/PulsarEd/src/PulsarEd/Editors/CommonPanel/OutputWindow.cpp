@@ -56,7 +56,7 @@ namespace pulsared
             {
                 if (auto cam = EditorWorld::GetPreviewWorld()->GetCameraManager().GetMainCamera())
                 {
-                    cam->SetDrawGizmoOverlay(!cam->GetDrawGizmoOverlay());
+                    cam->SetGizmoOverlayEnabled(!cam->IsGizmoOverlayEnabled());
                 }
             }
             ImGui::EndMenuBar();

@@ -117,7 +117,7 @@ namespace pulsared
             {
                 if (auto cam = world->GetCurrentCamera())
                 {
-                    cam->SetDrawGizmoOverlay(!cam->GetDrawGizmoOverlay());
+                    cam->SetGizmoOverlayEnabled(!cam->IsGizmoOverlayEnabled());
                 }
             }
 

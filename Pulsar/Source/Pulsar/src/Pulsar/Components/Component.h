@@ -66,7 +66,7 @@ namespace pulsar
 
         virtual void OnTransformChanged() {}
 
-        bool IsGizmoPassEnabled() const { return m_gizmoPassEnabled; }
+        bool CanDrawGizmo() const { return m_canDrawGizmo; }
         virtual void OnDrawGizmo(GizmoPainter* painter, bool selected) {}
     protected:
         virtual void OnReceiveMessage(MessageId id);
@@ -94,7 +94,7 @@ namespace pulsar
         Node* m_ownerNodePtr = nullptr;
     protected:
         bool m_isBegun = false;
-        bool m_gizmoPassEnabled = false;
+        bool m_canDrawGizmo = false;
     public:
         bool IsCollapsing = false;
     };
