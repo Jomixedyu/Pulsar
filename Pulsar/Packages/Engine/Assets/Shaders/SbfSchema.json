@@ -44,14 +44,6 @@
                             "PostProcess"
                         ]
                     },
-                    "Queue": {
-                        "type": "string",
-                        "enum": [
-                            "Opaque",
-                            "AlphaTest",
-                            "Transparency"
-                        ]
-                    },
                     "GraphicsPipeline": {
                         "type": "object",
                         "properties": {

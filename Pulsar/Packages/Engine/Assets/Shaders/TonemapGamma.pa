@@ -10,7 +10,6 @@
                 "Vertex": "BlitVSMain",
                 "Fragment": "PSMain"
             },
-            "Queue": "Opaque",
             "GraphicsPipeline": {
                 "CullMode": "None",
                 "DepthTest": false,

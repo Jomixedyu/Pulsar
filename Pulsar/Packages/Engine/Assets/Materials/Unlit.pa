@@ -1,5 +1,6 @@
 {
     "Features": [],
     "Parameters": [],
-    "Shader": "7d9f570d7e7df543b2654e81fbe01c5b"
+    "Shader": "7d9f570d7e7df543b2654e81fbe01c5b",
+    "Queue": "Opaque"
 }

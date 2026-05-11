@@ -10,9 +10,7 @@
                 "Vertex": "VSMain",
                 "Fragment": "PSMain"
             },
-            "Features": [
-            ],
-            "Queue": "Overlay",
+            "Features": [],
             "GraphicsPipeline": {
                 "CullMode": "None",
                 "ZWriteEnabled": false,

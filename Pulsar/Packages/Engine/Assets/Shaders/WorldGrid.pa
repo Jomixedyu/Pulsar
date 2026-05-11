@@ -13,7 +13,6 @@
             "Features": [
                 "FEATURE_ALPHATEST"
             ],
-            "Queue": "Opaque",
             "GraphicsPipeline": {
                 "CullMode": "Back",
                 "ZWriteEnabled": true,
@@ -21,6 +20,5 @@
             }
         }
     ],
-    "Properties": [
-    ]
+    "Properties": []
 }

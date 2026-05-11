@@ -17,5 +17,6 @@
             }
         }
     ],
-    "Shader": "b8bb34362e234f55ba0470d18e0aed80"
+    "Shader": "b8bb34362e234f55ba0470d18e0aed80",
+    "Queue": "Overlay"
 }

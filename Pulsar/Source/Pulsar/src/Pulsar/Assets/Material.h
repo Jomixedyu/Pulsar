@@ -109,6 +109,9 @@ namespace pulsar
         ShaderPropertySheet& GetSheet() { return m_sheet; }
         const ShaderPropertySheet& GetSheet() const { return m_sheet; }
 
+        ShaderPassRenderQueueType GetQueue() const { return m_queue; }
+        void SetQueue(ShaderPassRenderQueueType value) { m_queue = value; }
+
         Action<> OnShaderChanged;
 
     protected:
@@ -121,6 +124,9 @@ namespace pulsar
     private:
         CORELIB_REFL_DECL_FIELD(m_shader);
         RCPtr<Shader> m_shader;
+
+        CORELIB_REFL_DECL_FIELD(m_queue);
+        ShaderPassRenderQueueType m_queue = ShaderPassRenderQueueType::Opaque;
 
         ShaderPropertySheet m_sheet;
         std::vector<std::string> m_activeFeatures;

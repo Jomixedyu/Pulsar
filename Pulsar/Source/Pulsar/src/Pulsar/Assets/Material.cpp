@@ -144,6 +144,11 @@ namespace pulsar
                 parametersArray->Push(parameter);
             }
             s->Object->Add("Parameters", parametersArray);
+
+            // 序列化 Queue
+            const auto queueObject = s->Object->New(ser::VarientType::String);
+            queueObject->Assign(mkbox(m_queue)->GetName());
+            s->Object->Add("Queue", queueObject);
         }
         else // read
         {
@@ -192,6 +197,16 @@ namespace pulsar
                     default:
                         break;
                     }
+                }
+            }
+
+            // 读取 Queue
+            if (auto queueObj = s->Object->At("Queue"))
+            {
+                uint32_t queueNum{};
+                if (Enum::StaticTryParse(cltypeof<BoxingShaderPassRenderQueueType>(), queueObj->AsString(), &queueNum))
+                {
+                    m_queue = static_cast<ShaderPassRenderQueueType>(queueNum);
                 }
             }
 

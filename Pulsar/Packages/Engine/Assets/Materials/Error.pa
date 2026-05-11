@@ -1,3 +1,4 @@
 {
-	"Shader": "d84cd443a99b59c9e18f0f917d50a951"
+    "Shader": "d84cd443a99b59c9e18f0f917d50a951",
+    "Queue": "Opaque"
 }

@@ -111,7 +111,7 @@ namespace pulsar
                 batch.Material->GetShader()->GetConfig()->Passes->size() > 0)
             {
                 auto& pass0 = (*batch.Material->GetShader()->GetConfig()->Passes)[0];
-                batch.Queue = pass0->Queue;
+                batch.Queue = batch.Material->GetQueue();
                 if (pass0->GraphicsPipeline)
                 {
                     batch.CullMode = pass0->GraphicsPipeline->CullMode;

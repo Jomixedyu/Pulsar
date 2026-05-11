@@ -38,7 +38,7 @@ namespace pulsar
             if (shaderConfig->Passes && !shaderConfig->Passes->empty())
             {
                 auto& pass0 = (*shaderConfig->Passes)[0];
-                batch.Queue = pass0->Queue;
+                batch.Queue = m_material->GetQueue();
                 if (pass0->GraphicsPipeline)
                     batch.CullMode = pass0->GraphicsPipeline->CullMode;
             }
