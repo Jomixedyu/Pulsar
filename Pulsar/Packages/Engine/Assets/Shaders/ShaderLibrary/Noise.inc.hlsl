@@ -11,6 +11,14 @@ float3 GerstnerOffset(float3 worldPosition, float2 waveDirection, float amplitud
     return offset;
 }
 
+/* Default:
+Amplitude	20	10	5	2
+Wavelength	300	150	80	40
+Steepness	0.8	0.6	0.4	0.3
+Speed	1.2	1.5	2.0	2.5
+DirectionX	1.0	0.5	-0.8	-0.3
+DirectionY	0.3	1.0	0.2	-0.9
+*/
 float3 GerstnerOffset4(float3 worldPosition, float2 waveDirection[4], float4 amplitude, float4 wavelength, float4 steepness, float4 speed, float time)
 {
     float3 displacedPosition = worldPosition;
