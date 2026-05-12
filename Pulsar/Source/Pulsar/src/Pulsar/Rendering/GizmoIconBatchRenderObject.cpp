@@ -99,7 +99,6 @@ namespace pulsar
             batch.Interface = "RENDERER_STATICMESH";
             batch.DescriptorSetLayout = m_descriptorSetLayout;
             batch.State.VertexLayouts = {StaticMesh::StaticGetVertexLayout()};
-            batch.Queue = ShaderPassRenderQueueType::Overlay;
             batch.IsDepthTestDisabled = true;
 
             auto& element = batch.Elements.emplace_back();
@@ -107,19 +106,6 @@ namespace pulsar
             element.Indices = indicesBuffers.empty() ? nullptr : indicesBuffers[0];
             element.ModelDescriptor = gpu.DescriptorSet;
             batch.IsUsedIndices = element.Indices != nullptr;
-
-            if (item.Material && item.Material->GetShader() && item.Material->GetShader()->GetConfig())
-            {
-                auto shaderConfig = item.Material->GetShader()->GetConfig();
-                if (shaderConfig->Passes && !shaderConfig->Passes->empty())
-                {
-                    auto& pass0 = (*shaderConfig->Passes)[0];
-                    batch.Queue = item.Material->GetQueue();
-                    auto effectiveGP = item.Material->GetEffectiveGraphicsPipeline(pass0->Name);
-                    if (effectiveGP)
-                        batch.CullMode = effectiveGP->CullMode;
-                }
-            }
 
             m_batches.push_back(std::move(batch));
         }

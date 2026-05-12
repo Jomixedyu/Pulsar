@@ -1,23 +1,15 @@
 #pragma once
-#include "RenderFeature.h"
-#include <gfx/GFXDescriptorSet.h>
+#include "MeshRenderFeature.h"
 
 namespace pulsar
 {
-    class GizmoOverlayPass : public RenderFeature
+    class GizmoOverlayPass : public MeshRenderFeature
     {
     public:
-        ~GizmoOverlayPass() { Destroy(); }
-        void Initialize(PerPassResources* perPass);
-        void Destroy();
-
         RGTextureHandle AddToGraph(RenderGraph& graph,
                                    RGTextureHandle input,
                                    RGTextureHandle output,
-                                   CameraComponent* cam,
+                                   SceneCapture2DComponent* capture2D,
                                    PerPassResources* perPass) override;
-
-    private:
-        gfx::GFXDescriptorSet_sp m_perPassSet;
     };
 }

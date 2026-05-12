@@ -37,6 +37,8 @@ namespace pulsar
         float GetOrthoSize() const { return m_orthoSize; }
         void SetOrthoSize(float value);
 
+        const RCPtr<RenderTexture>& GetRenderTexture() const { return m_renderTarget; }
+
         uint32_t GetMSAASamples() const { return m_msaaSamples; }
         void SetMSAASamples(uint32_t value) { m_msaaSamples = value; }
 

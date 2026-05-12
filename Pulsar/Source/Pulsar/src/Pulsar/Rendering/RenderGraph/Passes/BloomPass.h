@@ -6,7 +6,7 @@
 
 namespace pulsar
 {
-    class CameraComponent;
+    class SceneCapture2DComponent;
 
     class BloomPass : public RenderFeature
     {
@@ -22,7 +22,7 @@ namespace pulsar
         RGTextureHandle AddToGraph(RenderGraph& graph,
                                    RGTextureHandle input,
                                    RGTextureHandle output,
-                                   CameraComponent* cam,
+                                   SceneCapture2DComponent* capture2D,
                                    PerPassResources* perPass) override;
 
     public:

@@ -27,7 +27,7 @@ namespace pulsar
         m_settings = stack.GetComponent<DisplayEncodingSettings>();
     }
 
-    void DisplayEncodingPass::PrepareMaterial(CameraComponent* cam)
+    void DisplayEncodingPass::PrepareMaterial(SceneCapture2DComponent* capture2D)
     {
         EnsureMaterial();
     }

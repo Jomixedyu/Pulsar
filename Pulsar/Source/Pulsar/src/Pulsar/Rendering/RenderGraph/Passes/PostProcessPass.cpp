@@ -1,5 +1,5 @@
 #include "PostProcessPass.h"
-#include <Pulsar/Components/CameraComponent.h>
+#include <Pulsar/Components/SceneCapture2DComponent.h>
 #include <Pulsar/Rendering/PerPassResources.h>
 #include <Pulsar/Assets/RenderTexture.h>
 #include <gfx/GFXCommandBuffer.h>
@@ -43,13 +43,13 @@ namespace pulsar
     RGTextureHandle PostProcessPass::AddToGraph(RenderGraph& graph,
                                                 RGTextureHandle hSrc,
                                                 RGTextureHandle hDst,
-                                                CameraComponent* cam,
+                                                SceneCapture2DComponent* capture2D,
                                                 PerPassResources* perPass)
     {
-        if (!IsEnabled() || !cam)
+        if (!IsEnabled() || !capture2D)
             return hSrc;
 
-        PrepareMaterial(cam);
+        PrepareMaterial(capture2D);
         if (!m_material)
             return hSrc;
         m_material->SubmitParameters();
@@ -69,10 +69,10 @@ namespace pulsar
                 if (m_material)
                     m_material->PrepareForRendering("PostProcess", "RENDERER_IMAGEPROCESS");
             })
-            .Execute([this, curSrc, curDst, cam, perPass]
+            .Execute([this, curSrc, curDst, capture2D, perPass]
                      (RGPassContext& passCtx, gfx::GFXCommandBuffer& cmdBuffer)
             {
-                DrawFullscreen(passCtx, cmdBuffer, curSrc, curDst, cam, perPass);
+                DrawFullscreen(passCtx, cmdBuffer, curSrc, curDst, capture2D, perPass);
             });
 
         return hDst;
@@ -80,7 +80,7 @@ namespace pulsar
 
     void PostProcessPass::DrawFullscreen(RGPassContext& passCtx, gfx::GFXCommandBuffer& cmdBuffer,
                                          RGTextureHandle hSrc, RGTextureHandle hDst,
-                                         CameraComponent* cam, PerPassResources* perPass)
+                                         SceneCapture2DComponent* capture2D, PerPassResources* perPass)
     {
         if (!m_material) return;
         auto shader = m_material->GetShader();
@@ -97,7 +97,7 @@ namespace pulsar
 
         RenderTexture* dstRT = passCtx.Get(hDst);
         if (!dstRT)
-            dstRT = cam->GetRenderTexture().GetPtr();
+            dstRT = capture2D->GetRenderTexture().GetPtr();
         if (!dstRT) return;
         auto* dstFBO = dstRT->GetGfxFrameBufferObject().get();
         if (!dstFBO) return;
@@ -108,7 +108,7 @@ namespace pulsar
 
         RenderTexture* srcRT = passCtx.Get(hSrc);
         if (!srcRT)
-            srcRT = cam->GetRenderTexture().GetPtr();
+            srcRT = capture2D->GetRenderTexture().GetPtr();
         if (srcRT)
         {
             auto srcView = srcRT->GetGfxRenderTarget0();

@@ -35,8 +35,7 @@ namespace pulsar
         void ResizeManagedRenderTexture(int width, int height);
     public:
 
-        const RCPtr<RenderTexture>&  GetRenderTexture() const { return m_renderTarget; }
-        void                         SetRenderTexture(const RCPtr<RenderTexture>& value, bool managed = false);
+        void SetRenderTexture(const RCPtr<RenderTexture>& value, bool managed = false);
 
         Ray ScreenPointToRay(Vector2f mousePosition) const;
 

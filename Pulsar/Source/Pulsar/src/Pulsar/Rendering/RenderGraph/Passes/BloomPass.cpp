@@ -194,10 +194,10 @@ namespace pulsar
     RGTextureHandle BloomPass::AddToGraph(RenderGraph& graph,
                                           RGTextureHandle input,
                                           RGTextureHandle output,
-                                          CameraComponent* cam,
+                                          SceneCapture2DComponent* capture2D,
                                           PerPassResources* perPass)
     {
-        if (!cam)
+        if (!capture2D)
             return input;
 
         EnsureMaterial();
@@ -205,7 +205,7 @@ namespace pulsar
             return input;
         m_material->SubmitParameters();
 
-        auto* camRT = cam->GetRenderTexture().GetPtr();
+        auto* camRT = capture2D->GetRenderTexture().GetPtr();
         if (!camRT)
             return input;
 

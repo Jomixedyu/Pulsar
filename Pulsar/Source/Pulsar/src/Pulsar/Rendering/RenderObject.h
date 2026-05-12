@@ -29,12 +29,9 @@ namespace pulsar::rendering
         bool IsWireframe{};
         bool IsCastShadow{};
         bool IsDepthTestDisabled{false};  // Gizmo 等需要始终可见的线条
-        gfx::GFXCullMode CullMode{};
         bool IsReverseCulling{false};
 
-        // Sorting metadata (filled by RenderObject or pipeline)
-        ShaderPassRenderQueueType Queue = ShaderPassRenderQueueType::Opaque;
-        int32_t Priority = 0;   // per-material render priority
+        int32_t Priority = 0;   // per-renderer render priority
         float   Depth    = 0.f; // signed camera-space depth, filled by pipeline
 
         size_t GetRenderState() const
@@ -45,20 +42,16 @@ namespace pulsar::rendering
                 ^ State.GetHashCode() * prime;
         }
 
-        gfx::GFXCullMode GetCullMode() const
+        gfx::GFXCullMode GetCullMode(gfx::GFXCullMode baseCullMode) const
         {
             if (IsReverseCulling)
             {
-                if (CullMode == gfx::GFXCullMode::Front)
-                {
+                if (baseCullMode == gfx::GFXCullMode::Front)
                     return gfx::GFXCullMode::Back;
-                }
-                if (CullMode == gfx::GFXCullMode::Back)
-                {
+                if (baseCullMode == gfx::GFXCullMode::Back)
                     return gfx::GFXCullMode::Front;
-                }
             }
-            return CullMode;
+            return baseCullMode;
         }
 
         void Append(const MeshBatch& batch)

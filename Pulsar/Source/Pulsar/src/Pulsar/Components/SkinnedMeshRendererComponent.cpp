@@ -163,17 +163,6 @@ namespace pulsar
                 continue;
             }
 
-            if (batch.Material->GetShader()->GetConfig() &&
-                batch.Material->GetShader()->GetConfig()->Passes &&
-                !batch.Material->GetShader()->GetConfig()->Passes->empty())
-            {
-                auto& pass0 = (*batch.Material->GetShader()->GetConfig()->Passes)[0];
-                batch.Queue = batch.Material->GetQueue();
-                auto effectiveGP = batch.Material->GetEffectiveGraphicsPipeline(pass0->Name);
-                if (effectiveGP)
-                    batch.CullMode = effectiveGP->CullMode;
-            }
-
             batch.Interface           = GetInterface();
             batch.DescriptorSetLayout = m_descriptorSetLayout;
 

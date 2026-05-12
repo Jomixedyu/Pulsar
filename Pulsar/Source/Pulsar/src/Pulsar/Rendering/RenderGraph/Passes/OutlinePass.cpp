@@ -1,5 +1,5 @@
 #include "OutlinePass.h"
-#include <Pulsar/Components/CameraComponent.h>
+#include <Pulsar/Components/SceneCapture2DComponent.h>
 #include <Pulsar/World.h>
 #include <Pulsar/Scene.h>
 #include <Pulsar/Rendering/RenderObject.h>
@@ -15,22 +15,6 @@
 
 namespace pulsar
 {
-    struct PreparedBatch
-    {
-        rendering::MeshBatch batch;
-        const MaterialPassBinding* binding = nullptr;
-    };
-
-    void OutlinePass::Initialize(PerPassResources* perPass)
-    {
-        m_perPassSet = perPass->AllocateSet(perPass->GetLayout("Forward"));
-    }
-
-    void OutlinePass::Destroy()
-    {
-        m_perPassSet.reset();
-    }
-
     static bool MaterialHasOutlinePass(const Material* material)
     {
         if (!material)
@@ -49,35 +33,45 @@ namespace pulsar
         return false;
     }
 
-    RGTextureHandle OutlinePass::AddToGraph(RenderGraph& graph, RGTextureHandle hFinal,
-                                            CameraComponent* cam, World* world,
+    RGTextureHandle OutlinePass::AddToGraph(RenderGraph& graph,
+                                            RGTextureHandle input,
+                                            RGTextureHandle output,
+                                            SceneCapture2DComponent* capture2D,
                                             PerPassResources* perPass)
     {
+        auto* world = capture2D->GetWorld();
+        if (!world)
+            return output;
+
         auto preparedOutline = std::make_shared<array_list<PreparedBatch>>();
 
         graph.AddPass("OutlinePass")
-            .Write(hFinal, RGAttachmentDesc{
+            .Write(output, RGAttachmentDesc{
                 .colorLoadOp  = gfx::GFXRenderPassLoadOp::Load,
                 .colorStoreOp = gfx::GFXRenderPassStoreOp::Store,
                 .depthLoadOp  = gfx::GFXRenderPassLoadOp::Load,
                 .depthStoreOp = gfx::GFXRenderPassStoreOp::Store,
             })
             .WithPerPass(perPass)
-            .Prepare([cam, world, preparedOutline, perPass, this](RGPassContext&)
+            .Prepare([capture2D, world, preparedOutline, perPass, this](RGPassContext&)
             {
                 perPass->WriteStandardBuffers(this->m_perPassSet.get());
                 perPass->Submit(this->m_perPassSet.get());
 
-                const Vector3f camPos     = cam->GetNode()->GetTransform()->GetWorldPosition();
-                const Vector3f camForward = cam->GetNode()->GetTransform()->GetForward();
+                const Vector3f camPos     = capture2D->GetNode()->GetTransform()->GetWorldPosition();
+                const Vector3f camForward = capture2D->GetNode()->GetTransform()->GetForward();
 
                 for (const rendering::RenderObject_sp& ro : world->GetRenderObjects())
                 {
                     const float depth = jmath::Dot(camForward, ro->GetWorldPosition() - camPos);
                     for (auto batch : ro->GetMeshBatches())
                     {
-                        if (batch.Queue != ShaderPassRenderQueueType::Opaque
-                            && batch.Queue != ShaderPassRenderQueueType::AlphaTest)
+                        if (!batch.Material)
+                            continue;
+
+                        auto queue = batch.Material->GetQueue();
+                        if (queue != ShaderPassRenderQueueType::Opaque
+                            && queue != ShaderPassRenderQueueType::AlphaTest)
                         {
                             continue;
                         }
@@ -106,7 +100,7 @@ namespace pulsar
                 };
                 std::sort(preparedOutline->begin(), preparedOutline->end(), sortAsc);
             })
-            .Execute([cam, perPass, preparedOutline, this]
+            .Execute([capture2D, perPass, preparedOutline, this]
                      (RGPassContext& ctx, gfx::GFXCommandBuffer& cmdBuffer)
             {
                 auto* targetFBO = cmdBuffer.GetFrameBuffer();
@@ -116,87 +110,19 @@ namespace pulsar
                 auto* pipelineMgr = cmdBuffer.GetApplication()->GetGraphicsPipelineManager();
                 cmdBuffer.CmdSetViewport(0, 0, (float)targetFBO->GetWidth(), (float)targetFBO->GetHeight());
 
-                for (const auto& pb : *preparedOutline)
+                auto getEffectiveGP = [](const PreparedBatch& pb) -> SPtr<ShaderConfigGraphicsPipeline>
                 {
-                    if (!pb.binding)
-                        continue;
-
-                    auto program = pb.binding->GetCurrentProgram();
-                    if (!program)
-                        continue;
-
-                    auto shader = pb.batch.Material->GetShader();
-                    if (!shader || !shader->GetConfig())
-                        continue;
-
-                    auto& gpuPrograms = program->GetGpuPrograms();
-                    auto shaderConfig = shader->GetConfig();
-
-                    gfx::GFXCullMode outlineCullMode = gfx::GFXCullMode::None;
-                    gfx::GFXGraphicsPipelineStateParams psoParams{};
+                    auto shaderConfig = pb.batch.Material->GetShader()->GetConfig();
                     // Outline pass 直接读 shader 原始配置，不应用 material override
-                    SPtr<ShaderConfigGraphicsPipeline> effectiveGP;
                     if (auto pass = shaderConfig->FindPass("VertexOutline"))
-                    {
-                        effectiveGP = pass->GraphicsPipeline;
-                    }
-                    if (effectiveGP)
-                    {
-                        outlineCullMode             = effectiveGP->CullMode;
-                        psoParams.CullMode          = effectiveGP->CullMode;
-                        psoParams.DepthCompareOp    = effectiveGP->ZTestOp;
-                        psoParams.DepthWriteEnable  = effectiveGP->ZWriteEnabled;
-                        psoParams.DepthTestEnable   = !pb.batch.IsDepthTestDisabled;
-                        psoParams.StencilTestEnable = effectiveGP->Stencil_Enabled;
-                        psoParams.BlendEnable       = effectiveGP->Blend_Enabled;
-                        psoParams.BlendSrcColor     = effectiveGP->Blend_Src;
-                        psoParams.BlendDstColor     = effectiveGP->Blend_Dst;
-                        psoParams.BlendSrcAlpha     = effectiveGP->Blend_SrcAlpha;
-                        psoParams.BlendDstAlpha     = effectiveGP->Blend_DstAlpha;
-                    }
-                    if (pb.batch.IsDepthTestDisabled)
-                    {
-                        psoParams.DepthTestEnable  = false;
-                        psoParams.DepthWriteEnable = false;
-                    }
+                        return pass->GraphicsPipeline;
+                    return nullptr;
+                };
 
-                    array_list<gfx::GFXDescriptorSetLayout_sp> descLayouts;
-                    descLayouts.push_back(pb.binding->m_descriptorSetLayout);
-                    descLayouts.push_back(this->m_perPassSet->GetDescriptorSetLayout());
-                    descLayouts.push_back(pb.batch.DescriptorSetLayout);
-
-                    auto gfxPipeline = pipelineMgr->GetGraphicsPipeline(
-                        gpuPrograms, psoParams, descLayouts,
-                        targetFBO->GetRenderTargetDesc(), pb.batch.State);
-
-                    if (!gfxPipeline)
-                        continue;
-
-                    cmdBuffer.CmdBindGraphicsPipeline(gfxPipeline.get());
-                    cmdBuffer.CmdSetCullMode(outlineCullMode);
-
-                    for (const auto& element : pb.batch.Elements)
-                    {
-                        array_list<gfx::GFXDescriptorSet*> descSets;
-                        descSets.push_back(pb.binding->m_descriptorSet.get());
-                        descSets.push_back(this->m_perPassSet.get());
-                        descSets.push_back(element.ModelDescriptor.get());
-                        cmdBuffer.CmdBindDescriptorSets(descSets, gfxPipeline.get());
-
-                        cmdBuffer.CmdBindVertexBuffers({element.Vertex.get()});
-                        if (pb.batch.IsUsedIndices)
-                        {
-                            cmdBuffer.CmdBindIndexBuffer(element.Indices.get());
-                            cmdBuffer.CmdDrawIndexed(element.Indices->GetElementCount());
-                        }
-                        else
-                        {
-                            cmdBuffer.CmdDraw(element.Vertex->GetElementCount());
-                        }
-                    }
-                }
+                DrawPreparedBatchList(cmdBuffer, *preparedOutline, this->m_perPassSet.get(),
+                                      pipelineMgr, targetFBO->GetRenderTargetDesc(), getEffectiveGP);
             });
 
-        return hFinal;
+        return output;
     }
 }

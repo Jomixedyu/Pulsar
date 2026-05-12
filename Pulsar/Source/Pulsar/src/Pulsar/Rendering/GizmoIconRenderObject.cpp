@@ -33,18 +33,6 @@ namespace pulsar
         batch.DescriptorSetLayout = m_descriptorSetLayout;
         batch.State.VertexLayouts = {StaticMesh::StaticGetVertexLayout()};
 
-        if (auto shaderConfig = m_material->GetShader()->GetConfig())
-        {
-            if (shaderConfig->Passes && !shaderConfig->Passes->empty())
-            {
-                auto& pass0 = (*shaderConfig->Passes)[0];
-                batch.Queue = m_material->GetQueue();
-                auto effectiveGP = m_material->GetEffectiveGraphicsPipeline(pass0->Name);
-                if (effectiveGP)
-                    batch.CullMode = effectiveGP->CullMode;
-            }
-        }
-
         if (!m_mesh->IsCreatedGPUResource())
             m_mesh->CreateGPUResource();
 

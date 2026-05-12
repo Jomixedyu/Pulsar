@@ -1,27 +1,19 @@
 #pragma once
+#include "MeshRenderFeature.h"
 #include <Pulsar/Rendering/RenderGraph/RenderGraph.h>
-#include <gfx/GFXDescriptorSet.h>
-
-namespace gfx { class GFXTexture2DView; }
 
 namespace pulsar
 {
-    class CameraComponent;
-    class World;
+    class SceneCapture2DComponent;
     class PerPassResources;
 
-    class OutlinePass
+    class OutlinePass : public MeshRenderFeature
     {
     public:
-        ~OutlinePass() { Destroy(); }
-        void Initialize(PerPassResources* perPass);
-        void Destroy();
-
-        RGTextureHandle AddToGraph(RenderGraph& graph, RGTextureHandle hFinal,
-                                   CameraComponent* cam, World* world,
-                                   PerPassResources* perPass);
-
-    private:
-        gfx::GFXDescriptorSet_sp m_perPassSet;
+        RGTextureHandle AddToGraph(RenderGraph& graph,
+                                   RGTextureHandle input,
+                                   RGTextureHandle output,
+                                   SceneCapture2DComponent* capture2D,
+                                   PerPassResources* perPass) override;
     };
 }
