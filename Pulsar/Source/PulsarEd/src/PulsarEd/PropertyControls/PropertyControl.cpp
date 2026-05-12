@@ -1,6 +1,7 @@
 #include "PropertyControls/PropertyControl.h"
 #include <Pulsar/SceneObject.h>
 #include <Pulsar/Assets/NodeCollection.h>
+#include <Pulsar/Meta/ToolFunctionAttribute.h>
 #include <PulsarEd/AssetDatabase.h>
 #include <PulsarEd/EditorUI.h>
 #include <imgui/imgui.h>
@@ -300,6 +301,45 @@ namespace pulsared
                         }
 
                         ImGui::PopID();
+                    }
+
+                    // Draw tool function buttons
+                    for (auto* method : innerType->GetMethodInfos())
+                    {
+                        if (auto toolAttr = method->GetAttribute<pulsar::ToolFunctionAttribute>())
+                        {
+                            ImGui::PushID(method->GetName().c_str());
+                            ImGui::TableNextRow();
+                            ImGui::TableSetColumnIndex(0);
+                            ImGui::AlignTextToFramePadding();
+                            const char* label = toolAttr->GetLabel();
+                            if (label[0] != '\0')
+                            {
+                                ImGui::Text("%s", label);
+                            }
+                            ImGui::TableSetColumnIndex(1);
+                            if (ImGui::Button(label[0] != '\0' ? label : method->GetName().c_str()))
+                            {
+                                if (method->IsStatic())
+                                {
+                                    method->Invoke(nullptr, {});
+                                }
+                                else
+                                {
+                                    Object* target = obj;
+                                    if (type->IsSubclassOf(cltypeof<PointerBoxingObject>()))
+                                    {
+                                        auto pointer = dynamic_cast<PointerBoxingObject*>(obj);
+                                        target = pointer->GetPointer();
+                                    }
+                                    if (target)
+                                    {
+                                        method->Invoke(target->shared_from_this(), {});
+                                    }
+                                }
+                            }
+                            ImGui::PopID();
+                        }
                     }
                 }
                 if (opened && !ignore)

@@ -8,6 +8,7 @@
 #include "gfx/GFXDescriptorSet.h"
 #include <Pulsar/Assets/Material.h>
 #include <Pulsar/Assets/RenderTexture.h>
+#include <Pulsar/Meta/ToolFunctionAttribute.h>
 
 namespace pulsar
 {
@@ -41,6 +42,9 @@ namespace pulsar
 
         bool IsGizmoPassEnabled() const { return m_gizmoPassEnabled; }
         void SetGizmoPassEnabled(bool value) { m_gizmoPassEnabled = value; }
+
+        CORELIB_REFL_DECL_METHOD(ResetToDefault, new ToolFunctionAttribute("Reset to Default"));
+        void ResetToDefault();
 
     protected:
         void BeginRT();

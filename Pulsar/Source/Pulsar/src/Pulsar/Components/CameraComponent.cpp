@@ -245,4 +245,13 @@ namespace pulsar
     {
         base::OnTransformChanged();
     }
+
+    void CameraComponent::ResetToDefault()
+    {
+        m_fov = 60.f;
+        m_near = 0.1f;
+        m_far = 1000.f;
+        m_orthoSize = 1.f;
+        UpdateCBuffer();
+    }
 } // namespace pulsar
