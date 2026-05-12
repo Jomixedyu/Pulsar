@@ -26,4 +26,16 @@ namespace pulsar
         }
         return nullptr;
     }
+
+    SPtr<ShaderConfigPass> ShaderConfig::FindPass(const string& name) const
+    {
+        if (!Passes)
+            return nullptr;
+        for (const auto& pass : *Passes)
+        {
+            if (pass->Name == name)
+                return pass;
+        }
+        return nullptr;
+    }
 }

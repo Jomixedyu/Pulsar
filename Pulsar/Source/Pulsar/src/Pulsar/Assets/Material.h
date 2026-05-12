@@ -6,6 +6,7 @@
 #include <Pulsar/AssetObject.h>
 #include <Pulsar/Assets/Shader.h>
 #include <Pulsar/Assets/Texture.h>
+#include <Pulsar/Rendering/ObjectPropertyOverride.h>
 
 #include <map>
 #include <memory>
@@ -55,6 +56,8 @@ namespace pulsar
             );
 
     public:
+        Material();
+
         static RCPtr<Material> StaticCreate(const RCPtr<Shader>& shader, string_view name = {});
 
         virtual void Serialize(AssetSerializer* s) override;
@@ -101,7 +104,19 @@ namespace pulsar
     public:
         RCPtr<Shader> GetShader() const;
                 void SetShader(RCPtr<Shader> value);
-                void ApplyShaderDefaults();
+        void ApplyShaderDefaults();
+
+        void SetGraphicsPipelineOverride(const SPtr<ShaderConfigGraphicsPipeline>& value)
+        {
+            m_graphicsPipelineOverride = value;
+            m_cachedEffectiveGraphicsPipeline.clear();
+        }
+
+        void SetGraphicsPipelineOverrideFields(const SPtr<ObjectPropertyOverride>& value)
+        {
+            m_graphicsPipelineOverrideFields = value;
+            m_cachedEffectiveGraphicsPipeline.clear();
+        }
 
         const std::vector<std::string>& GetActiveFeatures() const { return m_activeFeatures; }
         void SetActiveFeatures(std::vector<std::string> features);
@@ -111,6 +126,14 @@ namespace pulsar
 
         ShaderPassRenderQueueType GetQueue() const { return m_queue; }
         void SetQueue(ShaderPassRenderQueueType value) { m_queue = value; }
+
+        void InvalidateGraphicsPipelineCache() { m_cachedEffectiveGraphicsPipeline.clear(); }
+
+        SPtr<ShaderConfigGraphicsPipeline> GetGraphicsPipelineOverride() const { return m_graphicsPipelineOverride; }
+
+        SPtr<ObjectPropertyOverride> GetGraphicsPipelineOverrideFields() const { return m_graphicsPipelineOverrideFields; }
+
+        SPtr<ShaderConfigGraphicsPipeline> GetEffectiveGraphicsPipeline(const std::string& passName) const;
 
         Action<> OnShaderChanged;
 
@@ -128,11 +151,19 @@ namespace pulsar
         CORELIB_REFL_DECL_FIELD(m_queue);
         ShaderPassRenderQueueType m_queue = ShaderPassRenderQueueType::Opaque;
 
+        CORELIB_REFL_DECL_FIELD(m_graphicsPipelineOverride);
+        SPtr<ShaderConfigGraphicsPipeline> m_graphicsPipelineOverride;
+
+        CORELIB_REFL_DECL_FIELD(m_graphicsPipelineOverrideFields);
+        SPtr<ObjectPropertyOverride> m_graphicsPipelineOverrideFields;
+
         ShaderPropertySheet m_sheet;
         std::vector<std::string> m_activeFeatures;
 
         // Per-pass ShaderInstance cache (lazy-created); each binding owns its own GPU resources
         std::map<PassKey, MaterialPassBinding> m_passBindings;
+
+        mutable std::map<std::string, SPtr<ShaderConfigGraphicsPipeline>> m_cachedEffectiveGraphicsPipeline;
 
         bool m_createdGpuResource = false;
         bool m_isDirtyParameter{};

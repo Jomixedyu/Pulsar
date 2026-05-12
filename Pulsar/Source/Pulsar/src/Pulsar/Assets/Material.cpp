@@ -16,6 +16,12 @@
 namespace pulsar
 {
 
+    Material::Material()
+    {
+        init_sptr_member(m_graphicsPipelineOverride);
+        init_sptr_member(m_graphicsPipelineOverrideFields);
+    }
+
     RCPtr<Material> Material::StaticCreate(const RCPtr<Shader>& shader, string_view name)
     {
         auto material = NewAssetObject<Material>();
@@ -149,6 +155,25 @@ namespace pulsar
             const auto queueObject = s->Object->New(ser::VarientType::String);
             queueObject->Assign(mkbox(m_queue)->GetName());
             s->Object->Add("Queue", queueObject);
+
+            // 序列化 GraphicsPipelineOverride（只写被标记的字段）
+            if (m_graphicsPipelineOverride && m_graphicsPipelineOverrideFields && !m_graphicsPipelineOverrideFields->IsEmpty())
+            {
+                const auto overrideObj = s->Object->New(ser::VarientType::Object);
+                for (const auto& path : *m_graphicsPipelineOverrideFields->Paths)
+                {
+                    auto fieldName = path;
+                    if (auto field = m_graphicsPipelineOverride->GetType()->GetFieldInfo(fieldName))
+                    {
+                        auto value = field->GetValue(m_graphicsPipelineOverride.get());
+                        auto json = ser::JsonSerializer::Serialize(value.get(), {});
+                        auto valueObj = overrideObj->New(ser::VarientType::Object);
+                        valueObj->AssignParse(json);
+                        overrideObj->Add(fieldName, valueObj);
+                    }
+                }
+                s->Object->Add("GraphicsPipelineOverride", overrideObj);
+            }
         }
         else // read
         {
@@ -207,6 +232,27 @@ namespace pulsar
                 if (Enum::StaticTryParse(cltypeof<BoxingShaderPassRenderQueueType>(), queueObj->AsString(), &queueNum))
                 {
                     m_queue = static_cast<ShaderPassRenderQueueType>(queueNum);
+                }
+            }
+
+            // 读取 GraphicsPipelineOverride
+            if (auto overrideObj = s->Object->At("GraphicsPipelineOverride"))
+            {
+                m_graphicsPipelineOverride = mksptr(new ShaderConfigGraphicsPipeline());
+                m_graphicsPipelineOverrideFields = mksptr(new ObjectPropertyOverride());
+
+                for (const auto& key : overrideObj->GetKeys())
+                {
+                    if (auto field = m_graphicsPipelineOverride->GetType()->GetFieldInfo(key))
+                    {
+                        auto valueObj = overrideObj->At(key);
+                        auto value = ser::JsonSerializer::Deserialize(valueObj->ToString(), field->GetFieldType());
+                        if (value)
+                        {
+                            field->SetValue(m_graphicsPipelineOverride.get(), value);
+                            m_graphicsPipelineOverrideFields->Paths->push_back(key);
+                        }
+                    }
                 }
             }
 
@@ -532,6 +578,10 @@ namespace pulsar
         {
             SetShader(m_shader);
         }
+        else if (name == NAMEOF(m_graphicsPipelineOverride) || name == NAMEOF(m_graphicsPipelineOverrideFields))
+        {
+            m_cachedEffectiveGraphicsPipeline.clear();
+        }
     }
 
     RCPtr<Shader> Material::GetShader() const
@@ -595,6 +645,7 @@ namespace pulsar
     void Material::SetShader(RCPtr<Shader> value)
     {
         m_shader = std::move(value);
+        m_cachedEffectiveGraphicsPipeline.clear();
 
         RuntimeObjectManager::RebuildMessageBox(this);
 
@@ -617,6 +668,38 @@ namespace pulsar
         m_activeFeatures = std::move(features);
         ClearPassBindings();
     }
+
+    SPtr<ShaderConfigGraphicsPipeline> Material::GetEffectiveGraphicsPipeline(const std::string& passName) const
+    {
+        auto it = m_cachedEffectiveGraphicsPipeline.find(passName);
+        if (it != m_cachedEffectiveGraphicsPipeline.end())
+            return it->second;
+
+        SPtr<ShaderConfigGraphicsPipeline> base;
+        if (m_shader && m_shader->GetConfig() && m_shader->GetConfig()->Passes)
+        {
+            for (const auto& pass : *m_shader->GetConfig()->Passes)
+            {
+                if (pass->Name == passName && pass->GraphicsPipeline)
+                {
+                    base = pass->GraphicsPipeline;
+                    break;
+                }
+            }
+        }
+
+        if (m_graphicsPipelineOverride && m_graphicsPipelineOverrideFields && !m_graphicsPipelineOverrideFields->IsEmpty())
+        {
+            auto result = mksptr(new ShaderConfigGraphicsPipeline());
+            m_graphicsPipelineOverrideFields->ApplyTo(base.get(), m_graphicsPipelineOverride.get(), result.get());
+            m_cachedEffectiveGraphicsPipeline[passName] = result;
+            return result;
+        }
+
+        m_cachedEffectiveGraphicsPipeline[passName] = base;
+        return base;
+    }
+
     void Material::OnCollectAssetDependencies(array_list<guid_t>& deps)
     {
         base::OnCollectAssetDependencies(deps);

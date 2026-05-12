@@ -173,6 +173,8 @@ namespace pulsar
         
         CORELIB_REFL_DECL_FIELD(Properties);
         List_sp<SPtr<ShaderConfigProperty>> Properties;
+
+        SPtr<ShaderConfigPass> FindPass(const string& name) const;
     };
     CORELIB_DECL_SHORTSPTR(ShaderConfig);
 

@@ -134,27 +134,25 @@ namespace pulsar
 
                     gfx::GFXCullMode outlineCullMode = gfx::GFXCullMode::None;
                     gfx::GFXGraphicsPipelineStateParams psoParams{};
-                    if (shaderConfig->Passes && shaderConfig->Passes->size() > 0)
+                    // Outline pass 直接读 shader 原始配置，不应用 material override
+                    SPtr<ShaderConfigGraphicsPipeline> effectiveGP;
+                    if (auto pass = shaderConfig->FindPass("VertexOutline"))
                     {
-                        for (const auto& passConfig : *shaderConfig->Passes)
-                        {
-                            if (passConfig && passConfig->Name == "VertexOutline" && passConfig->GraphicsPipeline)
-                            {
-                                auto& gp = passConfig->GraphicsPipeline;
-                                outlineCullMode             = gp->CullMode;
-                                psoParams.CullMode          = gp->CullMode;
-                                psoParams.DepthCompareOp    = gp->ZTestOp;
-                                psoParams.DepthWriteEnable  = gp->ZWriteEnabled;
-                                psoParams.DepthTestEnable   = !pb.batch.IsDepthTestDisabled;
-                                psoParams.StencilTestEnable = gp->Stencil_Enabled;
-                                psoParams.BlendEnable       = gp->Blend_Enabled;
-                                psoParams.BlendSrcColor     = gp->Blend_Src;
-                                psoParams.BlendDstColor     = gp->Blend_Dst;
-                                psoParams.BlendSrcAlpha     = gp->Blend_SrcAlpha;
-                                psoParams.BlendDstAlpha     = gp->Blend_DstAlpha;
-                                break;
-                            }
-                        }
+                        effectiveGP = pass->GraphicsPipeline;
+                    }
+                    if (effectiveGP)
+                    {
+                        outlineCullMode             = effectiveGP->CullMode;
+                        psoParams.CullMode          = effectiveGP->CullMode;
+                        psoParams.DepthCompareOp    = effectiveGP->ZTestOp;
+                        psoParams.DepthWriteEnable  = effectiveGP->ZWriteEnabled;
+                        psoParams.DepthTestEnable   = !pb.batch.IsDepthTestDisabled;
+                        psoParams.StencilTestEnable = effectiveGP->Stencil_Enabled;
+                        psoParams.BlendEnable       = effectiveGP->Blend_Enabled;
+                        psoParams.BlendSrcColor     = effectiveGP->Blend_Src;
+                        psoParams.BlendDstColor     = effectiveGP->Blend_Dst;
+                        psoParams.BlendSrcAlpha     = effectiveGP->Blend_SrcAlpha;
+                        psoParams.BlendDstAlpha     = effectiveGP->Blend_DstAlpha;
                     }
                     if (pb.batch.IsDepthTestDisabled)
                     {

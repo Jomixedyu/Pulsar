@@ -39,8 +39,9 @@ namespace pulsar
             {
                 auto& pass0 = (*shaderConfig->Passes)[0];
                 batch.Queue = m_material->GetQueue();
-                if (pass0->GraphicsPipeline)
-                    batch.CullMode = pass0->GraphicsPipeline->CullMode;
+                auto effectiveGP = m_material->GetEffectiveGraphicsPipeline(pass0->Name);
+                if (effectiveGP)
+                    batch.CullMode = effectiveGP->CullMode;
             }
         }
 

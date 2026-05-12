@@ -119,19 +119,19 @@ namespace pulsar
                 if (shaderConfig->Passes && shaderConfig->Passes->size() > 0)
                 {
                     auto& passConfig = (*shaderConfig->Passes)[0];
-                    if (passConfig->GraphicsPipeline)
+                    auto effectiveGP = pb.batch.Material->GetEffectiveGraphicsPipeline(passConfig->Name);
+                    if (effectiveGP)
                     {
-                        auto& gp = passConfig->GraphicsPipeline;
-                        psoParams.CullMode          = gp->CullMode;
-                        psoParams.DepthCompareOp    = gp->ZTestOp;
-                        psoParams.DepthWriteEnable  = gp->ZWriteEnabled;
+                        psoParams.CullMode          = effectiveGP->CullMode;
+                        psoParams.DepthCompareOp    = effectiveGP->ZTestOp;
+                        psoParams.DepthWriteEnable  = effectiveGP->ZWriteEnabled;
                         psoParams.DepthTestEnable   = !pb.batch.IsDepthTestDisabled;
-                        psoParams.StencilTestEnable = gp->Stencil_Enabled;
-                        psoParams.BlendEnable       = gp->Blend_Enabled;
-                        psoParams.BlendSrcColor     = gp->Blend_Src;
-                        psoParams.BlendDstColor     = gp->Blend_Dst;
-                        psoParams.BlendSrcAlpha     = gp->Blend_SrcAlpha;
-                        psoParams.BlendDstAlpha     = gp->Blend_DstAlpha;
+                        psoParams.StencilTestEnable = effectiveGP->Stencil_Enabled;
+                        psoParams.BlendEnable       = effectiveGP->Blend_Enabled;
+                        psoParams.BlendSrcColor     = effectiveGP->Blend_Src;
+                        psoParams.BlendDstColor     = effectiveGP->Blend_Dst;
+                        psoParams.BlendSrcAlpha     = effectiveGP->Blend_SrcAlpha;
+                        psoParams.BlendDstAlpha     = effectiveGP->Blend_DstAlpha;
                     }
                 }
                 if (pb.batch.IsDepthTestDisabled)
