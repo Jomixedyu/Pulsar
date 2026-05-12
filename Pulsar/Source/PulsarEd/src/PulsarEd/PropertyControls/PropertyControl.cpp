@@ -308,8 +308,6 @@ namespace pulsared
                     {
                         if (auto toolAttr = method->GetAttribute<pulsar::ToolFunctionAttribute>())
                         {
-                            ImGui::TableNextRow();
-                            ImGui::TableSetColumnIndex(1);
                             const char* label = toolAttr->GetLabel();
                             const char* btnLabel = (label[0] != '\0') ? label : method->GetName().c_str();
                             if (ImGui::Button(btnLabel))
