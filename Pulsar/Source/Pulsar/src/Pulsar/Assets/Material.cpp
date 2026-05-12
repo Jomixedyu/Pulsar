@@ -719,16 +719,6 @@ namespace pulsar
         }
     }
 
-    static void AddOverrideField(ObjectPropertyOverride* fields, const string& name)
-    {
-        if (!fields || !fields->Paths) return;
-        for (const auto& path : *fields->Paths)
-        {
-            if (path == name) return;
-        }
-        fields->Paths->push_back(name);
-    }
-
     void Material::SetOpaqueOverride()
     {
         if (!m_graphicsPipelineOverride)
@@ -741,10 +731,10 @@ namespace pulsar
         m_graphicsPipelineOverride->Blend_Dst     = BlendFactor::Zero;
         m_graphicsPipelineOverride->ZWriteEnabled = true;
 
-        AddOverrideField(m_graphicsPipelineOverrideFields.get(), "Blend_Enabled");
-        AddOverrideField(m_graphicsPipelineOverrideFields.get(), "Blend_Src");
-        AddOverrideField(m_graphicsPipelineOverrideFields.get(), "Blend_Dst");
-        AddOverrideField(m_graphicsPipelineOverrideFields.get(), "ZWriteEnabled");
+        m_graphicsPipelineOverrideFields->AddField("Blend_Enabled");
+        m_graphicsPipelineOverrideFields->AddField("Blend_Src");
+        m_graphicsPipelineOverrideFields->AddField("Blend_Dst");
+        m_graphicsPipelineOverrideFields->AddField("ZWriteEnabled");
 
         m_cachedEffectiveGraphicsPipeline.clear();
     }
@@ -761,10 +751,10 @@ namespace pulsar
         m_graphicsPipelineOverride->Blend_Dst     = BlendFactor::OneMinusSrcAlpha;
         m_graphicsPipelineOverride->ZWriteEnabled = false;
 
-        AddOverrideField(m_graphicsPipelineOverrideFields.get(), "Blend_Enabled");
-        AddOverrideField(m_graphicsPipelineOverrideFields.get(), "Blend_Src");
-        AddOverrideField(m_graphicsPipelineOverrideFields.get(), "Blend_Dst");
-        AddOverrideField(m_graphicsPipelineOverrideFields.get(), "ZWriteEnabled");
+        m_graphicsPipelineOverrideFields->AddField("Blend_Enabled");
+        m_graphicsPipelineOverrideFields->AddField("Blend_Src");
+        m_graphicsPipelineOverrideFields->AddField("Blend_Dst");
+        m_graphicsPipelineOverrideFields->AddField("ZWriteEnabled");
 
         m_cachedEffectiveGraphicsPipeline.clear();
     }
