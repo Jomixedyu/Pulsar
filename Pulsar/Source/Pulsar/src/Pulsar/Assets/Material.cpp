@@ -719,4 +719,54 @@ namespace pulsar
         }
     }
 
+    static void AddOverrideField(ObjectPropertyOverride* fields, const string& name)
+    {
+        if (!fields || !fields->Paths) return;
+        for (const auto& path : *fields->Paths)
+        {
+            if (path == name) return;
+        }
+        fields->Paths->push_back(name);
+    }
+
+    void Material::SetOpaqueOverride()
+    {
+        if (!m_graphicsPipelineOverride)
+            init_sptr_member(m_graphicsPipelineOverride);
+        if (!m_graphicsPipelineOverrideFields)
+            init_sptr_member(m_graphicsPipelineOverrideFields);
+
+        m_graphicsPipelineOverride->Blend_Enabled = false;
+        m_graphicsPipelineOverride->Blend_Src     = BlendFactor::One;
+        m_graphicsPipelineOverride->Blend_Dst     = BlendFactor::Zero;
+        m_graphicsPipelineOverride->ZWriteEnabled = true;
+
+        AddOverrideField(m_graphicsPipelineOverrideFields.get(), "Blend_Enabled");
+        AddOverrideField(m_graphicsPipelineOverrideFields.get(), "Blend_Src");
+        AddOverrideField(m_graphicsPipelineOverrideFields.get(), "Blend_Dst");
+        AddOverrideField(m_graphicsPipelineOverrideFields.get(), "ZWriteEnabled");
+
+        m_cachedEffectiveGraphicsPipeline.clear();
+    }
+
+    void Material::SetTranslucentOverride()
+    {
+        if (!m_graphicsPipelineOverride)
+            init_sptr_member(m_graphicsPipelineOverride);
+        if (!m_graphicsPipelineOverrideFields)
+            init_sptr_member(m_graphicsPipelineOverrideFields);
+
+        m_graphicsPipelineOverride->Blend_Enabled = true;
+        m_graphicsPipelineOverride->Blend_Src     = BlendFactor::SrcAlpha;
+        m_graphicsPipelineOverride->Blend_Dst     = BlendFactor::OneMinusSrcAlpha;
+        m_graphicsPipelineOverride->ZWriteEnabled = false;
+
+        AddOverrideField(m_graphicsPipelineOverrideFields.get(), "Blend_Enabled");
+        AddOverrideField(m_graphicsPipelineOverrideFields.get(), "Blend_Src");
+        AddOverrideField(m_graphicsPipelineOverrideFields.get(), "Blend_Dst");
+        AddOverrideField(m_graphicsPipelineOverrideFields.get(), "ZWriteEnabled");
+
+        m_cachedEffectiveGraphicsPipeline.clear();
+    }
+
 } // namespace pulsar

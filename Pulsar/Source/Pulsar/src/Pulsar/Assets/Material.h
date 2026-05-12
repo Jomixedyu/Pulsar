@@ -7,6 +7,7 @@
 #include <Pulsar/Assets/Shader.h>
 #include <Pulsar/Assets/Texture.h>
 #include <Pulsar/Rendering/ObjectPropertyOverride.h>
+#include <Pulsar/Meta/ToolFunctionAttribute.h>
 
 #include <map>
 #include <memory>
@@ -134,6 +135,12 @@ namespace pulsar
         SPtr<ObjectPropertyOverride> GetGraphicsPipelineOverrideFields() const { return m_graphicsPipelineOverrideFields; }
 
         SPtr<ShaderConfigGraphicsPipeline> GetEffectiveGraphicsPipeline(const std::string& passName) const;
+
+        CORELIB_REFL_DECL_METHOD(SetOpaqueOverride, new ToolFunctionAttribute("Set Opaque"));
+        void SetOpaqueOverride();
+
+        CORELIB_REFL_DECL_METHOD(SetTranslucentOverride, new ToolFunctionAttribute("Set Translucent"));
+        void SetTranslucentOverride();
 
         Action<> OnShaderChanged;
 
