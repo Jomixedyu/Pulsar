@@ -308,17 +308,11 @@ namespace pulsared
                     {
                         if (auto toolAttr = method->GetAttribute<pulsar::ToolFunctionAttribute>())
                         {
-                            ImGui::PushID(method->GetName().c_str());
                             ImGui::TableNextRow();
-                            ImGui::TableSetColumnIndex(0);
-                            ImGui::AlignTextToFramePadding();
-                            const char* label = toolAttr->GetLabel();
-                            if (label[0] != '\0')
-                            {
-                                ImGui::Text("%s", label);
-                            }
                             ImGui::TableSetColumnIndex(1);
-                            if (ImGui::Button(label[0] != '\0' ? label : method->GetName().c_str()))
+                            const char* label = toolAttr->GetLabel();
+                            const char* btnLabel = (label[0] != '\0') ? label : method->GetName().c_str();
+                            if (ImGui::Button(btnLabel))
                             {
                                 if (method->IsStatic())
                                 {
@@ -338,7 +332,6 @@ namespace pulsared
                                     }
                                 }
                             }
-                            ImGui::PopID();
                         }
                     }
                 }
