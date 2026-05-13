@@ -18,6 +18,7 @@ namespace pulsar
         List_sp<string> Paths;
 
         bool IsEmpty() const { return !Paths || Paths->empty(); }
+        bool ContainsField(const string& name) const;
         void AddField(const string& name);
 
         void ApplyTo(Object* source, Object* override, Object* target) const;

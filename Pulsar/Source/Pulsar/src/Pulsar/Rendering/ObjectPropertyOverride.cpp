@@ -2,6 +2,16 @@
 
 namespace pulsar
 {
+    bool ObjectPropertyOverride::ContainsField(const string& name) const
+    {
+        if (!Paths) return false;
+        for (const auto& path : *Paths)
+        {
+            if (path == name) return true;
+        }
+        return false;
+    }
+
     void ObjectPropertyOverride::AddField(const string& name)
     {
         if (!Paths) return;
