@@ -23,6 +23,15 @@ namespace pulsar
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::AbstractComponentAttribute, Attribute);
     };
+    class ComponentIconAttribute : public Attribute
+    {
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::ComponentIconAttribute, Attribute);
+    public:
+        explicit ComponentIconAttribute(const char* icon) : m_icon(icon) {}
+        const char* GetIcon() const { return m_icon; }
+    private:
+        const char* m_icon;
+    };
     class CategoryAttribute : public Attribute
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::CategoryAttribute, Attribute);

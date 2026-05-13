@@ -3,6 +3,7 @@
 #include "AssetManager.h"
 #include "Logger.h"
 #include "Scene.h"
+#include "Assets/StaticMesh.h"
 #include <Pulsar/AppInstance.h>
 #include <Pulsar/Application.h>
 #include <Pulsar/Node.h>
@@ -11,7 +12,10 @@
 namespace pulsar
 {
 
-    CameraComponent::CameraComponent() = default;
+    CameraComponent::CameraComponent()
+    {
+        m_canDrawGizmo = true;
+    }
     CameraComponent::~CameraComponent() = default;
 
 
@@ -42,6 +46,73 @@ namespace pulsar
             ResizeManagedRenderTexture(width, height);
         }
         UpdateCBuffer();
+    }
+
+    void CameraComponent::OnDrawGizmo(GizmoPainter* painter, bool selected)
+    {
+        base::OnDrawGizmo(painter, selected);
+
+        auto color = selected ? GizmoPainter::DefaultSelectedLineColor : GizmoPainter::DefaultLineColor;
+
+        Matrix4f invVP = GetInvViewProjectionMat();
+
+        Vector4f ndcNear[4] = {
+            {-1, -1, 0, 1}, {1, -1, 0, 1}, {1, 1, 0, 1}, {-1, 1, 0, 1}
+        };
+        Vector4f ndcFar[4] = {
+            {-1, -1, 1, 1}, {1, -1, 1, 1}, {1, 1, 1, 1}, {-1, 1, 1, 1}
+        };
+
+        Vector3f nearPts[4], farPts[4];
+        for (int i = 0; i < 4; ++i)
+        {
+            Vector4f v = invVP * ndcNear[i];
+            v /= v.w;
+            nearPts[i] = v.xyz();
+
+            Vector4f f = invVP * ndcFar[i];
+            f /= f.w;
+            farPts[i] = f.xyz();
+        }
+
+        Vector3f camPos = GetTransform()->GetWorldPosition();
+
+        auto drawLine = [&](const Vector3f& a, const Vector3f& b)
+        {
+            StaticMeshVertex va, vb;
+            va.Position = a; va.Color = color;
+            vb.Position = b; vb.Color = color;
+            painter->DrawLine(va, vb);
+        };
+
+        // Near plane
+        drawLine(nearPts[0], nearPts[1]);
+        drawLine(nearPts[1], nearPts[2]);
+        drawLine(nearPts[2], nearPts[3]);
+        drawLine(nearPts[3], nearPts[0]);
+
+        // Far plane
+        drawLine(farPts[0], farPts[1]);
+        drawLine(farPts[1], farPts[2]);
+        drawLine(farPts[2], farPts[3]);
+        drawLine(farPts[3], farPts[0]);
+
+        if (m_projectionMode == CaptureProjectionMode::Perspective)
+        {
+            // From camera position to far plane corners
+            drawLine(camPos, farPts[0]);
+            drawLine(camPos, farPts[1]);
+            drawLine(camPos, farPts[2]);
+            drawLine(camPos, farPts[3]);
+        }
+        else
+        {
+            // Orthographic: side edges
+            drawLine(nearPts[0], farPts[0]);
+            drawLine(nearPts[1], farPts[1]);
+            drawLine(nearPts[2], farPts[2]);
+            drawLine(nearPts[3], farPts[3]);
+        }
     }
 
     void CameraComponent::ResizeManagedRenderTexture(int width, int height)
@@ -151,9 +222,10 @@ namespace pulsar
             ResizeManagedRenderTexture(1, 1);
         }
 
-        GetNode()->GetRuntimeWorld()->GetCameraManager().AddCamera(self_ptr());
+        GetNode()->GetRuntimeWorld()->GetCameraManager().AddCamera(self_ptr(), true);
 
         BeginRT();
+        OnTransformChanged();
     }
 
     void CameraComponent::EndComponent()
@@ -164,12 +236,22 @@ namespace pulsar
         {
             DestroyObject(m_renderTarget);
         }
-        if (m_managedRT)
-        {
-
-        }
         m_camDescriptorLayout.reset();
         m_cameraDescriptorSet.reset();
         m_cameraDataBuffer.reset();
+    }
+
+    void CameraComponent::OnTransformChanged()
+    {
+        base::OnTransformChanged();
+    }
+
+    void CameraComponent::ResetToDefault()
+    {
+        m_fov = 60.f;
+        m_near = 0.1f;
+        m_far = 1000.f;
+        m_orthoSize = 1.f;
+        UpdateCBuffer();
     }
 } // namespace pulsar

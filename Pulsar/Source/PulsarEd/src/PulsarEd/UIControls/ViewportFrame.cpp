@@ -77,11 +77,14 @@ namespace pulsared
 
     void ViewportFrame::Render(float dt)
     {
-        PreviewFrame(m_world, true, &m_viewportSize, m_descriptorSet.get(), m_newWorld);
+        PreviewFrame(m_world, m_isPreviewCam, &m_viewportSize, m_descriptorSet.get(), m_newWorld);
         m_newWorld = false;
-        if (auto world = dynamic_cast<EditorWorld*>(m_world))
+        if (m_enableEdToolTick)
         {
-            $$(world->GetTool())->Tick(dt);
+            if (auto world = dynamic_cast<EditorWorld*>(m_world))
+            {
+                $$(world->GetTool())->Tick(dt);
+            }
         }
     }
 

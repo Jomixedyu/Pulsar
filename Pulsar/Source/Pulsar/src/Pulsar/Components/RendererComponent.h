@@ -1,5 +1,6 @@
 #pragma once
 #include "Component.h"
+#include <Pulsar/IconsForkAwesome.h>
 #include <Pulsar/Rendering/RenderObject.h>
 
 namespace pulsar
@@ -17,7 +18,7 @@ namespace pulsar
     class RendererComponent : public Component, public IRendererComponent
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::RendererComponent, Component);
-        CORELIB_CLASS_ATTR(new AbstractComponentAttribute);
+        CORELIB_CLASS_ATTR(new AbstractComponentAttribute, new ComponentIconAttribute(ICON_FK_CUBE));
         CORELIB_IMPL_INTERFACES(IRendererComponent);
     public:
         RendererComponent() : CORELIB_INIT_INTERFACE(IRendererComponent) {}

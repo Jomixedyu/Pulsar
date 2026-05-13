@@ -1,6 +1,7 @@
 #include "PropertyControls/PropertyControl.h"
 #include <Pulsar/SceneObject.h>
 #include <Pulsar/Assets/NodeCollection.h>
+#include <Pulsar/Meta/ToolFunctionAttribute.h>
 #include <PulsarEd/AssetDatabase.h>
 #include <PulsarEd/EditorUI.h>
 #include <imgui/imgui.h>
@@ -300,6 +301,39 @@ namespace pulsared
                         }
 
                         ImGui::PopID();
+                    }
+
+                    // Draw tool function buttons
+                    for (auto* method : innerType->GetMethodInfos())
+                    {
+                        if (auto toolAttr = method->GetAttribute<pulsar::ToolFunctionAttribute>())
+                        {
+                            ImGui::TableNextRow();
+                            ImGui::TableSetColumnIndex(1);
+                            const char* label = toolAttr->GetLabel();
+                            const char* btnLabel = (label[0] != '\0') ? label : method->GetName().c_str();
+                            float btnWidth = ImGui::GetContentRegionAvail().x;
+                            if (ImGui::Button(btnLabel, ImVec2(btnWidth, 0.0f)))
+                            {
+                                if (method->IsStatic())
+                                {
+                                    method->Invoke(nullptr, {});
+                                }
+                                else
+                                {
+                                    Object* target = obj;
+                                    if (type->IsSubclassOf(cltypeof<PointerBoxingObject>()))
+                                    {
+                                        auto pointer = dynamic_cast<PointerBoxingObject*>(obj);
+                                        target = pointer->GetPointer();
+                                    }
+                                    if (target)
+                                    {
+                                        method->Invoke(target->shared_from_this(), {});
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
                 if (opened && !ignore)

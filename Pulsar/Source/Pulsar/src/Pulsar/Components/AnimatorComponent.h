@@ -1,4 +1,5 @@
 #pragma once
+#include <Pulsar/IconsForkAwesome.h>
 #include "Component.h"
 #include "../Assets/AnimatorController.h"
 
@@ -9,7 +10,7 @@ namespace pulsar
     class AnimatorComponent : public Component
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::AnimatorComponent, Component);
-        CORELIB_CLASS_ATTR(new CategoryAttribute("Animation"));
+        CORELIB_CLASS_ATTR(new CategoryAttribute("Animation"), new ComponentIconAttribute(ICON_FK_FILM));
     public:
         AnimatorComponent();
 

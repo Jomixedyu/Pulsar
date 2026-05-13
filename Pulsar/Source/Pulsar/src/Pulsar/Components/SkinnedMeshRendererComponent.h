@@ -12,7 +12,7 @@ namespace pulsar
     class SkinnedMeshRendererComponent : public RendererComponent
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::SkinnedMeshRendererComponent, RendererComponent);
-        CORELIB_CLASS_ATTR(new CategoryAttribute("Renderer"));
+        CORELIB_CLASS_ATTR(new CategoryAttribute("Renderer"), new ComponentIconAttribute(ICON_FK_CUBES));
     public:
         SkinnedMeshRendererComponent();
 

@@ -82,8 +82,7 @@ namespace gfx
         class GFXVulkanDescriptorManager* GetVulkanDescriptorManager() const { return m_descriptorManager; }
         virtual GFXExtensions GetExtensionNames() override;
         virtual intptr_t GetWindowHandle() override;
-
-        GFXSurface* GetWindow() const { return m_window; }
+        virtual GFXSurface* GetWindow() override { return m_window; }
     public:
         const VkDevice& GetVkDevice() const { return m_device; }
         const VkPhysicalDevice& GetVkPhysicalDevice() const { return m_physicalDevice; }

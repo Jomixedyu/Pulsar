@@ -6,7 +6,7 @@ namespace pulsar
     void CameraManager::AddCamera(const ObjectPtr<CameraComponent>& camera, bool isMainCamera)
     {
         m_cameras.push_back(camera);
-        if (isMainCamera || m_cameras.size() == 1)
+        if (isMainCamera && !m_mainCamera && !camera->HasObjectFlags(OF_Preview))
         {
             SetMainCamera(camera);
         }
@@ -22,6 +22,14 @@ namespace pulsar
         if (camera == m_mainCamera)
         {
             SetMainCamera(nullptr);
+            for (auto& cam : m_cameras)
+            {
+                if (!cam->HasObjectFlags(OF_Preview))
+                {
+                    SetMainCamera(cam);
+                    break;
+                }
+            }
         }
     }
     void CameraManager::SetMainCamera(const ObjectPtr<CameraComponent>& camera)

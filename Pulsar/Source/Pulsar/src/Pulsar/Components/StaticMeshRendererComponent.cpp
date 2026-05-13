@@ -104,20 +104,6 @@ namespace pulsar
                 continue;
             }
 
-            // Fill Queue and CullMode from shader config Pass[0]
-            if (batch.Material->GetShader() &&
-                batch.Material->GetShader()->GetConfig() &&
-                batch.Material->GetShader()->GetConfig()->Passes &&
-                batch.Material->GetShader()->GetConfig()->Passes->size() > 0)
-            {
-                auto& pass0 = (*batch.Material->GetShader()->GetConfig()->Passes)[0];
-                batch.Queue = pass0->Queue;
-                if (pass0->GraphicsPipeline)
-                {
-                    batch.CullMode = pass0->GraphicsPipeline->CullMode;
-                }
-            }
-
             batch.Interface = GetInterface();
             batch.DescriptorSetLayout = m_meshDescriptorSetLayout;
 

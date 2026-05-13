@@ -68,7 +68,7 @@ namespace pulsared
 
     CameraComponent_ref EditorWorld::GetCurrentCamera()
     {
-        return base::GetCurrentCamera();
+        return m_cam;
     }
 
     void EditorWorld::OnWorldBegin()
@@ -91,7 +91,7 @@ namespace pulsared
         camNode->GetTransform()->Translate({0, 0, -1});
         this->m_camNode = camNode;
 
-        m_cam = camNode->AddComponent<CameraComponent>();
+        m_cam = camNode->AddComponent<CameraComponent>(OF_Preview);
         auto ctrl = camNode->AddComponent<StdEditCameraControllerComponent>();
         ctrl->m_targetTransform = camCtrlNode->GetTransform();
 

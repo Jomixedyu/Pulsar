@@ -1,6 +1,8 @@
 #pragma once
+#include <Pulsar/IconsForkAwesome.h>
 #include "SceneCaptureComponent.h"
 #include <CoreLib/Attribute.h>
+#include <Pulsar/Assets/Texture2D.h>
 
 namespace pulsar
 {
@@ -8,9 +10,11 @@ namespace pulsar
     class SceneCapture2DComponent : public SceneCaptureComponent
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::SceneCapture2DComponent, SceneCaptureComponent);
-        CORELIB_CLASS_ATTR(new CategoryAttribute("Capture"));
+        CORELIB_CLASS_ATTR(new CategoryAttribute("Capture"), new ComponentIconAttribute(ICON_FK_TELEVISION));
     public:
         SceneCapture2DComponent();
+
+        void OnDrawGizmo(GizmoPainter* painter, bool selected) override;
 
         void BeginComponent() override;
         void EndComponent() override;
@@ -33,10 +37,13 @@ namespace pulsar
         float GetOrthoSize() const { return m_orthoSize; }
         void SetOrthoSize(float value);
 
+        const RCPtr<RenderTexture>& GetRenderTexture() const { return m_renderTarget; }
+
         uint32_t GetMSAASamples() const { return m_msaaSamples; }
         void SetMSAASamples(uint32_t value) { m_msaaSamples = value; }
 
         void OnTransformChanged() override;
+
 
     protected:
         void UpdateRTBackgroundColor();
@@ -81,6 +88,7 @@ namespace pulsar
         #endif
 
     protected:
+        RCPtr<class Texture2D> m_gizmoTexture;
 
         PerCaptureShaderParameter m_targetBuffer{};
         // Task 7.5: m_sceneColor removed (was unused)

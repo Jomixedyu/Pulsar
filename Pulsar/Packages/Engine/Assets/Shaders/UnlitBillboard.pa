@@ -1,0 +1,39 @@
+{
+    "$schema": "SbfSchema.json",
+    "Interfaces": [
+        "RENDERER_STATICMESH"
+    ],
+    "Passes": [
+        {
+            "Name": "Forward",
+            "Entry": {
+                "Vertex": "VSMain",
+                "Fragment": "PSMain"
+            },
+            "Features": [],
+            "GraphicsPipeline": {
+                "CullMode": "None",
+                "ZWriteEnabled": false,
+                "ZTestOp": "Always",
+                "Blend_Enabled": true,
+                "Blend_Src": "SrcAlpha",
+                "Blend_Dst": "OneMinusSrcAlpha"
+            }
+        }
+    ],
+    "Properties": [
+        {
+            "Label": "Tint",
+            "Name": "_TintColor",
+            "Type": "Float4",
+            "DefaultValue": "1,1,1,1",
+            "Style": "Color"
+        },
+        {
+            "Label": "Base Color Map",
+            "Name": "_BaseColorMap",
+            "Type": "Texture2D",
+            "DefaultValue": "T2D_WHITE"
+        }
+    ]
+}

@@ -27,7 +27,7 @@ namespace pulsar
         m_settings = stack.GetComponent<TonemappingSettings>();
     }
 
-    void TonemapPass::PrepareMaterial(CameraComponent* cam)
+    void TonemapPass::PrepareMaterial(SceneCapture2DComponent* capture2D)
     {
         EnsureMaterial();
         if (m_material && m_settings)

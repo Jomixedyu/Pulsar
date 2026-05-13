@@ -129,10 +129,16 @@ namespace pulsared
             bool opened = true;
             const bool dontDestroy = comp->GetType()->IsSubclassOf(cltypeof<TransformComponent>());
             string componentFriendlyName = ComponentInfoManager::GetFriendlyComponentName(comp->GetType());
+            const char* icon = ICON_FK_COG;
+            if (auto attr = comp->GetType()->GetAttribute<pulsar::ComponentIconAttribute>())
+            {
+                icon = attr->GetIcon();
+            }
+            string componentLabel = string(icon) + " " + componentFriendlyName;
 
             ImGui::PushID(comp.GetPtr());
             if (ImGui::CollapsingHeader(
-                componentFriendlyName.c_str(),
+                componentLabel.c_str(),
                 dontDestroy ? nullptr : &opened,
                 ImGuiTreeNodeFlags_DefaultOpen))
             {

@@ -57,6 +57,7 @@ namespace gfx
         virtual GFXTextureFormat GetFormat() const = 0;
         virtual GFXTexture2DView_sp Get2DView(size_t index = 0) = 0;
         virtual uint32_t GetSampleCount() const { return 1; }
+        virtual const GFXSamplerConfig& GetSamplerConfig() const { return m_samplerConfig; }
 
     public:
         std::array<float, 4> TargetClearColor;

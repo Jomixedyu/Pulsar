@@ -1,4 +1,5 @@
 #pragma once
+#include <Pulsar/IconsForkAwesome.h>
 #include "Assets/RenderTextureCube.h"
 #include "SceneCaptureComponent.h"
 
@@ -7,7 +8,7 @@ namespace pulsar
     class TextureCubeCaptureComponent : public SceneCaptureComponent
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::TextureCubeCaptureComponent, SceneCaptureComponent);
-        CORELIB_CLASS_ATTR(new CategoryAttribute("Capture"));
+        CORELIB_CLASS_ATTR(new CategoryAttribute("Capture"), new ComponentIconAttribute(ICON_FK_TELEVISION));
     public:
 
         void BeginComponent() override;

@@ -3,6 +3,7 @@
 #include <Pulsar/Scene.h>
 #include <Pulsar/World.h>
 #include <Pulsar/Prefab.h>
+#include <Pulsar/Components/CameraComponent.h>
 #include <PulsarEd/EditorNode.h>
 #include <PulsarEd/Editors/CommonPanel/OutlinerWindow.h>
 #include <PulsarEd/DragInfo.h>
@@ -10,6 +11,18 @@
 
 namespace pulsared
 {
+    static const char* _GetNodeIcon(pulsar::Node* node)
+    {
+        for (auto& comp : node->GetAllComponentArray())
+        {
+            if (auto attr = comp->GetType()->GetAttribute<pulsar::ComponentIconAttribute>())
+            {
+                return attr->GetIcon();
+            }
+        }
+        return ICON_FK_CIRCLE_O;
+    }
+
     static void _Show(EditorWorld* world, List_sp<ObjectPtr<Node>> nodes)
     {
         for (auto& node : *nodes)
@@ -32,6 +45,7 @@ namespace pulsared
             }
             bool is_editor_node = false;
             bool is_prefab_node = node->IsTemplateInstance();
+            bool is_inactive = !node->GetIsActive();
 
             if (node->HasObjectFlags(OF_NoPack))
             {
@@ -42,7 +56,11 @@ namespace pulsared
             {
                 ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Text, ImVec4(0.4f, 0.7f, 1.0f, 1.f));
             }
-            string name = node->GetName();
+            else if (is_inactive)
+            {
+                ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Text, ImVec4(0.5f, 0.5f, 0.5f, 1.f));
+            }
+            string name = string(_GetNodeIcon(node.GetPtr())) + " " + node->GetName();
             if (is_editor_node)
                 name.append(" (EditorOnly)");
 
@@ -79,13 +97,13 @@ namespace pulsared
                 ImGui::TreePop();
             }
             ImGui::PopID();
-            if (is_editor_node || is_prefab_node)
+            if (is_editor_node || is_prefab_node || is_inactive)
             {
                 ImGui::PopStyleColor();
             }
         }
     }
-    // 处理从 WorkspaceWindow 拖来的 Prefab，放入指定 scene
+    // 处理 WorkspaceWindow 拖来的 Prefab，放入指定 scene
     static void _HandlePrefabDrop(pulsar::NodeCollection* scene)
     {
         const ImGuiPayload* peekPayload = ImGui::GetDragDropPayload();
@@ -119,14 +137,14 @@ namespace pulsared
             return;
         }
 
-        ImGuiTreeNodeFlags base_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_DefaultOpen;
+        ImGuiTreeNodeFlags base_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed;
 
         for (int i = 0; i < world->GetSceneCount(); i++)
         {
             auto currentScene = world->GetScene(i);
             bool isFocus = (currentScene == world->GetFocusScene());
 
-            string label = currentScene->GetName();
+            string label = string(ICON_FK_MAP) + " " + currentScene->GetName();
             if (auto asset = cast<AssetObject>(currentScene))
             {
                 if (AssetDatabase::IsDirty(asset))
@@ -138,7 +156,7 @@ namespace pulsared
             {
                 label += "  (Focus Scene)";
             }
-            ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4{0,0,0,1});
+            ImGui::PushStyleColor(ImGuiCol_Header, ImVec4{0.08f, 0.08f, 0.10f, 1.0f});
             bool opened = ImGui::TreeNodeEx(label.c_str(), base_flags);
             ImGui::PopStyleColor();
 

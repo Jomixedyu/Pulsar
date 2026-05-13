@@ -16,6 +16,12 @@
 namespace pulsar
 {
 
+    Material::Material()
+    {
+        init_sptr_member(m_graphicsPipelineOverride);
+        init_sptr_member(m_graphicsPipelineOverrideFields);
+    }
+
     RCPtr<Material> Material::StaticCreate(const RCPtr<Shader>& shader, string_view name)
     {
         auto material = NewAssetObject<Material>();
@@ -144,6 +150,30 @@ namespace pulsar
                 parametersArray->Push(parameter);
             }
             s->Object->Add("Parameters", parametersArray);
+
+            // 序列化 Queue
+            const auto queueObject = s->Object->New(ser::VarientType::String);
+            queueObject->Assign(mkbox(m_queue)->GetName());
+            s->Object->Add("Queue", queueObject);
+
+            // 序列化 GraphicsPipelineOverride（只写被标记的字段）
+            if (m_graphicsPipelineOverride && m_graphicsPipelineOverrideFields && !m_graphicsPipelineOverrideFields->IsEmpty())
+            {
+                const auto overrideObj = s->Object->New(ser::VarientType::Object);
+                for (const auto& path : *m_graphicsPipelineOverrideFields->Paths)
+                {
+                    auto fieldName = path;
+                    if (auto field = m_graphicsPipelineOverride->GetType()->GetFieldInfo(fieldName))
+                    {
+                        auto value = field->GetValue(m_graphicsPipelineOverride.get());
+                        auto json = ser::JsonSerializer::Serialize(value.get(), {});
+                        auto valueObj = overrideObj->New(ser::VarientType::Object);
+                        valueObj->AssignParse(json);
+                        overrideObj->Add(fieldName, valueObj);
+                    }
+                }
+                s->Object->Add("GraphicsPipelineOverride", overrideObj);
+            }
         }
         else // read
         {
@@ -191,6 +221,37 @@ namespace pulsar
                     }
                     default:
                         break;
+                    }
+                }
+            }
+
+            // 读取 Queue
+            if (auto queueObj = s->Object->At("Queue"))
+            {
+                uint32_t queueNum{};
+                if (Enum::StaticTryParse(cltypeof<BoxingShaderPassRenderQueueType>(), queueObj->AsString(), &queueNum))
+                {
+                    m_queue = static_cast<ShaderPassRenderQueueType>(queueNum);
+                }
+            }
+
+            // 读取 GraphicsPipelineOverride
+            if (auto overrideObj = s->Object->At("GraphicsPipelineOverride"))
+            {
+                m_graphicsPipelineOverride = mksptr(new ShaderConfigGraphicsPipeline());
+                m_graphicsPipelineOverrideFields = mksptr(new ObjectPropertyOverride());
+
+                for (const auto& key : overrideObj->GetKeys())
+                {
+                    if (auto field = m_graphicsPipelineOverride->GetType()->GetFieldInfo(key))
+                    {
+                        auto valueObj = overrideObj->At(key);
+                        auto value = ser::JsonSerializer::Deserialize(valueObj->ToString(), field->GetFieldType());
+                        if (value)
+                        {
+                            field->SetValue(m_graphicsPipelineOverride.get(), value);
+                            m_graphicsPipelineOverrideFields->Paths->push_back(key);
+                        }
                     }
                 }
             }
@@ -517,6 +578,10 @@ namespace pulsar
         {
             SetShader(m_shader);
         }
+        else if (name == NAMEOF(m_graphicsPipelineOverride) || name == NAMEOF(m_graphicsPipelineOverrideFields))
+        {
+            m_cachedEffectiveGraphicsPipeline.clear();
+        }
     }
 
     RCPtr<Shader> Material::GetShader() const
@@ -580,6 +645,7 @@ namespace pulsar
     void Material::SetShader(RCPtr<Shader> value)
     {
         m_shader = std::move(value);
+        m_cachedEffectiveGraphicsPipeline.clear();
 
         RuntimeObjectManager::RebuildMessageBox(this);
 
@@ -602,6 +668,38 @@ namespace pulsar
         m_activeFeatures = std::move(features);
         ClearPassBindings();
     }
+
+    SPtr<ShaderConfigGraphicsPipeline> Material::GetEffectiveGraphicsPipeline(const std::string& passName) const
+    {
+        auto it = m_cachedEffectiveGraphicsPipeline.find(passName);
+        if (it != m_cachedEffectiveGraphicsPipeline.end())
+            return it->second;
+
+        SPtr<ShaderConfigGraphicsPipeline> base;
+        if (m_shader && m_shader->GetConfig() && m_shader->GetConfig()->Passes)
+        {
+            for (const auto& pass : *m_shader->GetConfig()->Passes)
+            {
+                if (pass->Name == passName && pass->GraphicsPipeline)
+                {
+                    base = pass->GraphicsPipeline;
+                    break;
+                }
+            }
+        }
+
+        if (m_graphicsPipelineOverride && m_graphicsPipelineOverrideFields && !m_graphicsPipelineOverrideFields->IsEmpty())
+        {
+            auto result = mksptr(new ShaderConfigGraphicsPipeline());
+            m_graphicsPipelineOverrideFields->ApplyTo(base.get(), m_graphicsPipelineOverride.get(), result.get());
+            m_cachedEffectiveGraphicsPipeline[passName] = result;
+            return result;
+        }
+
+        m_cachedEffectiveGraphicsPipeline[passName] = base;
+        return base;
+    }
+
     void Material::OnCollectAssetDependencies(array_list<guid_t>& deps)
     {
         base::OnCollectAssetDependencies(deps);
@@ -619,6 +717,103 @@ namespace pulsar
                 }
             }
         }
+    }
+
+    void Material::SetOpaqueOverride()
+    {
+        if (!m_graphicsPipelineOverride)
+            init_sptr_member(m_graphicsPipelineOverride);
+        if (!m_graphicsPipelineOverrideFields)
+            init_sptr_member(m_graphicsPipelineOverrideFields);
+
+        m_graphicsPipelineOverride->Blend_Enabled = false;
+        m_graphicsPipelineOverride->Blend_Src     = BlendFactor::One;
+        m_graphicsPipelineOverride->Blend_Dst     = BlendFactor::Zero;
+        m_graphicsPipelineOverride->ZWriteEnabled = true;
+
+        m_graphicsPipelineOverrideFields->AddField("Blend_Enabled");
+        m_graphicsPipelineOverrideFields->AddField("Blend_Src");
+        m_graphicsPipelineOverrideFields->AddField("Blend_Dst");
+        m_graphicsPipelineOverrideFields->AddField("ZWriteEnabled");
+
+        m_cachedEffectiveGraphicsPipeline.clear();
+    }
+
+    void Material::SetTranslucentOverride()
+    {
+        if (!m_graphicsPipelineOverride)
+            init_sptr_member(m_graphicsPipelineOverride);
+        if (!m_graphicsPipelineOverrideFields)
+            init_sptr_member(m_graphicsPipelineOverrideFields);
+
+        m_graphicsPipelineOverride->Blend_Enabled = true;
+        m_graphicsPipelineOverride->Blend_Src     = BlendFactor::SrcAlpha;
+        m_graphicsPipelineOverride->Blend_Dst     = BlendFactor::OneMinusSrcAlpha;
+        m_graphicsPipelineOverride->ZWriteEnabled = false;
+
+        m_graphicsPipelineOverrideFields->AddField("Blend_Enabled");
+        m_graphicsPipelineOverrideFields->AddField("Blend_Src");
+        m_graphicsPipelineOverrideFields->AddField("Blend_Dst");
+        m_graphicsPipelineOverrideFields->AddField("ZWriteEnabled");
+
+        m_cachedEffectiveGraphicsPipeline.clear();
+    }
+
+    void Material::RestorePipelineDefaults()
+    {
+        SPtr<ShaderConfigGraphicsPipeline> shaderPipeline;
+        if (m_shader && m_shader->GetConfig() && m_shader->GetConfig()->Passes && !m_shader->GetConfig()->Passes->empty())
+        {
+            if (auto pass0 = m_shader->GetConfig()->Passes->at(0))
+                shaderPipeline = pass0->GraphicsPipeline;
+        }
+        if (!shaderPipeline)
+            shaderPipeline = mksptr(new ShaderConfigGraphicsPipeline());
+
+        if (!m_graphicsPipelineOverride)
+            init_sptr_member(m_graphicsPipelineOverride);
+        if (!m_graphicsPipelineOverrideFields)
+            init_sptr_member(m_graphicsPipelineOverrideFields);
+
+        auto type = cltypeof<ShaderConfigGraphicsPipeline>();
+        for (auto fieldInfo : type->GetFieldInfos())
+        {
+            auto value = fieldInfo->GetValue(shaderPipeline.get());
+            fieldInfo->SetValue(m_graphicsPipelineOverride.get(), value);
+        }
+        m_graphicsPipelineOverrideFields->Paths->clear();
+
+        m_cachedEffectiveGraphicsPipeline.clear();
+    }
+
+    void Material::RebuildOverrideFields()
+    {
+        if (!m_graphicsPipelineOverride || !m_graphicsPipelineOverrideFields)
+            return;
+
+        SPtr<ShaderConfigGraphicsPipeline> shaderPipeline;
+        if (m_shader && m_shader->GetConfig() && m_shader->GetConfig()->Passes && !m_shader->GetConfig()->Passes->empty())
+        {
+            if (auto pass0 = m_shader->GetConfig()->Passes->at(0))
+                shaderPipeline = pass0->GraphicsPipeline;
+        }
+        if (!shaderPipeline)
+            shaderPipeline = mksptr(new ShaderConfigGraphicsPipeline());
+
+        m_graphicsPipelineOverrideFields->Paths->clear();
+
+        auto type = cltypeof<ShaderConfigGraphicsPipeline>();
+        for (auto fieldInfo : type->GetFieldInfos())
+        {
+            auto overrideValue = fieldInfo->GetValue(m_graphicsPipelineOverride.get());
+            auto shaderValue   = fieldInfo->GetValue(shaderPipeline.get());
+            if (overrideValue->ToString() != shaderValue->ToString())
+            {
+                m_graphicsPipelineOverrideFields->AddField(fieldInfo->GetName());
+            }
+        }
+
+        m_cachedEffectiveGraphicsPipeline.clear();
     }
 
 } // namespace pulsar

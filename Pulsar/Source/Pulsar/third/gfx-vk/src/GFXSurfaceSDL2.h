@@ -20,6 +20,8 @@ namespace gfx
         bool WantToClose() override;
         void PollEvent() override;
         void EnumEvents(void(* func)(void*)) override;
+        void GetWindowSize(int* width, int* height) const override;
+        void SetWindowSize(int width, int height) override;
 
         SDL_Window* m_window = nullptr;
         bool m_wantToClose = false;

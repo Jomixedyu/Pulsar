@@ -29,11 +29,24 @@ namespace pulsar
     RCPtr<RenderTexture> TransientRTPool::Acquire(const RGTextureDesc& desc)
     {
         auto& bucket = m_free[desc];
-        if (!bucket.empty())
+        while (!bucket.empty())
         {
             auto entry = std::move(bucket.back());
             bucket.pop_back();
-            return entry.rt;
+
+            bool valid = false;
+            if (entry.rt && !entry.rt->GetRenderTargets().empty())
+            {
+                auto& gfxTex = entry.rt->GetRenderTargets()[0];
+                if (gfxTex && gfxTex->GetSamplerConfig().Filter == gfx::GFXSamplerFilter::Linear)
+                    valid = true;
+            }
+
+            if (valid)
+                return entry.rt;
+
+            if (entry.rt)
+                DestroyObject(entry.rt);
         }
 
         static uint32_t s_counter = 0;

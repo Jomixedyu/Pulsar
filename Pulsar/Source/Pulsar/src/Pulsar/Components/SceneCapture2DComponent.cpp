@@ -2,6 +2,8 @@
 
 #include "Application.h"
 #include "Node.h"
+#include "AssetManager.h"
+#include "Assets/StaticMesh.h"
 
 namespace pulsar
 {
@@ -9,6 +11,13 @@ namespace pulsar
         : m_debugViewMat({})
     {
         m_renderingPath = RenderingPathMode::Deferred;
+        m_projectionMode = CaptureProjectionMode::Perspective;
+        m_fov = 60.0f;
+        m_near = 0.3f;
+        m_far = 1000.0f;
+        m_backgroundColor = Color4f{0.1f, 0.1f, 0.1f, 1.0f};
+        m_canDrawGizmo = true;
+        m_gizmoTexture = AssetManager::Get()->LoadAsset<Texture2D>("Editor/Gizmos/cinema");
     }
 
     static gfx::GFXDescriptorSetLayout_wp _CameraDescriptorLayout;
@@ -120,6 +129,12 @@ namespace pulsar
     {
         base::OnTransformChanged();
         UpdateCBuffer();
+    }
+
+    void SceneCapture2DComponent::OnDrawGizmo(GizmoPainter* painter, bool selected)
+    {
+        auto pos = GetNode()->GetTransform()->GetWorldPosition();
+        painter->DrawTexture(pos, 0.5f, m_gizmoTexture);
     }
 
 

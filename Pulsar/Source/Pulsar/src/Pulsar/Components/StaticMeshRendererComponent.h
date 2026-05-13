@@ -1,4 +1,5 @@
 #pragma once
+#include <Pulsar/IconsForkAwesome.h>
 
 #include "Pulsar/Application.h"
 
@@ -21,7 +22,7 @@ namespace pulsar
     class StaticMeshRendererComponent : public RendererComponent
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::StaticMeshRendererComponent, RendererComponent);
-        CORELIB_CLASS_ATTR(new CategoryAttribute("Renderer"));
+        CORELIB_CLASS_ATTR(new CategoryAttribute("Renderer"), new ComponentIconAttribute(ICON_FK_CUBE));
         DECL_OBJECTPTR_SELF
     public:
         SPtr<rendering::RenderObject> CreateRenderObject() override;

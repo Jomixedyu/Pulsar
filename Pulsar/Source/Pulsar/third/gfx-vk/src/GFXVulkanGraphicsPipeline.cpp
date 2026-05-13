@@ -39,32 +39,42 @@ namespace gfx
         {
         case GFXCompareMode::Never:
             return VK_COMPARE_OP_NEVER;
-            break;
         case GFXCompareMode::Less:
             return VK_COMPARE_OP_LESS;
-            break;
         case GFXCompareMode::Equal:
             return VK_COMPARE_OP_EQUAL;
-            break;
         case GFXCompareMode::LessOrEqual:
             return VK_COMPARE_OP_LESS_OR_EQUAL;
-            break;
         case GFXCompareMode::Greater:
             return VK_COMPARE_OP_GREATER;
-            break;
         case GFXCompareMode::NotEqual:
             return VK_COMPARE_OP_NOT_EQUAL;
-            break;
         case GFXCompareMode::GreaterOrEqual:
             return VK_COMPARE_OP_GREATER_OR_EQUAL;
-            break;
         case GFXCompareMode::Always:
             return VK_COMPARE_OP_ALWAYS;
-            break;
         default:
             assert(false);
         }
         return {};
+    }
+
+    static VkBlendFactor _GetVkBlendFactor(GFXBlendFactor factor)
+    {
+        switch (factor)
+        {
+        case GFXBlendFactor::One:                return VK_BLEND_FACTOR_ONE;
+        case GFXBlendFactor::Zero:               return VK_BLEND_FACTOR_ZERO;
+        case GFXBlendFactor::SrcColor:           return VK_BLEND_FACTOR_SRC_COLOR;
+        case GFXBlendFactor::SrcAlpha:           return VK_BLEND_FACTOR_SRC_ALPHA;
+        case GFXBlendFactor::DstColor:           return VK_BLEND_FACTOR_DST_COLOR;
+        case GFXBlendFactor::DstAlpha:           return VK_BLEND_FACTOR_DST_ALPHA;
+        case GFXBlendFactor::OneMinusSrcColor:   return VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
+        case GFXBlendFactor::OneMinusSrcAlpha:   return VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+        case GFXBlendFactor::OneMinusDstColor:   return VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
+        case GFXBlendFactor::OneMinusDstAlpha:   return VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
+        default: assert(false); return VK_BLEND_FACTOR_ONE;
+        }
     }
 
     GFXVulkanGraphicsPipeline::GFXVulkanGraphicsPipeline(
@@ -139,7 +149,13 @@ namespace gfx
         {
             auto& attachment = colorBlendAttachments.emplace_back();
             attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-            attachment.blendEnable = VK_FALSE;
+            attachment.blendEnable = stateParams.BlendEnable ? VK_TRUE : VK_FALSE;
+            attachment.srcColorBlendFactor = _GetVkBlendFactor(stateParams.BlendSrcColor);
+            attachment.dstColorBlendFactor = _GetVkBlendFactor(stateParams.BlendDstColor);
+            attachment.colorBlendOp = VK_BLEND_OP_ADD;
+            attachment.srcAlphaBlendFactor = _GetVkBlendFactor(stateParams.BlendSrcAlpha);
+            attachment.dstAlphaBlendFactor = _GetVkBlendFactor(stateParams.BlendDstAlpha);
+            attachment.alphaBlendOp = VK_BLEND_OP_ADD;
         }
 
         VkPipelineColorBlendStateCreateInfo colorBlending{};

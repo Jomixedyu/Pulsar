@@ -19,7 +19,7 @@ namespace pulsar
         RGTextureHandle AddToGraph(RenderGraph& graph,
                                    RGTextureHandle input,
                                    RGTextureHandle output,
-                                   CameraComponent* cam,
+                                   SceneCapture2DComponent* capture2D,
                                    PerPassResources* perPass) override;
 
     private:

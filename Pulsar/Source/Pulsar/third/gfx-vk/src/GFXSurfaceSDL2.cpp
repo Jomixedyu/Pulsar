@@ -83,5 +83,13 @@ namespace gfx
             func(&m_events[i]);
         }
     }
+    void GFXSurfaceSDL2::GetWindowSize(int* width, int* height) const
+    {
+        SDL_GetWindowSize(m_window, width, height);
+    }
+    void GFXSurfaceSDL2::SetWindowSize(int width, int height)
+    {
+        SDL_SetWindowSize(m_window, width, height);
+    }
 
 } // namespace gfx

@@ -1,4 +1,5 @@
 #pragma once
+#include <Pulsar/IconsForkAwesome.h>
 #include "LightComponent.h"
 #include "Pulsar/Rendering/RenderObject.h"
 
@@ -7,7 +8,7 @@ namespace pulsar
     class PointLightComponent : public LightComponent
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::PointLightComponent, LightComponent);
-        CORELIB_CLASS_ATTR(new CategoryAttribute("Light"));
+        CORELIB_CLASS_ATTR(new CategoryAttribute("Light"), new ComponentIconAttribute(ICON_FK_LIGHTBULB_O));
     public:
         void BeginComponent() override;
         void EndComponent() override;

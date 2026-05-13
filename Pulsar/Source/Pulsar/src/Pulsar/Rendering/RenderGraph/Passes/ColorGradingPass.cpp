@@ -32,7 +32,7 @@ namespace pulsar
         return m_settings != nullptr && m_settings->m_enabled && m_settings->m_lutTexture != nullptr;
     }
 
-    void ColorGradingPass::PrepareMaterial(CameraComponent* cam)
+    void ColorGradingPass::PrepareMaterial(SceneCapture2DComponent* capture2D)
     {
         EnsureMaterial();
         if (!m_material || !m_settings)

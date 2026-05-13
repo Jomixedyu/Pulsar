@@ -113,26 +113,12 @@ namespace pulsared
                 ImGui::EndCombo();
             }
 
-            const char* editMode[] = {"SceneEditor"};
-            ImGui::Text("Edit Mode");
-            ImGui::SetNextItemWidth(150);
-            if (ImGui::BeginCombo("##Edit Mode", editMode[this->m_editModeIndex]))
-            {
-                for (size_t i = 0; i < sizeof(editMode) / sizeof(const char*); i++)
-                {
-                    bool selected = this->m_editModeIndex == i;
-                    if (ImGui::Selectable(editMode[i], selected))
-                    {
-                        this->m_editModeIndex = static_cast<int>(i);
-                        this->m_editModeIndex = 0;
-                    }
-                }
-                ImGui::EndCombo();
-            }
-
             if (ImGui::Button(ICON_FK_ARROWS " Gizmos###Gizmos"))
             {
-                world->GetGizmosManager().SetEnabled(!world->GetGizmosManager().GetEnabled());
+                if (auto cam = world->GetCurrentCamera())
+                {
+                    cam->SetGizmoPassEnabled(!cam->IsGizmoPassEnabled());
+                }
             }
 
             if (ImGui::Button(ICON_FK_CUBE " 2D###2D"))

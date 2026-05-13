@@ -6,7 +6,6 @@
     "Passes": [
         {
             "Name": "Forward",
-            "Queue": "Opaque",
             "Entry": {
                 "Vertex": "VSMain",
                 "Fragment": "PSMain"

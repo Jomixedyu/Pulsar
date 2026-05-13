@@ -2,6 +2,8 @@
 #include "ScriptableCaptureRenderer.h"
 #include "Passes/OpaquePass.h"
 #include "Passes/TranslucencyPass.h"
+#include "Passes/OutlinePass.h"
+#include "Passes/BloomPass.h"
 #include "Passes/RenderFeature.h"
 #include "Passes/GizmoOverlayPass.h"
 #include "../PerPassResources.h"
@@ -23,6 +25,7 @@ namespace pulsar
     private:
         PerPassResources m_perPassResources;
         OpaquePass m_opaquePass;
+        OutlinePass m_outlinePass;
         TranslucencyPass m_translucencyPass;
         std::vector<std::unique_ptr<RenderFeature>> m_postProcessFeatures;
         GizmoOverlayPass m_gizmoOverlayPass;

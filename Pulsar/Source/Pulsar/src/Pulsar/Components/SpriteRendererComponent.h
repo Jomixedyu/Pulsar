@@ -1,4 +1,5 @@
 #pragma once
+#include <Pulsar/IconsForkAwesome.h>
 #include "Assets/SpriteAtlas.h"
 #include "RendererComponent.h"
 
@@ -7,7 +8,7 @@ namespace pulsar
     class SpriteRendererComponent : public RendererComponent
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::SpriteRendererComponent, RendererComponent);
-        CORELIB_CLASS_ATTR(new CategoryAttribute("Renderer"))
+        CORELIB_CLASS_ATTR(new CategoryAttribute("Renderer"), new ComponentIconAttribute(ICON_FK_PICTURE_O));
     public:
         SpriteRendererComponent() = default;
 

@@ -6,6 +6,7 @@
 #include "Editors/CommonPanel/PropertiesWindow.h"
 #include "Editors/CommonPanel/SceneWindow.h"
 #include "Editors/CommonPanel/WorkspaceWindow.h"
+#include "Editors/CommonPanel/OutputWindow.h"
 
 namespace pulsared
 {
@@ -19,6 +20,7 @@ namespace pulsared
         OpenPanel(cltypeof<OutlinerWindow>());
         OpenPanel(cltypeof<PropertiesWindow>());
         OpenPanel(cltypeof<WorkspaceWindow>());
+        OpenPanel(cltypeof<OutputWindow>());
     }
     void SceneEditorWindow::OnClose()
     {

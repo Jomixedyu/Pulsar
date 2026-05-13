@@ -20,9 +20,20 @@ float3 map_DecodeNormalMapRG(float2 normalMapSample)
     return map_DecodeNormalRG(normalRG);
 }
 
+// 可选：OpenGL 风格法线贴图（Unity/Blender 默认，G/Y+）解码
+// 使用方式：在材质 shader 中根据用户设置选择是否调用此版本
+float3 map_DecodeNormalMapRG_OpenGL(float2 normalMapSample)
+{
+    float2 normalRG = normalMapSample * 2.0 - 1.0;
+    normalRG.y = -normalRG.y; // OpenGL Y+ → DirectX/Vulkan Y-
+    return map_DecodeNormalRG(normalRG);
+}
+
 float2 map_MatCapMapping(float3 normalVS)
 {
-    return normalVS.xy * 0.5 + 0.5;
+    float2 uv = normalVS.xy * 0.5 + 0.5;
+    uv.y = 1 - uv.y; //directX
+    return uv;
 }
 
 // float4 map_TriPlanarMapping(Texture2D tex, SamplerState sampler, float3 posWS, float3 normalWS)

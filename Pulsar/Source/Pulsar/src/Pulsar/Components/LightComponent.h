@@ -1,4 +1,5 @@
 #pragma once
+#include <Pulsar/IconsForkAwesome.h>
 #include "Component.h"
 #include "Pulsar/Rendering/LightingData.h"
 
@@ -7,7 +8,7 @@ namespace pulsar
     class LightComponent : public Component
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::LightComponent, Component);
-        CORELIB_CLASS_ATTR(new AbstractComponentAttribute);
+        CORELIB_CLASS_ATTR(new AbstractComponentAttribute, new ComponentIconAttribute(ICON_FK_LIGHTBULB_O));
     public:
         void SetIntensity(float value);
         float GetIntensity() const { return m_intensity; }

@@ -1,4 +1,5 @@
 #pragma once
+#include <Pulsar/IconsForkAwesome.h>
 #include "LightComponent.h"
 #include "Pulsar/Scene.h"
 
@@ -7,7 +8,7 @@ namespace pulsar
     class SkyLightComponent : public LightComponent
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::SkyLightComponent, LightComponent);
-        CORELIB_CLASS_ATTR(new CategoryAttribute("Light"));
+        CORELIB_CLASS_ATTR(new CategoryAttribute("Light"), new ComponentIconAttribute(ICON_FK_MOON_O));
     public:
     protected:
         void BeginComponent() override;

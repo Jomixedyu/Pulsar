@@ -12,7 +12,7 @@ namespace pulsar
         void ReadSettings(const VolumeStack& stack) override;
 
     protected:
-        void PrepareMaterial(CameraComponent* cam) override;
+        void PrepareMaterial(SceneCapture2DComponent* capture2D) override;
         bool IsEnabled() const override;
         const char* GetPassName() const override { return "PostProcess_LUT"; }
 

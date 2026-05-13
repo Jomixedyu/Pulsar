@@ -549,13 +549,13 @@ namespace pulsared
     Vector2f EditorAppInstance::GetAppSize()
     {
         int32_t w, h;
-        Application::GetGfxApp()->GetViewport()->GetSize(&w, &h);
+        Application::GetGfxApp()->GetWindow()->GetWindowSize(&w, &h);
         return {(float)w, (float)h};
     }
 
     void EditorAppInstance::SetAppSize(Vector2f size)
     {
-        Application::GetGfxApp()->GetViewport()->SetSize((int)size.x, (int)size.y);
+        Application::GetGfxApp()->GetWindow()->SetWindowSize((int)size.x, (int)size.y);
     }
 
     bool EditorAppInstance::IsInteractiveRendering() const

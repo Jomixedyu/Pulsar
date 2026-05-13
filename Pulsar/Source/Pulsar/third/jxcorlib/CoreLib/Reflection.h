@@ -48,7 +48,7 @@
         } \
     } __corelib_refl_##NAME##_;
 
-#define CORELIB_REFL_DECL_STATICMETHOD(METHOD) \
+#define CORELIB_REFL_DECL_STATICMETHOD(METHOD, ...) \
     static inline struct __corelib_refl_##METHOD \
     { \
         __corelib_refl_##METHOD() \
@@ -56,7 +56,7 @@
             array_list<ParameterInfo*> infos; \
             ReflectionBuilder::GenMethodParameterInfos(&ThisClass::METHOD, &infos); \
             auto deleg = std::unique_ptr<MethodDescription>(new StaticMethodDescription{ &ThisClass::METHOD }); \
-            ReflectionBuilder::CreateMethodInfo(StaticType(), #METHOD, true, true, std::move(infos), std::move(deleg)); \
+            ReflectionBuilder::CreateMethodInfo(StaticType(), #METHOD, true, true, std::move(infos), std::move(deleg), {__VA_ARGS__}); \
         } \
     } __corelib_refl_##METHOD##_;
 
@@ -68,7 +68,7 @@
             array_list<ParameterInfo*> infos; \
             ReflectionBuilder::GenMethodParameterInfos(&ThisClass::METHOD, &infos); \
             auto deleg = std::unique_ptr<MethodDescription>(new MemberMethodDescription{ &ThisClass::METHOD }); \
-            ReflectionBuilder::CreateMethodInfo(StaticType(), #METHOD, true, false, std::move(infos), std::move(deleg)); \
+            ReflectionBuilder::CreateMethodInfo(StaticType(), #METHOD, true, false, std::move(infos), std::move(deleg), {__VA_ARGS__}); \
         } \
     } __corelib_refl_##METHOD##_;
 
@@ -360,10 +360,15 @@ namespace jxcorlib
             bool isPublic,
             bool isStatic,
             array_list<ParameterInfo*>&& info,
-            std::unique_ptr<MethodDescription>&& delegate)
+            std::unique_ptr<MethodDescription>&& delegate,
+            std::initializer_list<Attribute*> attrs = {})
         {
             //todo: return value
             auto methodInfo = new MethodInfo(name, isPublic, isStatic, type, nullptr, std::move(info), false, std::move(delegate));
+            for (auto& attr : attrs)
+            {
+                methodInfo->m_attributes.push_back(mksptr(attr));
+            }
             type->_AddMemberInfo(methodInfo);
 
         }

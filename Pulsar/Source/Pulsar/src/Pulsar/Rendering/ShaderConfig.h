@@ -135,9 +135,6 @@ namespace pulsar
         CORELIB_REFL_DECL_FIELD(Name);
         string Name;
 
-        CORELIB_REFL_DECL_FIELD(Queue);
-        ShaderPassRenderQueueType Queue;
-
         CORELIB_REFL_DECL_FIELD(Entry);
         SPtr<ShaderConfigEntry> Entry;
 
@@ -176,6 +173,8 @@ namespace pulsar
         
         CORELIB_REFL_DECL_FIELD(Properties);
         List_sp<SPtr<ShaderConfigProperty>> Properties;
+
+        SPtr<ShaderConfigPass> FindPass(const string& name) const;
     };
     CORELIB_DECL_SHORTSPTR(ShaderConfig);
 

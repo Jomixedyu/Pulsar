@@ -275,11 +275,11 @@ namespace jxcorlib
             }
             virtual bool IsValid() const override
             {
-                return (kStrong && m_instance) || (kWeak && !m_weakInst.expired());
+                return (m_mode == kStrong && m_instance) || (m_mode == kWeak && !m_weakInst.expired());
             }
             virtual TReturn Invoke(TArgs... args) override
             {
-                if(kStrong)
+                if(m_mode == kStrong)
                 {
                     return (m_instance.get()->*ptr_)(args...);
                 }

@@ -16,13 +16,21 @@ inline float4 TransformWorldToClip(float3 position)
 {
     return mul(CameraBuffer.MatrixVP, float4(position, 1.f));
 }
-inline float4 TransformWorldToView(float3 position)
+inline float3 TransformWorldToView(float3 position)
 {
-    return mul(CameraBuffer.MatrixV, float4(position, 1.f));
+    return mul(CameraBuffer.MatrixV, float4(position, 1.f)).xyz;
 }
 inline float3 TransformWorldToViewDir(float3 direction)
 {
     return mul((float3x3)CameraBuffer.MatrixV, direction);
+}
+inline float3 TransformViewToWorld(float3 position)
+{
+    return mul(CameraBuffer.InvMatrixV, float4(position, 1.f)).xyz;
+}
+inline float3 TransformViewToWorldDir(float3 direction)
+{
+    return mul((float3x3)CameraBuffer.InvMatrixV, direction);
 }
 inline float3 TransformObjectNormalToWorld(float3 normal)
 {

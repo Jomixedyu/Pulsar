@@ -1,8 +1,9 @@
 out
 .vs
 cmake-build-*
-BuildNinja/
+BuildNinja*/
 .idea
 \openspec
 Packages/Project/
 devdocs/
+Temp/
