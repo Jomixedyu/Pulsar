@@ -759,19 +759,13 @@ namespace pulsar
         m_cachedEffectiveGraphicsPipeline.clear();
     }
 
-    void Material::CopyShaderPipelineToOverride()
+    void Material::RestorePipelineDefaults()
     {
         SPtr<ShaderConfigGraphicsPipeline> shaderPipeline;
-        if (m_shader && m_shader->GetConfig() && m_shader->GetConfig()->Passes)
+        if (m_shader && m_shader->GetConfig() && m_shader->GetConfig()->Passes && !m_shader->GetConfig()->Passes->empty())
         {
-            for (const auto& pass : *m_shader->GetConfig()->Passes)
-            {
-                if (pass->GraphicsPipeline)
-                {
-                    shaderPipeline = pass->GraphicsPipeline;
-                    break;
-                }
-            }
+            if (auto pass0 = m_shader->GetConfig()->Passes->at(0))
+                shaderPipeline = pass0->GraphicsPipeline;
         }
         if (!shaderPipeline)
             shaderPipeline = mksptr(new ShaderConfigGraphicsPipeline());
@@ -786,28 +780,22 @@ namespace pulsar
         {
             auto value = fieldInfo->GetValue(shaderPipeline.get());
             fieldInfo->SetValue(m_graphicsPipelineOverride.get(), value);
-            m_graphicsPipelineOverrideFields->AddField(fieldInfo->GetName());
         }
+        m_graphicsPipelineOverrideFields->Paths->clear();
 
         m_cachedEffectiveGraphicsPipeline.clear();
     }
 
-    void Material::SyncOverrideFieldsFromShader()
+    void Material::RebuildOverrideFields()
     {
         if (!m_graphicsPipelineOverride || !m_graphicsPipelineOverrideFields)
             return;
 
         SPtr<ShaderConfigGraphicsPipeline> shaderPipeline;
-        if (m_shader && m_shader->GetConfig() && m_shader->GetConfig()->Passes)
+        if (m_shader && m_shader->GetConfig() && m_shader->GetConfig()->Passes && !m_shader->GetConfig()->Passes->empty())
         {
-            for (const auto& pass : *m_shader->GetConfig()->Passes)
-            {
-                if (pass->GraphicsPipeline)
-                {
-                    shaderPipeline = pass->GraphicsPipeline;
-                    break;
-                }
-            }
+            if (auto pass0 = m_shader->GetConfig()->Passes->at(0))
+                shaderPipeline = pass0->GraphicsPipeline;
         }
         if (!shaderPipeline)
             shaderPipeline = mksptr(new ShaderConfigGraphicsPipeline());
