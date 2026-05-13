@@ -759,4 +759,73 @@ namespace pulsar
         m_cachedEffectiveGraphicsPipeline.clear();
     }
 
+    void Material::CopyShaderPipelineToOverride()
+    {
+        SPtr<ShaderConfigGraphicsPipeline> shaderPipeline;
+        if (m_shader && m_shader->GetConfig() && m_shader->GetConfig()->Passes)
+        {
+            for (const auto& pass : *m_shader->GetConfig()->Passes)
+            {
+                if (pass->GraphicsPipeline)
+                {
+                    shaderPipeline = pass->GraphicsPipeline;
+                    break;
+                }
+            }
+        }
+        if (!shaderPipeline)
+            shaderPipeline = mksptr(new ShaderConfigGraphicsPipeline());
+
+        if (!m_graphicsPipelineOverride)
+            init_sptr_member(m_graphicsPipelineOverride);
+        if (!m_graphicsPipelineOverrideFields)
+            init_sptr_member(m_graphicsPipelineOverrideFields);
+
+        auto type = cltypeof<ShaderConfigGraphicsPipeline>();
+        for (auto fieldInfo : type->GetFieldInfos())
+        {
+            auto value = fieldInfo->GetValue(shaderPipeline.get());
+            fieldInfo->SetValue(m_graphicsPipelineOverride.get(), value.get());
+            m_graphicsPipelineOverrideFields->AddField(fieldInfo->GetName());
+        }
+
+        m_cachedEffectiveGraphicsPipeline.clear();
+    }
+
+    void Material::SyncOverrideFieldsFromShader()
+    {
+        if (!m_graphicsPipelineOverride || !m_graphicsPipelineOverrideFields)
+            return;
+
+        SPtr<ShaderConfigGraphicsPipeline> shaderPipeline;
+        if (m_shader && m_shader->GetConfig() && m_shader->GetConfig()->Passes)
+        {
+            for (const auto& pass : *m_shader->GetConfig()->Passes)
+            {
+                if (pass->GraphicsPipeline)
+                {
+                    shaderPipeline = pass->GraphicsPipeline;
+                    break;
+                }
+            }
+        }
+        if (!shaderPipeline)
+            shaderPipeline = mksptr(new ShaderConfigGraphicsPipeline());
+
+        m_graphicsPipelineOverrideFields->Paths->clear();
+
+        auto type = cltypeof<ShaderConfigGraphicsPipeline>();
+        for (auto fieldInfo : type->GetFieldInfos())
+        {
+            auto overrideValue = fieldInfo->GetValue(m_graphicsPipelineOverride.get());
+            auto shaderValue   = fieldInfo->GetValue(shaderPipeline.get());
+            if (overrideValue->ToString() != shaderValue->ToString())
+            {
+                m_graphicsPipelineOverrideFields->AddField(fieldInfo->GetName());
+            }
+        }
+
+        m_cachedEffectiveGraphicsPipeline.clear();
+    }
+
 } // namespace pulsar

@@ -142,6 +142,12 @@ namespace pulsar
         CORELIB_REFL_DECL_METHOD(SetTranslucentOverride, new ToolFunctionAttribute("Set Translucent"));
         void SetTranslucentOverride();
 
+        CORELIB_REFL_DECL_METHOD(CopyShaderPipelineToOverride, new ToolFunctionAttribute("Copy Shader Pipeline"));
+        void CopyShaderPipelineToOverride();
+
+        CORELIB_REFL_DECL_METHOD(SyncOverrideFieldsFromShader, new ToolFunctionAttribute("Sync Override Fields"));
+        void SyncOverrideFieldsFromShader();
+
         Action<> OnShaderChanged;
 
     protected:
