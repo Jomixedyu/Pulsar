@@ -785,7 +785,7 @@ namespace pulsar
         for (auto fieldInfo : type->GetFieldInfos())
         {
             auto value = fieldInfo->GetValue(shaderPipeline.get());
-            fieldInfo->SetValue(m_graphicsPipelineOverride.get(), value.get());
+            fieldInfo->SetValue(m_graphicsPipelineOverride.get(), value);
             m_graphicsPipelineOverrideFields->AddField(fieldInfo->GetName());
         }
 
