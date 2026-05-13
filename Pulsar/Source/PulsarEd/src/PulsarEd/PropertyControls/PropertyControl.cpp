@@ -312,7 +312,8 @@ namespace pulsared
                             ImGui::TableSetColumnIndex(1);
                             const char* label = toolAttr->GetLabel();
                             const char* btnLabel = (label[0] != '\0') ? label : method->GetName().c_str();
-                            if (ImGui::Button(btnLabel))
+                            float btnWidth = ImGui::GetContentRegionAvail().x;
+                            if (ImGui::Button(btnLabel, ImVec2(btnWidth, 0.0f)))
                             {
                                 if (method->IsStatic())
                                 {
