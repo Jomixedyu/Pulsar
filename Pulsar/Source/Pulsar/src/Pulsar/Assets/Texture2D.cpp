@@ -115,7 +115,7 @@ namespace pulsar
             if (m_compressedOriginImage)
             {
                 uncompressedData = gfx::LoadImageFromMemory(m_originMemory.data(), m_originMemory.size(),
-                                                               nullptr, nullptr, nullptr, m_channelCount);
+                                                                   nullptr, nullptr, nullptr, m_channelCount);
             }
             else
             {
@@ -132,7 +132,8 @@ namespace pulsar
             data = std::move(compressedData);
         }
 #else
-        data = m_nativeMemory;
+        // TODO: runtime path - load from pre-baked native data
+        // data = ...
 #endif
 
         m_cachedNativeSize = data.size();
