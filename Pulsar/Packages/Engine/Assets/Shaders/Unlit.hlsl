@@ -2,11 +2,12 @@
 #include "MeshRenderer.inc.hlsl"
 
 float4 _TintColor;
+float4 _EmissiveColor;
 
 Texture2D _BaseColorMap;
 SamplerState Sampler__BaseColorMap;
 
-Texture2D _BaseColorMap2;
+
 
 StandardVaryings VSMain(StandardAttributes a)
 {
@@ -19,7 +20,8 @@ StandardVaryings VSMain(StandardAttributes a)
 float4 PSMain(StandardVaryings v) : SV_Target
 {
     float4 tex = _BaseColorMap.Sample(Sampler__BaseColorMap, v.TexCoord0);
-    float3 final = tex.rgb * _TintColor.rgb;
-    return float4(final, 1);
+    float4 final = tex.rgba * _TintColor.rgba;
+    final.rgb += _EmissiveColor.rgb * tex.rgb;
+    return final;
 }
 
