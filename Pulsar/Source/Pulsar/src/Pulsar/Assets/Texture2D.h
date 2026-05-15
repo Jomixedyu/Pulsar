@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Texture.h"
+#include "Texture2DBase.h"
 #include <Pulsar/IGPUResource.h>
 #include <Pulsar/AssetObject.h>
 #include <gfx/GFXTexture.h>
@@ -26,9 +26,9 @@ namespace pulsar
 
 
 
-    class Texture2D : public Texture
+    class Texture2D : public Texture2DBase
     {
-        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::Texture2D, Texture);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::Texture2D, Texture2DBase);
         CORELIB_CLASS_ATTR(new AssetIconAttribute("Editor/Icons/texture.png"))
     public:
         Texture2D();

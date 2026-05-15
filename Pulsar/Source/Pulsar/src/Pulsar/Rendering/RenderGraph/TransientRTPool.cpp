@@ -51,7 +51,31 @@ namespace pulsar
 
         static uint32_t s_counter = 0;
         index_string name = index_string{std::string("_TransientRT_") + std::to_string(++s_counter)};
-        auto rt = RenderTexture::StaticCreate(name, desc.Width, desc.Height, desc.TargetInfos);
+
+        auto rt = NewAssetObject<RenderTexture>();
+        rt->SetIndexName(name);
+        rt->m_width = desc.Width;
+        rt->m_height = desc.Height;
+        rt->m_colorFormats->clear();
+        rt->m_depthFormat = RenderTextureDepthFormat::None;
+        uint32_t sampleCount = 1;
+
+        for (auto& info : desc.TargetInfos)
+        {
+            sampleCount = info.SampleCount;
+            if (info.TargetType == gfx::GFXTextureTargetType::ColorTarget)
+            {
+                if (auto mapped = RenderTexture::FromGFXColorFormat(info.Format))
+                    rt->m_colorFormats->push_back(*mapped);
+            }
+            else if (info.TargetType == gfx::GFXTextureTargetType::DepthTarget || info.TargetType == gfx::GFXTextureTargetType::DepthStencilTarget)
+            {
+                if (auto mapped = RenderTexture::FromGFXDepthFormat(info.Format))
+                    rt->m_depthFormat = *mapped;
+            }
+        }
+        rt->m_sampleCount = sampleCount;
+        rt->CreateGPUResource();
         return rt;
     }
 

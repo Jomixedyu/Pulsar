@@ -320,29 +320,31 @@ namespace pulsared
 
         }
 
-        if (PImGui::PropertyGroup("Info"))
+        if (auto tex2d = cast<Texture2D>(m_assetObject))
         {
-            if (PImGui::BeginPropertyLines())
+            if (PImGui::PropertyGroup("Info"))
             {
-                PImGui::PropertyLineText("Image Size", std::format("{} x {}", texSize.x, texSize.y) );
-                PImGui::PropertyLineText("Origin File Size", std::format("{} kb", tex->GetOriginCompressedBinarySize() / 1024) );
-                PImGui::PropertyLineText("Raw Memory Size", std::format("{} kb", tex->GetRawBinarySize() / 1024) );
-                PImGui::PropertyLineText("Compressed Size", std::format("{} kb", tex->GetNativeBinarySize() / 1024));
-                PImGui::EndPropertyLines();
-            }
-        }
-
-        if (PImGui::PropertyGroup("Formats (Win64)"))
-        {
-            if (PImGui::BeginPropertyLines())
-            {
-                for (auto item : *Texture2D::StaticGetFormatMapping(OSPlatform::Windows64))
+                if (PImGui::BeginPropertyLines())
                 {
-                    PImGui::PropertyLineText(mkbox(item.first)->GetName(), to_string(item.second));
+                    PImGui::PropertyLineText("Image Size", std::format("{} x {}", texSize.x, texSize.y) );
+                    PImGui::PropertyLineText("Origin File Size", std::format("{} kb", tex->GetOriginCompressedBinarySize() / 1024) );
+                    PImGui::PropertyLineText("Raw Memory Size", std::format("{} kb", tex->GetRawBinarySize() / 1024) );
+                    PImGui::PropertyLineText("Compressed Size", std::format("{} kb", tex->GetNativeBinarySize() / 1024));
+                    PImGui::EndPropertyLines();
                 }
-                PImGui::EndPropertyLines();
             }
 
+            if (PImGui::PropertyGroup("Formats (Win64)"))
+            {
+                if (PImGui::BeginPropertyLines())
+                {
+                    for (auto item : *Texture2D::StaticGetFormatMapping(OSPlatform::Windows64))
+                    {
+                        PImGui::PropertyLineText(mkbox(item.first)->GetName(), to_string(item.second));
+                    }
+                    PImGui::EndPropertyLines();
+                }
+            }
         }
     }
 

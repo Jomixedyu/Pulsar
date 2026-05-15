@@ -77,7 +77,12 @@ namespace pulsared
                             objType = pulsar::math::BoxingVector4f::StaticType();
                             break;
                         }
-                        case ShaderPropertyType::Texture2D:
+                        case ShaderPropertyType::Texture2D: {
+                            auto tex = material->GetTexture(name);
+                            objType = Texture2DBase::StaticType();
+                            obj = mkbox((RCPtrBase&)tex);
+                            break;
+                        }
                         case ShaderPropertyType::TextureCube: {
                             auto tex = material->GetTexture(name);
                             objType = Texture::StaticType();
