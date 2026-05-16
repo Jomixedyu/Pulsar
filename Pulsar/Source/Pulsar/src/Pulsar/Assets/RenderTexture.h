@@ -12,14 +12,6 @@ namespace pulsar
 
     using RenderTargetType = gfx::GFXTextureTargetType;
 
-    struct RenderTargetInfo
-    {
-        gfx::GFXTextureTargetType TargetType;
-        gfx::GFXTextureFormat Format;
-        uint32_t SampleCount = 1;
-        bool IsTransientAttachment = false;
-    };
-
     class RenderTexture : public Texture2DBase
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::RenderTexture, Texture2DBase);

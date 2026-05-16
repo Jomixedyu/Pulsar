@@ -27,24 +27,24 @@ namespace pulsar
     class RGPassContext
     {
     public:
-        RGPassContext(const std::vector<RCPtr<RenderTexture>>& physicalRTs,
+        RGPassContext(const std::vector<std::shared_ptr<RGPhysicalTexture>>& physicalRTs,
                       const std::unordered_map<uint32_t, size_t>& handleToIndex,
                       PerPassResources* perPassResources)
             : m_physicalRTs(physicalRTs)
             , m_handleToIndex(handleToIndex)
             , perPassResources(perPassResources) {}
 
-        RenderTexture* Get(RGTextureHandle h) const
+        const RGPhysicalTexture* Get(RGTextureHandle h) const
         {
             auto it = m_handleToIndex.find(h.id);
             if (it == m_handleToIndex.end()) return nullptr;
-            return m_physicalRTs[it->second].GetPtr();
+            return m_physicalRTs[it->second].get();
         }
 
         PerPassResources* perPassResources = nullptr;
 
     private:
-        const std::vector<RCPtr<RenderTexture>>& m_physicalRTs;
+        const std::vector<std::shared_ptr<RGPhysicalTexture>>& m_physicalRTs;
         const std::unordered_map<uint32_t, size_t>& m_handleToIndex;
     };
 
@@ -152,7 +152,7 @@ namespace pulsar
         std::vector<RGResourceDesc>                  m_resources;
         std::vector<RGPassDesc>                      m_passes;
         std::vector<size_t>                          m_sortedPassIndices;
-        std::vector<RCPtr<RenderTexture>>            m_physicalRTs;
+        std::vector<std::shared_ptr<RGPhysicalTexture>> m_physicalRTs;
         std::unordered_map<uint32_t, size_t>         m_handleToRTIndex;
 
         struct AcquiredEntry { RGTextureDesc desc; size_t rtIndex; };

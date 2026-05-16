@@ -73,7 +73,7 @@ namespace pulsar
 
             gfx::GFXTexture2DView* colorView = nullptr;
             if (auto* colorRT = ctx.Get(m_hOpaqueColor))
-                colorView = colorRT->GetGfxRenderTarget0().get();
+                colorView = colorRT->GetRenderTarget0().get();
             perPass->WriteTexture(this->m_perPassSet.get(), 3, colorView);
 
             perPass->Submit(this->m_perPassSet.get());

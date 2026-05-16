@@ -279,16 +279,16 @@ namespace pulsar
                     auto program = binding.GetCurrentProgram();
                     if (!program) return;
 
-                    RenderTexture* dstRT = passCtx.Get(hDst);
+                    const auto* dstRT = passCtx.Get(hDst);
                     if (!dstRT) return;
-                    auto* dstFBO = dstRT->GetGfxFrameBufferObject().get();
+                    auto* dstFBO = dstRT->GetFrameBufferObject().get();
                     if (!dstFBO) return;
 
-                    RenderTexture* srcRT = passCtx.Get(hSrc);
+                    const auto* srcRT = passCtx.Get(hSrc);
                     gfx::GFXTexture2DView* srcView = nullptr;
                     if (srcRT)
                     {
-                        auto view = srcRT->GetGfxRenderTarget0();
+                        auto view = srcRT->GetRenderTarget0();
                         if (view) srcView = view.get();
                     }
 
@@ -400,17 +400,17 @@ namespace pulsar
                 auto program = binding.GetCurrentProgram();
                 if (!program) return;
 
-                RenderTexture* dstRT = passCtx.Get(output);
+                const auto* dstRT = passCtx.Get(output);
                 if (!dstRT) return;
-                auto* dstFBO = dstRT->GetGfxFrameBufferObject().get();
+                auto* dstFBO = dstRT->GetFrameBufferObject().get();
                 if (!dstFBO) return;
 
                 auto GetView = [&](RGTextureHandle h) -> gfx::GFXTexture2DView*
                 {
-                    RenderTexture* rt = passCtx.Get(h);
+                    const auto* rt = passCtx.Get(h);
                     if (rt)
                     {
-                        auto view = rt->GetGfxRenderTarget0();
+                        auto view = rt->GetRenderTarget0();
                         if (view) return view.get();
                     }
                     return nullptr;
