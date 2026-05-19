@@ -3,9 +3,15 @@
 
 namespace pulsar
 {
+    gfx::GFXBuffer* PerRenderObjectDataManager::GetBuffer() const
+    {
+        if (!m_buffer.IsValid()) return nullptr;
+        return Application::GetGfxApp()->GetResourceManager()->GetBuffer(m_buffer);
+    }
+
     void PerRenderObjectDataManager::Initialize()
     {
-        if (m_buffer) return; // already initialized
+        if (m_buffer.IsValid()) return; // already initialized
 
         Grow(kInitialCapacity);
 
@@ -18,10 +24,12 @@ namespace pulsar
 
     void PerRenderObjectDataManager::Destroy()
     {
-        if (!m_buffer) return; // already destroyed
+        if (!m_buffer.IsValid()) return; // already destroyed
         m_dummyExtraSet.reset();
         m_dummyExtraLayout.reset();
-        m_buffer.reset();
+        if (auto* renderThread = Application::GetGfxApp()->GetRenderThread())
+            renderThread->DestroyImmediate(m_buffer);
+        m_buffer = gfx::BufferHandle{};
         m_cpuData.clear();
         m_slotUsed.clear();
         m_freeSlots.clear();
@@ -33,18 +41,23 @@ namespace pulsar
     {
         if (newCapacity <= m_capacity) return;
 
+        auto* renderThread = Application::GetGfxApp()->GetRenderThread();
+
         gfx::GFXBufferDesc desc{};
         desc.Usage = gfx::GFXBufferUsage::ConstantBuffer;
         desc.StorageType = gfx::GFXBufferMemoryPosition::VisibleOnHost;
         desc.BufferSize = newCapacity * sizeof(PerRenderObjectData);
         desc.ElementSize = sizeof(PerRenderObjectData);
-        auto newBuffer = Application::GetGfxApp()->CreateBuffer(desc);
+        auto newBuffer = renderThread->CreateBufferImmediate(desc);
 
         // Copy existing data if any
-        if (m_buffer && m_capacity > 0)
+        if (m_buffer.IsValid() && m_capacity > 0)
         {
-            // TODO: copy old data to new buffer
-            // For now, simple approach: re-upload all cpu data
+            if (auto* oldBuffer = Application::GetGfxApp()->GetResourceManager()->GetBuffer(m_buffer))
+            {
+                // TODO: copy old data to new buffer
+            }
+            renderThread->DestroyImmediate(m_buffer);
         }
 
         m_buffer = newBuffer;
@@ -55,7 +68,7 @@ namespace pulsar
 
     uint32_t PerRenderObjectDataManager::AllocSlot()
     {
-        if (!m_buffer) Initialize();
+        if (!m_buffer.IsValid()) Initialize();
 
         if (!m_freeSlots.empty())
         {
@@ -96,10 +109,13 @@ namespace pulsar
 
     void PerRenderObjectDataManager::EndFrame()
     {
-        if (!m_buffer || m_nextSlot == 0) return;
+        if (!m_buffer.IsValid() || m_nextSlot == 0) return;
 
         // Upload all active slots in one Fill
-        size_t uploadSize = m_nextSlot * sizeof(PerRenderObjectData);
-        m_buffer->Fill(m_cpuData.data());
+        auto* buffer = Application::GetGfxApp()->GetResourceManager()->GetBuffer(m_buffer);
+        if (buffer)
+        {
+            buffer->Fill(m_cpuData.data());
+        }
     }
 }

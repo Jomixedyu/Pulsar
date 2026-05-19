@@ -71,10 +71,13 @@ namespace pulsar
         desc.Usage = gfx::GFXBufferUsage::ConstantBuffer;
         desc.StorageType = gfx::GFXBufferMemoryPosition::VisibleOnDevice;
         desc.BufferSize = sizeof(BloomParams);
+        auto* renderThread = Application::GetGfxApp()->GetRenderThread();
         for (uint32_t i = 0; i < PassCount; ++i)
         {
-            m_bloomParamBuffers[i] = gfxApp->CreateBuffer(desc);
+            m_bloomParamBuffers[i] = renderThread->CreateBufferImmediate(desc);
         }
+
+        auto* resMgr = Application::GetGfxApp()->GetResourceManager();
 
         // Bind each buffer to its corresponding set
         for (int i = 0; i < 16; ++i)
@@ -82,18 +85,27 @@ namespace pulsar
             if (i < (int)m_bloomParamBuffers.size() && m_bloomSets[i])
             {
                 auto* d = m_bloomSets[i]->AddDescriptor("BloomParams", 8);
-                if (d) d->SetConstantBuffer(m_bloomParamBuffers[i].get());
+                auto* buffer = resMgr->GetBuffer(m_bloomParamBuffers[i]);
+                if (d && buffer) d->SetConstantBuffer(buffer);
             }
         }
         if (m_combineSet && m_bloomParamBuffers.size() > 12)
         {
             auto* d = m_combineSet->AddDescriptor("BloomParams", 8);
-            if (d) d->SetConstantBuffer(m_bloomParamBuffers[12].get());
+            auto* buffer = resMgr->GetBuffer(m_bloomParamBuffers[12]);
+            if (d && buffer) d->SetConstantBuffer(buffer);
         }
     }
 
     void BloomPass::Destroy()
     {
+        if (auto* renderThread = Application::GetGfxApp()->GetRenderThread())
+        {
+            for (auto& h : m_bloomParamBuffers)
+            {
+                if (h.IsValid()) renderThread->DestroyImmediate(h);
+            }
+        }
         m_bloomParamBuffers.clear();
         m_bloomSets.clear();
         m_bloomLayout.reset();
@@ -140,8 +152,11 @@ namespace pulsar
 
     void BloomPass::WriteBloomParams(uint32_t idx, const Vector2f& texelSize, const Vector2f& direction, int32_t sampleMode, float threshold)
     {
-        if (idx >= m_bloomParamBuffers.size() || !m_bloomParamBuffers[idx])
+        if (idx >= m_bloomParamBuffers.size() || !m_bloomParamBuffers[idx].IsValid())
             return;
+
+        auto* buffer = Application::GetGfxApp()->GetResourceManager()->GetBuffer(m_bloomParamBuffers[idx]);
+        if (!buffer) return;
 
         BloomParams params{};
         params.TexelSize = texelSize;
@@ -149,7 +164,7 @@ namespace pulsar
         params.Threshold = threshold;
         params.Intensity = m_bloomIntensity;
         params.SampleMode = sampleMode;
-        m_bloomParamBuffers[idx]->Fill(&params);
+        buffer->Fill(&params);
     }
 
     void BloomPass::SetupBloomSet(gfx::GFXDescriptorSet* set, gfx::GFXTexture2DView* srcView)

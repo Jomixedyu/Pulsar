@@ -6,6 +6,7 @@
 #include <Pulsar/EngineMath.h>
 #include <gfx/GFXApplication.h>
 #include <gfx/GFXBuffer.h>
+#include <gfx/GFXHandle.h>
 
 namespace pulsar
 {
@@ -17,8 +18,8 @@ namespace pulsar::rendering
 
     struct MeshBatchElement
     {
-        gfx::GFXBuffer_sp Vertex;
-        gfx::GFXBuffer_sp Indices;
+        gfx::BufferHandle Vertex;
+        gfx::BufferHandle Indices;
     };
 
     struct MeshBatch

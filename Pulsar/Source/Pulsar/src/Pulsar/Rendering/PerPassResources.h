@@ -1,6 +1,7 @@
 #pragma once
 #include <gfx/GFXBuffer.h>
 #include <gfx/GFXDescriptorSet.h>
+#include <gfx/GFXHandle.h>
 
 #include <Pulsar/EngineMath.h>
 #include <string>
@@ -81,9 +82,9 @@ namespace pulsar
         void Submit(gfx::GFXDescriptorSet* set) const;
 
     private:
-        gfx::GFXBuffer_sp m_cameraBuffer;
-        gfx::GFXBuffer_sp m_worldBuffer;
-        gfx::GFXBuffer_sp m_lightsBuffer;
+        gfx::BufferHandle m_cameraBuffer;
+        gfx::BufferHandle m_worldBuffer;
+        gfx::BufferHandle m_lightsBuffer;
 
         std::unordered_map<std::string, gfx::GFXDescriptorSetLayout_sp> m_layoutCache;
 

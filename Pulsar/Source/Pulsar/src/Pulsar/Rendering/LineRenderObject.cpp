@@ -30,19 +30,33 @@ namespace pulsar
     }
     void LineRenderObject::Fill()
     {
-        if (m_vertBuffer)
-        {
-            if (sizeof(StaticMeshVertex) * m_verties.size() > m_vertBuffer->GetSize())
-            {
-                gfx::GFXBufferDesc desc{};
-                desc.Usage        = gfx::GFXBufferUsage::Vertex;
-                desc.StorageType  = gfx::GFXBufferMemoryPosition::DeviceLocal;
-                desc.BufferSize   = m_verties.size() * sizeof(StaticMeshVertex);
-                desc.ElementSize  = sizeof(StaticMeshVertex);
+        auto* renderThread = Application::GetGfxApp()->GetRenderThread();
+        auto* resMgr       = Application::GetGfxApp()->GetResourceManager();
 
-                m_vertBuffer = Application::GetGfxApp()->CreateBuffer(desc);
+        if (m_vertBuffer.IsValid())
+        {
+            auto* buffer = resMgr->GetBuffer(m_vertBuffer);
+            if (buffer && sizeof(StaticMeshVertex) * m_verties.size() > buffer->GetSize())
+            {
+                renderThread->DestroyImmediate(m_vertBuffer);
+                m_vertBuffer = gfx::BufferHandle{};
             }
-            m_vertBuffer->Fill(m_verties.data());
+        }
+
+        if (!m_vertBuffer.IsValid() && !m_verties.empty())
+        {
+            gfx::GFXBufferDesc desc{};
+            desc.Usage        = gfx::GFXBufferUsage::Vertex;
+            desc.StorageType  = gfx::GFXBufferMemoryPosition::DeviceLocal;
+            desc.BufferSize   = m_verties.size() * sizeof(StaticMeshVertex);
+            desc.ElementSize  = sizeof(StaticMeshVertex);
+
+            m_vertBuffer = renderThread->CreateBufferImmediate(desc);
+        }
+
+        if (m_vertBuffer.IsValid() && !m_verties.empty())
+        {
+            renderThread->UploadBufferImmediate(m_vertBuffer, m_verties.data(), m_verties.size() * sizeof(StaticMeshVertex));
         }
     }
 
@@ -63,14 +77,18 @@ namespace pulsar
             m_meshDescriptorSetLayout = s_dummyLayout.lock();
         }
 
-        gfx::GFXBufferDesc vertexBufferDesc{};
-        vertexBufferDesc.Usage       = gfx::GFXBufferUsage::Vertex;
-        vertexBufferDesc.StorageType = gfx::GFXBufferMemoryPosition::DeviceLocal;
-        vertexBufferDesc.BufferSize  = m_verties.size() * sizeof(StaticMeshVertex);
-        vertexBufferDesc.ElementSize = sizeof(StaticMeshVertex);
+        if (!m_vertBuffer.IsValid() && !m_verties.empty())
+        {
+            gfx::GFXBufferDesc vertexBufferDesc{};
+            vertexBufferDesc.Usage       = gfx::GFXBufferUsage::Vertex;
+            vertexBufferDesc.StorageType = gfx::GFXBufferMemoryPosition::DeviceLocal;
+            vertexBufferDesc.BufferSize  = m_verties.size() * sizeof(StaticMeshVertex);
+            vertexBufferDesc.ElementSize = sizeof(StaticMeshVertex);
 
-        m_vertBuffer = Application::GetGfxApp()->CreateBuffer(vertexBufferDesc);
-        m_vertBuffer->Fill(m_verties.data());
+            auto* renderThread = Application::GetGfxApp()->GetRenderThread();
+            m_vertBuffer = renderThread->CreateBufferImmediate(vertexBufferDesc);
+            renderThread->UploadBufferImmediate(m_vertBuffer, m_verties.data(), m_verties.size() * sizeof(StaticMeshVertex));
+        }
 
         m_batchs.resize(1);
         rendering::MeshBatch& batch = m_batchs[0];
@@ -93,7 +111,12 @@ namespace pulsar
     void LineRenderObject::OnDestroyResource()
     {
         base::OnDestroyResource();
-        m_vertBuffer.reset();
+        if (m_vertBuffer.IsValid())
+        {
+            if (auto* renderThread = Application::GetGfxApp()->GetRenderThread())
+                renderThread->DestroyImmediate(m_vertBuffer);
+            m_vertBuffer = gfx::BufferHandle{};
+        }
     }
 
     void LineRenderObject::OnChangedTransform()

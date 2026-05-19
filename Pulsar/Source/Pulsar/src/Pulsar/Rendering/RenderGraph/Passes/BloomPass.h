@@ -3,6 +3,7 @@
 #include <Pulsar/Assets/Material.h>
 #include <gfx/GFXDescriptorSet.h>
 #include <gfx/GFXBuffer.h>
+#include <gfx/GFXHandle.h>
 
 namespace pulsar
 {
@@ -63,6 +64,6 @@ namespace pulsar
         gfx::GFXDescriptorSetLayout_sp m_combineLayout;
         gfx::GFXDescriptorSet_sp       m_combineSet;
 
-        array_list<gfx::GFXBuffer_sp> m_bloomParamBuffers;
+        array_list<gfx::BufferHandle> m_bloomParamBuffers;
     };
 }

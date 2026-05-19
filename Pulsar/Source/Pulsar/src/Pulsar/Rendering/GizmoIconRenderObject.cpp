@@ -44,9 +44,9 @@ namespace pulsar
         {
             auto& element = batch.Elements.emplace_back();
             element.Vertex = vertBuffers[0];
-            element.Indices = indicesBuffers.empty() ? nullptr : indicesBuffers[0];
+            element.Indices = indicesBuffers.empty() ? gfx::BufferHandle{} : indicesBuffers[0];
             // PerRenderObject data is in global dynamic UBO
-            batch.IsUsedIndices = element.Indices != nullptr;
+            batch.IsUsedIndices = element.Indices.IsValid();
         }
 
         m_batches.push_back(std::move(batch));

@@ -108,8 +108,8 @@ namespace pulsar
 
             auto& element = batch.Elements.emplace_back();
             element.Vertex = vertBuffers[0];
-            element.Indices = indicesBuffers.empty() ? nullptr : indicesBuffers[0];
-            batch.IsUsedIndices = element.Indices != nullptr;
+            element.Indices = indicesBuffers.empty() ? gfx::BufferHandle{} : indicesBuffers[0];
+            batch.IsUsedIndices = element.Indices.IsValid();
 
             m_batches.push_back(std::move(batch));
         }

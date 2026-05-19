@@ -1,5 +1,6 @@
 #include "MeshRenderFeature.h"
 #include <Pulsar/Rendering/PerPassResources.h>
+#include <Pulsar/Application.h>
 
 namespace pulsar
 {
@@ -69,6 +70,8 @@ namespace pulsar
         uint32_t dynOffset = pb.batch.RenderObjectIndex * sizeof(PerRenderObjectData);
         array_list<uint32_t> dynOffsets = { dynOffset };
 
+        auto* resMgr = Application::GetGfxApp()->GetResourceManager();
+
         for (const auto& element : pb.batch.Elements)
         {
             array_list<gfx::GFXDescriptorSet*> descSets;
@@ -77,15 +80,27 @@ namespace pulsar
             descSets.push_back(pb.batch.ExtraDescriptorSet.get());
             cmdBuffer.CmdBindDescriptorSets(descSets, gfxPipeline.get(), &dynOffsets);
 
-            cmdBuffer.CmdBindVertexBuffers({element.Vertex.get()});
+            auto* vertBuffer = resMgr->GetBuffer(element.Vertex);
+            if (!vertBuffer)
+                continue;
+
+            cmdBuffer.CmdBindVertexBuffers({vertBuffer});
             if (pb.batch.IsUsedIndices)
             {
-                cmdBuffer.CmdBindIndexBuffer(element.Indices.get());
-                cmdBuffer.CmdDrawIndexed(element.Indices->GetElementCount());
+                auto* indicesBuffer = resMgr->GetBuffer(element.Indices);
+                if (indicesBuffer)
+                {
+                    cmdBuffer.CmdBindIndexBuffer(indicesBuffer);
+                    cmdBuffer.CmdDrawIndexed(indicesBuffer->GetElementCount());
+                }
+                else
+                {
+                    cmdBuffer.CmdDraw(vertBuffer->GetElementCount());
+                }
             }
             else
             {
-                cmdBuffer.CmdDraw(element.Vertex->GetElementCount());
+                cmdBuffer.CmdDraw(vertBuffer->GetElementCount());
             }
         }
     }

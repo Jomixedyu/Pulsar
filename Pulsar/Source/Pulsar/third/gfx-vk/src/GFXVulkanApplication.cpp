@@ -415,6 +415,8 @@ namespace gfx
         m_renderer = new GFXVulkanRenderer(this);
 
         m_graphicsPipelineManager = new GFXVulkanGraphicsPipelineManager(this);
+
+        m_renderThread = std::make_unique<GFXRenderThread>(this);
     }
 
     void GFXVulkanApplication::ExecLoop()
@@ -478,6 +480,12 @@ namespace gfx
     void GFXVulkanApplication::Terminate()
     {
         base::Terminate();
+
+        // Ensure all GPU work is finished before releasing resources
+        vkDeviceWaitIdle(m_device);
+
+        // Release handle-managed resources before destroying the device
+        m_renderThread.reset();
 
         delete m_renderer;
         delete m_viewport;

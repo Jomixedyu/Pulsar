@@ -4,6 +4,7 @@
 #include <Pulsar/IGPUResource.h>
 #include <Pulsar/AssetObject.h>
 #include <Pulsar/Assets/Material.h>
+#include <gfx/GFXHandle.h>
 #include "Pulsar/Rendering/PrimitiveStruct.h"
 
 namespace pulsar
@@ -72,15 +73,15 @@ namespace pulsar
         bool CreateGPUResource() override;
         void DestroyGPUResource() override;
         bool IsCreatedGPUResource() const override;
-        const array_list<gfx::GFXBuffer_sp>& GetGPUResourceVertexBuffers() const { return m_vertexBuffers; }
-        const array_list<gfx::GFXBuffer_sp>& GetGPUResourceIndicesBuffers() const { return m_indicesBuffers; }
+        const array_list<gfx::BufferHandle>& GetGPUResourceVertexBuffers() const { return m_vertexBuffers; }
+        const array_list<gfx::BufferHandle>& GetGPUResourceIndicesBuffers() const { return m_indicesBuffers; }
     protected: // serialization data
         array_list<StaticMeshSection> m_sections;
         array_list<string> m_materialNames;
     protected: // runtime data
         bool m_isCreatedResource = false;
-        array_list<gfx::GFXBuffer_sp> m_vertexBuffers;
-        array_list<gfx::GFXBuffer_sp> m_indicesBuffers;
+        array_list<gfx::BufferHandle> m_vertexBuffers;
+        array_list<gfx::BufferHandle> m_indicesBuffers;
 
         BoxSphereBounds3f m_bounds{};
     };

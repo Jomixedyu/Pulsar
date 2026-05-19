@@ -24,7 +24,7 @@ namespace pulsar
         array_list<int32_t>           m_priorities;
 
         // set2 binding1: SkinnedRenderObjectData (BoneMatrices)
-        gfx::GFXBuffer_sp             m_skinningBuffer;
+        gfx::BufferHandle             m_skinningBuffer;
 
         gfx::GFXDescriptorSet_sp      m_descriptorSet;
         gfx::GFXDescriptorSetLayout_sp m_descriptorSetLayout;
@@ -44,14 +44,15 @@ namespace pulsar
         // Animator 调用：将骨骼矩阵写入 GPU UBO
         void UploadBoneMatrices(const array_list<Matrix4f>& boneMatrices)
         {
-            if (!m_skinningBuffer) return;
+            auto* buffer = Application::GetGfxApp()->GetResourceManager()->GetBuffer(m_skinningBuffer);
+            if (!buffer) return;
 
             SkinnedRenderObjectData data{};
             const size_t count = std::min(boneMatrices.size(), (size_t)SKINNEDMESH_MAX_BONES);
             for (size_t i = 0; i < count; ++i)
                 data.BoneMatrices[i] = boneMatrices[i];
 
-            m_skinningBuffer->Fill(&data);
+            buffer->Fill(&data);
         }
 
         void SubmitChange();
@@ -60,7 +61,12 @@ namespace pulsar
         {
             m_descriptorSet.reset();
             m_descriptorSetLayout.reset();
-            m_skinningBuffer.reset();
+            if (m_skinningBuffer.IsValid())
+            {
+                if (auto* renderThread = Application::GetGfxApp()->GetRenderThread())
+                    renderThread->DestroyImmediate(m_skinningBuffer);
+                m_skinningBuffer = gfx::BufferHandle{};
+            }
         }
 
         void OnChangedTransform() override
@@ -96,18 +102,22 @@ namespace pulsar
             desc.StorageType = gfx::GFXBufferMemoryPosition::VisibleOnDevice;
             desc.BufferSize  = sizeof(SkinnedRenderObjectData);
             desc.ElementSize = sizeof(SkinnedRenderObjectData);
-            m_skinningBuffer = Application::GetGfxApp()->CreateBuffer(desc);
+            auto* renderThread = Application::GetGfxApp()->GetRenderThread();
+            m_skinningBuffer = renderThread->CreateBufferImmediate(desc);
 
             // 默认骨骼矩阵全部为单位矩阵（静止姿势）
             SkinnedRenderObjectData defaultData{};
             for (auto& mat : defaultData.BoneMatrices)
                 mat = Matrix4f(1);
-            m_skinningBuffer->Fill(&defaultData);
+            renderThread->UploadBufferImmediate(m_skinningBuffer, &defaultData, sizeof(defaultData));
         }
 
         m_descriptorSet = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_descriptorSetLayout);
-        m_descriptorSet->AddDescriptor("SkinningData", kRenderingDescriptorBinding_SkinningData)
-                       ->SetConstantBuffer(m_skinningBuffer.get());
+        if (auto* buffer = Application::GetGfxApp()->GetResourceManager()->GetBuffer(m_skinningBuffer))
+        {
+            m_descriptorSet->AddDescriptor("SkinningData", kRenderingDescriptorBinding_SkinningData)
+                           ->SetConstantBuffer(buffer);
+        }
         m_descriptorSet->Submit();
 
         SubmitChange();

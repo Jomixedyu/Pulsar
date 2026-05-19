@@ -1,7 +1,7 @@
 #pragma once
 #include "GFXBuffer.h"
 #include "GFXTexture.h"
-#include "GFXInclude.h"
+#include "GFXResource.h"
 #include "GFXGpuProgram.h"
 #include <string_view>
 
@@ -37,13 +37,14 @@ namespace gfx
         }
     };
 
-    class GFXDescriptorSetLayout
+    class GFXDescriptorSetLayout : public GFXResource
     {
     protected:
         GFXDescriptorSetLayout()
         {
         }
-        virtual ~GFXDescriptorSetLayout() {}
+        ~GFXDescriptorSetLayout() override {}
+        GFXResourceType GetResourceType() const override { return GFXResourceType::DescriptorSetLayout; }
     };
     GFX_DECL_SPTR(GFXDescriptorSetLayout);
 

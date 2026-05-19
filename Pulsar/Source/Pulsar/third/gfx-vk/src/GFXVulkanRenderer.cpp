@@ -23,6 +23,12 @@ namespace gfx
             return;
         }
 
+        if (auto* renderThread = m_app->GetRenderThread())
+        {
+            renderThread->BeginFrame(m_app->GetFrameCount());
+            renderThread->Flush();
+        }
+
         vkWaitForFences(m_app->GetVkDevice(), 1, &viewport->GetQueue()->GetVkFence(), VK_TRUE, UINT64_MAX);
 
         uint32_t imageIndex;
@@ -73,6 +79,11 @@ namespace gfx
         else if (result != VK_SUCCESS)
         {
             throw std::runtime_error("failed to present swap chain image!");
+        }
+
+        if (auto* renderThread = m_app->GetRenderThread())
+        {
+            renderThread->EndFrame(m_app->GetFrameCount());
         }
     }
     void GFXVulkanRenderer::WaitExecuteRender(const std::function<void(GFXRenderContext*)>& func)

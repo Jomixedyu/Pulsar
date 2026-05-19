@@ -238,7 +238,6 @@ namespace pulsar
         }
         m_camDescriptorLayout.reset();
         m_cameraDescriptorSet.reset();
-        m_cameraDataBuffer.reset();
     }
 
     void CameraComponent::OnTransformChanged()

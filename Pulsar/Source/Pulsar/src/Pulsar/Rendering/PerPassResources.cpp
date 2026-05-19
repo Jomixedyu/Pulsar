@@ -9,7 +9,7 @@ namespace pulsar
         if (m_initialized)
             return;
 
-        auto gfxApp = Application::GetGfxApp();
+        auto* renderThread = Application::GetGfxApp()->GetRenderThread();
 
         // 创建 3 个 cbuffer
         {
@@ -18,13 +18,13 @@ namespace pulsar
             desc.StorageType = gfx::GFXBufferMemoryPosition::VisibleOnDevice;
 
             desc.BufferSize = sizeof(PerPassCameraData);
-            m_cameraBuffer = gfxApp->CreateBuffer(desc);
+            m_cameraBuffer = renderThread->CreateBufferImmediate(desc);
 
             desc.BufferSize = sizeof(PerPassWorldData);
-            m_worldBuffer = gfxApp->CreateBuffer(desc);
+            m_worldBuffer = renderThread->CreateBufferImmediate(desc);
 
             desc.BufferSize = sizeof(PerPassLightsBufferData);
-            m_lightsBuffer = gfxApp->CreateBuffer(desc);
+            m_lightsBuffer = renderThread->CreateBufferImmediate(desc);
         }
 
         m_initialized = true;
@@ -35,29 +35,36 @@ namespace pulsar
         if (!m_initialized)
             return;
 
+        if (auto* renderThread = Application::GetGfxApp()->GetRenderThread())
+        {
+            renderThread->DestroyImmediate(m_cameraBuffer);
+            renderThread->DestroyImmediate(m_worldBuffer);
+            renderThread->DestroyImmediate(m_lightsBuffer);
+        }
+
         m_layoutCache.clear();
-        m_cameraBuffer.reset();
-        m_worldBuffer.reset();
-        m_lightsBuffer.reset();
+        m_cameraBuffer = gfx::BufferHandle{};
+        m_worldBuffer = gfx::BufferHandle{};
+        m_lightsBuffer = gfx::BufferHandle{};
         m_initialized = false;
     }
 
     void PerPassResources::UpdateCamera(const PerPassCameraData& data)
     {
-        if (m_cameraBuffer)
-            m_cameraBuffer->Fill(&data);
+        if (auto* buffer = Application::GetGfxApp()->GetResourceManager()->GetBuffer(m_cameraBuffer))
+            buffer->Fill(&data);
     }
 
     void PerPassResources::UpdateWorld(const PerPassWorldData& data)
     {
-        if (m_worldBuffer)
-            m_worldBuffer->Fill(&data);
+        if (auto* buffer = Application::GetGfxApp()->GetResourceManager()->GetBuffer(m_worldBuffer))
+            buffer->Fill(&data);
     }
 
     void PerPassResources::UpdateLights(const PerPassLightsBufferData& data)
     {
-        if (m_lightsBuffer)
-            m_lightsBuffer->Fill(&data);
+        if (auto* buffer = Application::GetGfxApp()->GetResourceManager()->GetBuffer(m_lightsBuffer))
+            buffer->Fill(&data);
     }
 
     gfx::GFXDescriptorSetLayout_sp PerPassResources::GetLayout(const std::string& passName)
@@ -123,7 +130,11 @@ namespace pulsar
         if (!set) return;
         auto* camDesc = set->FindByBinding(0);
         if (!camDesc) camDesc = set->AddDescriptor("CameraBuffer", 0);
-        if (camDesc) camDesc->SetConstantBuffer(m_cameraBuffer.get());
+        if (camDesc)
+        {
+            auto* buffer = Application::GetGfxApp()->GetResourceManager()->GetBuffer(m_cameraBuffer);
+            if (buffer) camDesc->SetConstantBuffer(buffer);
+        }
     }
 
     void PerPassResources::WriteWorldToSet(gfx::GFXDescriptorSet* set) const
@@ -131,7 +142,11 @@ namespace pulsar
         if (!set) return;
         auto* worldDesc = set->FindByBinding(1);
         if (!worldDesc) worldDesc = set->AddDescriptor("WorldBuffer", 1);
-        if (worldDesc) worldDesc->SetConstantBuffer(m_worldBuffer.get());
+        if (worldDesc)
+        {
+            auto* buffer = Application::GetGfxApp()->GetResourceManager()->GetBuffer(m_worldBuffer);
+            if (buffer) worldDesc->SetConstantBuffer(buffer);
+        }
     }
 
     void PerPassResources::WriteLightsToSet(gfx::GFXDescriptorSet* set) const
@@ -139,7 +154,11 @@ namespace pulsar
         if (!set) return;
         auto* lightDesc = set->FindByBinding(2);
         if (!lightDesc) lightDesc = set->AddDescriptor("LightBuffer", 2);
-        if (lightDesc) lightDesc->SetConstantBuffer(m_lightsBuffer.get());
+        if (lightDesc)
+        {
+            auto* buffer = Application::GetGfxApp()->GetResourceManager()->GetBuffer(m_lightsBuffer);
+            if (buffer) lightDesc->SetConstantBuffer(buffer);
+        }
     }
 
     void PerPassResources::WritePerRenderObjectToSet(gfx::GFXDescriptorSet* set, gfx::GFXBuffer* buffer) const

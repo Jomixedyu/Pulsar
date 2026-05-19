@@ -1,15 +1,16 @@
 #pragma once
+#include "GFXResource.h"
 #include "GFXDescriptorSet.h"
-#include "GFXInclude.h"
 #include "GFXRenderPass.h"
 #include "GFXTextureView.h"
 
 namespace gfx
 {
-    class GFXFrameBufferObject
+    class GFXFrameBufferObject : public GFXResource
     {
     public:
-        virtual ~GFXFrameBufferObject() = default;
+        ~GFXFrameBufferObject() override = default;
+        GFXResourceType GetResourceType() const override { return GFXResourceType::FrameBufferObject; }
         virtual int32_t GetWidth() const = 0;
         virtual int32_t GetHeight() const = 0;
         virtual const GFXRenderTargetDesc& GetRenderTargetDesc() const = 0;

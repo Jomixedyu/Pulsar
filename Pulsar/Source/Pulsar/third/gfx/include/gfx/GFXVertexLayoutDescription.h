@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <vector>
-#include "GFXInclude.h"
+#include "GFXResource.h"
 
 namespace gfx
 {
@@ -22,14 +22,15 @@ namespace gfx
         size_t Offset;
     };
 
-    class GFXVertexLayoutDescription
+    class GFXVertexLayoutDescription : public GFXResource
     {
     public:
         uint32_t BindingPoint;
         uint32_t Stride;
         array_list<GFXVertexInputAttribute> Attributes;
     public:
-        virtual ~GFXVertexLayoutDescription() {}
+        ~GFXVertexLayoutDescription() override {}
+        GFXResourceType GetResourceType() const override { return GFXResourceType::VertexLayoutDescription; }
     };
     GFX_DECL_SPTR(GFXVertexLayoutDescription)
 }
