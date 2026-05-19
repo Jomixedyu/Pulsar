@@ -2,6 +2,7 @@
 
 #include "GFXVulkanGpuProgram.h"
 #include "GFXVulkanGraphicsPipeline.h"
+#include "GFXVulkanApplication.h"
 
 namespace gfx
 {
@@ -55,6 +56,30 @@ namespace gfx
 
         m_caches.insert({ hash, gpipeline });
         return gpipeline;
+    }
+
+    std::shared_ptr<GFXGraphicsPipeline> GFXVulkanGraphicsPipelineManager::GetGraphicsPipeline(
+        const array_list<GpuProgramHandle>& gpuPrograms,
+        GFXGraphicsPipelineStateParams stateParams,
+        const array_list<DescriptorSetLayoutHandle>& descriptorSetLayouts,
+        const GFXRenderTargetDesc& renderTargetDesc,
+        const GFXGraphicsPipelineState& gpInfo)
+    {
+        array_list<GFXGpuProgram_sp> gpuProgramSps;
+        gpuProgramSps.reserve(gpuPrograms.size());
+        for (auto& h : gpuPrograms)
+        {
+            gpuProgramSps.push_back(m_app->GetResourceManager()->GetGpuProgramShared(h));
+        }
+
+        array_list<GFXDescriptorSetLayout_sp> layoutSps;
+        layoutSps.reserve(descriptorSetLayouts.size());
+        for (auto& h : descriptorSetLayouts)
+        {
+            layoutSps.push_back(m_app->GetResourceManager()->GetDescriptorSetLayoutShared(h));
+        }
+
+        return GetGraphicsPipeline(gpuProgramSps, stateParams, layoutSps, renderTargetDesc, gpInfo);
     }
 
     void GFXVulkanGraphicsPipelineManager::GCollect()

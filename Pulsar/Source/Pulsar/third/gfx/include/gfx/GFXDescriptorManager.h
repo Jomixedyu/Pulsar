@@ -1,5 +1,6 @@
 #pragma once
 #include "GFXDescriptorSet.h"
+#include "GFXHandle.h"
 #include <vector>
 #include <cstdint>
 #include <memory>
@@ -10,6 +11,7 @@ namespace gfx
     {
     public:
         virtual std::shared_ptr<GFXDescriptorSet> GetDescriptorSet(GFXDescriptorSetLayout_sp layout) = 0;
+        virtual std::shared_ptr<GFXDescriptorSet> GetDescriptorSet(DescriptorSetLayoutHandle layout) = 0;
 
         virtual ~GFXDescriptorManager() {}
     protected:

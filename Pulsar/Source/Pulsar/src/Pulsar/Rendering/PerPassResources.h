@@ -61,10 +61,10 @@ namespace pulsar
         void UpdateLights(const PerPassLightsBufferData& data);
 
         // 按 ShaderPass Name 获取/创建 layout（Forward / ShadowCaster / PostProcess 等）
-        gfx::GFXDescriptorSetLayout_sp GetLayout(const std::string& passName);
+        gfx::DescriptorSetLayoutHandle GetLayout(const std::string& passName);
 
         // 按指定 layout 分配 descriptor set
-        gfx::GFXDescriptorSet_sp AllocateSet(gfx::GFXDescriptorSetLayout_sp layout) const;
+        gfx::GFXDescriptorSet_sp AllocateSet(gfx::DescriptorSetLayoutHandle layout) const;
 
         // 按标准 binding 写入单个 buffer（调用方确保 layout 包含该 binding）
         void WriteCameraToSet(gfx::GFXDescriptorSet* set) const;
@@ -86,7 +86,7 @@ namespace pulsar
         gfx::BufferHandle m_worldBuffer;
         gfx::BufferHandle m_lightsBuffer;
 
-        std::unordered_map<std::string, gfx::GFXDescriptorSetLayout_sp> m_layoutCache;
+        std::unordered_map<std::string, gfx::DescriptorSetLayoutHandle> m_layoutCache;
 
         bool m_initialized = false;
     };

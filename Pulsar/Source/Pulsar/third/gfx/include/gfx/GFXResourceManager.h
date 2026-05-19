@@ -84,6 +84,25 @@ namespace gfx
         GFXDescriptorSetLayout*   GetDescriptorSetLayout(DescriptorSetLayoutHandle handle) const;
         GFXVertexLayoutDescription* GetVertexLayoutDescription(VertexLayoutDescriptionHandle handle) const;
 
+        // -----------------------------------------------------------------
+        // Shared-pointer lookups (for interop with legacy APIs)
+        // -----------------------------------------------------------------
+        template<typename T>
+        std::shared_ptr<T> GetSharedPtr(uint32_t index, uint16_t generation) const
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            if (index >= m_slots.size()) return nullptr;
+            if (m_slots[index].generation != generation) return nullptr;
+            if (m_slots[index].isPendingDestroy) return nullptr;
+            return std::static_pointer_cast<T>(m_slots[index].resource);
+        }
+
+        GFXGpuProgram_sp            GetGpuProgramShared(GpuProgramHandle handle) const;
+        GFXDescriptorSetLayout_sp   GetDescriptorSetLayoutShared(DescriptorSetLayoutHandle handle) const;
+        GFXTexture_sp               GetTextureShared(TextureHandle handle) const;
+        GFXFrameBufferObject_sp     GetFrameBufferObjectShared(FrameBufferObjectHandle handle) const;
+        GFXVertexLayoutDescription_sp GetVertexLayoutDescriptionShared(VertexLayoutDescriptionHandle handle) const;
+
         // Generic lookup
         GFXResource* GetResource(uint32_t resourceId) const;
 

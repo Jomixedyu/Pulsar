@@ -40,6 +40,11 @@ namespace pulsar
         cmdList.Destroy(m_worldBuffer);
         cmdList.Destroy(m_lightsBuffer);
 
+        for (auto& pair : m_layoutCache)
+        {
+            if (pair.second.IsValid())
+                cmdList.Destroy(pair.second);
+        }
         m_layoutCache.clear();
         m_cameraBuffer = gfx::BufferHandle{};
         m_worldBuffer = gfx::BufferHandle{};
@@ -65,13 +70,13 @@ namespace pulsar
             buffer->Fill(&data);
     }
 
-    gfx::GFXDescriptorSetLayout_sp PerPassResources::GetLayout(const std::string& passName)
+    gfx::DescriptorSetLayoutHandle PerPassResources::GetLayout(const std::string& passName)
     {
         auto it = m_layoutCache.find(passName);
         if (it != m_layoutCache.end())
             return it->second;
 
-        auto gfxApp = Application::GetGfxApp();
+        auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
         std::vector<gfx::GFXDescriptorSetLayoutDesc> descs;
 
         if (passName == "Forward")
@@ -112,12 +117,12 @@ namespace pulsar
             };
         }
 
-        auto layout = gfxApp->CreateDescriptorSetLayout(descs.data(), static_cast<uint32_t>(descs.size()));
-        m_layoutCache[passName] = layout;
-        return layout;
+        auto handle = cmdList.CreateDescriptorSetLayout(descs);
+        m_layoutCache[passName] = handle;
+        return handle;
     }
 
-    gfx::GFXDescriptorSet_sp PerPassResources::AllocateSet(gfx::GFXDescriptorSetLayout_sp layout) const
+    gfx::GFXDescriptorSet_sp PerPassResources::AllocateSet(gfx::DescriptorSetLayoutHandle layout) const
     {
         auto gfxApp = Application::GetGfxApp();
         return gfxApp->GetDescriptorManager()->GetDescriptorSet(layout);

@@ -203,6 +203,31 @@ namespace gfx
         return static_cast<GFXVertexLayoutDescription*>(m_slots[handle.index].resource.get());
     }
 
+    GFXGpuProgram_sp GFXResourceManager::GetGpuProgramShared(GpuProgramHandle handle) const
+    {
+        return GetSharedPtr<GFXGpuProgram>(handle.index, handle.generation);
+    }
+
+    GFXDescriptorSetLayout_sp GFXResourceManager::GetDescriptorSetLayoutShared(DescriptorSetLayoutHandle handle) const
+    {
+        return GetSharedPtr<GFXDescriptorSetLayout>(handle.index, handle.generation);
+    }
+
+    GFXTexture_sp GFXResourceManager::GetTextureShared(TextureHandle handle) const
+    {
+        return GetSharedPtr<GFXTexture>(handle.index, handle.generation);
+    }
+
+    GFXFrameBufferObject_sp GFXResourceManager::GetFrameBufferObjectShared(FrameBufferObjectHandle handle) const
+    {
+        return GetSharedPtr<GFXFrameBufferObject>(handle.index, handle.generation);
+    }
+
+    GFXVertexLayoutDescription_sp GFXResourceManager::GetVertexLayoutDescriptionShared(VertexLayoutDescriptionHandle handle) const
+    {
+        return GetSharedPtr<GFXVertexLayoutDescription>(handle.index, handle.generation);
+    }
+
     GFXResource* GFXResourceManager::GetResource(uint32_t resourceId) const
     {
         std::lock_guard<std::mutex> lock(m_mutex);

@@ -4,6 +4,7 @@
 #include "GFXRenderPass.h"
 #include "GFXGpuProgram.h"
 #include "GFXDescriptorSet.h"
+#include "GFXHandle.h"
 
 namespace gfx
 {
@@ -20,6 +21,13 @@ namespace gfx
             const array_list<GFXGpuProgram_sp>& gpuPrograms,
             GFXGraphicsPipelineStateParams stateParams,
             const array_list<GFXDescriptorSetLayout_sp>& descriptorSetLayouts,
+            const GFXRenderTargetDesc& renderTargetDesc,
+            const GFXGraphicsPipelineState& gpInfo) = 0;
+
+        virtual std::shared_ptr<GFXGraphicsPipeline> GetGraphicsPipeline(
+            const array_list<GpuProgramHandle>& gpuPrograms,
+            GFXGraphicsPipelineStateParams stateParams,
+            const array_list<DescriptorSetLayoutHandle>& descriptorSetLayouts,
             const GFXRenderTargetDesc& renderTargetDesc,
             const GFXGraphicsPipelineState& gpInfo) = 0;
 
