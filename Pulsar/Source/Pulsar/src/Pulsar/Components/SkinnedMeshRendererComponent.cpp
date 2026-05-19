@@ -23,7 +23,7 @@ namespace pulsar
         array_list<RCPtr<Material>>   m_materials;
         array_list<int32_t>           m_priorities;
 
-        // set2 binding1: SkinnedRendererData (BoneMatrices)
+        // set2 binding1: SkinnedRenderObjectData (BoneMatrices)
         gfx::GFXBuffer_sp             m_skinningBuffer;
 
         gfx::GFXDescriptorSet_sp      m_descriptorSet;
@@ -46,7 +46,7 @@ namespace pulsar
         {
             if (!m_skinningBuffer) return;
 
-            SkinnedRendererData data{};
+            SkinnedRenderObjectData data{};
             const size_t count = std::min(boneMatrices.size(), (size_t)SKINNEDMESH_MAX_BONES);
             for (size_t i = 0; i < count; ++i)
                 data.BoneMatrices[i] = boneMatrices[i];
@@ -75,7 +75,7 @@ namespace pulsar
 
     void SkinnedMeshRenderObject::OnCreateResource()
     {
-        // set2 layout: binding1=SkinnedRendererData
+        // set2 layout: binding1=SkinnedRenderObjectData
         if (SkinnedMeshDescriptorSetLayout.expired())
         {
             gfx::GFXDescriptorSetLayoutDesc binding{
@@ -89,17 +89,17 @@ namespace pulsar
             m_descriptorSetLayout = SkinnedMeshDescriptorSetLayout.lock();
         }
 
-        // binding1: SkinnedRendererData（初始化为单位矩阵）
+        // binding1: SkinnedRenderObjectData（初始化为单位矩阵）
         {
             gfx::GFXBufferDesc desc{};
             desc.Usage       = gfx::GFXBufferUsage::ConstantBuffer;
             desc.StorageType = gfx::GFXBufferMemoryPosition::VisibleOnDevice;
-            desc.BufferSize  = sizeof(SkinnedRendererData);
-            desc.ElementSize = sizeof(SkinnedRendererData);
+            desc.BufferSize  = sizeof(SkinnedRenderObjectData);
+            desc.ElementSize = sizeof(SkinnedRenderObjectData);
             m_skinningBuffer = Application::GetGfxApp()->CreateBuffer(desc);
 
             // 默认骨骼矩阵全部为单位矩阵（静止姿势）
-            SkinnedRendererData defaultData{};
+            SkinnedRenderObjectData defaultData{};
             for (auto& mat : defaultData.BoneMatrices)
                 mat = Matrix4f(1);
             m_skinningBuffer->Fill(&defaultData);

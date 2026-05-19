@@ -46,14 +46,14 @@ namespace pulsar
     constexpr inline int kSizeofSkinnedMeshVertex = sizeof(SkinnedMeshVertex);
 
     // set2 binding1：GPU Skinning 骨骼矩阵 UBO
-    struct SkinnedRendererData
+    struct SkinnedRenderObjectData
     {
         Matrix4f BoneMatrices[SKINNEDMESH_MAX_BONES];
     };
 
     constexpr uint32_t kRenderingDescriptorSpace_PerRenderObject = 2;
     constexpr uint32_t kRenderingDescriptorBinding_PerRenderObjectExtra = 0; // PerRenderObjectExtra (骨骼等)
-    constexpr uint32_t kRenderingDescriptorBinding_SkinningData  = 1; // SkinnedRendererData
+    constexpr uint32_t kRenderingDescriptorBinding_SkinningData  = 1; // SkinnedRenderObjectData
 }
 
 #endif // PULSAR_PRIMITIVE_STRUCT_H

@@ -17,14 +17,14 @@ BillboardVaryings VSMain(StandardAttributes a)
     BillboardVaryings v = (BillboardVaryings)0;
 
     // 正确提取世界位置
-    float3 centerWS = mul(RendererBuffer.LocalToWorldMatrix, float4(0, 0, 0, 1)).xyz;
+    float3 centerWS = mul(RenderObjectBuffer.LocalToWorldMatrix, float4(0, 0, 0, 1)).xyz;
     // 正确提取各轴缩放：取 column 0 / column 1 的长度（HLSL M[i] 是 row，column 要跨行取）
-    float scaleX = length(float3(RendererBuffer.LocalToWorldMatrix[0].x,
-                                 RendererBuffer.LocalToWorldMatrix[1].x,
-                                 RendererBuffer.LocalToWorldMatrix[2].x));
-    float scaleY = length(float3(RendererBuffer.LocalToWorldMatrix[0].y,
-                                 RendererBuffer.LocalToWorldMatrix[1].y,
-                                 RendererBuffer.LocalToWorldMatrix[2].y));
+    float scaleX = length(float3(RenderObjectBuffer.LocalToWorldMatrix[0].x,
+                                 RenderObjectBuffer.LocalToWorldMatrix[1].x,
+                                 RenderObjectBuffer.LocalToWorldMatrix[2].x));
+    float scaleY = length(float3(RenderObjectBuffer.LocalToWorldMatrix[0].y,
+                                 RenderObjectBuffer.LocalToWorldMatrix[1].y,
+                                 RenderObjectBuffer.LocalToWorldMatrix[2].y));
 
     // 从 InvMatrixV（camera world transform）提取 Right / Up 列向量
     float3 rightWS = normalize(float3(CameraBuffer.InvMatrixV[0].x,
