@@ -63,8 +63,8 @@ namespace pulsar
             m_descriptorSetLayout.reset();
             if (m_skinningBuffer.IsValid())
             {
-                if (auto* renderThread = Application::GetGfxApp()->GetRenderThread())
-                    renderThread->DestroyImmediate(m_skinningBuffer);
+                auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
+                cmdList.Destroy(m_skinningBuffer);
                 m_skinningBuffer = gfx::BufferHandle{};
             }
         }
@@ -102,14 +102,14 @@ namespace pulsar
             desc.StorageType = gfx::GFXBufferMemoryPosition::VisibleOnDevice;
             desc.BufferSize  = sizeof(SkinnedRenderObjectData);
             desc.ElementSize = sizeof(SkinnedRenderObjectData);
-            auto* renderThread = Application::GetGfxApp()->GetRenderThread();
-            m_skinningBuffer = renderThread->CreateBufferImmediate(desc);
+            auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
+            m_skinningBuffer = cmdList.CreateBuffer(desc);
 
             // 默认骨骼矩阵全部为单位矩阵（静止姿势）
             SkinnedRenderObjectData defaultData{};
             for (auto& mat : defaultData.BoneMatrices)
                 mat = Matrix4f(1);
-            renderThread->UploadBufferImmediate(m_skinningBuffer, &defaultData, sizeof(defaultData));
+            cmdList.UploadBuffer(m_skinningBuffer, &defaultData, sizeof(defaultData));
         }
 
         m_descriptorSet = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_descriptorSetLayout);

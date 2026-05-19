@@ -120,7 +120,7 @@ namespace pulsar
         if (m_isCreatedResource) return true;
         m_isCreatedResource = true;
 
-        auto* renderThread = Application::GetGfxApp()->GetRenderThread();
+        auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
         for (auto& section : m_sections)
         {
             auto verts = section.BuildInterleavedVertices();
@@ -130,8 +130,8 @@ namespace pulsar
             vDesc.StorageType = gfx::GFXBufferMemoryPosition::DeviceLocal;
             vDesc.BufferSize  = verts.size() * sizeof(SkinnedMeshVertex);
             vDesc.ElementSize = sizeof(SkinnedMeshVertex);
-            auto vb = renderThread->CreateBufferImmediate(vDesc);
-            renderThread->UploadBufferImmediate(vb, verts.data(), verts.size() * sizeof(SkinnedMeshVertex));
+            auto vb = cmdList.CreateBuffer(vDesc);
+            cmdList.UploadBuffer(vb, verts.data(), verts.size() * sizeof(SkinnedMeshVertex));
             m_vertexBuffers.push_back(vb);
 
             gfx::GFXBufferDesc iDesc{};
@@ -139,8 +139,8 @@ namespace pulsar
             iDesc.StorageType = gfx::GFXBufferMemoryPosition::DeviceLocal;
             iDesc.BufferSize  = section.GetIndicesAllocSize();
             iDesc.ElementSize = sizeof(MeshIndicesType);
-            auto ib = renderThread->CreateBufferImmediate(iDesc);
-            renderThread->UploadBufferImmediate(ib, section.Indices.data(), section.GetIndicesAllocSize());
+            auto ib = cmdList.CreateBuffer(iDesc);
+            cmdList.UploadBuffer(ib, section.Indices.data(), section.GetIndicesAllocSize());
             m_indicesBuffers.push_back(ib);
         }
         return true;
@@ -151,13 +151,11 @@ namespace pulsar
         if (!m_isCreatedResource) return;
         m_isCreatedResource = false;
 
-        if (auto* renderThread = Application::GetGfxApp()->GetRenderThread())
-        {
-            for (auto& h : m_vertexBuffers)
-                renderThread->DestroyImmediate(h);
-            for (auto& h : m_indicesBuffers)
-                renderThread->DestroyImmediate(h);
-        }
+        auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
+        for (auto& h : m_vertexBuffers)
+            cmdList.Destroy(h);
+        for (auto& h : m_indicesBuffers)
+            cmdList.Destroy(h);
         m_vertexBuffers.clear();
         m_indicesBuffers.clear();
     }

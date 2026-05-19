@@ -9,7 +9,7 @@ namespace pulsar
         if (m_initialized)
             return;
 
-        auto* renderThread = Application::GetGfxApp()->GetRenderThread();
+        auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
 
         // 创建 3 个 cbuffer
         {
@@ -18,13 +18,13 @@ namespace pulsar
             desc.StorageType = gfx::GFXBufferMemoryPosition::VisibleOnDevice;
 
             desc.BufferSize = sizeof(PerPassCameraData);
-            m_cameraBuffer = renderThread->CreateBufferImmediate(desc);
+            m_cameraBuffer = cmdList.CreateBuffer(desc);
 
             desc.BufferSize = sizeof(PerPassWorldData);
-            m_worldBuffer = renderThread->CreateBufferImmediate(desc);
+            m_worldBuffer = cmdList.CreateBuffer(desc);
 
             desc.BufferSize = sizeof(PerPassLightsBufferData);
-            m_lightsBuffer = renderThread->CreateBufferImmediate(desc);
+            m_lightsBuffer = cmdList.CreateBuffer(desc);
         }
 
         m_initialized = true;
@@ -35,12 +35,10 @@ namespace pulsar
         if (!m_initialized)
             return;
 
-        if (auto* renderThread = Application::GetGfxApp()->GetRenderThread())
-        {
-            renderThread->DestroyImmediate(m_cameraBuffer);
-            renderThread->DestroyImmediate(m_worldBuffer);
-            renderThread->DestroyImmediate(m_lightsBuffer);
-        }
+        auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
+        cmdList.Destroy(m_cameraBuffer);
+        cmdList.Destroy(m_worldBuffer);
+        cmdList.Destroy(m_lightsBuffer);
 
         m_layoutCache.clear();
         m_cameraBuffer = gfx::BufferHandle{};

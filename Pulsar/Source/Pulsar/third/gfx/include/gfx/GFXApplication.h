@@ -16,6 +16,7 @@
 #include "GFXVertexLayoutDescription.h"
 #include "GFXGlobalShaderManager.h"
 #include "GFXSurface.h"
+#include "GFXCommandList.h"
 #include "GFXRenderThread.h"
 #include <functional>
 #include <memory>
@@ -111,8 +112,9 @@ namespace gfx
 
         virtual GFXSwapchain* GetViewport() = 0;
 
-        GFXRenderThread* GetRenderThread() const { return m_renderThread.get(); }
-        GFXResourceManager* GetResourceManager() const { return m_renderThread ? m_renderThread->GetResourceManager() : nullptr; }
+        GFXCommandList& GetCommandList() const { return *m_commandList; }
+        GFXCommandList& GetImmediateCommandList() const { return *m_immediateCommandList; }
+        GFXResourceManager* GetResourceManager() const { return m_resourceManager; }
 
         GFXGlobalShaderManager& GetGlobalShaderManager() { return m_shaderManager; }
 
@@ -123,6 +125,9 @@ namespace gfx
         GFXGlobalConfig m_config{};
         GFXGlobalShaderManager m_shaderManager;
         std::unique_ptr<GFXRenderThread> m_renderThread;
+        GFXResourceManager* m_resourceManager = nullptr;
+        std::unique_ptr<GFXCommandList> m_commandList;
+        std::unique_ptr<GFXCommandList> m_immediateCommandList;
     };
 
 } // namespace gfx

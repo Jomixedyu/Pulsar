@@ -49,8 +49,8 @@ namespace pulsar
         perCameraBufferDesc.BufferSize  = sizeof(PerCaptureShaderParameter);
         perCameraBufferDesc.ElementSize = sizeof(PerCaptureShaderParameter);
 
-        auto* renderThread = Application::GetGfxApp()->GetRenderThread();
-        m_cameraDataBuffer = renderThread->CreateBufferImmediate(perCameraBufferDesc);
+        auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
+        m_cameraDataBuffer = cmdList.CreateBuffer(perCameraBufferDesc);
         m_cameraDescriptorSet = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_camDescriptorLayout);
         if (auto* buffer = Application::GetGfxApp()->GetResourceManager()->GetBuffer(m_cameraDataBuffer))
         {
@@ -62,8 +62,8 @@ namespace pulsar
     {
         if (m_cameraDataBuffer.IsValid())
         {
-            if (auto* renderThread = Application::GetGfxApp()->GetRenderThread())
-                renderThread->DestroyImmediate(m_cameraDataBuffer);
+            auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
+            cmdList.Destroy(m_cameraDataBuffer);
             m_cameraDataBuffer = gfx::BufferHandle{};
         }
         SceneCaptureComponent::EndComponent();

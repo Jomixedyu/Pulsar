@@ -27,8 +27,8 @@ namespace pulsar
         if (!m_buffer.IsValid()) return; // already destroyed
         m_dummyExtraSet.reset();
         m_dummyExtraLayout.reset();
-        if (auto* renderThread = Application::GetGfxApp()->GetRenderThread())
-            renderThread->DestroyImmediate(m_buffer);
+        auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
+        cmdList.Destroy(m_buffer);
         m_buffer = gfx::BufferHandle{};
         m_cpuData.clear();
         m_slotUsed.clear();
@@ -41,14 +41,14 @@ namespace pulsar
     {
         if (newCapacity <= m_capacity) return;
 
-        auto* renderThread = Application::GetGfxApp()->GetRenderThread();
+        auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
 
         gfx::GFXBufferDesc desc{};
         desc.Usage = gfx::GFXBufferUsage::ConstantBuffer;
         desc.StorageType = gfx::GFXBufferMemoryPosition::VisibleOnHost;
         desc.BufferSize = newCapacity * sizeof(PerRenderObjectData);
         desc.ElementSize = sizeof(PerRenderObjectData);
-        auto newBuffer = renderThread->CreateBufferImmediate(desc);
+        auto newBuffer = cmdList.CreateBuffer(desc);
 
         // Copy existing data if any
         if (m_buffer.IsValid() && m_capacity > 0)
@@ -57,7 +57,7 @@ namespace pulsar
             {
                 // TODO: copy old data to new buffer
             }
-            renderThread->DestroyImmediate(m_buffer);
+            cmdList.Destroy(m_buffer);
         }
 
         m_buffer = newBuffer;

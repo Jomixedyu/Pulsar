@@ -71,10 +71,10 @@ namespace pulsar
         desc.Usage = gfx::GFXBufferUsage::ConstantBuffer;
         desc.StorageType = gfx::GFXBufferMemoryPosition::VisibleOnDevice;
         desc.BufferSize = sizeof(BloomParams);
-        auto* renderThread = Application::GetGfxApp()->GetRenderThread();
+        auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
         for (uint32_t i = 0; i < PassCount; ++i)
         {
-            m_bloomParamBuffers[i] = renderThread->CreateBufferImmediate(desc);
+            m_bloomParamBuffers[i] = cmdList.CreateBuffer(desc);
         }
 
         auto* resMgr = Application::GetGfxApp()->GetResourceManager();
@@ -99,12 +99,10 @@ namespace pulsar
 
     void BloomPass::Destroy()
     {
-        if (auto* renderThread = Application::GetGfxApp()->GetRenderThread())
+        auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
+        for (auto& h : m_bloomParamBuffers)
         {
-            for (auto& h : m_bloomParamBuffers)
-            {
-                if (h.IsValid()) renderThread->DestroyImmediate(h);
-            }
+            if (h.IsValid()) cmdList.Destroy(h);
         }
         m_bloomParamBuffers.clear();
         m_bloomSets.clear();
