@@ -8,7 +8,7 @@ float FoamTravelingWave(float distToShore, float time,
 
     float d = saturate(distToShore / waveDistance);
 
-    float dPhase = pow(d, shoreEase);              // ★ 改这一行
+    float dPhase = pow(d, shoreEase);
     float phase  = frac((time * waveSpeed + dPhase) / waveCycle);
 
     float p      = saturate(phase / foamWidth);
