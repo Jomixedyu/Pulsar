@@ -86,7 +86,6 @@ namespace pulsar
                 {gfx::GFXDescriptorType::ConstantBuffer,       gfx::GFXGpuProgramStageFlags::VertexFragment, 0, 1},
                 {gfx::GFXDescriptorType::ConstantBuffer,       gfx::GFXGpuProgramStageFlags::VertexFragment, 1, 1},
                 {gfx::GFXDescriptorType::CombinedImageSampler, gfx::GFXGpuProgramStageFlags::Fragment,       3, 1},
-                {gfx::GFXDescriptorType::ConstantBufferDynamic,gfx::GFXGpuProgramStageFlags::VertexFragment, 6, 1},
             };
         }
         else if (passName == "ShadowCaster")
