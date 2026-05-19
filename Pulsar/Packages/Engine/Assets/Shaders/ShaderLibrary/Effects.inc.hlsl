@@ -2,7 +2,7 @@
 float FoamTravelingWave(float distToShore, float time,
                         float waveDistance, float waveSpeed,
                         float waveCycle,    float foamWidth, float foamSharp,
-                        float shoreEase /* 1.0=不变, 2.0=岸边变慢, 0.5=岸边更快 */)
+                        float shoreEase)
 {
     const float halfPi = 1.5707963;
 
