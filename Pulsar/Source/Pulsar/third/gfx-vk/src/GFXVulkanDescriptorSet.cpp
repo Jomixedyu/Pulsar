@@ -30,6 +30,9 @@ namespace gfx
         case gfx::GFXDescriptorType::ConstantBuffer:
             return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
             break;
+        case gfx::GFXDescriptorType::ConstantBufferDynamic:
+            return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+            break;
         case gfx::GFXDescriptorType::CombinedImageSampler:
             return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             break;
@@ -114,6 +117,24 @@ namespace gfx
         WriteInfo.dstBinding = m_bindingPoint;
         WriteInfo.dstArrayElement = 0;
         WriteInfo.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        WriteInfo.descriptorCount = 1;
+        WriteInfo.pBufferInfo = &BufferInfo;
+
+        IsDirty = true;
+    }
+    void GFXVulkanDescriptor::SetConstantBufferDynamic(GFXBuffer* buffer)
+    {
+        const auto vkBuffer = static_cast<GFXVulkanBuffer*>(buffer);
+
+        BufferInfo.buffer = vkBuffer->GetVkBuffer();
+        BufferInfo.offset = 0;
+        BufferInfo.range = vkBuffer->GetDesc().ElementSize; // range = single element, not whole buffer
+
+        WriteInfo.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        WriteInfo.dstSet = m_descriptorSet->GetVkDescriptorSet();
+        WriteInfo.dstBinding = m_bindingPoint;
+        WriteInfo.dstArrayElement = 0;
+        WriteInfo.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
         WriteInfo.descriptorCount = 1;
         WriteInfo.pBufferInfo = &BufferInfo;
 

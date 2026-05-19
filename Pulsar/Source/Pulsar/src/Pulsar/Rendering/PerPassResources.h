@@ -7,6 +7,7 @@
 #include <unordered_map>
 
 #include "LightingData.h"
+#include <gfx/GFXBuffer.h>
 
 namespace pulsar
 {
@@ -68,9 +69,10 @@ namespace pulsar
         void WriteCameraToSet(gfx::GFXDescriptorSet* set) const;
         void WriteWorldToSet(gfx::GFXDescriptorSet* set) const;
         void WriteLightsToSet(gfx::GFXDescriptorSet* set) const;
+        void WritePerRenderObjectToSet(gfx::GFXDescriptorSet* set, gfx::GFXBuffer* buffer) const;
 
-        // 便捷函数：写入全部 3 个标准 buffer（0/1/2）
-        void WriteStandardBuffers(gfx::GFXDescriptorSet* set) const;
+        // 便捷函数：写入全部标准 buffer（0/1/2/6）
+        void WriteStandardBuffers(gfx::GFXDescriptorSet* set, gfx::GFXBuffer* perRenderObjectBuffer) const;
 
         // 按 binding 写入 texture（调用方确保 layout 包含该 binding）
         void WriteTexture(gfx::GFXDescriptorSet* set, uint32_t binding, gfx::GFXTexture2DView* view) const;

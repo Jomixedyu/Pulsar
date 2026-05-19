@@ -72,11 +72,12 @@ namespace pulsar
         if (passName == "Forward")
         {
             descs = {
-                {gfx::GFXDescriptorType::ConstantBuffer,       gfx::GFXGpuProgramStageFlags::VertexFragment, 0, 1},
-                {gfx::GFXDescriptorType::ConstantBuffer,       gfx::GFXGpuProgramStageFlags::VertexFragment, 1, 1},
-                {gfx::GFXDescriptorType::ConstantBuffer,       gfx::GFXGpuProgramStageFlags::VertexFragment, 2, 1},
-                {gfx::GFXDescriptorType::CombinedImageSampler, gfx::GFXGpuProgramStageFlags::Fragment,       3, 1},
-                {gfx::GFXDescriptorType::CombinedImageSampler, gfx::GFXGpuProgramStageFlags::Fragment,       4, 1},
+                {gfx::GFXDescriptorType::ConstantBuffer,        gfx::GFXGpuProgramStageFlags::VertexFragment, 0, 1},
+                {gfx::GFXDescriptorType::ConstantBuffer,        gfx::GFXGpuProgramStageFlags::VertexFragment, 1, 1},
+                {gfx::GFXDescriptorType::ConstantBuffer,        gfx::GFXGpuProgramStageFlags::VertexFragment, 2, 1},
+                {gfx::GFXDescriptorType::CombinedImageSampler,  gfx::GFXGpuProgramStageFlags::Fragment,       3, 1},
+                {gfx::GFXDescriptorType::CombinedImageSampler,  gfx::GFXGpuProgramStageFlags::Fragment,       4, 1},
+                {gfx::GFXDescriptorType::ConstantBufferDynamic, gfx::GFXGpuProgramStageFlags::VertexFragment, 6, 1},
             };
         }
         else if (passName == "PostProcess")
@@ -85,22 +86,25 @@ namespace pulsar
                 {gfx::GFXDescriptorType::ConstantBuffer,       gfx::GFXGpuProgramStageFlags::VertexFragment, 0, 1},
                 {gfx::GFXDescriptorType::ConstantBuffer,       gfx::GFXGpuProgramStageFlags::VertexFragment, 1, 1},
                 {gfx::GFXDescriptorType::CombinedImageSampler, gfx::GFXGpuProgramStageFlags::Fragment,       3, 1},
+                {gfx::GFXDescriptorType::ConstantBufferDynamic,gfx::GFXGpuProgramStageFlags::VertexFragment, 6, 1},
             };
         }
         else if (passName == "ShadowCaster")
         {
             descs = {
-                {gfx::GFXDescriptorType::ConstantBuffer, gfx::GFXGpuProgramStageFlags::VertexFragment, 0, 1},
-                {gfx::GFXDescriptorType::ConstantBuffer, gfx::GFXGpuProgramStageFlags::VertexFragment, 1, 1},
+                {gfx::GFXDescriptorType::ConstantBuffer,        gfx::GFXGpuProgramStageFlags::VertexFragment, 0, 1},
+                {gfx::GFXDescriptorType::ConstantBuffer,        gfx::GFXGpuProgramStageFlags::VertexFragment, 1, 1},
+                {gfx::GFXDescriptorType::ConstantBufferDynamic, gfx::GFXGpuProgramStageFlags::VertexFragment, 6, 1},
             };
         }
         else
         {
-            // 默认：标准 3 CBV
+            // 默认：标准 3 CBV + 1 Dynamic UBO
             descs = {
-                {gfx::GFXDescriptorType::ConstantBuffer, gfx::GFXGpuProgramStageFlags::VertexFragment, 0, 1},
-                {gfx::GFXDescriptorType::ConstantBuffer, gfx::GFXGpuProgramStageFlags::VertexFragment, 1, 1},
-                {gfx::GFXDescriptorType::ConstantBuffer, gfx::GFXGpuProgramStageFlags::VertexFragment, 2, 1},
+                {gfx::GFXDescriptorType::ConstantBuffer,        gfx::GFXGpuProgramStageFlags::VertexFragment, 0, 1},
+                {gfx::GFXDescriptorType::ConstantBuffer,        gfx::GFXGpuProgramStageFlags::VertexFragment, 1, 1},
+                {gfx::GFXDescriptorType::ConstantBuffer,        gfx::GFXGpuProgramStageFlags::VertexFragment, 2, 1},
+                {gfx::GFXDescriptorType::ConstantBufferDynamic, gfx::GFXGpuProgramStageFlags::VertexFragment, 6, 1},
             };
         }
 
@@ -139,11 +143,20 @@ namespace pulsar
         if (lightDesc) lightDesc->SetConstantBuffer(m_lightsBuffer.get());
     }
 
-    void PerPassResources::WriteStandardBuffers(gfx::GFXDescriptorSet* set) const
+    void PerPassResources::WritePerRenderObjectToSet(gfx::GFXDescriptorSet* set, gfx::GFXBuffer* buffer) const
+    {
+        if (!set) return;
+        auto* desc = set->FindByBinding(6);
+        if (!desc) desc = set->AddDescriptor("PerRenderObjectBuffer", 6);
+        if (desc && buffer) desc->SetConstantBufferDynamic(buffer);
+    }
+
+    void PerPassResources::WriteStandardBuffers(gfx::GFXDescriptorSet* set, gfx::GFXBuffer* perRenderObjectBuffer) const
     {
         WriteCameraToSet(set);
         WriteWorldToSet(set);
         WriteLightsToSet(set);
+        WritePerRenderObjectToSet(set, perRenderObjectBuffer);
     }
 
     void PerPassResources::WriteTexture(gfx::GFXDescriptorSet* set, uint32_t binding, gfx::GFXTexture2DView* view) const

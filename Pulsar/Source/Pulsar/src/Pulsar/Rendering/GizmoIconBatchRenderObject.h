@@ -30,13 +30,9 @@ namespace pulsar
         bool m_dirty = true;
 
         gfx::GFXDescriptorSetLayout_sp m_descriptorSetLayout;
+        gfx::GFXDescriptorSet_sp m_dummyExtraSet;
 
-        struct PerItemGPU
-        {
-            gfx::GFXBuffer_sp ConstantBuffer;
-            gfx::GFXDescriptorSet_sp DescriptorSet;
-        };
-        array_list<PerItemGPU> m_itemGPU;
+        array_list<uint32_t> m_itemSlots;
         array_list<rendering::MeshBatch> m_batches;
     };
 }

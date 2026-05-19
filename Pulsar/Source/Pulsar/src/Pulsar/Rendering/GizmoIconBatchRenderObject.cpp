@@ -22,13 +22,13 @@ namespace pulsar
 
     void GizmoIconBatchRenderObject::OnCreateResource()
     {
+        if (m_pPerRenderObjectDataManager)
+            m_dummyExtraSet = m_pPerRenderObjectDataManager->GetDummyExtraSet();
+
         if (s_sharedLayout.expired())
         {
-            gfx::GFXDescriptorSetLayoutDesc info{
-                gfx::GFXDescriptorType::ConstantBuffer,
-                gfx::GFXGpuProgramStageFlags::VertexFragment,
-                0, kRenderingDescriptorSpace_ModelInfo};
-            m_descriptorSetLayout = Application::GetGfxApp()->CreateDescriptorSetLayout(&info, 1);
+            gfx::GFXDescriptorSetLayoutDesc info{};
+            m_descriptorSetLayout = Application::GetGfxApp()->CreateDescriptorSetLayout(&info, 0);
             s_sharedLayout = m_descriptorSetLayout;
         }
         else
@@ -40,7 +40,14 @@ namespace pulsar
 
     void GizmoIconBatchRenderObject::OnDestroyResource()
     {
-        m_itemGPU.clear();
+        if (m_pPerRenderObjectDataManager)
+        {
+            for (uint32_t slot : m_itemSlots)
+            {
+                m_pPerRenderObjectDataManager->FreeSlot(slot);
+            }
+        }
+        m_itemSlots.clear();
         m_batches.clear();
         m_descriptorSetLayout.reset();
     }
@@ -65,46 +72,43 @@ namespace pulsar
             return;
         }
 
-        // Ensure enough GPU resources
-        while (m_itemGPU.size() < m_items.size())
+        if (!m_pPerRenderObjectDataManager)
         {
-            PerItemGPU gpu{};
-            gfx::GFXBufferDesc desc{};
-            desc.Usage = gfx::GFXBufferUsage::ConstantBuffer;
-            desc.StorageType = gfx::GFXBufferMemoryPosition::VisibleOnDevice;
-            desc.BufferSize = sizeof(PerRendererData);
-            desc.ElementSize = sizeof(PerRendererData);
-            gpu.ConstantBuffer = Application::GetGfxApp()->CreateBuffer(desc);
-            gpu.DescriptorSet = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_descriptorSetLayout);
-            gpu.DescriptorSet->AddDescriptor("ModelObject", 0)->SetConstantBuffer(gpu.ConstantBuffer.get());
-            gpu.DescriptorSet->Submit();
-            m_itemGPU.push_back(std::move(gpu));
+            m_dirty = false;
+            return;
+        }
+
+        // Ensure enough slots
+        while (m_itemSlots.size() < m_items.size())
+        {
+            m_itemSlots.push_back(m_pPerRenderObjectDataManager->AllocSlot());
         }
 
         for (size_t i = 0; i < m_items.size(); ++i)
         {
             auto& item = m_items[i];
-            auto& gpu = m_itemGPU[i];
+            uint32_t slot = m_itemSlots[i];
 
-            PerRendererData data{};
+            PerRenderObjectData data{};
             data.LocalToWorldMatrix = item.Transform;
             data.WorldToLocalMatrix = Inverse(item.Transform);
             data.NormalLocalToWorldMatrix = Transpose(data.WorldToLocalMatrix);
             data.NodePosition = Vector4f{item.Transform[3][0], item.Transform[3][1], item.Transform[3][2], 1.0f};
             data.ShaderFlags = 0;
-            gpu.ConstantBuffer->Fill(&data);
+            m_pPerRenderObjectDataManager->SetData(slot, data);
 
             rendering::MeshBatch batch{};
             batch.Material = item.Material;
             batch.Interface = "RENDERER_STATICMESH";
             batch.DescriptorSetLayout = m_descriptorSetLayout;
+            batch.RenderObjectIndex = slot;
+            batch.ExtraDescriptorSet = m_dummyExtraSet;
             batch.State.VertexLayouts = {StaticMesh::StaticGetVertexLayout()};
             batch.IsDepthTestDisabled = true;
 
             auto& element = batch.Elements.emplace_back();
             element.Vertex = vertBuffers[0];
             element.Indices = indicesBuffers.empty() ? nullptr : indicesBuffers[0];
-            element.ModelDescriptor = gpu.DescriptorSet;
             batch.IsUsedIndices = element.Indices != nullptr;
 
             m_batches.push_back(std::move(batch));

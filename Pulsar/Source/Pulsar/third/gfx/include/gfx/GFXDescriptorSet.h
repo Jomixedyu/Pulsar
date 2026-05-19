@@ -10,6 +10,7 @@ namespace gfx
     enum class GFXDescriptorType
     {
         ConstantBuffer,
+        ConstantBufferDynamic,
         StructuredBuffer,
         CombinedImageSampler,
         Texture2D
@@ -54,6 +55,7 @@ namespace gfx
         GFXDescriptor(const GFXDescriptor&) = delete;
 
         virtual void SetConstantBuffer(GFXBuffer* buffer) = 0;
+        virtual void SetConstantBufferDynamic(GFXBuffer* buffer) = 0;
         virtual void SetStructuredBuffer(GFXBuffer* buffer) = 0;
         virtual void SetTextureSampler2D(GFXTexture2DView* texture) = 0;
         virtual void SetTexture2D(GFXTexture* texture) = 0;

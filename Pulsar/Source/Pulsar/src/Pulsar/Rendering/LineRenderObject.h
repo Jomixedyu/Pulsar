@@ -12,8 +12,7 @@ namespace pulsar
         array_list<StaticMeshVertex> m_verties;
 
         gfx::GFXBuffer_sp m_vertBuffer;
-        gfx::GFXBuffer_sp m_meshConstantBuffer;
-        gfx::GFXDescriptorSet_sp m_meshObjDescriptorSet;
+        gfx::GFXDescriptorSet_sp m_dummyExtraSet;
         gfx::GFXDescriptorSetLayout_sp m_meshDescriptorSetLayout;
 
         array_list<rendering::MeshBatch> m_batchs;

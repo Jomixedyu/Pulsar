@@ -1,4 +1,5 @@
-#pragma once
+#ifndef PULSAR_PRIMITIVE_STRUCT_H
+#define PULSAR_PRIMITIVE_STRUCT_H
 #include "Pulsar/EngineMath.h"
 
 namespace pulsar
@@ -18,7 +19,7 @@ namespace pulsar
     };
     constexpr inline int kSizeofStaticMeshVertex = sizeof(StaticMeshVertex);
 
-    struct PerRendererData
+    struct PerRenderObjectData
     {
         Matrix4f LocalToWorldMatrix;
         Matrix4f WorldToLocalMatrix;
@@ -50,7 +51,9 @@ namespace pulsar
         Matrix4f BoneMatrices[SKINNEDMESH_MAX_BONES];
     };
 
-    constexpr uint32_t kRenderingDescriptorSpace_ModelInfo = 2;
-    constexpr uint32_t kRenderingDescriptorBinding_PerRenderer   = 0; // PerRendererData
+    constexpr uint32_t kRenderingDescriptorSpace_PerRenderObject = 2;
+    constexpr uint32_t kRenderingDescriptorBinding_PerRenderObjectExtra = 0; // PerRenderObjectExtra (骨骼等)
     constexpr uint32_t kRenderingDescriptorBinding_SkinningData  = 1; // SkinnedRendererData
 }
+
+#endif // PULSAR_PRIMITIVE_STRUCT_H

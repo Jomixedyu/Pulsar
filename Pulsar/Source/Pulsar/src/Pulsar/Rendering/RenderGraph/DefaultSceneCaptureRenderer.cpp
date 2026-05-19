@@ -72,6 +72,9 @@ namespace pulsar
         if (!camRenderTexture)
             return;
 
+        auto& perRenderObjectMgr = world->GetPerRenderObjectDataManager();
+        perRenderObjectMgr.BeginFrame();
+
         auto* perPass = &m_perPassResources;
 
         PerPassCameraData camData{};
@@ -257,6 +260,8 @@ namespace pulsar
                 m_gizmoOverlayPass.AddToGraph(graph, hFinal, hFinal, capture2D, perPass);
             }
         }
+
+        perRenderObjectMgr.EndFrame();
     }
 
 } // namespace pulsar

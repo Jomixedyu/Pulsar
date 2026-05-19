@@ -11,8 +11,6 @@
 
 namespace pulsar
 {
-    static gfx::GFXDescriptorSetLayout_wp MeshDescriptorSetLayout;
-
     class StaticMeshRenderObject final : public rendering::RenderObject
     {
     public:
@@ -21,9 +19,7 @@ namespace pulsar
         array_list<RCPtr<Material>> m_materials;
         array_list<int32_t> m_priorities;
 
-        gfx::GFXBuffer_sp m_meshConstantBuffer;
-        gfx::GFXDescriptorSet_sp m_meshObjDescriptorSet;
-        gfx::GFXDescriptorSetLayout_sp m_meshDescriptorSetLayout;
+        gfx::GFXDescriptorSet_sp m_dummyExtraSet;
 
         StaticMeshRenderObject() = default;
         StaticMeshRenderObject* SetStaticMesh(RCPtr<StaticMesh> mesh)
@@ -41,9 +37,7 @@ namespace pulsar
         void OnCreateResource() override;
         void OnDestroyResource() override
         {
-            m_meshObjDescriptorSet.reset();
-            m_meshDescriptorSetLayout.reset();
-            m_meshConstantBuffer.reset();
+            m_dummyExtraSet.reset();
         }
 
         void OnChangedTransform() override
@@ -52,7 +46,6 @@ namespace pulsar
             {
                 batch.IsReverseCulling = IsDeterminantNegative();
             }
-            m_meshConstantBuffer->Fill(&m_perModelData);
         }
 
         array_list<rendering::MeshBatch> GetMeshBatches() override
@@ -105,7 +98,10 @@ namespace pulsar
             }
 
             batch.Interface = GetInterface();
-            batch.DescriptorSetLayout = m_meshDescriptorSetLayout;
+            batch.RenderObjectIndex = m_renderObjectIndex;
+            batch.ExtraDescriptorSet = m_dummyExtraSet;
+            if (m_dummyExtraSet)
+                batch.DescriptorSetLayout = m_dummyExtraSet->GetDescriptorSetLayout();
 
             if (!m_staticMesh->IsCreatedGPUResource())
             {
@@ -121,7 +117,7 @@ namespace pulsar
                 auto& element = batch.Elements.emplace_back();
                 element.Vertex =  vertBuffers[matIndex];
                 element.Indices = indicesBuffers[matIndex];
-                element.ModelDescriptor = m_meshObjDescriptorSet;
+                // PerRenderObject data is in global dynamic UBO, no per-element descriptor set needed
             }
 
         }
@@ -134,30 +130,8 @@ namespace pulsar
 
     void StaticMeshRenderObject::OnCreateResource()
     {
-        if (MeshDescriptorSetLayout.expired())
-        {
-            gfx::GFXDescriptorSetLayoutDesc info{
-                gfx::GFXDescriptorType::ConstantBuffer,
-                gfx::GFXGpuProgramStageFlags::VertexFragment,
-                0, kRenderingDescriptorSpace_ModelInfo};
-            m_meshDescriptorSetLayout = Application::GetGfxApp()->CreateDescriptorSetLayout(&info, 1);
-            MeshDescriptorSetLayout = m_meshDescriptorSetLayout;
-        }
-        else
-        {
-            m_meshDescriptorSetLayout = MeshDescriptorSetLayout.lock();
-        }
-
-        gfx::GFXBufferDesc perModelDesc{};
-        perModelDesc.Usage        = gfx::GFXBufferUsage::ConstantBuffer;
-        perModelDesc.StorageType  = gfx::GFXBufferMemoryPosition::VisibleOnDevice;
-                perModelDesc.BufferSize   = sizeof(PerRendererData);
-                perModelDesc.ElementSize  = sizeof(PerRendererData);
-
-        m_meshConstantBuffer   = Application::GetGfxApp()->CreateBuffer(perModelDesc);
-        m_meshObjDescriptorSet = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_meshDescriptorSetLayout);
-        m_meshObjDescriptorSet->AddDescriptor("ModelObject", 0)->SetConstantBuffer(m_meshConstantBuffer.get());
-        m_meshObjDescriptorSet->Submit();
+        if (m_pPerRenderObjectDataManager)
+            m_dummyExtraSet = m_pPerRenderObjectDataManager->GetDummyExtraSet();
 
         SubmitChange();
     }

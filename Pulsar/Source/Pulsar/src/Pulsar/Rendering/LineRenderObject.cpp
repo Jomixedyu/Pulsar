@@ -6,7 +6,8 @@
 
 namespace pulsar
 {
-    static inline gfx::GFXDescriptorSetLayout_wp MeshDescriptorSetLayout{};
+    // Layout for set2 (dummy, kept for pipeline compatibility)
+    static inline gfx::GFXDescriptorSetLayout_wp s_dummyLayout{};
 
     void LineRenderObject::SetPoints(const array_list<Vector3f>& pointPairs, const array_list<Color4b>& pointColors)
     {
@@ -48,30 +49,19 @@ namespace pulsar
     void LineRenderObject::OnCreateResource()
     {
         base::OnCreateResource();
-        if (MeshDescriptorSetLayout.expired())
+        if (m_pPerRenderObjectDataManager)
+            m_dummyExtraSet = m_pPerRenderObjectDataManager->GetDummyExtraSet();
+
+        if (s_dummyLayout.expired())
         {
-            gfx::GFXDescriptorSetLayoutDesc info{
-                gfx::GFXDescriptorType::ConstantBuffer,
-                gfx::GFXGpuProgramStageFlags::VertexFragment,
-                0, kRenderingDescriptorSpace_ModelInfo};
-            m_meshDescriptorSetLayout = Application::GetGfxApp()->CreateDescriptorSetLayout(&info, 1);
-            MeshDescriptorSetLayout = m_meshDescriptorSetLayout;
+            gfx::GFXDescriptorSetLayoutDesc info{};
+            m_meshDescriptorSetLayout = Application::GetGfxApp()->CreateDescriptorSetLayout(&info, 0);
+            s_dummyLayout = m_meshDescriptorSetLayout;
         }
         else
         {
-            m_meshDescriptorSetLayout = MeshDescriptorSetLayout.lock();
+            m_meshDescriptorSetLayout = s_dummyLayout.lock();
         }
-
-        gfx::GFXBufferDesc perMeshBufferDesc{};
-        perMeshBufferDesc.Usage         = gfx::GFXBufferUsage::ConstantBuffer;
-        perMeshBufferDesc.StorageType   = gfx::GFXBufferMemoryPosition::VisibleOnDevice;
-                perMeshBufferDesc.BufferSize    = sizeof(PerRendererData);
-                perMeshBufferDesc.ElementSize   = sizeof(PerRendererData);
-
-        m_meshConstantBuffer = Application::GetGfxApp()->CreateBuffer(perMeshBufferDesc);
-        m_meshObjDescriptorSet = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_meshDescriptorSetLayout);
-        m_meshObjDescriptorSet->AddDescriptor("ModelObject", 0)->SetConstantBuffer(m_meshConstantBuffer.get());
-        m_meshObjDescriptorSet->Submit();
 
         gfx::GFXBufferDesc vertexBufferDesc{};
         vertexBufferDesc.Usage       = gfx::GFXBufferUsage::Vertex;
@@ -86,9 +76,10 @@ namespace pulsar
         rendering::MeshBatch& batch = m_batchs[0];
         batch.Interface = GetInterface();
         batch.DescriptorSetLayout = m_meshDescriptorSetLayout;
+        batch.RenderObjectIndex = m_renderObjectIndex;
+        batch.ExtraDescriptorSet = m_dummyExtraSet;
         batch.Elements.resize(1);
         batch.Elements[0].Vertex = m_vertBuffer;
-        batch.Elements[0].ModelDescriptor = m_meshObjDescriptorSet;
         batch.State.Topology = gfx::GFXPrimitiveTopology::LineList;
         batch.State.LineWidth = 1.f;
         batch.State.VertexLayouts = {StaticMesh::StaticGetVertexLayout()};
@@ -107,7 +98,6 @@ namespace pulsar
 
     void LineRenderObject::OnChangedTransform()
     {
-        m_meshConstantBuffer->Fill(&m_perModelData);
     }
 
     array_list<rendering::MeshBatch> LineRenderObject::GetMeshBatches()

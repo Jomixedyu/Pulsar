@@ -23,8 +23,6 @@ namespace pulsar
         array_list<RCPtr<Material>>   m_materials;
         array_list<int32_t>           m_priorities;
 
-        // set2 binding0: PerRendererData
-        gfx::GFXBuffer_sp             m_perRendererBuffer;
         // set2 binding1: SkinnedRendererData (BoneMatrices)
         gfx::GFXBuffer_sp             m_skinningBuffer;
 
@@ -62,7 +60,6 @@ namespace pulsar
         {
             m_descriptorSet.reset();
             m_descriptorSetLayout.reset();
-            m_perRendererBuffer.reset();
             m_skinningBuffer.reset();
         }
 
@@ -70,7 +67,6 @@ namespace pulsar
         {
             for (auto& batch : m_batches)
                 batch.IsReverseCulling = IsDeterminantNegative();
-            m_perRendererBuffer->Fill(&m_perModelData);
         }
 
         array_list<rendering::MeshBatch> GetMeshBatches() override { return m_batches; }
@@ -79,31 +75,18 @@ namespace pulsar
 
     void SkinnedMeshRenderObject::OnCreateResource()
     {
-        // set2 layout: binding0=PerRendererData, binding1=SkinnedRendererData
+        // set2 layout: binding1=SkinnedRendererData
         if (SkinnedMeshDescriptorSetLayout.expired())
         {
-            gfx::GFXDescriptorSetLayoutDesc bindings[2] = {
-                {gfx::GFXDescriptorType::ConstantBuffer, gfx::GFXGpuProgramStageFlags::VertexFragment,
-                 kRenderingDescriptorBinding_PerRenderer,  kRenderingDescriptorSpace_ModelInfo},
-                {gfx::GFXDescriptorType::ConstantBuffer, gfx::GFXGpuProgramStageFlags::VertexFragment,
-                 kRenderingDescriptorBinding_SkinningData, kRenderingDescriptorSpace_ModelInfo},
-            };
-            m_descriptorSetLayout = Application::GetGfxApp()->CreateDescriptorSetLayout(bindings, 2);
+            gfx::GFXDescriptorSetLayoutDesc binding{
+                gfx::GFXDescriptorType::ConstantBuffer, gfx::GFXGpuProgramStageFlags::VertexFragment,
+                kRenderingDescriptorBinding_SkinningData, kRenderingDescriptorSpace_PerRenderObject};
+            m_descriptorSetLayout = Application::GetGfxApp()->CreateDescriptorSetLayout(&binding, 1);
             SkinnedMeshDescriptorSetLayout = m_descriptorSetLayout;
         }
         else
         {
             m_descriptorSetLayout = SkinnedMeshDescriptorSetLayout.lock();
-        }
-
-        // binding0: PerRendererData
-        {
-            gfx::GFXBufferDesc desc{};
-            desc.Usage       = gfx::GFXBufferUsage::ConstantBuffer;
-            desc.StorageType = gfx::GFXBufferMemoryPosition::VisibleOnDevice;
-            desc.BufferSize  = sizeof(PerRendererData);
-            desc.ElementSize = sizeof(PerRendererData);
-            m_perRendererBuffer = Application::GetGfxApp()->CreateBuffer(desc);
         }
 
         // binding1: SkinnedRendererData（初始化为单位矩阵）
@@ -123,8 +106,6 @@ namespace pulsar
         }
 
         m_descriptorSet = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_descriptorSetLayout);
-        m_descriptorSet->AddDescriptor("PerRenderer", kRenderingDescriptorBinding_PerRenderer)
-                       ->SetConstantBuffer(m_perRendererBuffer.get());
         m_descriptorSet->AddDescriptor("SkinningData", kRenderingDescriptorBinding_SkinningData)
                        ->SetConstantBuffer(m_skinningBuffer.get());
         m_descriptorSet->Submit();
@@ -164,6 +145,8 @@ namespace pulsar
             }
 
             batch.Interface           = GetInterface();
+            batch.RenderObjectIndex   = m_renderObjectIndex;
+            batch.ExtraDescriptorSet  = m_descriptorSet;
             batch.DescriptorSetLayout = m_descriptorSetLayout;
 
             if (!m_skinnedMesh->IsCreatedGPUResource())
@@ -177,7 +160,7 @@ namespace pulsar
                 auto& element         = batch.Elements.emplace_back();
                 element.Vertex        = vertBuffers[matIndex];
                 element.Indices       = indicesBuffers[matIndex];
-                element.ModelDescriptor = m_descriptorSet;
+                // PerRenderObject data is in global dynamic UBO
             }
         }
     }

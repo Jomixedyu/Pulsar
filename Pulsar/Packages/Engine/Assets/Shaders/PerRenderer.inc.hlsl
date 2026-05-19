@@ -17,7 +17,7 @@ struct RendererData
     float4   _Padding3;
 };
 
-ConstantBuffer<RendererData> RendererBuffer : register(b0, space2);
+ConstantBuffer<RendererData> RendererBuffer : register(b6, space1);
 
 
 #ifdef RENDERER_SKINNEDMESH

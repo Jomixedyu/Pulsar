@@ -66,13 +66,16 @@ namespace pulsar
         cmdBuffer.CmdBindGraphicsPipeline(gfxPipeline.get());
         cmdBuffer.CmdSetCullMode(pb.batch.GetCullMode(psoParams.CullMode));
 
+        uint32_t dynOffset = pb.batch.RenderObjectIndex * sizeof(PerRenderObjectData);
+        array_list<uint32_t> dynOffsets = { dynOffset };
+
         for (const auto& element : pb.batch.Elements)
         {
             array_list<gfx::GFXDescriptorSet*> descSets;
             descSets.push_back(pb.binding->m_descriptorSet.get());
             descSets.push_back(perPassSet);
-            descSets.push_back(element.ModelDescriptor.get());
-            cmdBuffer.CmdBindDescriptorSets(descSets, gfxPipeline.get());
+            descSets.push_back(pb.batch.ExtraDescriptorSet.get());
+            cmdBuffer.CmdBindDescriptorSets(descSets, gfxPipeline.get(), &dynOffsets);
 
             cmdBuffer.CmdBindVertexBuffers({element.Vertex.get()});
             if (pb.batch.IsUsedIndices)
