@@ -416,10 +416,9 @@ namespace gfx
 
         m_graphicsPipelineManager = new GFXVulkanGraphicsPipelineManager(this);
 
-        m_renderThread = std::make_unique<GFXRenderThread>(this);
-        m_resourceManager = m_renderThread->GetResourceManager();
-        m_commandList = std::make_unique<GFXCommandListDeferred>(m_resourceManager);
-        m_immediateCommandList = std::make_unique<GFXCommandListImmediate>(m_resourceManager);
+        m_resourceManager = std::make_unique<GFXResourceManager>(this);
+        m_commandList = std::make_unique<GFXCommandListDeferred>(m_resourceManager.get());
+        m_immediateCommandList = std::make_unique<GFXCommandListImmediate>(m_resourceManager.get());
     }
 
     void GFXVulkanApplication::ExecLoop()
@@ -490,8 +489,7 @@ namespace gfx
         // Release handle-managed resources before destroying the device
         m_immediateCommandList.reset();
         m_commandList.reset();
-        m_renderThread.reset();
-        m_resourceManager = nullptr;
+        m_resourceManager.reset();
 
         delete m_renderer;
         delete m_viewport;

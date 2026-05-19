@@ -17,7 +17,6 @@
 #include "GFXGlobalShaderManager.h"
 #include "GFXSurface.h"
 #include "GFXCommandList.h"
-#include "GFXRenderThread.h"
 #include <functional>
 #include <memory>
 
@@ -35,7 +34,7 @@ namespace gfx
     public:
         GFXApplication(const GFXApplication&) = delete;
         GFXApplication(GFXApplication&&) = delete;
-        virtual ~GFXApplication()  = default;
+        virtual ~GFXApplication();
 
         virtual void Initialize()
         {
@@ -114,7 +113,7 @@ namespace gfx
 
         GFXCommandList& GetCommandList() const { return *m_commandList; }
         GFXCommandList& GetImmediateCommandList() const { return *m_immediateCommandList; }
-        GFXResourceManager* GetResourceManager() const { return m_resourceManager; }
+        GFXResourceManager* GetResourceManager() const { return m_resourceManager.get(); }
 
         GFXGlobalShaderManager& GetGlobalShaderManager() { return m_shaderManager; }
 
@@ -124,8 +123,7 @@ namespace gfx
     protected:
         GFXGlobalConfig m_config{};
         GFXGlobalShaderManager m_shaderManager;
-        std::unique_ptr<GFXRenderThread> m_renderThread;
-        GFXResourceManager* m_resourceManager = nullptr;
+        std::unique_ptr<GFXResourceManager> m_resourceManager;
         std::unique_ptr<GFXCommandList> m_commandList;
         std::unique_ptr<GFXCommandList> m_immediateCommandList;
     };

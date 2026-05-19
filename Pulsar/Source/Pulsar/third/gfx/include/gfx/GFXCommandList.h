@@ -11,7 +11,7 @@ namespace gfx
     // -------------------------------------------------------------------------
     // Command list abstraction.
     //
-    // Hides GFXRenderThread from user code.  Provides both deferred
+    // Replaces the old GFXRenderThread API.  Provides both deferred
     // (Enqueue/Flush) and synchronous (Create/Destroy/Upload) operations.
     //
     // Render commands (CmdDraw, CmdBindGraphicsPipeline, …) are NOT duplicated
