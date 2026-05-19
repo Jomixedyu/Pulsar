@@ -19,14 +19,4 @@ struct RenderObjectData
 
 ConstantBuffer<RenderObjectData> RenderObjectBuffer : register(b6, space1);
 
-
-#ifdef RENDERER_SKINNEDMESH
-// GPU Skinning: 最多 256 根骨骼矩阵 (set2 binding1)
-struct SkinnedRenderObjectData
-{
-    float4x4 BoneMatrices[256];
-};
-ConstantBuffer<SkinnedRenderObjectData> SkinningBuffer : register(b1, space2);
-#endif // RENDERER_SKINNEDMESH
-
 #endif // _ENGINE_PER_RENDER_OBJECT_INC

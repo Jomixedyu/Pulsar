@@ -48,6 +48,13 @@ float3 TransformTangentToWorld(float3 dirTS, float3 normalWS, float4 tangentWS)
 #define PRIMITIVE_FLAGS_CAST_SHADOWS 0x1
 
 #ifdef RENDERER_SKINNEDMESH
+// GPU Skinning: 最多 256 根骨骼矩阵 (set2 binding1)
+struct SkinnedRenderObjectData
+{
+    float4x4 BoneMatrices[256];
+};
+ConstantBuffer<SkinnedRenderObjectData> SkinningBuffer : register(b1, space2);
+
 // 将顶点位置从 BindPose 空间变换到蒙皮后的局部空间
 inline float3 SkinPosition(float3 position, uint4 boneIndices, float4 boneWeights)
 {
