@@ -46,6 +46,7 @@ namespace gfx
             HandleType handle;
             handle.index = index;
             handle.generation = m_slots[index].generation;
+            handle.mgr = this;
             return handle;
         }
 
@@ -126,5 +127,22 @@ namespace gfx
 
         mutable std::mutex m_mutex;
     };
+
+    // -------------------------------------------------------------------------
+    // GFXHandle::Get() / Lock() member function definitions.
+    // Declared in GFXHandle.h, defined here after GFXResourceManager is complete.
+    // -------------------------------------------------------------------------
+    template<> inline auto GFXHandle<BufferHandleTag>::Get() const { return mgr ? mgr->GetBuffer(*this) : nullptr; }
+    template<> inline auto GFXHandle<TextureHandleTag>::Get() const { return mgr ? mgr->GetTexture(*this) : nullptr; }
+    template<> inline auto GFXHandle<FrameBufferObjectHandleTag>::Get() const { return mgr ? mgr->GetFrameBufferObject(*this) : nullptr; }
+    template<> inline auto GFXHandle<GpuProgramHandleTag>::Get() const { return mgr ? mgr->GetGpuProgram(*this) : nullptr; }
+    template<> inline auto GFXHandle<DescriptorSetLayoutHandleTag>::Get() const { return mgr ? mgr->GetDescriptorSetLayout(*this) : nullptr; }
+    template<> inline auto GFXHandle<VertexLayoutDescriptionHandleTag>::Get() const { return mgr ? mgr->GetVertexLayoutDescription(*this) : nullptr; }
+
+    template<> inline auto GFXHandle<GpuProgramHandleTag>::Lock() const { return mgr ? mgr->GetGpuProgramShared(*this) : GFXGpuProgram_sp{}; }
+    template<> inline auto GFXHandle<DescriptorSetLayoutHandleTag>::Lock() const { return mgr ? mgr->GetDescriptorSetLayoutShared(*this) : GFXDescriptorSetLayout_sp{}; }
+    template<> inline auto GFXHandle<TextureHandleTag>::Lock() const { return mgr ? mgr->GetTextureShared(*this) : GFXTexture_sp{}; }
+    template<> inline auto GFXHandle<FrameBufferObjectHandleTag>::Lock() const { return mgr ? mgr->GetFrameBufferObjectShared(*this) : GFXFrameBufferObject_sp{}; }
+    template<> inline auto GFXHandle<VertexLayoutDescriptionHandleTag>::Lock() const { return mgr ? mgr->GetVertexLayoutDescriptionShared(*this) : GFXVertexLayoutDescription_sp{}; }
 
 } // namespace gfx

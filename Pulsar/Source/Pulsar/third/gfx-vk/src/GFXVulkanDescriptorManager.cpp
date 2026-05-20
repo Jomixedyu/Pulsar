@@ -33,11 +33,4 @@ namespace gfx
 
         return m_pools[m_pools.size() - 1]->GetDescriptorSet(layout);
     }
-
-    std::shared_ptr<GFXDescriptorSet> GFXVulkanDescriptorManager::GetDescriptorSet(DescriptorSetLayoutHandle layout)
-    {
-        auto layoutSp = m_app->GetResourceManager()->GetDescriptorSetLayoutShared(layout);
-        if (!layoutSp) return nullptr;
-        return GetDescriptorSet(layoutSp);
-    }
-}
+} // namespace gfx

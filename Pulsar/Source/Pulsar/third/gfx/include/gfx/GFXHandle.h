@@ -4,6 +4,8 @@
 
 namespace gfx
 {
+    class GFXResourceManager;
+
     static constexpr uint32_t kInvalidHandleIndex = UINT32_MAX;
 
     // Strongly-typed handle with generation counter for use-after-free detection.
@@ -13,15 +15,19 @@ namespace gfx
     {
         uint32_t index = kInvalidHandleIndex;
         uint16_t generation = 0;
+        GFXResourceManager* mgr = nullptr;
 
         bool IsValid() const { return index != kInvalidHandleIndex; }
-        void Invalidate() { index = kInvalidHandleIndex; generation = 0; }
+        void Invalidate() { index = kInvalidHandleIndex; generation = 0; mgr = nullptr; }
 
         bool operator==(const GFXHandle& other) const
         {
             return index == other.index && generation == other.generation;
         }
         bool operator!=(const GFXHandle& other) const { return !(*this == other); }
+
+        auto Get() const;
+        auto Lock() const;
     };
 
     // Alias for specific resource handle types.

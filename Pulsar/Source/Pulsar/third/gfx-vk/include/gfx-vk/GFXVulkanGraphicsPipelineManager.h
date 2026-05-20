@@ -18,13 +18,6 @@ namespace gfx
             const GFXRenderTargetDesc& renderTargetDesc,
             const GFXGraphicsPipelineState& gpInfo) override;
 
-        virtual std::shared_ptr<GFXGraphicsPipeline> GetGraphicsPipeline(
-            const array_list<GpuProgramHandle>& gpuPrograms,
-            GFXGraphicsPipelineStateParams stateParams,
-            const array_list<DescriptorSetLayoutHandle>& descriptorSetLayouts,
-            const GFXRenderTargetDesc& renderTargetDesc,
-            const GFXGraphicsPipelineState& gpInfo) override;
-
         virtual void GCollect() override;
 
     protected:

@@ -10,6 +10,7 @@
 #include <Pulsar/Assets/Material.h>
 #include <Pulsar/Rendering/ShaderInstanceCache.h>
 #include <Pulsar/Rendering/ShaderPropertySync.h>
+#include <gfx/GFXResourceManager.h>
 #include <mutex>
 #include <utility>
 
@@ -554,7 +555,7 @@ namespace pulsar
 
         // 即使没有任何 binding 也创建空 layout，确保 set 0 始终存在以保证 set 编号对齐
         binding.m_descriptorSetLayout = cmdList.CreateDescriptorSetLayout(descLayoutInfos);
-        binding.m_descriptorSet = gfxApp->GetDescriptorManager()->GetDescriptorSet(binding.m_descriptorSetLayout);
+        binding.m_descriptorSet = gfxApp->GetDescriptorManager()->GetDescriptorSet(binding.m_descriptorSetLayout.Lock());
 
         if (binding.m_materialConstantBuffer)
         {

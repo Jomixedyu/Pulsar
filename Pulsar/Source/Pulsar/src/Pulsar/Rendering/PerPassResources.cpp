@@ -1,6 +1,7 @@
 #include "Rendering/PerPassResources.h"
 
 #include <Pulsar/Application.h>
+#include <gfx/GFXResourceManager.h>
 
 namespace pulsar
 {
@@ -125,7 +126,7 @@ namespace pulsar
     gfx::GFXDescriptorSet_sp PerPassResources::AllocateSet(gfx::DescriptorSetLayoutHandle layout) const
     {
         auto gfxApp = Application::GetGfxApp();
-        return gfxApp->GetDescriptorManager()->GetDescriptorSet(layout);
+        return gfxApp->GetDescriptorManager()->GetDescriptorSet(layout.Lock());
     }
 
     void PerPassResources::WriteCameraToSet(gfx::GFXDescriptorSet* set) const
