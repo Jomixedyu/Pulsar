@@ -311,9 +311,10 @@ namespace pulsar
 
                     auto* gfxApp = cmdBuffer.GetApplication();
                     auto* pipelineMgr = gfxApp->GetGraphicsPipelineManager();
+                    auto* resMgr = gfxApp->GetResourceManager();
 
                     array_list<gfx::GFXDescriptorSetLayout_sp> descLayouts;
-                    descLayouts.push_back(binding.m_descriptorSetLayout);
+                    descLayouts.push_back(resMgr->GetDescriptorSetLayoutShared(binding.m_descriptorSetLayout));
                     descLayouts.push_back(m_bloomLayout);
 
                     gfx::GFXGraphicsPipelineStateParams psoParams{};
@@ -437,8 +438,9 @@ namespace pulsar
 
                 auto* gfxApp = cmdBuffer.GetApplication();
                 auto* pipelineMgr = gfxApp->GetGraphicsPipelineManager();
+                auto* resMgr = gfxApp->GetResourceManager();
                 array_list<gfx::GFXDescriptorSetLayout_sp> descLayouts;
-                descLayouts.push_back(binding.m_descriptorSetLayout);
+                descLayouts.push_back(resMgr->GetDescriptorSetLayoutShared(binding.m_descriptorSetLayout));
                 descLayouts.push_back(m_combineLayout);
 
                 gfx::GFXGraphicsPipelineStateParams psoParams{};

@@ -376,7 +376,12 @@ namespace pulsar
         {
             // Rebuild GPU resources for this binding with the new program's layout
             binding.m_descriptorSet.reset();
-            binding.m_descriptorSetLayout.reset();
+            if (binding.m_descriptorSetLayout.IsValid())
+            {
+                auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
+                cmdList.Destroy(binding.m_descriptorSetLayout);
+            }
+            binding.m_descriptorSetLayout = gfx::DescriptorSetLayoutHandle{};
             binding.m_materialConstantBuffer.reset();
             binding.m_gpuResourcesInitialized = false;
             EnsureGPUResources(binding, program->m_layout);
@@ -545,9 +550,10 @@ namespace pulsar
             descLayoutInfos.push_back(texDesc);
         }
 
+        auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
+
         // 即使没有任何 binding 也创建空 layout，确保 set 0 始终存在以保证 set 编号对齐
-        binding.m_descriptorSetLayout = gfxApp->CreateDescriptorSetLayout(
-            descLayoutInfos.data(), descLayoutInfos.size());
+        binding.m_descriptorSetLayout = cmdList.CreateDescriptorSetLayout(descLayoutInfos);
         binding.m_descriptorSet = gfxApp->GetDescriptorManager()->GetDescriptorSet(binding.m_descriptorSetLayout);
 
         if (binding.m_materialConstantBuffer)
@@ -566,7 +572,13 @@ namespace pulsar
 
     void Material::ClearPassBindings()
     {
-        // Clearing the map releases all per-binding GPU resources (descriptor sets, cbuffers, layouts)
+        // Explicitly destroy handle-managed resources before clearing the map
+        auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
+        for (auto& [key, binding] : m_passBindings)
+        {
+            if (binding.m_descriptorSetLayout.IsValid())
+                cmdList.Destroy(binding.m_descriptorSetLayout);
+        }
         m_passBindings.clear();
     }
 

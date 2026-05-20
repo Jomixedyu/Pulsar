@@ -134,8 +134,9 @@ namespace pulsar
 
         auto* gfxApp = cmdBuffer.GetApplication();
         auto* pipelineMgr = gfxApp->GetGraphicsPipelineManager();
+        auto* resMgr = gfxApp->GetResourceManager();
         array_list<gfx::GFXDescriptorSetLayout_sp> descLayouts;
-        descLayouts.push_back(ppPassBinding->m_descriptorSetLayout);   // set 0: material
+        descLayouts.push_back(resMgr->GetDescriptorSetLayoutShared(ppPassBinding->m_descriptorSetLayout)); // set 0: material
         descLayouts.push_back(m_perPassSet->GetDescriptorSetLayout()); // set 1: per-pass (Camera/World/Source)
 
         auto& gpuPrograms = program->GetGpuPrograms();

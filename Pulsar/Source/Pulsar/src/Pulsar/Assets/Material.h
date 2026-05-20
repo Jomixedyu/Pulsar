@@ -1,6 +1,7 @@
 #pragma once
 
 #include <gfx/GFXDescriptorSet.h>
+#include <gfx/GFXHandle.h>
 #include <Pulsar/Rendering/ShaderPropertySheet.h>
 #include <Pulsar/Rendering/ShaderInstance.h>
 #include <Pulsar/AssetObject.h>
@@ -37,7 +38,7 @@ namespace pulsar
 
         // Per-binding GPU resources (lazily created when this interface's shader is ready)
         gfx::GFXDescriptorSet_sp             m_descriptorSet;
-        gfx::GFXDescriptorSetLayout_sp       m_descriptorSetLayout;
+        gfx::DescriptorSetLayoutHandle       m_descriptorSetLayout;
         gfx::GFXBuffer_sp                    m_materialConstantBuffer;
         bool                                 m_gpuResourcesInitialized = false;
         std::weak_ptr<ShaderProgramResource> m_builtWithProgram;

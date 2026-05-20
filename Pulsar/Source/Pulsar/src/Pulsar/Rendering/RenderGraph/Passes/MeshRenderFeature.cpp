@@ -52,8 +52,10 @@ namespace pulsar
             psoParams.DepthWriteEnable = false;
         }
 
+        auto* resMgr = Application::GetGfxApp()->GetResourceManager();
+
         array_list<gfx::GFXDescriptorSetLayout_sp> descLayouts;
-        descLayouts.push_back(pb.binding->m_descriptorSetLayout);
+        descLayouts.push_back(resMgr->GetDescriptorSetLayoutShared(pb.binding->m_descriptorSetLayout));
         descLayouts.push_back(perPassSet->GetDescriptorSetLayout());
         descLayouts.push_back(pb.batch.DescriptorSetLayout);
 
@@ -69,8 +71,6 @@ namespace pulsar
 
         uint32_t dynOffset = pb.batch.RenderObjectIndex * sizeof(PerRenderObjectData);
         array_list<uint32_t> dynOffsets = { dynOffset };
-
-        auto* resMgr = Application::GetGfxApp()->GetResourceManager();
 
         for (const auto& element : pb.batch.Elements)
         {
