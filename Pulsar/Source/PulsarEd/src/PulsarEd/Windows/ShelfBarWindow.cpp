@@ -4,6 +4,7 @@
 #include "Menus/Menu.h"
 #include "Menus/MenuEntrySubMenu.h"
 #include "imgui/imgui_internal.h"
+#include <PulsarEd/EditorWorld.h>
 
 namespace pulsared
 {
@@ -28,6 +29,10 @@ namespace pulsared
                             {
                                 if (ImGui::Button(btn->DisplayName.c_str(), {0, -FLT_MIN}))
                                 {
+                                    if (btn->Action)
+                                    {
+                                        btn->Action->Invoke(nullptr);
+                                    }
                                 }
                             }
                             else if(sptr_cast<MenuEntrySeparate>(submenuEntry))
@@ -58,8 +63,17 @@ namespace pulsared
     ShelfBarWindow::ShelfBarWindow()
     {
         auto rendering = mksptr(new MenuEntrySubMenu("App"));
-        rendering->AddEntry(mksptr(new MenuEntryButton("Play")));
-        rendering->AddEntry(mksptr(new MenuEntryButton("Stop")));
+        auto playBtn = mksptr(new MenuEntryButton("Play"));
+        playBtn->Action = MenuAction::FromLambda([](SPtr<MenuContexts>) {
+            EditorWorld::BeginPlayInEditor();
+        });
+        rendering->AddEntry(playBtn);
+
+        auto stopBtn = mksptr(new MenuEntryButton("Stop"));
+        stopBtn->Action = MenuAction::FromLambda([](SPtr<MenuContexts>) {
+            EditorWorld::EndPlayInEditor();
+        });
+        rendering->AddEntry(stopBtn);
         rendering->AddEntry(mksptr(new MenuEntrySeparate("0")));
         rendering->AddEntry(mksptr(new MenuEntryButton("Build")));
         MenuManager::GetOrAddMenu("ToolBar")->AddEntry(rendering);

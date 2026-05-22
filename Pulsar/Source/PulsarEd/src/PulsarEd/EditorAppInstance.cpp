@@ -572,20 +572,6 @@ namespace pulsared
         Application::GetGfxApp()->GetWindow()->SetWindowSize((int)size.x, (int)size.y);
     }
 
-    bool EditorAppInstance::IsInteractiveRendering() const
-    {
-        return m_isPlaying;
-    }
-
-    void EditorAppInstance::StartInteractiveRendering()
-    {
-        m_isPlaying = true;
-    }
-
-    void EditorAppInstance::StopInteractiveRendering()
-    {
-        m_isPlaying = false;
-    }
     void EditorAppInstance::ShowModalDialog(SPtr<ModalDialog> dialog)
     {
         m_modalDialog = std::move(dialog);

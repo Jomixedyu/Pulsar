@@ -498,6 +498,10 @@ namespace pulsar
             {
                 node->BeginNode(this);
             }
+            if (m_runtimeWorld->GetPlaying() && node->GetIsActive())
+            {
+                node->BeginPlay();
+            }
         }
     }
 

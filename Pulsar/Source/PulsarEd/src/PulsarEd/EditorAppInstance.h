@@ -77,11 +77,6 @@ namespace pulsared
         virtual Vector2f GetAppSize();
         virtual void SetAppSize(Vector2f size);
 
-        virtual bool IsInteractiveRendering() const;
-
-        void StartInteractiveRendering();
-        void StopInteractiveRendering();
-
         ExclusiveTaskQueue& GetTaskQueue()
         {
             return m_exclusiveTaskQueue;
@@ -102,7 +97,6 @@ namespace pulsared
         ExclusiveTaskQueue m_exclusiveTaskQueue;
         class ShaderHotReloadWatcher* m_shaderHotReloadWatcher = nullptr;
 
-        bool m_isPlaying = false;
         bool m_shouldQuit = false;
     };
 

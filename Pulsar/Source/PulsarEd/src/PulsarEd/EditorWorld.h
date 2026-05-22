@@ -20,8 +20,8 @@ namespace pulsared
         static void PopPreviewWorld();
         static World* GetPreviewWorld();
 
-        static EditorWorld* DuplicateAndBeginPlay();
-        static void EndPlayAndRestore();
+        static void BeginPlayInEditor();
+        static void EndPlayInEditor();
 
     public:
         using World::World;

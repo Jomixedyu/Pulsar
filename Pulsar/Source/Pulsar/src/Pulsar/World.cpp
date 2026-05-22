@@ -65,6 +65,10 @@ namespace pulsar
         if (m_isPlaying)
             return;
         m_isPlaying = true;
+        for (auto& subsystem : m_subsystems)
+        {
+            subsystem->OnBeginPlay();
+        }
         for (auto& scene : m_scenes)
         {
             if (scene)
@@ -87,6 +91,10 @@ namespace pulsar
             {
                 scene->EndPlay();
             }
+        }
+        for (auto& subsystem : m_subsystems)
+        {
+            subsystem->OnEndPlay();
         }
         EndSimulate();
     }
@@ -273,10 +281,6 @@ namespace pulsar
 
     void World::OnWorldBegin()
     {
-        #ifdef WITH_EDITOR
-        assert(GetWorldTypeName() != StaticWorldTypeName());
-        #endif
-
         InitializeResidentScene();
         m_focusScene = GetResidentScene();
 

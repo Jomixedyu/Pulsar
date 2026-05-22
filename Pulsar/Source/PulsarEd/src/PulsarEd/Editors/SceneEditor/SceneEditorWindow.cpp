@@ -1,6 +1,7 @@
 #include "Editors/SceneEditor/SceneEditorWindow.h"
 
 #include "EditorAppInstance.h"
+#include "EditorWorld.h"
 #include "Editors/SceneEditor/SceneEditor.h"
 #include "Editors/CommonPanel/OutlinerWindow.h"
 #include "Editors/CommonPanel/PropertiesWindow.h"
@@ -47,20 +48,19 @@ namespace pulsared
                 }
             }
 
-            auto world = GetEdApp()->GetEditorWorld();
-            bool isPlaying = world->GetPlaying();
+            bool isPlaying = !EditorWorld::PreviewWorldStackEmpty();
 
             ImGui::BeginDisabled(isPlaying);
             if (ImGui::Button(ICON_FK_PLAY))
             {
-                world->BeginPlay();
+                EditorWorld::BeginPlayInEditor();
             }
             ImGui::EndDisabled();
 
             ImGui::BeginDisabled(!isPlaying);
             if (ImGui::Button(ICON_FK_STOP))
             {
-                world->EndPlay();
+                EditorWorld::EndPlayInEditor();
             }
             ImGui::EndDisabled();
 

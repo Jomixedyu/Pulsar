@@ -44,13 +44,33 @@ namespace pulsared
         return base::Current();
     }
 
-    EditorWorld* EditorWorld::DuplicateAndBeginPlay()
+    void EditorWorld::BeginPlayInEditor()
     {
-        return {};
+        if (!PreviewWorldStackEmpty())
+            return;
+
+        auto pieWorld = std::make_unique<World>("PIE");
+        World::Current()->OnDuplicated(pieWorld.get());
+        PushPreviewWorld(std::move(pieWorld));
+
+        auto* world = GetPreviewWorld();
+        if (world)
+        {
+            world->BeginPlay();
+        }
     }
 
-    void EditorWorld::EndPlayAndRestore()
+    void EditorWorld::EndPlayInEditor()
     {
+        if (PreviewWorldStackEmpty())
+            return;
+
+        auto* world = GetPreviewWorld();
+        if (world && world != World::Current())
+        {
+            world->EndPlay();
+        }
+        PopPreviewWorld();
     }
 
 
