@@ -3,6 +3,7 @@
 #include "Pulsar/World.h"
 
 #include "Utils/PrefabUtil.h"
+#include <PulsarEd/EditorAppInstance.h>
 #include <PulsarEd/EditorAssetManager.h>
 #include <PulsarEd/Editors/AssetEditor/AssetEditorWindow.h>
 #include <PulsarEd/Utils/AssetEditorManager.h>
@@ -21,7 +22,7 @@ namespace pulsared
 
         if (auto scene = cast<pulsar::Scene>(asset))
         {
-            auto world = pulsar::World::Current();
+            auto world = GetEdApp()->GetEditorWorld();
             if (auto oldScene = world->GetFocusScene())
             {
                 world->UnloadScene(oldScene);

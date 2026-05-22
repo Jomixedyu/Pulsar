@@ -23,6 +23,7 @@ namespace pulsar
     class EngineAppInstance : public AppInstance
     {
     public:
+        World* GetWorld() const { return m_world; }
         virtual const char* AppType() override;
         virtual void OnInitialized() override;
         virtual void OnTerminate() override;
@@ -41,6 +42,8 @@ namespace pulsar
 
         virtual void OnEndRender(float d4) override;
 
+    protected:
+        World* m_world = nullptr;
     };
 
 }

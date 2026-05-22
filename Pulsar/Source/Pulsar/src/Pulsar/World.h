@@ -24,14 +24,6 @@ namespace pulsar
     class World
     {
     public: //static functions
-        static World* Current();
-        static World* Reset(std::unique_ptr<World>&& world);
-        template<typename T>
-        static T* Reset(string_view name)
-        {
-            return static_cast<T*>(Reset(std::unique_ptr<World>(new T{name})));
-        }
-        static inline Action<> OnWorldChanged;
         static const hash_set<World*>& GetAllWorlds();
 
     public:

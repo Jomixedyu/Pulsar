@@ -84,9 +84,9 @@ namespace pulsared
                 auto entry = mksptr(new MenuEntryButton("Create Node"));
                 menu->AddEntry(entry);
                 entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
-                    auto newNode = World::Current()->GetFocusScene()->NewNode("New Node");
-                    World::Current()->GetSelection().Clear();
-                    World::Current()->GetSelection().Select(newNode);
+                    auto newNode = GetEdApp()->GetEditorWorld()->GetFocusScene()->NewNode("New Node");
+                    GetEdApp()->GetEditorWorld()->GetSelection().Clear();
+                    GetEdApp()->GetEditorWorld()->GetSelection().Select(newNode);
                 });
             }
 
@@ -96,7 +96,7 @@ namespace pulsared
                 auto entry = mksptr(new MenuEntryButton("Create Sphere"));
                 shapeMenu->AddEntry(entry);
                 entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
-                    auto newNode = World::Current()->GetFocusScene()->NewNode("New Sphere");
+                    auto newNode = GetEdApp()->GetEditorWorld()->GetFocusScene()->NewNode("New Sphere");
                     newNode->AddComponent<SphereShape3DComponent>();
 
                     auto renderer = newNode->AddComponent<StaticMeshRendererComponent>();
@@ -109,7 +109,7 @@ namespace pulsared
                 auto entry = mksptr(new MenuEntryButton("Create Cube"));
                 shapeMenu->AddEntry(entry);
                 entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
-                    auto newNode = World::Current()->GetFocusScene()->NewNode("New Cube");
+                    auto newNode = GetEdApp()->GetEditorWorld()->GetFocusScene()->NewNode("New Cube");
                     newNode->AddComponent<BoxShape3DComponent>();
 
                     auto renderer = newNode->AddComponent<StaticMeshRendererComponent>();
@@ -123,7 +123,7 @@ namespace pulsared
                 auto entry = mksptr(new MenuEntryButton("Create Plane"));
                 shapeMenu->AddEntry(entry);
                 entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
-                    auto renderer = World::Current()->GetFocusScene()->NewNode("New Plane")
+                    auto renderer = GetEdApp()->GetEditorWorld()->GetFocusScene()->NewNode("New Plane")
                         ->AddComponent<StaticMeshRendererComponent>();
                     renderer->SetStaticMesh(AssetManager::Get()->LoadAsset<StaticMesh>(BuiltinAsset::Shapes_Plane));
                     renderer->SetMaterial(0, AssetManager::Get()->LoadAsset<Material>(BuiltinAsset::Material_Lambert));
@@ -137,7 +137,7 @@ namespace pulsared
                 auto entry = mksptr(new MenuEntryButton("Create Sky Light"));
                 light3dMenu->AddEntry(entry);
                 entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
-                    World::Current()->GetFocusScene()->NewNode("New Sky Light")
+                    GetEdApp()->GetEditorWorld()->GetFocusScene()->NewNode("New Sky Light")
                         ->AddComponent<SkyLightComponent>();
                 });
             }
@@ -145,7 +145,7 @@ namespace pulsared
                 auto entry = mksptr(new MenuEntryButton("Create Directional Light"));
                 light3dMenu->AddEntry(entry);
                 entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
-                    World::Current()->GetFocusScene()->NewNode("New Directional Light")
+                    GetEdApp()->GetEditorWorld()->GetFocusScene()->NewNode("New Directional Light")
                         ->AddComponent<DirectionalLightComponent>();
                 });
             }
@@ -153,7 +153,7 @@ namespace pulsared
                 auto entry = mksptr(new MenuEntryButton("Create Point Light"));
                 light3dMenu->AddEntry(entry);
                 entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
-                    World::Current()->GetFocusScene()->NewNode("New Point Light")
+                    GetEdApp()->GetEditorWorld()->GetFocusScene()->NewNode("New Point Light")
                         ->AddComponent<PointLightComponent>();
                 });
             }
@@ -164,10 +164,10 @@ namespace pulsared
                 auto entry = mksptr(new MenuEntryButton("Create Camera"));
                 cameraMenu->AddEntry(entry);
                 entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
-                    auto newNode = World::Current()->GetFocusScene()->NewNode("New Camera");
+                    auto newNode = GetEdApp()->GetEditorWorld()->GetFocusScene()->NewNode("New Camera");
                     newNode->AddComponent<CameraComponent>();
-                    World::Current()->GetSelection().Clear();
-                    World::Current()->GetSelection().Select(newNode);
+                    GetEdApp()->GetEditorWorld()->GetSelection().Clear();
+                    GetEdApp()->GetEditorWorld()->GetSelection().Select(newNode);
                 });
             }
         }

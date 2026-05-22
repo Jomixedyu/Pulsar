@@ -2,6 +2,7 @@
 
 #include "Pulsar/Components/DirectionalLightComponent.h"
 #include "Pulsar/EngineAppInstance.h"
+#include <PulsarEd/EditorAppInstance.h>
 
 #include "EdTools/EdTool.h"
 #include "EdTools/MoveEdTool.h"
@@ -41,7 +42,7 @@ namespace pulsared
         {
             return _worldStack.top().get();
         }
-        return base::Current();
+        return GetEdApp()->GetEditorWorld();
     }
 
     void EditorWorld::BeginPlayInEditor()
@@ -50,7 +51,7 @@ namespace pulsared
             return;
 
         auto pieWorld = std::make_unique<World>("PIE");
-        World::Current()->OnDuplicated(pieWorld.get());
+        GetEdApp()->GetEditorWorld()->OnDuplicated(pieWorld.get());
         PushPreviewWorld(std::move(pieWorld));
 
         auto* world = GetPreviewWorld();
@@ -66,7 +67,7 @@ namespace pulsared
             return;
 
         auto* world = GetPreviewWorld();
-        if (world && world != World::Current())
+        if (world && world != GetEdApp()->GetEditorWorld())
         {
             world->EndPlay();
         }

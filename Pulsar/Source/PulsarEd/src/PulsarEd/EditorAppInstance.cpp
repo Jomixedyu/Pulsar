@@ -215,13 +215,13 @@ namespace pulsared
     void EditorAppInstance::SetupDefaultResidentScene()
     {
 
-        auto scene = World::Current()->GetFocusScene();
+        auto scene = m_world->GetFocusScene();
         if (!scene)
         {
-            scene = World::Current()->GetResidentScene();
+            scene = m_world->GetResidentScene();
         }
 
-        auto cam = World::Current()->GetCurrentCamera();
+        auto cam = m_world->GetCurrentCamera();
         cam->GetTransform()->SetPosition({0,0,-50});
         cam->GetTransform()->GetParent()->SetEuler({});
 
@@ -381,7 +381,8 @@ namespace pulsared
 
         // world
         Logger::Log("initialize world");
-        auto edWorld = World::Reset<EditorWorld>("MainWorld");
+        auto edWorld = new EditorWorld("MainWorld");
+        edWorld->OnWorldBegin();
         edWorld->GetCurrentCamera()->GetTransform()->GetParent()->SetEuler({45.f,-45,0});
 
         m_world = edWorld;
@@ -461,7 +462,12 @@ namespace pulsared
         pulsar::ShaderInstanceCache::Instance().Clear();
         pulsar::TransientRTPool::Shutdown();
 
-        World::Reset(nullptr);
+        if (m_world)
+        {
+            m_world->OnWorldEnd();
+            delete m_world;
+            m_world = nullptr;
+        }
 
         m_gui->Terminate();
         m_gui.reset();
