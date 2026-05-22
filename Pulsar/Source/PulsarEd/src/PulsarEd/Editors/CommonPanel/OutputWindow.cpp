@@ -69,4 +69,62 @@ namespace pulsared
             m_viewportFrame->Render(dt);
         }
     }
+
+    World* OutputWindow::RouteInput(const std::vector<uinput::InputEvent>& events)
+    {
+        auto* world = m_viewportFrame ? m_viewportFrame->GetWorld() : nullptr;
+        if (!world)
+            return nullptr;
+
+        float vpX = 0.0f, vpY = 0.0f, vpW = 0.0f, vpH = 0.0f;
+        bool focused = false;
+        if (m_viewportFrame)
+        {
+            vpX = m_viewportFrame->GetLastViewportX();
+            vpY = m_viewportFrame->GetLastViewportY();
+            vpW = m_viewportFrame->GetLastViewportW();
+            vpH = m_viewportFrame->GetLastViewportH();
+            focused = m_viewportFrame->GetLastHasFocus();
+        }
+
+        for (auto e : events)
+        {
+            switch (e.type)
+            {
+            case uinput::InputEvent::KeyDown:
+                if (focused)
+                    world->ProcessInputEvent(e);
+                break;
+            case uinput::InputEvent::KeyUp:
+                world->ProcessInputEvent(e); // always release to avoid stuck keys
+                break;
+            case uinput::InputEvent::MouseMove:
+                if (e.mouseX >= vpX && e.mouseX < vpX + vpW &&
+                    e.mouseY >= vpY && e.mouseY < vpY + vpH)
+                {
+                    e.mouseX -= vpX;
+                    e.mouseY -= vpY;
+                    world->ProcessInputEvent(e);
+                }
+                break;
+            case uinput::InputEvent::MouseButtonDown:
+                if (e.mouseX >= vpX && e.mouseX < vpX + vpW &&
+                    e.mouseY >= vpY && e.mouseY < vpY + vpH)
+                {
+                    e.mouseX -= vpX;
+                    e.mouseY -= vpY;
+                    world->ProcessInputEvent(e);
+                }
+                break;
+            case uinput::InputEvent::MouseButtonUp:
+                world->ProcessInputEvent(e); // always release to avoid stuck buttons
+                break;
+            case uinput::InputEvent::MouseWheel:
+                if (focused)
+                    world->ProcessInputEvent(e);
+                break;
+            }
+        }
+        return world;
+    }
 }

@@ -1,49 +1,60 @@
 #pragma once
-#include "InputDevice.h"
-#include <memory>
 #include <vector>
-
-#include <functional>
 #include "InputKeyCode.h"
 
 namespace uinput
 {
-    enum class InputValueType
+    struct InputVector2f
     {
-        Bool,
-        Float,
-        Float2,
-        Float3,
+        float x = 0.0f;
+        float y = 0.0f;
     };
 
-
-    enum class KeyState
+    // Unified platform-agnostic input event
+    struct InputEvent
     {
-        None,
-        Down,
-        Up
+        enum Type
+        {
+            KeyDown,
+            KeyUp,
+            MouseMove,
+            MouseButtonDown,
+            MouseButtonUp,
+            MouseWheel,
+        };
+
+        Type type;
+
+        // Key events
+        KeyCode keyCode = static_cast<KeyCode>(0);
+
+        // Mouse move
+        float mouseX = 0.0f;
+        float mouseY = 0.0f;
+
+        // Mouse button (0=Left, 1=Right, 2=Middle, 3=X1, 4=X2)
+        int mouseButton = 0;
+
+        // Mouse wheel
+        float wheelDelta = 0.0f;
     };
 
     class InputManager
     {
     public:
-
         static InputManager* GetInstance();
-    public:
+
         virtual ~InputManager() = default;
         virtual void Initialize();
         virtual void Terminate();
-        virtual void ProcessEvents();
 
-        virtual int AddKeyboardInput(const std::function<void(KeyState, KeyCode)>& func);
-        virtual void RemoveKeyboardInput(int key);
+        // Poll all pending events (platform-agnostic). Called once per frame.
+        virtual std::vector<InputEvent> PollEvents() = 0;
 
-        void BroadcastKeyboard(KeyState mode, KeyCode code);
+        // Instantaneous queries (no cross-frame state)
+        virtual InputVector2f GetMousePosition() const = 0;
+        virtual bool IsMouseButtonDown(int button) const = 0;
 
-    private:
-        std::unordered_map<int, std::function<void(KeyState, KeyCode)>> m_keyboard;
-
-        std::vector<std::unique_ptr<InputDevice>> m_devices;
     };
 
 } // namespace uinput

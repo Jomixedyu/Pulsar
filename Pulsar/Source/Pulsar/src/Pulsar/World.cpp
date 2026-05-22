@@ -1,5 +1,6 @@
 #include "World.h"
 #include "Application.h"
+#include "Input.h"
 
 #include <Pulsar/Logger.h>
 #include <Pulsar/Scene.h>
@@ -39,13 +40,14 @@ namespace pulsar
         return gWorlds;
     }
     World::World(string_view name)
-        : m_name(name), m_gizmosManager(this)
+        : m_name(name), m_gizmosManager(this), m_inputContext(new InputContext())
     {
         gWorlds.insert(this);
     }
 
     World::~World()
     {
+        delete m_inputContext;
         gWorlds.erase(this);
     }
 
@@ -111,6 +113,18 @@ namespace pulsar
     void World::CameraFocusNode(Node* node)
     {
 
+    }
+
+    void World::BeginInputFrame()
+    {
+        if (m_isPlaying && m_inputContext)
+            m_inputContext->BeginFrame();
+    }
+
+    void World::ProcessInputEvent(const uinput::InputEvent& e)
+    {
+        if (m_isPlaying && m_inputContext)
+            m_inputContext->ProcessEvent(e);
     }
 
     void World::Tick(float dt)

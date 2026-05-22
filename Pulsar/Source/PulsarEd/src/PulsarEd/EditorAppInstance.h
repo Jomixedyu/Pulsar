@@ -7,6 +7,7 @@
 #include <Pulsar/EngineAppInstance.h>
 #include <Pulsar/ImGuiImpl.h>
 
+
 namespace pulsared
 {
     struct ModalDialog
@@ -67,6 +68,7 @@ namespace pulsared
         {
             return m_world;
         }
+
         virtual AssetManager* GetAssetManager() override
         {
             return m_assetManager;
@@ -87,6 +89,7 @@ namespace pulsared
 
         void ShowModalDialog(SPtr<ModalDialog> dialog);
         void SetupDefaultResidentScene();
+        void TickWorld(float dt);
 
     protected:
         array_list<std::unique_ptr<Editor>> m_editors;

@@ -19,6 +19,12 @@ namespace pulsared
         virtual void OnOpen() override;
         virtual void OnClose() override;
 
+        const ViewportFrame* GetViewportFrame() const { return m_viewportFrame; }
+
+        // Route global input events to the World currently displayed by this window.
+        // Returns the World that received input (may be nullptr).
+        World* RouteInput(const std::vector<uinput::InputEvent>& events);
+
     private:
         void OnOpenWorkspace();
         void OnCloseWorkspace();

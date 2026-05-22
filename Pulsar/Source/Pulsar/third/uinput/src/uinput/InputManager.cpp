@@ -15,31 +15,9 @@ namespace uinput
     void InputManager::Terminate()
     {
     }
-    void InputManager::ProcessEvents()
+    std::vector<InputEvent> InputManager::PollEvents()
     {
-    }
-
-    int InputManager::AddKeyboardInput(const std::function<void(KeyState, KeyCode)>& func)
-    {
-        static int id = 0;
-
-        ++id;
-
-        m_keyboard[id] = func;
-        return id;
-    }
-
-    void InputManager::RemoveKeyboardInput(int key)
-    {
-        m_keyboard.erase(key);
-    }
-
-    void InputManager::BroadcastKeyboard(KeyState mode, KeyCode code)
-    {
-        for (auto& [i, func] : m_keyboard)
-        {
-            func(mode, code);
-        }
+        return {};
     }
 
 } // namespace uinput

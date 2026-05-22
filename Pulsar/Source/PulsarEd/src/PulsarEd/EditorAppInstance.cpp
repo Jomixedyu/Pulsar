@@ -4,6 +4,8 @@
 #include "EditorRenderPipeline.h"
 #include "Editors/EditorWindow.h"
 #include "Editors/SceneEditor/SceneEditor.h"
+#include "Editors/CommonPanel/OutputWindow.h"
+#include "PulsarEd/UIControls/ViewportFrame.h"
 #include "Pulsar/Components/PointLightComponent.h"
 
 #include "Shaders/EditorShaderCompileService.h"
@@ -429,7 +431,6 @@ namespace pulsared
         SetupDefaultResidentScene();
 
         uinput::InputManager::GetInstance()->Initialize();
-        pulsar::Input::Initialize();
 
         m_shaderHotReloadWatcher = new ShaderHotReloadWatcher();
         m_shaderHotReloadWatcher->Initialize();
@@ -438,7 +439,6 @@ namespace pulsared
 
     void EditorAppInstance::OnTerminate()
     {
-        pulsar::Input::Shutdown();
         uinput::InputManager::GetInstance()->Terminate();
 
         for (auto& editor : m_editors)
@@ -488,6 +488,27 @@ namespace pulsared
         EditorLogRecorder::Terminate();
     }
 
+    void EditorAppInstance::TickWorld(float dt)
+    {
+        // 1. All worlds snapshot their input state
+        for (auto* world : World::GetAllWorlds())
+            world->BeginInputFrame();
+
+        // 2. Fetch global events once
+        auto events = uinput::InputManager::GetInstance()->PollEvents();
+
+        // 3. Each OutputWindow routes events to its own displayed World
+        for (auto& win : EditorWindowManager::GetOpeningWindows(cltypeof<OutputWindow>()))
+        {
+            auto outputWin = sptr_cast<OutputWindow>(win);
+            outputWin->RouteInput(events);
+        }
+
+        // 4. Tick all worlds unconditionally
+        for (auto* world : World::GetAllWorlds())
+            world->Tick(dt);
+    }
+
     void EditorAppInstance::OnBeginRender(float dt)
     {
         // 刷新异步 shader 编译回调（主线程）
@@ -505,13 +526,8 @@ namespace pulsared
         {
             m_gui->NewFrame();
 
-            pulsar::Input::Update();
-            uinput::InputManager::GetInstance()->ProcessEvents();
-
-            EditorWorld::GetPreviewWorld()->Tick(dt);
-            //World::Current()->Tick(dt);
-
             pulsared::EditorWindowManager::Draw(dt);
+            TickWorld(dt);
             pulsared::EditorTickerManager::Ticker.Invoke(dt);
 
             if (m_modalDialog)
@@ -527,9 +543,7 @@ namespace pulsared
         }
         else
         {
-            pulsar::Input::Update();
-            uinput::InputManager::GetInstance()->ProcessEvents();
-            EditorWorld::GetPreviewWorld()->Tick(dt);
+            TickWorld(dt);
             pulsared::EditorTickerManager::Ticker.Invoke(dt);
         }
     }

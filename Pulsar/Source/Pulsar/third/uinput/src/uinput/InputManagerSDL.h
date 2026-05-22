@@ -11,10 +11,17 @@ namespace uinput
     public:
         void Initialize() override;
         void Terminate() override;
-        void ProcessEvents() override;
-        void PushEvent(SDL_Event* event);
+
+        std::vector<InputEvent> PollEvents() override;
+
+        InputVector2f GetMousePosition() const override;
+        bool IsMouseButtonDown(int button) const override;
+
+    public:
+        void PushEvent(const InputEvent& event);
+
     private:
-        std::vector<SDL_Event> m_pendingEvents;
+        std::vector<InputEvent> m_pendingEvents;
         std::mutex m_mutex;
     };
 } // namespace uinput
