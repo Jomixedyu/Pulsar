@@ -59,7 +59,45 @@ namespace pulsar
 
     Vector3f TransformComponent::GetWorldScale()
     {
-        return GetParentLocalToWorldMatrix() * m_scale;
+        auto mat = GetLocalToWorldMatrix();
+        return Vector3f(
+            jmath::Magnitude(mat[0].xyz()),
+            jmath::Magnitude(mat[1].xyz()),
+            jmath::Magnitude(mat[2].xyz())
+        );
+    }
+    void TransformComponent::SetWorldScale(Vector3f value)
+    {
+        auto parentMat = GetParentLocalToWorldMatrix();
+        Vector3f parentScale(
+            jmath::Magnitude(parentMat[0].xyz()),
+            jmath::Magnitude(parentMat[1].xyz()),
+            jmath::Magnitude(parentMat[2].xyz())
+        );
+        SetScale(Vector3f(
+            value.x / parentScale.x,
+            value.y / parentScale.y,
+            value.z / parentScale.z
+        ));
+    }
+    Quat4f TransformComponent::GetWorldRotation()
+    {
+        if (m_parent)
+        {
+            return m_parent->GetWorldRotation() * m_rotation;
+        }
+        return m_rotation;
+    }
+    void TransformComponent::SetWorldRotation(Quat4f value)
+    {
+        if (m_parent)
+        {
+            SetRotation(jmath::Inverse(m_parent->GetWorldRotation()) * value);
+        }
+        else
+        {
+            SetRotation(value);
+        }
     }
     void TransformComponent::SetRotation(Quat4f rotation)
     {
@@ -223,19 +261,24 @@ namespace pulsar
             return;
         }
 
-        if (parent == nullptr)
+        if (m_parent)
         {
-            // set empty
             SceneObjectPtr<TransformComponent> selfScenePtr = self_ptr();
-            const auto it = std::ranges::find(*m_parent->m_children, selfScenePtr);
-            m_parent->m_children->erase(it);
-            m_parent = nullptr;
+            auto it = std::ranges::find(*m_parent->m_children, selfScenePtr);
+            if (it != m_parent->m_children->end())
+            {
+                m_parent->m_children->erase(it);
+            }
         }
-        else
+
+        m_parent = parent;
+
+        if (m_parent)
         {
-            m_parent = parent;
             SceneObjectPtr<TransformComponent> selfScenePtr = self_ptr();
             m_parent->m_children->push_back(selfScenePtr);
         }
+
+        MakeTransformChanged();
     }
 } // namespace pulsar
