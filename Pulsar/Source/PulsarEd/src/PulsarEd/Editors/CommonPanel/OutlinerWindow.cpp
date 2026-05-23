@@ -1,4 +1,6 @@
 #include "EditorWorld.h"
+#include "Editors/EditorWindow.h"
+#include "Editors/SceneEditor/SceneEditor.h"
 
 #include <Pulsar/Scene.h>
 #include <Pulsar/World.h>
@@ -200,7 +202,8 @@ namespace pulsared
 
     void OutlinerWindow::OnDrawImGui(float dt)
     {
-        auto world = dynamic_cast<EditorWorld*>(EditorWorld::GetPreviewWorld());
+        auto sceneEditor = dynamic_cast<SceneEditor*>(GetParentEditorWindow()->GetEditor());
+        auto world = sceneEditor ? dynamic_cast<EditorWorld*>(sceneEditor->GetPreviewWorld()) : nullptr;
         if (!world)
         {
             return;

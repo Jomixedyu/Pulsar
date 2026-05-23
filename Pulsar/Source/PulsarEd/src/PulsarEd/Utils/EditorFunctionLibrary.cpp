@@ -3,12 +3,14 @@
 #include <Pulsar/Components/CameraComponent.h>
 #include <Pulsar/Util/TextureSaveUtil.h>
 #include "EditorWorld.h"
+#include "Editors/SceneEditor/SceneEditor.h"
 
 namespace pulsared
 {
     std::string EditorFunctionLibrary::CaptureScreenshot()
     {
-        auto world = dynamic_cast<EditorWorld*>(EditorWorld::GetPreviewWorld());
+        auto sceneEditor = SceneEditor::GetCurrent();
+        auto world = sceneEditor ? dynamic_cast<EditorWorld*>(sceneEditor->GetPreviewWorld()) : nullptr;
         if (!world)
         {
             return "";

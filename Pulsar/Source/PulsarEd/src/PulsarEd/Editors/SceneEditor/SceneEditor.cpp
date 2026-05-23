@@ -214,12 +214,16 @@ namespace pulsared
                                                             ComponentInfoManager::GetFriendlyComponentName(type)));
                 targetMenu->AddEntry(itemEntry);
                 itemEntry->Action = MenuAction::FromLambda([](MenuContexts_rsp ctxs) {
-                    auto edworld = dynamic_cast<EditorWorld*>(EditorWorld::GetPreviewWorld());
+                    auto sceneEditor = SceneEditor::GetCurrent();
+                    auto edworld = sceneEditor ? dynamic_cast<EditorWorld*>(sceneEditor->GetPreviewWorld()) : nullptr;
 
-                    if (auto node = cast<Node>(edworld->GetSelection().GetSelected()))
+                    if (edworld)
                     {
-                        Type* type = AssemblyManager::GlobalFindType(ctxs->EntryName);
-                        node->AddComponent(type);
+                        if (auto node = cast<Node>(edworld->GetSelection().GetSelected()))
+                        {
+                            Type* type = AssemblyManager::GlobalFindType(ctxs->EntryName);
+                            node->AddComponent(type);
+                        }
                     }
                 });
             }
@@ -283,6 +287,68 @@ namespace pulsared
 
     }
 
+    SceneEditor* SceneEditor::s_current = nullptr;
+
+    void SceneEditor::PushPreviewWorld(std::unique_ptr<World> world)
+    {
+        world->OnWorldBegin();
+        auto pipeline = static_cast<EngineRenderPipeline*>(Application::GetGfxApp()->GetRenderPipeline());
+        pipeline->AddWorld(world.get());
+        m_previewWorldStack.push(std::move(world));
+    }
+
+    bool SceneEditor::PreviewWorldStackEmpty() const
+    {
+        return m_previewWorldStack.empty();
+    }
+
+    void SceneEditor::PopPreviewWorld()
+    {
+        auto world = m_previewWorldStack.top().get();
+        auto pipeline = static_cast<EngineRenderPipeline*>(Application::GetGfxApp()->GetRenderPipeline());
+        pipeline->RemoveWorld(world);
+        world->OnWorldEnd();
+        m_previewWorldStack.pop();
+    }
+
+    World* SceneEditor::GetPreviewWorld() const
+    {
+        if (!m_previewWorldStack.empty())
+        {
+            return m_previewWorldStack.top().get();
+        }
+        return GetEdApp()->GetEditorWorld();
+    }
+
+    void SceneEditor::BeginPlayInEditor()
+    {
+        if (!PreviewWorldStackEmpty())
+            return;
+
+        auto pieWorld = std::make_unique<World>("PIE");
+        GetEdApp()->GetEditorWorld()->OnDuplicated(pieWorld.get());
+        PushPreviewWorld(std::move(pieWorld));
+
+        auto* world = GetPreviewWorld();
+        if (world)
+        {
+            world->BeginPlay();
+        }
+    }
+
+    void SceneEditor::EndPlayInEditor()
+    {
+        if (PreviewWorldStackEmpty())
+            return;
+
+        auto* world = GetPreviewWorld();
+        if (world && world != GetEdApp()->GetEditorWorld())
+        {
+            world->EndPlay();
+        }
+        PopPreviewWorld();
+    }
+
     void SceneEditor::Initialize()
     {
         base::Initialize();
@@ -297,9 +363,35 @@ namespace pulsared
 
     }
 
+    SceneEditor::~SceneEditor()
+    {
+        if (s_current == this)
+            s_current = nullptr;
+    }
+
     void SceneEditor::Terminate()
     {
+        while (!PreviewWorldStackEmpty())
+        {
+            PopPreviewWorld();
+        }
         base::Terminate();
+    }
+
+    void SceneEditor::RouteInput(const std::vector<uinput::InputEvent>& events)
+    {
+        for (auto& win : EditorWindowManager::GetOpeningWindows(cltypeof<EditorWindow>()))
+        {
+            auto editorWin = sptr_cast<EditorWindow>(win);
+            if (!editorWin || editorWin->GetEditor() != this) continue;
+            for (auto& panel : editorWin->GetOpenedPanels())
+            {
+                if (auto outputWin = sptr_cast<OutputWindow>(panel))
+                {
+                    outputWin->RouteInput(events);
+                }
+            }
+        }
     }
 
     SPtr<EditorWindow> SceneEditor::OnCreateEditorWindow()

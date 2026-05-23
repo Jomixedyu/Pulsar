@@ -25,12 +25,16 @@ namespace pulsared
     void EditorWindow::OnOpen()
     {
         base::OnOpen();
-        EditorWindowManager::OnWindowStateChanged.AddListener(this, &EditorWindow::OnGlobalPanelStateChanged);
     }
     void EditorWindow::OnClose()
     {
+        for (auto& panel : m_openedPanels)
+        {
+            panel->OnClose();
+            panel->SetOpened(false);
+        }
+        m_openedPanels.clear();
         base::OnClose();
-        EditorWindowManager::OnWindowStateChanged.RemoveListener(this, &EditorWindow::OnGlobalPanelStateChanged);
     }
 
     void EditorWindow::OnDrawImGui(float dt)
@@ -73,6 +77,46 @@ namespace pulsared
         auto name = StringUtil::Concat(to_string(GetWindowId()), "+panel");
         m_dockspaceClassId = ImGui::GetID(name.c_str());
         base::DrawImGui(dt);
+
+        for (size_t i = 0; i < m_openedPanels.size(); )
+        {
+            auto& panel = m_openedPanels[i];
+            if (!panel->GetIsOpened())
+            {
+                ++i;
+                continue;
+            }
+
+            bool isOpened = true;
+            const auto winName = StringUtil::Concat(panel->GetWindowDisplayName(), "###", panel->GetWindowName());
+            auto winClass = panel->GetGuiWindowClass();
+            ImGui::SetNextWindowClass(&winClass);
+            auto winSize = panel->GetWinSize();
+            ImGui::SetNextWindowSize(ImVec2{winSize.x, winSize.y});
+            const bool isDrawable = ImGui::Begin(winName.c_str(), &isOpened, panel->GetGuiWindowFlags());
+            if (isOpened)
+            {
+                panel->SetOpened(true);
+                if (isDrawable)
+                {
+                    panel->OnDrawImGui(dt);
+                }
+                if (panel->GetAllowResize())
+                {
+                    const auto size = ImGui::GetWindowSize();
+                    panel->SetWinSize(Vector2f{size.x, size.y});
+                }
+            }
+            else
+            {
+                panel->OnClose();
+                panel->SetOpened(false);
+                m_openedPanels.erase(m_openedPanels.begin() + i);
+                continue;
+            }
+            ImGui::End();
+            ++i;
+        }
     }
 
     void EditorWindow::OpenPanel(Type* type)
@@ -83,26 +127,26 @@ namespace pulsared
             {
                 auto newWindow = sptr_cast<PanelWindow>(type->CreateSharedInstance({}));
                 newWindow->m_parentWindowId = GetWindowId();
+                newWindow->m_parentEditorWindow = this;
 
                 m_openedPanels.push_back(newWindow);
-                newWindow->Open();
+                newWindow->SetOpened(true);
+                newWindow->OnOpen();
             }
         }
-
     }
     void EditorWindow::ClosePanel(Type* type)
     {
         if (type == nullptr)
-        {
             return;
-        }
 
-        for (auto& panel : m_openedPanels)
+        for (auto it = m_openedPanels.begin(); it != m_openedPanels.end(); ++it)
         {
-            if (panel->GetType() == type)
+            if ((*it)->GetType() == type)
             {
-                panel->Close();
-                std::erase(m_openedPanels, panel);
+                (*it)->OnClose();
+                (*it)->SetOpened(false);
+                m_openedPanels.erase(it);
                 break;
             }
         }
@@ -123,26 +167,8 @@ namespace pulsared
         return false;
     }
 
-    void EditorWindow::OnGlobalPanelStateChanged(EdGuiWindow* win, bool opened)
-    {
-        if (win)
-        {
-            if (win->GetType()->IsSubclassOf(cltypeof<PanelWindow>()))
-            {
-                auto panel = static_cast<PanelWindow*>(win);
-                if (panel->GetParentWindowId() == GetWindowId())
-                {
-                    OnPanelStateChanged(panel, opened);
-                }
-            }
-        }
-    }
-
-
     void EditorWindow::OnPanelStateChanged(PanelWindow* win, bool open)
     {
         // change panel menu state
-
-
     }
 } // namespace pulsared

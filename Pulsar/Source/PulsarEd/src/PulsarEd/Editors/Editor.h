@@ -16,6 +16,8 @@ namespace pulsared
         void RegisterPanelType(Type* type);
         bool ContainsPanelType(Type* type) const;
 
+        virtual void RouteInput(const std::vector<uinput::InputEvent>& events) {}
+
         SPtr<EditorWindow> CreateEditorWindow();
     protected:
         virtual SPtr<EditorWindow> OnCreateEditorWindow() = 0;

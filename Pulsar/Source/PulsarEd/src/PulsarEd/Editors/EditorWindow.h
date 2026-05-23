@@ -37,6 +37,7 @@ namespace pulsared
         void OpenPanel(Type* type);
         void ClosePanel(Type* type);
         bool IsOpenedPanel(Type* type) const;
+        const array_list<SPtr<PanelWindow>>& GetOpenedPanels() const { return m_openedPanels; }
 
         Editor* GetEditor() const { return m_editor; }
     protected:

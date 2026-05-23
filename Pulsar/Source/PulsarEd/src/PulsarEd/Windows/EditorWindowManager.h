@@ -15,7 +15,6 @@ namespace pulsared
 
         static inline Action<EdGuiWindow*, bool> OnWindowStateChanged;
 
-        static EdGuiWindow_sp GetOpeningWindow(string_view name);
         static EdGuiWindow_sp GetOpeningWindow(Type* type);
         static array_list<EdGuiWindow_sp> GetOpeningWindows(Type* type);
 

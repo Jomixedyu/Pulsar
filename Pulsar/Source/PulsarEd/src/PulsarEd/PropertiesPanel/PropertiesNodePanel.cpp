@@ -1,6 +1,7 @@
 #include "PropertiesPanel/PropertiesNodePanel.h"
 
 #include "EditorWorld.h"
+#include "Editors/SceneEditor/SceneEditor.h"
 #include "Menus/Menu.h"
 #include "Menus/MenuRenderer.h"
 
@@ -30,7 +31,8 @@ namespace pulsared
 
     void PropertiesNodePanel::OnDrawImGui()
     {
-        auto world = dynamic_cast<EditorWorld*>(EditorWorld::GetPreviewWorld());
+        auto sceneEditor = SceneEditor::GetCurrent();
+        auto world = sceneEditor ? dynamic_cast<EditorWorld*>(sceneEditor->GetPreviewWorld()) : nullptr;
         assert(world);
 
         auto selectedObj = world->GetSelection().GetSelected();

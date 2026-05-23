@@ -3,6 +3,8 @@
 #include "PulsarEd/UIControls/ViewportFrame.h"
 #include "PulsarEd/EditorWorld.h"
 #include "PulsarEd/EditorAppInstance.h"
+#include "PulsarEd/Editors/EditorWindow.h"
+#include "PulsarEd/Editors/SceneEditor/SceneEditor.h"
 #include "PulsarEd/Workspace.h"
 
 namespace pulsared
@@ -31,7 +33,7 @@ namespace pulsared
 
     void OutputWindow::OnOpenWorkspace()
     {
-        m_viewportFrame = new ViewportFrame;
+        m_viewportFrame = std::make_unique<ViewportFrame>();
         m_viewportFrame->Initialize();
         m_viewportFrame->SetIsPreviewCamera(false);
         m_viewportFrame->SetEnableEdToolTick(false);
@@ -43,18 +45,20 @@ namespace pulsared
         if (m_viewportFrame)
         {
             m_viewportFrame->Terminate();
-            delete m_viewportFrame;
-            m_viewportFrame = nullptr;
+            m_viewportFrame.reset();
         }
     }
 
     void OutputWindow::OnDrawImGui(float dt)
     {
+        auto sceneEditor = dynamic_cast<SceneEditor*>(GetParentEditorWindow()->GetEditor());
+
         if (ImGui::BeginMenuBar())
         {
             if (ImGui::Button(ICON_FK_ARROWS " Gizmos###OutputGizmos"))
             {
-                if (auto cam = EditorWorld::GetPreviewWorld()->GetCameraManager().GetMainCamera())
+                auto world = sceneEditor ? sceneEditor->GetPreviewWorld() : nullptr;
+                if (auto cam = world ? world->GetCameraManager().GetMainCamera() : nullptr)
                 {
                     cam->SetGizmoPassEnabled(!cam->IsGizmoPassEnabled());
                 }
@@ -64,7 +68,7 @@ namespace pulsared
 
         if (m_viewportFrame)
         {
-            auto world = EditorWorld::GetPreviewWorld();
+            auto world = sceneEditor ? sceneEditor->GetPreviewWorld() : nullptr;
             m_viewportFrame->SetWorld(world);
             m_viewportFrame->Render(dt);
         }

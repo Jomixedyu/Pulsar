@@ -5,6 +5,7 @@
 #include "Menus/MenuEntrySubMenu.h"
 #include "imgui/imgui_internal.h"
 #include <PulsarEd/EditorWorld.h>
+#include <PulsarEd/Editors/SceneEditor/SceneEditor.h>
 
 namespace pulsared
 {
@@ -57,7 +58,6 @@ namespace pulsared
     }
     void ShelfBarWindow::OnDrawImGui(float dt)
     {
-        base::OnDrawImGui(dt);
         RenderToolbar(MenuManager::GetOrAddMenu("ToolBar"));
     }
     ShelfBarWindow::ShelfBarWindow()
@@ -65,13 +65,19 @@ namespace pulsared
         auto rendering = mksptr(new MenuEntrySubMenu("App"));
         auto playBtn = mksptr(new MenuEntryButton("Play"));
         playBtn->Action = MenuAction::FromLambda([](SPtr<MenuContexts>) {
-            EditorWorld::BeginPlayInEditor();
+            if (auto sceneEditor = SceneEditor::GetCurrent())
+            {
+                sceneEditor->BeginPlayInEditor();
+            }
         });
         rendering->AddEntry(playBtn);
 
         auto stopBtn = mksptr(new MenuEntryButton("Stop"));
         stopBtn->Action = MenuAction::FromLambda([](SPtr<MenuContexts>) {
-            EditorWorld::EndPlayInEditor();
+            if (auto sceneEditor = SceneEditor::GetCurrent())
+            {
+                sceneEditor->EndPlayInEditor();
+            }
         });
         rendering->AddEntry(stopBtn);
         rendering->AddEntry(mksptr(new MenuEntrySeparate("0")));

@@ -38,7 +38,7 @@ namespace pulsared
         void CaptureScreenshot();
     private:
         int32_t drawmode_select_index = 0;
-        SceneEditorViewportFrame* m_sceneEditor = nullptr;
+        std::unique_ptr<SceneEditorViewportFrame> m_sceneEditor;
 
 
         //ObjectPtr<Node> m_camNode;

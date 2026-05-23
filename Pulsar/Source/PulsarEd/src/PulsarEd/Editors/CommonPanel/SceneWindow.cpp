@@ -5,6 +5,8 @@
 #include "EdTools/SelectorEdTool.h"
 #include "EditorAppInstance.h"
 #include "EditorWorld.h"
+#include "Editors/EditorWindow.h"
+#include "Editors/SceneEditor/SceneEditor.h"
 #include "ImGuiExt.h"
 #include "Subsystems/EditorGridSubsystem.h"
 
@@ -34,7 +36,7 @@ namespace pulsared
 
     void SceneWindow::OnOpenWorkspace()
     {
-        m_sceneEditor = new SceneEditorViewportFrame;
+        m_sceneEditor = std::make_unique<SceneEditorViewportFrame>();
         m_sceneEditor->Initialize();
         m_sceneEditor->SetWorld(GetEdApp()->GetEditorWorld());
     }
@@ -42,8 +44,7 @@ namespace pulsared
     void SceneWindow::OnCloseWorkspace()
     {
         m_sceneEditor->Terminate();
-        delete m_sceneEditor;
-        m_sceneEditor = nullptr;
+        m_sceneEditor.reset();
     }
 
     void SceneWindow::OnOpen()
@@ -78,18 +79,19 @@ namespace pulsared
         static bool b = true;
         // ImGui::ShowDemoWindow(&b);
 
-        auto world = dynamic_cast<EditorWorld*>(EditorWorld::GetPreviewWorld());
+        auto sceneEditor = dynamic_cast<SceneEditor*>(GetParentEditorWindow()->GetEditor());
+        auto world = sceneEditor ? dynamic_cast<EditorWorld*>(sceneEditor->GetPreviewWorld()) : nullptr;
 
         m_sceneEditor->SetWorld(world);
 
         if (ImGui::BeginMenuBar())
         {
-            if (!EditorWorld::PreviewWorldStackEmpty())
+            if (sceneEditor && !sceneEditor->PreviewWorldStackEmpty())
             {
                 if (ImGui::Button("Pop"))
                 {
-                    EditorWorld::PopPreviewWorld();
-                    world = dynamic_cast<EditorWorld*>(EditorWorld::GetPreviewWorld());
+                    sceneEditor->PopPreviewWorld();
+                    world = dynamic_cast<EditorWorld*>(sceneEditor->GetPreviewWorld());
                     m_sceneEditor->SetWorld(world);
                 }
             }

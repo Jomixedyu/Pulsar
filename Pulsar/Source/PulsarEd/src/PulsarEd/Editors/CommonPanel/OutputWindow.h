@@ -19,7 +19,7 @@ namespace pulsared
         virtual void OnOpen() override;
         virtual void OnClose() override;
 
-        const ViewportFrame* GetViewportFrame() const { return m_viewportFrame; }
+        const ViewportFrame* GetViewportFrame() const { return m_viewportFrame.get(); }
 
         // Route global input events to the World currently displayed by this window.
         // Returns the World that received input (may be nullptr).
@@ -29,6 +29,6 @@ namespace pulsared
         void OnOpenWorkspace();
         void OnCloseWorkspace();
 
-        ViewportFrame* m_viewportFrame = nullptr;
+        std::unique_ptr<ViewportFrame> m_viewportFrame;
     };
 }

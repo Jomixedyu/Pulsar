@@ -4,7 +4,6 @@
 #include "EditorRenderPipeline.h"
 #include "Editors/EditorWindow.h"
 #include "Editors/SceneEditor/SceneEditor.h"
-#include "Editors/CommonPanel/OutputWindow.h"
 #include "PulsarEd/UIControls/ViewportFrame.h"
 #include "Pulsar/Components/PointLightComponent.h"
 
@@ -446,9 +445,9 @@ namespace pulsared
         {
             editor->Terminate();
         }
-        m_editors.clear();
-
         PrefabUtil::ClosePrefabMode();
+
+        m_editors.clear();
 
         if (m_shaderHotReloadWatcher)
         {
@@ -496,22 +495,25 @@ namespace pulsared
 
     void EditorAppInstance::TickWorld(float dt)
     {
+        // Snapshot world list to avoid iterator invalidation if Tick() mutates gWorlds
+        const auto& allWorlds = World::GetAllWorlds();
+        array_list<World*> worlds(allWorlds.begin(), allWorlds.end());
+
         // 1. All worlds snapshot their input state
-        for (auto* world : World::GetAllWorlds())
+        for (auto* world : worlds)
             world->BeginInputFrame();
 
         // 2. Fetch global events once
         auto events = uinput::InputManager::GetInstance()->PollEvents();
 
-        // 3. Each OutputWindow routes events to its own displayed World
-        for (auto& win : EditorWindowManager::GetOpeningWindows(cltypeof<OutputWindow>()))
+        // 3. Let each editor route input to its own panels
+        for (auto& editor : m_editors)
         {
-            auto outputWin = sptr_cast<OutputWindow>(win);
-            outputWin->RouteInput(events);
+            editor->RouteInput(events);
         }
 
         // 4. Tick all worlds unconditionally
-        for (auto* world : World::GetAllWorlds())
+        for (auto* world : worlds)
             world->Tick(dt);
     }
 

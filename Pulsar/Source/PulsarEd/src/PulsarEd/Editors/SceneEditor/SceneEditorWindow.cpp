@@ -29,10 +29,16 @@ namespace pulsared
     }
     void SceneEditorWindow::OnDrawImGui(float dt)
     {
+        auto sceneEditor = dynamic_cast<SceneEditor*>(GetEditor());
+        if (sceneEditor && ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows))
+        {
+            SceneEditor::SetCurrent(sceneEditor);
+        }
+
         base::OnDrawImGui(dt);
         if (ImGui::IsKeyDown(ImGuiKey::ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey::ImGuiKey_S, false))
         {
-            if (auto sceneEditor = dynamic_cast<SceneEditor*>(GetEditor()))
+            if (sceneEditor)
             {
                 sceneEditor->SaveScene();
             }
@@ -42,27 +48,30 @@ namespace pulsared
             ImGui::Separator();
             if (ImGui::Button(ICON_FK_FLOPPY_O)) // save button
             {
-                if (auto sceneEditor = dynamic_cast<SceneEditor*>(GetEditor()))
+                if (sceneEditor)
                 {
                     sceneEditor->SaveScene();
                 }
             }
 
-            bool isPlaying = !EditorWorld::PreviewWorldStackEmpty();
-
-            ImGui::BeginDisabled(isPlaying);
-            if (ImGui::Button(ICON_FK_PLAY))
+            if (sceneEditor)
             {
-                EditorWorld::BeginPlayInEditor();
-            }
-            ImGui::EndDisabled();
+                bool isPlaying = !sceneEditor->PreviewWorldStackEmpty();
 
-            ImGui::BeginDisabled(!isPlaying);
-            if (ImGui::Button(ICON_FK_STOP))
-            {
-                EditorWorld::EndPlayInEditor();
+                ImGui::BeginDisabled(isPlaying);
+                if (ImGui::Button(ICON_FK_PLAY))
+                {
+                    sceneEditor->BeginPlayInEditor();
+                }
+                ImGui::EndDisabled();
+
+                ImGui::BeginDisabled(!isPlaying);
+                if (ImGui::Button(ICON_FK_STOP))
+                {
+                    sceneEditor->EndPlayInEditor();
+                }
+                ImGui::EndDisabled();
             }
-            ImGui::EndDisabled();
 
             ImGui::EndMenuBar();
         }
