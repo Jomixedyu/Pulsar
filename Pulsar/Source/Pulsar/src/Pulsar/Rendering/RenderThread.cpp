@@ -1,5 +1,6 @@
 #include "RenderThread.h"
 #include "RenderProxyRegistry.h"
+#include "PerRenderObjectDataManager.h"
 
 namespace pulsar
 {
@@ -13,6 +14,7 @@ namespace pulsar
     {
         m_running.store(true);
         m_proxyRegistry = std::make_unique<rendering::RenderProxyRegistry>();
+        m_perObjectDataMgr = std::make_unique<PerRenderObjectDataManager>();
     }
 
     void RenderThread::Stop()
@@ -20,6 +22,7 @@ namespace pulsar
         FlushCommands();
         m_running.store(false);
         m_proxyRegistry.reset();
+        m_perObjectDataMgr.reset();
     }
 
     void RenderThread::TriggerRenderFrame()

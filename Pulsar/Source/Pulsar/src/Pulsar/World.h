@@ -4,7 +4,7 @@
 #include "Components/Component.h"
 #include "ObjectBase.h"
 #include "Rendering/RenderProxy.h"
-#include "Rendering/PerRenderObjectDataManager.h"
+#include "Rendering/RenderThread.h"
 #include "SceneCaptureManager.h"
 #include "SelectionSet.h"
 #include "Simulate.h"
@@ -101,7 +101,7 @@ namespace pulsar
         CameraManager&        GetCameraManager() { return m_cameraManager; }
         SceneCaptureManager&  GetCaptureManager() { return m_captureManager; }
         GizmosManager&        GetGizmosManager() { return m_gizmosManager; }
-        PerRenderObjectDataManager& GetPerRenderObjectDataManager() { return m_perRenderObjectDataManager; }
+        PerRenderObjectDataManager& GetPerRenderObjectDataManager() { return RenderThread::Get().GetPerObjectDataManager(); }
         SimulateManager&      GetSimulateManager() { return m_simulateManager; }
         PhysicsWorld2D*       GetPhysicsWorld2D() const { return m_physicsWorld2D; }
         PhysicsWorld3D*       GetPhysicsWorld3D() const { return m_physicsWorld3D; }
@@ -123,7 +123,6 @@ namespace pulsar
         SimulateManager                       m_simulateManager;
 
         GizmosManager m_gizmosManager;
-        PerRenderObjectDataManager            m_perRenderObjectDataManager;
         array_list<SPtr<class WorldSubsystem>> m_subsystems;
 
 

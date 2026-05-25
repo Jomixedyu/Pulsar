@@ -1,7 +1,7 @@
 #include "RenderProxyGizmoIconBatch.h"
-
 #include "Application.h"
 #include "Assets/StaticMesh.h"
+#include <Pulsar/Rendering/PerRenderObjectDataManager.h>
 #include <gfx/GFXApplication.h>
 
 namespace pulsar
@@ -20,10 +20,9 @@ namespace pulsar
         m_dirty = true;
     }
 
-    void RenderProxyGizmoIconBatch::OnCreateResource()
+    void RenderProxyGizmoIconBatch::InitRHI()
     {
-        if (m_pPerRenderObjectDataManager)
-            m_dummyExtraSet = m_pPerRenderObjectDataManager->GetDummyExtraSet();
+        m_dummyExtraSet = RenderThread::Get().GetPerObjectDataManager().GetDummyExtraSet();
 
         if (s_sharedLayout.expired())
         {
@@ -38,15 +37,12 @@ namespace pulsar
         m_dirty = true;
     }
 
-    void RenderProxyGizmoIconBatch::OnDestroyResource()
+    void RenderProxyGizmoIconBatch::ReleaseRHI()
     {
-        if (m_pPerRenderObjectDataManager)
-        {
-            for (uint32_t slot : m_itemSlots)
+        for (uint32_t slot : m_itemSlots)
             {
-                m_pPerRenderObjectDataManager->FreeSlot(slot);
+                RenderThread::Get().GetPerObjectDataManager().FreeSlot(slot);
             }
-        }
         m_itemSlots.clear();
         m_batches.clear();
         m_descriptorSetLayout.reset();
@@ -72,16 +68,10 @@ namespace pulsar
             return;
         }
 
-        if (!m_pPerRenderObjectDataManager)
-        {
-            m_dirty = false;
-            return;
-        }
-
         // Ensure enough slots
         while (m_itemSlots.size() < m_items.size())
         {
-            m_itemSlots.push_back(m_pPerRenderObjectDataManager->AllocSlot());
+            m_itemSlots.push_back(RenderThread::Get().GetPerObjectDataManager().AllocSlot());
         }
 
         for (size_t i = 0; i < m_items.size(); ++i)
@@ -95,7 +85,7 @@ namespace pulsar
             data.NormalLocalToWorldMatrix = Transpose(data.WorldToLocalMatrix);
             data.NodePosition = Vector4f{item.Transform[3][0], item.Transform[3][1], item.Transform[3][2], 1.0f};
             data.ShaderFlags = 0;
-            m_pPerRenderObjectDataManager->SetData(slot, data);
+            RenderThread::Get().GetPerObjectDataManager().SetData(slot, data);
 
             rendering::MeshBatch batch{};
             batch.Material = item.Material;

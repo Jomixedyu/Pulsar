@@ -55,8 +55,8 @@ namespace pulsar
         }
 
         void SubmitChange();
-        void OnCreateResource() override;
-        void OnDestroyResource() override
+        void InitRHI() override;
+        void ReleaseRHI() override
         {
             m_descriptorSet.reset();
             m_descriptorSetLayout.reset();
@@ -73,7 +73,7 @@ namespace pulsar
         std::string GetInterface() const override { return "RENDERER_SKINNEDMESH"; }
     };
 
-    void RenderProxySkinnedMesh::OnCreateResource()
+    void RenderProxySkinnedMesh::InitRHI()
     {
         // set2 layout: binding1=SkinnedRenderObjectData
         if (SkinnedMeshDescriptorSetLayout.expired())

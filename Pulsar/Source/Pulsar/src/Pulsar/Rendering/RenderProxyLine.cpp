@@ -1,6 +1,7 @@
 #include "Application.h"
 #include "AssetManager.h"
 #include "Assets/StaticMesh.h"
+#include <Pulsar/Rendering/PerRenderObjectDataManager.h>
 
 #include <Pulsar/Rendering/RenderProxyLine.h>
 
@@ -58,11 +59,10 @@ namespace pulsar
         }
     }
 
-    void RenderProxyLine::OnCreateResource()
+    void RenderProxyLine::InitRHI()
     {
-        base::OnCreateResource();
-        if (m_pPerRenderObjectDataManager)
-            m_dummyExtraSet = m_pPerRenderObjectDataManager->GetDummyExtraSet();
+        base::InitRHI();
+        m_dummyExtraSet = RenderThread::Get().GetPerObjectDataManager().GetDummyExtraSet();
 
         if (s_dummyLayout.expired())
         {
@@ -106,9 +106,9 @@ namespace pulsar
             batch.Material->SetQueue(m_renderQueue);
     }
 
-    void RenderProxyLine::OnDestroyResource()
+    void RenderProxyLine::ReleaseRHI()
     {
-        base::OnDestroyResource();
+        base::ReleaseRHI();
         m_vertBuffer.Reset();
     }
 

@@ -7,6 +7,7 @@
 #include <gfx/GFXBuffer.h>
 
 #include <Pulsar/Rendering/ShaderConfig.h>
+#include <Pulsar/Rendering/PerRenderObjectDataManager.h>
 #include <utility>
 
 namespace pulsar
@@ -34,8 +35,8 @@ namespace pulsar
             return this;
         }
         void SubmitChange();
-        void OnCreateResource() override;
-        void OnDestroyResource() override
+        void InitRHI() override;
+        void ReleaseRHI() override
         {
             m_dummyExtraSet.reset();
         }
@@ -128,10 +129,9 @@ namespace pulsar
         }
     }
 
-    void RenderProxyStaticMesh::OnCreateResource()
+    void RenderProxyStaticMesh::InitRHI()
     {
-        if (m_pPerRenderObjectDataManager)
-            m_dummyExtraSet = m_pPerRenderObjectDataManager->GetDummyExtraSet();
+        m_dummyExtraSet = RenderThread::Get().GetPerObjectDataManager().GetDummyExtraSet();
 
         SubmitChange();
     }

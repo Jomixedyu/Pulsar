@@ -1,6 +1,7 @@
 #include "World.h"
 #include "Rendering/RenderThread.h"
 #include "Rendering/RenderProxyRegistry.h"
+#include <Pulsar/Rendering/PerRenderObjectDataManager.h>
 #include "Application.h"
 
 #include <Pulsar/Logger.h>
@@ -49,7 +50,7 @@ namespace pulsar
     World::~World()
     {
         gWorlds.erase(this);
-        m_perRenderObjectDataManager.Destroy();
+
     }
 
     void World::OnDuplicated(World* target)
@@ -247,31 +248,38 @@ namespace pulsar
     }
     void World::AddRenderObject(const rendering::RenderProxy_sp& renderObject)
     {
-        auto slot = m_perRenderObjectDataManager.AllocSlot();
-        renderObject->SetRenderObjectIndex(slot);
-        renderObject->SetPerRenderObjectDataManager(&m_perRenderObjectDataManager);
-        m_perRenderObjectDataManager.SetData(slot, renderObject->GetPerRenderObjectData());
-        renderObject->OnCreateResource();
         m_renderObjects.insert(renderObject);
 
-        // Register with the Render Thread proxy registry
-        RenderThread::Get().GetProxyRegistry().RegisterProxy(renderObject.get());
+        auto proxy = renderObject;
+        RenderThread::Get().EnqueueCommand([proxy]() {
+            auto& rt = RenderThread::Get();
+            auto& mgr = rt.GetPerObjectDataManager();
+            auto slot = mgr.AllocSlot();
+            proxy->SetRenderObjectIndex(slot);
+            mgr.SetData(slot, proxy->GetPerRenderObjectData());
+            proxy->InitRHI();
+            rt.GetProxyRegistry().RegisterProxy(proxy.get());
+        });
     }
     void World::RemoveRenderObject(rendering::RenderProxy_rsp renderObject)
     {
         const auto it = m_renderObjects.find(renderObject);
         if (it != m_renderObjects.end())
         {
-            (*it)->OnDestroyResource();
-            auto slot = (*it)->GetRenderObjectIndex();
-            if (slot != rendering::RenderProxy::kInvalidSlot)
-            {
-                m_perRenderObjectDataManager.FreeSlot(slot);
-            }
             m_renderObjects.erase(it);
 
-            // Unregister from the Render Thread proxy registry (disabled for debugging)
-            RenderThread::Get().GetProxyRegistry().UnregisterProxy(renderObject.get());
+            auto proxy = renderObject;
+            RenderThread::Get().EnqueueCommand([proxy]() {
+                auto& rt = RenderThread::Get();
+                rt.GetProxyRegistry().UnregisterProxy(proxy.get());
+                proxy->ReleaseRHI();
+                auto slot = proxy->GetRenderObjectIndex();
+                if (slot != rendering::RenderProxy::kInvalidSlot)
+                {
+                    rt.GetPerObjectDataManager().FreeSlot(slot);
+                    proxy->SetRenderObjectIndex(rendering::RenderProxy::kInvalidSlot);
+                }
+            });
         }
     }
 
@@ -331,7 +339,7 @@ namespace pulsar
         delete m_lightManager;
         m_lightManager = nullptr;
 
-        m_perRenderObjectDataManager.Destroy();
+
     }
 
     void World::OnSceneLoading(RCPtr<NodeCollection> scene)

@@ -1,5 +1,6 @@
 #include "Rendering/RenderProxy.h"
-#include "Rendering/PerRenderObjectDataManager.h"
+#include "Rendering/RenderThread.h"
+#include <Pulsar/Rendering/PerRenderObjectDataManager.h>
 
 namespace pulsar::rendering
 {
@@ -11,11 +12,17 @@ namespace pulsar::rendering
         m_perRenderObjectData.NormalLocalToWorldMatrix = jmath::Transpose(m_perRenderObjectData.WorldToLocalMatrix);
         m_isLocalToWorldDeterminantNegative = localToWorld.Determinant() < 0;
 
-        if (m_renderObjectIndex != kInvalidSlot && m_pPerRenderObjectDataManager)
-        {
-            m_pPerRenderObjectDataManager->SetData(m_renderObjectIndex, m_perRenderObjectData);
-        }
-
+        // Notify subclasses (Game Thread side)
         OnChangedTransform();
+
+        // Upload to GPU buffer via Render Thread
+        auto index = m_renderObjectIndex;
+        auto data = m_perRenderObjectData;
+        RenderThread::Get().EnqueueCommand([index, data]() {
+            if (index != kInvalidSlot)
+            {
+                RenderThread::Get().GetPerObjectDataManager().SetData(index, data);
+            }
+        });
     }
 } // namespace pulsar::rendering

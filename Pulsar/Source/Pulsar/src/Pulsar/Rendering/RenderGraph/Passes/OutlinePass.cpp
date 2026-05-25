@@ -1,6 +1,8 @@
 #include "OutlinePass.h"
 #include <Pulsar/Components/SceneCapture2DComponent.h>
 #include <Pulsar/World.h>
+#include <Pulsar/Rendering/PerRenderObjectDataManager.h>
+#include <Pulsar/Rendering/RenderProxyRegistry.h>
 #include <Pulsar/Scene.h>
 #include <Pulsar/Rendering/RenderProxy.h>
 #include <Pulsar/Rendering/ShaderPass.h>
@@ -61,7 +63,7 @@ namespace pulsar
                 const Vector3f camPos     = capture2D->GetNode()->GetTransform()->GetWorldPosition();
                 const Vector3f camForward = capture2D->GetNode()->GetTransform()->GetForward();
 
-                for (const rendering::RenderProxy_sp& ro : world->GetRenderObjects())
+                for (rendering::RenderProxy* ro : RenderThread::Get().GetProxyRegistry().GetProxies())
                 {
                     const float depth = jmath::Dot(camForward, ro->GetWorldPosition() - camPos);
                     for (auto batch : ro->GetMeshBatches())

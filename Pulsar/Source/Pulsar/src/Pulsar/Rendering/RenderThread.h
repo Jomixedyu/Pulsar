@@ -8,6 +8,8 @@
 
 namespace pulsar
 {
+    class PerRenderObjectDataManager;
+
     namespace rendering
     {
         class RenderProxyRegistry;
@@ -79,6 +81,7 @@ namespace pulsar
         bool IsInRenderThread() const;
 
         rendering::RenderProxyRegistry& GetProxyRegistry() { return *m_proxyRegistry; }
+        PerRenderObjectDataManager& GetPerObjectDataManager() { return *m_perObjectDataMgr; }
 
     private:
         void Run();
@@ -94,5 +97,6 @@ namespace pulsar
         std::atomic<bool> m_running{false};
 
         std::unique_ptr<rendering::RenderProxyRegistry> m_proxyRegistry;
+        std::unique_ptr<PerRenderObjectDataManager> m_perObjectDataMgr;
     };
 }

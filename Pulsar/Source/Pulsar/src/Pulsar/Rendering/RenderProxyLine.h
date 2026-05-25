@@ -31,8 +31,8 @@ namespace pulsar
         void SetDepthTestEnabled(bool enabled) { m_depthTestEnabled = enabled; }
         void SetQueue(ShaderPassRenderQueueType queue) { m_renderQueue = queue; }
 
-        void OnCreateResource() override;
-        void OnDestroyResource() override;
+        void InitRHI() override;
+        void ReleaseRHI() override;
 
         void OnChangedTransform() override;
         array_list<rendering::MeshBatch> GetMeshBatches() override;

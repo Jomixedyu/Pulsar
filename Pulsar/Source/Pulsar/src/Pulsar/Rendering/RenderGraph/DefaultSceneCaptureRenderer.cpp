@@ -1,6 +1,7 @@
 #include "DefaultSceneCaptureRenderer.h"
 #include <Pulsar/Logger.h>
 #include <Pulsar/Node.h>
+#include <Pulsar/Rendering/PerRenderObjectDataManager.h>
 #include <Pulsar/Components/CameraComponent.h>
 #include <Pulsar/Components/SceneCaptureComponent.h>
 #include <Pulsar/Components/SceneCapture2DComponent.h>

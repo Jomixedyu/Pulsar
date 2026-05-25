@@ -17,8 +17,8 @@ namespace pulsar
         void SetMesh(const RCPtr<StaticMesh>& mesh);
         void SetItems(const array_list<IconItem>& items);
 
-        void OnCreateResource() override;
-        void OnDestroyResource() override;
+        void InitRHI() override;
+        void ReleaseRHI() override;
         void OnChangedTransform() override {}
         array_list<rendering::MeshBatch> GetMeshBatches() override;
 

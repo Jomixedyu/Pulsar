@@ -84,8 +84,8 @@ namespace pulsar::rendering
 
         }
 
-        virtual void OnCreateResource() {}
-        virtual void OnDestroyResource() {}
+        virtual void InitRHI() {}
+        virtual void ReleaseRHI() {}
 
         virtual array_list<MeshBatch> GetMeshBatches() = 0;
         virtual std::string GetInterface() const { return {}; }
@@ -103,9 +103,6 @@ namespace pulsar::rendering
         void SetRenderObjectIndex(uint32_t index) { m_renderObjectIndex = index; }
         uint32_t GetRenderObjectIndex() const { return m_renderObjectIndex; }
 
-        void SetPerRenderObjectDataManager(PerRenderObjectDataManager* mgr) { m_pPerRenderObjectDataManager = mgr; }
-        PerRenderObjectDataManager* GetPerRenderObjectDataManager() const { return m_pPerRenderObjectDataManager; }
-
         const PerRenderObjectData& GetPerRenderObjectData() const { return m_perRenderObjectData; }
         void SetPerRenderObjectData(const PerRenderObjectData& data) { m_perRenderObjectData = data; }
 
@@ -117,7 +114,6 @@ namespace pulsar::rendering
         bool      m_isLocalToWorldDeterminantNegative{};
         int       m_lineWidth{1};
         uint32_t  m_renderObjectIndex = kInvalidSlot;
-        PerRenderObjectDataManager* m_pPerRenderObjectDataManager = nullptr;
     };
     CORELIB_DECL_SHORTSPTR(RenderProxy);
 }
