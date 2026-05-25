@@ -122,8 +122,6 @@ namespace pulsar
         m_ticker += dt;
         m_totalTime += dt;
 
-        m_lightManager->Update();
-
         m_gizmosManager.Draw();
 
         if (m_isPlaying)
@@ -248,8 +246,6 @@ namespace pulsar
     }
     void World::AddRenderObject(const rendering::RenderProxy_sp& renderObject)
     {
-        m_renderObjects.insert(renderObject);
-
         auto proxy = renderObject;
         RenderThread::Get().EnqueueCommand([proxy]() {
             auto& rt = RenderThread::Get();
@@ -263,24 +259,18 @@ namespace pulsar
     }
     void World::RemoveRenderObject(rendering::RenderProxy_rsp renderObject)
     {
-        const auto it = m_renderObjects.find(renderObject);
-        if (it != m_renderObjects.end())
-        {
-            m_renderObjects.erase(it);
-
-            auto proxy = renderObject;
-            RenderThread::Get().EnqueueCommand([proxy]() {
-                auto& rt = RenderThread::Get();
-                rt.GetProxyRegistry().UnregisterProxy(proxy.get());
-                proxy->ReleaseRHI();
-                auto slot = proxy->GetRenderObjectIndex();
-                if (slot != rendering::RenderProxy::kInvalidSlot)
-                {
-                    rt.GetPerObjectDataManager().FreeSlot(slot);
-                    proxy->SetRenderObjectIndex(rendering::RenderProxy::kInvalidSlot);
-                }
-            });
-        }
+        auto proxy = renderObject;
+        RenderThread::Get().EnqueueCommand([proxy]() {
+            auto& rt = RenderThread::Get();
+            rt.GetProxyRegistry().UnregisterProxy(proxy.get());
+            proxy->ReleaseRHI();
+            auto slot = proxy->GetRenderObjectIndex();
+            if (slot != rendering::RenderProxy::kInvalidSlot)
+            {
+                rt.GetPerObjectDataManager().FreeSlot(slot);
+                proxy->SetRenderObjectIndex(rendering::RenderProxy::kInvalidSlot);
+            }
+        });
     }
 
     void World::OnWorldBegin()
@@ -294,8 +284,6 @@ namespace pulsar
 
         m_physicsWorld2D = new PhysicsWorld2D;
         m_physicsWorld3D = new PhysicsWorld3D;
-
-        m_lightManager = new LightManager;
 
         for (auto& item : SubsystemManager::GetAllSubsystems())
         {
@@ -335,10 +323,6 @@ namespace pulsar
 
         delete m_physicsWorld3D;
         m_physicsWorld3D = nullptr;
-
-        delete m_lightManager;
-        m_lightManager = nullptr;
-
 
     }
 

@@ -9,6 +9,8 @@
 namespace pulsar
 {
     class PerRenderObjectDataManager;
+    class CameraManager;
+    class LightManager;
 
     namespace rendering
     {
@@ -82,6 +84,8 @@ namespace pulsar
 
         rendering::RenderProxyRegistry& GetProxyRegistry() { return *m_proxyRegistry; }
         PerRenderObjectDataManager& GetPerObjectDataManager() { return *m_perObjectDataMgr; }
+        CameraManager& GetCameraManager() { return *m_cameraManager; }
+        LightManager& GetLightManager() { return *m_lightManager; }
 
     private:
         void Run();
@@ -96,6 +100,8 @@ namespace pulsar
         std::atomic<bool> m_hasPendingCommands{false};
         std::atomic<bool> m_running{false};
 
+        std::unique_ptr<CameraManager> m_cameraManager;
+        std::unique_ptr<LightManager> m_lightManager;
         std::unique_ptr<rendering::RenderProxyRegistry> m_proxyRegistry;
         std::unique_ptr<PerRenderObjectDataManager> m_perObjectDataMgr;
     };

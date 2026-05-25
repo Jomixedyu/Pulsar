@@ -95,29 +95,25 @@ namespace pulsar
 
     public: //rendering
         array_list<ObjectPtrBase>&      GetDeferredDestroyedQueue() { return m_deferredDestroyedQueue; }
-        const hash_set<rendering::RenderProxy_sp>& GetRenderObjects() const { return m_renderObjects; }
         void            AddRenderObject(const rendering::RenderProxy_sp& renderObject);
         void            RemoveRenderObject(rendering::RenderProxy_rsp renderObject);
-        CameraManager&        GetCameraManager() { return m_cameraManager; }
+        CameraManager&        GetCameraManager() { return RenderThread::Get().GetCameraManager(); }
         SceneCaptureManager&  GetCaptureManager() { return m_captureManager; }
         GizmosManager&        GetGizmosManager() { return m_gizmosManager; }
         PerRenderObjectDataManager& GetPerRenderObjectDataManager() { return RenderThread::Get().GetPerObjectDataManager(); }
         SimulateManager&      GetSimulateManager() { return m_simulateManager; }
         PhysicsWorld2D*       GetPhysicsWorld2D() const { return m_physicsWorld2D; }
         PhysicsWorld3D*       GetPhysicsWorld3D() const { return m_physicsWorld3D; }
-        LightManager*         GetLightManager() const { return m_lightManager; }
+        LightManager&         GetLightManager() const { return RenderThread::Get().GetLightManager(); }
     protected:
         SelectionSet<Node> m_selection;
     protected:
         PhysicsWorld2D* m_physicsWorld2D = nullptr;
         PhysicsWorld3D* m_physicsWorld3D = nullptr;
-        LightManager*   m_lightManager = nullptr;
 
         RCPtr<Material>                       m_defaultMaterial;
-        hash_set<rendering::RenderProxy_sp>  m_renderObjects;
         array_list<RCPtr<NodeCollection>>     m_scenes;
         RCPtr<NodeCollection>                 m_focusScene;
-        CameraManager                         m_cameraManager;
         SceneCaptureManager                   m_captureManager;
         array_list<ObjectPtrBase>             m_deferredDestroyedQueue;
         SimulateManager                       m_simulateManager;

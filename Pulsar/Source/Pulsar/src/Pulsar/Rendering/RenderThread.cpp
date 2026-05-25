@@ -1,6 +1,8 @@
 #include "RenderThread.h"
 #include "RenderProxyRegistry.h"
 #include "PerRenderObjectDataManager.h"
+#include <Pulsar/CameraManager.h>
+#include <Pulsar/Rendering/LightingData.h>
 
 namespace pulsar
 {
@@ -13,6 +15,8 @@ namespace pulsar
     void RenderThread::Start()
     {
         m_running.store(true);
+        m_cameraManager = std::make_unique<CameraManager>();
+        m_lightManager = std::make_unique<LightManager>();
         m_proxyRegistry = std::make_unique<rendering::RenderProxyRegistry>();
         m_perObjectDataMgr = std::make_unique<PerRenderObjectDataManager>();
     }
@@ -23,6 +27,8 @@ namespace pulsar
         m_running.store(false);
         m_proxyRegistry.reset();
         m_perObjectDataMgr.reset();
+        m_lightManager.reset();
+        m_cameraManager.reset();
     }
 
     void RenderThread::TriggerRenderFrame()
@@ -30,6 +36,10 @@ namespace pulsar
         // Phase 2: process commands immediately.
         // In real thread mode this would swap queues and signal the worker thread.
         ProcessCommands();
+        if (m_lightManager)
+        {
+            m_lightManager->Update();
+        }
     }
 
     void RenderThread::FlushCommands()

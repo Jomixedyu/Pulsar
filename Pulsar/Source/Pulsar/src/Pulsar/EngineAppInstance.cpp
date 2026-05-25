@@ -47,7 +47,7 @@ namespace pulsar
         {
             cmdBuffer.CmdPushDebugInfo("SceneRenderer");
 
-            for (const auto& cam : world->GetCameraManager().GetCameras())
+            for (const auto& cam : RenderThread::Get().GetCameraManager().GetCameras())
             {
                 RenderGraph graph;
 

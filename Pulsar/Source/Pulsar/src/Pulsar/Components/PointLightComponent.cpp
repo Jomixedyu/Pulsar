@@ -62,14 +62,14 @@ namespace pulsar
         OnLightColorChanged();
         OnRadiusChanged();
 
-        GetWorld()->GetLightManager()->AddLight(&m_runtimeLightData);
+        GetWorld()->GetLightManager().AddLight(&m_runtimeLightData);
 
     }
 
     void PointLightComponent::EndComponent()
     {
         base::EndComponent();
-        GetWorld()->GetLightManager()->RemoveLight(&m_runtimeLightData);
+        GetWorld()->GetLightManager().RemoveLight(&m_runtimeLightData);
     }
 
     BoxSphereBounds3f PointLightComponent::GetBoundsWS()

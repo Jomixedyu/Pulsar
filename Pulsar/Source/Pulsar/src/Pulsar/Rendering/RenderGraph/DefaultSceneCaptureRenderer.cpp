@@ -109,17 +109,17 @@ namespace pulsar
                     worldData.SkyLightColor = {skyLight.Color.r, skyLight.Color.g, skyLight.Color.b, skyLight.Intensity};
                 }
             }
-            worldData.LightParameterCount = static_cast<uint32_t>(world->GetLightManager()->GetLightCount());
+            worldData.LightParameterCount = static_cast<uint32_t>(RenderThread::Get().GetLightManager().GetLightCount());
             perPass->UpdateWorld(worldData);
         }
 
         {
             PerPassLightsBufferData lightsData{};
-            auto* lightMgr = ctx.world->GetLightManager();
-            int lightCount = std::min(lightMgr->GetLightCount(), 63);
+            auto& lightMgr = RenderThread::Get().GetLightManager();
+            int lightCount = std::min(lightMgr.GetLightCount(), 63);
             for (int i = 0; i < lightCount; ++i)
             {
-                auto& src = lightMgr->GetLightParameter(i);
+                auto& src = lightMgr.GetLightParameter(i);
                 lightsData.Lights[i] = src;
             }
             perPass->UpdateLights(lightsData);

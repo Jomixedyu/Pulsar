@@ -26,7 +26,7 @@ namespace pulsared
 
             for (auto world : m_worlds)
             {
-                for (auto cam : world->GetCameraManager().GetCameras())
+                for (auto cam : RenderThread::Get().GetCameraManager().GetCameras())
                 {
                     auto rt = cam->GetRenderTexture()->GetGfxRenderTarget0();
                     cmd.CmdImageTransitionBarrier(rt.get(), gfx::GFXResourceLayout::ShaderReadOnly);
