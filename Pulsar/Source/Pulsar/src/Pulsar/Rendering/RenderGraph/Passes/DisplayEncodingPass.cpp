@@ -20,6 +20,7 @@ namespace pulsar
 
         m_material = Material::StaticCreate(shader);
         m_material->CreateGPUResource();
+        m_proxyMaterial = mksptr(new RenderProxyMaterial(m_material));
     }
 
     void DisplayEncodingPass::ReadSettings(const VolumeStack& stack)

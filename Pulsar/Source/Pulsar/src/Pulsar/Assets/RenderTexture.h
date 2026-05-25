@@ -3,6 +3,7 @@
 #include "Texture2DBase.h"
 #include "RenderTextureFormats.h"
 #include <Pulsar/IGPUResource.h>
+#include <Pulsar/Rendering/RenderProxyTexture.h>
 #include <gfx/GFXFrameBufferObject.h>
 #include <gfx/GFXTexture.h>
 
@@ -45,15 +46,18 @@ namespace pulsar
         void EnableRenderTarget();
         void DisableRenderTarget();
 
-        std::shared_ptr<gfx::GFXTexture2DView> GetGfxRenderTarget0() const { return m_renderTargets[0]->Get2DView(0); }
-        const std::shared_ptr<gfx::GFXFrameBufferObject>& GetGfxFrameBufferObject() const { return m_framebuffer; }
-        const array_list<gfx::GFXTexture_sp>& GetRenderTargets() const { return m_renderTargets; }
+        std::shared_ptr<gfx::GFXTexture2DView> GetGfxRenderTarget0() const;
+        std::shared_ptr<gfx::GFXFrameBufferObject> GetGfxFrameBufferObject() const;
+        const array_list<gfx::GFXTexture_sp>& GetRenderTargets() const;
+
+        List_sp<RenderTextureColorFormat> GetColorFormats() const { return m_colorFormats; }
+        uint32_t GetSampleCount() const { return m_sampleCount; }
+        RenderTextureDepthFormat GetDepthFormat() const { return m_depthFormat; }
 
     protected:
         void RebuildGPUResources();
 
-        array_list<gfx::GFXTexture_sp> m_renderTargets;
-        std::shared_ptr<gfx::GFXFrameBufferObject> m_framebuffer;
+        SPtr<RenderProxyRenderTexture> m_proxy;
 
         bool m_createdGPUResource = false;
 

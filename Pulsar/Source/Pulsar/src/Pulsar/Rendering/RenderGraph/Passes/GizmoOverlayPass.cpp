@@ -51,8 +51,9 @@ namespace pulsar
                             continue;
 
                         batch.Depth = depth;
-                        const MaterialPassBinding* binding = batch.Material
-                            ->PrepareForRendering("Forward", batch.Interface);
+                        const RenderProxyMaterialPassBinding* binding = batch.ProxyMaterial
+                            ? batch.ProxyMaterial->PrepareForRendering("Forward", batch.Interface)
+                            : nullptr;
 
                         preparedOverlay->push_back(PreparedBatch{ std::move(batch), binding });
                     }

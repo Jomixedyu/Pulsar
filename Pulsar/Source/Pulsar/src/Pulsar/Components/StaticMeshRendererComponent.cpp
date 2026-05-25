@@ -8,6 +8,7 @@
 
 #include <Pulsar/Rendering/ShaderConfig.h>
 #include <Pulsar/Rendering/PerRenderObjectDataManager.h>
+#include <Pulsar/Rendering/RenderProxyMaterial.h>
 #include <utility>
 
 namespace pulsar
@@ -18,6 +19,7 @@ namespace pulsar
         array_list<rendering::MeshBatch> m_batches;
         RCPtr<StaticMesh> m_staticMesh;
         array_list<RCPtr<Material>> m_materials;
+        array_list<SPtr<RenderProxyMaterial>> m_proxyMaterials;
         array_list<int32_t> m_priorities;
 
         gfx::GFXDescriptorSet_sp m_dummyExtraSet;
@@ -36,6 +38,12 @@ namespace pulsar
         {
             m_materials = materials;
             m_priorities = priorities;
+            m_proxyMaterials.clear();
+            m_proxyMaterials.reserve(materials.size());
+            for (auto& mat : materials)
+            {
+                m_proxyMaterials.push_back(mksptr(new RenderProxyMaterial(mat)));
+            }
             return this;
         }
         void SubmitChange();
@@ -45,6 +53,12 @@ namespace pulsar
             m_dummyExtraSet.reset();
             m_vertexBuffers.clear();
             m_indicesBuffers.clear();
+            for (auto& proxyMat : m_proxyMaterials)
+            {
+                if (proxyMat)
+                    proxyMat->ReleaseRHI();
+            }
+            m_proxyMaterials.clear();
         }
 
         void OnChangedTransform() override
@@ -73,6 +87,41 @@ namespace pulsar
         if (!m_staticMesh)
             return;
 
+        // Lazy-create GPU buffers if not yet created (e.g. SetStaticMesh called before InitRHI)
+        if (m_vertexBuffers.empty())
+        {
+            auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
+            for (auto& section : m_staticMesh->GetSections())
+            {
+                auto interleavedVerts = section.BuildInterleavedVertices();
+                const size_t vertSize = interleavedVerts.size() * sizeof(StaticMeshVertex);
+
+                {
+                    gfx::GFXBufferDesc vertexDesc{};
+                    vertexDesc.Usage       = gfx::GFXBufferUsage::Vertex;
+                    vertexDesc.StorageType = gfx::GFXBufferMemoryPosition::DeviceLocal;
+                    vertexDesc.BufferSize  = vertSize;
+                    vertexDesc.ElementSize = sizeof(StaticMeshVertex);
+
+                    auto vertBuffer = cmdList.CreateBuffer(vertexDesc);
+                    cmdList.UploadBuffer(vertBuffer.Get(), interleavedVerts.data(), vertSize);
+                    m_vertexBuffers.push_back(vertBuffer);
+                }
+
+                {
+                    gfx::GFXBufferDesc indicesDesc{};
+                    indicesDesc.Usage       = gfx::GFXBufferUsage::Indices;
+                    indicesDesc.StorageType = gfx::GFXBufferMemoryPosition::DeviceLocal;
+                    indicesDesc.BufferSize  = section.GetIndicesAllocSize();
+                    indicesDesc.ElementSize = sizeof(MeshIndicesType);
+
+                    auto indicesBuffer = cmdList.CreateBuffer(indicesDesc);
+                    cmdList.UploadBuffer(indicesBuffer.Get(), section.Indices.data(), section.GetIndicesAllocSize());
+                    m_indicesBuffers.push_back(indicesBuffer);
+                }
+            }
+        }
+
         for (int matIndex = 0; matIndex < m_materials.size(); ++matIndex)
         {
             auto& slot = m_materials.at(matIndex);
@@ -84,17 +133,16 @@ namespace pulsar
             batch.IsCastShadow = true;
 
             batch.Material  = slot;
+            batch.ProxyMaterial = (matIndex < (int)m_proxyMaterials.size()) ? m_proxyMaterials[matIndex] : nullptr;
             batch.Priority  = (matIndex < (int)m_priorities.size()) ? m_priorities.at(matIndex) : 0;
 
             // null / invalid material → fallback to Error material
-            bool isInvalidMaterial = !batch.Material
-                || !batch.Material->GetShader()
-                || !batch.Material->CreateGPUResource();
+            bool isInvalidMaterial = !batch.Material || !batch.Material->GetShader();
             if (isInvalidMaterial)
             {
                 batch.Material = AssetManager::Get()->LoadAsset<Material>("Engine/Materials/Error");
                 if (batch.Material)
-                    batch.Material->CreateGPUResource();
+                    batch.ProxyMaterial = mksptr(new RenderProxyMaterial(batch.Material));
             }
 
             // still no valid material after fallback, skip

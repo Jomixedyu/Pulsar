@@ -1,9 +1,6 @@
 #pragma once
 
-#include <gfx/GFXDescriptorSet.h>
-#include <gfx/GFXHandle.h>
 #include <Pulsar/Rendering/ShaderPropertySheet.h>
-#include <Pulsar/Rendering/ShaderInstance.h>
 #include <Pulsar/AssetObject.h>
 #include <Pulsar/Assets/Shader.h>
 #include <Pulsar/Assets/Texture.h>
@@ -31,25 +28,10 @@ namespace pulsar
         }
     };
 
-    // Per-pass binding: holds a ShaderInstance AND its own GPU resources for a specific (pass, interface) combination
-    struct MaterialPassBinding
-    {
-        std::shared_ptr<ShaderInstance> m_instance;
+    class RenderProxyMaterial;
+    struct RenderProxyMaterialPassBinding;
 
-        // Per-binding GPU resources (lazily created when this interface's shader is ready)
-        gfx::GFXDescriptorSet_sp             m_descriptorSet;
-        gfx::DescriptorSetLayoutHandle       m_descriptorSetLayout;
-        gfx::GFXBuffer_sp                    m_materialConstantBuffer;
-        bool                                 m_gpuResourcesInitialized = false;
-        std::weak_ptr<ShaderProgramResource> m_builtWithProgram;
-
-        std::shared_ptr<ShaderProgramResource> GetCurrentProgram() const
-        {
-            return m_instance ? m_instance->GetCurrentProgram() : nullptr;
-        }
-    };
-
-    class Material final : public AssetObject, public IGPUResource
+    class Material final : public AssetObject
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::Material, AssetObject);
         CORELIB_CLASS_ATTR(
@@ -64,10 +46,6 @@ namespace pulsar
 
         virtual void Serialize(AssetSerializer* s) override;
         void OnInstantiateAsset(AssetObject* obj) override;
-    public:
-        virtual bool CreateGPUResource() override;
-        virtual void DestroyGPUResource() override;
-        virtual bool IsCreatedGPUResource() const override;
 
         void OnCollectAssetDependencies(array_list<jxcorlib::guid_t> &deps) override;
         void GetSubscribeObserverHandles(array_list<ObjectHandle>& out) override;
@@ -75,6 +53,19 @@ namespace pulsar
     protected:
         void OnNotifyObserver(ObjectHandle inDependency, DependencyObjectState msg) override;
     public:
+        // Backward-compatible GPU resource management (delegates to internal RenderProxyMaterial)
+        bool CreateGPUResource();
+        void DestroyGPUResource();
+        bool IsCreatedGPUResource() const;
+
+        // Renderer-triggered: called once per frame before drawing with this (pass, interface).
+        const RenderProxyMaterialPassBinding* PrepareForRendering(
+            const std::string& passName,
+            const std::string& interface_);
+
+        // User-triggered: upload dirty parameters to all ready bindings.
+        void SubmitParameters(bool force = false);
+
         // Parameter accessors (operate on m_sheet)
         void SetIntScalar(const index_string& name, int value);
         void SetFloat(const index_string& name, float value);
@@ -85,28 +76,11 @@ namespace pulsar
         Vector4f GetVector4(const index_string& name);
         RCPtr<Texture> GetTexture(const index_string& name);
 
-        // User-triggered: upload dirty parameters to all ready bindings.
-        // Call this after modifying material parameters (SetFloat / SetTexture / etc.).
-        void SubmitParameters(bool force = false);
-
-        // Renderer-triggered: called once per frame before drawing with this (pass, interface).
-        // Detects async shader compilation completing, creates GPU resources, and does the
-        // initial parameter sync into freshly created resources.
-        // Returns nullptr if the shader for this binding is not yet ready.
-        const MaterialPassBinding* PrepareForRendering(
-            const std::string& passName,
-            const std::string& interface_);
-
-        // Per-pass binding: lazily creates ShaderInstance for (pass, interface)
-        // The binding owns its own GPU resources (descriptor set, cbuffer), created when the shader is ready.
-        const MaterialPassBinding& GetPassBinding(
-            const std::string& passName,
-            const std::string& interface_);
+        void ApplyShaderDefaults();
 
     public:
         RCPtr<Shader> GetShader() const;
                 void SetShader(RCPtr<Shader> value);
-        void ApplyShaderDefaults();
 
         void SetGraphicsPipelineOverride(const SPtr<ShaderConfigGraphicsPipeline>& value)
         {
@@ -155,10 +129,6 @@ namespace pulsar
         void PostEditChange(FieldInfo* info) override;
 
     private:
-        void ClearPassBindings();
-        void EnsureGPUResources(MaterialPassBinding& binding, const ShaderPropertyLayout& layout);
-
-    private:
         CORELIB_REFL_DECL_FIELD(m_shader);
         RCPtr<Shader> m_shader;
 
@@ -174,13 +144,12 @@ namespace pulsar
         ShaderPropertySheet m_sheet;
         std::vector<std::string> m_activeFeatures;
 
-        // Per-pass ShaderInstance cache (lazy-created); each binding owns its own GPU resources
-        std::map<PassKey, MaterialPassBinding> m_passBindings;
-
         mutable std::map<std::string, SPtr<ShaderConfigGraphicsPipeline>> m_cachedEffectiveGraphicsPipeline;
 
+        // Internal proxy for backward compatibility; actual GPU resources live here
+        mutable SPtr<RenderProxyMaterial> m_proxy;
         bool m_createdGpuResource = false;
-        bool m_isDirtyParameter{};
+        bool m_isDirtyParameter = false;
     };
 
 } // namespace pulsar

@@ -8,10 +8,8 @@
 #include <CoreLib.Serialization/JsonSerializer.h>
 #include <Pulsar/AssetManager.h>
 #include <Pulsar/Assets/Material.h>
-#include <Pulsar/Rendering/ShaderInstanceCache.h>
-#include <Pulsar/Rendering/ShaderPropertySync.h>
-#include <gfx/GFXResourceManager.h>
-#include <mutex>
+#include <Pulsar/Rendering/RenderProxyMaterial.h>
+
 #include <utility>
 
 namespace pulsar
@@ -36,33 +34,6 @@ namespace pulsar
         return material;
     }
 
-    bool Material::CreateGPUResource()
-    {
-        if (m_createdGpuResource)
-        {
-            return true;
-        }
-        m_createdGpuResource = true;
-        // 轻量初始化: GPU 资源将在第一个 ShaderInstance Ready 后通过 EnsureGPUResources 懒创建
-        return true;
-    }
-
-    void Material::DestroyGPUResource()
-    {
-        if (!m_createdGpuResource)
-        {
-            return;
-        }
-        m_createdGpuResource = false;
-        // Clearing pass bindings releases all per-binding GPU resources (descriptor sets, cbuffers)
-        m_passBindings.clear();
-    }
-
-    bool Material::IsCreatedGPUResource() const
-    {
-        return m_createdGpuResource;
-    }
-
     void Material::GetSubscribeObserverHandles(array_list<ObjectHandle>& out)
     {
         base::GetSubscribeObserverHandles(out);
@@ -79,6 +50,51 @@ namespace pulsar
         }
     }
 
+    bool Material::CreateGPUResource()
+    {
+        if (m_createdGpuResource)
+            return true;
+        m_createdGpuResource = true;
+        if (!m_proxy)
+            m_proxy = mksptr(new RenderProxyMaterial(this));
+        return true;
+    }
+
+    void Material::DestroyGPUResource()
+    {
+        if (!m_createdGpuResource)
+            return;
+        m_createdGpuResource = false;
+        if (m_proxy)
+            m_proxy->ReleaseRHI();
+        m_proxy.reset();
+    }
+
+    bool Material::IsCreatedGPUResource() const
+    {
+        return m_createdGpuResource;
+    }
+
+    const RenderProxyMaterialPassBinding* Material::PrepareForRendering(
+        const std::string& passName,
+        const std::string& interface_)
+    {
+        if (!m_createdGpuResource)
+            return nullptr;
+        if (!m_proxy)
+            m_proxy = mksptr(new RenderProxyMaterial(this));
+        return m_proxy->PrepareForRendering(passName, interface_);
+    }
+
+    void Material::SubmitParameters(bool force)
+    {
+        if (!m_createdGpuResource)
+            return;
+        if (!m_proxy)
+            m_proxy = mksptr(new RenderProxyMaterial(this));
+        m_proxy->SubmitParameters(force);
+    }
+
     void Material::OnNotifyObserver(ObjectHandle inDependency, DependencyObjectState msg)
     {
         base::OnNotifyObserver(inDependency, msg);
@@ -86,12 +102,16 @@ namespace pulsar
         {
             if (EnumHasFlag(msg, DependencyObjectState::Modified))
             {
-                // Shader 修改 -> 清除绑定，等待重新获取
-                ClearPassBindings();
+                // Shader 修改 -> 通知 proxy 重新获取
+                if (m_proxy)
+                    m_proxy->ReleaseRHI();
+                OnShaderChanged.Invoke();
             }
             else if (EnumHasFlag(msg, DependencyObjectState::Unload))
             {
-                ClearPassBindings();
+                if (m_proxy)
+                    m_proxy->ReleaseRHI();
+                OnShaderChanged.Invoke();
             }
         }
         SubmitParameters(true);
@@ -358,223 +378,6 @@ namespace pulsar
     }
 #pragma endregion
 
-    const MaterialPassBinding* Material::PrepareForRendering(
-        const std::string& passName,
-        const std::string& interface_)
-    {
-        if (!IsCreatedGPUResource())
-            return nullptr;
-
-        // GetPassBinding lazily creates the ShaderInstance for this (pass, interface) if not yet exist
-        auto& binding = const_cast<MaterialPassBinding&>(GetPassBinding(passName, interface_));
-
-        auto program = binding.GetCurrentProgram();
-        if (!program)
-            return nullptr; // shader still compiling
-
-        // Detect async compilation completing or shader hot-reload for this specific binding
-        if (program != binding.m_builtWithProgram.lock())
-        {
-            // Rebuild GPU resources for this binding with the new program's layout
-            binding.m_descriptorSet.reset();
-            binding.m_descriptorSetLayout.Reset();
-            binding.m_materialConstantBuffer.reset();
-            binding.m_gpuResourcesInitialized = false;
-            RenderThread::Get().EnqueueCommandSync([this, &binding, &program]() {
-                this->EnsureGPUResources(binding, program->m_layout);
-            });
-            binding.m_builtWithProgram = program;
-
-            // Initial parameter sync: push current sheet values into freshly created GPU resources
-            ApplyShaderDefaults();
-            ShaderPropertySync::SyncSheetToGpu(
-                m_sheet,
-                program->m_layout,
-                binding.m_materialConstantBuffer.get(),
-                binding.m_descriptorSet.get());
-            if (binding.m_descriptorSet)
-                binding.m_descriptorSet->Submit();
-        }
-
-        if (!binding.m_gpuResourcesInitialized)
-            return nullptr;
-
-        return &binding;
-    }
-
-    void Material::SubmitParameters(bool force)
-    {
-        if (!IsCreatedGPUResource())
-            return;
-
-        if (!m_isDirtyParameter && !force)
-            return;
-
-        // Upload current sheet values to every binding that already has GPU resources ready.
-        // Bindings whose shaders haven't compiled yet will receive the values via the
-        // initial sync inside PrepareForRendering when they eventually become ready.
-        ApplyShaderDefaults();
-
-        bool anyUploaded = false;
-        for (auto& [key, binding] : m_passBindings)
-        {
-            if (!binding.m_gpuResourcesInitialized) continue;
-
-            auto program = binding.GetCurrentProgram();
-            if (!program) continue;
-
-            ShaderPropertySync::SyncSheetToGpu(
-                m_sheet,
-                program->m_layout,
-                binding.m_materialConstantBuffer.get(),
-                binding.m_descriptorSet.get());
-
-            if (binding.m_descriptorSet)
-                binding.m_descriptorSet->Submit();
-
-            anyUploaded = true;
-        }
-
-        if (anyUploaded)
-            m_isDirtyParameter = false;
-    }
-
-    const MaterialPassBinding& Material::GetPassBinding(
-        const std::string& passName,
-        const std::string& interface_)
-    {
-        PassKey key{passName, interface_};
-        auto it = m_passBindings.find(key);
-        if (it != m_passBindings.end())
-            return it->second;
-
-        // 懒创建: 从 ShaderInstanceCache 获取
-        if (!m_shader)
-        {
-            static MaterialPassBinding empty{};
-            return empty;
-        }
-
-        auto config = m_shader->GetConfig();
-
-        ShaderVariantKey variantKey;
-        variantKey.m_shaderGuid = m_shader->GetAssetGuid();
-        variantKey.m_passName = passName;
-        variantKey.m_interface = interface_;
-        variantKey.m_features = m_activeFeatures;
-
-        // 构造编译任务 (路径由编译器服务根据 guid 解析)
-        ShaderCompileTask task;
-        task.m_variantKey = variantKey;
-
-        // 入口点: 从 ShaderConfig 的 Passes 中查找
-        if (config && config->Passes)
-        {
-            // 优先匹配 passName
-            for (const auto& pass : *config->Passes)
-            {
-                if (pass->Name == passName && pass->Entry)
-                {
-                    task.m_entries.m_vertex = pass->Entry->Vertex;
-                    task.m_entries.m_fragment = pass->Entry->Fragment;
-                    task.m_entries.m_tessControl = pass->Entry->TessControl;
-                    task.m_entries.m_tessEval = pass->Entry->TessEval;
-                    break;
-                }
-            }
-
-            // fallback: 如果没找到匹配的 pass，使用第一个 pass 的 entry
-            if (task.m_entries.m_vertex.empty() && task.m_entries.m_fragment.empty())
-            {
-                for (const auto& pass : *config->Passes)
-                {
-                    if (pass->Entry)
-                    {
-                        task.m_entries.m_vertex = pass->Entry->Vertex;
-                        task.m_entries.m_fragment = pass->Entry->Fragment;
-                        task.m_entries.m_tessControl = pass->Entry->TessControl;
-                        task.m_entries.m_tessEval = pass->Entry->TessEval;
-                        Logger::Log("Material pass '" + passName + "' not found, using first pass '" + pass->Name + "' entry as fallback", LogLevel::Warning);
-                        break;
-                    }
-                }
-            }
-        }
-
-        auto instance = ShaderInstanceCache::Instance().GetOrCreate(variantKey, task);
-        MaterialPassBinding binding;
-        binding.m_instance = instance;
-        auto [insertIt, _] = m_passBindings.emplace(key, std::move(binding));
-
-        return insertIt->second;
-    }
-
-    void Material::EnsureGPUResources(MaterialPassBinding& binding, const ShaderPropertyLayout& layout)
-    {
-        if (binding.m_gpuResourcesInitialized)
-            return;
-
-        auto gfxApp = Application::GetGfxApp();
-
-        // 创建该 binding 专属的 descriptor set layout (set 0)
-        array_list<gfx::GFXDescriptorSetLayoutDesc> descLayoutInfos;
-
-        if (layout.m_totalCBufferSize > 0)
-        {
-            gfx::GFXDescriptorSetLayoutDesc cbDesc{};
-            cbDesc.Type = gfx::GFXDescriptorType::ConstantBuffer;
-            cbDesc.Stage = (layout.m_cbufferStageFlags != gfx::GFXGpuProgramStageFlags::None)
-                ? layout.m_cbufferStageFlags
-                : gfx::GFXGpuProgramStageFlags::VertexFragment;
-            cbDesc.BindingPoint = layout.m_cbufferBindingPoint;
-            descLayoutInfos.push_back(cbDesc);
-
-            // 创建该 binding 专属的 cbuffer
-            gfx::GFXBufferDesc bufferDesc{};
-            bufferDesc.Usage = gfx::GFXBufferUsage::ConstantBuffer;
-            bufferDesc.StorageType = gfx::GFXBufferMemoryPosition::VisibleOnDevice;
-            bufferDesc.BufferSize = layout.m_totalCBufferSize;
-            binding.m_materialConstantBuffer = gfxApp->CreateBuffer(bufferDesc);
-        }
-
-        for (const auto& texEntry : layout.m_textureEntries)
-        {
-            gfx::GFXDescriptorSetLayoutDesc texDesc{};
-            texDesc.Type = texEntry.m_isCombinedImageSampler
-                ? gfx::GFXDescriptorType::CombinedImageSampler
-                : gfx::GFXDescriptorType::Texture2D;
-            texDesc.Stage = texEntry.m_stageFlags;
-            texDesc.BindingPoint = texEntry.m_bindingPoint;
-            descLayoutInfos.push_back(texDesc);
-        }
-
-        auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
-
-        // 即使没有任何 binding 也创建空 layout，确保 set 0 始终存在以保证 set 编号对齐
-        binding.m_descriptorSetLayout = cmdList.CreateDescriptorSetLayout(descLayoutInfos);
-        binding.m_descriptorSet = gfxApp->GetDescriptorManager()->GetDescriptorSet(binding.m_descriptorSetLayout.Lock());
-
-        if (binding.m_materialConstantBuffer)
-        {
-            binding.m_descriptorSet->AddDescriptor("ConstantProperties", 0)
-                ->SetConstantBuffer(binding.m_materialConstantBuffer.get());
-        }
-
-        for (const auto& texEntry : layout.m_textureEntries)
-        {
-            binding.m_descriptorSet->AddDescriptor(texEntry.m_name, texEntry.m_bindingPoint);
-        }
-
-        binding.m_gpuResourcesInitialized = true;
-    }
-
-    void Material::ClearPassBindings()
-    {
-        // Explicitly destroy handle-managed resources before clearing the map
-        auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
-        m_passBindings.clear();
-    }
-
     void Material::PostEditChange(FieldInfo* info)
     {
         base::PostEditChange(info);
@@ -654,15 +457,12 @@ namespace pulsar
 
         RuntimeObjectManager::RebuildMessageBox(this);
 
-        ClearPassBindings();
-
-        // shader 变更时将 DefaultValue 写进 sheet（不覆盖已有值）
         ApplyShaderDefaults();
 
-        if (m_createdGpuResource)
+        if (m_proxy)
         {
-            DestroyGPUResource();
-            CreateGPUResource();
+            m_proxy->ReleaseRHI();
+            m_proxy.reset();
         }
 
         OnShaderChanged.Invoke();
@@ -671,7 +471,6 @@ namespace pulsar
     void Material::SetActiveFeatures(std::vector<std::string> features)
     {
         m_activeFeatures = std::move(features);
-        ClearPassBindings();
     }
 
     SPtr<ShaderConfigGraphicsPipeline> Material::GetEffectiveGraphicsPipeline(const std::string& passName) const

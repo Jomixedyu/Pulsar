@@ -3,6 +3,7 @@
 #include "Texture2DBase.h"
 #include <Pulsar/IGPUResource.h>
 #include <Pulsar/AssetObject.h>
+#include <Pulsar/Rendering/RenderProxyTexture.h>
 #include <gfx/GFXTexture.h>
 
 
@@ -52,7 +53,9 @@ namespace pulsar
         void DestroyGPUResource() override;
         bool IsCreatedGPUResource() const override;
 
-        std::shared_ptr<gfx::GFXTexture> GetGFXTexture() const override { return m_tex; }
+        std::shared_ptr<gfx::GFXTexture> GetGFXTexture() const override;
+
+        int GetChannelCount() const { return m_channelCount; }
 
     public:
         bool IsSRGB() const;
@@ -76,7 +79,7 @@ namespace pulsar
         bool m_enableReadWrite{};
         gfx::GFXTextureFormat m_format{};
 
-        std::shared_ptr<gfx::GFXTexture> m_tex;
+        SPtr<RenderProxyTexture2D> m_proxy;
         bool m_init = false;
 
         bool m_isCreatedGPUResource = false;

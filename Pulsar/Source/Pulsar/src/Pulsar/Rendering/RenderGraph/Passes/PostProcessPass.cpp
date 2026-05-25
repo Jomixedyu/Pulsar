@@ -13,6 +13,8 @@ namespace pulsar
     PostProcessPass::PostProcessPass(RCPtr<Material> material)
         : m_material(std::move(material))
     {
+        if (m_material)
+            m_proxyMaterial = mksptr(new RenderProxyMaterial(m_material));
     }
 
     void PostProcessPass::Initialize(PerPassResources* perPass)
@@ -52,7 +54,8 @@ namespace pulsar
         PrepareMaterial(capture2D);
         if (!m_material)
             return hSrc;
-        m_material->SubmitParameters();
+        if (m_proxyMaterial)
+            m_proxyMaterial->SubmitParameters();
 
         auto curSrc = hSrc;
         auto curDst = hDst;
@@ -66,8 +69,8 @@ namespace pulsar
             .WithPerPass(perPass)
             .Prepare([this, perPass](RGPassContext&)
             {
-                if (m_material)
-                    m_material->PrepareForRendering("PostProcess", "RENDERER_IMAGEPROCESS");
+                if (m_proxyMaterial)
+                    m_proxyMaterial->PrepareForRendering("PostProcess", "RENDERER_IMAGEPROCESS");
             })
             .Execute([this, curSrc, curDst, capture2D, perPass]
                      (RGPassContext& passCtx, gfx::GFXCommandBuffer& cmdBuffer)
@@ -82,17 +85,16 @@ namespace pulsar
                                          RGTextureHandle hSrc, RGTextureHandle hDst,
                                          SceneCapture2DComponent* capture2D, PerPassResources* perPass)
     {
-        if (!m_material) return;
-        auto shader = m_material->GetShader();
+        if (!m_proxyMaterial) return;
+        auto material = m_proxyMaterial->GetSourceMaterial();
+        if (!material) return;
+        auto shader = material->GetShader();
         if (!shader || !shader->GetConfig()) return;
 
-        const auto* ppPassBinding = m_material->GetPassBinding("PostProcess", "RENDERER_IMAGEPROCESS")
-                                        .m_gpuResourcesInitialized
-                                    ? &m_material->GetPassBinding("PostProcess", "RENDERER_IMAGEPROCESS")
-                                    : nullptr;
-        if (!ppPassBinding) return;
+        auto binding = m_proxyMaterial->PrepareForRendering("PostProcess", "RENDERER_IMAGEPROCESS");
+        if (!binding || !binding->m_gpuResourcesInitialized) return;
 
-        auto program = ppPassBinding->GetCurrentProgram();
+        auto program = binding->GetCurrentProgram();
         if (!program) return;
 
         const auto* dstRT = passCtx.Get(hDst);
@@ -136,7 +138,7 @@ namespace pulsar
         auto* pipelineMgr = gfxApp->GetGraphicsPipelineManager();
         auto* resMgr = gfxApp->GetResourceManager();
         array_list<gfx::GFXDescriptorSetLayout_sp> descLayouts;
-        descLayouts.push_back(ppPassBinding->m_descriptorSetLayout.Lock()); // set 0: material
+        descLayouts.push_back(binding->m_descriptorSetLayout.Lock()); // set 0: material
         descLayouts.push_back(m_perPassSet->GetDescriptorSetLayout()); // set 1: per-pass (Camera/World/Source)
 
         auto& gpuPrograms = program->GetGpuPrograms();
@@ -155,7 +157,7 @@ namespace pulsar
         cmdBuffer.CmdBindGraphicsPipeline(gfxPipeline.get());
 
         array_list<gfx::GFXDescriptorSet*> descSets;
-        descSets.push_back(ppPassBinding->m_descriptorSet.get()); // set 0
+        descSets.push_back(binding->m_descriptorSet.get()); // set 0
         descSets.push_back(m_perPassSet.get());                    // set 1
         cmdBuffer.CmdBindDescriptorSets(descSets, gfxPipeline.get());
 

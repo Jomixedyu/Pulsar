@@ -2,6 +2,7 @@
 #include "AssetManager.h"
 #include "Assets/StaticMesh.h"
 #include <Pulsar/Rendering/PerRenderObjectDataManager.h>
+#include <Pulsar/Rendering/RenderProxyMaterial.h>
 
 #include <Pulsar/Rendering/RenderProxyLine.h>
 
@@ -109,7 +110,10 @@ namespace pulsar
         batch.IsDepthTestDisabled = !m_depthTestEnabled;
         batch.Material = AssetManager::Get()->LoadAsset<Material>("Engine/Materials/VertexColor");
         if (batch.Material)
+        {
             batch.Material->SetQueue(m_renderQueue);
+            batch.ProxyMaterial = mksptr(new RenderProxyMaterial(batch.Material));
+        }
     }
 
     void RenderProxyLine::ReleaseRHI()
@@ -124,13 +128,6 @@ namespace pulsar
 
     array_list<rendering::MeshBatch> RenderProxyLine::GetMeshBatches()
     {
-        for (const auto& batch : m_batchs)
-        {
-            if (batch.Material && !batch.Material->IsCreatedGPUResource())
-            {
-                batch.Material->CreateGPUResource();
-            }
-        }
         return m_batchs;
     }
 } // namespace pulsar

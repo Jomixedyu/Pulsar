@@ -53,8 +53,8 @@ namespace pulsar
                     for (auto batch : ro->GetMeshBatches())
                     {
                         batch.Depth = depth;
-                        const MaterialPassBinding* binding = batch.Material
-                            ? batch.Material->PrepareForRendering("Forward", batch.Interface)
+                        const RenderProxyMaterialPassBinding* binding = batch.ProxyMaterial
+                            ? batch.ProxyMaterial->PrepareForRendering("Forward", batch.Interface)
                             : nullptr;
 
                         if (!batch.Material)

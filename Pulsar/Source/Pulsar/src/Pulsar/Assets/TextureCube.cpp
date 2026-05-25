@@ -66,77 +66,30 @@ namespace pulsar
         {
             return true;
         }
-
-        auto gfxapp = Application::GetGfxApp();
-
-        m_cube = gfxapp->CreateTextureCube(m_width);
-
-        auto texCube = m_cube;
-
-        auto renderFunction = [texCube](gfx::GFXCommandBuffer* cmd) {
-            // load material
-            RCPtr<Material> mat;
-            auto gfxapp = cmd->GetApplication();
-
-            array_list<gfx::GFXTexture2DView_sp> faceRts;
-            faceRts.resize(6);
-            for (int i = 0; i < 6; ++i)
-            {
-                faceRts[i] = texCube->Get2DView(i);
-            }
-            auto facePointers = faceRts
-                | std::views::transform([](gfx::GFXTexture2DView_sp& x){ return x.get(); })
-                | std::ranges::to<array_list<gfx::GFXTexture2DView*>>();
-
-            gfx::GFXFrameBufferObject_sp frameBuffers[6]{};
-            for (auto& fbo : frameBuffers)
-            {
-                fbo = gfxapp->CreateFrameBufferObject(faceRts);
-            }
-
-            // render
-            for (int i = 0; i < 6; ++i)
-            {
-                auto& fbo = frameBuffers[i];
-                cmd->SetFrameBuffer(fbo.get());
-                cmd->CmdBeginRenderPass();
-
-
-
-                cmd->CmdEndRenderPass();
-                cmd->SetFrameBuffer(nullptr);
-            }
-
-            for (auto& fbo : frameBuffers)
-            {
-                cmd->SetFrameBuffer(fbo.get());
-                cmd->CmdBeginRenderPass();
-
-
-
-
-
-                cmd->CmdEndRenderPass();
-                cmd->SetFrameBuffer(nullptr);
-            }
-
-
-        };
-        // gfxapp->GetRenderer()->WaitExecuteRender(renderFunction);
-
-
-        // wait render hdr to cube
-
         m_isCreatedGPUResource = true;
-
+        if (!m_proxy)
+            m_proxy = mksptr(new RenderProxyTextureCube(this));
+        m_proxy->InitRHI();
         return true;
     }
+
     void TextureCube::DestroyGPUResource()
     {
         if (!m_isCreatedGPUResource)
         {
             return;
         }
-        m_cube.reset();
+        m_isCreatedGPUResource = false;
+        if (m_proxy)
+            m_proxy->ReleaseRHI();
+        m_proxy.reset();
     }
+
+    std::shared_ptr<gfx::GFXTexture> TextureCube::GetGFXTexture() const
+    {
+        if (m_proxy)
+            return std::shared_ptr<gfx::GFXTexture>(m_proxy->GetGFXTexture());
+        return nullptr;
+    }
+
 } // namespace pulsar

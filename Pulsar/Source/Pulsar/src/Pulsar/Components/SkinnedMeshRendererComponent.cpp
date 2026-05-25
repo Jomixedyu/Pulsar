@@ -6,6 +6,7 @@
 #include <Pulsar/Application.h>
 #include <Pulsar/Logger.h>
 #include <Pulsar/Rendering/ShaderConfig.h>
+#include <Pulsar/Rendering/RenderProxyMaterial.h>
 #include <gfx/GFXBuffer.h>
 
 namespace pulsar
@@ -21,6 +22,7 @@ namespace pulsar
         array_list<rendering::MeshBatch> m_batches;
         RCPtr<SkinnedMesh>               m_skinnedMesh;
         array_list<RCPtr<Material>>   m_materials;
+        array_list<SPtr<RenderProxyMaterial>> m_proxyMaterials;
         array_list<int32_t>           m_priorities;
 
         // set2 binding1: SkinnedRenderObjectData (BoneMatrices)
@@ -42,6 +44,12 @@ namespace pulsar
         {
             m_materials = mats;
             m_priorities = priorities;
+            m_proxyMaterials.clear();
+            m_proxyMaterials.reserve(mats.size());
+            for (auto& mat : mats)
+            {
+                m_proxyMaterials.push_back(mksptr(new RenderProxyMaterial(mat)));
+            }
             return this;
         }
 
@@ -67,6 +75,12 @@ namespace pulsar
             m_skinningBuffer.Reset();
             m_vertexBuffers.clear();
             m_indicesBuffers.clear();
+            for (auto& proxyMat : m_proxyMaterials)
+            {
+                if (proxyMat)
+                    proxyMat->ReleaseRHI();
+            }
+            m_proxyMaterials.clear();
         }
 
         void OnChangedTransform() override
@@ -153,6 +167,34 @@ namespace pulsar
         m_batches.clear();
         if (!m_skinnedMesh) return;
 
+        // Lazy-create GPU buffers if not yet created (e.g. SetSkinnedMesh called before InitRHI)
+        if (m_vertexBuffers.empty())
+        {
+            auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
+            for (auto& section : m_skinnedMesh->GetSections())
+            {
+                auto verts = section.BuildInterleavedVertices();
+
+                gfx::GFXBufferDesc vDesc{};
+                vDesc.Usage       = gfx::GFXBufferUsage::Vertex;
+                vDesc.StorageType = gfx::GFXBufferMemoryPosition::DeviceLocal;
+                vDesc.BufferSize  = verts.size() * sizeof(SkinnedMeshVertex);
+                vDesc.ElementSize = sizeof(SkinnedMeshVertex);
+                auto vb = cmdList.CreateBuffer(vDesc);
+                cmdList.UploadBuffer(vb.Get(), verts.data(), verts.size() * sizeof(SkinnedMeshVertex));
+                m_vertexBuffers.push_back(vb);
+
+                gfx::GFXBufferDesc iDesc{};
+                iDesc.Usage       = gfx::GFXBufferUsage::Indices;
+                iDesc.StorageType = gfx::GFXBufferMemoryPosition::DeviceLocal;
+                iDesc.BufferSize  = section.GetIndicesAllocSize();
+                iDesc.ElementSize = sizeof(MeshIndicesType);
+                auto ib = cmdList.CreateBuffer(iDesc);
+                cmdList.UploadBuffer(ib.Get(), section.Indices.data(), section.GetIndicesAllocSize());
+                m_indicesBuffers.push_back(ib);
+            }
+        }
+
         for (int matIndex = 0; matIndex < (int)m_materials.size(); ++matIndex)
         {
             auto& slot = m_materials.at(matIndex);
@@ -163,15 +205,15 @@ namespace pulsar
             batch.IsUsedIndices   = true;
             batch.IsCastShadow    = true;
             batch.Material        = slot;
+            batch.ProxyMaterial   = (matIndex < (int)m_proxyMaterials.size()) ? m_proxyMaterials[matIndex] : nullptr;
             batch.Priority        = (matIndex < (int)m_priorities.size()) ? m_priorities.at(matIndex) : 0;
 
-            bool isInvalidMaterial = !batch.Material
-                || !batch.Material->GetShader()
-                || !batch.Material->CreateGPUResource();
+            bool isInvalidMaterial = !batch.Material || !batch.Material->GetShader();
             if (isInvalidMaterial)
             {
                 batch.Material = AssetManager::Get()->LoadAsset<Material>("Engine/Materials/Error");
-                if (batch.Material) batch.Material->CreateGPUResource();
+                if (batch.Material)
+                    batch.ProxyMaterial = mksptr(new RenderProxyMaterial(batch.Material));
             }
             if (!batch.Material || !batch.Material->GetShader())
             {

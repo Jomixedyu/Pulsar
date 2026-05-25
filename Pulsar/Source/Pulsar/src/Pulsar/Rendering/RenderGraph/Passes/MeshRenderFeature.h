@@ -2,7 +2,7 @@
 #include "RenderFeature.h"
 #include <Pulsar/Rendering/RenderProxy.h>
 #include <Pulsar/Rendering/ShaderPass.h>
-#include <Pulsar/Assets/Material.h>
+#include <Pulsar/Rendering/RenderProxyMaterial.h>
 #include <gfx/GFXDescriptorSet.h>
 #include <gfx/GFXCommandBuffer.h>
 #include <gfx/GFXApplication.h>
@@ -15,7 +15,7 @@ namespace pulsar
     struct PreparedBatch
     {
         rendering::MeshBatch batch;
-        const MaterialPassBinding* binding = nullptr;
+        const RenderProxyMaterialPassBinding* binding = nullptr;
     };
 
     class MeshRenderFeature : public RenderFeature

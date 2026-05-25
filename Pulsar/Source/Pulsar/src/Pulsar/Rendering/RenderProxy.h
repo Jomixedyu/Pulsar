@@ -11,6 +11,7 @@
 namespace pulsar
 {
     class PerRenderObjectDataManager;
+    class RenderProxyMaterial;
 }
 
 namespace pulsar::rendering
@@ -28,6 +29,7 @@ namespace pulsar::rendering
         gfx::GFXDescriptorSetLayout_sp DescriptorSetLayout;
         gfx::GFXDescriptorSet_sp ExtraDescriptorSet; // set2 (dummy or skinning)
         RCPtr<Material> Material;
+        SPtr<class RenderProxyMaterial> ProxyMaterial; // GPU resources for the material
         std::string Interface; // Renderer interface name (e.g. "RENDERER_STATICMESH")
 
         gfx::GFXGraphicsPipelineState State{};

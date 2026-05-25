@@ -1,6 +1,7 @@
 #pragma once
 #include "RenderFeature.h"
 #include <Pulsar/Assets/Material.h>
+#include <Pulsar/Rendering/RenderProxyMaterial.h>
 #include <gfx/GFXDescriptorSet.h>
 
 namespace pulsar
@@ -23,7 +24,14 @@ namespace pulsar
                                    SceneCapture2DComponent* capture2D,
                                    PerPassResources* perPass) override;
 
-        void SetMaterial(RCPtr<Material> material) { m_material = material; }
+        void SetMaterial(RCPtr<Material> material)
+        {
+            m_material = material;
+            if (m_material)
+                m_proxyMaterial = mksptr(new RenderProxyMaterial(m_material));
+            else
+                m_proxyMaterial.reset();
+        }
 
     public:
         bool IsPassEnabled() const { return IsEnabled(); }
@@ -40,6 +48,7 @@ namespace pulsar
         gfx::GFXDescriptorSetLayout_sp GetInputSamplerLayout();
 
         RCPtr<Material> m_material;
+        SPtr<RenderProxyMaterial> m_proxyMaterial;
         gfx::GFXDescriptorSet_sp m_descriptorSet;
         gfx::GFXDescriptorSet_sp m_perPassSet;
         gfx::GFXDescriptorSetLayout_sp m_inputSamplerLayout;

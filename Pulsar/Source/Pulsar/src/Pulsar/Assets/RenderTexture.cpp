@@ -77,10 +77,29 @@ namespace pulsar
 
     std::shared_ptr<gfx::GFXTexture> RenderTexture::GetGFXTexture() const
     {
-        if (m_renderTargets.empty())
+        if (!m_proxy)
             return nullptr;
-        // Return first color attachment for preview/sampling
-        return m_renderTargets[0];
+        auto rt0 = m_proxy->GetRenderTarget0();
+        return rt0;
+    }
+
+    std::shared_ptr<gfx::GFXTexture2DView> RenderTexture::GetGfxRenderTarget0() const
+    {
+        if (!m_proxy)
+            return nullptr;
+        auto rt0 = m_proxy->GetRenderTarget0();
+        return rt0 ? rt0->Get2DView(0) : nullptr;
+    }
+
+    std::shared_ptr<gfx::GFXFrameBufferObject> RenderTexture::GetGfxFrameBufferObject() const
+    {
+        return m_proxy ? m_proxy->GetFrameBufferObject() : nullptr;
+    }
+
+    const array_list<gfx::GFXTexture_sp>& RenderTexture::GetRenderTargets() const
+    {
+        static array_list<gfx::GFXTexture_sp> empty;
+        return m_proxy ? m_proxy->GetRenderTargets() : empty;
     }
 
     void RenderTexture::Serialize(AssetSerializer* s)
@@ -144,46 +163,10 @@ namespace pulsar
         if (IsCreatedGPUResource())
             return true;
 
-        auto gfx = Application::GetGfxApp();
-        if (!gfx)
-            return false;
-
-        // Ensure at least one color format
-        if (m_colorFormats->empty())
-        {
-            m_colorFormats->push_back(RenderTextureColorFormat::RGBA8_UNorm);
-        }
-
-        gfx::GFXSamplerConfig samplerCfg{};
-        samplerCfg.Filter = gfx::GFXSamplerFilter::Linear;
-        samplerCfg.AddressMode = gfx::GFXSamplerAddressMode::ClampToEdge;
-
-        // Create color attachments (MRT)
-        for (auto& fmt : *m_colorFormats)
-        {
-            auto rt = gfx->CreateRenderTarget(m_width, m_height, gfx::GFXTextureTargetType::ColorTarget, ToGFXFormat(fmt), samplerCfg, m_sampleCount, false);
-            m_renderTargets.push_back(rt);
-        }
-
-        // Create depth attachment if specified
-        if (m_depthFormat != RenderTextureDepthFormat::None)
-        {
-            auto depthFmt = ToGFXFormat(m_depthFormat);
-            bool isDepthStencil = (m_depthFormat == RenderTextureDepthFormat::D32_SFloat_S8_UInt || m_depthFormat == RenderTextureDepthFormat::D24_UNorm_S8_UInt);
-            auto targetType = isDepthStencil ? gfx::GFXTextureTargetType::DepthStencilTarget : gfx::GFXTextureTargetType::DepthTarget;
-            auto rt = gfx->CreateRenderTarget(m_width, m_height, targetType, depthFmt, samplerCfg, m_sampleCount, false);
-            m_renderTargets.push_back(rt);
-        }
-
-        // Build FBO
-        std::vector<gfx::GFXTexture2DView_sp> views;
-        for (auto& rt : m_renderTargets)
-        {
-            views.push_back(rt->Get2DView(0));
-        }
-        m_framebuffer = gfx->CreateFrameBufferObject(views);
-
         m_createdGPUResource = true;
+        if (!m_proxy)
+            m_proxy = mksptr(new RenderProxyRenderTexture(this));
+        m_proxy->InitRHI();
         return true;
     }
 
@@ -192,9 +175,10 @@ namespace pulsar
         if (!IsCreatedGPUResource())
             return;
 
-        m_framebuffer.reset();
-        m_renderTargets.clear();
         m_createdGPUResource = false;
+        if (m_proxy)
+            m_proxy->ReleaseRHI();
+        m_proxy.reset();
     }
 
     bool RenderTexture::IsCreatedGPUResource() const

@@ -1,6 +1,6 @@
 #pragma once
 #include "Texture.h"
-
+#include <Pulsar/Rendering/RenderProxyTexture.h>
 
 namespace pulsar
 {
@@ -13,10 +13,12 @@ namespace pulsar
         void DestroyGPUResource() override;
         bool IsCreatedGPUResource() const override { return m_isCreatedGPUResource; }
 
+        std::shared_ptr<gfx::GFXTexture> GetGFXTexture() const override;
+
     public:
         array_list<uint8_t> m_originData;
 
-        gfx::GFXTexture_sp m_cube;
+        SPtr<RenderProxyTextureCube> m_proxy;
 
         bool m_isCreatedGPUResource{};
 

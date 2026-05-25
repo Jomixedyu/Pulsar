@@ -16,9 +16,11 @@ namespace pulsar
         {
             return true;
         }
-        m_texture = Application::GetGfxApp()->CreateTextureCube(m_width);
-
         m_isCreated = true;
+        if (!m_proxy)
+            m_proxy = mksptr(new RenderProxyRenderTextureCube(this));
+        m_proxy->InitRHI();
+        return true;
     }
 
     void RenderTextureCube::DestroyGPUResource()
@@ -28,7 +30,9 @@ namespace pulsar
             return;
         }
         m_isCreated = false;
-        m_texture.reset();
+        if (m_proxy)
+            m_proxy->ReleaseRHI();
+        m_proxy.reset();
     }
 
     bool RenderTextureCube::IsCreatedGPUResource() const
@@ -43,6 +47,14 @@ namespace pulsar
     {
         return m_width;
     }
+
+    std::shared_ptr<gfx::GFXTexture> RenderTextureCube::GetGFXTexture() const
+    {
+        if (m_proxy)
+            return std::shared_ptr<gfx::GFXTexture>(m_proxy->GetGFXTexture());
+        return nullptr;
+    }
+
     void RenderTextureCube::PostEditChange(FieldInfo* info)
     {
         base::PostEditChange(info);

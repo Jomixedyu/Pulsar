@@ -2,6 +2,7 @@
 #include "Application.h"
 #include "Assets/StaticMesh.h"
 #include <Pulsar/Rendering/PerRenderObjectDataManager.h>
+#include <Pulsar/Rendering/RenderProxyMaterial.h>
 #include <gfx/GFXApplication.h>
 
 namespace pulsar
@@ -122,6 +123,7 @@ namespace pulsar
 
             rendering::MeshBatch batch{};
             batch.Material = item.Material;
+            batch.ProxyMaterial = mksptr(new RenderProxyMaterial(item.Material));
             batch.Interface = "RENDERER_STATICMESH";
             batch.DescriptorSetLayout = m_descriptorSetLayout;
             batch.RenderObjectIndex = slot;
@@ -145,11 +147,6 @@ namespace pulsar
         if (m_dirty)
             _Rebuild();
 
-        for (auto& batch : m_batches)
-        {
-            if (batch.Material && !batch.Material->IsCreatedGPUResource())
-                batch.Material->CreateGPUResource();
-        }
         return m_batches;
     }
 }

@@ -105,52 +105,10 @@ namespace pulsar
         {
             return true;
         }
-
-        auto targetGfxFormat = _GetTextureFormat(m_compressionFormat);
-
-        array_list<uint8_t> data{};
-#ifdef WITH_EDITOR
-        {
-            array_list<uint8_t> uncompressedData;
-            if (m_compressedOriginImage)
-            {
-                uncompressedData = gfx::LoadImageFromMemory(m_originMemory.data(), m_originMemory.size(),
-                                                                   nullptr, nullptr, nullptr, m_channelCount);
-            }
-            else
-            {
-                uncompressedData = m_originMemory;
-            }
-            m_cachedUncompressedRawSize = uncompressedData.size();
-
-            auto compressedData = TextureCompressionUtil::Compress(
-                std::move(uncompressedData),
-                m_textureSize.x,
-                m_textureSize.y,
-                m_channelCount,
-                targetGfxFormat);
-            data = std::move(compressedData);
-        }
-#else
-        // TODO: runtime path - load from pre-baked native data
-        // data = ...
-#endif
-
-        m_cachedNativeSize = data.size();
-
         m_isCreatedGPUResource = true;
-
-        SamplerConfig samplerConfig;
-        samplerConfig.Filter = GetSamplerFilter();
-        samplerConfig.AddressMode = GetSamplerAddressMode();
-
-        m_tex = Application::GetGfxApp()->CreateTexture2DFromMemory(
-            data.data(),
-            data.size(),
-            m_textureSize.x, m_textureSize.y,
-            targetGfxFormat,
-            samplerConfig);
-
+        if (!m_proxy)
+            m_proxy = mksptr(new RenderProxyTexture2D(this));
+        m_proxy->InitRHI();
         return true;
     }
 
@@ -161,12 +119,21 @@ namespace pulsar
             return;
         }
         m_isCreatedGPUResource = false;
-        m_tex.reset();
+        if (m_proxy)
+            m_proxy->ReleaseRHI();
+        m_proxy.reset();
     }
 
     bool Texture2D::IsCreatedGPUResource() const
     {
         return m_isCreatedGPUResource;
+    }
+
+    std::shared_ptr<gfx::GFXTexture> Texture2D::GetGFXTexture() const
+    {
+        if (m_proxy)
+            return std::shared_ptr<gfx::GFXTexture>(m_proxy->GetGFXTexture());
+        return nullptr;
     }
 
     bool Texture2D::IsSRGB() const

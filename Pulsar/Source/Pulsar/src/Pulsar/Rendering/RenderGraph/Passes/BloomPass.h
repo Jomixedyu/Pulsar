@@ -1,6 +1,7 @@
 #pragma once
 #include "RenderFeature.h"
 #include <Pulsar/Assets/Material.h>
+#include <Pulsar/Rendering/RenderProxyMaterial.h>
 #include <gfx/GFXDescriptorSet.h>
 #include <gfx/GFXBuffer.h>
 #include <gfx/GFXHandle.h>
@@ -53,6 +54,7 @@ namespace pulsar
         };
 
         RCPtr<Material> m_material;
+        SPtr<RenderProxyMaterial> m_proxyMaterial;
 
         bool  m_bloomEnabled = true;
         float m_bloomThreshold = 0.44922f;

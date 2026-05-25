@@ -1,5 +1,6 @@
 #pragma once
 #include "Texture.h"
+#include <Pulsar/Rendering/RenderProxyTexture.h>
 
 namespace pulsar
 {
@@ -15,6 +16,8 @@ namespace pulsar
         int32_t GetWidth() const override;
         int32_t GetHeight() const override;
 
+        std::shared_ptr<gfx::GFXTexture> GetGFXTexture() const override;
+
         void PostEditChange(FieldInfo* info) override;
 
     protected:
@@ -24,7 +27,7 @@ namespace pulsar
         CORELIB_REFL_DECL_FIELD(m_width);
         int32_t m_width;
 
-        gfx::GFXTexture_sp m_texture;
+        SPtr<RenderProxyRenderTextureCube> m_proxy;
         bool m_isCreated = false;
     };
 } // namespace pulsar
