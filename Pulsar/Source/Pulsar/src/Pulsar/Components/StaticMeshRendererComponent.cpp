@@ -106,7 +106,10 @@ namespace pulsar
 
             if (!m_staticMesh->IsCreatedGPUResource())
             {
-                m_staticMesh->CreateGPUResource();
+                auto mesh = m_staticMesh;
+                RenderThread::Get().EnqueueCommandSync([mesh]() {
+                    mesh->CreateGPUResource();
+                });
             }
 
             // collect elements
@@ -144,12 +147,6 @@ namespace pulsar
         // m_staticMesh->CreateGPUResource();
         if (m_staticMesh)
         {
-            m_staticMesh->CreateGPUResource();
-            for (const auto& mat : *m_materials)
-            {
-                if (mat)
-                    mat->CreateGPUResource();
-            }
             ro->SetStaticMesh(m_staticMesh)
                 ->SetMaterials(*m_materials, *m_priorities)
                 ->SubmitChange();

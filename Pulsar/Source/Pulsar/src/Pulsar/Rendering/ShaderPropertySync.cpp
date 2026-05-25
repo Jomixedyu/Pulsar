@@ -74,7 +74,12 @@ namespace pulsar
             }
 
             if (tex && !tex->IsCreatedGPUResource())
-                tex->CreateGPUResource();
+            {
+                auto texture = tex;
+                RenderThread::Get().EnqueueCommandSync([texture]() {
+                    texture->CreateGPUResource();
+                });
+            }
 
             if (tex && tex->GetGFXTexture())
             {

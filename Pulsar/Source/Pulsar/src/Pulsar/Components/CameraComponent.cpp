@@ -136,7 +136,12 @@ namespace pulsar
         rt->m_height = height;
         rt->m_colorFormats->push_back(RenderTextureColorFormat::RGBA8_UNorm);
         rt->m_depthFormat = RenderTextureDepthFormat::D32_SFloat_S8_UInt;
-        rt->CreateGPUResource();
+        {
+            auto renderTex = rt;
+            RenderThread::Get().EnqueueCommandSync([renderTex]() {
+                renderTex->CreateGPUResource();
+            });
+        }
         m_renderTarget = rt;
 
 

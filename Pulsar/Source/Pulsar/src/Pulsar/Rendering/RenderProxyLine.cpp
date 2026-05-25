@@ -21,13 +21,19 @@ namespace pulsar
 
             m_verties.push_back(vert);
         }
-        Fill();
+        auto* proxy = this;
+        RenderThread::Get().EnqueueCommand([proxy]() {
+            proxy->Fill();
+        });
     }
 
     void RenderProxyLine::SetVerties(const array_list<StaticMeshVertex>& verties)
     {
         m_verties = verties;
-        Fill();
+        auto* proxy = this;
+        RenderThread::Get().EnqueueCommand([proxy]() {
+            proxy->Fill();
+        });
     }
     void RenderProxyLine::Fill()
     {

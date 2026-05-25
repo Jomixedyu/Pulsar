@@ -151,7 +151,12 @@ namespace pulsar
             batch.DescriptorSetLayout = m_descriptorSetLayout;
 
             if (!m_skinnedMesh->IsCreatedGPUResource())
-                m_skinnedMesh->CreateGPUResource();
+            {
+                auto mesh = m_skinnedMesh;
+                RenderThread::Get().EnqueueCommandSync([mesh]() {
+                    mesh->CreateGPUResource();
+                });
+            }
 
             auto vertBuffers    = m_skinnedMesh->GetGPUResourceVertexBuffers();
             auto indicesBuffers = m_skinnedMesh->GetGPUResourceIndicesBuffers();
@@ -181,12 +186,6 @@ namespace pulsar
         auto ro = mksptr(new RenderProxySkinnedMesh());
         if (m_skinnedMesh)
         {
-            m_skinnedMesh->CreateGPUResource();
-            for (const auto& mat : *m_materials)
-            {
-                if (mat)
-                    mat->CreateGPUResource();
-            }
             ro->SetSkinnedMesh(m_skinnedMesh)
               ->SetMaterials(*m_materials, *m_priorities)
               ->SubmitChange();

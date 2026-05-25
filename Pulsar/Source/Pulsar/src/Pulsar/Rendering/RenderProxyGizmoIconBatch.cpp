@@ -58,7 +58,12 @@ namespace pulsar
         }
 
         if (!m_mesh->IsCreatedGPUResource())
-            m_mesh->CreateGPUResource();
+        {
+            auto mesh = m_mesh;
+            RenderThread::Get().EnqueueCommandSync([mesh]() {
+                mesh->CreateGPUResource();
+            });
+        }
 
         auto vertBuffers = m_mesh->GetGPUResourceVertexBuffers();
         auto indicesBuffers = m_mesh->GetGPUResourceIndicesBuffers();

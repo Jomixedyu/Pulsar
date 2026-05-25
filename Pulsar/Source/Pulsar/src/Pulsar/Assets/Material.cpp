@@ -380,7 +380,9 @@ namespace pulsar
             binding.m_descriptorSetLayout.Reset();
             binding.m_materialConstantBuffer.reset();
             binding.m_gpuResourcesInitialized = false;
-            EnsureGPUResources(binding, program->m_layout);
+            RenderThread::Get().EnqueueCommandSync([this, &binding, &program]() {
+                this->EnsureGPUResources(binding, program->m_layout);
+            });
             binding.m_builtWithProgram = program;
 
             // Initial parameter sync: push current sheet values into freshly created GPU resources

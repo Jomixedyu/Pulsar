@@ -1,6 +1,7 @@
 #include "Pulsar/Assets/CurveLinearColorAtlas.h"
 
 #include "Application.h"
+#include <Pulsar/Rendering/RenderThread.h>
 
 namespace pulsar
 {
@@ -76,7 +77,13 @@ namespace pulsar
             SamplerConfig cfg;
             cfg.Filter = GetSamplerFilter();
             cfg.AddressMode = GetSamplerAddressMode();
-            m_gfxTexture = Application::GetGfxApp()->CreateTexture2DFromMemory((uint8_t*)m_bitmap.data(), bitmapDataSize, m_width, m_height, gfx::GFXTextureFormat::R8G8B8A8_UNorm, cfg);
+            auto* atlas = this;
+            RenderThread::Get().EnqueueCommand([atlas, cfg, bitmapDataSize]() {
+                atlas->m_gfxTexture = Application::GetGfxApp()->CreateTexture2DFromMemory(
+                    (uint8_t*)atlas->m_bitmap.data(), bitmapDataSize,
+                    atlas->m_width, atlas->m_height,
+                    gfx::GFXTextureFormat::R8G8B8A8_UNorm, cfg);
+            });
         }
         RuntimeObjectManager::NotifyDependencySource(GetObjectHandle(), DependencyObjectState::Modified);
     }
