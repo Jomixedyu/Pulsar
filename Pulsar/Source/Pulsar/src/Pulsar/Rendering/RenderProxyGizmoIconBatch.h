@@ -5,7 +5,7 @@
 
 namespace pulsar
 {
-    class GizmoIconBatchRenderObject : public rendering::RenderProxy
+    class RenderProxyGizmoIconBatch : public rendering::RenderProxy
     {
     public:
         struct IconItem

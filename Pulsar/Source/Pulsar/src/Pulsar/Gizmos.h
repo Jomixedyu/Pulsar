@@ -1,7 +1,7 @@
 #pragma once
 #include "EngineMath.h"
 #include "ObjectBase.h"
-#include "Rendering/LineRenderObject.h"
+#include "Rendering/RenderProxyLine.h"
 #include "Rendering/PrimitiveStruct.h"
 #include "Rendering/RenderProxy.h"
 #include <Pulsar/Assets/Material.h>
@@ -77,8 +77,8 @@ namespace pulsar
         void Draw();
 
     private:
-        SPtr<LineRenderObject> m_lineRenderObject;
-        SPtr<class GizmoIconBatchRenderObject> m_iconBatchRenderObject;
+        SPtr<RenderProxyLine> m_lineRenderObject;
+        SPtr<class RenderProxyGizmoIconBatch> m_iconBatchRenderObject;
         RCPtr<class Shader> m_billboardShader;
         array_list<RCPtr<class Material>> m_iconMaterialPool;
         class World* m_world = nullptr;

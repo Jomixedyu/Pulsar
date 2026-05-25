@@ -4,7 +4,7 @@
 
 #include "Pulsar/AssetManager.h"
 #include "Pulsar/Assets/StaticMesh.h"
-#include "Pulsar/Rendering/LineRenderObject.h"
+#include "Pulsar/Rendering/RenderProxyLine.h"
 #include "PulsarEd/Editors/CommonPanel/SceneWindow.h"
 #include "PulsarEd/Windows/EditorWindowManager.h"
 
@@ -95,7 +95,7 @@ namespace pulsared
 
     SPtr<rendering::RenderProxy> Grid3DComponent::CreateRenderObject()
     {
-        auto ro = new LineRenderObject();
+        auto ro = new RenderProxyLine();
         ro->SetDepthTestEnabled(true);
         ro->SetQueue(ShaderPassRenderQueueType::Opaque);
         ro->SetPoints(m_vert, m_colors);

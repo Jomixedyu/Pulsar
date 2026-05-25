@@ -1,7 +1,7 @@
 #include "Components/PointLightComponent.h"
 
 #include "Node.h"
-#include "Rendering/LineRenderObject.h"
+#include "Rendering/RenderProxyLine.h"
 #include "Rendering/PrimitiveStruct.h"
 #include "World.h"
 

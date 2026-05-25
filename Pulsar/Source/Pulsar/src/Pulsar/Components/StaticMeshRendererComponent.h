@@ -15,7 +15,7 @@ namespace pulsar
     class Mesh;
     class Material;
     class ShaderConfig;
-    class StaticMeshRenderObject;
+    class RenderProxyStaticMesh;
 
 
 
@@ -96,7 +96,7 @@ namespace pulsar
         CORELIB_REFL_DECL_FIELD(m_showBitangentGizmo);
         bool m_showBitangentGizmo = false;
 
-        SPtr<StaticMeshRenderObject> m_renderObject;
+        SPtr<RenderProxyStaticMesh> m_renderObject;
 
     private:
 

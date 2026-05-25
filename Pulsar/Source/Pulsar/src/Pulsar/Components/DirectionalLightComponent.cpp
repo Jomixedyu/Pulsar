@@ -4,7 +4,7 @@
 #include "Scene.h"
 #include "TransformUtil.h"
 #include "World.h"
-#include <Pulsar/Rendering/LineRenderObject.h>
+#include <Pulsar/Rendering/RenderProxyLine.h>
 
 namespace pulsar
 {
@@ -13,7 +13,7 @@ namespace pulsar
     {
         base::BeginComponent();
 
-        auto ro = mksptr(new LineRenderObject);
+        auto ro = mksptr(new RenderProxyLine);
         Color4b lineColor {255,255,255};
 
         array_list<Vector3f> prototype;

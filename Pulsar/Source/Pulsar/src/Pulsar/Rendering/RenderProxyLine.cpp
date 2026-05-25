@@ -2,14 +2,14 @@
 #include "AssetManager.h"
 #include "Assets/StaticMesh.h"
 
-#include <Pulsar/Rendering/LineRenderObject.h>
+#include <Pulsar/Rendering/RenderProxyLine.h>
 
 namespace pulsar
 {
     // Layout for set2 (dummy, kept for pipeline compatibility)
     static inline gfx::GFXDescriptorSetLayout_wp s_dummyLayout{};
 
-    void LineRenderObject::SetPoints(const array_list<Vector3f>& pointPairs, const array_list<Color4b>& pointColors)
+    void RenderProxyLine::SetPoints(const array_list<Vector3f>& pointPairs, const array_list<Color4b>& pointColors)
     {
         m_verties.clear();
         for (size_t i = 0; i < pointPairs.size(); i++)
@@ -23,12 +23,12 @@ namespace pulsar
         Fill();
     }
 
-    void LineRenderObject::SetVerties(const array_list<StaticMeshVertex>& verties)
+    void RenderProxyLine::SetVerties(const array_list<StaticMeshVertex>& verties)
     {
         m_verties = verties;
         Fill();
     }
-    void LineRenderObject::Fill()
+    void RenderProxyLine::Fill()
     {
         auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
         auto* resMgr  = Application::GetGfxApp()->GetResourceManager();
@@ -58,7 +58,7 @@ namespace pulsar
         }
     }
 
-    void LineRenderObject::OnCreateResource()
+    void RenderProxyLine::OnCreateResource()
     {
         base::OnCreateResource();
         if (m_pPerRenderObjectDataManager)
@@ -106,17 +106,17 @@ namespace pulsar
             batch.Material->SetQueue(m_renderQueue);
     }
 
-    void LineRenderObject::OnDestroyResource()
+    void RenderProxyLine::OnDestroyResource()
     {
         base::OnDestroyResource();
         m_vertBuffer.Reset();
     }
 
-    void LineRenderObject::OnChangedTransform()
+    void RenderProxyLine::OnChangedTransform()
     {
     }
 
-    array_list<rendering::MeshBatch> LineRenderObject::GetMeshBatches()
+    array_list<rendering::MeshBatch> RenderProxyLine::GetMeshBatches()
     {
         for (const auto& batch : m_batchs)
         {

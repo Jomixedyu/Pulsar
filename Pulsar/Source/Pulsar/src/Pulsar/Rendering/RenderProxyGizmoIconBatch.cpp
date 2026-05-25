@@ -1,4 +1,4 @@
-#include "GizmoIconBatchRenderObject.h"
+#include "RenderProxyGizmoIconBatch.h"
 
 #include "Application.h"
 #include "Assets/StaticMesh.h"
@@ -8,19 +8,19 @@ namespace pulsar
 {
     static gfx::GFXDescriptorSetLayout_wp s_sharedLayout{};
 
-    void GizmoIconBatchRenderObject::SetMesh(const RCPtr<StaticMesh>& mesh)
+    void RenderProxyGizmoIconBatch::SetMesh(const RCPtr<StaticMesh>& mesh)
     {
         m_mesh = mesh;
         m_dirty = true;
     }
 
-    void GizmoIconBatchRenderObject::SetItems(const array_list<IconItem>& items)
+    void RenderProxyGizmoIconBatch::SetItems(const array_list<IconItem>& items)
     {
         m_items = items;
         m_dirty = true;
     }
 
-    void GizmoIconBatchRenderObject::OnCreateResource()
+    void RenderProxyGizmoIconBatch::OnCreateResource()
     {
         if (m_pPerRenderObjectDataManager)
             m_dummyExtraSet = m_pPerRenderObjectDataManager->GetDummyExtraSet();
@@ -38,7 +38,7 @@ namespace pulsar
         m_dirty = true;
     }
 
-    void GizmoIconBatchRenderObject::OnDestroyResource()
+    void RenderProxyGizmoIconBatch::OnDestroyResource()
     {
         if (m_pPerRenderObjectDataManager)
         {
@@ -52,7 +52,7 @@ namespace pulsar
         m_descriptorSetLayout.reset();
     }
 
-    void GizmoIconBatchRenderObject::_Rebuild()
+    void RenderProxyGizmoIconBatch::_Rebuild()
     {
         m_batches.clear();
         if (!m_mesh || m_items.empty())
@@ -117,7 +117,7 @@ namespace pulsar
         m_dirty = false;
     }
 
-    array_list<rendering::MeshBatch> GizmoIconBatchRenderObject::GetMeshBatches()
+    array_list<rendering::MeshBatch> RenderProxyGizmoIconBatch::GetMeshBatches()
     {
         if (m_dirty)
             _Rebuild();

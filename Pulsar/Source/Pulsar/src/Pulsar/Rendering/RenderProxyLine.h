@@ -5,7 +5,7 @@
 
 namespace pulsar
 {
-    class LineRenderObject : public rendering::RenderProxy
+    class RenderProxyLine : public rendering::RenderProxy
     {
         using base = rendering::RenderProxy;
 
@@ -21,7 +21,7 @@ namespace pulsar
         ShaderPassRenderQueueType m_renderQueue = ShaderPassRenderQueueType::Overlay;
 
     public:
-        LineRenderObject() = default;
+        RenderProxyLine() = default;
 
         void SetPoints(const array_list<Vector3f>& pointPairs, const array_list<Color4b>& pointColors);
         void SetVerties(const array_list<StaticMeshVertex>& verties);

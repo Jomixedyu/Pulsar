@@ -1,8 +1,8 @@
 #include "Gizmos.h"
 
 #include "Components/Component.h"
-#include "Rendering/LineRenderObject.h"
-#include "Rendering/GizmoIconBatchRenderObject.h"
+#include "Rendering/RenderProxyLine.h"
+#include "Rendering/RenderProxyGizmoIconBatch.h"
 #include "Assets/StaticMesh.h"
 #include "Assets/Shader.h"
 #include "Assets/Material.h"
@@ -91,7 +91,7 @@ namespace pulsar
         {
             if (m_lineRenderObject == nullptr)
             {
-                m_lineRenderObject = mksptr(new LineRenderObject);
+                m_lineRenderObject = mksptr(new RenderProxyLine);
             }
             m_lineRenderObject->SetVerties(linePoints);
 
@@ -110,7 +110,7 @@ namespace pulsar
         // Icons
         if (!m_iconBatchRenderObject)
         {
-            m_iconBatchRenderObject = mksptr(new GizmoIconBatchRenderObject);
+            m_iconBatchRenderObject = mksptr(new RenderProxyGizmoIconBatch);
             m_iconBatchRenderObject->SetMesh(AssetManager::Get()->LoadAsset<StaticMesh>("Engine/Shapes/Plane"));
             m_world->AddRenderObject(m_iconBatchRenderObject);
         }
@@ -132,7 +132,7 @@ namespace pulsar
             }
 
             // Assign texture/tint per icon
-            array_list<GizmoIconBatchRenderObject::IconItem> batchItems;
+            array_list<RenderProxyGizmoIconBatch::IconItem> batchItems;
             batchItems.reserve(iconRequests.size());
             for (size_t i = 0; i < iconRequests.size(); ++i)
             {
@@ -153,7 +153,7 @@ namespace pulsar
                 matx[3][1] = req.WorldPos.y;
                 matx[3][2] = req.WorldPos.z;
                 matx[3][3] = 1.0f;
-                batchItems.push_back(GizmoIconBatchRenderObject::IconItem{matx, mat});
+                batchItems.push_back(RenderProxyGizmoIconBatch::IconItem{matx, mat});
             }
 
             m_iconBatchRenderObject->SetItems(batchItems);

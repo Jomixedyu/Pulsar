@@ -7,7 +7,7 @@
 
 namespace pulsar
 {
-    class SkinnedMeshRenderObject;
+    class RenderProxySkinnedMesh;
 
     class SkinnedMeshRendererComponent : public RendererComponent
     {
@@ -72,7 +72,7 @@ namespace pulsar
         CORELIB_REFL_DECL_FIELD(m_isCastShadow);
         bool m_isCastShadow = true;
 
-        SPtr<SkinnedMeshRenderObject>    m_renderObject;
+        SPtr<RenderProxySkinnedMesh>    m_renderObject;
     };
 
 }

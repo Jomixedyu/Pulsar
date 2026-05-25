@@ -11,11 +11,11 @@
 namespace pulsar
 {
     // -----------------------------------------------------------------------
-    // SkinnedMeshRenderObject
+    // RenderProxySkinnedMesh
     // -----------------------------------------------------------------------
     static gfx::GFXDescriptorSetLayout_wp SkinnedMeshDescriptorSetLayout;
 
-    class SkinnedMeshRenderObject final : public rendering::RenderProxy
+    class RenderProxySkinnedMesh final : public rendering::RenderProxy
     {
     public:
         array_list<rendering::MeshBatch> m_batches;
@@ -29,12 +29,12 @@ namespace pulsar
         gfx::GFXDescriptorSet_sp      m_descriptorSet;
         gfx::GFXDescriptorSetLayout_sp m_descriptorSetLayout;
 
-        SkinnedMeshRenderObject* SetSkinnedMesh(RCPtr<SkinnedMesh> mesh)
+        RenderProxySkinnedMesh* SetSkinnedMesh(RCPtr<SkinnedMesh> mesh)
         {
             m_skinnedMesh = std::move(mesh);
             return this;
         }
-        SkinnedMeshRenderObject* SetMaterials(const array_list<RCPtr<Material>>& mats, const array_list<int32_t>& priorities)
+        RenderProxySkinnedMesh* SetMaterials(const array_list<RCPtr<Material>>& mats, const array_list<int32_t>& priorities)
         {
             m_materials = mats;
             m_priorities = priorities;
@@ -73,7 +73,7 @@ namespace pulsar
         std::string GetInterface() const override { return "RENDERER_SKINNEDMESH"; }
     };
 
-    void SkinnedMeshRenderObject::OnCreateResource()
+    void RenderProxySkinnedMesh::OnCreateResource()
     {
         // set2 layout: binding1=SkinnedRenderObjectData
         if (SkinnedMeshDescriptorSetLayout.expired())
@@ -114,7 +114,7 @@ namespace pulsar
         SubmitChange();
     }
 
-    void SkinnedMeshRenderObject::SubmitChange()
+    void RenderProxySkinnedMesh::SubmitChange()
     {
         m_batches.clear();
         if (!m_skinnedMesh) return;
@@ -178,7 +178,7 @@ namespace pulsar
 
     SPtr<rendering::RenderProxy> SkinnedMeshRendererComponent::CreateRenderObject()
     {
-        auto ro = mksptr(new SkinnedMeshRenderObject());
+        auto ro = mksptr(new RenderProxySkinnedMesh());
         if (m_skinnedMesh)
         {
             m_skinnedMesh->CreateGPUResource();
@@ -197,7 +197,7 @@ namespace pulsar
     void SkinnedMeshRendererComponent::BeginComponent()
     {
         base::BeginComponent();
-        m_renderObject = sptr_static_cast<SkinnedMeshRenderObject>(CreateRenderObject());
+        m_renderObject = sptr_static_cast<RenderProxySkinnedMesh>(CreateRenderObject());
         GetWorld()->AddRenderObject(m_renderObject);
         ResizeMaterials(m_materials->size());
         RebuildBoneReferences();

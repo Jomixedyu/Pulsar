@@ -11,7 +11,7 @@
 
 namespace pulsar
 {
-    class StaticMeshRenderObject final : public rendering::RenderProxy
+    class RenderProxyStaticMesh final : public rendering::RenderProxy
     {
     public:
         array_list<rendering::MeshBatch> m_batches;
@@ -21,13 +21,13 @@ namespace pulsar
 
         gfx::GFXDescriptorSet_sp m_dummyExtraSet;
 
-        StaticMeshRenderObject() = default;
-        StaticMeshRenderObject* SetStaticMesh(RCPtr<StaticMesh> mesh)
+        RenderProxyStaticMesh() = default;
+        RenderProxyStaticMesh* SetStaticMesh(RCPtr<StaticMesh> mesh)
         {
             m_staticMesh = std::move(mesh);
             return this;
         }
-        StaticMeshRenderObject* SetMaterials(const array_list<RCPtr<Material>>& materials, const array_list<int32_t>& priorities)
+        RenderProxyStaticMesh* SetMaterials(const array_list<RCPtr<Material>>& materials, const array_list<int32_t>& priorities)
         {
             m_materials = materials;
             m_priorities = priorities;
@@ -59,7 +59,7 @@ namespace pulsar
         }
     };
 
-    void StaticMeshRenderObject::SubmitChange()
+    void RenderProxyStaticMesh::SubmitChange()
     {
         m_batches.clear();
 
@@ -128,7 +128,7 @@ namespace pulsar
         }
     }
 
-    void StaticMeshRenderObject::OnCreateResource()
+    void RenderProxyStaticMesh::OnCreateResource()
     {
         if (m_pPerRenderObjectDataManager)
             m_dummyExtraSet = m_pPerRenderObjectDataManager->GetDummyExtraSet();
@@ -140,7 +140,7 @@ namespace pulsar
 
     SPtr<rendering::RenderProxy> StaticMeshRendererComponent::CreateRenderObject()
     {
-        auto ro = mksptr(new StaticMeshRenderObject());
+        auto ro = mksptr(new RenderProxyStaticMesh());
         // m_staticMesh->CreateGPUResource();
         if (m_staticMesh)
         {
@@ -250,7 +250,7 @@ namespace pulsar
     void StaticMeshRendererComponent::BeginComponent()
     {
         base::BeginComponent();
-        m_renderObject = sptr_static_cast<StaticMeshRenderObject>(CreateRenderObject());
+        m_renderObject = sptr_static_cast<RenderProxyStaticMesh>(CreateRenderObject());
         GetWorld()->AddRenderObject(m_renderObject);
         ResizeMaterials(m_materials->size());
 
