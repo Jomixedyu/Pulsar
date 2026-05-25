@@ -520,21 +520,21 @@ namespace gfx
         m_window = nullptr;
     }
 
-    GFXBuffer_sp GFXVulkanApplication::CreateBuffer(const GFXBufferDesc& desc)
+    GFXRefCountPtr<GFXBuffer> GFXVulkanApplication::CreateBuffer(const GFXBufferDesc& desc)
     {
-        return gfxmksptr(new GFXVulkanBuffer(this, desc));
+        return GFXRefCountPtr<GFXBuffer>::FromOwned(new GFXVulkanBuffer(this, desc));
     }
     GFXCommandBuffer_sp gfx::GFXVulkanApplication::CreateCommandBuffer()
     {
-        return gfxmksptr(new GFXVulkanCommandBuffer(this));
+        return GFXCommandBuffer_sp(new GFXVulkanCommandBuffer(this));
     }
-    GFXVertexLayoutDescription_sp gfx::GFXVulkanApplication::CreateVertexLayoutDescription()
+    GFXRefCountPtr<GFXVertexLayoutDescription> gfx::GFXVulkanApplication::CreateVertexLayoutDescription()
     {
-        return gfxmksptr(new GFXVulkanVertexLayoutDescription());
+        return GFXRefCountPtr<GFXVertexLayoutDescription>::FromOwned(new GFXVulkanVertexLayoutDescription());
     }
 
 
-    std::shared_ptr<GFXTexture> gfx::GFXVulkanApplication::CreateTexture2DFromMemory(
+    GFXRefCountPtr<GFXTexture> gfx::GFXVulkanApplication::CreateTexture2DFromMemory(
         const uint8_t* imageData, size_t length, int width, int height, GFXTextureFormat format, const GFXSamplerConfig& samplerConfig)
     {
         GFXTextureCreateDesc info{};
@@ -547,23 +547,23 @@ namespace gfx
         info.SamplerCfg = samplerConfig;
         info.DataType = GFXTextureDataType::Texture2D;
 
-        return gfxmksptr(new GFXVulkanTexture(this, info));
+        return GFXRefCountPtr<GFXTexture>::FromOwned(new GFXVulkanTexture(this, info));
     }
 
-    std::shared_ptr<GFXFrameBufferObject> GFXVulkanApplication::CreateFrameBufferObject(
+    GFXRefCountPtr<GFXFrameBufferObject> GFXVulkanApplication::CreateFrameBufferObject(
         const std::vector<GFXTexture2DView_sp>& renderTargets)
     {
         auto buf = new GFXVulkanFrameBufferObject(this, renderTargets);
-        return gfxmksptr(buf);
+        return GFXRefCountPtr<GFXFrameBufferObject>::FromOwned(buf);
     }
 
-    GFXGpuProgram_sp GFXVulkanApplication::CreateGpuProgram(GFXGpuProgramStageFlags stage, const uint8_t* code, size_t length)
+    GFXRefCountPtr<GFXGpuProgram> GFXVulkanApplication::CreateGpuProgram(GFXGpuProgramStageFlags stage, const uint8_t* code, size_t length)
     {
-        return gfxmksptr(new GFXVulkanGpuProgram(this, stage, code, length));
+        return GFXRefCountPtr<GFXGpuProgram>::FromOwned(new GFXVulkanGpuProgram(this, stage, code, length));
     }
 
 
-    GFXTexture_sp GFXVulkanApplication::CreateTextureCube(int32_t size)
+    GFXRefCountPtr<GFXTexture> GFXVulkanApplication::CreateTextureCube(int32_t size)
     {
         GFXTextureCreateDesc info{};
         info.Width = size;
@@ -573,10 +573,10 @@ namespace gfx
         info.Format = GFXTextureFormat::R16G16B16A16_SFloat;
         info.TargetType = GFXTextureTargetType::ColorTarget;
         info.DataType = GFXTextureDataType::TextureCube;
-        return gfxmksptr(new GFXVulkanTexture(this, info));
+        return GFXRefCountPtr<GFXTexture>::FromOwned(new GFXVulkanTexture(this, info));
     }
 
-    GFXTexture_sp GFXVulkanApplication::CreateRenderTarget(
+    GFXRefCountPtr<GFXTexture> GFXVulkanApplication::CreateRenderTarget(
         int32_t width, int32_t height, GFXTextureTargetType type, GFXTextureFormat format, const GFXSamplerConfig& samplerCfg,
         uint32_t sampleCount, bool isTransientAttachment)
     {
@@ -592,7 +592,7 @@ namespace gfx
         info.SamplerCfg = samplerCfg;
 
         auto rt = new GFXVulkanTexture(this, info);
-        return gfxmksptr(rt);
+        return GFXRefCountPtr<GFXTexture>::FromOwned(rt);
     }
 
     GFXDescriptorManager* GFXVulkanApplication::GetDescriptorManager()
@@ -600,11 +600,11 @@ namespace gfx
         return m_descriptorManager;
     }
 
-    GFXDescriptorSetLayout_sp GFXVulkanApplication::CreateDescriptorSetLayout(
+    GFXRefCountPtr<GFXDescriptorSetLayout> GFXVulkanApplication::CreateDescriptorSetLayout(
         const GFXDescriptorSetLayoutDesc* layouts,
         size_t layoutCount)
     {
-        return gfxmksptr(new GFXVulkanDescriptorSetLayout(this, layouts, layoutCount));
+        return GFXRefCountPtr<GFXDescriptorSetLayout>::FromOwned(new GFXVulkanDescriptorSetLayout(this, layouts, layoutCount));
     }
 
     array_list<GFXTextureFormat> GFXVulkanApplication::GetSupportedDepthFormats()

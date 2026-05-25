@@ -40,10 +40,10 @@ namespace gfx
         virtual const char* GetApiLevelName() const override { return "Vulkan 1.3"; }
 
         void TickRender(float deltaTime);
-        virtual GFXBuffer_sp CreateBuffer(const GFXBufferDesc& desc) override;
+        virtual GFXRefCountPtr<GFXBuffer> CreateBuffer(const GFXBufferDesc& desc) override;
         virtual GFXCommandBuffer_sp CreateCommandBuffer() override;
-        virtual GFXVertexLayoutDescription_sp CreateVertexLayoutDescription() override;
-        virtual GFXGpuProgram_sp CreateGpuProgram(GFXGpuProgramStageFlags stage, const uint8_t* code, size_t length) override;
+        virtual GFXRefCountPtr<GFXVertexLayoutDescription> CreateVertexLayoutDescription() override;
+        virtual GFXRefCountPtr<GFXGpuProgram> CreateGpuProgram(GFXGpuProgramStageFlags stage, const uint8_t* code, size_t length) override;
 
 
         virtual GFXGraphicsPipelineManager* GetGraphicsPipelineManager() const override
@@ -51,7 +51,7 @@ namespace gfx
             return m_graphicsPipelineManager;
         }
 
-        virtual GFXTexture_sp CreateTexture2DFromMemory(
+        virtual GFXRefCountPtr<GFXTexture> CreateTexture2DFromMemory(
             const uint8_t* imageData, size_t length,
             int width, int height,
             GFXTextureFormat format,
@@ -59,19 +59,19 @@ namespace gfx
             ) override;
 
 
-        virtual GFXFrameBufferObject_sp CreateFrameBufferObject(
+        virtual GFXRefCountPtr<GFXFrameBufferObject> CreateFrameBufferObject(
             const array_list<GFXTexture2DView_sp>& renderTargets) override;
 
-        virtual GFXTexture_sp CreateTextureCube(int32_t size) override;
+        virtual GFXRefCountPtr<GFXTexture> CreateTextureCube(int32_t size) override;
 
-        virtual GFXTexture_sp CreateRenderTarget(
+        virtual GFXRefCountPtr<GFXTexture> CreateRenderTarget(
             int32_t width, int32_t height, GFXTextureTargetType type,
             GFXTextureFormat format, const GFXSamplerConfig& samplerCfg,
             uint32_t sampleCount = 1, bool isTransientAttachment = false) override;
 
         virtual GFXDescriptorManager* GetDescriptorManager() override;
 
-        virtual GFXDescriptorSetLayout_sp CreateDescriptorSetLayout(
+        virtual GFXRefCountPtr<GFXDescriptorSetLayout> CreateDescriptorSetLayout(
             const GFXDescriptorSetLayoutDesc* layouts,
             size_t layoutCount) override;
 

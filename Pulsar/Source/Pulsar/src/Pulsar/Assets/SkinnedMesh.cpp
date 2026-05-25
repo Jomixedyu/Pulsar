@@ -131,7 +131,7 @@ namespace pulsar
             vDesc.BufferSize  = verts.size() * sizeof(SkinnedMeshVertex);
             vDesc.ElementSize = sizeof(SkinnedMeshVertex);
             auto vb = cmdList.CreateBuffer(vDesc);
-            cmdList.UploadBuffer(vb, verts.data(), verts.size() * sizeof(SkinnedMeshVertex));
+            cmdList.UploadBuffer(vb.Get(), verts.data(), verts.size() * sizeof(SkinnedMeshVertex));
             m_vertexBuffers.push_back(vb);
 
             gfx::GFXBufferDesc iDesc{};
@@ -140,7 +140,7 @@ namespace pulsar
             iDesc.BufferSize  = section.GetIndicesAllocSize();
             iDesc.ElementSize = sizeof(MeshIndicesType);
             auto ib = cmdList.CreateBuffer(iDesc);
-            cmdList.UploadBuffer(ib, section.Indices.data(), section.GetIndicesAllocSize());
+            cmdList.UploadBuffer(ib.Get(), section.Indices.data(), section.GetIndicesAllocSize());
             m_indicesBuffers.push_back(ib);
         }
         return true;
@@ -152,10 +152,6 @@ namespace pulsar
         m_isCreatedResource = false;
 
         auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
-        for (auto& h : m_vertexBuffers)
-            cmdList.Destroy(h);
-        for (auto& h : m_indicesBuffers)
-            cmdList.Destroy(h);
         m_vertexBuffers.clear();
         m_indicesBuffers.clear();
     }

@@ -1,4 +1,5 @@
 #pragma once
+#include "GFXRefCountPtr.h"
 #include "GFXResourceManager.h"
 #include "GFXCommandBuffer.h"
 
@@ -11,12 +12,13 @@ namespace gfx
     // -------------------------------------------------------------------------
     // Command list abstraction.
     //
-    // Replaces the old GFXRenderThread API.  Provides both deferred
-    // (Enqueue/Flush) and synchronous (Create/Destroy/Upload) operations.
+    // Provides both deferred (Enqueue/Flush) and synchronous operations.
+    // Render commands (CmdDraw, CmdBindGraphicsPipeline, ...) are NOT here;
+    // callers obtain the active GFXCommandBuffer via GetCommandBuffer() and
+    // issue draw commands directly on it.
     //
-    // Render commands (CmdDraw, CmdBindGraphicsPipeline, …) are NOT duplicated
-    // here; callers obtain the active GFXCommandBuffer via GetCommandBuffer()
-    // and issue draw commands directly on it.
+    // Resource creation returns GFXRefCountPtr<T>. Destruction is automatic
+    // via intrusive reference counting (no explicit Destroy needed).
     // -------------------------------------------------------------------------
     class GFXCommandList
     {
@@ -38,33 +40,22 @@ namespace gfx
         virtual void EndFrame(uint64_t frameIndex) = 0;
 
         // -----------------------------------------------------------------
-        // Resource creation (synchronous — caller needs handle immediately)
+        // Resource creation (synchronous — caller gets ref-counted pointer)
         // -----------------------------------------------------------------
-        virtual BufferHandle              CreateBuffer(const GFXBufferDesc& desc) = 0;
-        virtual TextureHandle             CreateTexture2D(const GFXTextureCreateDesc& desc) = 0;
-        virtual TextureHandle             CreateTextureCube(int32_t size) = 0;
-        virtual TextureHandle             CreateRenderTarget(const GFXTextureCreateDesc& desc) = 0;
-        virtual FrameBufferObjectHandle   CreateFrameBufferObject(const array_list<GFXTexture2DView_sp>& attachments) = 0;
-        virtual GpuProgramHandle          CreateGpuProgram(GFXGpuProgramStageFlags stage, const void* code, size_t length) = 0;
-        virtual DescriptorSetLayoutHandle CreateDescriptorSetLayout(const std::vector<GFXDescriptorSetLayoutDesc>& bindings) = 0;
-        virtual VertexLayoutDescriptionHandle CreateVertexLayoutDescription() = 0;
+        virtual GFXRefCountPtr<GFXBuffer> CreateBuffer(const GFXBufferDesc& desc) = 0;
+        virtual GFXRefCountPtr<GFXTexture> CreateTexture2D(const GFXTextureCreateDesc& desc) = 0;
+        virtual GFXRefCountPtr<GFXTexture> CreateTextureCube(int32_t size) = 0;
+        virtual GFXRefCountPtr<GFXTexture> CreateRenderTarget(const GFXTextureCreateDesc& desc) = 0;
+        virtual GFXRefCountPtr<GFXFrameBufferObject> CreateFrameBufferObject(const array_list<GFXTexture2DView_sp>& attachments) = 0;
+        virtual GFXRefCountPtr<GFXGpuProgram> CreateGpuProgram(GFXGpuProgramStageFlags stage, const void* code, size_t length) = 0;
+        virtual GFXRefCountPtr<GFXDescriptorSetLayout> CreateDescriptorSetLayout(const std::vector<GFXDescriptorSetLayoutDesc>& bindings) = 0;
+        virtual GFXRefCountPtr<GFXVertexLayoutDescription> CreateVertexLayoutDescription() = 0;
 
         // -----------------------------------------------------------------
-        // Resource destruction (synchronous API; actual GPU free is deferred
-        // inside the resource manager until a safe frame)
+        // Resource upload (caller keeps resource alive via GFXRefCountPtr)
         // -----------------------------------------------------------------
-        virtual void Destroy(BufferHandle handle) = 0;
-        virtual void Destroy(TextureHandle handle) = 0;
-        virtual void Destroy(FrameBufferObjectHandle handle) = 0;
-        virtual void Destroy(GpuProgramHandle handle) = 0;
-        virtual void Destroy(DescriptorSetLayoutHandle handle) = 0;
-        virtual void Destroy(VertexLayoutDescriptionHandle handle) = 0;
-
-        // -----------------------------------------------------------------
-        // Resource upload (can be used inside Enqueue or called directly)
-        // -----------------------------------------------------------------
-        virtual void UploadBuffer(BufferHandle handle, const void* data, size_t size) = 0;
-        virtual void UploadTexture(TextureHandle handle, const void* data, uint32_t width, uint32_t height, GFXTextureFormat format) = 0;
+        virtual void UploadBuffer(GFXBuffer* buffer, const void* data, size_t size) = 0;
+        virtual void UploadTexture(GFXTexture* texture, const void* data, uint32_t width, uint32_t height, GFXTextureFormat format) = 0;
 
         // -----------------------------------------------------------------
         // Active command buffer (for render commands)
@@ -91,32 +82,25 @@ namespace gfx
         void BeginFrame(uint64_t frameIndex) override;
         void EndFrame(uint64_t frameIndex) override;
 
-        BufferHandle              CreateBuffer(const GFXBufferDesc& desc) override;
-        TextureHandle             CreateTexture2D(const GFXTextureCreateDesc& desc) override;
-        TextureHandle             CreateTextureCube(int32_t size) override;
-        TextureHandle             CreateRenderTarget(const GFXTextureCreateDesc& desc) override;
-        FrameBufferObjectHandle   CreateFrameBufferObject(const array_list<GFXTexture2DView_sp>& attachments) override;
-        GpuProgramHandle          CreateGpuProgram(GFXGpuProgramStageFlags stage, const void* code, size_t length) override;
-        DescriptorSetLayoutHandle CreateDescriptorSetLayout(const std::vector<GFXDescriptorSetLayoutDesc>& bindings) override;
-        VertexLayoutDescriptionHandle CreateVertexLayoutDescription() override;
+        GFXRefCountPtr<GFXBuffer> CreateBuffer(const GFXBufferDesc& desc) override;
+        GFXRefCountPtr<GFXTexture> CreateTexture2D(const GFXTextureCreateDesc& desc) override;
+        GFXRefCountPtr<GFXTexture> CreateTextureCube(int32_t size) override;
+        GFXRefCountPtr<GFXTexture> CreateRenderTarget(const GFXTextureCreateDesc& desc) override;
+        GFXRefCountPtr<GFXFrameBufferObject> CreateFrameBufferObject(const array_list<GFXTexture2DView_sp>& attachments) override;
+        GFXRefCountPtr<GFXGpuProgram> CreateGpuProgram(GFXGpuProgramStageFlags stage, const void* code, size_t length) override;
+        GFXRefCountPtr<GFXDescriptorSetLayout> CreateDescriptorSetLayout(const std::vector<GFXDescriptorSetLayoutDesc>& bindings) override;
+        GFXRefCountPtr<GFXVertexLayoutDescription> CreateVertexLayoutDescription() override;
 
-        void Destroy(BufferHandle handle) override;
-        void Destroy(TextureHandle handle) override;
-        void Destroy(FrameBufferObjectHandle handle) override;
-        void Destroy(GpuProgramHandle handle) override;
-        void Destroy(DescriptorSetLayoutHandle handle) override;
-        void Destroy(VertexLayoutDescriptionHandle handle) override;
-
-        void UploadBuffer(BufferHandle handle, const void* data, size_t size) override;
-        void UploadTexture(TextureHandle handle, const void* data, uint32_t width, uint32_t height, GFXTextureFormat format) override;
+        void UploadBuffer(GFXBuffer* buffer, const void* data, size_t size) override;
+        void UploadTexture(GFXTexture* texture, const void* data, uint32_t width, uint32_t height, GFXTextureFormat format) override;
     };
 
     // -------------------------------------------------------------------------
     // Deferred command list — Enqueue() stores lambdas in an internal queue.
     // Flush() drains the queue and executes them on the caller thread.
     //
-    // Creation/Destroy/Upload methods are synchronous (they touch the resource
-    // manager directly) so that callers can use handles immediately.
+    // Creation/Upload methods are synchronous (they touch the resource
+    // manager directly) so that callers can use resources immediately.
     // -------------------------------------------------------------------------
     class GFXCommandListDeferred final : public GFXCommandList
     {
@@ -128,24 +112,17 @@ namespace gfx
         void BeginFrame(uint64_t frameIndex) override;
         void EndFrame(uint64_t frameIndex) override;
 
-        BufferHandle              CreateBuffer(const GFXBufferDesc& desc) override;
-        TextureHandle             CreateTexture2D(const GFXTextureCreateDesc& desc) override;
-        TextureHandle             CreateTextureCube(int32_t size) override;
-        TextureHandle             CreateRenderTarget(const GFXTextureCreateDesc& desc) override;
-        FrameBufferObjectHandle   CreateFrameBufferObject(const array_list<GFXTexture2DView_sp>& attachments) override;
-        GpuProgramHandle          CreateGpuProgram(GFXGpuProgramStageFlags stage, const void* code, size_t length) override;
-        DescriptorSetLayoutHandle CreateDescriptorSetLayout(const std::vector<GFXDescriptorSetLayoutDesc>& bindings) override;
-        VertexLayoutDescriptionHandle CreateVertexLayoutDescription() override;
+        GFXRefCountPtr<GFXBuffer> CreateBuffer(const GFXBufferDesc& desc) override;
+        GFXRefCountPtr<GFXTexture> CreateTexture2D(const GFXTextureCreateDesc& desc) override;
+        GFXRefCountPtr<GFXTexture> CreateTextureCube(int32_t size) override;
+        GFXRefCountPtr<GFXTexture> CreateRenderTarget(const GFXTextureCreateDesc& desc) override;
+        GFXRefCountPtr<GFXFrameBufferObject> CreateFrameBufferObject(const array_list<GFXTexture2DView_sp>& attachments) override;
+        GFXRefCountPtr<GFXGpuProgram> CreateGpuProgram(GFXGpuProgramStageFlags stage, const void* code, size_t length) override;
+        GFXRefCountPtr<GFXDescriptorSetLayout> CreateDescriptorSetLayout(const std::vector<GFXDescriptorSetLayoutDesc>& bindings) override;
+        GFXRefCountPtr<GFXVertexLayoutDescription> CreateVertexLayoutDescription() override;
 
-        void Destroy(BufferHandle handle) override;
-        void Destroy(TextureHandle handle) override;
-        void Destroy(FrameBufferObjectHandle handle) override;
-        void Destroy(GpuProgramHandle handle) override;
-        void Destroy(DescriptorSetLayoutHandle handle) override;
-        void Destroy(VertexLayoutDescriptionHandle handle) override;
-
-        void UploadBuffer(BufferHandle handle, const void* data, size_t size) override;
-        void UploadTexture(TextureHandle handle, const void* data, uint32_t width, uint32_t height, GFXTextureFormat format) override;
+        void UploadBuffer(GFXBuffer* buffer, const void* data, size_t size) override;
+        void UploadTexture(GFXTexture* texture, const void* data, uint32_t width, uint32_t height, GFXTextureFormat format) override;
 
     private:
         std::vector<Command> m_queue;

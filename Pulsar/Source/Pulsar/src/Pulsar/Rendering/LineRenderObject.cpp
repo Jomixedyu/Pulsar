@@ -35,11 +35,9 @@ namespace pulsar
 
         if (m_vertBuffer.IsValid())
         {
-            auto* buffer = resMgr->GetBuffer(m_vertBuffer);
-            if (buffer && sizeof(StaticMeshVertex) * m_verties.size() > buffer->GetSize())
+            if (sizeof(StaticMeshVertex) * m_verties.size() > m_vertBuffer->GetSize())
             {
-                cmdList.Destroy(m_vertBuffer);
-                m_vertBuffer = gfx::BufferHandle{};
+                m_vertBuffer.Reset();
             }
         }
 
@@ -56,7 +54,7 @@ namespace pulsar
 
         if (m_vertBuffer.IsValid() && !m_verties.empty())
         {
-            cmdList.UploadBuffer(m_vertBuffer, m_verties.data(), m_verties.size() * sizeof(StaticMeshVertex));
+            cmdList.UploadBuffer(m_vertBuffer.Get(), m_verties.data(), m_verties.size() * sizeof(StaticMeshVertex));
         }
     }
 
@@ -87,7 +85,7 @@ namespace pulsar
 
             auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
             m_vertBuffer = cmdList.CreateBuffer(vertexBufferDesc);
-            cmdList.UploadBuffer(m_vertBuffer, m_verties.data(), m_verties.size() * sizeof(StaticMeshVertex));
+            cmdList.UploadBuffer(m_vertBuffer.Get(), m_verties.data(), m_verties.size() * sizeof(StaticMeshVertex));
         }
 
         m_batchs.resize(1);
@@ -111,12 +109,7 @@ namespace pulsar
     void LineRenderObject::OnDestroyResource()
     {
         base::OnDestroyResource();
-        if (m_vertBuffer.IsValid())
-        {
-            auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
-            cmdList.Destroy(m_vertBuffer);
-            m_vertBuffer = gfx::BufferHandle{};
-        }
+        m_vertBuffer.Reset();
     }
 
     void LineRenderObject::OnChangedTransform()

@@ -69,37 +69,37 @@ namespace gfx
 
         virtual GFXRenderer* GetRenderer() = 0;
 
-        virtual GFXBuffer_sp CreateBuffer(const GFXBufferDesc& desc) = 0;
+        virtual GFXRefCountPtr<GFXBuffer> CreateBuffer(const GFXBufferDesc& desc) = 0;
         virtual GFXCommandBuffer_sp CreateCommandBuffer() = 0;
-        virtual GFXVertexLayoutDescription_sp CreateVertexLayoutDescription() = 0;
-        virtual GFXGpuProgram_sp CreateGpuProgram(GFXGpuProgramStageFlags stage, const uint8_t* code, size_t length) = 0;
+        virtual GFXRefCountPtr<GFXVertexLayoutDescription> CreateVertexLayoutDescription() = 0;
+        virtual GFXRefCountPtr<GFXGpuProgram> CreateGpuProgram(GFXGpuProgramStageFlags stage, const uint8_t* code, size_t length) = 0;
 
         virtual GFXDescriptorManager* GetDescriptorManager() = 0;
 
-        virtual GFXDescriptorSetLayout_sp CreateDescriptorSetLayout(
+        virtual GFXRefCountPtr<GFXDescriptorSetLayout> CreateDescriptorSetLayout(
             const GFXDescriptorSetLayoutDesc* layouts,
             size_t layoutCount) = 0;
-        virtual GFXDescriptorSetLayout_sp CreateDescriptorSetLayout(
+        virtual GFXRefCountPtr<GFXDescriptorSetLayout> CreateDescriptorSetLayout(
             std::initializer_list<GFXDescriptorSetLayoutDesc> layouts);
 
         virtual GFXGraphicsPipelineManager* GetGraphicsPipelineManager() const = 0;
 
 
-        virtual GFXTexture_sp CreateTexture2DFromMemory(
+        virtual GFXRefCountPtr<GFXTexture> CreateTexture2DFromMemory(
             const uint8_t* imageData, size_t length,
             int width, int height,
             GFXTextureFormat format,
             const GFXSamplerConfig& samplerConfig
             ) = 0;
 
-        virtual GFXTexture_sp CreateTextureCube(int32_t size) = 0;
+        virtual GFXRefCountPtr<GFXTexture> CreateTextureCube(int32_t size) = 0;
 
-        virtual GFXTexture_sp CreateRenderTarget(
+        virtual GFXRefCountPtr<GFXTexture> CreateRenderTarget(
             int32_t width, int32_t height, GFXTextureTargetType type,
             GFXTextureFormat format, const GFXSamplerConfig& samplerCfg,
             uint32_t sampleCount = 1, bool isTransientAttachment = false) = 0;
 
-        virtual GFXFrameBufferObject_sp CreateFrameBufferObject(
+        virtual GFXRefCountPtr<GFXFrameBufferObject> CreateFrameBufferObject(
             const array_list<GFXTexture2DView_sp>& renderTargets) = 0;
 
         virtual array_list<GFXTextureFormat> GetSupportedDepthFormats() = 0;

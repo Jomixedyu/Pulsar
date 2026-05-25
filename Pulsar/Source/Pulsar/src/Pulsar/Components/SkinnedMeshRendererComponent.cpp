@@ -44,15 +44,14 @@ namespace pulsar
         // Animator 调用：将骨骼矩阵写入 GPU UBO
         void UploadBoneMatrices(const array_list<Matrix4f>& boneMatrices)
         {
-            auto* buffer = Application::GetGfxApp()->GetResourceManager()->GetBuffer(m_skinningBuffer);
-            if (!buffer) return;
+            if (!m_skinningBuffer.IsValid()) return;
 
             SkinnedRenderObjectData data{};
             const size_t count = std::min(boneMatrices.size(), (size_t)SKINNEDMESH_MAX_BONES);
             for (size_t i = 0; i < count; ++i)
                 data.BoneMatrices[i] = boneMatrices[i];
 
-            buffer->Fill(&data);
+            m_skinningBuffer->Fill(&data);
         }
 
         void SubmitChange();
@@ -61,12 +60,7 @@ namespace pulsar
         {
             m_descriptorSet.reset();
             m_descriptorSetLayout.reset();
-            if (m_skinningBuffer.IsValid())
-            {
-                auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
-                cmdList.Destroy(m_skinningBuffer);
-                m_skinningBuffer = gfx::BufferHandle{};
-            }
+            m_skinningBuffer.Reset();
         }
 
         void OnChangedTransform() override
@@ -109,15 +103,12 @@ namespace pulsar
             SkinnedRenderObjectData defaultData{};
             for (auto& mat : defaultData.BoneMatrices)
                 mat = Matrix4f(1);
-            cmdList.UploadBuffer(m_skinningBuffer, &defaultData, sizeof(defaultData));
+            cmdList.UploadBuffer(m_skinningBuffer.Get(), &defaultData, sizeof(defaultData));
         }
 
         m_descriptorSet = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_descriptorSetLayout);
-        if (auto* buffer = Application::GetGfxApp()->GetResourceManager()->GetBuffer(m_skinningBuffer))
-        {
-            m_descriptorSet->AddDescriptor("SkinningData", kRenderingDescriptorBinding_SkinningData)
-                           ->SetConstantBuffer(buffer);
-        }
+        m_descriptorSet->AddDescriptor("SkinningData", kRenderingDescriptorBinding_SkinningData)
+                       ->SetConstantBuffer(m_skinningBuffer.Get());
         m_descriptorSet->Submit();
 
         SubmitChange();

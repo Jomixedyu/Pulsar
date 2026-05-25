@@ -55,7 +55,7 @@ namespace pulsar
         auto* resMgr = Application::GetGfxApp()->GetResourceManager();
 
         array_list<gfx::GFXDescriptorSetLayout_sp> descLayouts;
-        descLayouts.push_back(resMgr->GetDescriptorSetLayoutShared(pb.binding->m_descriptorSetLayout));
+        descLayouts.push_back(pb.binding->m_descriptorSetLayout.Lock());
         descLayouts.push_back(perPassSet->GetDescriptorSetLayout());
         descLayouts.push_back(pb.batch.DescriptorSetLayout);
 
@@ -80,27 +80,25 @@ namespace pulsar
             descSets.push_back(pb.batch.ExtraDescriptorSet.get());
             cmdBuffer.CmdBindDescriptorSets(descSets, gfxPipeline.get(), &dynOffsets);
 
-            auto* vertBuffer = resMgr->GetBuffer(element.Vertex);
-            if (!vertBuffer)
+            if (!element.Vertex.IsValid())
                 continue;
 
-            cmdBuffer.CmdBindVertexBuffers({vertBuffer});
+            cmdBuffer.CmdBindVertexBuffers({element.Vertex.Get()});
             if (pb.batch.IsUsedIndices)
             {
-                auto* indicesBuffer = resMgr->GetBuffer(element.Indices);
-                if (indicesBuffer)
+                if (element.Indices.IsValid())
                 {
-                    cmdBuffer.CmdBindIndexBuffer(indicesBuffer);
-                    cmdBuffer.CmdDrawIndexed(indicesBuffer->GetElementCount());
+                    cmdBuffer.CmdBindIndexBuffer(element.Indices.Get());
+                    cmdBuffer.CmdDrawIndexed(element.Indices->GetElementCount());
                 }
                 else
                 {
-                    cmdBuffer.CmdDraw(vertBuffer->GetElementCount());
+                    cmdBuffer.CmdDraw(element.Vertex->GetElementCount());
                 }
             }
             else
             {
-                cmdBuffer.CmdDraw(vertBuffer->GetElementCount());
+                cmdBuffer.CmdDraw(element.Vertex->GetElementCount());
             }
         }
     }

@@ -1,33 +1,26 @@
 #pragma once
+#include "GFXRefCountPtr.h"
 #include "GFXResource.h"
-#include "GFXHandle.h"
 #include "GFXBuffer.h"
 #include "GFXTexture.h"
 #include "GFXGpuProgram.h"
 #include "GFXCommandBuffer.h"
 
 #include <vector>
-#include <unordered_map>
-#include <mutex>
 
 namespace gfx
 {
-    // Forward declarations
     class GFXApplication;
 
     // -------------------------------------------------------------------------
-    // Typed resource slot used internally by the manager.
-    // -------------------------------------------------------------------------
-    struct GFXResourceSlot
-    {
-        GFXResource_sp resource;      // nullptr if free
-        uint16_t generation = 1;      // bumped on alloc, checked on lookup
-        bool isPendingDestroy = false;
-    };
-
-    // -------------------------------------------------------------------------
-    // Resource manager: owns all GPU resources via typed handles.
-    // All mutating operations are queued and flushed together.
+    // Resource manager: factory for GPU resources.
+    //
+    // In the new architecture, resources are owned by GFXRefCountPtr<T>
+    // (intrusive reference counting). The manager no longer maintains a
+    // slot table; it simply forwards creation requests to GFXApplication.
+    //
+    // Destruction is deferred by GFXDeferredDestroyQueue (2 frames) to
+    // ensure the GPU is no longer using the resource.
     // -------------------------------------------------------------------------
     class GFXResourceManager
     {
@@ -36,36 +29,23 @@ namespace gfx
         ~GFXResourceManager();
 
         // -----------------------------------------------------------------
-        // Handle allocation
+        // Factory methods (synchronous — caller gets ref-counted pointer)
         // -----------------------------------------------------------------
-        template<typename HandleType>
-        HandleType AllocHandle()
-        {
-            std::lock_guard<std::mutex> lock(m_mutex);
-            uint32_t index = AllocSlotInternal();
-            HandleType handle;
-            handle.index = index;
-            handle.generation = m_slots[index].generation;
-            handle.mgr = this;
-            return handle;
-        }
+        GFXRefCountPtr<GFXBuffer> CreateBuffer(const GFXBufferDesc& desc);
+        GFXRefCountPtr<GFXTexture> CreateTexture2D(const GFXTextureCreateDesc& desc);
+        GFXRefCountPtr<GFXTexture> CreateTextureCube(int32_t size);
+        GFXRefCountPtr<GFXTexture> CreateRenderTarget(const GFXTextureCreateDesc& desc);
+        GFXRefCountPtr<GFXFrameBufferObject> CreateFrameBufferObject(const array_list<GFXTexture2DView_sp>& attachments);
+        GFXRefCountPtr<GFXGpuProgram> CreateGpuProgram(GFXGpuProgramStageFlags stage, const void* code, size_t length);
+        GFXRefCountPtr<GFXDescriptorSetLayout> CreateDescriptorSetLayout(const std::vector<GFXDescriptorSetLayoutDesc>& bindings);
+        GFXRefCountPtr<GFXVertexLayoutDescription> CreateVertexLayoutDescription();
 
         // -----------------------------------------------------------------
-        // Synchronous resource creation (called from RenderThread lambdas)
+        // Resource upload (operates on raw pointers — the caller keeps
+        // the resource alive via GFXRefCountPtr)
         // -----------------------------------------------------------------
-        void CreateBuffer(BufferHandle handle, const GFXBufferDesc& desc);
-        void CreateTexture2D(TextureHandle handle, const GFXTextureCreateDesc& desc);
-        void CreateTextureCube(TextureHandle handle, int32_t size);
-        void CreateRenderTarget(TextureHandle handle, const GFXTextureCreateDesc& desc);
-        void CreateFrameBufferObject(FrameBufferObjectHandle handle, const array_list<GFXTexture2DView_sp>& attachments);
-        void CreateGpuProgram(GpuProgramHandle handle, GFXGpuProgramStageFlags stage, const void* code, size_t length);
-        void CreateDescriptorSetLayout(DescriptorSetLayoutHandle handle, const std::vector<GFXDescriptorSetLayoutDesc>& bindings);
-        void CreateVertexLayoutDescription(VertexLayoutDescriptionHandle handle);
-
-        void DestroyResource(uint32_t resourceId, uint16_t generation);
-
-        void UploadBuffer(BufferHandle handle, const void* data, size_t size);
-        void UploadTexture(TextureHandle handle, const void* data, uint32_t width, uint32_t height, GFXTextureFormat format);
+        void UploadBuffer(GFXBuffer* buffer, const void* data, size_t size);
+        void UploadTexture(GFXTexture* texture, const void* data, uint32_t width, uint32_t height, GFXTextureFormat format);
 
         // -----------------------------------------------------------------
         // Frame lifecycle
@@ -73,76 +53,9 @@ namespace gfx
         void BeginFrame(uint64_t frameIndex);
         void EndFrame(uint64_t frameIndex);
 
-        // -----------------------------------------------------------------
-        // Immediate lookups (read-only). Used by the render thread or
-        // during flush to resolve handles into actual resources.
-        // Returns nullptr if the handle is stale or invalid.
-        // -----------------------------------------------------------------
-        GFXBuffer*                GetBuffer(BufferHandle handle) const;
-        GFXTexture*               GetTexture(TextureHandle handle) const;
-        GFXFrameBufferObject*     GetFrameBufferObject(FrameBufferObjectHandle handle) const;
-        GFXGpuProgram*            GetGpuProgram(GpuProgramHandle handle) const;
-        GFXDescriptorSetLayout*   GetDescriptorSetLayout(DescriptorSetLayoutHandle handle) const;
-        GFXVertexLayoutDescription* GetVertexLayoutDescription(VertexLayoutDescriptionHandle handle) const;
-
-        // -----------------------------------------------------------------
-        // Shared-pointer lookups (for interop with legacy APIs)
-        // -----------------------------------------------------------------
-        template<typename T>
-        std::shared_ptr<T> GetSharedPtr(uint32_t index, uint16_t generation) const
-        {
-            std::lock_guard<std::mutex> lock(m_mutex);
-            if (index >= m_slots.size()) return nullptr;
-            if (m_slots[index].generation != generation) return nullptr;
-            if (m_slots[index].isPendingDestroy) return nullptr;
-            return std::static_pointer_cast<T>(m_slots[index].resource);
-        }
-
-        GFXGpuProgram_sp            GetGpuProgramShared(GpuProgramHandle handle) const;
-        GFXDescriptorSetLayout_sp   GetDescriptorSetLayoutShared(DescriptorSetLayoutHandle handle) const;
-        GFXTexture_sp               GetTextureShared(TextureHandle handle) const;
-        GFXFrameBufferObject_sp     GetFrameBufferObjectShared(FrameBufferObjectHandle handle) const;
-        GFXVertexLayoutDescription_sp GetVertexLayoutDescriptionShared(VertexLayoutDescriptionHandle handle) const;
-
-        // Generic lookup
-        GFXResource* GetResource(uint32_t resourceId) const;
-
     private:
-        // Internal helpers
-        uint32_t AllocSlotInternal();
-        void FreeSlot(uint32_t index);
-        bool ValidateHandle(uint32_t index, uint16_t generation) const;
-        void ProcessDeferredDestroys();
-
-        // Resource storage (sparse array with free-list)
-        std::vector<GFXResourceSlot> m_slots;
-        std::vector<uint32_t> m_freeSlots;
-
         GFXApplication* m_app = nullptr;
         uint64_t m_currentFrame = 0;
-
-        // Deferred destruction queue (resources destroyed N frames after queue)
-        static constexpr uint32_t kDeferredDestroyFrames = 2;
-        std::vector<std::pair<uint64_t, uint32_t>> m_deferredDestroyQueue;
-
-        mutable std::mutex m_mutex;
     };
-
-    // -------------------------------------------------------------------------
-    // GFXHandle::Get() / Lock() member function definitions.
-    // Declared in GFXHandle.h, defined here after GFXResourceManager is complete.
-    // -------------------------------------------------------------------------
-    template<> inline auto GFXHandle<BufferHandleTag>::Get() const { return mgr ? mgr->GetBuffer(*this) : nullptr; }
-    template<> inline auto GFXHandle<TextureHandleTag>::Get() const { return mgr ? mgr->GetTexture(*this) : nullptr; }
-    template<> inline auto GFXHandle<FrameBufferObjectHandleTag>::Get() const { return mgr ? mgr->GetFrameBufferObject(*this) : nullptr; }
-    template<> inline auto GFXHandle<GpuProgramHandleTag>::Get() const { return mgr ? mgr->GetGpuProgram(*this) : nullptr; }
-    template<> inline auto GFXHandle<DescriptorSetLayoutHandleTag>::Get() const { return mgr ? mgr->GetDescriptorSetLayout(*this) : nullptr; }
-    template<> inline auto GFXHandle<VertexLayoutDescriptionHandleTag>::Get() const { return mgr ? mgr->GetVertexLayoutDescription(*this) : nullptr; }
-
-    template<> inline auto GFXHandle<GpuProgramHandleTag>::Lock() const { return mgr ? mgr->GetGpuProgramShared(*this) : GFXGpuProgram_sp{}; }
-    template<> inline auto GFXHandle<DescriptorSetLayoutHandleTag>::Lock() const { return mgr ? mgr->GetDescriptorSetLayoutShared(*this) : GFXDescriptorSetLayout_sp{}; }
-    template<> inline auto GFXHandle<TextureHandleTag>::Lock() const { return mgr ? mgr->GetTextureShared(*this) : GFXTexture_sp{}; }
-    template<> inline auto GFXHandle<FrameBufferObjectHandleTag>::Lock() const { return mgr ? mgr->GetFrameBufferObjectShared(*this) : GFXFrameBufferObject_sp{}; }
-    template<> inline auto GFXHandle<VertexLayoutDescriptionHandleTag>::Lock() const { return mgr ? mgr->GetVertexLayoutDescriptionShared(*this) : GFXVertexLayoutDescription_sp{}; }
 
 } // namespace gfx

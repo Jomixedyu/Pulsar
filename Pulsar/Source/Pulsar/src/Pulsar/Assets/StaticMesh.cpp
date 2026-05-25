@@ -81,7 +81,7 @@ namespace pulsar
                 vertexDesc.ElementSize = sizeof(StaticMeshVertex);
 
                 auto vertBuffer = cmdList.CreateBuffer(vertexDesc);
-                cmdList.UploadBuffer(vertBuffer, interleavedVerts.data(), vertSize);
+                cmdList.UploadBuffer(vertBuffer.Get(), interleavedVerts.data(), vertSize);
                 m_vertexBuffers.push_back(vertBuffer);
             }
 
@@ -93,7 +93,7 @@ namespace pulsar
                 indicesDesc.ElementSize = sizeof(MeshIndicesType);
 
                 auto indicesBuffer = cmdList.CreateBuffer(indicesDesc);
-                cmdList.UploadBuffer(indicesBuffer, section.Indices.data(), section.GetIndicesAllocSize());
+                cmdList.UploadBuffer(indicesBuffer.Get(), section.Indices.data(), section.GetIndicesAllocSize());
                 m_indicesBuffers.push_back(indicesBuffer);
             }
         }
@@ -106,10 +106,6 @@ namespace pulsar
         m_isCreatedResource = false;
 
         auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
-        for (auto& h : m_vertexBuffers)
-            cmdList.Destroy(h);
-        for (auto& h : m_indicesBuffers)
-            cmdList.Destroy(h);
         m_vertexBuffers.clear();
         m_indicesBuffers.clear();
     }

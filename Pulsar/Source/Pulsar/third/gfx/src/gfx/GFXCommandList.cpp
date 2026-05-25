@@ -32,103 +32,60 @@ void GFXCommandListImmediate::EndFrame(uint64_t frameIndex)
     m_resourceManager->EndFrame(frameIndex);
 }
 
-BufferHandle GFXCommandListImmediate::CreateBuffer(const GFXBufferDesc& desc)
+GFXRefCountPtr<GFXBuffer> GFXCommandListImmediate::CreateBuffer(const GFXBufferDesc& desc)
 {
-    auto handle = m_resourceManager->AllocHandle<BufferHandle>();
-    m_resourceManager->CreateBuffer(handle, desc);
-    return handle;
+    return m_resourceManager->CreateBuffer(desc);
 }
 
-TextureHandle GFXCommandListImmediate::CreateTexture2D(const GFXTextureCreateDesc& desc)
+GFXRefCountPtr<GFXTexture> GFXCommandListImmediate::CreateTexture2D(const GFXTextureCreateDesc& desc)
 {
-    auto handle = m_resourceManager->AllocHandle<TextureHandle>();
-    m_resourceManager->CreateTexture2D(handle, desc);
-    return handle;
+    return m_resourceManager->CreateTexture2D(desc);
 }
 
-TextureHandle GFXCommandListImmediate::CreateTextureCube(int32_t size)
+GFXRefCountPtr<GFXTexture> GFXCommandListImmediate::CreateTextureCube(int32_t size)
 {
-    auto handle = m_resourceManager->AllocHandle<TextureHandle>();
-    m_resourceManager->CreateTextureCube(handle, size);
-    return handle;
+    return m_resourceManager->CreateTextureCube(size);
 }
 
-TextureHandle GFXCommandListImmediate::CreateRenderTarget(const GFXTextureCreateDesc& desc)
+GFXRefCountPtr<GFXTexture> GFXCommandListImmediate::CreateRenderTarget(const GFXTextureCreateDesc& desc)
 {
-    auto handle = m_resourceManager->AllocHandle<TextureHandle>();
-    m_resourceManager->CreateRenderTarget(handle, desc);
-    return handle;
+    return m_resourceManager->CreateRenderTarget(desc);
 }
 
-FrameBufferObjectHandle GFXCommandListImmediate::CreateFrameBufferObject(const array_list<GFXTexture2DView_sp>& attachments)
+GFXRefCountPtr<GFXFrameBufferObject> GFXCommandListImmediate::CreateFrameBufferObject(const array_list<GFXTexture2DView_sp>& attachments)
 {
-    auto handle = m_resourceManager->AllocHandle<FrameBufferObjectHandle>();
-    m_resourceManager->CreateFrameBufferObject(handle, attachments);
-    return handle;
+    return m_resourceManager->CreateFrameBufferObject(attachments);
 }
 
-GpuProgramHandle GFXCommandListImmediate::CreateGpuProgram(GFXGpuProgramStageFlags stage, const void* code, size_t length)
+GFXRefCountPtr<GFXGpuProgram> GFXCommandListImmediate::CreateGpuProgram(GFXGpuProgramStageFlags stage, const void* code, size_t length)
 {
-    auto handle = m_resourceManager->AllocHandle<GpuProgramHandle>();
-    m_resourceManager->CreateGpuProgram(handle, stage, code, length);
-    return handle;
+    return m_resourceManager->CreateGpuProgram(stage, code, length);
 }
 
-DescriptorSetLayoutHandle GFXCommandListImmediate::CreateDescriptorSetLayout(const std::vector<GFXDescriptorSetLayoutDesc>& bindings)
+GFXRefCountPtr<GFXDescriptorSetLayout> GFXCommandListImmediate::CreateDescriptorSetLayout(const std::vector<GFXDescriptorSetLayoutDesc>& bindings)
 {
-    auto handle = m_resourceManager->AllocHandle<DescriptorSetLayoutHandle>();
-    m_resourceManager->CreateDescriptorSetLayout(handle, bindings);
-    return handle;
+    return m_resourceManager->CreateDescriptorSetLayout(bindings);
 }
 
-VertexLayoutDescriptionHandle GFXCommandListImmediate::CreateVertexLayoutDescription()
+GFXRefCountPtr<GFXVertexLayoutDescription> GFXCommandListImmediate::CreateVertexLayoutDescription()
 {
-    auto handle = m_resourceManager->AllocHandle<VertexLayoutDescriptionHandle>();
-    m_resourceManager->CreateVertexLayoutDescription(handle);
-    return handle;
+    return m_resourceManager->CreateVertexLayoutDescription();
 }
 
-void GFXCommandListImmediate::Destroy(BufferHandle handle)
+void GFXCommandListImmediate::UploadBuffer(GFXBuffer* buffer, const void* data, size_t size)
 {
-    m_resourceManager->DestroyResource(handle.index, handle.generation);
-}
-
-void GFXCommandListImmediate::Destroy(TextureHandle handle)
-{
-    m_resourceManager->DestroyResource(handle.index, handle.generation);
-}
-
-void GFXCommandListImmediate::Destroy(FrameBufferObjectHandle handle)
-{
-    m_resourceManager->DestroyResource(handle.index, handle.generation);
-}
-
-void GFXCommandListImmediate::Destroy(GpuProgramHandle handle)
-{
-    m_resourceManager->DestroyResource(handle.index, handle.generation);
-}
-
-void GFXCommandListImmediate::Destroy(DescriptorSetLayoutHandle handle)
-{
-    m_resourceManager->DestroyResource(handle.index, handle.generation);
-}
-
-void GFXCommandListImmediate::Destroy(VertexLayoutDescriptionHandle handle)
-{
-    m_resourceManager->DestroyResource(handle.index, handle.generation);
-}
-
-void GFXCommandListImmediate::UploadBuffer(BufferHandle handle, const void* data, size_t size)
-{
-    if (m_resourceManager && data && size > 0)
+    if (m_resourceManager && buffer && data && size > 0)
     {
-        m_resourceManager->UploadBuffer(handle, data, size);
+        m_resourceManager->UploadBuffer(buffer, data, size);
     }
 }
 
-void GFXCommandListImmediate::UploadTexture(TextureHandle handle, const void* data, uint32_t width, uint32_t height, GFXTextureFormat format)
+void GFXCommandListImmediate::UploadTexture(GFXTexture* texture, const void* data, uint32_t width, uint32_t height, GFXTextureFormat format)
 {
-    // TODO: implement when texture upload path exists in resource manager
+    if (m_resourceManager && texture && data)
+    {
+        m_resourceManager->UploadTexture(texture, data, width, height, format);
+    }
 }
 
 // ==========================================================================
@@ -169,103 +126,60 @@ void GFXCommandListDeferred::EndFrame(uint64_t frameIndex)
     m_resourceManager->EndFrame(frameIndex);
 }
 
-BufferHandle GFXCommandListDeferred::CreateBuffer(const GFXBufferDesc& desc)
+GFXRefCountPtr<GFXBuffer> GFXCommandListDeferred::CreateBuffer(const GFXBufferDesc& desc)
 {
-    auto handle = m_resourceManager->AllocHandle<BufferHandle>();
-    m_resourceManager->CreateBuffer(handle, desc);
-    return handle;
+    return m_resourceManager->CreateBuffer(desc);
 }
 
-TextureHandle GFXCommandListDeferred::CreateTexture2D(const GFXTextureCreateDesc& desc)
+GFXRefCountPtr<GFXTexture> GFXCommandListDeferred::CreateTexture2D(const GFXTextureCreateDesc& desc)
 {
-    auto handle = m_resourceManager->AllocHandle<TextureHandle>();
-    m_resourceManager->CreateTexture2D(handle, desc);
-    return handle;
+    return m_resourceManager->CreateTexture2D(desc);
 }
 
-TextureHandle GFXCommandListDeferred::CreateTextureCube(int32_t size)
+GFXRefCountPtr<GFXTexture> GFXCommandListDeferred::CreateTextureCube(int32_t size)
 {
-    auto handle = m_resourceManager->AllocHandle<TextureHandle>();
-    m_resourceManager->CreateTextureCube(handle, size);
-    return handle;
+    return m_resourceManager->CreateTextureCube(size);
 }
 
-TextureHandle GFXCommandListDeferred::CreateRenderTarget(const GFXTextureCreateDesc& desc)
+GFXRefCountPtr<GFXTexture> GFXCommandListDeferred::CreateRenderTarget(const GFXTextureCreateDesc& desc)
 {
-    auto handle = m_resourceManager->AllocHandle<TextureHandle>();
-    m_resourceManager->CreateRenderTarget(handle, desc);
-    return handle;
+    return m_resourceManager->CreateRenderTarget(desc);
 }
 
-FrameBufferObjectHandle GFXCommandListDeferred::CreateFrameBufferObject(const array_list<GFXTexture2DView_sp>& attachments)
+GFXRefCountPtr<GFXFrameBufferObject> GFXCommandListDeferred::CreateFrameBufferObject(const array_list<GFXTexture2DView_sp>& attachments)
 {
-    auto handle = m_resourceManager->AllocHandle<FrameBufferObjectHandle>();
-    m_resourceManager->CreateFrameBufferObject(handle, attachments);
-    return handle;
+    return m_resourceManager->CreateFrameBufferObject(attachments);
 }
 
-GpuProgramHandle GFXCommandListDeferred::CreateGpuProgram(GFXGpuProgramStageFlags stage, const void* code, size_t length)
+GFXRefCountPtr<GFXGpuProgram> GFXCommandListDeferred::CreateGpuProgram(GFXGpuProgramStageFlags stage, const void* code, size_t length)
 {
-    auto handle = m_resourceManager->AllocHandle<GpuProgramHandle>();
-    m_resourceManager->CreateGpuProgram(handle, stage, code, length);
-    return handle;
+    return m_resourceManager->CreateGpuProgram(stage, code, length);
 }
 
-DescriptorSetLayoutHandle GFXCommandListDeferred::CreateDescriptorSetLayout(const std::vector<GFXDescriptorSetLayoutDesc>& bindings)
+GFXRefCountPtr<GFXDescriptorSetLayout> GFXCommandListDeferred::CreateDescriptorSetLayout(const std::vector<GFXDescriptorSetLayoutDesc>& bindings)
 {
-    auto handle = m_resourceManager->AllocHandle<DescriptorSetLayoutHandle>();
-    m_resourceManager->CreateDescriptorSetLayout(handle, bindings);
-    return handle;
+    return m_resourceManager->CreateDescriptorSetLayout(bindings);
 }
 
-VertexLayoutDescriptionHandle GFXCommandListDeferred::CreateVertexLayoutDescription()
+GFXRefCountPtr<GFXVertexLayoutDescription> GFXCommandListDeferred::CreateVertexLayoutDescription()
 {
-    auto handle = m_resourceManager->AllocHandle<VertexLayoutDescriptionHandle>();
-    m_resourceManager->CreateVertexLayoutDescription(handle);
-    return handle;
+    return m_resourceManager->CreateVertexLayoutDescription();
 }
 
-void GFXCommandListDeferred::Destroy(BufferHandle handle)
+void GFXCommandListDeferred::UploadBuffer(GFXBuffer* buffer, const void* data, size_t size)
 {
-    m_resourceManager->DestroyResource(handle.index, handle.generation);
-}
-
-void GFXCommandListDeferred::Destroy(TextureHandle handle)
-{
-    m_resourceManager->DestroyResource(handle.index, handle.generation);
-}
-
-void GFXCommandListDeferred::Destroy(FrameBufferObjectHandle handle)
-{
-    m_resourceManager->DestroyResource(handle.index, handle.generation);
-}
-
-void GFXCommandListDeferred::Destroy(GpuProgramHandle handle)
-{
-    m_resourceManager->DestroyResource(handle.index, handle.generation);
-}
-
-void GFXCommandListDeferred::Destroy(DescriptorSetLayoutHandle handle)
-{
-    m_resourceManager->DestroyResource(handle.index, handle.generation);
-}
-
-void GFXCommandListDeferred::Destroy(VertexLayoutDescriptionHandle handle)
-{
-    m_resourceManager->DestroyResource(handle.index, handle.generation);
-}
-
-void GFXCommandListDeferred::UploadBuffer(BufferHandle handle, const void* data, size_t size)
-{
-    if (m_resourceManager && data && size > 0)
+    if (m_resourceManager && buffer && data && size > 0)
     {
-        m_resourceManager->UploadBuffer(handle, data, size);
+        m_resourceManager->UploadBuffer(buffer, data, size);
     }
 }
 
-void GFXCommandListDeferred::UploadTexture(TextureHandle handle, const void* data, uint32_t width, uint32_t height, GFXTextureFormat format)
+void GFXCommandListDeferred::UploadTexture(GFXTexture* texture, const void* data, uint32_t width, uint32_t height, GFXTextureFormat format)
 {
-    // TODO: implement when texture upload path exists in resource manager
+    if (m_resourceManager && texture && data)
+    {
+        m_resourceManager->UploadTexture(texture, data, width, height, format);
+    }
 }
 
 } // namespace gfx

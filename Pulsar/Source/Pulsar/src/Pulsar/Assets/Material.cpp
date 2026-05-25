@@ -377,12 +377,7 @@ namespace pulsar
         {
             // Rebuild GPU resources for this binding with the new program's layout
             binding.m_descriptorSet.reset();
-            if (binding.m_descriptorSetLayout.IsValid())
-            {
-                auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
-                cmdList.Destroy(binding.m_descriptorSetLayout);
-            }
-            binding.m_descriptorSetLayout = gfx::DescriptorSetLayoutHandle{};
+            binding.m_descriptorSetLayout.Reset();
             binding.m_materialConstantBuffer.reset();
             binding.m_gpuResourcesInitialized = false;
             EnsureGPUResources(binding, program->m_layout);
@@ -575,11 +570,6 @@ namespace pulsar
     {
         // Explicitly destroy handle-managed resources before clearing the map
         auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
-        for (auto& [key, binding] : m_passBindings)
-        {
-            if (binding.m_descriptorSetLayout.IsValid())
-                cmdList.Destroy(binding.m_descriptorSetLayout);
-        }
         m_passBindings.clear();
     }
 

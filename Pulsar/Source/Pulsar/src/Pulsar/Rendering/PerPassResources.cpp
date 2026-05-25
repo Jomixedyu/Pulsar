@@ -36,39 +36,29 @@ namespace pulsar
         if (!m_initialized)
             return;
 
-        auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
-        cmdList.Destroy(m_cameraBuffer);
-        cmdList.Destroy(m_worldBuffer);
-        cmdList.Destroy(m_lightsBuffer);
-
-        for (auto& pair : m_layoutCache)
-        {
-            if (pair.second.IsValid())
-                cmdList.Destroy(pair.second);
-        }
         m_layoutCache.clear();
-        m_cameraBuffer = gfx::BufferHandle{};
-        m_worldBuffer = gfx::BufferHandle{};
-        m_lightsBuffer = gfx::BufferHandle{};
+        m_cameraBuffer.Reset();
+        m_worldBuffer.Reset();
+        m_lightsBuffer.Reset();
         m_initialized = false;
     }
 
     void PerPassResources::UpdateCamera(const PerPassCameraData& data)
     {
-        if (auto* buffer = Application::GetGfxApp()->GetResourceManager()->GetBuffer(m_cameraBuffer))
-            buffer->Fill(&data);
+        if (m_cameraBuffer.IsValid())
+            m_cameraBuffer->Fill(&data);
     }
 
     void PerPassResources::UpdateWorld(const PerPassWorldData& data)
     {
-        if (auto* buffer = Application::GetGfxApp()->GetResourceManager()->GetBuffer(m_worldBuffer))
-            buffer->Fill(&data);
+        if (m_worldBuffer.IsValid())
+            m_worldBuffer->Fill(&data);
     }
 
     void PerPassResources::UpdateLights(const PerPassLightsBufferData& data)
     {
-        if (auto* buffer = Application::GetGfxApp()->GetResourceManager()->GetBuffer(m_lightsBuffer))
-            buffer->Fill(&data);
+        if (m_lightsBuffer.IsValid())
+            m_lightsBuffer->Fill(&data);
     }
 
     gfx::DescriptorSetLayoutHandle PerPassResources::GetLayout(const std::string& passName)
@@ -136,8 +126,7 @@ namespace pulsar
         if (!camDesc) camDesc = set->AddDescriptor("CameraBuffer", 0);
         if (camDesc)
         {
-            auto* buffer = Application::GetGfxApp()->GetResourceManager()->GetBuffer(m_cameraBuffer);
-            if (buffer) camDesc->SetConstantBuffer(buffer);
+            camDesc->SetConstantBuffer(m_cameraBuffer.Get());
         }
     }
 
@@ -148,8 +137,7 @@ namespace pulsar
         if (!worldDesc) worldDesc = set->AddDescriptor("WorldBuffer", 1);
         if (worldDesc)
         {
-            auto* buffer = Application::GetGfxApp()->GetResourceManager()->GetBuffer(m_worldBuffer);
-            if (buffer) worldDesc->SetConstantBuffer(buffer);
+            worldDesc->SetConstantBuffer(m_worldBuffer.Get());
         }
     }
 
@@ -160,8 +148,7 @@ namespace pulsar
         if (!lightDesc) lightDesc = set->AddDescriptor("LightBuffer", 2);
         if (lightDesc)
         {
-            auto* buffer = Application::GetGfxApp()->GetResourceManager()->GetBuffer(m_lightsBuffer);
-            if (buffer) lightDesc->SetConstantBuffer(buffer);
+            lightDesc->SetConstantBuffer(m_lightsBuffer.Get());
         }
     }
 

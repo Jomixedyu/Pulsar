@@ -52,20 +52,12 @@ namespace pulsar
         auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
         m_cameraDataBuffer = cmdList.CreateBuffer(perCameraBufferDesc);
         m_cameraDescriptorSet = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_camDescriptorLayout);
-        if (auto* buffer = Application::GetGfxApp()->GetResourceManager()->GetBuffer(m_cameraDataBuffer))
-        {
-            m_cameraDescriptorSet->AddDescriptor("Target", 0)->SetConstantBuffer(buffer);
-        }
+        m_cameraDescriptorSet->AddDescriptor("Target", 0)->SetConstantBuffer(m_cameraDataBuffer.Get());
         m_cameraDescriptorSet->Submit();
     }
     void SceneCapture2DComponent::EndComponent()
     {
-        if (m_cameraDataBuffer.IsValid())
-        {
-            auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
-            cmdList.Destroy(m_cameraDataBuffer);
-            m_cameraDataBuffer = gfx::BufferHandle{};
-        }
+        m_cameraDataBuffer.Reset();
         SceneCaptureComponent::EndComponent();
     }
     Matrix4f SceneCapture2DComponent::GetViewMat() const
@@ -179,9 +171,9 @@ namespace pulsar
         target.CamNear = m_near;
         target.CamFar = m_far;
         target.Resolution = m_renderTarget->GetSize2df();
-        if (auto* buffer = Application::GetGfxApp()->GetResourceManager()->GetBuffer(m_cameraDataBuffer))
+        if (m_cameraDataBuffer.IsValid())
         {
-            buffer->Fill(&target);
+            m_cameraDataBuffer->Fill(&target);
         }
     }
 } // namespace pulsar

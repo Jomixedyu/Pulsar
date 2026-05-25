@@ -5,8 +5,7 @@ namespace pulsar
 {
     gfx::GFXBuffer* PerRenderObjectDataManager::GetBuffer() const
     {
-        if (!m_buffer.IsValid()) return nullptr;
-        return Application::GetGfxApp()->GetResourceManager()->GetBuffer(m_buffer);
+        return m_buffer.Get();
     }
 
     void PerRenderObjectDataManager::Initialize()
@@ -27,9 +26,7 @@ namespace pulsar
         if (!m_buffer.IsValid()) return; // already destroyed
         m_dummyExtraSet.reset();
         m_dummyExtraLayout.reset();
-        auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
-        cmdList.Destroy(m_buffer);
-        m_buffer = gfx::BufferHandle{};
+        m_buffer.Reset();
         m_cpuData.clear();
         m_slotUsed.clear();
         m_freeSlots.clear();
@@ -53,11 +50,7 @@ namespace pulsar
         // Copy existing data if any
         if (m_buffer.IsValid() && m_capacity > 0)
         {
-            if (auto* oldBuffer = Application::GetGfxApp()->GetResourceManager()->GetBuffer(m_buffer))
-            {
-                // TODO: copy old data to new buffer
-            }
-            cmdList.Destroy(m_buffer);
+            // TODO: copy old data to new buffer
         }
 
         m_buffer = newBuffer;
@@ -112,10 +105,9 @@ namespace pulsar
         if (!m_buffer.IsValid() || m_nextSlot == 0) return;
 
         // Upload all active slots in one Fill
-        auto* buffer = Application::GetGfxApp()->GetResourceManager()->GetBuffer(m_buffer);
-        if (buffer)
+        if (m_buffer.IsValid())
         {
-            buffer->Fill(m_cpuData.data());
+            m_buffer->Fill(m_cpuData.data());
         }
     }
 }
