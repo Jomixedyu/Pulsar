@@ -24,7 +24,7 @@ namespace pulsar
         void InitRHI();
         void ReleaseRHI();
 
-        gfx::GFXTexture* GetGFXTexture() const { return m_tex.get(); }
+        std::shared_ptr<gfx::GFXTexture> GetGFXTexture() const { return m_tex; }
         bool IsInitialized() const { return m_tex.get() != nullptr; }
 
     private:
@@ -44,7 +44,7 @@ namespace pulsar
         void InitRHI();
         void ReleaseRHI();
 
-        gfx::GFXTexture* GetGFXTexture() const { return m_tex.get(); }
+        std::shared_ptr<gfx::GFXTexture> GetGFXTexture() const { return m_tex; }
         bool IsInitialized() const { return m_tex.get() != nullptr; }
 
     private:
@@ -87,7 +87,7 @@ namespace pulsar
         void InitRHI();
         void ReleaseRHI();
 
-        gfx::GFXTexture* GetGFXTexture() const { return m_tex.get(); }
+        std::shared_ptr<gfx::GFXTexture> GetGFXTexture() const { return m_tex; }
         bool IsInitialized() const { return m_tex.get() != nullptr; }
 
     private:

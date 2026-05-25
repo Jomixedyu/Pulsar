@@ -132,7 +132,7 @@ namespace pulsar
     std::shared_ptr<gfx::GFXTexture> Texture2D::GetGFXTexture() const
     {
         if (m_proxy)
-            return std::shared_ptr<gfx::GFXTexture>(m_proxy->GetGFXTexture());
+            return m_proxy->GetGFXTexture();
         return nullptr;
     }
 
