@@ -1,4 +1,6 @@
 #include "World.h"
+#include "Rendering/RenderThread.h"
+#include "Rendering/RenderProxyRegistry.h"
 #include "Application.h"
 
 #include <Pulsar/Logger.h>
@@ -251,6 +253,9 @@ namespace pulsar
         m_perRenderObjectDataManager.SetData(slot, renderObject->GetPerRenderObjectData());
         renderObject->OnCreateResource();
         m_renderObjects.insert(renderObject);
+
+        // Register with the Render Thread proxy registry
+        RenderThread::Get().GetProxyRegistry().RegisterProxy(renderObject.get());
     }
     void World::RemoveRenderObject(rendering::RenderObject_rsp renderObject)
     {
@@ -264,6 +269,9 @@ namespace pulsar
                 m_perRenderObjectDataManager.FreeSlot(slot);
             }
             m_renderObjects.erase(it);
+
+            // Unregister from the Render Thread proxy registry (disabled for debugging)
+            RenderThread::Get().GetProxyRegistry().UnregisterProxy(renderObject.get());
         }
     }
 

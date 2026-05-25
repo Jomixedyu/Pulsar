@@ -1,5 +1,6 @@
 ﻿#include <Pulsar/Application.h>
 #include <Pulsar/Logger.h>
+#include <Pulsar/Rendering/RenderThread.h>
 #include <gfx-vk/GFXVulkanApplication.h>
 #include "AppInstance.h"
 #include <chrono>
@@ -104,6 +105,8 @@ namespace pulsar
 
         Watch.Record("gfx initialize");
 
+        RenderThread::Get().Start();
+
         instance->OnInitialized();
 
         Watch.Record("user initialize");
@@ -150,6 +153,7 @@ namespace pulsar
         };
         g_gfxApp->ExecLoop();
         instance->OnTerminate();
+        RenderThread::Get().Stop();
         g_gfxApp->Terminate();
         delete g_gfxApp;
         g_gfxApp = nullptr;
