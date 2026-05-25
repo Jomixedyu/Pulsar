@@ -34,6 +34,42 @@ namespace pulsar
         {
             m_descriptorSetLayout = s_sharedLayout.lock();
         }
+
+        // Create GPU buffers from StaticMesh CPU data
+        if (m_mesh)
+        {
+            auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
+            for (auto& section : m_mesh->GetSections())
+            {
+                auto interleavedVerts = section.BuildInterleavedVertices();
+                const size_t vertSize = interleavedVerts.size() * sizeof(StaticMeshVertex);
+
+                {
+                    gfx::GFXBufferDesc vertexDesc{};
+                    vertexDesc.Usage       = gfx::GFXBufferUsage::Vertex;
+                    vertexDesc.StorageType = gfx::GFXBufferMemoryPosition::DeviceLocal;
+                    vertexDesc.BufferSize  = vertSize;
+                    vertexDesc.ElementSize = sizeof(StaticMeshVertex);
+
+                    auto vertBuffer = cmdList.CreateBuffer(vertexDesc);
+                    cmdList.UploadBuffer(vertBuffer.Get(), interleavedVerts.data(), vertSize);
+                    m_vertexBuffers.push_back(vertBuffer);
+                }
+
+                {
+                    gfx::GFXBufferDesc indicesDesc{};
+                    indicesDesc.Usage       = gfx::GFXBufferUsage::Indices;
+                    indicesDesc.StorageType = gfx::GFXBufferMemoryPosition::DeviceLocal;
+                    indicesDesc.BufferSize  = section.GetIndicesAllocSize();
+                    indicesDesc.ElementSize = sizeof(MeshIndicesType);
+
+                    auto indicesBuffer = cmdList.CreateBuffer(indicesDesc);
+                    cmdList.UploadBuffer(indicesBuffer.Get(), section.Indices.data(), section.GetIndicesAllocSize());
+                    m_indicesBuffers.push_back(indicesBuffer);
+                }
+            }
+        }
+
         m_dirty = true;
     }
 
@@ -45,6 +81,8 @@ namespace pulsar
             }
         m_itemSlots.clear();
         m_batches.clear();
+        m_vertexBuffers.clear();
+        m_indicesBuffers.clear();
         m_descriptorSetLayout.reset();
     }
 
@@ -57,17 +95,7 @@ namespace pulsar
             return;
         }
 
-        if (!m_mesh->IsCreatedGPUResource())
-        {
-            auto mesh = m_mesh;
-            RenderThread::Get().EnqueueCommandSync([mesh]() {
-                mesh->CreateGPUResource();
-            });
-        }
-
-        auto vertBuffers = m_mesh->GetGPUResourceVertexBuffers();
-        auto indicesBuffers = m_mesh->GetGPUResourceIndicesBuffers();
-        if (vertBuffers.empty())
+        if (m_vertexBuffers.empty())
         {
             m_dirty = false;
             return;
@@ -102,8 +130,8 @@ namespace pulsar
             batch.IsDepthTestDisabled = true;
 
             auto& element = batch.Elements.emplace_back();
-            element.Vertex = vertBuffers[0];
-            element.Indices = indicesBuffers.empty() ? gfx::BufferHandle{} : indicesBuffers[0];
+            element.Vertex = m_vertexBuffers[0];
+            element.Indices = m_indicesBuffers.empty() ? gfx::BufferHandle{} : m_indicesBuffers[0];
             batch.IsUsedIndices = element.Indices.IsValid();
 
             m_batches.push_back(std::move(batch));

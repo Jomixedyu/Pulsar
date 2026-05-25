@@ -58,62 +58,6 @@ namespace pulsar
         mesh->m_sections = m_sections;
     }
 
-    bool StaticMesh::CreateGPUResource()
-    {
-        if (m_isCreatedResource)
-        {
-            return true;
-        }
-        m_isCreatedResource = true;
-
-        auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
-        for (auto& section : m_sections)
-        {
-            // 从分离属性数据合并为交错格式再上传（GPU 侧暂时保持单 Buffer）
-            auto interleavedVerts = section.BuildInterleavedVertices();
-            const size_t vertSize = interleavedVerts.size() * sizeof(StaticMeshVertex);
-
-            {
-                gfx::GFXBufferDesc vertexDesc{};
-                vertexDesc.Usage       = gfx::GFXBufferUsage::Vertex;
-                vertexDesc.StorageType = gfx::GFXBufferMemoryPosition::DeviceLocal;
-                vertexDesc.BufferSize  = vertSize;
-                vertexDesc.ElementSize = sizeof(StaticMeshVertex);
-
-                auto vertBuffer = cmdList.CreateBuffer(vertexDesc);
-                cmdList.UploadBuffer(vertBuffer.Get(), interleavedVerts.data(), vertSize);
-                m_vertexBuffers.push_back(vertBuffer);
-            }
-
-            {
-                gfx::GFXBufferDesc indicesDesc{};
-                indicesDesc.Usage       = gfx::GFXBufferUsage::Indices;
-                indicesDesc.StorageType = gfx::GFXBufferMemoryPosition::DeviceLocal;
-                indicesDesc.BufferSize  = section.GetIndicesAllocSize();
-                indicesDesc.ElementSize = sizeof(MeshIndicesType);
-
-                auto indicesBuffer = cmdList.CreateBuffer(indicesDesc);
-                cmdList.UploadBuffer(indicesBuffer.Get(), section.Indices.data(), section.GetIndicesAllocSize());
-                m_indicesBuffers.push_back(indicesBuffer);
-            }
-        }
-        return true;
-    }
-    void StaticMesh::DestroyGPUResource()
-    {
-        if (!m_isCreatedResource)
-            return;
-        m_isCreatedResource = false;
-
-        auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
-        m_vertexBuffers.clear();
-        m_indicesBuffers.clear();
-    }
-    bool StaticMesh::IsCreatedGPUResource() const
-    {
-        return m_isCreatedResource;
-    }
-
     StaticMesh::~StaticMesh() = default;
 
     gfx::GFXVertexLayoutDescription_sp StaticMesh::StaticGetVertexLayout()

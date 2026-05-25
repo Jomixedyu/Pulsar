@@ -29,6 +29,10 @@ namespace pulsar
         gfx::GFXDescriptorSet_sp      m_descriptorSet;
         gfx::GFXDescriptorSetLayout_sp m_descriptorSetLayout;
 
+        // GPU buffers owned by this proxy (created in InitRHI, destroyed in ReleaseRHI)
+        array_list<gfx::BufferHandle> m_vertexBuffers;
+        array_list<gfx::BufferHandle> m_indicesBuffers;
+
         RenderProxySkinnedMesh* SetSkinnedMesh(RCPtr<SkinnedMesh> mesh)
         {
             m_skinnedMesh = std::move(mesh);
@@ -61,6 +65,8 @@ namespace pulsar
             m_descriptorSet.reset();
             m_descriptorSetLayout.reset();
             m_skinningBuffer.Reset();
+            m_vertexBuffers.clear();
+            m_indicesBuffers.clear();
         }
 
         void OnChangedTransform() override
@@ -111,6 +117,34 @@ namespace pulsar
                        ->SetConstantBuffer(m_skinningBuffer.Get());
         m_descriptorSet->Submit();
 
+        // Create GPU buffers from SkinnedMesh CPU data
+        if (m_skinnedMesh)
+        {
+            auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
+            for (auto& section : m_skinnedMesh->GetSections())
+            {
+                auto verts = section.BuildInterleavedVertices();
+
+                gfx::GFXBufferDesc vDesc{};
+                vDesc.Usage       = gfx::GFXBufferUsage::Vertex;
+                vDesc.StorageType = gfx::GFXBufferMemoryPosition::DeviceLocal;
+                vDesc.BufferSize  = verts.size() * sizeof(SkinnedMeshVertex);
+                vDesc.ElementSize = sizeof(SkinnedMeshVertex);
+                auto vb = cmdList.CreateBuffer(vDesc);
+                cmdList.UploadBuffer(vb.Get(), verts.data(), verts.size() * sizeof(SkinnedMeshVertex));
+                m_vertexBuffers.push_back(vb);
+
+                gfx::GFXBufferDesc iDesc{};
+                iDesc.Usage       = gfx::GFXBufferUsage::Indices;
+                iDesc.StorageType = gfx::GFXBufferMemoryPosition::DeviceLocal;
+                iDesc.BufferSize  = section.GetIndicesAllocSize();
+                iDesc.ElementSize = sizeof(MeshIndicesType);
+                auto ib = cmdList.CreateBuffer(iDesc);
+                cmdList.UploadBuffer(ib.Get(), section.Indices.data(), section.GetIndicesAllocSize());
+                m_indicesBuffers.push_back(ib);
+            }
+        }
+
         SubmitChange();
     }
 
@@ -150,22 +184,11 @@ namespace pulsar
             batch.ExtraDescriptorSet  = m_descriptorSet;
             batch.DescriptorSetLayout = m_descriptorSetLayout;
 
-            if (!m_skinnedMesh->IsCreatedGPUResource())
-            {
-                auto mesh = m_skinnedMesh;
-                RenderThread::Get().EnqueueCommandSync([mesh]() {
-                    mesh->CreateGPUResource();
-                });
-            }
-
-            auto vertBuffers    = m_skinnedMesh->GetGPUResourceVertexBuffers();
-            auto indicesBuffers = m_skinnedMesh->GetGPUResourceIndicesBuffers();
-
-            if (matIndex < (int)vertBuffers.size())
+            if (matIndex < (int)m_vertexBuffers.size())
             {
                 auto& element         = batch.Elements.emplace_back();
-                element.Vertex        = vertBuffers[matIndex];
-                element.Indices       = indicesBuffers[matIndex];
+                element.Vertex        = m_vertexBuffers[matIndex];
+                element.Indices       = m_indicesBuffers[matIndex];
                 // PerRenderObject data is in global dynamic UBO
             }
         }

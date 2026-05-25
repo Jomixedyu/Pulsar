@@ -2,7 +2,6 @@
 
 #include "StaticMesh.h"
 #include "Skeleton.h"
-#include <gfx/GFXHandle.h>
 #include <Pulsar/Rendering/PrimitiveStruct.h>
 
 namespace pulsar
@@ -51,11 +50,7 @@ namespace pulsar
             array_list<SkinnedMeshSection>&& sections,
             array_list<string>&&             materialNames);
 
-        // IGPUResource
         size_t GetVertexCount() override { return 0; }
-        bool   IsCreatedGPUResource() const override;
-        bool   CreateGPUResource() override;
-        void   DestroyGPUResource() override;
 
         // Skeleton 访问（通过 Skeleton 资产获取骨骼层级）
         RCPtr<Skeleton>    GetSkeleton()    const { return m_skeleton; }
@@ -66,8 +61,7 @@ namespace pulsar
         const array_list<string>&            GetMaterialNames()     const { return m_materialNames; }
         size_t                               GetMaterialCount()     const { return m_materialNames.size(); }
 
-        const array_list<gfx::BufferHandle>& GetGPUResourceVertexBuffers()  const { return m_vertexBuffers; }
-        const array_list<gfx::BufferHandle>& GetGPUResourceIndicesBuffers() const { return m_indicesBuffers; }
+        const array_list<SkinnedMeshSection>& GetSections() const { return m_sections; }
 
     protected:
         void OnCollectAssetDependencies(array_list<jxcorlib::guid_t>& deps) override;
@@ -77,11 +71,6 @@ namespace pulsar
         RCPtr<Skeleton>               m_skeleton;       // 骨骼层级（独立资产）
         array_list<SkinnedMeshSection> m_sections;
         array_list<string>            m_materialNames;
-
-    protected: // runtime data
-        bool m_isCreatedResource = false;
-        array_list<gfx::BufferHandle> m_vertexBuffers;
-        array_list<gfx::BufferHandle> m_indicesBuffers;
     };
     DECL_PTR(SkinnedMesh);
 

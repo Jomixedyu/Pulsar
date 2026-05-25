@@ -113,52 +113,6 @@ namespace pulsar
     }
 
     // -----------------------------------------------------------------------
-    // GPU Resource
-    // -----------------------------------------------------------------------
-    bool SkinnedMesh::CreateGPUResource()
-    {
-        if (m_isCreatedResource) return true;
-        m_isCreatedResource = true;
-
-        auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
-        for (auto& section : m_sections)
-        {
-            auto verts = section.BuildInterleavedVertices();
-
-            gfx::GFXBufferDesc vDesc{};
-            vDesc.Usage       = gfx::GFXBufferUsage::Vertex;
-            vDesc.StorageType = gfx::GFXBufferMemoryPosition::DeviceLocal;
-            vDesc.BufferSize  = verts.size() * sizeof(SkinnedMeshVertex);
-            vDesc.ElementSize = sizeof(SkinnedMeshVertex);
-            auto vb = cmdList.CreateBuffer(vDesc);
-            cmdList.UploadBuffer(vb.Get(), verts.data(), verts.size() * sizeof(SkinnedMeshVertex));
-            m_vertexBuffers.push_back(vb);
-
-            gfx::GFXBufferDesc iDesc{};
-            iDesc.Usage       = gfx::GFXBufferUsage::Indices;
-            iDesc.StorageType = gfx::GFXBufferMemoryPosition::DeviceLocal;
-            iDesc.BufferSize  = section.GetIndicesAllocSize();
-            iDesc.ElementSize = sizeof(MeshIndicesType);
-            auto ib = cmdList.CreateBuffer(iDesc);
-            cmdList.UploadBuffer(ib.Get(), section.Indices.data(), section.GetIndicesAllocSize());
-            m_indicesBuffers.push_back(ib);
-        }
-        return true;
-    }
-
-    void SkinnedMesh::DestroyGPUResource()
-    {
-        if (!m_isCreatedResource) return;
-        m_isCreatedResource = false;
-
-        auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
-        m_vertexBuffers.clear();
-        m_indicesBuffers.clear();
-    }
-
-    bool SkinnedMesh::IsCreatedGPUResource() const { return m_isCreatedResource; }
-
-    // -----------------------------------------------------------------------
     // Serialize  （v2: SkeletonSerialize 以 GUID 引用方式存储）
     // -----------------------------------------------------------------------
     void SkinnedMesh::Serialize(AssetSerializer* s)

@@ -1,10 +1,9 @@
 #pragma once
 #include <Pulsar/AssetObject.h>
-#include <Pulsar/IGPUResource.h>
 
 namespace pulsar
 {
-    class Mesh : public AssetObject, public IGPUResource
+    class Mesh : public AssetObject
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::Mesh, AssetObject);
     public:

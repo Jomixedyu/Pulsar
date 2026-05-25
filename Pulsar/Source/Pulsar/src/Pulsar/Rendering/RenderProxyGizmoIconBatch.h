@@ -32,6 +32,10 @@ namespace pulsar
         gfx::GFXDescriptorSetLayout_sp m_descriptorSetLayout;
         gfx::GFXDescriptorSet_sp m_dummyExtraSet;
 
+        // GPU buffers owned by this proxy (created in InitRHI, destroyed in ReleaseRHI)
+        array_list<gfx::BufferHandle> m_vertexBuffers;
+        array_list<gfx::BufferHandle> m_indicesBuffers;
+
         array_list<uint32_t> m_itemSlots;
         array_list<rendering::MeshBatch> m_batches;
     };

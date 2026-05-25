@@ -22,6 +22,10 @@ namespace pulsar
 
         gfx::GFXDescriptorSet_sp m_dummyExtraSet;
 
+        // GPU buffers owned by this proxy (created in InitRHI, destroyed in ReleaseRHI)
+        array_list<gfx::BufferHandle> m_vertexBuffers;
+        array_list<gfx::BufferHandle> m_indicesBuffers;
+
         RenderProxyStaticMesh() = default;
         RenderProxyStaticMesh* SetStaticMesh(RCPtr<StaticMesh> mesh)
         {
@@ -39,6 +43,8 @@ namespace pulsar
         void ReleaseRHI() override
         {
             m_dummyExtraSet.reset();
+            m_vertexBuffers.clear();
+            m_indicesBuffers.clear();
         }
 
         void OnChangedTransform() override
@@ -104,23 +110,12 @@ namespace pulsar
             if (m_dummyExtraSet)
                 batch.DescriptorSetLayout = m_dummyExtraSet->GetDescriptorSetLayout();
 
-            if (!m_staticMesh->IsCreatedGPUResource())
-            {
-                auto mesh = m_staticMesh;
-                RenderThread::Get().EnqueueCommandSync([mesh]() {
-                    mesh->CreateGPUResource();
-                });
-            }
-
-            // collect elements
-            auto vertBuffers = m_staticMesh->GetGPUResourceVertexBuffers();
-            auto indicesBuffers = m_staticMesh->GetGPUResourceIndicesBuffers();
-
-            if (matIndex < vertBuffers.size())
+            // collect elements from proxy-owned GPU buffers
+            if (matIndex < (int)m_vertexBuffers.size())
             {
                 auto& element = batch.Elements.emplace_back();
-                element.Vertex =  vertBuffers[matIndex];
-                element.Indices = indicesBuffers[matIndex];
+                element.Vertex =  m_vertexBuffers[matIndex];
+                element.Indices = m_indicesBuffers[matIndex];
                 // PerRenderObject data is in global dynamic UBO, no per-element descriptor set needed
             }
 
@@ -135,6 +130,41 @@ namespace pulsar
     void RenderProxyStaticMesh::InitRHI()
     {
         m_dummyExtraSet = RenderThread::Get().GetPerObjectDataManager().GetDummyExtraSet();
+
+        // Create GPU buffers from StaticMesh CPU data
+        if (m_staticMesh)
+        {
+            auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
+            for (auto& section : m_staticMesh->GetSections())
+            {
+                auto interleavedVerts = section.BuildInterleavedVertices();
+                const size_t vertSize = interleavedVerts.size() * sizeof(StaticMeshVertex);
+
+                {
+                    gfx::GFXBufferDesc vertexDesc{};
+                    vertexDesc.Usage       = gfx::GFXBufferUsage::Vertex;
+                    vertexDesc.StorageType = gfx::GFXBufferMemoryPosition::DeviceLocal;
+                    vertexDesc.BufferSize  = vertSize;
+                    vertexDesc.ElementSize = sizeof(StaticMeshVertex);
+
+                    auto vertBuffer = cmdList.CreateBuffer(vertexDesc);
+                    cmdList.UploadBuffer(vertBuffer.Get(), interleavedVerts.data(), vertSize);
+                    m_vertexBuffers.push_back(vertBuffer);
+                }
+
+                {
+                    gfx::GFXBufferDesc indicesDesc{};
+                    indicesDesc.Usage       = gfx::GFXBufferUsage::Indices;
+                    indicesDesc.StorageType = gfx::GFXBufferMemoryPosition::DeviceLocal;
+                    indicesDesc.BufferSize  = section.GetIndicesAllocSize();
+                    indicesDesc.ElementSize = sizeof(MeshIndicesType);
+
+                    auto indicesBuffer = cmdList.CreateBuffer(indicesDesc);
+                    cmdList.UploadBuffer(indicesBuffer.Get(), section.Indices.data(), section.GetIndicesAllocSize());
+                    m_indicesBuffers.push_back(indicesBuffer);
+                }
+            }
+        }
 
         SubmitChange();
     }
