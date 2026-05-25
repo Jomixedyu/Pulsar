@@ -93,7 +93,7 @@ namespace pulsared
         m_renderObject->SetTransform(GetNode()->GetTransform()->GetLocalToWorldMatrix());
     }
 
-    SPtr<rendering::RenderObject> Grid3DComponent::CreateRenderObject()
+    SPtr<rendering::RenderProxy> Grid3DComponent::CreateRenderObject()
     {
         auto ro = new LineRenderObject();
         ro->SetDepthTestEnabled(true);

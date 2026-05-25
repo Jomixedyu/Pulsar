@@ -15,7 +15,7 @@ namespace pulsar
         void BeginComponent() override;
         void EndComponent() override;
 
-        SPtr<rendering::RenderObject> CreateRenderObject() override;
+        SPtr<rendering::RenderProxy> CreateRenderObject() override;
 
         CORELIB_REFL_DECL_FIELD(m_material);
         RCPtr<Material> m_material;

@@ -245,7 +245,7 @@ namespace pulsar
     void World::OnUnloadingResidentScene(RCPtr<NodeCollection> scene)
     {
     }
-    void World::AddRenderObject(const rendering::RenderObject_sp& renderObject)
+    void World::AddRenderObject(const rendering::RenderProxy_sp& renderObject)
     {
         auto slot = m_perRenderObjectDataManager.AllocSlot();
         renderObject->SetRenderObjectIndex(slot);
@@ -257,14 +257,14 @@ namespace pulsar
         // Register with the Render Thread proxy registry
         RenderThread::Get().GetProxyRegistry().RegisterProxy(renderObject.get());
     }
-    void World::RemoveRenderObject(rendering::RenderObject_rsp renderObject)
+    void World::RemoveRenderObject(rendering::RenderProxy_rsp renderObject)
     {
         const auto it = m_renderObjects.find(renderObject);
         if (it != m_renderObjects.end())
         {
             (*it)->OnDestroyResource();
             auto slot = (*it)->GetRenderObjectIndex();
-            if (slot != rendering::RenderObject::kInvalidSlot)
+            if (slot != rendering::RenderProxy::kInvalidSlot)
             {
                 m_perRenderObjectDataManager.FreeSlot(slot);
             }

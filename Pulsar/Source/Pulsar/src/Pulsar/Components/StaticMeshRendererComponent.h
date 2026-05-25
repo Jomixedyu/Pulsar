@@ -25,7 +25,7 @@ namespace pulsar
         CORELIB_CLASS_ATTR(new CategoryAttribute("Renderer"), new ComponentIconAttribute(ICON_FK_CUBE));
         DECL_OBJECTPTR_SELF
     public:
-        SPtr<rendering::RenderObject> CreateRenderObject() override;
+        SPtr<rendering::RenderProxy> CreateRenderObject() override;
     public:
         void GetSubscribeObserverHandles(array_list<ObjectHandle>& out) override;
         List_sp<RCPtr<Material>> GetMaterials() const { return this->m_materials; }

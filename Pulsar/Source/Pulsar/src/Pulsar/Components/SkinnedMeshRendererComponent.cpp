@@ -15,7 +15,7 @@ namespace pulsar
     // -----------------------------------------------------------------------
     static gfx::GFXDescriptorSetLayout_wp SkinnedMeshDescriptorSetLayout;
 
-    class SkinnedMeshRenderObject final : public rendering::RenderObject
+    class SkinnedMeshRenderObject final : public rendering::RenderProxy
     {
     public:
         array_list<rendering::MeshBatch> m_batches;
@@ -176,7 +176,7 @@ namespace pulsar
         init_sptr_member(m_priorities);
     }
 
-    SPtr<rendering::RenderObject> SkinnedMeshRendererComponent::CreateRenderObject()
+    SPtr<rendering::RenderProxy> SkinnedMeshRendererComponent::CreateRenderObject()
     {
         auto ro = mksptr(new SkinnedMeshRenderObject());
         if (m_skinnedMesh)

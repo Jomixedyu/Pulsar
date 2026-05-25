@@ -3,7 +3,7 @@
 #include "ObjectBase.h"
 #include "Rendering/LineRenderObject.h"
 #include "Rendering/PrimitiveStruct.h"
-#include "Rendering/RenderObject.h"
+#include "Rendering/RenderProxy.h"
 #include <Pulsar/Assets/Material.h>
 
 namespace pulsar

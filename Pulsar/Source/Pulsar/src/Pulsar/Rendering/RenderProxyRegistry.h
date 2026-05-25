@@ -6,7 +6,7 @@
 
 namespace pulsar::rendering
 {
-    class RenderObject;
+    class RenderProxy;
 
     // Registry of all active RenderObjects (will become RenderProxy in Phase 3).
     // Lives on the Render Thread. Game Thread must use RenderThread::EnqueueCommand
@@ -14,20 +14,20 @@ namespace pulsar::rendering
     class RenderProxyRegistry
     {
     public:
-        void RegisterProxy(RenderObject* proxy);
-        void UnregisterProxy(RenderObject* proxy);
+        void RegisterProxy(RenderProxy* proxy);
+        void UnregisterProxy(RenderProxy* proxy);
 
-        const std::unordered_set<RenderObject*>& GetProxies() const
+        const std::unordered_set<RenderProxy*>& GetProxies() const
         {
             return m_proxies;
         }
 
         // Filter by interface name (e.g. RENDERER_STATICMESH)
         void GetProxiesByInterface(const std::string& interfaceName,
-                                    std::vector<RenderObject*>& out) const;
+                                    std::vector<RenderProxy*>& out) const;
 
     private:
-        std::unordered_set<RenderObject*> m_proxies;
+        std::unordered_set<RenderProxy*> m_proxies;
         mutable std::mutex m_mutex; // Protects against concurrent Register/Unregister
     };
 }

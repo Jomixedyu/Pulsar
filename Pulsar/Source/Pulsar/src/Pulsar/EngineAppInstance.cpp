@@ -7,7 +7,7 @@
 #include "Node.h"
 #include "Rendering/LightingData.h"
 #include "Rendering/PerPassResources.h"
-#include "Rendering/RenderObject.h"
+#include "Rendering/RenderProxy.h"
 #include "Rendering/RenderGraph/TransientRTPool.h"
 #include "Rendering/RenderGraph/RenderGraph.h"
 #include "Rendering/RenderGraph/ScriptableCaptureRenderer.h"

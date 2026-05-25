@@ -10,7 +10,7 @@ namespace pulsar
     {
         base::EndComponent();
     }
-    SPtr<rendering::RenderObject> SpriteRendererComponent::CreateRenderObject()
+    SPtr<rendering::RenderProxy> SpriteRendererComponent::CreateRenderObject()
     {
         return {};
     }

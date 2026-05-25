@@ -2,7 +2,7 @@
 #include <Pulsar/Components/SceneCapture2DComponent.h>
 #include <Pulsar/World.h>
 #include <Pulsar/Scene.h>
-#include <Pulsar/Rendering/RenderObject.h>
+#include <Pulsar/Rendering/RenderProxy.h>
 #include <Pulsar/Rendering/ShaderPass.h>
 #include <Pulsar/Assets/Material.h>
 #include <Pulsar/Node.h>
@@ -45,7 +45,7 @@ namespace pulsar
             const Vector3f camPos     = capture2D->GetNode()->GetTransform()->GetWorldPosition();
             const Vector3f camForward = capture2D->GetNode()->GetTransform()->GetForward();
 
-            for (const rendering::RenderObject_sp& ro : world->GetRenderObjects())
+            for (const rendering::RenderProxy_sp& ro : world->GetRenderObjects())
             {
                 const float depth = jmath::Dot(camForward, ro->GetWorldPosition() - camPos);
                 for (auto batch : ro->GetMeshBatches())

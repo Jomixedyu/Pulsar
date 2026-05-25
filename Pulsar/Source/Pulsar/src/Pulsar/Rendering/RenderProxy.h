@@ -71,12 +71,12 @@ namespace pulsar::rendering
     };
 
 
-    class RenderObject
+    class RenderProxy
     {
     public:
         static constexpr uint32_t kInvalidSlot = UINT32_MAX;
 
-        virtual ~RenderObject() = default;
+        virtual ~RenderProxy() = default;
         void SetTransform(const Matrix4f& localToWorld);
         virtual void OnChangedTransform() {}
         void UpdateConstantBuffer()
@@ -119,5 +119,5 @@ namespace pulsar::rendering
         uint32_t  m_renderObjectIndex = kInvalidSlot;
         PerRenderObjectDataManager* m_pPerRenderObjectDataManager = nullptr;
     };
-    CORELIB_DECL_SHORTSPTR(RenderObject);
+    CORELIB_DECL_SHORTSPTR(RenderProxy);
 }

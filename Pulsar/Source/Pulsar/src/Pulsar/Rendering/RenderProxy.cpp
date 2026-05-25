@@ -1,9 +1,9 @@
-#include "Rendering/RenderObject.h"
+#include "Rendering/RenderProxy.h"
 #include "Rendering/PerRenderObjectDataManager.h"
 
 namespace pulsar::rendering
 {
-    void RenderObject::SetTransform(const Matrix4f& localToWorld)
+    void RenderProxy::SetTransform(const Matrix4f& localToWorld)
     {
         m_perRenderObjectData.LocalToWorldMatrix = localToWorld;
         m_perRenderObjectData.WorldToLocalMatrix = jmath::Inverse(localToWorld);

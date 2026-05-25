@@ -1,7 +1,7 @@
 #pragma once
 #include "Component.h"
 #include <Pulsar/IconsForkAwesome.h>
-#include <Pulsar/Rendering/RenderObject.h>
+#include <Pulsar/Rendering/RenderProxy.h>
 
 namespace pulsar
 {
@@ -12,7 +12,7 @@ namespace pulsar
         CORELIB_DEF_INTERFACE(AssemblyObject_pulsar, pulsar::IRendererComponent, IInterface);
         CORELIB_CLASS_ATTR(new AbstractComponentAttribute);
     public:
-        virtual SPtr<rendering::RenderObject> CreateRenderObject() = 0;
+        virtual SPtr<rendering::RenderProxy> CreateRenderObject() = 0;
     };
 
     class RendererComponent : public Component, public IRendererComponent

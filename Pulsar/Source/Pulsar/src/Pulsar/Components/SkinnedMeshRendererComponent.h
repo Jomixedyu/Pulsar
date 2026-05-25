@@ -16,7 +16,7 @@ namespace pulsar
     public:
         SkinnedMeshRendererComponent();
 
-        SPtr<rendering::RenderObject> CreateRenderObject() override;
+        SPtr<rendering::RenderProxy> CreateRenderObject() override;
 
         void BeginComponent() override;
         void EndComponent() override;

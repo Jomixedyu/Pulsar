@@ -1,13 +1,13 @@
 #pragma once
-#include "RenderObject.h"
+#include "RenderProxy.h"
 #include "PrimitiveStruct.h"
 #include <gfx/GFXHandle.h>
 
 namespace pulsar
 {
-    class LineRenderObject : public rendering::RenderObject
+    class LineRenderObject : public rendering::RenderProxy
     {
-        using base = rendering::RenderObject;
+        using base = rendering::RenderProxy;
 
     private:
         array_list<StaticMeshVertex> m_verties;

@@ -1,6 +1,6 @@
 #pragma once
 #include "RenderFeature.h"
-#include <Pulsar/Rendering/RenderObject.h>
+#include <Pulsar/Rendering/RenderProxy.h>
 #include <Pulsar/Rendering/ShaderPass.h>
 #include <Pulsar/Assets/Material.h>
 #include <gfx/GFXDescriptorSet.h>

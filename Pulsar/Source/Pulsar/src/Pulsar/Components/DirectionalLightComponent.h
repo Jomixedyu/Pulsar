@@ -1,7 +1,7 @@
 #pragma once
 #include <Pulsar/IconsForkAwesome.h>
 #include "LightComponent.h"
-#include "Pulsar/Rendering/RenderObject.h"
+#include "Pulsar/Rendering/RenderProxy.h"
 #include "Pulsar/Scene.h"
 
 namespace pulsar
@@ -23,7 +23,7 @@ namespace pulsar
         void OnLightColorChanged() override;
 
         void OnTransformChanged() override;
-        SPtr<rendering::RenderObject> m_gizmos;
+        SPtr<rendering::RenderProxy> m_gizmos;
 
         std::unique_ptr<DirectionalLightSceneInfo> m_sceneInfo;
     };

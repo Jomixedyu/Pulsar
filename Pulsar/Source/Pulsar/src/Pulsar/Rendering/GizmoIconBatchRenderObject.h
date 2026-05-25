@@ -1,11 +1,11 @@
 #pragma once
-#include "RenderObject.h"
+#include "RenderProxy.h"
 #include <Pulsar/Assets/Material.h>
 #include <Pulsar/Assets/StaticMesh.h>
 
 namespace pulsar
 {
-    class GizmoIconBatchRenderObject : public rendering::RenderObject
+    class GizmoIconBatchRenderObject : public rendering::RenderProxy
     {
     public:
         struct IconItem

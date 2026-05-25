@@ -11,7 +11,7 @@
 
 namespace pulsar
 {
-    class StaticMeshRenderObject final : public rendering::RenderObject
+    class StaticMeshRenderObject final : public rendering::RenderProxy
     {
     public:
         array_list<rendering::MeshBatch> m_batches;
@@ -138,7 +138,7 @@ namespace pulsar
 
 
 
-    SPtr<rendering::RenderObject> StaticMeshRendererComponent::CreateRenderObject()
+    SPtr<rendering::RenderProxy> StaticMeshRendererComponent::CreateRenderObject()
     {
         auto ro = mksptr(new StaticMeshRenderObject());
         // m_staticMesh->CreateGPUResource();

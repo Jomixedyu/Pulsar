@@ -92,7 +92,7 @@ namespace pulsared
         m_renderObject->SetTransform(GetNode()->GetTransform()->GetLocalToWorldMatrix());
     }
 
-    SPtr<rendering::RenderObject> Grid2DComponent::CreateRenderObject()
+    SPtr<rendering::RenderProxy> Grid2DComponent::CreateRenderObject()
     {
         auto ro = new LineRenderObject();
         ro->SetDepthTestEnabled(true);

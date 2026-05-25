@@ -1,7 +1,7 @@
 #pragma once
 #include <Pulsar/IconsForkAwesome.h>
 #include "LightComponent.h"
-#include "Pulsar/Rendering/RenderObject.h"
+#include "Pulsar/Rendering/RenderProxy.h"
 
 namespace pulsar
 {
