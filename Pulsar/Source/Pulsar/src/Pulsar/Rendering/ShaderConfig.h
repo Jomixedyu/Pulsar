@@ -37,6 +37,9 @@ namespace pulsar
         CORELIB_REFL_DECL_FIELD(Style);
         string Style;
 
+        CORELIB_REFL_DECL_FIELD(Category);
+        string Category;
+
         SPtr<jxcorlib::Attribute> GetStyleAttribute() const;
 
     };

@@ -108,4 +108,4 @@ namespace pulsared
         }
         ImGui::PopStyleVar();
     }
-}
+} // namespace pulsared

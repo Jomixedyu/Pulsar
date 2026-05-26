@@ -2,6 +2,7 @@
 
 #include "Pulsar/Components/DirectionalLightComponent.h"
 #include "Pulsar/EngineAppInstance.h"
+#include <PulsarEd/EditorAppInstance.h>
 
 #include "EdTools/EdTool.h"
 #include "EdTools/MoveEdTool.h"
@@ -9,51 +10,9 @@
 #include <Pulsar/Scene.h>
 #include <PulsarEd/Components/Grid3DComponent.h>
 #include <PulsarEd/Components/StdEditCameraControllerComponent.h>
-#include <stack>
 
 namespace pulsared
 {
-    static std::stack<std::unique_ptr<World>> _worldStack;
-    void EditorWorld::PushPreviewWorld(std::unique_ptr<World> world)
-    {
-        world->OnWorldBegin();
-        auto pipeline = static_cast<EngineRenderPipeline*>(Application::GetGfxApp()->GetRenderPipeline());
-        pipeline->AddWorld(world.get());
-        _worldStack.push(std::move(world));
-    }
-    bool EditorWorld::PreviewWorldStackEmpty()
-    {
-        return _worldStack.empty();
-    }
-    void EditorWorld::PopPreviewWorld()
-    {
-        auto world = _worldStack.top().get();
-
-        auto pipeline = static_cast<EngineRenderPipeline*>(Application::GetGfxApp()->GetRenderPipeline());
-        pipeline->RemoveWorld(world);
-
-        world->OnWorldEnd();
-        _worldStack.pop();
-    }
-    World* EditorWorld::GetPreviewWorld()
-    {
-        if (!_worldStack.empty())
-        {
-            return _worldStack.top().get();
-        }
-        return base::Current();
-    }
-
-    EditorWorld* EditorWorld::DuplicateAndBeginPlay()
-    {
-        return {};
-    }
-
-    void EditorWorld::EndPlayAndRestore()
-    {
-    }
-
-
     void EditorWorld::Tick(float dt)
     {
         base::Tick(dt);

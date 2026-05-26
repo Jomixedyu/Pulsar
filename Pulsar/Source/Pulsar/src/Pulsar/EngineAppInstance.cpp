@@ -16,6 +16,7 @@
 #include <Pulsar/Application.h>
 #include <Pulsar/EngineAppInstance.h>
 #include <Pulsar/ImGuiImpl.h>
+#include <Pulsar/Input.h>
 #include <Pulsar/Logger.h>
 #include <Pulsar/World.h>
 #include <Pulsar/Rendering/ShaderInstanceCache.h>
@@ -114,15 +115,24 @@ namespace pulsar
 
         TransientRTPool::Initialize();
 
-        World::Reset<World>("MainWorld");
-        Application::GetGfxApp()->SetRenderPipeline(new EngineRenderPipeline{World::Current()});
+        m_world = new World("MainWorld");
+        m_world->OnWorldBegin();
+        Application::GetGfxApp()->SetRenderPipeline(new EngineRenderPipeline{m_world});
+
+        uinput::InputManager::GetInstance()->Initialize();
     }
 
     void EngineAppInstance::OnTerminate()
     {
-        ShaderInstanceCache::Instance().Clear();
-        World::Reset(nullptr);
+        uinput::InputManager::GetInstance()->Terminate();
 
+        ShaderInstanceCache::Instance().Clear();
+        if (m_world)
+        {
+            m_world->OnWorldEnd();
+            delete m_world;
+            m_world = nullptr;
+        }
         TransientRTPool::Shutdown();
     }
 
@@ -131,7 +141,14 @@ namespace pulsar
         auto bgc = Color4f{0.2f, 0.2f, 0.2f, 0.2};
         // RenderInterface::Clear(bgc.r, bgc.g, bgc.b, bgc.a);
 
-        World::Current()->Tick(dt);
+        if (m_world)
+        {
+            m_world->BeginInputFrame();
+            auto events = uinput::InputManager::GetInstance()->PollEvents();
+            for (const auto& e : events)
+                m_world->ProcessInputEvent(e);
+            m_world->Tick(dt);
+        }
 
         // RenderInterface::Render();
         // SystemInterface::PollEvents();
@@ -152,7 +169,7 @@ namespace pulsar
 
     Vector2f EngineAppInstance::GetOutputScreenSize()
     {
-        float x, y;
+        float x = 0.0f, y = 0.0f;
         // detail::RenderInterface::GetDefaultBufferViewport(&x, &y);
         return Vector2f(x, y);
     }

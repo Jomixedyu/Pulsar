@@ -1,13 +1,22 @@
 #pragma once
+#include "Editors/AssetEditor/AssetEditor.h"
 #include "Editors/AssetEditor/AssetEditorWindow.h"
 #include <Pulsar/Assets/AnimatorController.h>
 
 namespace pulsared
 {
+    class AnimatorControllerEditor : public AssetEditor
+    {
+        CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::AnimatorControllerEditor, AssetEditor);
+        DEFINE_ASSET_EDITOR(AnimatorController);
+    public:
+        SPtr<EditorWindow> OnCreateEditorWindow() override;
+        string_view GetMenuName() const override { return "Animator Controller Editor"; }
+    };
+
     class AnimatorControllerEditorWindow : public AssetEditorWindow
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::AnimatorControllerEditorWindow, AssetEditorWindow);
-        DEFINE_ASSET_EDITOR(AnimatorController, false);
     public:
         string_view GetWindowDisplayName() const override { return "Animator Controller"; }
     protected:
@@ -31,4 +40,10 @@ namespace pulsared
         int  m_addTransTo        = 0;
         bool m_addTransAnyState  = false;
     };
+
+    inline SPtr<EditorWindow> AnimatorControllerEditor::OnCreateEditorWindow()
+    {
+        return mksptr(new AnimatorControllerEditorWindow());
+    }
+
 }

@@ -8,6 +8,8 @@
 
 namespace pulsared
 {
+    ViewportFrame::~ViewportFrame() = default;
+
     // ret: viewport Size Changed
     static bool PreviewFrame(World* world, bool isPreviewCam, Vector2f* viewportSize, gfx::GFXDescriptorSet* descriptorSet, bool forceResize = false)
     {
@@ -77,6 +79,13 @@ namespace pulsared
 
     void ViewportFrame::Render(float dt)
     {
+        // Capture viewport geometry for the caller (e.g. SceneWindow) to sync to InputContext
+        m_lastViewportX = ImGui::GetCursorScreenPos().x;
+        m_lastViewportY = ImGui::GetCursorScreenPos().y;
+        m_lastViewportW = ImGui::GetContentRegionAvail().x;
+        m_lastViewportH = ImGui::GetContentRegionAvail().y;
+        m_lastHasFocus = ImGui::IsWindowHovered() && ImGui::IsWindowFocused();
+
         PreviewFrame(m_world, m_isPreviewCam, &m_viewportSize, m_descriptorSet.get(), m_newWorld);
         m_newWorld = false;
         if (m_enableEdToolTick)

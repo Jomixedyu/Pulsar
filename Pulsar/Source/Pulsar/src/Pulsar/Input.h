@@ -1,25 +1,45 @@
 #pragma once
+#include <Pulsar/EngineMath.h>
 #include <uinput/InputKeyCode.h>
+#include <uinput/InputManager.h>
 #include <set>
 
 namespace pulsar
 {
     using KeyCode = uinput::KeyCode;
 
-    class Input
+    // Pure input state machine.  No viewport awareness; the caller is
+    // responsible for routing events and converting coordinates.
+    struct InputContext
     {
     public:
-        static void Initialize();
-        static void Shutdown();
-        static void Update(); // 每帧开始时调用，在 ProcessEvents 之前
+        // --- Lifecycle ---
+        void BeginFrame();  // Snapshot previous frame state
+        void ProcessEvent(const uinput::InputEvent& e);
 
-        static bool GetKey(KeyCode key);        // 持续按住
-        static bool GetKeyDown(KeyCode key);    // 本帧刚按下
-        static bool GetKeyUp(KeyCode key);      // 本帧刚释放
+        // --- Query APIs ---
+        bool GetKey(KeyCode key) const;
+        bool GetKeyDown(KeyCode key) const;
+        bool GetKeyUp(KeyCode key) const;
+
+        Vector2f GetMousePosition() const;     // local to the caller's viewport
+        Vector2f GetMouseDelta() const;
+
+        bool GetMouseButton(int button) const;
+        bool GetMouseButtonDown(int button) const;
+        bool GetMouseButtonUp(int button) const;
+
+        float GetMouseScrollWheel() const;
+        float GetMouseScrollWheelDelta() const;
 
     private:
-        static int s_callbackHandle;
-        static std::set<KeyCode> s_currentKeys;
-        static std::set<KeyCode> s_previousKeys;
+        std::set<KeyCode> currentKeys;
+        std::set<KeyCode> previousKeys;
+        std::set<int> currentMouseButtons;
+        std::set<int> previousMouseButtons;
+        Vector2f mousePosition;
+        Vector2f prevMousePosition;
+        float mouseWheel = 0.0f;
+        float prevMouseWheel = 0.0f;
     };
 }

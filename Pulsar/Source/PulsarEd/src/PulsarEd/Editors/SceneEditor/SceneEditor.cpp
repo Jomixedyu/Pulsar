@@ -84,9 +84,9 @@ namespace pulsared
                 auto entry = mksptr(new MenuEntryButton("Create Node"));
                 menu->AddEntry(entry);
                 entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
-                    auto newNode = World::Current()->GetFocusScene()->NewNode("New Node");
-                    World::Current()->GetSelection().Clear();
-                    World::Current()->GetSelection().Select(newNode);
+                    auto newNode = GetEdApp()->GetEditorWorld()->GetFocusScene()->NewNode("New Node");
+                    GetEdApp()->GetEditorWorld()->GetSelection().Clear();
+                    GetEdApp()->GetEditorWorld()->GetSelection().Select(newNode);
                 });
             }
 
@@ -96,7 +96,7 @@ namespace pulsared
                 auto entry = mksptr(new MenuEntryButton("Create Sphere"));
                 shapeMenu->AddEntry(entry);
                 entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
-                    auto newNode = World::Current()->GetFocusScene()->NewNode("New Sphere");
+                    auto newNode = GetEdApp()->GetEditorWorld()->GetFocusScene()->NewNode("New Sphere");
                     newNode->AddComponent<SphereShape3DComponent>();
 
                     auto renderer = newNode->AddComponent<StaticMeshRendererComponent>();
@@ -109,7 +109,7 @@ namespace pulsared
                 auto entry = mksptr(new MenuEntryButton("Create Cube"));
                 shapeMenu->AddEntry(entry);
                 entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
-                    auto newNode = World::Current()->GetFocusScene()->NewNode("New Cube");
+                    auto newNode = GetEdApp()->GetEditorWorld()->GetFocusScene()->NewNode("New Cube");
                     newNode->AddComponent<BoxShape3DComponent>();
 
                     auto renderer = newNode->AddComponent<StaticMeshRendererComponent>();
@@ -123,7 +123,7 @@ namespace pulsared
                 auto entry = mksptr(new MenuEntryButton("Create Plane"));
                 shapeMenu->AddEntry(entry);
                 entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
-                    auto renderer = World::Current()->GetFocusScene()->NewNode("New Plane")
+                    auto renderer = GetEdApp()->GetEditorWorld()->GetFocusScene()->NewNode("New Plane")
                         ->AddComponent<StaticMeshRendererComponent>();
                     renderer->SetStaticMesh(AssetManager::Get()->LoadAsset<StaticMesh>(BuiltinAsset::Shapes_Plane));
                     renderer->SetMaterial(0, AssetManager::Get()->LoadAsset<Material>(BuiltinAsset::Material_Lambert));
@@ -137,7 +137,7 @@ namespace pulsared
                 auto entry = mksptr(new MenuEntryButton("Create Sky Light"));
                 light3dMenu->AddEntry(entry);
                 entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
-                    World::Current()->GetFocusScene()->NewNode("New Sky Light")
+                    GetEdApp()->GetEditorWorld()->GetFocusScene()->NewNode("New Sky Light")
                         ->AddComponent<SkyLightComponent>();
                 });
             }
@@ -145,7 +145,7 @@ namespace pulsared
                 auto entry = mksptr(new MenuEntryButton("Create Directional Light"));
                 light3dMenu->AddEntry(entry);
                 entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
-                    World::Current()->GetFocusScene()->NewNode("New Directional Light")
+                    GetEdApp()->GetEditorWorld()->GetFocusScene()->NewNode("New Directional Light")
                         ->AddComponent<DirectionalLightComponent>();
                 });
             }
@@ -153,7 +153,7 @@ namespace pulsared
                 auto entry = mksptr(new MenuEntryButton("Create Point Light"));
                 light3dMenu->AddEntry(entry);
                 entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
-                    World::Current()->GetFocusScene()->NewNode("New Point Light")
+                    GetEdApp()->GetEditorWorld()->GetFocusScene()->NewNode("New Point Light")
                         ->AddComponent<PointLightComponent>();
                 });
             }
@@ -164,10 +164,10 @@ namespace pulsared
                 auto entry = mksptr(new MenuEntryButton("Create Camera"));
                 cameraMenu->AddEntry(entry);
                 entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
-                    auto newNode = World::Current()->GetFocusScene()->NewNode("New Camera");
+                    auto newNode = GetEdApp()->GetEditorWorld()->GetFocusScene()->NewNode("New Camera");
                     newNode->AddComponent<CameraComponent>();
-                    World::Current()->GetSelection().Clear();
-                    World::Current()->GetSelection().Select(newNode);
+                    GetEdApp()->GetEditorWorld()->GetSelection().Clear();
+                    GetEdApp()->GetEditorWorld()->GetSelection().Select(newNode);
                 });
             }
         }
@@ -214,12 +214,16 @@ namespace pulsared
                                                             ComponentInfoManager::GetFriendlyComponentName(type)));
                 targetMenu->AddEntry(itemEntry);
                 itemEntry->Action = MenuAction::FromLambda([](MenuContexts_rsp ctxs) {
-                    auto edworld = dynamic_cast<EditorWorld*>(EditorWorld::GetPreviewWorld());
+                    auto sceneEditor = SceneEditor::GetCurrent();
+                    auto edworld = sceneEditor ? dynamic_cast<EditorWorld*>(sceneEditor->GetPreviewWorld()) : nullptr;
 
-                    if (auto node = cast<Node>(edworld->GetSelection().GetSelected()))
+                    if (edworld)
                     {
-                        Type* type = AssemblyManager::GlobalFindType(ctxs->EntryName);
-                        node->AddComponent(type);
+                        if (auto node = cast<Node>(edworld->GetSelection().GetSelected()))
+                        {
+                            Type* type = AssemblyManager::GlobalFindType(ctxs->EntryName);
+                            node->AddComponent(type);
+                        }
                     }
                 });
             }
@@ -283,23 +287,104 @@ namespace pulsared
 
     }
 
+    SceneEditor* SceneEditor::s_current = nullptr;
+
+    void SceneEditor::PushPreviewWorld(std::unique_ptr<World> world)
+    {
+        world->OnWorldBegin();
+        auto pipeline = static_cast<EngineRenderPipeline*>(Application::GetGfxApp()->GetRenderPipeline());
+        pipeline->AddWorld(world.get());
+        m_previewWorldStack.push(std::move(world));
+    }
+
+    bool SceneEditor::PreviewWorldStackEmpty() const
+    {
+        return m_previewWorldStack.empty();
+    }
+
+    void SceneEditor::PopPreviewWorld()
+    {
+        auto world = m_previewWorldStack.top().get();
+        auto pipeline = static_cast<EngineRenderPipeline*>(Application::GetGfxApp()->GetRenderPipeline());
+        pipeline->RemoveWorld(world);
+        world->OnWorldEnd();
+        m_previewWorldStack.pop();
+    }
+
+    World* SceneEditor::GetPreviewWorld() const
+    {
+        if (!m_previewWorldStack.empty())
+        {
+            return m_previewWorldStack.top().get();
+        }
+        return GetEdApp()->GetEditorWorld();
+    }
+
+    void SceneEditor::BeginPlayInEditor()
+    {
+        if (!PreviewWorldStackEmpty())
+            return;
+
+        auto pieWorld = std::make_unique<World>("PIE");
+        GetEdApp()->GetEditorWorld()->OnDuplicated(pieWorld.get());
+        PushPreviewWorld(std::move(pieWorld));
+
+        auto* world = GetPreviewWorld();
+        if (world)
+        {
+            world->BeginPlay();
+        }
+    }
+
+    void SceneEditor::EndPlayInEditor()
+    {
+        if (PreviewWorldStackEmpty())
+            return;
+
+        auto* world = GetPreviewWorld();
+        if (world && world != GetEdApp()->GetEditorWorld())
+        {
+            world->EndPlay();
+        }
+        PopPreviewWorld();
+    }
+
     void SceneEditor::Initialize()
     {
         base::Initialize();
 
         InitBasicMenu(this);
-        RegisterPanelType(cltypeof<SceneWindow>());
-        RegisterPanelType(cltypeof<PropertiesWindow>());
-        RegisterPanelType(cltypeof<ConsoleWindow>());
-        RegisterPanelType(cltypeof<WorkspaceWindow>());
-        RegisterPanelType(cltypeof<OutlinerWindow>());
-        RegisterPanelType(cltypeof<OutputWindow>());
+    }
 
+    SceneEditor::~SceneEditor()
+    {
+        if (s_current == this)
+            s_current = nullptr;
     }
 
     void SceneEditor::Terminate()
     {
+        while (!PreviewWorldStackEmpty())
+        {
+            PopPreviewWorld();
+        }
         base::Terminate();
+    }
+
+    void SceneEditor::RouteInput(const std::vector<uinput::InputEvent>& events)
+    {
+        for (auto& win : EditorWindowManager::GetOpeningWindows(cltypeof<EditorWindow>()))
+        {
+            auto editorWin = sptr_cast<EditorWindow>(win);
+            if (!editorWin || editorWin->GetEditor() != this) continue;
+            for (auto& panel : editorWin->GetOpenedPanels())
+            {
+                if (auto outputWin = sptr_cast<OutputWindow>(panel))
+                {
+                    outputWin->RouteInput(events);
+                }
+            }
+        }
     }
 
     SPtr<EditorWindow> SceneEditor::OnCreateEditorWindow()

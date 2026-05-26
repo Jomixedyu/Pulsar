@@ -3,9 +3,9 @@
 
 namespace pulsared
 {
-    class ShelfBarWindow : public EdGuiWindow
+    class ShelfBarWindow : public PanelWindow
     {
-        CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::ShelfBarWindow, EdGuiWindow);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::ShelfBarWindow, PanelWindow);
     public:
         virtual ImGuiWindowFlags GetGuiWindowFlags() const override;
         static string_view StaticWindowName() { return ICON_FK_TELEVISION " ShelfBar" "###ShelfBar"; }

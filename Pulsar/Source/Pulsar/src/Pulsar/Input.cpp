@@ -1,48 +1,88 @@
 #include "Input.h"
-#include <uinput/InputManager.h>
 
 namespace pulsar
 {
-    int Input::s_callbackHandle = -1;
-    std::set<KeyCode> Input::s_currentKeys;
-    std::set<KeyCode> Input::s_previousKeys;
-
-    void Input::Initialize()
+    void InputContext::BeginFrame()
     {
-        s_callbackHandle = uinput::InputManager::GetInstance()->AddKeyboardInput([](uinput::KeyState state, KeyCode c) {
-            if (state == uinput::KeyState::Down)
-            {
-                s_currentKeys.insert(c);
-            }
-            else if (state == uinput::KeyState::Up)
-            {
-                s_currentKeys.erase(c);
-            }
-        });
+        previousKeys = currentKeys;
+        previousMouseButtons = currentMouseButtons;
+        prevMousePosition = mousePosition;
+        prevMouseWheel = mouseWheel;
     }
 
-    void Input::Shutdown()
+    void InputContext::ProcessEvent(const uinput::InputEvent& e)
     {
-        uinput::InputManager::GetInstance()->RemoveKeyboardInput(s_callbackHandle);
+        switch (e.type)
+        {
+        case uinput::InputEvent::KeyDown:
+            currentKeys.insert(e.keyCode);
+            break;
+        case uinput::InputEvent::KeyUp:
+            currentKeys.erase(e.keyCode);
+            break;
+        case uinput::InputEvent::MouseMove:
+            mousePosition = Vector2f(e.mouseX, e.mouseY);
+            break;
+        case uinput::InputEvent::MouseButtonDown:
+            currentMouseButtons.insert(e.mouseButton);
+            break;
+        case uinput::InputEvent::MouseButtonUp:
+            currentMouseButtons.erase(e.mouseButton);
+            break;
+        case uinput::InputEvent::MouseWheel:
+            mouseWheel += e.wheelDelta;
+            break;
+        }
     }
 
-    void Input::Update()
+    // --- Query implementations ---
+    bool InputContext::GetKey(KeyCode key) const
     {
-        s_previousKeys = s_currentKeys;
+        return currentKeys.contains(key);
     }
 
-    bool Input::GetKey(KeyCode key)
+    bool InputContext::GetKeyDown(KeyCode key) const
     {
-        return s_currentKeys.contains(key);
+        return currentKeys.contains(key) && !previousKeys.contains(key);
     }
 
-    bool Input::GetKeyDown(KeyCode key)
+    bool InputContext::GetKeyUp(KeyCode key) const
     {
-        return s_currentKeys.contains(key) && !s_previousKeys.contains(key);
+        return !currentKeys.contains(key) && previousKeys.contains(key);
     }
 
-    bool Input::GetKeyUp(KeyCode key)
+    Vector2f InputContext::GetMousePosition() const
     {
-        return !s_currentKeys.contains(key) && s_previousKeys.contains(key);
+        return mousePosition;
+    }
+
+    Vector2f InputContext::GetMouseDelta() const
+    {
+        return mousePosition - prevMousePosition;
+    }
+
+    bool InputContext::GetMouseButton(int button) const
+    {
+        return currentMouseButtons.contains(button);
+    }
+
+    bool InputContext::GetMouseButtonDown(int button) const
+    {
+        return currentMouseButtons.contains(button) && !previousMouseButtons.contains(button);
+    }
+
+    bool InputContext::GetMouseButtonUp(int button) const
+    {
+        return !currentMouseButtons.contains(button) && previousMouseButtons.contains(button);
+    }
+
+    float InputContext::GetMouseScrollWheel() const
+    {
+        return mouseWheel;
+    }
+
+    float InputContext::GetMouseScrollWheelDelta() const
+    {
+        return mouseWheel - prevMouseWheel;
     }
 }

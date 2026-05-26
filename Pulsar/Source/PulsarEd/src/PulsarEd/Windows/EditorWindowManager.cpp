@@ -123,18 +123,6 @@ namespace pulsared
         GetEdApp()->GetTaskQueue().TickDraw();
     }
 
-    EdGuiWindow_sp EditorWindowManager::GetOpeningWindow(string_view name)
-    {
-        for (auto& window : _OpeningWindows.items)
-        {
-            if (window->GetWindowName() == name)
-            {
-                return window;
-            }
-        }
-        return nullptr;
-    }
-
     EdGuiWindow_sp EditorWindowManager::GetOpeningWindow(Type* type)
     {
         for (auto& window : _OpeningWindows.items)

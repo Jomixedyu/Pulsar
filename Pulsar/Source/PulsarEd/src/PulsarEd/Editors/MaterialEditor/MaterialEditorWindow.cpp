@@ -39,15 +39,28 @@ namespace pulsared
             m_shader = material->GetShader();
         }
 
-        if (PImGui::PropertyGroup("Parameters"))
+        // Group properties by Category
+        std::map<string, std::vector<SPtr<ShaderConfigProperty>>> categoryMap;
+        string defaultCategory = "Parameters";
+        
+        auto shader = material->GetShader();
+        auto shaderConfig = shader ? shader->GetConfig() : nullptr;
+        if (shaderConfig && shaderConfig->Properties)
         {
-            if (PImGui::BeginPropertyLines())
+            for (const auto& prop : *shaderConfig->Properties)
             {
-                auto shader = material->GetShader();
-                auto shaderConfig = shader ? shader->GetConfig() : nullptr;
-                if (shaderConfig && shaderConfig->Properties)
+                const auto& cat = !prop->Category.empty() ? prop->Category : defaultCategory;
+                categoryMap[cat].push_back(prop);
+            }
+        }
+
+        for (const auto& [catName, props] : categoryMap)
+        {
+            if (PImGui::PropertyGroup(catName.c_str()))
+            {
+                if (PImGui::BeginPropertyLines())
                 {
-                    for (const auto& prop : *shaderConfig->Properties)
+                    for (const auto& prop : props)
                     {
                         index_string name{prop->Name};
                         const auto paramType = prop->Type;
@@ -121,8 +134,8 @@ namespace pulsared
                             material->SubmitParameters();
                         }
                     }
+                    PImGui::EndPropertyLines();
                 }
-                PImGui::EndPropertyLines();
             }
         }
     }

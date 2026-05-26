@@ -35,6 +35,10 @@ namespace pulsar
         void SetScale(Vector3f value) { m_scale = value; MakeTransformChanged(); }
         Vector3f GetScale() const noexcept { return m_scale; }
         Vector3f GetWorldScale();
+        void SetWorldScale(Vector3f value);
+
+        Quat4f GetWorldRotation();
+        void SetWorldRotation(Quat4f value);
 
         void SetRotation(Quat4f rotation);
         Quat4f GetRotation() const { return m_rotation; }

@@ -1,6 +1,7 @@
 #include "EditorWorld.h"
 
 #include <PulsarEd/Editors/CommonPanel/PropertiesWindow.h>
+#include <PulsarEd/Editors/SceneEditor/SceneEditor.h>
 
 namespace pulsared
 {
@@ -13,7 +14,10 @@ namespace pulsared
 
     static Type* _GetSelectionType()
     {
-        auto world = dynamic_cast<EditorWorld*>(EditorWorld::GetPreviewWorld());
+        auto sceneEditor = SceneEditor::GetCurrent();
+        auto world = sceneEditor ? dynamic_cast<EditorWorld*>(sceneEditor->GetPreviewWorld()) : nullptr;
+        if (!world)
+            return nullptr;
         for (auto& item : *properties_panel())
         {
             if (world->GetSelection().IsType(item.first))

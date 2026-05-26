@@ -4,6 +4,8 @@
 #include "Menus/Menu.h"
 #include "Menus/MenuEntrySubMenu.h"
 #include "imgui/imgui_internal.h"
+#include <PulsarEd/EditorWorld.h>
+#include <PulsarEd/Editors/SceneEditor/SceneEditor.h>
 
 namespace pulsared
 {
@@ -28,6 +30,10 @@ namespace pulsared
                             {
                                 if (ImGui::Button(btn->DisplayName.c_str(), {0, -FLT_MIN}))
                                 {
+                                    if (btn->Action)
+                                    {
+                                        btn->Action->Invoke(nullptr);
+                                    }
                                 }
                             }
                             else if(sptr_cast<MenuEntrySeparate>(submenuEntry))
@@ -52,14 +58,28 @@ namespace pulsared
     }
     void ShelfBarWindow::OnDrawImGui(float dt)
     {
-        base::OnDrawImGui(dt);
         RenderToolbar(MenuManager::GetOrAddMenu("ToolBar"));
     }
     ShelfBarWindow::ShelfBarWindow()
     {
         auto rendering = mksptr(new MenuEntrySubMenu("App"));
-        rendering->AddEntry(mksptr(new MenuEntryButton("Play")));
-        rendering->AddEntry(mksptr(new MenuEntryButton("Stop")));
+        auto playBtn = mksptr(new MenuEntryButton("Play"));
+        playBtn->Action = MenuAction::FromLambda([](SPtr<MenuContexts>) {
+            if (auto sceneEditor = SceneEditor::GetCurrent())
+            {
+                sceneEditor->BeginPlayInEditor();
+            }
+        });
+        rendering->AddEntry(playBtn);
+
+        auto stopBtn = mksptr(new MenuEntryButton("Stop"));
+        stopBtn->Action = MenuAction::FromLambda([](SPtr<MenuContexts>) {
+            if (auto sceneEditor = SceneEditor::GetCurrent())
+            {
+                sceneEditor->EndPlayInEditor();
+            }
+        });
+        rendering->AddEntry(stopBtn);
         rendering->AddEntry(mksptr(new MenuEntrySeparate("0")));
         rendering->AddEntry(mksptr(new MenuEntryButton("Build")));
         MenuManager::GetOrAddMenu("ToolBar")->AddEntry(rendering);

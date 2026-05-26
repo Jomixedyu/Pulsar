@@ -1,4 +1,5 @@
 #pragma once
+#include "Editors/AssetEditor/AssetEditor.h"
 #include "Editors/AssetEditor/AssetPreviewEditorWindow.h"
 #include "Pulsar/Assets/RenderTexture.h"
 #include "Pulsar/Assets/VolumeProfile.h"
@@ -7,10 +8,18 @@
 
 namespace pulsared
 {
+    class TextureEditor : public AssetEditor
+    {
+        CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::TextureEditor, AssetEditor);
+        DEFINE_ASSET_EDITOR_DERIVE(Texture2D);
+    public:
+        SPtr<EditorWindow> OnCreateEditorWindow() override;
+        string_view GetMenuName() const override { return "Texture Editor"; }
+    };
+
     class TextureEditorWindow : public AssetPreviewEditorWindow
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::TextureEditorWindow, AssetPreviewEditorWindow);
-        DEFINE_ASSET_EDITOR(Texture2DBase, true);
     public:
         virtual string_view GetWindowDisplayName() const { return "Texutre Editor"; }
 
@@ -35,4 +44,9 @@ namespace pulsared
         RCPtr<VolumeProfile> m_previewProfile;
         SPtr<DisplayEncodingSettings> m_displayEncodingSettings;
     };
+
+    inline SPtr<EditorWindow> TextureEditor::OnCreateEditorWindow()
+    {
+        return mksptr(new TextureEditorWindow());
+    }
 }

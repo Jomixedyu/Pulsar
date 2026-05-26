@@ -3,7 +3,9 @@
 #include "EditorAssetManager.h"
 #include "EditorRenderPipeline.h"
 #include "Editors/EditorWindow.h"
+#include "Editors/EditorRegistry.h"
 #include "Editors/SceneEditor/SceneEditor.h"
+#include "PulsarEd/UIControls/ViewportFrame.h"
 #include "Pulsar/Components/PointLightComponent.h"
 
 #include "Shaders/EditorShaderCompileService.h"
@@ -72,7 +74,6 @@ namespace pulsared
 
     void EditorAppInstance::OnCreateEditors()
     {
-        m_editors.push_back(std::make_unique<SceneEditor>());
     }
     const char* EditorAppInstance::AppType()
     {
@@ -213,13 +214,13 @@ namespace pulsared
     void EditorAppInstance::SetupDefaultResidentScene()
     {
 
-        auto scene = World::Current()->GetFocusScene();
+        auto scene = m_world->GetFocusScene();
         if (!scene)
         {
-            scene = World::Current()->GetResidentScene();
+            scene = m_world->GetResidentScene();
         }
 
-        auto cam = World::Current()->GetCurrentCamera();
+        auto cam = m_world->GetCurrentCamera();
         cam->GetTransform()->SetPosition({0,0,-50});
         cam->GetTransform()->GetParent()->SetEuler({});
 
@@ -379,7 +380,8 @@ namespace pulsared
 
         // world
         Logger::Log("initialize world");
-        auto edWorld = World::Reset<EditorWorld>("MainWorld");
+        auto edWorld = new EditorWorld("MainWorld");
+        edWorld->OnWorldBegin();
         edWorld->GetCurrentCamera()->GetTransform()->GetParent()->SetEuler({45.f,-45,0});
 
         m_world = edWorld;
@@ -409,11 +411,11 @@ namespace pulsared
         Logger::Log("initialize editor window manager");
         EditorWindowManager::Initialize();
 
-        for (auto& editor : m_editors)
+        EditorRegistry::Initialize();
+        if (auto* sceneEditor = EditorRegistry::FindEditor<SceneEditor>())
         {
-            editor->Initialize();
+            sceneEditor->CreateEditorWindow()->Open();
         }
-        m_editors[0]->CreateEditorWindow()->Open();
 
         Workspace::OpenWorkspace(_SearchUpFolder("Project") / "Project.peproj");
 
@@ -429,7 +431,6 @@ namespace pulsared
         SetupDefaultResidentScene();
 
         uinput::InputManager::GetInstance()->Initialize();
-        pulsar::Input::Initialize();
 
         m_shaderHotReloadWatcher = new ShaderHotReloadWatcher();
         m_shaderHotReloadWatcher->Initialize();
@@ -438,15 +439,9 @@ namespace pulsared
 
     void EditorAppInstance::OnTerminate()
     {
-        pulsar::Input::Shutdown();
         uinput::InputManager::GetInstance()->Terminate();
 
-        for (auto& editor : m_editors)
-        {
-            editor->Terminate();
-        }
-        m_editors.clear();
-
+        EditorRegistry::Terminate();
         PrefabUtil::ClosePrefabMode();
 
         if (m_shaderHotReloadWatcher)
@@ -461,7 +456,12 @@ namespace pulsared
         pulsar::ShaderInstanceCache::Instance().Clear();
         pulsar::TransientRTPool::Shutdown();
 
-        World::Reset(nullptr);
+        if (m_world)
+        {
+            m_world->OnWorldEnd();
+            delete m_world;
+            m_world = nullptr;
+        }
 
         m_gui->Terminate();
         m_gui.reset();
@@ -488,6 +488,30 @@ namespace pulsared
         EditorLogRecorder::Terminate();
     }
 
+    void EditorAppInstance::TickWorld(float dt)
+    {
+        // Snapshot world list to avoid iterator invalidation if Tick() mutates gWorlds
+        const auto& allWorlds = World::GetAllWorlds();
+        array_list<World*> worlds(allWorlds.begin(), allWorlds.end());
+
+        // 1. All worlds snapshot their input state
+        for (auto* world : worlds)
+            world->BeginInputFrame();
+
+        // 2. Fetch global events once
+        auto events = uinput::InputManager::GetInstance()->PollEvents();
+
+        // 3. Let each editor route input to its own panels
+        for (auto& editor : EditorRegistry::GetEditors())
+        {
+            editor->RouteInput(events);
+        }
+
+        // 4. Tick all worlds unconditionally
+        for (auto* world : worlds)
+            world->Tick(dt);
+    }
+
     void EditorAppInstance::OnBeginRender(float dt)
     {
         // 刷新异步 shader 编译回调（主线程）
@@ -505,13 +529,8 @@ namespace pulsared
         {
             m_gui->NewFrame();
 
-            pulsar::Input::Update();
-            uinput::InputManager::GetInstance()->ProcessEvents();
-
-            EditorWorld::GetPreviewWorld()->Tick(dt);
-            //World::Current()->Tick(dt);
-
             pulsared::EditorWindowManager::Draw(dt);
+            TickWorld(dt);
             pulsared::EditorTickerManager::Ticker.Invoke(dt);
 
             if (m_modalDialog)
@@ -527,9 +546,7 @@ namespace pulsared
         }
         else
         {
-            pulsar::Input::Update();
-            uinput::InputManager::GetInstance()->ProcessEvents();
-            EditorWorld::GetPreviewWorld()->Tick(dt);
+            TickWorld(dt);
             pulsared::EditorTickerManager::Ticker.Invoke(dt);
         }
     }
@@ -558,20 +575,6 @@ namespace pulsared
         Application::GetGfxApp()->GetWindow()->SetWindowSize((int)size.x, (int)size.y);
     }
 
-    bool EditorAppInstance::IsInteractiveRendering() const
-    {
-        return m_isPlaying;
-    }
-
-    void EditorAppInstance::StartInteractiveRendering()
-    {
-        m_isPlaying = true;
-    }
-
-    void EditorAppInstance::StopInteractiveRendering()
-    {
-        m_isPlaying = false;
-    }
     void EditorAppInstance::ShowModalDialog(SPtr<ModalDialog> dialog)
     {
         m_modalDialog = std::move(dialog);

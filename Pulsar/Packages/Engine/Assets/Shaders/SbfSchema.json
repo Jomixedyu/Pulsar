@@ -153,73 +153,73 @@
                                     "IncrWrap",
                                     "DecrWrap"
                                 ]
+                            },
+                            "Blend_Enabled": {
+                                "type": "boolean"
+                            },
+                            "Blend_AlphaEnabled": {
+                                "type": "boolean"
+                            },
+                            "Blend_Src": {
+                                "type": "string",
+                                "enum": [
+                                    "One",
+                                    "Zero",
+                                    "SrcColor",
+                                    "SrcAlpha",
+                                    "DstColor",
+                                    "DstAlpha",
+                                    "OneMinusSrcColor",
+                                    "OneMinusSrcAlpha",
+                                    "OneMinusDstColor",
+                                    "OneMinusDstAlpha"
+                                ]
+                            },
+                            "Blend_Dst": {
+                                "type": "string",
+                                "enum": [
+                                    "One",
+                                    "Zero",
+                                    "SrcColor",
+                                    "SrcAlpha",
+                                    "DstColor",
+                                    "DstAlpha",
+                                    "OneMinusSrcColor",
+                                    "OneMinusSrcAlpha",
+                                    "OneMinusDstColor",
+                                    "OneMinusDstAlpha"
+                                ]
+                            },
+                            "Blend_SrcAlpha": {
+                                "type": "string",
+                                "enum": [
+                                    "One",
+                                    "Zero",
+                                    "SrcColor",
+                                    "SrcAlpha",
+                                    "DstColor",
+                                    "DstAlpha",
+                                    "OneMinusSrcColor",
+                                    "OneMinusSrcAlpha",
+                                    "OneMinusDstColor",
+                                    "OneMinusDstAlpha"
+                                ]
+                            },
+                            "Blend_DstAlpha": {
+                                "type": "string",
+                                "enum": [
+                                    "One",
+                                    "Zero",
+                                    "SrcColor",
+                                    "SrcAlpha",
+                                    "DstColor",
+                                    "DstAlpha",
+                                    "OneMinusSrcColor",
+                                    "OneMinusSrcAlpha",
+                                    "OneMinusDstColor",
+                                    "OneMinusDstAlpha"
+                                ]
                             }
-                        },
-                        "Blend_Enabled": {
-                            "type": "boolean"
-                        },
-                        "Blend_AlphaEnabled": {
-                            "type": "boolean"
-                        },
-                        "Blend_Src": {
-                            "type": "string",
-                            "enum": [
-                                "One",
-                                "Zero",
-                                "SrcColor",
-                                "SrcAlpha",
-                                "DstColor",
-                                "DstAlpha",
-                                "OneMinusSrcColor",
-                                "OneMinusSrcAlpha",
-                                "OneMinusDstColor",
-                                "OneMinusDstAlpha"
-                            ]
-                        },
-                        "Blend_Dst": {
-                            "type": "string",
-                            "enum": [
-                                "One",
-                                "Zero",
-                                "SrcColor",
-                                "SrcAlpha",
-                                "DstColor",
-                                "DstAlpha",
-                                "OneMinusSrcColor",
-                                "OneMinusSrcAlpha",
-                                "OneMinusDstColor",
-                                "OneMinusDstAlpha"
-                            ]
-                        },
-                        "Blend_SrcAlpha": {
-                            "type": "string",
-                            "enum": [
-                                "One",
-                                "Zero",
-                                "SrcColor",
-                                "SrcAlpha",
-                                "DstColor",
-                                "DstAlpha",
-                                "OneMinusSrcColor",
-                                "OneMinusSrcAlpha",
-                                "OneMinusDstColor",
-                                "OneMinusDstAlpha"
-                            ]
-                        },
-                        "Blend_DstAlpha": {
-                            "type": "string",
-                            "enum": [
-                                "One",
-                                "Zero",
-                                "SrcColor",
-                                "SrcAlpha",
-                                "DstColor",
-                                "DstAlpha",
-                                "OneMinusSrcColor",
-                                "OneMinusSrcAlpha",
-                                "OneMinusDstColor",
-                                "OneMinusDstAlpha"
-                            ]
                         }
                     },
                     "Entry": {

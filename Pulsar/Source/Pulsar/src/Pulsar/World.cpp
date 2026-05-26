@@ -1,5 +1,6 @@
 #include "World.h"
 #include "Application.h"
+#include "Input.h"
 
 #include <Pulsar/Logger.h>
 #include <Pulsar/Scene.h>
@@ -13,39 +14,20 @@
 
 namespace pulsar
 {
-    static std::unique_ptr<World> _world_inst = nullptr;
-    World* World::Current()
-    {
-        return _world_inst.get();
-    }
-
-    World* World::Reset(std::unique_ptr<World>&& world)
-    {
-        if (_world_inst)
-        {
-            _world_inst->OnWorldEnd();
-        }
-        _world_inst = std::move(world);
-        if (_world_inst)
-        {
-            _world_inst->OnWorldBegin();
-        }
-        return _world_inst.get();
-    }
-
     static hash_set<World*> gWorlds;
     const hash_set<World*>& World::GetAllWorlds()
     {
         return gWorlds;
     }
     World::World(string_view name)
-        : m_name(name), m_gizmosManager(this)
+        : m_name(name), m_gizmosManager(this), m_inputContext(new InputContext())
     {
         gWorlds.insert(this);
     }
 
     World::~World()
     {
+        delete m_inputContext;
         gWorlds.erase(this);
         m_perRenderObjectDataManager.Destroy();
     }
@@ -64,6 +46,10 @@ namespace pulsar
         if (m_isPlaying)
             return;
         m_isPlaying = true;
+        for (auto& subsystem : m_subsystems)
+        {
+            subsystem->OnBeginPlay();
+        }
         for (auto& scene : m_scenes)
         {
             if (scene)
@@ -86,6 +72,10 @@ namespace pulsar
             {
                 scene->EndPlay();
             }
+        }
+        for (auto& subsystem : m_subsystems)
+        {
+            subsystem->OnEndPlay();
         }
         EndSimulate();
     }
@@ -112,6 +102,18 @@ namespace pulsar
     void World::CameraFocusNode(Node* node)
     {
 
+    }
+
+    void World::BeginInputFrame()
+    {
+        if (m_isPlaying && m_inputContext)
+            m_inputContext->BeginFrame();
+    }
+
+    void World::ProcessInputEvent(const uinput::InputEvent& e)
+    {
+        if (m_isPlaying && m_inputContext)
+            m_inputContext->ProcessEvent(e);
     }
 
     void World::Tick(float dt)
@@ -269,10 +271,6 @@ namespace pulsar
 
     void World::OnWorldBegin()
     {
-        #ifdef WITH_EDITOR
-        assert(GetWorldTypeName() != StaticWorldTypeName());
-        #endif
-
         InitializeResidentScene();
         m_focusScene = GetResidentScene();
 

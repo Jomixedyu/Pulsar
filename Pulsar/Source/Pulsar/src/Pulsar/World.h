@@ -9,6 +9,8 @@
 #include "SelectionSet.h"
 #include "Simulate.h"
 
+namespace uinput { struct InputEvent; }
+
 namespace pulsar
 {
     class NodeCollection;
@@ -18,18 +20,11 @@ namespace pulsar
     class PhysicsWorld3D;
     class WorldSubsystem;
     class LightManager;
+    struct InputContext;
 
     class World
     {
     public: //static functions
-        static World* Current();
-        static World* Reset(std::unique_ptr<World>&& world);
-        template<typename T>
-        static T* Reset(string_view name)
-        {
-            return static_cast<T*>(Reset(std::unique_ptr<World>(new T{name})));
-        }
-        static inline Action<> OnWorldChanged;
         static const hash_set<World*>& GetAllWorlds();
 
     public:
@@ -81,6 +76,12 @@ namespace pulsar
         RCPtr<NodeCollection>        GetResidentScene() const { return m_scenes[0]; }
 
         bool GetPlaying() const { return m_isPlaying; }
+
+        InputContext* GetInputContext() const { return m_inputContext; }
+
+        void BeginInputFrame();
+        void ProcessInputEvent(const uinput::InputEvent& e);
+
     public: // scene managment
         void ChangeScene(RCPtr<NodeCollection> scene, bool clearResidentScene = true);
         void LoadScene(RCPtr<NodeCollection> scene);
@@ -131,5 +132,6 @@ namespace pulsar
         float    m_totalTime = 0;
         string   m_name;
         bool     m_isPlaying{};
+        InputContext* m_inputContext;
     };
 }

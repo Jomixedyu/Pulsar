@@ -1,7 +1,8 @@
 #include "Gameplay/Character2d.h"
-#include "Input.h"
+#include "Components/InputComponent.h"
 #include "Logger.h"
 #include "Node.h"
+#include "World.h"
 
 namespace pulsar
 {
@@ -19,10 +20,10 @@ namespace pulsar
     {
         base::OnTick(ticker);
         float h = 0;
-        if (Input::GetKey(KeyCode::A))
-            h -= 1;
-        if (Input::GetKey(KeyCode::D))
-            h += 1;
+        if (auto input = GetNode()->GetComponent<InputComponent>())
+        {
+            h = input->GetAxis("Horizontal");
+        }
         GetTransform()->Translate({ h * ticker.deltatime, 0, 0});
     }
 }

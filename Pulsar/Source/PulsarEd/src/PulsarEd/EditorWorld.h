@@ -14,16 +14,6 @@ namespace pulsared
     {
         using base = World;
     public:
-
-        static void PushPreviewWorld(std::unique_ptr<World> world);
-        static bool PreviewWorldStackEmpty();
-        static void PopPreviewWorld();
-        static World* GetPreviewWorld();
-
-        static EditorWorld* DuplicateAndBeginPlay();
-        static void EndPlayAndRestore();
-
-    public:
         using World::World;
 
         virtual void Tick(float dt) override;

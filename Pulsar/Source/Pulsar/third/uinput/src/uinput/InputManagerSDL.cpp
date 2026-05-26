@@ -1,5 +1,6 @@
 #include "InputManagerSDL.h"
 #include <optional>
+#include <unordered_map>
 
 namespace uinput
 {
@@ -9,11 +10,11 @@ namespace uinput
 #pragma region codes
             {
                 {SDL_KeyCode::SDLK_SPACE, KeyCode::SPACE},
-                {SDL_KeyCode::SDLK_QUOTE, KeyCode::APOSTROPHE}, /* ' */
-                {SDL_KeyCode::SDLK_COMMA, KeyCode::COMMA},      /* , */
-                {SDL_KeyCode::SDLK_MINUS, KeyCode::MINUS},      /* - */
-                {SDL_KeyCode::SDLK_PERIOD, KeyCode::PERIOD},     /* . */
-                {SDL_KeyCode::SDLK_SLASH, KeyCode::SLASH},      /* / */
+                {SDL_KeyCode::SDLK_QUOTE, KeyCode::APOSTROPHE},
+                {SDL_KeyCode::SDLK_COMMA, KeyCode::COMMA},
+                {SDL_KeyCode::SDLK_MINUS, KeyCode::MINUS},
+                {SDL_KeyCode::SDLK_PERIOD, KeyCode::PERIOD},
+                {SDL_KeyCode::SDLK_SLASH, KeyCode::SLASH},
                 {SDL_KeyCode::SDLK_0, KeyCode::NUM_0},
                 {SDL_KeyCode::SDLK_1, KeyCode::NUM_1},
                 {SDL_KeyCode::SDLK_2, KeyCode::NUM_2},
@@ -24,8 +25,8 @@ namespace uinput
                 {SDL_KeyCode::SDLK_7, KeyCode::NUM_7},
                 {SDL_KeyCode::SDLK_8, KeyCode::NUM_8},
                 {SDL_KeyCode::SDLK_9, KeyCode::NUM_9},
-                {SDL_KeyCode::SDLK_SEMICOLON, KeyCode::SEMICOLON}, /* ; */
-                {SDL_KeyCode::SDLK_EQUALS, KeyCode::EQUAL},     /* = */
+                {SDL_KeyCode::SDLK_SEMICOLON, KeyCode::SEMICOLON},
+                {SDL_KeyCode::SDLK_EQUALS, KeyCode::EQUAL},
                 {SDL_KeyCode::SDLK_a, KeyCode::A},
                 {SDL_KeyCode::SDLK_b, KeyCode::B},
                 {SDL_KeyCode::SDLK_c, KeyCode::C},
@@ -52,12 +53,10 @@ namespace uinput
                 {SDL_KeyCode::SDLK_x, KeyCode::X},
                 {SDL_KeyCode::SDLK_y, KeyCode::Y},
                 {SDL_KeyCode::SDLK_z, KeyCode::Z},
-                {SDL_KeyCode::SDLK_LEFTBRACKET, KeyCode::LEFT_BRACKET},  /* [ */
-                {SDL_KeyCode::SDLK_BACKSLASH, KeyCode::BACKSLASH},     /* \ */
-                {SDL_KeyCode::SDLK_RIGHTBRACKET, KeyCode::RIGHT_BRACKET}, /* ] */
-                {SDL_KeyCode::SDLK_BACKQUOTE, KeyCode::GRAVE_ACCENT},  /* ` */
-                // {SDL_KeyCode::SDLK_0, KeyCode::WORLD_1},       /* non-US #1 */
-                // {SDL_KeyCode::SDLK_0, KeyCode::WORLD_2},       /* non-US #2 */
+                {SDL_KeyCode::SDLK_LEFTBRACKET, KeyCode::LEFT_BRACKET},
+                {SDL_KeyCode::SDLK_BACKSLASH, KeyCode::BACKSLASH},
+                {SDL_KeyCode::SDLK_RIGHTBRACKET, KeyCode::RIGHT_BRACKET},
+                {SDL_KeyCode::SDLK_BACKQUOTE, KeyCode::GRAVE_ACCENT},
                 {SDL_KeyCode::SDLK_ESCAPE, KeyCode::ESCAPE},
                 {SDL_KeyCode::SDLK_RETURN, KeyCode::ENTER},
                 {SDL_KeyCode::SDLK_TAB, KeyCode::TAB},
@@ -101,7 +100,6 @@ namespace uinput
                 {SDL_KeyCode::SDLK_F22, KeyCode::F22},
                 {SDL_KeyCode::SDLK_F23, KeyCode::F23},
                 {SDL_KeyCode::SDLK_F24, KeyCode::F24},
-                // {SDL_KeyCode::SDLK_F25, KeyCode::F25},
                 {SDL_KeyCode::SDLK_KP_0, KeyCode::KP_0},
                 {SDL_KeyCode::SDLK_KP_1, KeyCode::KP_1},
                 {SDL_KeyCode::SDLK_KP_2, KeyCode::KP_2},
@@ -122,11 +120,9 @@ namespace uinput
                 {SDL_KeyCode::SDLK_LSHIFT, KeyCode::LEFT_SHIFT},
                 {SDL_KeyCode::SDLK_LCTRL, KeyCode::LEFT_CONTROL},
                 {SDL_KeyCode::SDLK_LALT, KeyCode::LEFT_ALT},
-                // {SDL_KeyCode::LSu, KeyCode::LEFT_SUPER},
                 {SDL_KeyCode::SDLK_RSHIFT, KeyCode::RIGHT_SHIFT},
                 {SDL_KeyCode::SDLK_RCTRL, KeyCode::RIGHT_CONTROL},
                 {SDL_KeyCode::SDLK_RALT, KeyCode::RIGHT_ALT},
-                // {SDL_KeyCode::SDLK_0, KeyCode::RIGHT_SUPER},
                 {SDL_KeyCode::SDLK_MENU, KeyCode::MENU},
             };
 #pragma endregion codes
@@ -149,10 +145,43 @@ namespace uinput
         case SDL_MOUSEBUTTONUP:
         case SDL_MOUSEMOTION:
         case SDL_MOUSEWHEEL:
-            self->PushEvent(event);
+        {
+            InputEvent e{};
+            switch (event->type)
+            {
+            case SDL_KEYDOWN:
+                e.type = InputEvent::KeyDown;
+                if (auto code = SDLKeyCode2KeyCode(event->key.keysym.sym))
+                    e.keyCode = code.value();
+                break;
+            case SDL_KEYUP:
+                e.type = InputEvent::KeyUp;
+                if (auto code = SDLKeyCode2KeyCode(event->key.keysym.sym))
+                    e.keyCode = code.value();
+                break;
+            case SDL_MOUSEMOTION:
+                e.type = InputEvent::MouseMove;
+                e.mouseX = static_cast<float>(event->motion.x);
+                e.mouseY = static_cast<float>(event->motion.y);
+                break;
+            case SDL_MOUSEBUTTONDOWN:
+                e.type = InputEvent::MouseButtonDown;
+                e.mouseButton = static_cast<int>(event->button.button) - 1;
+                break;
+            case SDL_MOUSEBUTTONUP:
+                e.type = InputEvent::MouseButtonUp;
+                e.mouseButton = static_cast<int>(event->button.button) - 1;
+                break;
+            case SDL_MOUSEWHEEL:
+                e.type = InputEvent::MouseWheel;
+                e.wheelDelta = static_cast<float>(event->wheel.preciseY);
+                break;
+            }
+            self->PushEvent(e);
+            break;
+        }
         default:;
         }
-
         return 0;
     }
 
@@ -161,45 +190,38 @@ namespace uinput
         InputManager::Initialize();
         SDL_AddEventWatch(OnEvent, this);
     }
+
     void InputManagerSDL::Terminate()
     {
-        InputManager::Terminate();
         SDL_DelEventWatch(OnEvent, this);
+        InputManager::Terminate();
     }
 
-    void InputManagerSDL::ProcessEvents()
+    std::vector<InputEvent> InputManagerSDL::PollEvents()
     {
-        InputManager::ProcessEvents();
-
-        for (auto& e : m_pendingEvents)
-        {
-            switch (e.type)
-            {
-            case SDL_KEYDOWN: {
-                if (auto value = SDLKeyCode2KeyCode(e.key.keysym.sym))
-                {
-                    BroadcastKeyboard(KeyState::Down, value.value());
-                }
-                break;
-            }
-            case SDL_KEYUP: {
-                if (auto value = SDLKeyCode2KeyCode(e.key.keysym.sym))
-                {
-                    BroadcastKeyboard(KeyState::Up, value.value());
-                }
-                break;
-            }
-            default:;
-            }
-        }
-
+        std::lock_guard<std::mutex> lock(m_mutex);
+        auto result = std::move(m_pendingEvents);
         m_pendingEvents.clear();
+        return result;
     }
-    void InputManagerSDL::PushEvent(SDL_Event* event)
+
+    InputVector2f InputManagerSDL::GetMousePosition() const
     {
-        m_mutex.lock();
-        m_pendingEvents.push_back(*event);
-        m_mutex.unlock();
+        int x = 0, y = 0;
+        SDL_GetMouseState(&x, &y);
+        return { static_cast<float>(x), static_cast<float>(y) };
+    }
+
+    bool InputManagerSDL::IsMouseButtonDown(int button) const
+    {
+        Uint32 state = SDL_GetMouseState(nullptr, nullptr);
+        return state & SDL_BUTTON(button + 1);
+    }
+
+    void InputManagerSDL::PushEvent(const InputEvent& event)
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_pendingEvents.push_back(event);
     }
 
 } // namespace uinput

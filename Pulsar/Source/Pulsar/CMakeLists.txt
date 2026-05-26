@@ -38,6 +38,11 @@ endif ()
 target_compile_definitions(${PROJECT_NAME} PUBLIC PULSAR_GFX_BUILD_VULKAN)
 target_link_options(${PROJECT_NAME} PUBLIC /NATVIS:${CMAKE_CURRENT_LIST_DIR}/src/Pulsar/pulsar.natvis)
 
+# mimalloc: disable shared lib and tests for faster build
+set(MI_BUILD_SHARED OFF CACHE BOOL "" FORCE)
+set(MI_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+add_subdirectory("./third/mimalloc")
+
 set(AllModule ${PUBLIC_MODULE})
 list(APPEND AllModule ${PRIVATE_MODULE})
 
@@ -56,4 +61,6 @@ endforeach ()
 foreach (module ${PRIVATE_MODULE})
     target_link_libraries(${PROJECT_NAME} PRIVATE ${module})
 endforeach ()
+
+target_link_libraries(${PROJECT_NAME} PUBLIC mimalloc-static)
 

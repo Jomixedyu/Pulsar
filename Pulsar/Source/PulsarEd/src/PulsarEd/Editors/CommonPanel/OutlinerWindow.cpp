@@ -1,4 +1,6 @@
 #include "EditorWorld.h"
+#include "Editors/EditorWindow.h"
+#include "Editors/SceneEditor/SceneEditor.h"
 
 #include <Pulsar/Scene.h>
 #include <Pulsar/World.h>
@@ -22,6 +24,48 @@ namespace pulsared
         }
         return ICON_FK_CIRCLE_O;
     }
+
+    static bool _IsDescendantOf(pulsar::Node* ancestor, pulsar::Node* descendant)
+    {
+        if (ancestor == descendant)
+            return true;
+        for (auto& child : *ancestor->GetTransform()->GetChildren())
+        {
+            if (_IsDescendantOf(child->GetNode().GetPtr(), descendant))
+                return true;
+        }
+        return false;
+    }
+
+    static void _SetNodeParent(pulsar::Node* node, pulsar::Node* parent)
+    {
+        auto transform = node->GetTransform();
+        auto worldPos = transform->GetWorldPosition();
+        auto worldRot = transform->GetWorldRotation();
+        auto worldScl = transform->GetWorldScale();
+
+        if (parent)
+        {
+            node->SetParent(pulsar::ObjectPtr<pulsar::Node>::UnsafeCreate(parent->GetObjectHandle()));
+        }
+        else
+        {
+            if (transform->GetParent())
+            {
+                auto collection = node->GetOwnerNodeCollection();
+                transform->SetParent(nullptr);
+                if (collection)
+                    collection->RegisterRootNode(pulsar::ObjectPtr<pulsar::Node>::UnsafeCreate(node->GetObjectHandle()));
+            }
+        }
+
+        transform->SetWorldPosition(worldPos);
+        transform->SetWorldRotation(worldRot);
+        transform->SetWorldScale(worldScl);
+    }
+
+    // Forward declare
+    static void _HandlePrefabDrop(pulsar::NodeCollection* scene);
 
     static void _Show(EditorWorld* world, List_sp<ObjectPtr<Node>> nodes)
     {
@@ -85,6 +129,32 @@ namespace pulsared
 
             }
 
+            // Drag source
+            if (ImGui::BeginDragDropSource())
+            {
+                pulsar::Node* ptr = node.GetPtr();
+                ImGui::SetDragDropPayload("OUTLINER_NODE", &ptr, sizeof(pulsar::Node*));
+                ImGui::Text("Move %s", node->GetName().c_str());
+                ImGui::EndDragDropSource();
+            }
+
+            // Drop target: parent the dragged node to this node
+            if (ImGui::BeginDragDropTarget())
+            {
+                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("OUTLINER_NODE"))
+                {
+                    pulsar::Node* dragged = *(pulsar::Node**)payload->Data;
+                    if (dragged && dragged != node.GetPtr()
+                        && dragged->GetOwnerNodeCollection() == node->GetOwnerNodeCollection()
+                        && !_IsDescendantOf(dragged, node.GetPtr()))
+                    {
+                        _SetNodeParent(dragged, node.GetPtr());
+                    }
+                }
+                _HandlePrefabDrop(node->GetOwnerNodeCollection());
+                ImGui::EndDragDropTarget();
+            }
+
             if (isOpened)
             {
                 auto childNodes = mksptr(new List<ObjectPtr<Node>>);
@@ -103,6 +173,7 @@ namespace pulsared
             }
         }
     }
+
     // 处理 WorkspaceWindow 拖来的 Prefab，放入指定 scene
     static void _HandlePrefabDrop(pulsar::NodeCollection* scene)
     {
@@ -131,7 +202,8 @@ namespace pulsared
 
     void OutlinerWindow::OnDrawImGui(float dt)
     {
-        auto world = dynamic_cast<EditorWorld*>(EditorWorld::GetPreviewWorld());
+        auto sceneEditor = dynamic_cast<SceneEditor*>(GetParentEditorWindow()->GetEditor());
+        auto world = sceneEditor ? dynamic_cast<EditorWorld*>(sceneEditor->GetPreviewWorld()) : nullptr;
         if (!world)
         {
             return;
@@ -160,16 +232,23 @@ namespace pulsared
             bool opened = ImGui::TreeNodeEx(label.c_str(), base_flags);
             ImGui::PopStyleColor();
 
-            // drop target：挂在 scene TreeNode header 上
+            // drop target：挂在 scene TreeNode header 上（节点拖来设为 root）
             if (ImGui::BeginDragDropTarget())
             {
+                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("OUTLINER_NODE"))
+                {
+                    pulsar::Node* dragged = *(pulsar::Node**)payload->Data;
+                    if (dragged && dragged->GetOwnerNodeCollection() == currentScene.GetPtr())
+                        _SetNodeParent(dragged, nullptr);
+                }
                 _HandlePrefabDrop(currentScene.GetPtr());
                 ImGui::EndDragDropTarget();
             }
 
             if (opened)
             {
-                _Show(world, currentScene->GetRootNodes());
+                auto rootNodesCopy = mksptr(new List<ObjectPtr<Node>>(*currentScene->GetRootNodes()));
+                _Show(world, rootNodesCopy);
                 ImGui::TreePop();
             }
         }
@@ -186,6 +265,12 @@ namespace pulsared
                 ImGui::InvisibleButton("##outliner_drop_zone", winSize, ImGuiButtonFlags_None);
                 if (ImGui::BeginDragDropTarget())
                 {
+                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("OUTLINER_NODE"))
+                    {
+                        pulsar::Node* dragged = *(pulsar::Node**)payload->Data;
+                        if (dragged && dragged->GetOwnerNodeCollection() == focusScene.GetPtr())
+                            _SetNodeParent(dragged, nullptr);
+                    }
                     _HandlePrefabDrop(focusScene.GetPtr());
                     ImGui::EndDragDropTarget();
                 }

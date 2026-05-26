@@ -18,6 +18,7 @@ namespace pulsared
         void ScanForChanges();
         void ReloadShader(const jxcorlib::guid_t& guid);
         void ReloadAllShaders();
+        void ReloadShaderPa(const std::filesystem::path& paPath);
 
         std::unordered_map<std::filesystem::path, std::filesystem::file_time_type> m_fileTimes;
         float m_elapsedSinceLastScan = 0.0f;

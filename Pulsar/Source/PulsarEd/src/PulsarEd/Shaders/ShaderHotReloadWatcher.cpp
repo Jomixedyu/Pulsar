@@ -8,6 +8,8 @@
 #include <Pulsar/Logger.h>
 #include <CoreLib/File.h>
 #include <CoreLib.Serialization/JsonSerializer.h>
+#include <algorithm>
+#include <cctype>
 
 namespace pulsared
 {
@@ -33,13 +35,31 @@ namespace pulsared
         }
     }
 
-    static bool IsShaderSourceFile(const std::filesystem::path& path)
+    static bool IsHlslFile(const std::filesystem::path& path)
     {
-        auto ext = path.extension().u8string();
-        return ext == u8".hlsl" || ext == u8".inc.hlsl";
+        auto filename = path.filename().string();
+        std::transform(filename.begin(), filename.end(), filename.begin(), ::tolower);
+        // Exclude .inc.hlsl include files — they are not standalone shader assets
+        if (filename.ends_with(".inc.hlsl"))
+            return false;
+        auto ext = path.extension().string();
+        std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+        return ext == ".hlsl";
     }
 
-    static jxcorlib::guid_t ParseGuidFromPmeta(const std::filesystem::path& pmetaPath)
+    static bool IsShaderSourceFile(const std::filesystem::path& path)
+    {
+        return IsHlslFile(path);
+    }
+
+    static bool IsPaFile(const std::filesystem::path& path)
+    {
+        auto ext = path.extension().string();
+        std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+        return ext == ".pa";
+    }
+
+    static SPtr<AssetMetaData> ParseMetaFromPmeta(const std::filesystem::path& pmetaPath)
     {
         if (!std::filesystem::exists(pmetaPath))
             return {};
@@ -47,12 +67,20 @@ namespace pulsared
         try
         {
             auto json = FileUtil::ReadAllText(pmetaPath);
-            auto meta = ser::JsonSerializer::Deserialize<AssetMetaData>(json);
-            if (meta && meta->Guid)
-                return meta->Guid;
+            return ser::JsonSerializer::Deserialize<AssetMetaData>(json);
         }
         catch (...)
         {
+        }
+        return {};
+    }
+
+    static jxcorlib::guid_t ParseGuidFromPmeta(const std::filesystem::path& pmetaPath)
+    {
+        if (auto meta = ParseMetaFromPmeta(pmetaPath))
+        {
+            if (meta->Guid)
+                return meta->Guid;
         }
         return {};
     }
@@ -62,50 +90,61 @@ namespace pulsared
         namespace fs = std::filesystem;
 
         std::vector<fs::path> changedHlsl;
-        std::vector<fs::path> changedIncHlsl;
-        std::vector<fs::path> discoveredFiles;
+        std::vector<fs::path> changedPa;
 
         for (const auto& package : AssetDatabase::GetPackageInfos())
         {
-            fs::path shadersDir = fs::path(package.Path) / "Assets" / "Shaders";
-            if (!fs::exists(shadersDir) || !fs::is_directory(shadersDir))
+            fs::path assetsDir = fs::path(package.Path) / "Assets";
+            if (!fs::exists(assetsDir) || !fs::is_directory(assetsDir))
                 continue;
 
-            for (auto& entry : fs::recursive_directory_iterator(shadersDir))
+            try
             {
-                if (!entry.is_regular_file())
-                    continue;
-
-                auto path = entry.path().lexically_normal();
-                if (!IsShaderSourceFile(path))
-                    continue;
-
-                auto lastWrite = fs::last_write_time(path);
-                auto it = m_fileTimes.find(path);
-                if (it == m_fileTimes.end())
+                for (auto& entry : fs::recursive_directory_iterator(assetsDir, fs::directory_options::skip_permission_denied))
                 {
-                    m_fileTimes[path] = lastWrite;
+                    if (!entry.is_regular_file())
+                        continue;
+
+                    auto path = entry.path().lexically_normal();
+
+                    std::filesystem::file_time_type lastWrite;
+                    try
+                    {
+                        lastWrite = fs::last_write_time(path);
+                    }
+                    catch (...)
+                    {
+                        continue;
+                    }
+
+                    auto it = m_fileTimes.find(path);
+                    if (it == m_fileTimes.end())
+                    {
+                        m_fileTimes[path] = lastWrite;
+                    }
+                    else if (it->second != lastWrite)
+                    {
+                        it->second = lastWrite;
+                        auto filename = path.filename().string();
+                        std::transform(filename.begin(), filename.end(), filename.begin(), ::tolower);
+                        if (filename.ends_with(".hlsl"))
+                            changedHlsl.push_back(path);
+                        else if (IsPaFile(path))
+                            changedPa.push_back(path);
+                    }
                 }
-                else if (it->second != lastWrite)
-                {
-                    it->second = lastWrite;
-                    auto ext = path.extension().u8string();
-                    if (ext == u8".hlsl")
-                        changedHlsl.push_back(path);
-                    else
-                        changedIncHlsl.push_back(path);
-                }
+            }
+            catch (const std::exception& e)
+            {
+                pulsar::Logger::Log("Shader hot-reload scan error in " + assetsDir.string() + ": " + e.what(), pulsar::LogLevel::Error);
             }
         }
 
-        // 处理 include 文件变化：保守策略，重载所有 shader
-        if (!changedIncHlsl.empty())
+        // 处理 .pa 资产文件变化：重新加载 shader 配置数据
+        for (const auto& path : changedPa)
         {
-            for (const auto& path : changedIncHlsl)
-            {
-                pulsar::Logger::Log("Shader include modified: " + path.string());
-            }
-            ReloadAllShaders();
+            pulsar::Logger::Log("Shader asset modified: " + path.string());
+            ReloadShaderPa(path);
         }
 
         // 处理 hlsl 文件变化：精确重载对应 shader
@@ -159,5 +198,51 @@ namespace pulsared
         });
 
         pulsar::Logger::Log("All shaders hot-reload triggered due to include file change.");
+    }
+
+    void ShaderHotReloadWatcher::ReloadShaderPa(const std::filesystem::path& paPath)
+    {
+        auto pmetaPath = paPath;
+        pmetaPath.replace_extension(".pmeta");
+
+        auto meta = ParseMetaFromPmeta(pmetaPath);
+        if (!meta || !meta->Guid)
+        {
+            pulsar::Logger::Log("Failed to parse .pmeta for: " + paPath.string(), pulsar::LogLevel::Warning);
+            return;
+        }
+
+        if (meta->Type != "pulsar::Shader")
+            return; // Not a shader asset, ignore
+
+        auto shader = pulsar::RuntimeAssetManager::GetLoadedAssetByGuid<pulsar::Shader>(meta->Guid);
+        if (!shader)
+        {
+            // Shader not currently loaded, no need to hot-reload
+            return;
+        }
+
+        auto pbaPath = paPath;
+        pbaPath.replace_extension(".pba");
+
+        try
+        {
+            auto fileJson = FileUtil::ReadAllText(paPath);
+            auto objser = ser::CreateVarient("json");
+            objser->AssignParse(fileJson);
+
+            auto serializer = pulsar::AssetSerializer{objser, pbaPath, false, true};
+            shader->Serialize(&serializer);
+
+            pulsar::Logger::Log("Shader asset data reloaded: " + paPath.string());
+        }
+        catch (const std::exception& e)
+        {
+            pulsar::Logger::Log("Failed to reload shader .pa: " + paPath.string() + ", error: " + e.what(), pulsar::LogLevel::Error);
+            return;
+        }
+
+        // Invalidate cache and notify dependents
+        ReloadShader(meta->Guid);
     }
 }

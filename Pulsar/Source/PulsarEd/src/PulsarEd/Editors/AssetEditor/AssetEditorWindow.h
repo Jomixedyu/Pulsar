@@ -36,6 +36,7 @@ namespace pulsared
         void SetAssetObject(RCPtr<AssetObject> asset) { m_assetObject = asset; }
 
         void OnDrawImGui(float dt) override;
+        void OnBuildMenuContexts(SPtr<MenuContexts> ctxs) override;
         virtual void OnRefreshMenuContexts();
     protected:
         RCPtr<AssetObject> m_assetObject;
