@@ -87,7 +87,6 @@ namespace pulsared
         void TickWorld(float dt);
 
     protected:
-        array_list<std::unique_ptr<Editor>> m_editors;
         SPtr<ModalDialog> m_modalDialog;
         std::shared_ptr<ImGuiObject> m_gui = nullptr;
 

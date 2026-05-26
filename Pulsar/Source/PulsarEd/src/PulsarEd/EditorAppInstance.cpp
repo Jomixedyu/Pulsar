@@ -3,6 +3,7 @@
 #include "EditorAssetManager.h"
 #include "EditorRenderPipeline.h"
 #include "Editors/EditorWindow.h"
+#include "Editors/EditorRegistry.h"
 #include "Editors/SceneEditor/SceneEditor.h"
 #include "PulsarEd/UIControls/ViewportFrame.h"
 #include "Pulsar/Components/PointLightComponent.h"
@@ -73,7 +74,6 @@ namespace pulsared
 
     void EditorAppInstance::OnCreateEditors()
     {
-        m_editors.push_back(std::make_unique<SceneEditor>());
     }
     const char* EditorAppInstance::AppType()
     {
@@ -411,11 +411,11 @@ namespace pulsared
         Logger::Log("initialize editor window manager");
         EditorWindowManager::Initialize();
 
-        for (auto& editor : m_editors)
+        EditorRegistry::Initialize();
+        if (auto* sceneEditor = EditorRegistry::FindEditor<SceneEditor>())
         {
-            editor->Initialize();
+            sceneEditor->CreateEditorWindow()->Open();
         }
-        m_editors[0]->CreateEditorWindow()->Open();
 
         Workspace::OpenWorkspace(_SearchUpFolder("Project") / "Project.peproj");
 
@@ -441,13 +441,8 @@ namespace pulsared
     {
         uinput::InputManager::GetInstance()->Terminate();
 
-        for (auto& editor : m_editors)
-        {
-            editor->Terminate();
-        }
+        EditorRegistry::Terminate();
         PrefabUtil::ClosePrefabMode();
-
-        m_editors.clear();
 
         if (m_shaderHotReloadWatcher)
         {
@@ -507,7 +502,7 @@ namespace pulsared
         auto events = uinput::InputManager::GetInstance()->PollEvents();
 
         // 3. Let each editor route input to its own panels
-        for (auto& editor : m_editors)
+        for (auto& editor : EditorRegistry::GetEditors())
         {
             editor->RouteInput(events);
         }

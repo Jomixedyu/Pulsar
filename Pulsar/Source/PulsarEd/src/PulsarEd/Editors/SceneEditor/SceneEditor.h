@@ -7,6 +7,8 @@ namespace pulsared
 {
     class SceneEditor : public Editor
     {
+        CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::SceneEditor, Editor);
+        DEFINE_EDITOR(SceneEditor);
         using base = Editor;
     public:
         ~SceneEditor();

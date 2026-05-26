@@ -1,6 +1,7 @@
 #include "Editors/EditorWindow.h"
 
 #include "Editors/Editor.h"
+#include "Editors/EditorRegistry.h"
 #include "Menus/ISubMenu.h"
 #include "Menus/Menu.h"
 #include "Menus/MenuEntrySubMenu.h"
@@ -44,7 +45,6 @@ namespace pulsared
         // render menu
         if (auto editor = GetEditor())
         {
-            auto menu = MenuManager::GetMenu(GetEditor()->GetMenuName());
             auto ctxs = mksptr(new MenuContexts);
 
             auto ctx = mksptr(new EditorWindowMenuContext);
@@ -52,9 +52,56 @@ namespace pulsared
 
             ctxs->Contexts.push_back(ctx);
 
+            OnBuildMenuContexts(ctxs);
+
             if (ImGui::BeginMenuBar())
             {
-                MenuRenderer::RenderMenu(menu, ctxs);
+                auto mergedMenu = mksptr(new MenuEntrySubMenu("MergedMenuBar"));
+                hash_map<string, MenuEntrySubMenu_sp> mergedSubMenus;
+                hash_set<string> mergedEntryNames;
+
+                auto type = editor->GetType();
+                while (type && type != cltypeof<Object>())
+                {
+                    if (auto* parentEditor = EditorRegistry::GetEditor(type))
+                    {
+                        auto menu = MenuManager::GetMenu(parentEditor->GetMenuName());
+                        if (menu)
+                        {
+                            for (auto& entry : menu->GetEntries())
+                            {
+                                if (auto subMenu = sptr_cast<MenuEntrySubMenu>(entry))
+                                {
+                                    auto it = mergedSubMenus.find(subMenu->Name);
+                                    if (it == mergedSubMenus.end())
+                                    {
+                                        auto newSub = mksptr(new MenuEntrySubMenu(subMenu->Name, subMenu->DisplayName));
+                                        newSub->Priority = subMenu->Priority;
+                                        mergedSubMenus[subMenu->Name] = newSub;
+                                        mergedMenu->AddEntry(newSub);
+                                        it = mergedSubMenus.find(subMenu->Name);
+                                    }
+                                    for (auto& subEntry : subMenu->GetEntries())
+                                    {
+                                        bool found = false;
+                                        for (auto& e : it->second->GetEntries())
+                                        {
+                                            if (e->Name == subEntry->Name) { found = true; break; }
+                                        }
+                                        if (!found) it->second->AddEntry(subEntry);
+                                    }
+                                }
+                                else if (mergedEntryNames.insert(entry->Name).second)
+                                {
+                                    mergedMenu->AddEntry(entry);
+                                }
+                            }
+                        }
+                    }
+                    type = type->GetBase();
+                }
+
+                MenuRenderer::RenderMenu(mergedMenu.get(), ctxs);
                 ImGui::EndMenuBar();
             }
         }
@@ -119,20 +166,72 @@ namespace pulsared
         }
     }
 
+    void EditorWindow::RegisterPanelType(Type* type)
+    {
+        if (type == nullptr)
+            return;
+        if (std::ranges::contains(m_registeredPanelTypes, type))
+            return;
+        if (!type->IsSubclassOf(cltypeof<PanelWindow>()))
+            return;
+        m_registeredPanelTypes.push_back(type);
+
+        // Register panel menu entry under Window submenu
+        if (m_editor)
+        {
+            auto editorMenu = MenuManager::GetOrAddMenu(m_editor->GetMenuName());
+            auto menu = editorMenu->FindOrNewMenuEntry("Window");
+
+            auto displayName = StringUtil::FriendlyName(type->GetShortName());
+
+            auto checkAction = MenuCheckAction::FromLambda([](MenuContexts_sp ctxs, bool checked) {
+                if (auto ctx = ctxs->FindContext<EditorWindowMenuContext>())
+                {
+                    if (ctx->m_editorWindow)
+                    {
+                        auto type = AssemblyManager::GlobalFindType(ctxs->EntryName);
+                        if (checked)
+                        {
+                            ctx->m_editorWindow->OpenPanel(type);
+                        }
+                        else
+                        {
+                            ctx->m_editorWindow->ClosePanel(type);
+                        }
+                    }
+                }
+            });
+            auto getCheckAction = MenuGetCheckedAction::FromLambda([](MenuContexts_sp ctxs) {
+                if (auto ctx = ctxs->FindContext<EditorWindowMenuContext>())
+                {
+                    if (ctx->m_editorWindow)
+                    {
+                        auto type = AssemblyManager::GlobalFindType(ctxs->EntryName);
+                        return ctx->m_editorWindow->IsOpenedPanel(type);
+                    }
+                }
+                return false;
+            });
+            menu->AddEntry(mksptr(new MenuEntryCheck(type->GetName(), displayName, checkAction, getCheckAction)));
+        }
+    }
+
+    bool EditorWindow::ContainsPanelType(Type* type) const
+    {
+        return std::ranges::contains(m_registeredPanelTypes, type);
+    }
+
     void EditorWindow::OpenPanel(Type* type)
     {
-        if (auto editor = GetEditor())
+        if (ContainsPanelType(type))
         {
-            if (editor->ContainsPanelType(type))
-            {
-                auto newWindow = sptr_cast<PanelWindow>(type->CreateSharedInstance({}));
-                newWindow->m_parentWindowId = GetWindowId();
-                newWindow->m_parentEditorWindow = this;
+            auto newWindow = sptr_cast<PanelWindow>(type->CreateSharedInstance({}));
+            newWindow->m_parentWindowId = GetWindowId();
+            newWindow->m_parentEditorWindow = this;
 
-                m_openedPanels.push_back(newWindow);
-                newWindow->SetOpened(true);
-                newWindow->OnOpen();
-            }
+            m_openedPanels.push_back(newWindow);
+            newWindow->SetOpened(true);
+            newWindow->OnOpen();
         }
     }
     void EditorWindow::ClosePanel(Type* type)

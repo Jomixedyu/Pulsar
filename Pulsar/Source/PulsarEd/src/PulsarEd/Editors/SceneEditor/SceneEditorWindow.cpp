@@ -17,6 +17,12 @@ namespace pulsared
         m_windowDisplayName = "Scene Editor";
         base::OnOpen();
 
+        RegisterPanelType(cltypeof<SceneWindow>());
+        RegisterPanelType(cltypeof<OutlinerWindow>());
+        RegisterPanelType(cltypeof<PropertiesWindow>());
+        RegisterPanelType(cltypeof<WorkspaceWindow>());
+        RegisterPanelType(cltypeof<OutputWindow>());
+
         OpenPanel(cltypeof<SceneWindow>());
         OpenPanel(cltypeof<OutlinerWindow>());
         OpenPanel(cltypeof<PropertiesWindow>());

@@ -5,6 +5,7 @@
 namespace pulsared
 {
     class ISubMenu;
+    class MenuContexts;
 }
 namespace pulsared
 {
@@ -34,6 +35,9 @@ namespace pulsared
         void OnDrawImGui(float dt) override;
         void DrawImGui(float dt) override;
 
+        void RegisterPanelType(Type* type);
+        bool ContainsPanelType(Type* type) const;
+        
         void OpenPanel(Type* type);
         void ClosePanel(Type* type);
         bool IsOpenedPanel(Type* type) const;
@@ -42,12 +46,14 @@ namespace pulsared
         Editor* GetEditor() const { return m_editor; }
     protected:
         virtual void OnPanelStateChanged(PanelWindow* win, bool open);
+        virtual void OnBuildMenuContexts(SPtr<MenuContexts> ctxs) {}
     private:
         void OnGlobalPanelStateChanged(EdGuiWindow* win, bool opened);
     protected:
         bool m_useDockspace = true;
     private:
         Editor* m_editor = nullptr;
+        array_list<Type*> m_registeredPanelTypes;
         array_list<SPtr<PanelWindow>> m_openedPanels;
         ImGuiID m_dockspaceClassId{};
     };

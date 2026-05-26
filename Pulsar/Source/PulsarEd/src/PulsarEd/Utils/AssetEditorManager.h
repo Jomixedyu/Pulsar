@@ -1,13 +1,26 @@
 #pragma once
 #include <PulsarEd/Assembly.h>
 #include <Pulsar/AssetObject.h>
+#include <PulsarEd/Editors/EditorRegistry.h>
 
-#define DEFINE_ASSET_EDITOR(TYPE, ALLOW_DERIVE) static inline struct __asset_editor { __asset_editor() \
-{ ::pulsared::AssetEditorManager::Register(cltypeof<TYPE>(), ThisClass::StaticType(), ALLOW_DERIVE); } \
+#define DEFINE_ASSET_EDITOR(TYPE) static inline struct __asset_editor { __asset_editor() \
+{ \
+    ::pulsared::AssetEditorManager::Register(cltypeof<TYPE>(), ThisClass::StaticType(), false); \
+    ::pulsared::EditorRegistry::Register(ThisClass::StaticType()); \
+} \
+} __asset_editor__;
+
+#define DEFINE_ASSET_EDITOR_DERIVE(TYPE) static inline struct __asset_editor { __asset_editor() \
+{ \
+    ::pulsared::AssetEditorManager::Register(cltypeof<TYPE>(), ThisClass::StaticType(), true); \
+    ::pulsared::EditorRegistry::Register(ThisClass::StaticType()); \
+} \
 } __asset_editor__;
 
 namespace pulsared
 {
+    class Editor;
+
     class AssetEditorManager
     {
     public:
@@ -53,5 +66,7 @@ namespace pulsared
             }
             return {};
         }
+
+
     };
 }

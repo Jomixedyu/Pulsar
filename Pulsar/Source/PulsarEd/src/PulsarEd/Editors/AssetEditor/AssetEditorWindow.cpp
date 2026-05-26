@@ -78,14 +78,13 @@ namespace pulsared
     void AssetEditorWindow::OnDrawImGui(float dt)
     {
         base::OnDrawImGui(dt);
-        if (ImGui::BeginMenuBar())
-        {
-            OnRefreshMenuContexts();
-            MenuRenderer::RenderMenu(MenuManager::GetMenu("AssetEditor"), m_menuBarCtxs);
-            ImGui::EndMenuBar();
-        }
         OnDrawAssetEditor(dt);
-
+    }
+    void AssetEditorWindow::OnBuildMenuContexts(SPtr<MenuContexts> ctxs)
+    {
+        OnRefreshMenuContexts();
+        for (auto& c : m_menuBarCtxs->Contexts)
+            ctxs->Contexts.push_back(c);
     }
     void AssetEditorWindow::OnRefreshMenuContexts()
     {

@@ -354,13 +354,6 @@ namespace pulsared
         base::Initialize();
 
         InitBasicMenu(this);
-        RegisterPanelType(cltypeof<SceneWindow>());
-        RegisterPanelType(cltypeof<PropertiesWindow>());
-        RegisterPanelType(cltypeof<ConsoleWindow>());
-        RegisterPanelType(cltypeof<WorkspaceWindow>());
-        RegisterPanelType(cltypeof<OutlinerWindow>());
-        RegisterPanelType(cltypeof<OutputWindow>());
-
     }
 
     SceneEditor::~SceneEditor()

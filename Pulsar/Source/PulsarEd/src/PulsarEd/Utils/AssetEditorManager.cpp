@@ -6,6 +6,7 @@
 #include <PulsarEd/EditorAppInstance.h>
 #include <PulsarEd/EditorAssetManager.h>
 #include <PulsarEd/Editors/AssetEditor/AssetEditorWindow.h>
+#include <PulsarEd/Editors/EditorRegistry.h>
 #include <PulsarEd/Utils/AssetEditorManager.h>
 #include <PulsarEd/Windows/EditorWindowManager.h>
 
@@ -33,25 +34,39 @@ namespace pulsared
             return;
         }
 
-        auto windowType = GetValue(asset->GetType());
-        if (!windowType)
+        auto editorType = GetValue(asset->GetType());
+        if (!editorType)
         {
             Logger::Log("asset editor not found: " + asset->GetType()->GetShortName());
             return;
         }
 
-        
-        for (auto& win : EditorWindowManager::GetOpeningWindows(windowType))
+        auto* editor = EditorRegistry::GetEditor(editorType);
+        if (!editor)
         {
-            if (sptr_cast<AssetEditorWindow>(win)->GetAssetObject() == asset)
+            Logger::Log("asset editor instance not found: " + editorType->GetShortName());
+            return;
+        }
+        auto win = editor->CreateEditorWindow();
+        auto assetWin = sptr_cast<AssetEditorWindow>(win);
+        if (!assetWin)
+        {
+            Logger::Log("asset editor window type invalid: " + editorType->GetShortName());
+            return;
+        }
+
+        for (auto& openWin : EditorWindowManager::GetOpeningWindows(win->GetType()))
+        {
+            auto openAssetWin = sptr_cast<AssetEditorWindow>(openWin);
+            if (openAssetWin && openAssetWin->GetAssetObject() == asset)
             {
-                //todo throw exceptions
                 return;
             }
         }
 
-        auto win = sptr_cast<AssetEditorWindow>(windowType->CreateSharedInstance({}));
-        win->SetAssetObject(asset);
-        win->Open();
+        assetWin->SetAssetObject(asset);
+        assetWin->Open();
     }
+
+
 }
