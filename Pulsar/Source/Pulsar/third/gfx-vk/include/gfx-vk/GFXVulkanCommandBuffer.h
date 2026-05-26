@@ -26,7 +26,7 @@ namespace gfx
         virtual void CmdBindGraphicsPipeline(GFXGraphicsPipeline* pipeline) override;
         virtual void CmdBindVertexBuffers(const std::vector<GFXBuffer*>& buffers) override;
         virtual void CmdBindIndexBuffer(GFXBuffer* buffer) override;
-        virtual void CmdBindDescriptorSets(const array_list<GFXDescriptorSet*>& descriptorSet, GFXGraphicsPipeline* pipeline) override;
+        virtual void CmdBindDescriptorSets(const array_list<GFXDescriptorSet*>& descriptorSet, GFXGraphicsPipeline* pipeline, const array_list<uint32_t>* dynamicOffsets = nullptr) override;
 
         virtual void CmdPushDebugInfo(std::string_view label, const std::array<float, 4>& color) override;
         virtual void CmdPopDebugInfo() override;

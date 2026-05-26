@@ -129,7 +129,12 @@ namespace pulsar
             auto& res = m_resources[rid];
             if (res.kind == RGResourceKind::Persistent)
             {
-                m_physicalRTs[rid] = RCPtr<RenderTexture>::UnsafeCreate(res.external->GetObjectHandle());
+                auto pt = std::make_shared<RGPhysicalTexture>();
+                pt->width  = res.external->GetWidth();
+                pt->height = res.external->GetHeight();
+                pt->attachments = res.external->GetRenderTargets();
+                pt->fbo = res.external->GetGfxFrameBufferObject();
+                m_physicalRTs[rid] = std::move(pt);
                 m_handleToRTIndex[static_cast<uint32_t>(rid)] = rid;
             }
             else
@@ -167,14 +172,14 @@ namespace pulsar
                 auto it = m_handleToRTIndex.find(binding.handle.id);
                 if (it == m_handleToRTIndex.end()) continue;
 
-                auto* rt = m_physicalRTs[it->second].GetPtr();
+                auto* rt = m_physicalRTs[it->second].get();
                 if (!rt) continue;
 
                 const gfx::GFXResourceLayout barrierLayout = (binding.usage == RGResourceUsage::Read)
                     ? gfx::GFXResourceLayout::ShaderReadOnly
                     : gfx::GFXResourceLayout::RenderTarget;
 
-                for (const auto& gfxTex : rt->GetRenderTargets())
+                for (const auto& gfxTex : rt->attachments)
                 {
                     if (!gfxTex) continue;
                     auto view = gfxTex->Get2DView(0);
@@ -191,9 +196,9 @@ namespace pulsar
                 if (binding.usage != RGResourceUsage::Write) continue;
                 auto it = m_handleToRTIndex.find(binding.handle.id);
                 if (it == m_handleToRTIndex.end()) continue;
-                auto* rt = m_physicalRTs[it->second].GetPtr();
+                auto* rt = m_physicalRTs[it->second].get();
                 if (!rt) continue;
-                fbo       = rt->GetGfxFrameBufferObject().get();
+                fbo       = rt->GetFrameBufferObject().get();
                 fboAttach = &binding.attachment;
                 break;
             }

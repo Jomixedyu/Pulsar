@@ -65,6 +65,8 @@ namespace pulsar
             return true;
         }
         m_isCreatedResource = true;
+
+        auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
         for (auto& section : m_sections)
         {
             // 从分离属性数据合并为交错格式再上传（GPU 侧暂时保持单 Buffer）
@@ -78,8 +80,8 @@ namespace pulsar
                 vertexDesc.BufferSize  = vertSize;
                 vertexDesc.ElementSize = sizeof(StaticMeshVertex);
 
-                auto vertBuffer = Application::GetGfxApp()->CreateBuffer(vertexDesc);
-                vertBuffer->Fill(interleavedVerts.data());
+                auto vertBuffer = cmdList.CreateBuffer(vertexDesc);
+                cmdList.UploadBuffer(vertBuffer, interleavedVerts.data(), vertSize);
                 m_vertexBuffers.push_back(vertBuffer);
             }
 
@@ -90,8 +92,8 @@ namespace pulsar
                 indicesDesc.BufferSize  = section.GetIndicesAllocSize();
                 indicesDesc.ElementSize = sizeof(MeshIndicesType);
 
-                auto indicesBuffer = Application::GetGfxApp()->CreateBuffer(indicesDesc);
-                indicesBuffer->Fill(section.Indices.data());
+                auto indicesBuffer = cmdList.CreateBuffer(indicesDesc);
+                cmdList.UploadBuffer(indicesBuffer, section.Indices.data(), section.GetIndicesAllocSize());
                 m_indicesBuffers.push_back(indicesBuffer);
             }
         }
@@ -103,6 +105,11 @@ namespace pulsar
             return;
         m_isCreatedResource = false;
 
+        auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
+        for (auto& h : m_vertexBuffers)
+            cmdList.Destroy(h);
+        for (auto& h : m_indicesBuffers)
+            cmdList.Destroy(h);
         m_vertexBuffers.clear();
         m_indicesBuffers.clear();
     }

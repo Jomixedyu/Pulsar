@@ -29,6 +29,7 @@ namespace pulsar
     {
         delete m_inputContext;
         gWorlds.erase(this);
+        m_perRenderObjectDataManager.Destroy();
     }
 
     void World::OnDuplicated(World* target)
@@ -246,6 +247,10 @@ namespace pulsar
     }
     void World::AddRenderObject(const rendering::RenderObject_sp& renderObject)
     {
+        auto slot = m_perRenderObjectDataManager.AllocSlot();
+        renderObject->SetRenderObjectIndex(slot);
+        renderObject->SetPerRenderObjectDataManager(&m_perRenderObjectDataManager);
+        m_perRenderObjectDataManager.SetData(slot, renderObject->GetPerRenderObjectData());
         renderObject->OnCreateResource();
         m_renderObjects.insert(renderObject);
     }
@@ -255,6 +260,11 @@ namespace pulsar
         if (it != m_renderObjects.end())
         {
             (*it)->OnDestroyResource();
+            auto slot = (*it)->GetRenderObjectIndex();
+            if (slot != rendering::RenderObject::kInvalidSlot)
+            {
+                m_perRenderObjectDataManager.FreeSlot(slot);
+            }
             m_renderObjects.erase(it);
         }
     }
@@ -310,6 +320,8 @@ namespace pulsar
 
         delete m_lightManager;
         m_lightManager = nullptr;
+
+        m_perRenderObjectDataManager.Destroy();
     }
 
     void World::OnSceneLoading(RCPtr<NodeCollection> scene)

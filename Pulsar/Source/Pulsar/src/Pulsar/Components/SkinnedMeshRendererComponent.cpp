@@ -23,10 +23,8 @@ namespace pulsar
         array_list<RCPtr<Material>>   m_materials;
         array_list<int32_t>           m_priorities;
 
-        // set2 binding0: PerRendererData
-        gfx::GFXBuffer_sp             m_perRendererBuffer;
-        // set2 binding1: SkinnedRendererData (BoneMatrices)
-        gfx::GFXBuffer_sp             m_skinningBuffer;
+        // set2 binding1: SkinnedRenderObjectData (BoneMatrices)
+        gfx::BufferHandle             m_skinningBuffer;
 
         gfx::GFXDescriptorSet_sp      m_descriptorSet;
         gfx::GFXDescriptorSetLayout_sp m_descriptorSetLayout;
@@ -46,14 +44,15 @@ namespace pulsar
         // Animator 调用：将骨骼矩阵写入 GPU UBO
         void UploadBoneMatrices(const array_list<Matrix4f>& boneMatrices)
         {
-            if (!m_skinningBuffer) return;
+            auto* buffer = Application::GetGfxApp()->GetResourceManager()->GetBuffer(m_skinningBuffer);
+            if (!buffer) return;
 
-            SkinnedRendererData data{};
+            SkinnedRenderObjectData data{};
             const size_t count = std::min(boneMatrices.size(), (size_t)SKINNEDMESH_MAX_BONES);
             for (size_t i = 0; i < count; ++i)
                 data.BoneMatrices[i] = boneMatrices[i];
 
-            m_skinningBuffer->Fill(&data);
+            buffer->Fill(&data);
         }
 
         void SubmitChange();
@@ -62,15 +61,18 @@ namespace pulsar
         {
             m_descriptorSet.reset();
             m_descriptorSetLayout.reset();
-            m_perRendererBuffer.reset();
-            m_skinningBuffer.reset();
+            if (m_skinningBuffer.IsValid())
+            {
+                auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
+                cmdList.Destroy(m_skinningBuffer);
+                m_skinningBuffer = gfx::BufferHandle{};
+            }
         }
 
         void OnChangedTransform() override
         {
             for (auto& batch : m_batches)
                 batch.IsReverseCulling = IsDeterminantNegative();
-            m_perRendererBuffer->Fill(&m_perModelData);
         }
 
         array_list<rendering::MeshBatch> GetMeshBatches() override { return m_batches; }
@@ -79,16 +81,13 @@ namespace pulsar
 
     void SkinnedMeshRenderObject::OnCreateResource()
     {
-        // set2 layout: binding0=PerRendererData, binding1=SkinnedRendererData
+        // set2 layout: binding1=SkinnedRenderObjectData
         if (SkinnedMeshDescriptorSetLayout.expired())
         {
-            gfx::GFXDescriptorSetLayoutDesc bindings[2] = {
-                {gfx::GFXDescriptorType::ConstantBuffer, gfx::GFXGpuProgramStageFlags::VertexFragment,
-                 kRenderingDescriptorBinding_PerRenderer,  kRenderingDescriptorSpace_ModelInfo},
-                {gfx::GFXDescriptorType::ConstantBuffer, gfx::GFXGpuProgramStageFlags::VertexFragment,
-                 kRenderingDescriptorBinding_SkinningData, kRenderingDescriptorSpace_ModelInfo},
-            };
-            m_descriptorSetLayout = Application::GetGfxApp()->CreateDescriptorSetLayout(bindings, 2);
+            gfx::GFXDescriptorSetLayoutDesc binding{
+                gfx::GFXDescriptorType::ConstantBuffer, gfx::GFXGpuProgramStageFlags::VertexFragment,
+                kRenderingDescriptorBinding_SkinningData, kRenderingDescriptorSpace_PerRenderObject};
+            m_descriptorSetLayout = Application::GetGfxApp()->CreateDescriptorSetLayout(&binding, 1);
             SkinnedMeshDescriptorSetLayout = m_descriptorSetLayout;
         }
         else
@@ -96,37 +95,29 @@ namespace pulsar
             m_descriptorSetLayout = SkinnedMeshDescriptorSetLayout.lock();
         }
 
-        // binding0: PerRendererData
+        // binding1: SkinnedRenderObjectData（初始化为单位矩阵）
         {
             gfx::GFXBufferDesc desc{};
             desc.Usage       = gfx::GFXBufferUsage::ConstantBuffer;
             desc.StorageType = gfx::GFXBufferMemoryPosition::VisibleOnDevice;
-            desc.BufferSize  = sizeof(PerRendererData);
-            desc.ElementSize = sizeof(PerRendererData);
-            m_perRendererBuffer = Application::GetGfxApp()->CreateBuffer(desc);
-        }
-
-        // binding1: SkinnedRendererData（初始化为单位矩阵）
-        {
-            gfx::GFXBufferDesc desc{};
-            desc.Usage       = gfx::GFXBufferUsage::ConstantBuffer;
-            desc.StorageType = gfx::GFXBufferMemoryPosition::VisibleOnDevice;
-            desc.BufferSize  = sizeof(SkinnedRendererData);
-            desc.ElementSize = sizeof(SkinnedRendererData);
-            m_skinningBuffer = Application::GetGfxApp()->CreateBuffer(desc);
+            desc.BufferSize  = sizeof(SkinnedRenderObjectData);
+            desc.ElementSize = sizeof(SkinnedRenderObjectData);
+            auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
+            m_skinningBuffer = cmdList.CreateBuffer(desc);
 
             // 默认骨骼矩阵全部为单位矩阵（静止姿势）
-            SkinnedRendererData defaultData{};
+            SkinnedRenderObjectData defaultData{};
             for (auto& mat : defaultData.BoneMatrices)
                 mat = Matrix4f(1);
-            m_skinningBuffer->Fill(&defaultData);
+            cmdList.UploadBuffer(m_skinningBuffer, &defaultData, sizeof(defaultData));
         }
 
         m_descriptorSet = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_descriptorSetLayout);
-        m_descriptorSet->AddDescriptor("PerRenderer", kRenderingDescriptorBinding_PerRenderer)
-                       ->SetConstantBuffer(m_perRendererBuffer.get());
-        m_descriptorSet->AddDescriptor("SkinningData", kRenderingDescriptorBinding_SkinningData)
-                       ->SetConstantBuffer(m_skinningBuffer.get());
+        if (auto* buffer = Application::GetGfxApp()->GetResourceManager()->GetBuffer(m_skinningBuffer))
+        {
+            m_descriptorSet->AddDescriptor("SkinningData", kRenderingDescriptorBinding_SkinningData)
+                           ->SetConstantBuffer(buffer);
+        }
         m_descriptorSet->Submit();
 
         SubmitChange();
@@ -164,6 +155,8 @@ namespace pulsar
             }
 
             batch.Interface           = GetInterface();
+            batch.RenderObjectIndex   = m_renderObjectIndex;
+            batch.ExtraDescriptorSet  = m_descriptorSet;
             batch.DescriptorSetLayout = m_descriptorSetLayout;
 
             if (!m_skinnedMesh->IsCreatedGPUResource())
@@ -177,7 +170,7 @@ namespace pulsar
                 auto& element         = batch.Elements.emplace_back();
                 element.Vertex        = vertBuffers[matIndex];
                 element.Indices       = indicesBuffers[matIndex];
-                element.ModelDescriptor = m_descriptorSet;
+                // PerRenderObject data is in global dynamic UBO
             }
         }
     }

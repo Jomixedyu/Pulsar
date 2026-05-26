@@ -31,7 +31,7 @@ namespace gfx
         virtual void CmdBindGraphicsPipeline(GFXGraphicsPipeline* pipeline) = 0;
         virtual void CmdBindVertexBuffers(const std::vector<GFXBuffer*>& buffers) = 0;
         virtual void CmdBindIndexBuffer(GFXBuffer* buffer) = 0;
-        virtual void CmdBindDescriptorSets(const array_list<GFXDescriptorSet*>& descriptorSet, GFXGraphicsPipeline* pipeline) = 0;
+        virtual void CmdBindDescriptorSets(const array_list<GFXDescriptorSet*>& descriptorSet, GFXGraphicsPipeline* pipeline, const array_list<uint32_t>* dynamicOffsets = nullptr) = 0;
 
         virtual void CmdPushDebugInfo(std::string_view label, const std::array<float, 4>& color = {}) = 0;
         virtual void CmdPopDebugInfo() = 0;

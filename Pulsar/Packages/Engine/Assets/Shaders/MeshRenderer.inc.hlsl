@@ -2,11 +2,11 @@
 #define _MESH_RENDERER_INC
 
 #include "Common.inc.hlsl"
-#include "PerRenderer.inc.hlsl"
+#include "PerRenderObject.inc.hlsl"
 
 inline float4 TransformObjectToWorld(float3 position)
 {
-    return mul(RendererBuffer.LocalToWorldMatrix, float4(position, 1.0));
+    return mul(RenderObjectBuffer.LocalToWorldMatrix, float4(position, 1.0));
 }
 inline float4 TransformObjectToClip(float3 position)
 {
@@ -34,7 +34,7 @@ inline float3 TransformViewToWorldDir(float3 direction)
 }
 inline float3 TransformObjectNormalToWorld(float3 normal)
 {
-    return mul((float3x3)RendererBuffer.NormalLocalToWorldMatrix, normal);
+    return mul((float3x3)RenderObjectBuffer.NormalLocalToWorldMatrix, normal);
 }
 
 float3 TransformTangentToWorld(float3 dirTS, float3 normalWS, float4 tangentWS)
@@ -48,6 +48,13 @@ float3 TransformTangentToWorld(float3 dirTS, float3 normalWS, float4 tangentWS)
 #define PRIMITIVE_FLAGS_CAST_SHADOWS 0x1
 
 #ifdef RENDERER_SKINNEDMESH
+// GPU Skinning: 最多 256 根骨骼矩阵 (set2 binding1)
+struct SkinnedRenderObjectData
+{
+    float4x4 BoneMatrices[256];
+};
+ConstantBuffer<SkinnedRenderObjectData> SkinningBuffer : register(b1, space2);
+
 // 将顶点位置从 BindPose 空间变换到蒙皮后的局部空间
 inline float3 SkinPosition(float3 position, uint4 boneIndices, float4 boneWeights)
 {

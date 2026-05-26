@@ -1,5 +1,6 @@
 #include "MeshRenderFeature.h"
 #include <Pulsar/Rendering/PerPassResources.h>
+#include <Pulsar/Application.h>
 
 namespace pulsar
 {
@@ -51,8 +52,10 @@ namespace pulsar
             psoParams.DepthWriteEnable = false;
         }
 
+        auto* resMgr = Application::GetGfxApp()->GetResourceManager();
+
         array_list<gfx::GFXDescriptorSetLayout_sp> descLayouts;
-        descLayouts.push_back(pb.binding->m_descriptorSetLayout);
+        descLayouts.push_back(resMgr->GetDescriptorSetLayoutShared(pb.binding->m_descriptorSetLayout));
         descLayouts.push_back(perPassSet->GetDescriptorSetLayout());
         descLayouts.push_back(pb.batch.DescriptorSetLayout);
 
@@ -66,23 +69,38 @@ namespace pulsar
         cmdBuffer.CmdBindGraphicsPipeline(gfxPipeline.get());
         cmdBuffer.CmdSetCullMode(pb.batch.GetCullMode(psoParams.CullMode));
 
+        uint32_t dynOffset = pb.batch.RenderObjectIndex * sizeof(PerRenderObjectData);
+        array_list<uint32_t> dynOffsets = { dynOffset };
+
         for (const auto& element : pb.batch.Elements)
         {
             array_list<gfx::GFXDescriptorSet*> descSets;
             descSets.push_back(pb.binding->m_descriptorSet.get());
             descSets.push_back(perPassSet);
-            descSets.push_back(element.ModelDescriptor.get());
-            cmdBuffer.CmdBindDescriptorSets(descSets, gfxPipeline.get());
+            descSets.push_back(pb.batch.ExtraDescriptorSet.get());
+            cmdBuffer.CmdBindDescriptorSets(descSets, gfxPipeline.get(), &dynOffsets);
 
-            cmdBuffer.CmdBindVertexBuffers({element.Vertex.get()});
+            auto* vertBuffer = resMgr->GetBuffer(element.Vertex);
+            if (!vertBuffer)
+                continue;
+
+            cmdBuffer.CmdBindVertexBuffers({vertBuffer});
             if (pb.batch.IsUsedIndices)
             {
-                cmdBuffer.CmdBindIndexBuffer(element.Indices.get());
-                cmdBuffer.CmdDrawIndexed(element.Indices->GetElementCount());
+                auto* indicesBuffer = resMgr->GetBuffer(element.Indices);
+                if (indicesBuffer)
+                {
+                    cmdBuffer.CmdBindIndexBuffer(indicesBuffer);
+                    cmdBuffer.CmdDrawIndexed(indicesBuffer->GetElementCount());
+                }
+                else
+                {
+                    cmdBuffer.CmdDraw(vertBuffer->GetElementCount());
+                }
             }
             else
             {
-                cmdBuffer.CmdDraw(element.Vertex->GetElementCount());
+                cmdBuffer.CmdDraw(vertBuffer->GetElementCount());
             }
         }
     }

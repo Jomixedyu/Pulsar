@@ -29,6 +29,13 @@
             "Style": "Color"
         },
         {
+            "Label": "EmissiveColor",
+            "Name": "_EmissiveColor",
+            "Type": "Float4",
+            "DefaultValue": "0,0,0,1",
+            "Style": "Color"
+        },
+        {
             "Label": "Base Color Map",
             "Name": "_BaseColorMap",
             "Type": "Texture2D",

@@ -1,5 +1,5 @@
 #pragma once
-#include "GFXInclude.h"
+#include "GFXResource.h"
 
 namespace gfx
 {
@@ -26,14 +26,15 @@ namespace gfx
         size_t ElementSize;
     };
 
-    class GFXBuffer
+    class GFXBuffer : public GFXResource
     {
     public:
         explicit GFXBuffer(const GFXBufferDesc& desc)
             : m_desc(desc) {}
         GFXBuffer(const GFXBuffer&) = delete;
         GFXBuffer(GFXBuffer&&) = delete;
-        virtual ~GFXBuffer() = default;
+        ~GFXBuffer() override = default;
+        GFXResourceType GetResourceType() const override { return GFXResourceType::Buffer; }
     public:
         virtual void Fill(const void* data) = 0;
         virtual void Release() = 0;

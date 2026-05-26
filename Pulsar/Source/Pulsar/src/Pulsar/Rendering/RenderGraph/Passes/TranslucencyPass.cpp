@@ -69,11 +69,11 @@ namespace pulsar
             std::sort(preparedTransparent->begin(), preparedTransparent->end(), sortDesc);
 
             // Update per-pass textures for this pass's own descriptor set
-            perPass->WriteStandardBuffers(this->m_perPassSet.get());
+            perPass->WriteStandardBuffers(this->m_perPassSet.get(), world->GetPerRenderObjectDataManager().GetBuffer());
 
             gfx::GFXTexture2DView* colorView = nullptr;
             if (auto* colorRT = ctx.Get(m_hOpaqueColor))
-                colorView = colorRT->GetGfxRenderTarget0().get();
+                colorView = colorRT->GetRenderTarget0().get();
             perPass->WriteTexture(this->m_perPassSet.get(), 3, colorView);
 
             perPass->Submit(this->m_perPassSet.get());

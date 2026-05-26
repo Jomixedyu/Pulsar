@@ -1,12 +1,14 @@
 #pragma once
 #include <gfx/GFXBuffer.h>
 #include <gfx/GFXDescriptorSet.h>
+#include <gfx/GFXHandle.h>
 
 #include <Pulsar/EngineMath.h>
 #include <string>
 #include <unordered_map>
 
 #include "LightingData.h"
+#include <gfx/GFXBuffer.h>
 
 namespace pulsar
 {
@@ -59,18 +61,19 @@ namespace pulsar
         void UpdateLights(const PerPassLightsBufferData& data);
 
         // 按 ShaderPass Name 获取/创建 layout（Forward / ShadowCaster / PostProcess 等）
-        gfx::GFXDescriptorSetLayout_sp GetLayout(const std::string& passName);
+        gfx::DescriptorSetLayoutHandle GetLayout(const std::string& passName);
 
         // 按指定 layout 分配 descriptor set
-        gfx::GFXDescriptorSet_sp AllocateSet(gfx::GFXDescriptorSetLayout_sp layout) const;
+        gfx::GFXDescriptorSet_sp AllocateSet(gfx::DescriptorSetLayoutHandle layout) const;
 
         // 按标准 binding 写入单个 buffer（调用方确保 layout 包含该 binding）
         void WriteCameraToSet(gfx::GFXDescriptorSet* set) const;
         void WriteWorldToSet(gfx::GFXDescriptorSet* set) const;
         void WriteLightsToSet(gfx::GFXDescriptorSet* set) const;
+        void WritePerRenderObjectToSet(gfx::GFXDescriptorSet* set, gfx::GFXBuffer* buffer) const;
 
-        // 便捷函数：写入全部 3 个标准 buffer（0/1/2）
-        void WriteStandardBuffers(gfx::GFXDescriptorSet* set) const;
+        // 便捷函数：写入全部标准 buffer（0/1/2/6）
+        void WriteStandardBuffers(gfx::GFXDescriptorSet* set, gfx::GFXBuffer* perRenderObjectBuffer) const;
 
         // 按 binding 写入 texture（调用方确保 layout 包含该 binding）
         void WriteTexture(gfx::GFXDescriptorSet* set, uint32_t binding, gfx::GFXTexture2DView* view) const;
@@ -79,11 +82,11 @@ namespace pulsar
         void Submit(gfx::GFXDescriptorSet* set) const;
 
     private:
-        gfx::GFXBuffer_sp m_cameraBuffer;
-        gfx::GFXBuffer_sp m_worldBuffer;
-        gfx::GFXBuffer_sp m_lightsBuffer;
+        gfx::BufferHandle m_cameraBuffer;
+        gfx::BufferHandle m_worldBuffer;
+        gfx::BufferHandle m_lightsBuffer;
 
-        std::unordered_map<std::string, gfx::GFXDescriptorSetLayout_sp> m_layoutCache;
+        std::unordered_map<std::string, gfx::DescriptorSetLayoutHandle> m_layoutCache;
 
         bool m_initialized = false;
     };

@@ -95,32 +95,48 @@ namespace pulsar
         auto program = ppPassBinding->GetCurrentProgram();
         if (!program) return;
 
-        RenderTexture* dstRT = passCtx.Get(hDst);
-        if (!dstRT)
-            dstRT = capture2D->GetRenderTexture().GetPtr();
-        if (!dstRT) return;
-        auto* dstFBO = dstRT->GetGfxFrameBufferObject().get();
+        const auto* dstRT = passCtx.Get(hDst);
+        gfx::GFXFrameBufferObject* dstFBO = nullptr;
+        if (dstRT)
+        {
+            dstFBO = dstRT->GetFrameBufferObject().get();
+        }
+        else
+        {
+            auto* persistentRT = capture2D->GetRenderTexture().GetPtr();
+            if (persistentRT)
+                dstFBO = persistentRT->GetGfxFrameBufferObject().get();
+        }
         if (!dstFBO) return;
 
         // Write per-pass data (Camera + World + SourceTexture) into set 1
         perPass->WriteCameraToSet(m_perPassSet.get());
         perPass->WriteWorldToSet(m_perPassSet.get());
 
-        RenderTexture* srcRT = passCtx.Get(hSrc);
-        if (!srcRT)
-            srcRT = capture2D->GetRenderTexture().GetPtr();
+        const auto* srcRT = passCtx.Get(hSrc);
+        gfx::GFXTexture2DView* srcView = nullptr;
         if (srcRT)
         {
-            auto srcView = srcRT->GetGfxRenderTarget0();
-            if (srcView)
-                perPass->WriteTexture(m_perPassSet.get(), 3, srcView.get());
+            srcView = srcRT->GetRenderTarget0().get();
         }
+        else
+        {
+            auto* persistentRT = capture2D->GetRenderTexture().GetPtr();
+            if (persistentRT)
+            {
+                auto view = persistentRT->GetGfxRenderTarget0();
+                if (view) srcView = view.get();
+            }
+        }
+        if (srcView)
+            perPass->WriteTexture(m_perPassSet.get(), 3, srcView);
         perPass->Submit(m_perPassSet.get());
 
         auto* gfxApp = cmdBuffer.GetApplication();
         auto* pipelineMgr = gfxApp->GetGraphicsPipelineManager();
+        auto* resMgr = gfxApp->GetResourceManager();
         array_list<gfx::GFXDescriptorSetLayout_sp> descLayouts;
-        descLayouts.push_back(ppPassBinding->m_descriptorSetLayout);   // set 0: material
+        descLayouts.push_back(resMgr->GetDescriptorSetLayoutShared(ppPassBinding->m_descriptorSetLayout)); // set 0: material
         descLayouts.push_back(m_perPassSet->GetDescriptorSetLayout()); // set 1: per-pass (Camera/World/Source)
 
         auto& gpuPrograms = program->GetGpuPrograms();

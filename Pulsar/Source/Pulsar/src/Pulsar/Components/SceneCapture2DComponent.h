@@ -3,6 +3,7 @@
 #include "SceneCaptureComponent.h"
 #include <CoreLib/Attribute.h>
 #include <Pulsar/Assets/Texture2D.h>
+#include <gfx/GFXHandle.h>
 
 namespace pulsar
 {
@@ -52,7 +53,7 @@ namespace pulsar
     protected:
         gfx::GFXDescriptorSetLayout_sp m_camDescriptorLayout;
         gfx::GFXDescriptorSet_sp m_cameraDescriptorSet;
-        gfx::GFXBuffer_sp m_cameraDataBuffer;
+        gfx::BufferHandle m_cameraDataBuffer;
 
         CORELIB_REFL_DECL_FIELD(m_fov);
         float m_fov{};

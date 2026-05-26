@@ -1,5 +1,5 @@
 #pragma once
-#include "GFXInclude.h"
+#include "GFXResource.h"
 #include "GFXVertexLayoutDescription.h"
 
 namespace gfx
@@ -104,13 +104,14 @@ namespace gfx
         }
     };
 
-    class GFXGraphicsPipeline
+    class GFXGraphicsPipeline : public GFXResource
     {
     public:
         GFXGraphicsPipeline() = default;
         GFXGraphicsPipeline(const GFXGraphicsPipeline&) = delete;
         GFXGraphicsPipeline(GFXGraphicsPipeline&&) = delete;
-        virtual ~GFXGraphicsPipeline() = default;
+        ~GFXGraphicsPipeline() override = default;
+        GFXResourceType GetResourceType() const override { return GFXResourceType::GraphicsPipeline; }
     public:
 
     };

@@ -33,4 +33,4 @@ namespace gfx
 
         return m_pools[m_pools.size() - 1]->GetDescriptorSet(layout);
     }
-}
+} // namespace gfx

@@ -72,6 +72,9 @@ namespace pulsar
         if (!camRenderTexture)
             return;
 
+        auto& perRenderObjectMgr = world->GetPerRenderObjectDataManager();
+        perRenderObjectMgr.BeginFrame();
+
         auto* perPass = &m_perPassResources;
 
         PerPassCameraData camData{};
@@ -174,8 +177,8 @@ namespace pulsar
                 auto* srcRT = passCtx.Get(hSceneColor);
                 auto* dstRT = passCtx.Get(hOpaqueColor);
                 if (!srcRT || !dstRT) return;
-                auto srcView = srcRT->GetGfxRenderTarget0();
-                auto dstView = dstRT->GetGfxRenderTarget0();
+                auto srcView = srcRT->GetRenderTarget0();
+                auto dstView = dstRT->GetRenderTarget0();
                 if (!srcView || !dstView) return;
                 cmdBuffer.CmdBlit(srcView.get(), dstView.get());
             });
@@ -226,17 +229,25 @@ namespace pulsar
                 .NoRenderPass()
                 .Execute([hSrc, hFinal, capture2D](RGPassContext& passCtx, gfx::GFXCommandBuffer& cmdBuffer)
                 {
-                    auto* srcRT   = passCtx.Get(hSrc);
-                    auto* finalRT = passCtx.Get(hFinal);
-                    if (!finalRT)
-                        finalRT = capture2D->GetRenderTexture().GetPtr();
-                    if (!srcRT || !finalRT) return;
+                    const auto* srcRT   = passCtx.Get(hSrc);
+                    const auto* finalRT = passCtx.Get(hFinal);
+                    gfx::GFXTexture2DView* finalView = nullptr;
+                    if (finalRT)
+                    {
+                        finalView = finalRT->GetRenderTarget0().get();
+                    }
+                    else
+                    {
+                        auto* persistentRT = capture2D->GetRenderTexture().GetPtr();
+                        if (persistentRT)
+                            finalView = persistentRT->GetGfxRenderTarget0().get();
+                    }
+                    if (!srcRT || !finalView) return;
 
-                    auto srcView   = srcRT->GetGfxRenderTarget0();
-                    auto finalView = finalRT->GetGfxRenderTarget0();
-                    if (!srcView || !finalView) return;
+                    auto srcView = srcRT->GetRenderTarget0();
+                    if (!srcView) return;
 
-                    cmdBuffer.CmdBlit(srcView.get(), finalView.get());
+                    cmdBuffer.CmdBlit(srcView.get(), finalView);
                 });
         }
 
@@ -249,6 +260,8 @@ namespace pulsar
                 m_gizmoOverlayPass.AddToGraph(graph, hFinal, hFinal, capture2D, perPass);
             }
         }
+
+        perRenderObjectMgr.EndFrame();
     }
 
 } // namespace pulsar

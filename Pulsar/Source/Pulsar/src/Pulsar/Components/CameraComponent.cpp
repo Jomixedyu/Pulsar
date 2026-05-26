@@ -130,14 +130,14 @@ namespace pulsar
 
         auto rtname = GetNode()->GetName() + "_CamRT";
 
-        array_list<RenderTargetInfo> formats;
-
-        formats.push_back({ gfx::GFXTextureTargetType::ColorTarget, gfx::GFXTextureFormat::R8G8B8A8_UNorm});
-
-        formats.push_back({
-            .TargetType = gfx::GFXTextureTargetType::DepthStencilTarget, .Format = gfx::GFXTextureFormat::D32_SFloat_S8_UInt});
-
-        m_renderTarget = RenderTexture::StaticCreate(index_string{rtname}, width, height, formats);
+        auto rt = NewAssetObject<RenderTexture>();
+        rt->SetIndexName(index_string{rtname});
+        rt->m_width = width;
+        rt->m_height = height;
+        rt->m_colorFormats->push_back(RenderTextureColorFormat::RGBA8_UNorm);
+        rt->m_depthFormat = RenderTextureDepthFormat::D32_SFloat_S8_UInt;
+        rt->CreateGPUResource();
+        m_renderTarget = rt;
 
 
         UpdateRT();
@@ -238,7 +238,6 @@ namespace pulsar
         }
         m_camDescriptorLayout.reset();
         m_cameraDescriptorSet.reset();
-        m_cameraDataBuffer.reset();
     }
 
     void CameraComponent::OnTransformChanged()

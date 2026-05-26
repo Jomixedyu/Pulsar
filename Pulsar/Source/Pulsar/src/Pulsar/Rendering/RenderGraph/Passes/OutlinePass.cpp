@@ -55,7 +55,7 @@ namespace pulsar
             .WithPerPass(perPass)
             .Prepare([capture2D, world, preparedOutline, perPass, this](RGPassContext&)
             {
-                perPass->WriteStandardBuffers(this->m_perPassSet.get());
+                perPass->WriteStandardBuffers(this->m_perPassSet.get(), world->GetPerRenderObjectDataManager().GetBuffer());
                 perPass->Submit(this->m_perPassSet.get());
 
                 const Vector3f camPos     = capture2D->GetNode()->GetTransform()->GetWorldPosition();

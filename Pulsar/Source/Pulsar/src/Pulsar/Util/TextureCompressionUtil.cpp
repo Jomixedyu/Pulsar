@@ -3,6 +3,9 @@
 
 #include "DirectXTex.h"
 #include "stdfloat"
+#include <CoreLib/File.h>
+#include <filesystem>
+#include <cstring>
 
 #ifdef _WIN32
     #include <DirectXTex/BC.h>
@@ -34,6 +37,91 @@ namespace
     private:
         int m_oldThreads = 1;
     };
+}
+
+namespace
+{
+    uint64_t FNV1aHash(const uint8_t* data, size_t len)
+    {
+        uint64_t hash = 14695981039346656037ull;
+        for (size_t i = 0; i < len; ++i)
+        {
+            hash ^= data[i];
+            hash *= 1099511628211ull;
+        }
+        return hash;
+    }
+
+    uint64_t ComputeCacheFingerprint(
+        const uint8_t* data, size_t dataLen,
+        size_t width, size_t height, size_t channel,
+        gfx::GFXTextureFormat format,
+        int cacheVersion)
+    {
+        uint64_t hash = FNV1aHash(data, dataLen);
+        auto mix = [&hash](uint64_t v)
+        {
+            hash ^= v;
+            hash *= 1099511628211ull;
+        };
+        mix(static_cast<uint64_t>(width));
+        mix(static_cast<uint64_t>(height));
+        mix(static_cast<uint64_t>(channel));
+        mix(static_cast<uint64_t>(format));
+        mix(static_cast<uint64_t>(cacheVersion));
+        return hash;
+    }
+
+    std::filesystem::path GetCacheDirectory()
+    {
+        auto cacheDir = std::filesystem::temp_directory_path() / "Pulsar" / "TextureCompressionCache";
+        std::filesystem::create_directories(cacheDir);
+        return cacheDir;
+    }
+
+    std::filesystem::path GetCachePath(uint64_t fingerprint)
+    {
+        return GetCacheDirectory() / (std::to_string(fingerprint) + ".cache");
+    }
+
+    bool TryLoadCache(uint64_t fingerprint, std::vector<uint8_t>& outData)
+    {
+        auto path = GetCachePath(fingerprint);
+        if (!std::filesystem::exists(path))
+            return false;
+
+        auto bytes = jxcorlib::FileUtil::ReadAllBytes(path);
+        if (bytes.size() < sizeof(uint64_t))
+            return false;
+
+        uint64_t fileFingerprint;
+        std::memcpy(&fileFingerprint, bytes.data(), sizeof(uint64_t));
+        if (fileFingerprint != fingerprint)
+            return false;
+
+        outData.resize(bytes.size() - sizeof(uint64_t));
+        if (!outData.empty())
+            std::memcpy(outData.data(), bytes.data() + sizeof(uint64_t), outData.size());
+        return true;
+    }
+
+    void SaveCache(uint64_t fingerprint, const std::vector<uint8_t>& data)
+    {
+        auto path = GetCachePath(fingerprint);
+        std::vector<char> buffer;
+        buffer.reserve(sizeof(uint64_t) + data.size());
+
+        buffer.resize(sizeof(uint64_t));
+        std::memcpy(buffer.data(), &fingerprint, sizeof(uint64_t));
+
+        buffer.insert(buffer.end(),
+            reinterpret_cast<const char*>(data.data()),
+            reinterpret_cast<const char*>(data.data() + data.size()));
+
+        jxcorlib::FileUtil::WriteAllBytes(
+            jxcorlib::StrToU8Path(path.generic_string()),
+            buffer.data(), buffer.size());
+    }
 }
 
 namespace pulsar
@@ -97,7 +185,15 @@ namespace pulsar
         size_t width, size_t height, size_t channel,
         gfx::GFXTextureFormat format)
     {
+        uint64_t fingerprint = ComputeCacheFingerprint(
+            data.data(), data.size(),
+            width, height, channel,
+            format, CACHE_VERSION);
+
         std::vector<uint8_t> ret;
+        if (TryLoadCache(fingerprint, ret))
+            return ret;
+
         switch (format)
         {
 #ifdef _WIN32
@@ -290,6 +386,7 @@ namespace pulsar
         default:
             assert(false);
         }
+        SaveCache(fingerprint, ret);
         return ret;
     }
 } // namespace pulsar

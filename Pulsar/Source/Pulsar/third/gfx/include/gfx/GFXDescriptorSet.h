@@ -1,7 +1,7 @@
 #pragma once
 #include "GFXBuffer.h"
 #include "GFXTexture.h"
-#include "GFXInclude.h"
+#include "GFXResource.h"
 #include "GFXGpuProgram.h"
 #include <string_view>
 
@@ -10,6 +10,7 @@ namespace gfx
     enum class GFXDescriptorType
     {
         ConstantBuffer,
+        ConstantBufferDynamic,
         StructuredBuffer,
         CombinedImageSampler,
         Texture2D
@@ -36,13 +37,14 @@ namespace gfx
         }
     };
 
-    class GFXDescriptorSetLayout
+    class GFXDescriptorSetLayout : public GFXResource
     {
     protected:
         GFXDescriptorSetLayout()
         {
         }
-        virtual ~GFXDescriptorSetLayout() {}
+        ~GFXDescriptorSetLayout() override {}
+        GFXResourceType GetResourceType() const override { return GFXResourceType::DescriptorSetLayout; }
     };
     GFX_DECL_SPTR(GFXDescriptorSetLayout);
 
@@ -54,6 +56,7 @@ namespace gfx
         GFXDescriptor(const GFXDescriptor&) = delete;
 
         virtual void SetConstantBuffer(GFXBuffer* buffer) = 0;
+        virtual void SetConstantBufferDynamic(GFXBuffer* buffer) = 0;
         virtual void SetStructuredBuffer(GFXBuffer* buffer) = 0;
         virtual void SetTextureSampler2D(GFXTexture2DView* texture) = 0;
         virtual void SetTexture2D(GFXTexture* texture) = 0;

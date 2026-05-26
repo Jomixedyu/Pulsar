@@ -107,6 +107,9 @@ namespace gfx
         {
             return m_cmdPool;
         }
+
+        uint32_t GetFrameCount() const { return m_framecount; }
+
     private:
         void InitVkInstance();
 

@@ -71,10 +71,13 @@ namespace pulsar
         desc.Usage = gfx::GFXBufferUsage::ConstantBuffer;
         desc.StorageType = gfx::GFXBufferMemoryPosition::VisibleOnDevice;
         desc.BufferSize = sizeof(BloomParams);
+        auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
         for (uint32_t i = 0; i < PassCount; ++i)
         {
-            m_bloomParamBuffers[i] = gfxApp->CreateBuffer(desc);
+            m_bloomParamBuffers[i] = cmdList.CreateBuffer(desc);
         }
+
+        auto* resMgr = Application::GetGfxApp()->GetResourceManager();
 
         // Bind each buffer to its corresponding set
         for (int i = 0; i < 16; ++i)
@@ -82,18 +85,25 @@ namespace pulsar
             if (i < (int)m_bloomParamBuffers.size() && m_bloomSets[i])
             {
                 auto* d = m_bloomSets[i]->AddDescriptor("BloomParams", 8);
-                if (d) d->SetConstantBuffer(m_bloomParamBuffers[i].get());
+                auto* buffer = resMgr->GetBuffer(m_bloomParamBuffers[i]);
+                if (d && buffer) d->SetConstantBuffer(buffer);
             }
         }
         if (m_combineSet && m_bloomParamBuffers.size() > 12)
         {
             auto* d = m_combineSet->AddDescriptor("BloomParams", 8);
-            if (d) d->SetConstantBuffer(m_bloomParamBuffers[12].get());
+            auto* buffer = resMgr->GetBuffer(m_bloomParamBuffers[12]);
+            if (d && buffer) d->SetConstantBuffer(buffer);
         }
     }
 
     void BloomPass::Destroy()
     {
+        auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
+        for (auto& h : m_bloomParamBuffers)
+        {
+            if (h.IsValid()) cmdList.Destroy(h);
+        }
         m_bloomParamBuffers.clear();
         m_bloomSets.clear();
         m_bloomLayout.reset();
@@ -140,8 +150,11 @@ namespace pulsar
 
     void BloomPass::WriteBloomParams(uint32_t idx, const Vector2f& texelSize, const Vector2f& direction, int32_t sampleMode, float threshold)
     {
-        if (idx >= m_bloomParamBuffers.size() || !m_bloomParamBuffers[idx])
+        if (idx >= m_bloomParamBuffers.size() || !m_bloomParamBuffers[idx].IsValid())
             return;
+
+        auto* buffer = Application::GetGfxApp()->GetResourceManager()->GetBuffer(m_bloomParamBuffers[idx]);
+        if (!buffer) return;
 
         BloomParams params{};
         params.TexelSize = texelSize;
@@ -149,7 +162,7 @@ namespace pulsar
         params.Threshold = threshold;
         params.Intensity = m_bloomIntensity;
         params.SampleMode = sampleMode;
-        m_bloomParamBuffers[idx]->Fill(&params);
+        buffer->Fill(&params);
     }
 
     void BloomPass::SetupBloomSet(gfx::GFXDescriptorSet* set, gfx::GFXTexture2DView* srcView)
@@ -279,16 +292,16 @@ namespace pulsar
                     auto program = binding.GetCurrentProgram();
                     if (!program) return;
 
-                    RenderTexture* dstRT = passCtx.Get(hDst);
+                    const auto* dstRT = passCtx.Get(hDst);
                     if (!dstRT) return;
-                    auto* dstFBO = dstRT->GetGfxFrameBufferObject().get();
+                    auto* dstFBO = dstRT->GetFrameBufferObject().get();
                     if (!dstFBO) return;
 
-                    RenderTexture* srcRT = passCtx.Get(hSrc);
+                    const auto* srcRT = passCtx.Get(hSrc);
                     gfx::GFXTexture2DView* srcView = nullptr;
                     if (srcRT)
                     {
-                        auto view = srcRT->GetGfxRenderTarget0();
+                        auto view = srcRT->GetRenderTarget0();
                         if (view) srcView = view.get();
                     }
 
@@ -298,9 +311,10 @@ namespace pulsar
 
                     auto* gfxApp = cmdBuffer.GetApplication();
                     auto* pipelineMgr = gfxApp->GetGraphicsPipelineManager();
+                    auto* resMgr = gfxApp->GetResourceManager();
 
                     array_list<gfx::GFXDescriptorSetLayout_sp> descLayouts;
-                    descLayouts.push_back(binding.m_descriptorSetLayout);
+                    descLayouts.push_back(resMgr->GetDescriptorSetLayoutShared(binding.m_descriptorSetLayout));
                     descLayouts.push_back(m_bloomLayout);
 
                     gfx::GFXGraphicsPipelineStateParams psoParams{};
@@ -400,17 +414,17 @@ namespace pulsar
                 auto program = binding.GetCurrentProgram();
                 if (!program) return;
 
-                RenderTexture* dstRT = passCtx.Get(output);
+                const auto* dstRT = passCtx.Get(output);
                 if (!dstRT) return;
-                auto* dstFBO = dstRT->GetGfxFrameBufferObject().get();
+                auto* dstFBO = dstRT->GetFrameBufferObject().get();
                 if (!dstFBO) return;
 
                 auto GetView = [&](RGTextureHandle h) -> gfx::GFXTexture2DView*
                 {
-                    RenderTexture* rt = passCtx.Get(h);
+                    const auto* rt = passCtx.Get(h);
                     if (rt)
                     {
-                        auto view = rt->GetGfxRenderTarget0();
+                        auto view = rt->GetRenderTarget0();
                         if (view) return view.get();
                     }
                     return nullptr;
@@ -424,8 +438,9 @@ namespace pulsar
 
                 auto* gfxApp = cmdBuffer.GetApplication();
                 auto* pipelineMgr = gfxApp->GetGraphicsPipelineManager();
+                auto* resMgr = gfxApp->GetResourceManager();
                 array_list<gfx::GFXDescriptorSetLayout_sp> descLayouts;
-                descLayouts.push_back(binding.m_descriptorSetLayout);
+                descLayouts.push_back(resMgr->GetDescriptorSetLayoutShared(binding.m_descriptorSetLayout));
                 descLayouts.push_back(m_combineLayout);
 
                 gfx::GFXGraphicsPipelineStateParams psoParams{};

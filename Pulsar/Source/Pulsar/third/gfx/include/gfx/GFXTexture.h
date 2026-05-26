@@ -1,5 +1,5 @@
 #pragma once
-#include "GFXInclude.h"
+#include "GFXResource.h"
 #include "GFXTextureView.h"
 #include "TextureClasses.h"
 #include <cstdint>
@@ -38,10 +38,11 @@ namespace gfx
 
     };
 
-    class GFXTexture
+    class GFXTexture : public GFXResource
     {
     public:
-        virtual ~GFXTexture() = default;
+        ~GFXTexture() override = default;
+        GFXResourceType GetResourceType() const override { return GFXResourceType::Texture; }
         GFXTexture(int32_t width, int32_t height, int32_t depth, GFXSamplerConfig cfg)
             : m_width(width), m_height(height), m_depth(depth), m_samplerConfig(cfg)
         {

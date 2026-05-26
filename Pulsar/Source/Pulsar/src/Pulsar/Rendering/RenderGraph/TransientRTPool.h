@@ -1,11 +1,22 @@
 #pragma once
-#include <Pulsar/Assets/RenderTexture.h>
+#include <Pulsar/Assembly.h>
+#include <gfx/GFXTexture.h>
+#include <gfx/GFXFrameBufferObject.h>
 #include <corelib/CommonException.h>
 #include <unordered_map>
 #include <vector>
 
 namespace pulsar
 {
+    // Describes a single attachment target
+    struct RenderTargetInfo
+    {
+        gfx::GFXTextureTargetType TargetType;
+        gfx::GFXTextureFormat Format;
+        uint32_t SampleCount = 1;
+        bool IsTransientAttachment = false;
+    };
+
     // Describes the dimensions and format of a transient render texture
     struct RGTextureDesc
     {
@@ -44,6 +55,33 @@ namespace pulsar
         }
     };
 
+    // Lightweight GPU resource bundle for transient / internal render targets.
+    // NOT an AssetObject — purely manages GFX attachments and FBO.
+    struct RGPhysicalTexture
+    {
+        int32_t width = 0;
+        int32_t height = 0;
+        array_list<gfx::GFXTexture_sp> attachments;
+        gfx::GFXFrameBufferObject_sp fbo;
+
+        gfx::GFXTexture2DView_sp GetRenderTarget0() const
+        {
+            if (attachments.empty()) return nullptr;
+            return attachments[0]->Get2DView(0);
+        }
+
+        gfx::GFXFrameBufferObject_sp GetFrameBufferObject() const
+        {
+            return fbo;
+        }
+
+        gfx::GFXTexture_sp GetTexture0() const
+        {
+            if (attachments.empty()) return nullptr;
+            return attachments[0];
+        }
+    };
+
     class TransientRTPool;
 
     // RAII wrapper: auto-releases the RT back to the pool on destruction
@@ -51,7 +89,7 @@ namespace pulsar
     {
     public:
         ScopedRT() = default;
-        ScopedRT(TransientRTPool* pool, RCPtr<RenderTexture> rt, const RGTextureDesc& desc)
+        ScopedRT(TransientRTPool* pool, std::shared_ptr<RGPhysicalTexture> rt, const RGTextureDesc& desc)
             : m_pool(pool), m_rt(std::move(rt)), m_desc(desc) {}
 
         ScopedRT(const ScopedRT&) = delete;
@@ -73,14 +111,14 @@ namespace pulsar
 
         ~ScopedRT() { Release(); }
 
-        RenderTexture* Get() const { return m_rt.GetPtr(); }
-        RCPtr<RenderTexture> GetRC() const { return m_rt; }
+        RGPhysicalTexture* Get() const { return m_rt.get(); }
+        std::shared_ptr<RGPhysicalTexture> GetPtr() const { return m_rt; }
         explicit operator bool() const { return m_rt != nullptr; }
 
     private:
         void Release();
         TransientRTPool* m_pool = nullptr;
-        RCPtr<RenderTexture> m_rt;
+        std::shared_ptr<RGPhysicalTexture> m_rt;
         RGTextureDesc m_desc;
     };
 
@@ -94,10 +132,10 @@ namespace pulsar
         static void Shutdown();
 
         // Acquire an RT matching desc. Returns from free list or creates new.
-        RCPtr<RenderTexture> Acquire(const RGTextureDesc& desc);
+        std::shared_ptr<RGPhysicalTexture> Acquire(const RGTextureDesc& desc);
 
         // Return an RT to the pool's free list.
-        void Release(const RGTextureDesc& desc, RCPtr<RenderTexture> rt);
+        void Release(const RGTextureDesc& desc, std::shared_ptr<RGPhysicalTexture> rt);
 
         // Acquire with RAII wrapper
         ScopedRT AcquireScoped(const RGTextureDesc& desc);
@@ -111,7 +149,7 @@ namespace pulsar
     private:
         struct PoolEntry
         {
-            RCPtr<RenderTexture> rt;
+            std::shared_ptr<RGPhysicalTexture> rt;
             uint64_t lastUsedFrame = 0;
         };
 

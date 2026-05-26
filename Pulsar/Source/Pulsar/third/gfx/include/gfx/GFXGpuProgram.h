@@ -1,5 +1,5 @@
 #pragma once
-#include "GFXInclude.h"
+#include "GFXResource.h"
 #include <string>
 
 namespace gfx
@@ -33,12 +33,13 @@ namespace gfx
         return nullptr;
     }
 
-    class GFXGpuProgram
+    class GFXGpuProgram : public GFXResource
     {
     public:
         GFXGpuProgram() {}
         GFXGpuProgram(const GFXGpuProgram&) = delete;
-        virtual ~GFXGpuProgram() {}
+        ~GFXGpuProgram() override {}
+        GFXResourceType GetResourceType() const override { return GFXResourceType::GpuProgram; }
 
         virtual GFXGpuProgramStageFlags GetStage() const = 0;
         const std::string& GetEntryName() const { return m_entryName; }

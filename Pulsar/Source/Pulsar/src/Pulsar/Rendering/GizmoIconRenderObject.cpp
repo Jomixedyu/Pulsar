@@ -31,6 +31,8 @@ namespace pulsar
         batch.Material = m_material;
         batch.Interface = "RENDERER_STATICMESH";
         batch.DescriptorSetLayout = m_descriptorSetLayout;
+        batch.RenderObjectIndex = m_renderObjectIndex;
+        batch.ExtraDescriptorSet = m_dummyExtraSet;
         batch.State.VertexLayouts = {StaticMesh::StaticGetVertexLayout()};
 
         if (!m_mesh->IsCreatedGPUResource())
@@ -42,9 +44,9 @@ namespace pulsar
         {
             auto& element = batch.Elements.emplace_back();
             element.Vertex = vertBuffers[0];
-            element.Indices = indicesBuffers.empty() ? nullptr : indicesBuffers[0];
-            element.ModelDescriptor = m_descriptorSet;
-            batch.IsUsedIndices = element.Indices != nullptr;
+            element.Indices = indicesBuffers.empty() ? gfx::BufferHandle{} : indicesBuffers[0];
+            // PerRenderObject data is in global dynamic UBO
+            batch.IsUsedIndices = element.Indices.IsValid();
         }
 
         m_batches.push_back(std::move(batch));
@@ -52,14 +54,13 @@ namespace pulsar
 
     void GizmoIconRenderObject::OnCreateResource()
     {
+        if (m_pPerRenderObjectDataManager)
+            m_dummyExtraSet = m_pPerRenderObjectDataManager->GetDummyExtraSet();
 
         if (s_sharedLayout.expired())
         {
-            gfx::GFXDescriptorSetLayoutDesc info{
-                gfx::GFXDescriptorType::ConstantBuffer,
-                gfx::GFXGpuProgramStageFlags::VertexFragment,
-                0, kRenderingDescriptorSpace_ModelInfo};
-            m_descriptorSetLayout = Application::GetGfxApp()->CreateDescriptorSetLayout(&info, 1);
+            gfx::GFXDescriptorSetLayoutDesc info{};
+            m_descriptorSetLayout = Application::GetGfxApp()->CreateDescriptorSetLayout(&info, 0);
             s_sharedLayout = m_descriptorSetLayout;
         }
         else
@@ -67,31 +68,16 @@ namespace pulsar
             m_descriptorSetLayout = s_sharedLayout.lock();
         }
 
-        gfx::GFXBufferDesc desc{};
-        desc.Usage = gfx::GFXBufferUsage::ConstantBuffer;
-        desc.StorageType = gfx::GFXBufferMemoryPosition::VisibleOnDevice;
-        desc.BufferSize = sizeof(PerRendererData);
-        desc.ElementSize = sizeof(PerRendererData);
-
-        m_constantBuffer = Application::GetGfxApp()->CreateBuffer(desc);
-        m_descriptorSet = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_descriptorSetLayout);
-        m_descriptorSet->AddDescriptor("ModelObject", 0)->SetConstantBuffer(m_constantBuffer.get());
-        m_descriptorSet->Submit();
-
         _RebuildBatch();
     }
 
     void GizmoIconRenderObject::OnDestroyResource()
     {
-        m_constantBuffer.reset();
-        m_descriptorSet.reset();
         m_batches.clear();
     }
 
     void GizmoIconRenderObject::OnChangedTransform()
     {
-        if (m_constantBuffer)
-            m_constantBuffer->Fill(&m_perModelData);
     }
 
     array_list<rendering::MeshBatch> GizmoIconRenderObject::GetMeshBatches()

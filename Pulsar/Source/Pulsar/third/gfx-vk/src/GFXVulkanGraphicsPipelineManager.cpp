@@ -2,6 +2,7 @@
 
 #include "GFXVulkanGpuProgram.h"
 #include "GFXVulkanGraphicsPipeline.h"
+#include "GFXVulkanApplication.h"
 
 namespace gfx
 {

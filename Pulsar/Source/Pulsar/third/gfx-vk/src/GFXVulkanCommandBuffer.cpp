@@ -246,7 +246,7 @@ namespace gfx
             _GetVkIndexType(buffer->GetElementSize()));
     }
 
-    void GFXVulkanCommandBuffer::CmdBindDescriptorSets(const array_list<GFXDescriptorSet*>& descriptorSet, GFXGraphicsPipeline* pipeline)
+    void GFXVulkanCommandBuffer::CmdBindDescriptorSets(const array_list<GFXDescriptorSet*>& descriptorSet, GFXGraphicsPipeline* pipeline, const array_list<uint32_t>* dynamicOffsets)
     {
         VkDescriptorSet sets[8]{};
         for (int i = 0; const auto set : descriptorSet)
@@ -261,10 +261,10 @@ namespace gfx
                                 VK_PIPELINE_BIND_POINT_GRAPHICS,
                                 vkGpipeline->GetVkPipelineLayout(),
                                 0,
-                                descriptorSet.size(),
+                                static_cast<uint32_t>(descriptorSet.size()),
                                 sets,
-                                0,
-                                nullptr);
+                                dynamicOffsets ? static_cast<uint32_t>(dynamicOffsets->size()) : 0,
+                                dynamicOffsets ? dynamicOffsets->data() : nullptr);
     }
     void GFXVulkanCommandBuffer::CmdPushDebugInfo(std::string_view label, const std::array<float, 4>& color)
     {

@@ -120,6 +120,7 @@ namespace pulsar
         if (m_isCreatedResource) return true;
         m_isCreatedResource = true;
 
+        auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
         for (auto& section : m_sections)
         {
             auto verts = section.BuildInterleavedVertices();
@@ -129,8 +130,8 @@ namespace pulsar
             vDesc.StorageType = gfx::GFXBufferMemoryPosition::DeviceLocal;
             vDesc.BufferSize  = verts.size() * sizeof(SkinnedMeshVertex);
             vDesc.ElementSize = sizeof(SkinnedMeshVertex);
-            auto vb = Application::GetGfxApp()->CreateBuffer(vDesc);
-            vb->Fill(verts.data());
+            auto vb = cmdList.CreateBuffer(vDesc);
+            cmdList.UploadBuffer(vb, verts.data(), verts.size() * sizeof(SkinnedMeshVertex));
             m_vertexBuffers.push_back(vb);
 
             gfx::GFXBufferDesc iDesc{};
@@ -138,8 +139,8 @@ namespace pulsar
             iDesc.StorageType = gfx::GFXBufferMemoryPosition::DeviceLocal;
             iDesc.BufferSize  = section.GetIndicesAllocSize();
             iDesc.ElementSize = sizeof(MeshIndicesType);
-            auto ib = Application::GetGfxApp()->CreateBuffer(iDesc);
-            ib->Fill(section.Indices.data());
+            auto ib = cmdList.CreateBuffer(iDesc);
+            cmdList.UploadBuffer(ib, section.Indices.data(), section.GetIndicesAllocSize());
             m_indicesBuffers.push_back(ib);
         }
         return true;
@@ -149,6 +150,12 @@ namespace pulsar
     {
         if (!m_isCreatedResource) return;
         m_isCreatedResource = false;
+
+        auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
+        for (auto& h : m_vertexBuffers)
+            cmdList.Destroy(h);
+        for (auto& h : m_indicesBuffers)
+            cmdList.Destroy(h);
         m_vertexBuffers.clear();
         m_indicesBuffers.clear();
     }

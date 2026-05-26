@@ -1,12 +1,12 @@
 #pragma once
 #include "CurveLinearColor.h"
-#include "Texture.h"
+#include "Texture2DBase.h"
 
 namespace pulsar
 {
-    class CurveLinearColorAtlas : public Texture
+    class CurveLinearColorAtlas : public Texture2DBase
     {
-        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::CurveLinearColorAtlas, Texture);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::CurveLinearColorAtlas, Texture2DBase);
         CORELIB_CLASS_ATTR(new CreateAssetAttribute);
     public:
         CurveLinearColorAtlas();
