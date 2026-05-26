@@ -4,6 +4,7 @@
 #include "Node.h"
 #include "AssetManager.h"
 #include "Assets/StaticMesh.h"
+#include <Pulsar/Rendering/RenderThread.h>
 
 namespace pulsar
 {
@@ -28,36 +29,40 @@ namespace pulsar
     {
         base::BeginComponent();
 
-        if (_CameraDescriptorLayout.expired())
-        {
-            gfx::GFXDescriptorSetLayoutDesc info{
-                gfx::GFXDescriptorType::ConstantBuffer,
-                gfx::GFXGpuProgramStageFlags::VertexFragment,
-                0,
-                kRenderingDescriptorSpace_Camera};
-            m_camDescriptorLayout = Application::GetGfxApp()->CreateDescriptorSetLayout(&info, 1);
-            _CameraDescriptorLayout = m_camDescriptorLayout;
-        }
-        else
-        {
-            m_camDescriptorLayout = _CameraDescriptorLayout.lock();
-        }
+        RenderThread::Get().EnqueueCommandSync([this]() {
+            if (_CameraDescriptorLayout.expired())
+            {
+                gfx::GFXDescriptorSetLayoutDesc info{
+                    gfx::GFXDescriptorType::ConstantBuffer,
+                    gfx::GFXGpuProgramStageFlags::VertexFragment,
+                    0,
+                    kRenderingDescriptorSpace_Camera};
+                m_camDescriptorLayout = Application::GetGfxApp()->CreateDescriptorSetLayout(&info, 1);
+                _CameraDescriptorLayout = m_camDescriptorLayout;
+            }
+            else
+            {
+                m_camDescriptorLayout = _CameraDescriptorLayout.lock();
+            }
 
-        gfx::GFXBufferDesc perCameraBufferDesc{};
-        perCameraBufferDesc.Usage       = gfx::GFXBufferUsage::ConstantBuffer;
-        perCameraBufferDesc.StorageType = gfx::GFXBufferMemoryPosition::VisibleOnDevice;
-        perCameraBufferDesc.BufferSize  = sizeof(PerCaptureShaderParameter);
-        perCameraBufferDesc.ElementSize = sizeof(PerCaptureShaderParameter);
+            gfx::GFXBufferDesc perCameraBufferDesc{};
+            perCameraBufferDesc.Usage       = gfx::GFXBufferUsage::ConstantBuffer;
+            perCameraBufferDesc.StorageType = gfx::GFXBufferMemoryPosition::VisibleOnDevice;
+            perCameraBufferDesc.BufferSize  = sizeof(PerCaptureShaderParameter);
+            perCameraBufferDesc.ElementSize = sizeof(PerCaptureShaderParameter);
 
-        auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
-        m_cameraDataBuffer = cmdList.CreateBuffer(perCameraBufferDesc);
-        m_cameraDescriptorSet = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_camDescriptorLayout);
-        m_cameraDescriptorSet->AddDescriptor("Target", 0)->SetConstantBuffer(m_cameraDataBuffer.Get());
-        m_cameraDescriptorSet->Submit();
+            auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
+            m_cameraDataBuffer = cmdList.CreateBuffer(perCameraBufferDesc);
+            m_cameraDescriptorSet = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_camDescriptorLayout);
+            m_cameraDescriptorSet->AddDescriptor("Target", 0)->SetConstantBuffer(m_cameraDataBuffer.Get());
+            m_cameraDescriptorSet->Submit();
+        });
     }
     void SceneCapture2DComponent::EndComponent()
     {
-        m_cameraDataBuffer.Reset();
+        RenderThread::Get().EnqueueCommand([this]() {
+            m_cameraDataBuffer.Reset();
+        });
         SceneCaptureComponent::EndComponent();
     }
     Matrix4f SceneCapture2DComponent::GetViewMat() const
@@ -146,13 +151,17 @@ namespace pulsar
         {
             return;
         }
-        auto rt0 = m_renderTarget->GetGfxRenderTarget0();
-        auto& color = rt0->GetTexture()->TargetClearColor;
-
-        color[0] = m_backgroundColor.r;
-        color[1] = m_backgroundColor.g;
-        color[2] = m_backgroundColor.b;
-        color[3] = m_backgroundColor.a;
+        RenderThread::Get().EnqueueCommand([this]() {
+            auto rt0 = m_renderTarget->GetGfxRenderTarget0();
+            if (rt0 && rt0->GetTexture())
+            {
+                auto& color = rt0->GetTexture()->TargetClearColor;
+                color[0] = m_backgroundColor.r;
+                color[1] = m_backgroundColor.g;
+                color[2] = m_backgroundColor.b;
+                color[3] = m_backgroundColor.a;
+            }
+        });
     }
 
     void SceneCapture2DComponent::UpdateCBuffer()
@@ -171,9 +180,15 @@ namespace pulsar
         target.CamNear = m_near;
         target.CamFar = m_far;
         target.Resolution = m_renderTarget->GetSize2df();
+
         if (m_cameraDataBuffer.IsValid())
         {
-            m_cameraDataBuffer->Fill(&target);
+            RenderThread::Get().EnqueueCommand([this, target]() {
+                if (m_cameraDataBuffer.IsValid())
+                {
+                    m_cameraDataBuffer->Fill(&target);
+                }
+            });
         }
     }
 } // namespace pulsar

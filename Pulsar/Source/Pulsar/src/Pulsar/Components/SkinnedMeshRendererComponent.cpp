@@ -7,6 +7,7 @@
 #include <Pulsar/Logger.h>
 #include <Pulsar/Rendering/ShaderConfig.h>
 #include <Pulsar/Rendering/RenderProxyMaterial.h>
+#include <Pulsar/Rendering/RenderThread.h>
 #include <gfx/GFXBuffer.h>
 
 namespace pulsar
@@ -56,14 +57,15 @@ namespace pulsar
         // Animator 调用：将骨骼矩阵写入 GPU UBO
         void UploadBoneMatrices(const array_list<Matrix4f>& boneMatrices)
         {
-            if (!m_skinningBuffer.IsValid()) return;
-
             SkinnedRenderObjectData data{};
             const size_t count = std::min(boneMatrices.size(), (size_t)SKINNEDMESH_MAX_BONES);
             for (size_t i = 0; i < count; ++i)
                 data.BoneMatrices[i] = boneMatrices[i];
 
-            m_skinningBuffer->Fill(&data);
+            RenderThread::Get().EnqueueCommand([this, data]() {
+                if (m_skinningBuffer.IsValid())
+                    m_skinningBuffer->Fill(&data);
+            });
         }
 
         void SubmitChange();

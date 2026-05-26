@@ -5,6 +5,7 @@
 #include <Pulsar/Application.h>
 #include <Pulsar/Components/CameraComponent.h>
 #include <Pulsar/Logger.h>
+#include <Pulsar/Rendering/RenderThread.h>
 #include <gfx/GFXImage.h>
 #include <gfx/GFXTexture.h>
 #include <CoreLib/File.h>
@@ -174,7 +175,11 @@ namespace pulsar
         if (outWidth) *outWidth = width;
         if (outHeight) *outHeight = height;
 
-        return gfxApp->ReadbackTexture(texture, width, height);
+        std::vector<uint8_t> result;
+        RenderThread::Get().EnqueueCommandSync([&result, gfxApp, texture, width, height]() {
+            result = gfxApp->ReadbackTexture(texture, width, height);
+        });
+        return result;
     }
 
     std::string TextureSaveUtil::CaptureCameraScreenshot(CameraComponent* camera)

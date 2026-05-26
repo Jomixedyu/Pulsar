@@ -8,6 +8,7 @@
 #include <Pulsar/Application.h>
 #include <Pulsar/Node.h>
 #include <Pulsar/TransformUtil.h>
+#include <Pulsar/Rendering/RenderThread.h>
 
 namespace pulsar
 {
@@ -209,10 +210,15 @@ namespace pulsar
     {
         if (m_isBegun && m_renderTarget)
         {
-            auto& refData = m_renderTarget->GetGfxFrameBufferObject()->RefData;
-            refData.clear();
-            refData.push_back(m_cameraDescriptorSet);
-
+            RenderThread::Get().EnqueueCommand([this]() {
+                auto fbo = m_renderTarget->GetGfxFrameBufferObject();
+                if (fbo)
+                {
+                    auto& refData = fbo->RefData;
+                    refData.clear();
+                    refData.push_back(m_cameraDescriptorSet);
+                }
+            });
             UpdateCBuffer();
         }
     }
@@ -241,8 +247,10 @@ namespace pulsar
         {
             DestroyObject(m_renderTarget);
         }
-        m_camDescriptorLayout.reset();
-        m_cameraDescriptorSet.reset();
+        RenderThread::Get().EnqueueCommand([this]() {
+            m_camDescriptorLayout.reset();
+            m_cameraDescriptorSet.reset();
+        });
     }
 
     void CameraComponent::OnTransformChanged()
