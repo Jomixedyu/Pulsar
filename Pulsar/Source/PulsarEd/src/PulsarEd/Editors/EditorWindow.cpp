@@ -159,6 +159,7 @@ namespace pulsared
                 panel->OnClose();
                 panel->SetOpened(false);
                 m_openedPanels.erase(m_openedPanels.begin() + i);
+                ImGui::End();
                 continue;
             }
             ImGui::End();
