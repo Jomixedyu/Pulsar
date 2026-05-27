@@ -39,38 +39,64 @@ namespace pulsared
                     std::format("{:.1f}", m_clip->GetFPS()));
                 PImGui::PropertyLineText("Tracks",
                     std::format("{}", m_clip->GetTracks().size()));
-                auto skel = m_clip->GetSkeleton();
-                PImGui::PropertyLineText("Skeleton",
-                    skel ? skel->GetName() : "(none)");
                 PImGui::EndPropertyLines();
             }
         }
 
         // --- 轨道列表 ---
-        if (PImGui::PropertyGroup("Bone Tracks"))
+        if (PImGui::PropertyGroup("Tracks"))
         {
-            if (ImGui::BeginTable("TracksTable", 4,
+            if (ImGui::BeginTable("TracksTable", 5,
                 ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY,
                 ImVec2(0, 200)))
             {
                 ImGui::TableSetupScrollFreeze(0, 1);
-                ImGui::TableSetupColumn("Bone Name",  ImGuiTableColumnFlags_WidthStretch);
-                ImGui::TableSetupColumn("Pos Keys",   ImGuiTableColumnFlags_WidthFixed, 70.f);
-                ImGui::TableSetupColumn("Rot Keys",   ImGuiTableColumnFlags_WidthFixed, 70.f);
-                ImGui::TableSetupColumn("Scale Keys", ImGuiTableColumnFlags_WidthFixed, 75.f);
+                ImGui::TableSetupColumn("Type",       ImGuiTableColumnFlags_WidthFixed, 80.f);
+                ImGui::TableSetupColumn("Name",       ImGuiTableColumnFlags_WidthStretch);
+                ImGui::TableSetupColumn("Binding",    ImGuiTableColumnFlags_WidthStretch);
+                ImGui::TableSetupColumn("Keys",       ImGuiTableColumnFlags_WidthFixed, 120.f);
+                ImGui::TableSetupColumn("",           ImGuiTableColumnFlags_WidthFixed, 40.f);
                 ImGui::TableHeadersRow();
 
-                for (auto& track : m_clip->GetTracks())
+                for (auto& trackBase : m_clip->GetTracks())
                 {
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
-                    ImGui::TextUnformatted(track.BoneName.c_str());
-                    ImGui::TableSetColumnIndex(1);
-                    ImGui::Text("%d", (int)track.PositionKeys.size());
-                    ImGui::TableSetColumnIndex(2);
-                    ImGui::Text("%d", (int)track.RotationKeys.size());
-                    ImGui::TableSetColumnIndex(3);
-                    ImGui::Text("%d", (int)track.ScaleKeys.size());
+                    if (trackBase->TrackType == pulsar::AnimationTrackType::Bone)
+                    {
+                        ImGui::TextUnformatted("Bone");
+                        ImGui::TableSetColumnIndex(1);
+                        auto boneTrack = pulsar::sptr_cast<pulsar::BoneAnimationTrack>(trackBase);
+                        ImGui::TextUnformatted(boneTrack ? boneTrack->BoneName.c_str() : "");
+                        ImGui::TableSetColumnIndex(2);
+                        ImGui::Text("-");
+                        ImGui::TableSetColumnIndex(3);
+                        if (boneTrack)
+                        {
+                            ImGui::Text("P:%d R:%d S:%d",
+                                (int)boneTrack->PositionKeys.size(),
+                                (int)boneTrack->RotationKeys.size(),
+                                (int)boneTrack->ScaleKeys.size());
+                        }
+                    }
+                    else
+                    {
+                        ImGui::TextUnformatted("Property");
+                        ImGui::TableSetColumnIndex(1);
+                        auto propTrack = pulsar::sptr_cast<pulsar::PropertyAnimationTrack>(trackBase);
+                        ImGui::TextUnformatted(propTrack ? propTrack->FieldName.c_str() : "");
+                        ImGui::TableSetColumnIndex(2);
+                        if (propTrack)
+                            ImGui::Text("%s::%s", propTrack->ComponentTypeName.c_str(), propTrack->FieldName.c_str());
+                        ImGui::TableSetColumnIndex(3);
+                        if (propTrack)
+                        {
+                            ImGui::Text("F:%d V3:%d Q:%d",
+                                (int)propTrack->FloatKeys.size(),
+                                (int)propTrack->Vector3Keys.size(),
+                                (int)propTrack->QuatKeys.size());
+                        }
+                    }
                 }
                 ImGui::EndTable();
             }

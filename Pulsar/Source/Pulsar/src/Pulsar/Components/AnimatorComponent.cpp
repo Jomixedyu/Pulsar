@@ -256,67 +256,127 @@ namespace pulsar
         const AnimatorState* state = m_controller->FindState(m_currentStateName);
         if (!state || !state->Clip) return;
 
-        auto skeleton = state->Clip->GetSkeleton();
-        if (!skeleton)
+        for (auto& trackBase : state->Clip->GetTracks())
         {
-            Logger::Log("AnimatorComponent::SampleAt - state clip has no skeleton, state=" + m_currentStateName, LogLevel::Warning);
+            switch (trackBase->TrackType)
+            {
+            case AnimationTrackType::Bone:
+                if (auto boneTrack = sptr_cast<BoneAnimationTrack>(trackBase))
+                    SampleBoneTrack(boneTrack.get(), time);
+                break;
+            case AnimationTrackType::Property:
+                if (auto propTrack = sptr_cast<PropertyAnimationTrack>(trackBase))
+                    SamplePropertyTrack(propTrack.get(), time);
+                break;
+            }
+        }
+    }
+
+    void AnimatorComponent::SampleBoneTrack(BoneAnimationTrack* track, float time)
+    {
+        auto* rootTransform = GetNode()->GetTransform().GetPtr();
+        if (!rootTransform) return;
+
+        auto boneTransform = rootTransform->FindByName(track->BoneName);
+        if (!boneTransform)
+        {
+            static hash_set<string> s_loggedBones;
+            if (s_loggedBones.insert(track->BoneName).second)
+                Logger::Log("AnimatorComponent::SampleBoneTrack - node not found for bone: " + track->BoneName, LogLevel::Warning);
             return;
         }
 
-        const auto& bones = skeleton->GetBones();
-        // 以 Animator 所在节点作为导入小场景根；Skeleton::BoneInfo::Path 也相对这个根。
-        auto* rootTransform = GetNode()->GetTransform().GetPtr();
+        Vector3f pos   = SampleVector3(track->PositionKeys, time);
+        Quat4f   rot   = SampleQuat   (track->RotationKeys, time);
+        Vector3f scale = SampleVector3(track->ScaleKeys,    time);
 
-        int missingTrackCount = 0;
-        int missingNodeCount = 0;
-        int appliedCount = 0;
+        boneTransform->SetPosition(pos);
+        boneTransform->SetRotation(rot);
+        boneTransform->SetScale(scale);
+    }
 
-        for (const auto& bone : bones)
+    void AnimatorComponent::SamplePropertyTrack(PropertyAnimationTrack* track, float time)
+    {
+        auto node = GetNode();
+        if (!node) return;
+
+        // 解析 Component 类型名 -> Type*
+        static hash_map<string, Type*> s_typeCache;
+        Type* compType = nullptr;
+        auto it = s_typeCache.find(track->ComponentTypeName);
+        if (it != s_typeCache.end())
         {
-            auto* track = state->Clip->FindTrack(bone.Name);
-            if (!track)
-            {
-                if (missingTrackCount < 5)
-                    Logger::Log("AnimatorComponent::SampleAt - track not found for bone: " + bone.Name, LogLevel::Warning);
-                ++missingTrackCount;
-                continue;
-            }
-
-            // 优先按层级路径找；旧资源没有 Path 时 fallback 到直接子节点名字查找
-            auto boneTransform = !bone.Path.empty()
-                ? rootTransform->FindByPath(bone.Path)
-                : rootTransform->FindByName(bone.Name);
-            if (!boneTransform)
-            {
-                if (missingNodeCount < 5)
-                    Logger::Log("AnimatorComponent::SampleAt - node not found for bone: " + bone.Name + ", path=" + bone.Path, LogLevel::Warning);
-                ++missingNodeCount;
-                continue;
-            }
-
-            // 采样局部 TRS
-            Vector3f pos   = SampleVector3(track->PositionKeys, time);
-            Quat4f   rot   = SampleQuat   (track->RotationKeys, time);
-            Vector3f scale = SampleVector3(track->ScaleKeys,    time);
-
-            boneTransform->SetPosition(pos);
-            boneTransform->SetRotation(rot);
-            boneTransform->SetScale(scale);
-            ++appliedCount;
-
-
+            compType = it->second;
+        }
+        else
+        {
+            compType = AssemblyManager::GlobalFindType(track->ComponentTypeName);
+            if (compType) s_typeCache[track->ComponentTypeName] = compType;
+        }
+        if (!compType)
+        {
+            static hash_set<string> s_loggedTypes;
+            if (s_loggedTypes.insert(track->ComponentTypeName).second)
+                Logger::Log("AnimatorComponent::SamplePropertyTrack - component type not found: " + track->ComponentTypeName, LogLevel::Warning);
+            return;
         }
 
-        if (appliedCount == 0 || missingTrackCount > 0 || missingNodeCount > 0)
+        // 查找目标 Component 实例
+        Object* compInstance = nullptr;
+        for (auto& comp : node->GetAllComponentArray())
         {
-            Logger::Log(
-                "AnimatorComponent::SampleAt summary - state=" + m_currentStateName +
-                ", time=" + std::to_string(time) +
-                ", bones=" + std::to_string((int)bones.size()) +
-                ", applied=" + std::to_string(appliedCount) +
-                ", missingTrack=" + std::to_string(missingTrackCount) +
-                ", missingNode=" + std::to_string(missingNodeCount),
-                (appliedCount > 0 && missingTrackCount == 0 && missingNodeCount == 0) ? LogLevel::Info : LogLevel::Warning);
+            if (comp->GetType() == compType || comp->GetType()->IsSubclassOf(compType))
+            {
+                compInstance = comp.GetPtr();
+                break;
+            }
+        }
+        if (!compInstance)
+        {
+            static hash_set<string> s_loggedComps;
+            auto key = track->ComponentTypeName + "::" + track->FieldName;
+            if (s_loggedComps.insert(key).second)
+                Logger::Log("AnimatorComponent::SamplePropertyTrack - component not found on node: " + track->ComponentTypeName, LogLevel::Warning);
+            return;
+        }
+
+        // 获取 FieldInfo
+        auto* fieldInfo = compType->GetFieldInfo(track->FieldName);
+        if (!fieldInfo)
+        {
+            static hash_set<string> s_loggedFields;
+            auto key = track->ComponentTypeName + "::" + track->FieldName;
+            if (s_loggedFields.insert(key).second)
+                Logger::Log("AnimatorComponent::SamplePropertyTrack - field not found: " + key, LogLevel::Warning);
+            return;
+        }
+
+        // 根据字段类型采样并写入
+        Type* fieldType = fieldInfo->GetFieldType();
+        if (fieldType == cltypeof<jxcorlib::Single32>())
+        {
+            if (track->FloatKeys.empty()) return;
+            float value = SampleFloat(track->FloatKeys, time);
+            fieldInfo->SetValue(compInstance, BoxUtil::Box(value));
+        }
+        else if (fieldType == cltypeof<jxcorlib::math::BoxingVector3f>())
+        {
+            if (track->Vector3Keys.empty()) return;
+            Vector3f value = SampleVector3(track->Vector3Keys, time);
+            fieldInfo->SetValue(compInstance, BoxUtil::Box(value));
+        }
+        else if (fieldType == cltypeof<jxcorlib::math::BoxingQuat4f>())
+        {
+            if (track->QuatKeys.empty()) return;
+            Quat4f value = SampleQuat(track->QuatKeys, time);
+            fieldInfo->SetValue(compInstance, BoxUtil::Box(value));
+        }
+        else
+        {
+            static hash_set<string> s_loggedTypes;
+            auto key = track->ComponentTypeName + "::" + track->FieldName + " [type=" + fieldType->GetShortName() + "]";
+            if (s_loggedTypes.insert(key).second)
+                Logger::Log("AnimatorComponent::SamplePropertyTrack - unsupported field type: " + key, LogLevel::Warning);
         }
     }
 
@@ -351,6 +411,20 @@ namespace pulsar
     // -----------------------------------------------------------------------
     // Keyframe sampling (linear interpolation)
     // -----------------------------------------------------------------------
+    float AnimatorComponent::SampleFloat(const array_list<AnimFloatKey>& keys, float time)
+    {
+        if (keys.empty()) return 0.f;
+        if (keys.size() == 1 || time <= keys.front().Time) return keys.front().Value;
+        if (time >= keys.back().Time) return keys.back().Value;
+
+        int lo = 0, hi = (int)keys.size() - 1;
+        while (lo + 1 < hi) { int m = (lo + hi) / 2; (keys[m].Time <= time ? lo : hi) = m; }
+
+        float alpha = (keys[hi].Time > keys[lo].Time)
+            ? (time - keys[lo].Time) / (keys[hi].Time - keys[lo].Time) : 0.f;
+        return keys[lo].Value + (keys[hi].Value - keys[lo].Value) * alpha;
+    }
+
     Vector3f AnimatorComponent::SampleVector3(const array_list<AnimVector3Key>& keys, float time)
     {
         if (keys.empty()) return {};

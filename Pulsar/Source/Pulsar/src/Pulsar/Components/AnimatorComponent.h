@@ -51,13 +51,16 @@ namespace pulsar
         void StopPreview();        // 停止预览，清空当前状态
 
     protected:
-        static Vector3f SampleVector3(const array_list<AnimVector3Key>& keys, float time);
-        static Quat4f   SampleQuat   (const array_list<AnimQuatKey>& keys,    float time);
+        static float    SampleFloat   (const array_list<AnimFloatKey>& keys,   float time);
+        static Vector3f SampleVector3 (const array_list<AnimVector3Key>& keys, float time);
+        static Quat4f   SampleQuat    (const array_list<AnimQuatKey>& keys,    float time);
 
     private:
         void EnterState(const string& name);
         bool EvaluateConditions(const AnimatorTransition& transition) const;
         void ConsumeTriggersOfTransition(const AnimatorTransition& transition);
+        void SampleBoneTrack(BoneAnimationTrack* track, float time);
+        void SamplePropertyTrack(PropertyAnimationTrack* track, float time);
 
     protected:
         CORELIB_REFL_DECL_FIELD(m_controller);
