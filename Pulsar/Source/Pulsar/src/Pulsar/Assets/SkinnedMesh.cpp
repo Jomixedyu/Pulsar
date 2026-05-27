@@ -239,14 +239,6 @@ namespace pulsar
             deps.push_back(m_skeleton.GetGuid());
     }
 
-    void SkinnedMesh::OnInstantiateAsset(AssetObject* obj)
-    {
-        base::OnInstantiateAsset(obj);
-        auto mesh = static_cast<ThisClass*>(obj);
-        mesh->m_skeleton  = m_skeleton;
-        mesh->m_sections  = m_sections;
-    }
-
     SkinnedMesh::~SkinnedMesh() = default;
 
 } // namespace pulsar

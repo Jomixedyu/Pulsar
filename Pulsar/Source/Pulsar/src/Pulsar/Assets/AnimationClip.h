@@ -76,7 +76,6 @@ namespace pulsar
         SPtr<BoneAnimationTrack> FindBoneTrack(const string& boneName) const;
 
         void Serialize(AssetSerializer* s) override;
-        void OnInstantiateAsset(AssetObject* obj) override;
 
     private:
         float m_duration = 0.f;

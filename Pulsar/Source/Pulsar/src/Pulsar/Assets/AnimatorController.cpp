@@ -182,23 +182,6 @@ namespace pulsar
         }
     }
 
-    void AnimatorController::OnInstantiateAsset(AssetObject* obj)
-    {
-        auto* other = static_cast<AnimatorController*>(obj);
-        other->m_defaultState = m_defaultState;
-        other->m_params       = m_params;
-        other->m_transitions  = m_transitions;
-        // States：浅拷贝（Clip 是 RCPtr，共享引用）
-        other->m_states.resize(m_states.size());
-        for (size_t i = 0; i < m_states.size(); ++i)
-        {
-            other->m_states[i].Name  = m_states[i].Name;
-            other->m_states[i].Clip  = m_states[i].Clip;
-            other->m_states[i].Speed = m_states[i].Speed;
-            other->m_states[i].Loop  = m_states[i].Loop;
-        }
-    }
-
     void AnimatorController::OnCollectAssetDependencies(array_list<jxcorlib::guid_t>& deps)
     {
         for (auto& st : m_states)

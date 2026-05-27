@@ -158,9 +158,6 @@ namespace pulsar
             return m_assetGuid;
         }
 
-    public:
-        virtual void OnInstantiateAsset(AssetObject* obj);
-
     protected:
 #ifdef WITH_EDITOR
         CORELIB_REFL_DECL_FIELD(m_importFiles);

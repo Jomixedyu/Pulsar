@@ -102,7 +102,6 @@ namespace pulsar
         void          SetDefaultState(const string& name) { m_defaultState = name; }
 
         void Serialize(AssetSerializer* s) override;
-        void OnInstantiateAsset(AssetObject* obj) override;
         void OnCollectAssetDependencies(array_list<jxcorlib::guid_t>& deps) override;
 
     private:

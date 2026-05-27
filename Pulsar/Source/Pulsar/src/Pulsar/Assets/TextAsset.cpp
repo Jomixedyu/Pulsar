@@ -2,13 +2,6 @@
 namespace pulsar
 {
 
-    void TextAsset::OnInstantiateAsset(AssetObject* obj)
-    {
-        base::OnInstantiateAsset(obj);
-        TextAsset* i = static_cast<ThisClass*>(obj);
-        i->text_ = this->text_;
-    }
-
     RCPtr<TextAsset> TextAsset::StaticCreate(string_view str)
     {
         auto self = NewAssetObject<TextAsset>();

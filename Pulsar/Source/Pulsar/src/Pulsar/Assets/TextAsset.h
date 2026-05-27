@@ -9,8 +9,6 @@ namespace pulsar
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::TextAsset, AssetObject);
         friend class TextAssetImporter;
     public:
-        virtual void OnInstantiateAsset(AssetObject* obj) override;
-    public:
         static RCPtr<TextAsset> StaticCreate(string_view str);
         static RCPtr<TextAsset> StaticCreate(string&& str);
     public:

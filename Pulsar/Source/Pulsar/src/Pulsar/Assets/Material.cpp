@@ -266,15 +266,6 @@ namespace pulsar
         }
     }
 
-    void Material::OnInstantiateAsset(AssetObject* obj)
-    {
-        base::OnInstantiateAsset(obj);
-        auto self = static_cast<Material*>(obj);
-        self->m_sheet = m_sheet;
-        self->m_activeFeatures = m_activeFeatures;
-        self->SetShader(m_shader);
-    }
-
 #pragma region MaterialParameters
     void Material::SetIntScalar(const index_string& name, int value)
     {

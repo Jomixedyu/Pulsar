@@ -35,7 +35,6 @@ namespace pulsar
         int32_t FindBoneIndex(const string& name) const;
 
         void Serialize(AssetSerializer* s) override;
-        void OnInstantiateAsset(AssetObject* obj) override;
         // Skeleton 不引用其他资产，无需 override OnCollectAssetDependencies
 
     private:

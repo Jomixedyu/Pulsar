@@ -34,8 +34,6 @@ namespace pulsar
         ObjectPtr<Node> FindNodeByName(index_string name) const;
         ObjectPtr<Node> FindNodeByPath(string_view name) const;
 
-        void OnInstantiateAsset(AssetObject* obj) override;
-
         // 返回本次展开的根节点列表
         array_list<ObjectPtr<Node>> CombineFrom(RCPtr<NodeCollection> collection);
 

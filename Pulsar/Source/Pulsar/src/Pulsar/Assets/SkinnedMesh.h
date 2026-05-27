@@ -71,7 +71,6 @@ namespace pulsar
 
     protected:
         void OnCollectAssetDependencies(array_list<jxcorlib::guid_t>& deps) override;
-        virtual void OnInstantiateAsset(AssetObject* obj) override;
 
     protected: // serialization data
         RCPtr<Skeleton>               m_skeleton;       // 骨骼层级（独立资产）

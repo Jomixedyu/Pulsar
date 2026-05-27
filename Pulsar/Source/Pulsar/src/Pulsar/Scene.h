@@ -24,7 +24,6 @@ namespace pulsar
         virtual ~Scene() override = default;
 
         void Serialize(AssetSerializer* s) override;
-        void OnInstantiateAsset(AssetObject* obj) override;
 
         // Scene 特有：直射光/SkyLight 注册
         void OnAddNode(ObjectPtr<Node> node) override;

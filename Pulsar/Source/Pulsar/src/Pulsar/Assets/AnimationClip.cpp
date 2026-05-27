@@ -138,13 +138,4 @@ namespace pulsar
         }
     }
 
-    void AnimationClip::OnInstantiateAsset(AssetObject* obj)
-    {
-        base::OnInstantiateAsset(obj);
-        auto clip = static_cast<ThisClass*>(obj);
-        clip->m_duration = m_duration;
-        clip->m_fps      = m_fps;
-        clip->m_tracks   = m_tracks;
-    }
-
 } // namespace pulsar

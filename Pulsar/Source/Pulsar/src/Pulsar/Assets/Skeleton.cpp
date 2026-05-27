@@ -64,12 +64,4 @@ namespace pulsar
             SerializeBoneInfo(stream, isWrite, bone);
     }
 
-    void Skeleton::OnInstantiateAsset(AssetObject* obj)
-    {
-        base::OnInstantiateAsset(obj);
-        auto sk = static_cast<ThisClass*>(obj);
-        sk->m_bones = m_bones;
-        sk->m_rootBoneIndex = m_rootBoneIndex;
-    }
-
 } // namespace pulsar

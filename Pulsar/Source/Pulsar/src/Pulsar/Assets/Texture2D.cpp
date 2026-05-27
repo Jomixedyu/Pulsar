@@ -62,10 +62,6 @@ namespace pulsar
         base::OnDestroy();
         this->DestroyGPUResource();
     }
-    void Texture2D::OnInstantiateAsset(AssetObject* obj)
-    {
-    }
-
     void Texture2D::FromNativeData(const uint8_t* data, size_t length, bool compressed, int width, int height, int channel)
     {
         m_originMemory.resize(length);

@@ -57,8 +57,6 @@ namespace pulsar
             array_list<string>&& materialNames);
 
         void CalcBounds();
-    protected:
-        virtual void OnInstantiateAsset(AssetObject* obj) override;
     public:
         // Override
         virtual size_t GetVertexCount() override { return 0; }

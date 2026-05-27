@@ -22,11 +22,6 @@ namespace pulsar
         base::Serialize(s);
     }
 
-    void Scene::OnInstantiateAsset(AssetObject* obj)
-    {
-        base::OnInstantiateAsset(obj);
-    }
-
     Scene::Scene()
     {
 

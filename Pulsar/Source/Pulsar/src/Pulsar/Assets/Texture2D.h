@@ -40,9 +40,6 @@ namespace pulsar
 
     public:
         void OnDestroy() override;
-    protected:
-        virtual void OnInstantiateAsset(AssetObject* obj) override;
-
     public:
         void FromNativeData(const uint8_t* data, size_t length, bool compressed, int width, int height, int channel);
         void PostEditChange(FieldInfo* info) override;

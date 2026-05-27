@@ -14,10 +14,6 @@ namespace pulsar
         init_sptr_member(m_tags);
     }
 
-    void AssetObject::OnInstantiateAsset(AssetObject* obj)
-    {
-        obj->SetIndexName(this->GetIndexName());
-    }
     void AssetObject::AssetConstruct(guid_t guid)
     {
         m_assetGuid = guid;

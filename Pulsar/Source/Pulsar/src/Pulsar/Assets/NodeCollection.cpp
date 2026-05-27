@@ -153,11 +153,6 @@ namespace pulsar
         return ObjectPtr<Node>();
     }
 
-    void NodeCollection::OnInstantiateAsset(AssetObject* obj)
-    {
-        base::OnInstantiateAsset(obj);
-    }
-
     ObjectPtr<Node> NodeCollection::NewNode(index_string name, const ObjectPtr<Node>& parent, ObjectFlags flags)
     {
         auto node = BeginNewNode(name, parent, flags);

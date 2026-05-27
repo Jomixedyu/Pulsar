@@ -63,7 +63,6 @@ namespace pulsar
         static RCPtr<Material> StaticCreate(const RCPtr<Shader>& shader, string_view name = {});
 
         virtual void Serialize(AssetSerializer* s) override;
-        void OnInstantiateAsset(AssetObject* obj) override;
     public:
         virtual bool CreateGPUResource() override;
         virtual void DestroyGPUResource() override;

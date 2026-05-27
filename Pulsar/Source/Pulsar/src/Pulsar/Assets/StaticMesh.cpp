@@ -51,13 +51,6 @@ namespace pulsar
         return result;
     }
 
-    void StaticMesh::OnInstantiateAsset(AssetObject* obj)
-    {
-        base::OnInstantiateAsset(obj);
-        auto mesh = static_cast<ThisClass*>(obj);
-        mesh->m_sections = m_sections;
-    }
-
     bool StaticMesh::CreateGPUResource()
     {
         if (m_isCreatedResource)
