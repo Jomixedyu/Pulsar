@@ -1,6 +1,7 @@
 #include "Components/AnimatorComponent.h"
 #include "Components/SkinnedMeshRendererComponent.h"
 #include <Pulsar/Node.h>
+#include <Pulsar/World.h>
 #include <Pulsar/Logger.h>
 #include <cmath>
 #include <functional>
@@ -18,6 +19,7 @@ namespace pulsar
         // 仅初始化运行时参数表，不自动播放（播放在 BeginPlay 里触发）
         if (m_controller)
             m_runtimeParams = m_controller->GetParams();
+        GetWorld()->GetSimulateManager().AddSimulate(this);
     }
 
     void AnimatorComponent::EndComponent()
@@ -27,21 +29,30 @@ namespace pulsar
         m_currentStateName.clear();
         m_runtimeParams.clear();
         m_boneMatrices.clear();
+        GetWorld()->GetSimulateManager().RemoveSimulate(this);
     }
 
     void AnimatorComponent::BeginPlay()
     {
         base::BeginPlay();
-        if (m_controller && m_playOnStart)
+    }
+
+    void AnimatorComponent::EndPlay()
+    {
+        base::EndPlay();
+    }
+
+    void AnimatorComponent::BeginSimulate()
+    {
+        if (m_controller && m_playOnStart && !m_isPlaying)
         {
             m_runtimeParams = m_controller->GetParams();
             EnterState(m_controller->GetDefaultState());
         }
     }
 
-    void AnimatorComponent::EndPlay()
+    void AnimatorComponent::EndSimulate()
     {
-        base::EndPlay();
         m_isPlaying = false;
         m_currentStateName.clear();
         m_currentTime = 0.f;
@@ -192,7 +203,10 @@ namespace pulsar
     void AnimatorComponent::OnTick(Ticker ticker)
     {
         base::OnTick(ticker);
+    }
 
+    void AnimatorComponent::SimulateTick(float dt)
+    {
         if (!m_isPlaying || !m_controller || m_currentStateName.empty())
             return;
 
@@ -200,7 +214,7 @@ namespace pulsar
         if (!state || !state->Clip) return;
 
         const float duration = state->Clip->GetDuration();
-        m_currentTime += ticker.deltatime * m_speed * state->Speed;
+        m_currentTime += dt * m_speed * state->Speed;
 
         // 检查过渡（AnyState + 当前 State 的过渡）
         for (auto& tr : m_controller->GetTransitions())

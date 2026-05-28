@@ -2,12 +2,13 @@
 #include <Pulsar/IconsForkAwesome.h>
 #include "Component.h"
 #include "../Assets/AnimatorController.h"
+#include <Pulsar/Simulate.h>
 
 namespace pulsar
 {
     class SkinnedMeshRendererComponent;
 
-    class AnimatorComponent : public Component
+    class AnimatorComponent : public Component, public ISimulate
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::AnimatorComponent, Component);
         CORELIB_CLASS_ATTR(new CategoryAttribute("Animation"), new ComponentIconAttribute(ICON_FK_FILM));
@@ -19,6 +20,11 @@ namespace pulsar
         void BeginPlay() override;
         void EndPlay() override;
         void OnTick(Ticker ticker) override;
+
+        void BeginSimulate() override;
+        void EndSimulate() override;
+        void SimulateTick(float dt) override;
+
         void PostEditChange(FieldInfo* info) override;
         void GetDependenciesAsset(array_list<jxcorlib::guid_t>& deps) const override;
 

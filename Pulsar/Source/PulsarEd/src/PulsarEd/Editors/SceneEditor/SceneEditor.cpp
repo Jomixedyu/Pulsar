@@ -349,6 +349,39 @@ namespace pulsared
         PopPreviewWorld();
     }
 
+    void SceneEditor::BeginEditorSimulate()
+    {
+        if (!PreviewWorldStackEmpty())
+            return;
+
+        auto* world = GetEdApp()->GetEditorWorld();
+        if (world)
+        {
+            world->BeginSimulate();
+        }
+    }
+
+    void SceneEditor::EndEditorSimulate()
+    {
+        if (!PreviewWorldStackEmpty())
+            return;
+
+        auto* world = GetEdApp()->GetEditorWorld();
+        if (world)
+        {
+            world->EndSimulate();
+        }
+    }
+
+    bool SceneEditor::IsEditorSimulating() const
+    {
+        if (!PreviewWorldStackEmpty())
+            return false;
+
+        auto* world = GetEdApp()->GetEditorWorld();
+        return world && world->IsSimulating();
+    }
+
     void SceneEditor::Initialize()
     {
         base::Initialize();

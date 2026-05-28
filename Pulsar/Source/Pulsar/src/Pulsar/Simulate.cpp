@@ -11,4 +11,11 @@ namespace pulsar
     {
         std::erase(simulates, simulate);
     }
+    void SimulateManager::SimulateTick(float dt)
+    {
+        for (auto& simulate : simulates)
+        {
+            simulate->SimulateTick(dt);
+        }
+    }
 } // namespace pulsar

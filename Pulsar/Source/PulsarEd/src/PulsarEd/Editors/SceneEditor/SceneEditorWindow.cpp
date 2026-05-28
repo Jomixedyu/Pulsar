@@ -63,8 +63,9 @@ namespace pulsared
             if (sceneEditor)
             {
                 bool isPlaying = !sceneEditor->PreviewWorldStackEmpty();
+                bool isSimulating = sceneEditor->IsEditorSimulating();
 
-                ImGui::BeginDisabled(isPlaying);
+                ImGui::BeginDisabled(isPlaying || isSimulating);
                 if (ImGui::Button(ICON_FK_PLAY))
                 {
                     sceneEditor->BeginPlayInEditor();
@@ -75,6 +76,20 @@ namespace pulsared
                 if (ImGui::Button(ICON_FK_STOP))
                 {
                     sceneEditor->EndPlayInEditor();
+                }
+                ImGui::EndDisabled();
+
+                ImGui::BeginDisabled(isPlaying || isSimulating);
+                if (ImGui::Button(ICON_FK_COG))
+                {
+                    sceneEditor->BeginEditorSimulate();
+                }
+                ImGui::EndDisabled();
+
+                ImGui::BeginDisabled(isPlaying || !isSimulating);
+                if (ImGui::Button(ICON_FK_STOP "##StopSimulate"))
+                {
+                    sceneEditor->EndEditorSimulate();
                 }
                 ImGui::EndDisabled();
             }

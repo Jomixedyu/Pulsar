@@ -40,6 +40,8 @@ namespace pulsar
         virtual void BeginSimulate();
         virtual void EndSimulate();
 
+        bool IsSimulating() const { return m_isSimulating; }
+
         void CameraFocusNode(Node* node);
         virtual void Tick(float dt);
         virtual void OnWorldBegin();
@@ -132,6 +134,7 @@ namespace pulsar
         float    m_totalTime = 0;
         string   m_name;
         bool     m_isPlaying{};
+        bool     m_isSimulating = false;
         InputContext* m_inputContext;
     };
 }

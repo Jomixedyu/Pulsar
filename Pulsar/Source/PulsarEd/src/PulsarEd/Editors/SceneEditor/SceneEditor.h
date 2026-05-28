@@ -29,6 +29,11 @@ namespace pulsared
 
         void BeginPlayInEditor();
         void EndPlayInEditor();
+
+        void BeginEditorSimulate();
+        void EndEditorSimulate();
+        bool IsEditorSimulating() const;
+
         void RouteInput(const std::vector<uinput::InputEvent>& events) override;
 
         static SceneEditor* GetCurrent() { return s_current; }

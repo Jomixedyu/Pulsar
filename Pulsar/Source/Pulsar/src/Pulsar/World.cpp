@@ -82,6 +82,9 @@ namespace pulsar
 
     void World::BeginSimulate()
     {
+        if (m_isSimulating)
+            return;
+        m_isSimulating = true;
         for (auto& simulate : m_simulateManager.GetSimulates())
         {
             simulate->BeginSimulate();
@@ -91,6 +94,9 @@ namespace pulsar
     }
     void World::EndSimulate()
     {
+        if (!m_isSimulating)
+            return;
+        m_isSimulating = false;
         for (auto& simulate : m_simulateManager.GetSimulates())
         {
             simulate->EndSimulate();
@@ -134,8 +140,15 @@ namespace pulsar
                     scene->Tick(m_ticker);
                 }
             }
+        }
+        if (m_isPlaying || m_isSimulating)
+        {
             m_physicsWorld2D->Tick(dt);
             m_physicsWorld3D->StepSimulate(dt);
+        }
+        if (m_isSimulating)
+        {
+            m_simulateManager.SimulateTick(dt);
         }
     }
 

@@ -25,7 +25,7 @@ namespace pulsar
 
         void BeginSimulate() override;
         void EndSimulate() override;
-
+        void SimulateTick(float dt) override;
 
         void INotifyPhysics3DEvent_OnTransformChanged(Vector3f pos, Quat4f rot) override;
 

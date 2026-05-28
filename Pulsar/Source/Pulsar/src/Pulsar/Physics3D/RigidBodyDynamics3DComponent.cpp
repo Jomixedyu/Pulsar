@@ -72,6 +72,10 @@ namespace pulsar
         m_physics = nullptr;
     }
 
+    void RigidBodyDynamics3DComponent::SimulateTick(float dt)
+    {
+    }
+
     void RigidBodyDynamics3DComponent::INotifyPhysics3DEvent_OnTransformChanged(Vector3f pos, Quat4f rot)
     {
         if (auto transform = GetTransform())

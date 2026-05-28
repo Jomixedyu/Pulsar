@@ -129,6 +129,22 @@ namespace pulsared
 
             }
 
+            if (ImGui::BeginPopupContextItem("OutlinerNodeContext"))
+            {
+                if (is_prefab_node)
+                {
+                    if (ImGui::MenuItem("Unpack Prefab"))
+                    {
+                        auto collection = node->GetOwnerNodeCollection();
+                        if (collection)
+                        {
+                            collection->UnpackTemplateInstanceByNode(node);
+                        }
+                    }
+                }
+                ImGui::EndPopup();
+            }
+
             // Drag source
             if (ImGui::BeginDragDropSource())
             {
