@@ -23,7 +23,7 @@ if errorlevel 1 goto :fail
 call "%VSDEVCMD%" -arch=x64 -host_arch=x64
 if errorlevel 1 goto :fail
 
-cmake -S "%ROOT_DIR%" -B "%BUILD_DIR%" -G "%GENERATOR%" -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe
+cmake -S "%ROOT_DIR%" -B "%BUILD_DIR%" -G "%GENERATOR%" -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe -DCMAKE_BUILD_TYPE=Debug
 if errorlevel 1 goto :fail
 
 echo.

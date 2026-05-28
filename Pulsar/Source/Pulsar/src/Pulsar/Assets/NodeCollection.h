@@ -49,6 +49,12 @@ namespace pulsar
         // 找到节点所属的模板实例索引，未找到返回 -1
         int FindTemplateInstanceIndex(ObjectPtr<Node> node) const;
 
+        // 打散模板实例：保留所有节点，但断开与 prefab 的链接，使其变为普通场景节点
+        void UnpackTemplateInstance(int index);
+
+        // 传入该实例中的任意节点，自动找到所属实例并打散
+        void UnpackTemplateInstanceByNode(ObjectPtr<Node> node);
+
         const array_list<TemplateInstanceInfo>& GetTemplateInstances() const { return m_templateInstances; }
 
         ObjectPtr<Node> NewNode(index_string name = "Node", const ObjectPtr<Node>& parent = nullptr, ObjectFlags flags = 0);

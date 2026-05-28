@@ -26,6 +26,7 @@ namespace pulsar
     public:
         const guid_t& GetSourceGuidInTemplate() const { return m_sourceGuidInTemplate; }
         bool IsTemplateInstance() const { return !m_sourceGuidInTemplate.is_empty(); }
+        void ClearSourceGuidInTemplate() { m_sourceGuidInTemplate = guid_t{}; }
     };
 
 

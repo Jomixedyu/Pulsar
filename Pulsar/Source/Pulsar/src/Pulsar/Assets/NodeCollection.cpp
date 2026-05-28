@@ -312,6 +312,41 @@ namespace pulsar
             RemoveTemplateInstance(index);
     }
 
+    static void _ClearTemplateInstanceRecursive(ObjectPtr<Node> node)
+    {
+        if (!node)
+            return;
+        node->ClearSourceGuidInTemplate();
+        for (auto& comp : node->GetAllComponentArray())
+        {
+            if (comp)
+                comp->ClearSourceGuidInTemplate();
+        }
+        for (auto& child : *node->GetTransform()->GetChildren())
+        {
+            _ClearTemplateInstanceRecursive(child->GetNode());
+        }
+    }
+
+    void NodeCollection::UnpackTemplateInstance(int index)
+    {
+        assert(index >= 0 && index < (int)m_templateInstances.size());
+        auto& info = m_templateInstances[index];
+        for (auto& root : info.RootNodes)
+        {
+            if (root)
+                _ClearTemplateInstanceRecursive(root);
+        }
+        m_templateInstances.erase(m_templateInstances.begin() + index);
+    }
+
+    void NodeCollection::UnpackTemplateInstanceByNode(ObjectPtr<Node> node)
+    {
+        int index = FindTemplateInstanceIndex(node);
+        if (index >= 0)
+            UnpackTemplateInstance(index);
+    }
+
     array_list<ObjectPtr<Node>> NodeCollection::CombineFrom(RCPtr<NodeCollection> collection)
     {
         // 临时 finder：oldGuid → 新建对象（节点和组件）
