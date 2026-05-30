@@ -383,7 +383,7 @@ namespace pulsar
                 ? (selected ? Color4b{ 120, 255, 170, 255 } : Color4b{ 90, 220, 255, 220 })
                 : (selected ? Color4b{ 255, 220, 120, 255 } : Color4b{ 180, 210, 255, 200 });
 
-            const float jointRadius = 0.05f;
+            const float jointRadius = 0.01f;
 
             if (parentIdx >= 0)
             {
