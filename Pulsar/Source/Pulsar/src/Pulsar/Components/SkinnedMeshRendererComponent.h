@@ -40,6 +40,9 @@ namespace pulsar
         // 每帧由 Animator 调用，更新骨骼矩阵到 GPU
         void UpdateBoneMatrices(const array_list<Matrix4f>& boneMatrices);
 
+        // 从当前场景骨骼 Transform 计算并上传骨骼矩阵（Play + 编辑器通用）
+        void UpdateSkinningMatrices();
+
         bool HasBounds() const override { return false; }
         void GetSubscribeObserverHandles(array_list<ObjectHandle>& out) override;
 

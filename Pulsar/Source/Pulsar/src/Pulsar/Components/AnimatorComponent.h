@@ -7,6 +7,7 @@
 namespace pulsar
 {
     class SkinnedMeshRendererComponent;
+    class TransformComponent;
 
     class AnimatorComponent : public Component, public ISimulate
     {

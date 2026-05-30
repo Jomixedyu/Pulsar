@@ -44,15 +44,15 @@ namespace pulsar
         // Animator 调用：将骨骼矩阵写入 GPU UBO
         void UploadBoneMatrices(const array_list<Matrix4f>& boneMatrices)
         {
-            auto* buffer = Application::GetGfxApp()->GetResourceManager()->GetBuffer(m_skinningBuffer);
-            if (!buffer) return;
+            if (!m_skinningBuffer.IsValid()) return;
 
             SkinnedRenderObjectData data{};
             const size_t count = std::min(boneMatrices.size(), (size_t)SKINNEDMESH_MAX_BONES);
             for (size_t i = 0; i < count; ++i)
                 data.BoneMatrices[i] = boneMatrices[i];
 
-            buffer->Fill(&data);
+            auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
+            cmdList.UploadBuffer(m_skinningBuffer, &data, sizeof(data));
         }
 
         void SubmitChange();
@@ -220,10 +220,8 @@ namespace pulsar
         m_renderObject.reset();
     }
 
-    void SkinnedMeshRendererComponent::OnTick(Ticker ticker)
+    void SkinnedMeshRendererComponent::UpdateSkinningMatrices()
     {
-        base::OnTick(ticker);
-
         if (!m_skinnedMesh || !m_skinnedMesh->GetSkeleton()) return;
         if (!m_root) return;
 
@@ -240,7 +238,7 @@ namespace pulsar
             {
                 auto boneTransform = m_bones->at(i);
                 Logger::Log(
-                    "SkinnedMeshRendererComponent::OnTick bone bind debug - bone=" + skeletonBones[i].Name +
+                    "SkinnedMeshRendererComponent::UpdateSkinningMatrices bone bind debug - bone=" + skeletonBones[i].Name +
                     ", path=" + skeletonBones[i].Path +
                     ", parent=" + std::to_string(skeletonBones[i].ParentIndex) +
                     ", resolved=" + string(boneTransform ? boneTransform->GetNode()->GetName() : "<null>") +
@@ -254,16 +252,14 @@ namespace pulsar
         if (rootBoneIndex < 0 || rootBoneIndex >= (int)m_bones->size() || !m_bones->at(rootBoneIndex))
             return;
 
-        const Matrix4f rendererRootWorldInv = jmath::Inverse(m_root->GetLocalToWorldMatrix());
-
         array_list<Matrix4f> boneMatrices(skeletonBones.size(), Matrix4f(1.f));
         for (int i = 0; i < (int)skeletonBones.size(); ++i)
         {
             auto boneTransform = m_bones->at(i);
             if (!boneTransform) continue;
 
-            const Matrix4f boneModelMatrix = rendererRootWorldInv * boneTransform->GetLocalToWorldMatrix();
-            boneMatrices[i] = boneModelMatrix * skeletonBones[i].InverseBindMatrix;
+            // Standard skinning: boneWorld * inverseBindMatrix
+            boneMatrices[i] = boneTransform->GetLocalToWorldMatrix() * skeletonBones[i].InverseBindMatrix;
 
             if (i < 4 && !s_loggedSkinMatrices)
             {
@@ -285,8 +281,8 @@ namespace pulsar
                     translationAbs < 0.05f;
 
                 Logger::Log(
-                    "SkinnedMeshRendererComponent::OnTick skin matrix debug - bone=" + skeletonBones[i].Name +
-                    ", modelT=(" + std::to_string(boneModelMatrix[3][0]) + "," + std::to_string(boneModelMatrix[3][1]) + "," + std::to_string(boneModelMatrix[3][2]) + ")" +
+                    "SkinnedMeshRendererComponent::UpdateSkinningMatrices skin matrix debug - bone=" + skeletonBones[i].Name +
+                    ", worldT=(" + std::to_string(boneTransform->GetLocalToWorldMatrix()[3][0]) + "," + std::to_string(boneTransform->GetLocalToWorldMatrix()[3][1]) + "," + std::to_string(boneTransform->GetLocalToWorldMatrix()[3][2]) + ")" +
                     ", finalT=(" + std::to_string(finalMat[3][0]) + "," + std::to_string(finalMat[3][1]) + "," + std::to_string(finalMat[3][2]) + ")" +
                     ", diag=(" + std::to_string(diag0) + "," + std::to_string(diag1) + "," + std::to_string(diag2) + ")" +
                     ", offDiagSum=" + std::to_string(offDiag) +
@@ -300,6 +296,12 @@ namespace pulsar
         }
 
         UpdateBoneMatrices(boneMatrices);
+    }
+
+    void SkinnedMeshRendererComponent::OnTick(Ticker ticker)
+    {
+        base::OnTick(ticker);
+        UpdateSkinningMatrices();
     }
 
     void SkinnedMeshRendererComponent::PostEditChange(FieldInfo* info)
@@ -328,6 +330,9 @@ namespace pulsar
     void SkinnedMeshRendererComponent::OnDrawGizmo(GizmoPainter* painter, bool selected)
     {
         base::OnDrawGizmo(painter, selected);
+
+        // Editor mode: update skinning matrices every frame so mesh deforms when bones are rotated
+        UpdateSkinningMatrices();
 
         if (!m_skinnedMesh || !m_skinnedMesh->GetSkeleton()) return;
 
@@ -361,13 +366,9 @@ namespace pulsar
                 }
             }
 
-            // Fallback：bind pose 位置（相对 Skeleton 显式记录的根骨骼；若缺失则退回小场景根）
+            // Fallback：bind pose 世界位置（InverseBindMatrix 现在基于世界矩阵）
             Matrix4f bindMat = jmath::Inverse(bones[i].InverseBindMatrix);
-            const Matrix4f& rootWorld = m_root
-                ? m_root->GetLocalToWorldMatrix()
-                : GetNode()->GetTransform()->GetLocalToWorldMatrix();
-            Vector4f wp = rootWorld * Vector4f(bindMat[3][0], bindMat[3][1], bindMat[3][2], 1.f);
-            return { wp.x, wp.y, wp.z };
+            return { bindMat[3][0], bindMat[3][1], bindMat[3][2] };
         };
 
         for (int i = 0; i < (int)bones.size(); ++i)
@@ -553,6 +554,7 @@ namespace pulsar
         m_bones->resize(skeletonBones.size());
 
         auto sceneRoot = m_root;
+        const int rootBoneIndex = m_skinnedMesh->GetSkeleton()->GetRootBoneIndex();
 
         for (int i = 0; i < (int)skeletonBones.size(); ++i)
         {
@@ -560,9 +562,18 @@ namespace pulsar
             SceneObjectPtr<TransformComponent> resolvedBone;
             if (sceneRoot)
             {
-                resolvedBone = !bone.Path.empty()
-                    ? SceneObjectPtr<TransformComponent>(sceneRoot->FindByPath(bone.Path))
-                    : SceneObjectPtr<TransformComponent>(sceneRoot->FindByName(bone.Name));
+                if (i == rootBoneIndex)
+                {
+                    resolvedBone = sceneRoot; // root bone is m_root itself
+                }
+                else if (!bone.Path.empty())
+                {
+                    resolvedBone = SceneObjectPtr<TransformComponent>(sceneRoot->FindByPath(bone.Path));
+                }
+                else
+                {
+                    resolvedBone = SceneObjectPtr<TransformComponent>(sceneRoot->FindByName(bone.Name));
+                }
             }
             m_bones->at(i) = resolvedBone;
         }

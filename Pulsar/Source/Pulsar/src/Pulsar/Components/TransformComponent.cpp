@@ -15,13 +15,11 @@ namespace pulsar
     {
         for (auto& comp : *m_children)
         {
-            if (comp)
-            {
-                if (comp->GetNode()->GetName() == name)
-                {
-                    return comp;
-                }
-            }
+            if (!comp) continue;
+            if (comp->GetNode()->GetName() == name)
+                return comp;
+            if (auto found = comp->FindByName(name))
+                return found;
         }
         return nullptr;
     }

@@ -5,6 +5,7 @@ project("PulsarEd")
 set(PUBLIC_MODULE
         fbxsdk
         psc
+        assimp
 )
 set(PRIVATE_MODULE
 )
@@ -36,6 +37,14 @@ target_link_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}/Puls
 target_link_libraries(${PROJECT_NAME} PUBLIC Pulsar)
 target_link_options(${PROJECT_NAME} PUBLIC "/WHOLEARCHIVE:Pulsar$<$<CONFIG:Debug>:${CMAKE_DEBUG_POSTFIX}>")
 
+
+# assimp options (must be set before add_subdirectory)
+set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_ZLIB ON CACHE BOOL "" FORCE)
+set(ASSIMP_INSTALL OFF CACHE BOOL "" FORCE)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 
 set(AllModule ${PUBLIC_MODULE})
 list(APPEND AllModule ${PRIVATE_MODULE})

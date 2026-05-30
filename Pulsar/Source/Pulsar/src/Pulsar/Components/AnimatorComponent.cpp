@@ -291,6 +291,15 @@ namespace pulsar
         auto* rootTransform = GetNode()->GetTransform().GetPtr();
         if (!rootTransform) return;
 
+        // Use SkinnedMeshRendererComponent's root bone as search root if available
+        if (auto renderer = GetNode()->GetComponent<SkinnedMeshRendererComponent>())
+        {
+            if (auto root = renderer->GetRoot())
+            {
+                rootTransform = root.GetPtr();
+            }
+        }
+
         auto boneTransform = rootTransform->FindByName(track->BoneName);
         if (!boneTransform)
         {
