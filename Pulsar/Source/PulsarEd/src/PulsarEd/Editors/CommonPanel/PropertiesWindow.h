@@ -24,7 +24,7 @@ namespace pulsared
         CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::PropertiesWindow, PanelWindow);
     public:
         virtual ImGuiWindowFlags GetGuiWindowFlags() const override{
-            return ImGuiWindowFlags_AlwaysVerticalScrollbar;
+            return ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysVerticalScrollbar;
         }
         static string_view StaticWindowName() { return ICON_FK_TH_LIST " Properties###" "Properties"; }
         virtual string_view GetWindowDisplayName() const override { return StaticWindowName(); }

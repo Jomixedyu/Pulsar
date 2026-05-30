@@ -229,7 +229,7 @@ namespace pulsared
 
     ImGuiWindowFlags WorkspaceWindow::GetGuiWindowFlags() const
     {
-        return ImGuiWindowFlags_MenuBar;
+        return ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_MenuBar;
     }
     void WorkspaceWindow::OnOpen()
     {

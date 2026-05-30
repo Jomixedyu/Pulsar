@@ -140,7 +140,7 @@ namespace pulsared
             ImGui::SetNextWindowClass(&winClass);
             auto winSize = panel->GetWinSize();
             ImGui::SetNextWindowSize(ImVec2{winSize.x, winSize.y});
-            const bool isDrawable = ImGui::Begin(winName.c_str(), &isOpened, panel->GetGuiWindowFlags() | ImGuiWindowFlags_NoCollapse);
+            const bool isDrawable = ImGui::Begin(winName.c_str(), &isOpened, panel->GetGuiWindowFlags());
             if (isOpened)
             {
                 panel->SetOpened(true);

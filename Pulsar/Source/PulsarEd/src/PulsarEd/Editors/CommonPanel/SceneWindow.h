@@ -15,7 +15,7 @@ namespace pulsared
         CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::SceneWindow, PanelWindow);
     public:
         virtual ImGuiWindowFlags GetGuiWindowFlags() const override {
-            return ImGuiWindowFlags_None | ImGuiWindowFlags_::ImGuiWindowFlags_MenuBar;
+            return ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_::ImGuiWindowFlags_MenuBar;
         }
         SceneWindow();
         virtual void OnOpen() override;

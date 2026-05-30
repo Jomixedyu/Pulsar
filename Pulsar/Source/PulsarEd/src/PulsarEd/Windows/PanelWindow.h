@@ -13,8 +13,8 @@ namespace pulsared
     public:
         virtual string_view GetWindowDisplayName() const { return m_windowDisplayName; }
         virtual string GetWindowName() const { return GetType()->GetName(); }
-        virtual ImGuiWindowFlags GetGuiWindowFlags() const { return ImGuiWindowFlags_None; }
-        virtual ImGuiWindowClass GetGuiWindowClass() const { return ImGuiWindowClass{}; }
+        virtual ImGuiWindowFlags GetGuiWindowFlags() const { return ImGuiWindowFlags_NoCollapse; }
+        virtual ImGuiWindowClass GetGuiWindowClass() const;
 
         virtual void OnDrawImGui(float dt) {}
         virtual void OnOpen() {}

@@ -122,7 +122,7 @@ namespace pulsared
     }
     ImGuiWindowFlags ConsoleWindow::GetGuiWindowFlags() const
     {
-        return ImGuiWindowFlags_MenuBar;
+        return ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_MenuBar;
     }
 
     void ConsoleWindow::OnOpen()
