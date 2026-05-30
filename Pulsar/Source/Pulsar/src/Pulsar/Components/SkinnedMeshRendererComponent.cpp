@@ -252,14 +252,16 @@ namespace pulsar
         if (rootBoneIndex < 0 || rootBoneIndex >= (int)m_bones->size() || !m_bones->at(rootBoneIndex))
             return;
 
+        const Matrix4f rendererRootWorldInv = jmath::Inverse(m_root->GetLocalToWorldMatrix());
+
         array_list<Matrix4f> boneMatrices(skeletonBones.size(), Matrix4f(1.f));
         for (int i = 0; i < (int)skeletonBones.size(); ++i)
         {
             auto boneTransform = m_bones->at(i);
             if (!boneTransform) continue;
 
-            // Standard skinning: boneWorld * inverseBindMatrix
-            boneMatrices[i] = boneTransform->GetLocalToWorldMatrix() * skeletonBones[i].InverseBindMatrix;
+            const Matrix4f boneModelMatrix = rendererRootWorldInv * boneTransform->GetLocalToWorldMatrix();
+            boneMatrices[i] = boneModelMatrix * skeletonBones[i].InverseBindMatrix;
 
             if (i < 4 && !s_loggedSkinMatrices)
             {
@@ -282,7 +284,7 @@ namespace pulsar
 
                 Logger::Log(
                     "SkinnedMeshRendererComponent::UpdateSkinningMatrices skin matrix debug - bone=" + skeletonBones[i].Name +
-                    ", worldT=(" + std::to_string(boneTransform->GetLocalToWorldMatrix()[3][0]) + "," + std::to_string(boneTransform->GetLocalToWorldMatrix()[3][1]) + "," + std::to_string(boneTransform->GetLocalToWorldMatrix()[3][2]) + ")" +
+                    ", modelT=(" + std::to_string(boneModelMatrix[3][0]) + "," + std::to_string(boneModelMatrix[3][1]) + "," + std::to_string(boneModelMatrix[3][2]) + ")" +
                     ", finalT=(" + std::to_string(finalMat[3][0]) + "," + std::to_string(finalMat[3][1]) + "," + std::to_string(finalMat[3][2]) + ")" +
                     ", diag=(" + std::to_string(diag0) + "," + std::to_string(diag1) + "," + std::to_string(diag2) + ")" +
                     ", offDiagSum=" + std::to_string(offDiag) +
@@ -366,9 +368,13 @@ namespace pulsar
                 }
             }
 
-            // Fallback：bind pose 世界位置（InverseBindMatrix 现在基于世界矩阵）
+            // Fallback：bind pose 世界位置（相对 Skeleton 显式记录的根骨骼；若缺失则退回场景根）
             Matrix4f bindMat = jmath::Inverse(bones[i].InverseBindMatrix);
-            return { bindMat[3][0], bindMat[3][1], bindMat[3][2] };
+            const Matrix4f& rootWorld = m_root
+                ? m_root->GetLocalToWorldMatrix()
+                : GetNode()->GetTransform()->GetLocalToWorldMatrix();
+            Vector4f wp = rootWorld * Vector4f(bindMat[3][0], bindMat[3][1], bindMat[3][2], 1.f);
+            return { wp.x, wp.y, wp.z };
         };
 
         for (int i = 0; i < (int)bones.size(); ++i)

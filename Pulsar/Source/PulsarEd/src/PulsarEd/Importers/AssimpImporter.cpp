@@ -291,22 +291,11 @@ namespace pulsared
                 bone.BindModelMatrix = localMat;
         }
 
-        // Third pass: InverseBindMatrix must be based on world-space bind pose (globalBind),
-        // not the relative-to-root matrix. The second-pass BindModelMatrix is kept for
-        // compatibility but InverseBindMatrix is overridden from the world matrix.
+        // Third pass: compute InverseBindMatrix from BindModelMatrix
         for (int32_t i = 0; i < (int32_t)bones.size(); ++i)
         {
             auto& bone = bones[i];
-            auto it = nodeGlobalMatrices.find(bone.Name);
-            if (it != nodeGlobalMatrices.end())
-            {
-                bone.BindModelMatrix = it->second;
-                bone.InverseBindMatrix = jmath::Inverse(it->second);
-            }
-            else
-            {
-                bone.InverseBindMatrix = jmath::Inverse(bone.BindModelMatrix);
-            }
+            bone.InverseBindMatrix = jmath::Inverse(bone.BindModelMatrix);
         }
 
         return Skeleton::StaticCreate(name, std::move(bones), rootBoneIndex);
