@@ -344,6 +344,10 @@ namespace pulsared
         {
             return false;
         }
+        if (ExistsAssetPath(path))
+        {
+            return false;
+        }
         if (!OnRequestCreateAsset.IsValidReturnInvoke(asset, path))
         {
             return false;

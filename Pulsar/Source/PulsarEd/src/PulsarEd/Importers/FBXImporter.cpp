@@ -314,7 +314,7 @@ namespace pulsared
                 if (shader)
                 {
                     foundMaterial = Material::StaticCreate(shader, matName);
-                    AssetDatabase::CreateAsset(foundMaterial, meshFolder + "/" + matName);
+                    AssetDatabase::CreateAsset(foundMaterial, AssetDatabase::GetUniquePath(meshFolder + "/" + matName));
                     importedAssets.push_back(foundMaterial);
                 }
             }
@@ -416,7 +416,7 @@ namespace pulsared
         {
             if (auto skinnedMesh = ProcessSkinnedMesh(fbxNode, skeleton, inverseCoordsystem, settings->RecomputeTangents, settings->UseMikktspace))
             {
-                const auto meshPath = meshFolder + "/" + skinnedMesh->GetName();
+                const auto meshPath = AssetDatabase::GetUniquePath(meshFolder + "/" + skinnedMesh->GetName());
                 AssetDatabase::CreateAsset(skinnedMesh, meshPath);
                 auto renderer = newNode->AddComponent<SkinnedMeshRendererComponent>();
                 renderer->SetSkinnedMesh(skinnedMesh);
@@ -429,7 +429,7 @@ namespace pulsared
         // StaticMesh 路径
         else if (auto staticMesh = ProcessMesh(fbxNode, inverseCoordsystem, settings->RecomputeTangents, settings->UseMikktspace))
         {
-            const auto meshPath = meshFolder + "/" + staticMesh->GetName();
+            const auto meshPath = AssetDatabase::GetUniquePath(meshFolder + "/" + staticMesh->GetName());
             AssetDatabase::CreateAsset(staticMesh, meshPath);
             auto renderer = newNode->AddComponent<StaticMeshRendererComponent>();
             renderer->SetStaticMesh(staticMesh);
@@ -555,7 +555,7 @@ namespace pulsared
             RCPtr<Skeleton> postConvertSkeleton = ProcessSkeleton(fbxScene, filename + "Skeleton_Post", false);
             if (skeleton = ProcessSkeleton(fbxScene, filename + "Skeleton", inverseCoordSystem))
             {
-                const auto skeletonPath = targetMeshFolder + "/" + skeleton->GetName();
+                const auto skeletonPath = AssetDatabase::GetUniquePath(targetMeshFolder + "/" + skeleton->GetName());
                 AssetDatabase::CreateAsset(skeleton, skeletonPath);
                 importedAssets.push_back(skeleton);
             }
@@ -616,7 +616,7 @@ namespace pulsared
                 Logger::Log(StringUtil::Concat("Bound ", std::to_string(skinnedRendererCount), " SkinnedMeshRenderer(s) to skeleton root"));
             }
 
-            AssetDatabase::CreateAsset(prefab, settings->ImportingTargetFolder + "/" + filename + "Prefab");
+            AssetDatabase::CreateAsset(prefab, AssetDatabase::GetUniquePath(settings->ImportingTargetFolder + "/" + filename + "Prefab"));
             importedAssets.push_back(prefab);
 
             DestroySdkObjects(fbxManager, 0);

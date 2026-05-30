@@ -122,7 +122,7 @@ namespace pulsared
                 if (shader)
                 {
                     foundMaterial = Material::StaticCreate(shader, matName);
-                    AssetDatabase::CreateAsset(foundMaterial, meshFolder + "/" + matName);
+                    AssetDatabase::CreateAsset(foundMaterial, AssetDatabase::GetUniquePath(meshFolder + "/" + matName));
                     importedAssets.push_back(foundMaterial);
                 }
             }
@@ -634,7 +634,7 @@ namespace pulsared
             {
                 if (auto skinnedMesh = ProcessSkinnedMesh(scene, mesh, meshName, skeleton, settings->RecomputeTangents, settings->UseMikktspace))
                 {
-                    const auto meshPath = meshFolder + "/" + skinnedMesh->GetName();
+                    const auto meshPath = AssetDatabase::GetUniquePath(meshFolder + "/" + skinnedMesh->GetName());
                     AssetDatabase::CreateAsset(skinnedMesh, meshPath);
                     auto renderer = newNode->AddComponent<SkinnedMeshRendererComponent>();
                     renderer->SetSkinnedMesh(skinnedMesh);
@@ -647,7 +647,7 @@ namespace pulsared
             {
                 if (auto staticMesh = ProcessStaticMesh(scene, mesh, meshName, settings->RecomputeTangents, settings->UseMikktspace))
                 {
-                    const auto meshPath = meshFolder + "/" + staticMesh->GetName();
+                    const auto meshPath = AssetDatabase::GetUniquePath(meshFolder + "/" + staticMesh->GetName());
                     AssetDatabase::CreateAsset(staticMesh, meshPath);
                     auto renderer = newNode->AddComponent<StaticMeshRendererComponent>();
                     renderer->SetStaticMesh(staticMesh);
@@ -709,7 +709,7 @@ namespace pulsared
             RCPtr<Skeleton> skeleton = BuildSkeleton(scene, filename + "Skeleton");
             if (skeleton)
             {
-                const auto skeletonPath = targetMeshFolder + "/" + skeleton->GetName();
+                const auto skeletonPath = AssetDatabase::GetUniquePath(targetMeshFolder + "/" + skeleton->GetName());
                 AssetDatabase::CreateAsset(skeleton, skeletonPath);
                 importedAssets.push_back(skeleton);
             }
@@ -778,13 +778,13 @@ namespace pulsared
                 auto clips = BuildAnimationClips(scene, skeleton, filename);
                 for (auto& clip : clips)
                 {
-                    const auto clipPath = targetMeshFolder + "/" + clip->GetName();
+                    const auto clipPath = AssetDatabase::GetUniquePath(targetMeshFolder + "/" + clip->GetName());
                     AssetDatabase::CreateAsset(clip, clipPath);
                     importedAssets.push_back(clip);
                 }
             }
 
-            AssetDatabase::CreateAsset(prefab, targetMeshFolder + "/" + filename + "Prefab");
+            AssetDatabase::CreateAsset(prefab, AssetDatabase::GetUniquePath(targetMeshFolder + "/" + filename + "Prefab"));
             importedAssets.push_back(prefab);
         }
 
