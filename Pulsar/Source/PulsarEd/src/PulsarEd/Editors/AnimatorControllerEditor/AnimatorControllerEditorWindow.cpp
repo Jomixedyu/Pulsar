@@ -214,6 +214,48 @@ namespace pulsared
             AssetDatabase::MarkDirty(m_assetObject);
         }
 
+        // ---- 拖入添加 State ----
+        if (states.empty())
+        {
+            ImGui::TextDisabled("Drop AnimationClip here to add state");
+        }
+        ImGui::InvisibleButton("##state_drop_zone", ImVec2(-1, 4));
+        if (ImGui::BeginDragDropTarget())
+        {
+            if (auto* payload = ImGui::GetDragDropPayload())
+            {
+                if (string_view(payload->DataType) == AssetObjectDragInfo::Name)
+                {
+                    auto* drag = static_cast<AssetObjectDragInfo*>(payload->Data);
+                    if (drag->Type->IsSubclassOf(cltypeof<pulsar::AnimationClip>()))
+                    {
+                        if (ImGui::AcceptDragDropPayload(AssetObjectDragInfo::Name.data()))
+                        {
+                            auto clip = cast<pulsar::AnimationClip>(AssetDatabase::LoadAssetById(drag->AssetGuid));
+                            if (clip)
+                            {
+                                pulsar::AnimatorState st;
+                                st.Name = clip->GetName();
+                                // 处理名称冲突
+                                int suffix = 1;
+                                string baseName = st.Name;
+                                while (m_controller->FindState(st.Name) != nullptr)
+                                {
+                                    st.Name = baseName + " (" + std::to_string(suffix) + ")";
+                                    ++suffix;
+                                }
+                                st.Clip = clip;
+                                m_controller->AddState(std::move(st));
+                                m_selectedStateIdx = (int)m_controller->GetStates().size() - 1;
+                                AssetDatabase::MarkDirty(m_assetObject);
+                            }
+                        }
+                    }
+                }
+            }
+            ImGui::EndDragDropTarget();
+        }
+
         // ---- 选中 State 属性 ----
         if (m_selectedStateIdx >= 0 && m_selectedStateIdx < (int)states.size())
         {
