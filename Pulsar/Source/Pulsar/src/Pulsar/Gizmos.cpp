@@ -65,6 +65,9 @@ namespace pulsar
 
         for (auto& comp : m_gizmoComponents)
         {
+            if (!comp || !comp.IsValid())
+                continue;
+
             gizmoPainter.Context = {};
 
             bool isSelected = m_world->IsSelectedNode(comp->GetNode());
