@@ -108,6 +108,7 @@ namespace pulsar
             {
                 auto componentObj = componentArr->At(i);
                 auto idStr = componentObj->At("Id")->AsString();
+                auto type = componentObj->At("Type")->AsString();
 
                 guid_t guid = guid_t::parse(idStr);
 
@@ -120,7 +121,14 @@ namespace pulsar
                     }
                 }
 
-                assert(target);
+                if (!target)
+                {
+                    auto log = std::format(
+                        "During the deserialization process in Node, the component cannot be created. node: {}, comp: {}",
+                        this->GetName(), type);
+                    Logger::Log(log, LogLevel::Warning);
+                    continue;
+                }
 
                 auto compData = componentObj->At("Data");
                 SceneObjectSerializer ser {compData, s->IsWrite, s->HasEditorData, s->SceneObjectFinder};
