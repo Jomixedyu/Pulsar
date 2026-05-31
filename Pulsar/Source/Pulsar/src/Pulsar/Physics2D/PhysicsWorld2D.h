@@ -1,6 +1,8 @@
 #pragma once
 #include "Assembly.h"
+#include "ObjectBase.h"
 #include "Pulsar/EngineMath.h"
+#include <functional>
 
 namespace pulsar
 {
@@ -14,13 +16,6 @@ CORELIB_DECL_BOXING(pulsar::RigidBody2DMode, pulsar::BoxingRigidBody2DMode);
 namespace pulsar
 {
     class PhysicsWorld2D;
-
-    class INotifyPhysics2DEvent
-    {
-    public:
-        virtual ~INotifyPhysics2DEvent() = default;
-        virtual void INotifyPhysics2DEvent_OnChangedTransform(Vector2f pos, float rot) = 0;
-    };
 
     class Physics2DObject
     {
@@ -39,7 +34,11 @@ namespace pulsar
             bool m_isSensor = false;
         };
 
-        INotifyPhysics2DEvent* m_event{};
+        ObjectHandle CallbackObject;
+        std::function<void(Vector2f pos, float rot)> OnTransformChanged;
+        std::function<void(ObjectHandle otherHandle)> OnCollisionEnter;
+        std::function<void(ObjectHandle otherHandle)> OnCollisionExit;
+
         RigidBody2DMode m_rigidMode{};
         Vector2f m_position{};
         float m_rotation{};
@@ -64,6 +63,10 @@ namespace pulsar
 
         void AddObject(Physics2DObject* object);
         void RemoveObject(Physics2DObject* object);
+
+        Vector2f GetLinearVelocity(Physics2DObject* object) const;
+        void SetLinearVelocity(Physics2DObject* object, Vector2f velocity);
+        void ApplyLinearImpulse(Physics2DObject* object, Vector2f impulse, Vector2f point);
 
     protected:
         void AddObjectToSystem(Physics2DObject* object);

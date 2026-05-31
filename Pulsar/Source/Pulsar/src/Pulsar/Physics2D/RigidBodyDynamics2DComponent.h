@@ -14,7 +14,7 @@ namespace pulsar
         ObjectPtr<Node> node;
     };
 
-    class RigidBodyDynamics2DComponent : public Component, public ISimulate, public INotifyPhysics2DEvent
+    class RigidBodyDynamics2DComponent : public Component, public ISimulate
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::RigidBodyDynamics2DComponent, Component);
         CORELIB_CLASS_ATTR(new CategoryAttribute("2D"));
@@ -29,16 +29,21 @@ namespace pulsar
         void EndSimulate() override;
         void SimulateTick(float dt) override;
 
-        void INotifyPhysics2DEvent_OnChangedTransform(Vector2f pos, float rot) override;
-
         void OnAttachedShapeChanged(Shape2DComponent* shape);
+
+        RigidBody2DMode GetMode() const { return m_mode; }
+
+        Vector2f GetLinearVelocity() const;
+        void SetLinearVelocity(Vector2f velocity);
+        void ApplyLinearImpulse(Vector2f impulse);
+        void ApplyLinearImpulse(Vector2f impulse, Vector2f point);
     protected:
         array_list<Shape2DComponent_ref> CollectAttachedShapes() const;
     public:
-        ActionEvents<const Collision2D&> OnCollisionEnter2D;
-        ActionEvents<const Collision2D&> OnCollisionExit2D;
-        ActionEvents<const Collision2D&> OnOverlap2D;
-        ActionEvents<const Collision2D&> OnExitEnter2D;
+        Action<const Collision2D&> OnCollisionEnter2D;
+        Action<const Collision2D&> OnCollisionExit2D;
+        Action<const Collision2D&> OnOverlap2D;
+        Action<const Collision2D&> OnExitEnter2D;
     protected:
 
         // CORELIB_REFL_DECL_FIELD(m_density);

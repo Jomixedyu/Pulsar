@@ -25,9 +25,43 @@ namespace pulsar
         for (int i = 0; i < events.moveCount; ++i)
         {
             auto event = events.moveEvents[i];
-            auto eventCallback = (INotifyPhysics2DEvent*)event.userData;
+            auto obj = (Physics2DObject*)event.userData;
+            if (obj && obj->OnTransformChanged)
+            {
+                obj->OnTransformChanged(Vector2f(event.transform.p.x, event.transform.p.y), b2Rot_GetAngle(event.transform.q));
+            }
+        }
 
-            eventCallback->INotifyPhysics2DEvent_OnChangedTransform(event.transform.p, b2Rot_GetAngle(event.transform.q));
+        b2ContactEvents contactEvents = b2World_GetContactEvents(m_world->m_b2world);
+
+        for (int i = 0; i < contactEvents.beginCount; ++i)
+        {
+            auto& event = contactEvents.beginEvents[i];
+            auto bodyA = b2Shape_GetBody(event.shapeIdA);
+            auto bodyB = b2Shape_GetBody(event.shapeIdB);
+
+            auto objA = (Physics2DObject*)b2Body_GetUserData(bodyA);
+            auto objB = (Physics2DObject*)b2Body_GetUserData(bodyB);
+
+            if (objA && objA->OnCollisionEnter)
+                objA->OnCollisionEnter(objB ? objB->CallbackObject : ObjectHandle{});
+            if (objB && objB->OnCollisionEnter)
+                objB->OnCollisionEnter(objA ? objA->CallbackObject : ObjectHandle{});
+        }
+
+        for (int i = 0; i < contactEvents.endCount; ++i)
+        {
+            auto& event = contactEvents.endEvents[i];
+            auto bodyA = b2Shape_GetBody(event.shapeIdA);
+            auto bodyB = b2Shape_GetBody(event.shapeIdB);
+
+            auto objA = (Physics2DObject*)b2Body_GetUserData(bodyA);
+            auto objB = (Physics2DObject*)b2Body_GetUserData(bodyB);
+
+            if (objA && objA->OnCollisionExit)
+                objA->OnCollisionExit(objB ? objB->CallbackObject : ObjectHandle{});
+            if (objB && objB->OnCollisionExit)
+                objB->OnCollisionExit(objA ? objA->CallbackObject : ObjectHandle{});
         }
     }
 
@@ -96,6 +130,31 @@ namespace pulsar
         RemoveObjectFromSystem(object);
     }
 
+    Vector2f PhysicsWorld2D::GetLinearVelocity(Physics2DObject* object) const
+    {
+        if (!m_world || !m_world->m_obj2Body.contains(object))
+            return {};
+        auto bodyId = m_world->m_obj2Body.at(object);
+        auto v = b2Body_GetLinearVelocity(bodyId);
+        return Vector2f(v.x, v.y);
+    }
+
+    void PhysicsWorld2D::SetLinearVelocity(Physics2DObject* object, Vector2f velocity)
+    {
+        if (!m_world || !m_world->m_obj2Body.contains(object))
+            return;
+        auto bodyId = m_world->m_obj2Body.at(object);
+        b2Body_SetLinearVelocity(bodyId, b2Vec2{velocity.x, velocity.y});
+    }
+
+    void PhysicsWorld2D::ApplyLinearImpulse(Physics2DObject* object, Vector2f impulse, Vector2f point)
+    {
+        if (!m_world || !m_world->m_obj2Body.contains(object))
+            return;
+        auto bodyId = m_world->m_obj2Body.at(object);
+        b2Body_ApplyLinearImpulse(bodyId, b2Vec2{impulse.x, impulse.y}, b2Vec2{point.x, point.y}, true);
+    }
+
     void PhysicsWorld2D::AddObjectToSystem(Physics2DObject* object)
     {
         if (!m_world)
@@ -111,7 +170,7 @@ namespace pulsar
         auto bodyDef = b2DefaultBodyDef();
         bodyDef.position = b2Vec2(object->m_position.x, object->m_position.y);
         bodyDef.type = GetBodyType(object->m_rigidMode);
-        bodyDef.userData = object->m_event;
+        bodyDef.userData = object;
         bodyDef.rotation = b2MakeRot(object->m_rotation);
 
         auto bodyId = b2CreateBody(b2world, &bodyDef);
@@ -163,4 +222,5 @@ namespace pulsar
             m_world->m_obj2Body.erase(object);
         }
     }
+
 } // namespace pulsar

@@ -34,7 +34,31 @@ namespace pulsar
         m_physics->m_rigidMode = m_mode;
         m_physics->m_position = Vector2f(pos.x, pos.y);
         m_physics->m_rotation = rot.z * math::deg2rad();
-        m_physics->m_event = this;
+        m_physics->CallbackObject = this->GetObjectHandle();
+        m_physics->OnTransformChanged = [this](Vector2f p, float r) {
+            auto transform = GetTransform();
+            auto oldPos = transform->GetPosition();
+            transform->SetPosition(Vector3f(p.x, p.y, oldPos.z));
+            auto euler = transform->GetEuler();
+            euler.z = r * math::rad2deg();
+            transform->SetEuler(euler);
+        };
+        m_physics->OnCollisionEnter = [this](ObjectHandle otherHandle) {
+            auto otherComp = ObjectPtr<RigidBodyDynamics2DComponent>::UnsafeCreate(otherHandle);
+            if (otherComp)
+            {
+                Collision2D collision{ otherComp->GetNode() };
+                this->OnCollisionEnter2D.Invoke(collision);
+            }
+        };
+        m_physics->OnCollisionExit = [this](ObjectHandle otherHandle) {
+            auto otherComp = ObjectPtr<RigidBodyDynamics2DComponent>::UnsafeCreate(otherHandle);
+            if (otherComp)
+            {
+                Collision2D collision{ otherComp->GetNode() };
+                this->OnCollisionExit2D.Invoke(collision);
+            }
+        };
 
         for (auto& compRef : CollectAttachedShapes())
         {
@@ -75,22 +99,32 @@ namespace pulsar
     {
     }
 
-    void RigidBodyDynamics2DComponent::INotifyPhysics2DEvent_OnChangedTransform(Vector2f pos, float rot)
-    {
-        auto transform = GetTransform();
-
-        auto oldPos = transform->GetPosition();
-        transform->SetPosition(Vector3f(pos.x, pos.y, oldPos.z));
-
-
-        auto euler = transform->GetEuler();
-        euler.z = rot * math::rad2deg();
-        transform->SetEuler(euler);
-
-    }
-
     void RigidBodyDynamics2DComponent::OnAttachedShapeChanged(Shape2DComponent* shape)
     {
+    }
+
+    Vector2f RigidBodyDynamics2DComponent::GetLinearVelocity() const
+    {
+        if (!m_physics) return {};
+        return GetWorld()->GetPhysicsWorld2D()->GetLinearVelocity(m_physics);
+    }
+
+    void RigidBodyDynamics2DComponent::SetLinearVelocity(Vector2f velocity)
+    {
+        if (!m_physics) return;
+        GetWorld()->GetPhysicsWorld2D()->SetLinearVelocity(m_physics, velocity);
+    }
+
+    void RigidBodyDynamics2DComponent::ApplyLinearImpulse(Vector2f impulse)
+    {
+        if (!m_physics) return;
+        GetWorld()->GetPhysicsWorld2D()->ApplyLinearImpulse(m_physics, impulse, Vector2f(0,0));
+    }
+
+    void RigidBodyDynamics2DComponent::ApplyLinearImpulse(Vector2f impulse, Vector2f point)
+    {
+        if (!m_physics) return;
+        GetWorld()->GetPhysicsWorld2D()->ApplyLinearImpulse(m_physics, impulse, point);
     }
 
     array_list<Shape2DComponent_ref> RigidBodyDynamics2DComponent::CollectAttachedShapes() const
