@@ -35,9 +35,9 @@ namespace pulsar
     void World::OnDuplicated(World* target)
     {
         target->m_name = m_name + "_copy";
-        for (auto& scene : m_scenes)
+        for (size_t i = 1; i < m_scenes.size(); ++i)
         {
-            target->LoadScene(InstantiateAsset(scene));
+            target->LoadScene(InstantiateAsset(m_scenes[i]));
         }
     }
 
@@ -208,10 +208,6 @@ namespace pulsar
         m_scenes.push_back(scene);
         this->OnSceneLoading(scene);
         scene->BeginScene(this);
-        if (m_scenes.size() == 1)
-        {
-            OnLoadingResidentScene(scene);
-        }
     }
 
     void World::UnloadScene(RCPtr<NodeCollection> scene)
@@ -223,10 +219,6 @@ namespace pulsar
         }
         if (it == m_scenes.begin())
         {
-            if (m_scenes.size() > 1)
-            {
-                return;
-            }
             OnUnloadingResidentScene(scene);
         }
         else
@@ -247,6 +239,7 @@ namespace pulsar
         scene->SetObjectFlags(scene->GetObjectFlags() | OF_Transient & ~OF_Instantiable);
 
         LoadScene(scene);
+        OnLoadingResidentScene(scene);
     }
 
     void World::UnloadAllScene(bool unloadResidentScene)

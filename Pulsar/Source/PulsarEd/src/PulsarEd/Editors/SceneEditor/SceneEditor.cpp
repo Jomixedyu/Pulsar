@@ -325,14 +325,16 @@ namespace pulsared
         if (!PreviewWorldStackEmpty())
             return;
 
-        auto pieWorld = std::make_unique<World>("PIE");
-        GetEdApp()->GetEditorWorld()->OnDuplicated(pieWorld.get());
+        auto pieWorld = std::make_unique<EditorWorld>("PIE");
         PushPreviewWorld(std::move(pieWorld));
 
-        auto* world = GetPreviewWorld();
-        if (world)
+        auto* editorWorld = GetEdApp()->GetEditorWorld();
+        auto* previewWorld = GetPreviewWorld();
+        editorWorld->OnDuplicated(previewWorld);
+
+        if (previewWorld)
         {
-            world->BeginPlay();
+            previewWorld->BeginPlay();
         }
     }
 
