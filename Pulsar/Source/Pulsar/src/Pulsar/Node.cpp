@@ -291,6 +291,7 @@ namespace pulsar
 
     void Node::BeginNode(NodeCollection* collection)
     {
+        assert(!m_isBegun);
         m_ownerCollection = collection;
         m_isBegun = true;
         if (GetIsActive())
