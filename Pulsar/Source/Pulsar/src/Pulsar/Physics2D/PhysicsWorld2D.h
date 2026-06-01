@@ -15,7 +15,13 @@ CORELIB_DECL_BOXING(pulsar::RigidBody2DMode, pulsar::BoxingRigidBody2DMode);
 
 namespace pulsar
 {
+    class Node;
     class PhysicsWorld2D;
+
+    struct Collision2D
+    {
+        ObjectPtr<Node> node;
+    };
 
     class Physics2DObject
     {
@@ -67,6 +73,32 @@ namespace pulsar
         Vector2f GetLinearVelocity(Physics2DObject* object) const;
         void SetLinearVelocity(Physics2DObject* object, Vector2f velocity);
         void ApplyLinearImpulse(Physics2DObject* object, Vector2f impulse, Vector2f point);
+        void SetTransform(Physics2DObject* object, Vector2f position, float rotation);
+
+        struct RayCastResult
+        {
+            bool hit = false;
+            Vector2f point;
+            Vector2f normal;
+            ObjectHandle hitObject;
+        };
+        bool RayCast(Vector2f start, Vector2f end, RayCastResult& outResult);
+
+        struct CapsuleCastResult
+        {
+            bool hit = false;
+            Vector2f point;
+            Vector2f normal;
+            float fraction = 1.0f;
+            ObjectHandle hitObject;
+        };
+        /// 胶囊体 Shape Cast（类似 Unity 的 CharacterController sweep）
+        /// @param position 胶囊体中心位置
+        /// @param radius 胶囊体半径
+        /// @param height 胶囊体总高度
+        /// @param translation 位移向量
+        /// @param outResult 输出结果
+        bool CastCapsule(Vector2f position, float radius, float height, Vector2f translation, CapsuleCastResult& outResult);
 
     protected:
         void AddObjectToSystem(Physics2DObject* object);

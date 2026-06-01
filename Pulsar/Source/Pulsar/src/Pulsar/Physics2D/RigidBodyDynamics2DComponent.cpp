@@ -127,6 +127,12 @@ namespace pulsar
         GetWorld()->GetPhysicsWorld2D()->ApplyLinearImpulse(m_physics, impulse, point);
     }
 
+    void RigidBodyDynamics2DComponent::SetTransform(Vector2f position, float rotation)
+    {
+        if (!m_physics) return;
+        GetWorld()->GetPhysicsWorld2D()->SetTransform(m_physics, position, rotation);
+    }
+
     array_list<Shape2DComponent_ref> RigidBodyDynamics2DComponent::CollectAttachedShapes() const
     {
         array_list<Shape2DComponent_ref> ret;

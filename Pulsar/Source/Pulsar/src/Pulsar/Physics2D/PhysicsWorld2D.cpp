@@ -34,6 +34,12 @@ namespace pulsar
 
         b2ContactEvents contactEvents = b2World_GetContactEvents(m_world->m_b2world);
 
+        if (contactEvents.beginCount > 0 || contactEvents.endCount > 0)
+        {
+            // 用 printf 因为 Logger 可能在这不可用或太重量级
+            printf("[PhysicsWorld2D] contacts: begin=%d end=%d\n", contactEvents.beginCount, contactEvents.endCount);
+        }
+
         for (int i = 0; i < contactEvents.beginCount; ++i)
         {
             auto& event = contactEvents.beginEvents[i];
@@ -155,6 +161,87 @@ namespace pulsar
         b2Body_ApplyLinearImpulse(bodyId, b2Vec2{impulse.x, impulse.y}, b2Vec2{point.x, point.y}, true);
     }
 
+    void PhysicsWorld2D::SetTransform(Physics2DObject* object, Vector2f position, float rotation)
+    {
+        if (!m_world || !m_world->m_obj2Body.contains(object))
+            return;
+        auto bodyId = m_world->m_obj2Body.at(object);
+        b2Body_SetTransform(bodyId, b2Vec2{position.x, position.y}, b2MakeRot(rotation));
+    }
+
+    bool PhysicsWorld2D::RayCast(Vector2f start, Vector2f end, RayCastResult& outResult)
+    {
+        if (!m_world)
+            return false;
+
+        b2QueryFilter filter = b2DefaultQueryFilter();
+        b2Vec2 origin(start.x, start.y);
+        b2Vec2 translation(end.x - start.x, end.y - start.y);
+
+        b2RayResult result = b2World_CastRayClosest(m_world->m_b2world, origin, translation, filter);
+
+        if (result.hit)
+        {
+            outResult.hit = true;
+            outResult.point = Vector2f(result.point.x, result.point.y);
+            outResult.normal = Vector2f(result.normal.x, result.normal.y);
+
+            auto body = b2Shape_GetBody(result.shapeId);
+            auto obj = (Physics2DObject*)b2Body_GetUserData(body);
+            outResult.hitObject = obj ? obj->CallbackObject : ObjectHandle{};
+            return true;
+        }
+
+        return false;
+    }
+
+    struct CapsuleCastContext
+    {
+        PhysicsWorld2D::CapsuleCastResult* result;
+    };
+
+    static float CapsuleCastCallback(b2ShapeId shapeId, b2Vec2 point, b2Vec2 normal, float fraction, void* context)
+    {
+        auto* ctx = static_cast<CapsuleCastContext*>(context);
+        auto* result = ctx->result;
+
+        result->hit = true;
+        result->point = Vector2f(point.x, point.y);
+        result->normal = Vector2f(normal.x, normal.y);
+        result->fraction = fraction;
+
+        auto body = b2Shape_GetBody(shapeId);
+        auto obj = (Physics2DObject*)b2Body_GetUserData(body);
+        result->hitObject = obj ? obj->CallbackObject : ObjectHandle{};
+
+        // 返回 fraction 进行裁剪，继续搜索更近的命中
+        return fraction;
+    }
+
+    bool PhysicsWorld2D::CastCapsule(Vector2f position, float radius, float height, Vector2f translation, CapsuleCastResult& outResult)
+    {
+        if (!m_world)
+            return false;
+
+        outResult = CapsuleCastResult{};
+
+        float halfLine = height * 0.5f - radius;
+        if (halfLine < 0.0f) halfLine = 0.0f;
+
+        b2Capsule capsule{{0.0f, -halfLine}, {0.0f, halfLine}, radius};
+
+        b2Transform transform;
+        transform.p = {position.x, position.y};
+        transform.q = b2MakeRot(0.0f);
+
+        b2QueryFilter filter = b2DefaultQueryFilter();
+
+        CapsuleCastContext context{&outResult};
+        b2World_CastCapsule(m_world->m_b2world, &capsule, transform, {translation.x, translation.y}, filter, CapsuleCastCallback, &context);
+
+        return outResult.hit;
+    }
+
     void PhysicsWorld2D::AddObjectToSystem(Physics2DObject* object)
     {
         if (!m_world)
@@ -181,6 +268,7 @@ namespace pulsar
             shapeDef.density = inShape.m_density;
             shapeDef.friction = inShape.m_friction;
             shapeDef.isSensor = inShape.m_isSensor;
+            shapeDef.enableContactEvents = true;
 
             auto size = inShape.size;
             auto radius = inShape.radius;

@@ -420,6 +420,13 @@ namespace pulsared
                 }
             }
         }
+
+        // 把输入事件传递给 PreviewWorld，否则 PIE 中角色的 InputComponent 收不到键盘输入
+        if (auto* preview = GetPreviewWorld())
+        {
+            for (const auto& e : events)
+                preview->ProcessInputEvent(e);
+        }
     }
 
     SPtr<EditorWindow> SceneEditor::OnCreateEditorWindow()

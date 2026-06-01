@@ -294,7 +294,7 @@ namespace pulsared
             BoneInfo bone;
             bone.Name = boneNode->GetName();
 
-            // 构建 Path：从 skeleton root 到当前节点的路径
+            // 构建 Path：从 skeleton root 的 children 开始的路径（不含 root 本身）
             {
                 array_list<string> pathParts;
                 int32_t idx = i;
@@ -304,7 +304,10 @@ namespace pulsared
                     idx = skeletonNodes[idx].ParentIndex;
                 }
                 std::reverse(pathParts.begin(), pathParts.end());
-                bone.Path = StringUtil::Join(pathParts, "/");
+                // Drop root bone name since search starts from m_root itself
+                if (!pathParts.empty())
+                    pathParts.erase(pathParts.begin());
+                bone.Path = pathParts.empty() ? "" : StringUtil::Join(pathParts, "/");
             }
 
             bone.ParentIndex = info.ParentIndex;

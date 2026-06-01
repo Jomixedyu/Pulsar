@@ -73,12 +73,27 @@ namespace pulsar
         CORELIB_REFL_DECL_FIELD(m_jumpHangDuration);
         float m_jumpHangDuration = 0.2f;
 
+        CORELIB_REFL_DECL_FIELD(m_speed);
+        float m_speed = 5.0f;
+
+        CORELIB_REFL_DECL_FIELD(m_gravity);
+        float m_gravity = -20.0f;
+
+        CORELIB_REFL_DECL_FIELD(m_jumpImpulse);
+        float m_jumpImpulse = 10.0f;
+
+        CORELIB_REFL_DECL_FIELD(m_acceleration);
+        float m_acceleration = 10.0f;
+
         // runtime
         Character2dState m_state = Character2dState::Idle;
         int m_currentFrame = 0;
         float m_frameTimer = 0.0f;
         float m_jumpPhaseTimer = 0.0f;
         bool m_attackRequested = false;
+
+        float m_horizontalVelocity = 0.0f;
+        float m_verticalVelocity = 0.0f;
     };
 }
 

@@ -1,4 +1,5 @@
 #include "Components/InputComponent.h"
+#include "Logger.h"
 #include "World.h"
 
 namespace pulsar
@@ -10,6 +11,8 @@ namespace pulsar
         // Default bindings (hard-coded for now)
         BindAxis("Horizontal", KeyCode::A, KeyCode::D);
         BindAxis("Vertical",   KeyCode::S, KeyCode::W);
+        BindAction("Jump", KeyCode::SPACE);
+        BindAction("Attack", KeyCode::J);
     }
 
     void InputComponent::OnTick(Ticker ticker)

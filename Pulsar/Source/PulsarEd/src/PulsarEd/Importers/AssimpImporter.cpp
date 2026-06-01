@@ -250,8 +250,10 @@ namespace pulsared
 
             // BindModelMatrix relative to skeleton root
             Matrix4f bindModelMatrix = rootGlobalBindInv * globalBind;
+            bone.BindModelMatrix = bindModelMatrix;
+            bone.InverseBindMatrix = jmath::Inverse(bindModelMatrix);
 
-            // Extract local TRS from bindModelMatrix
+            // Extract local TRS from bindModelMatrix for Prefab node creation
             if (bone.ParentIndex >= 0)
             {
                 Matrix4f parentBindModel = bones[bone.ParentIndex].BindModelMatrix;
@@ -277,25 +279,6 @@ namespace pulsared
             }
 
             bones.push_back(bone);
-        }
-
-        // Second pass: compute BindModelMatrix from local TRS to ensure consistency
-        for (int32_t i = 0; i < (int32_t)bones.size(); ++i)
-        {
-            auto& bone = bones[i];
-            Matrix4f localMat;
-            transutil::NewTRS(localMat, bone.LocalTranslation, bone.LocalRotation, bone.LocalScale);
-            if (bone.ParentIndex >= 0)
-                bone.BindModelMatrix = bones[bone.ParentIndex].BindModelMatrix * localMat;
-            else
-                bone.BindModelMatrix = localMat;
-        }
-
-        // Third pass: compute InverseBindMatrix from BindModelMatrix
-        for (int32_t i = 0; i < (int32_t)bones.size(); ++i)
-        {
-            auto& bone = bones[i];
-            bone.InverseBindMatrix = jmath::Inverse(bone.BindModelMatrix);
         }
 
         return Skeleton::StaticCreate(name, std::move(bones), rootBoneIndex);

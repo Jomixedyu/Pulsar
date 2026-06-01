@@ -223,12 +223,14 @@ namespace pulsar
     void SkinnedMeshRendererComponent::UpdateSkinningMatrices()
     {
         if (!m_skinnedMesh || !m_skinnedMesh->GetSkeleton()) return;
-        if (!m_root) return;
 
         const auto& skeletonBones = m_skinnedMesh->GetSkeleton()->GetBones();
         if (skeletonBones.empty()) return;
-        if (m_bones->size() != skeletonBones.size()) return;
-        if (!m_bones->at(0)) return;
+        if (!m_bones || m_bones->size() != skeletonBones.size()) return;
+
+        const int rootBoneIndex = m_skinnedMesh->GetSkeleton()->GetRootBoneIndex();
+        if (rootBoneIndex < 0 || rootBoneIndex >= (int)m_bones->size() || !m_bones->at(rootBoneIndex))
+            return;
 
         static bool s_loggedSkinningDebug = false;
         static bool s_loggedSkinMatrices = false;
@@ -248,11 +250,14 @@ namespace pulsar
             s_loggedSkinningDebug = true;
         }
 
-        const int rootBoneIndex = m_skinnedMesh->GetSkeleton()->GetRootBoneIndex();
-        if (rootBoneIndex < 0 || rootBoneIndex >= (int)m_bones->size() || !m_bones->at(rootBoneIndex))
-            return;
-
-        const Matrix4f rendererRootWorldInv = jmath::Inverse(m_root->GetLocalToWorldMatrix());
+        // Use mesh node (this renderer's node) as the reference space for skinning
+        const Matrix4f meshWorldInv = jmath::Inverse(GetNode()->GetTransform()->GetLocalToWorldMatrix());
+        Matrix4f meshToRootTransform = Matrix4f(1.f);
+        if (m_root)
+        {
+            const Matrix4f rootWorld = m_root->GetLocalToWorldMatrix();
+            meshToRootTransform = jmath::Inverse(rootWorld) * GetNode()->GetTransform()->GetLocalToWorldMatrix();
+        }
 
         array_list<Matrix4f> boneMatrices(skeletonBones.size(), Matrix4f(1.f));
         for (int i = 0; i < (int)skeletonBones.size(); ++i)
@@ -260,8 +265,8 @@ namespace pulsar
             auto boneTransform = m_bones->at(i);
             if (!boneTransform) continue;
 
-            const Matrix4f boneModelMatrix = rendererRootWorldInv * boneTransform->GetLocalToWorldMatrix();
-            boneMatrices[i] = boneModelMatrix * skeletonBones[i].InverseBindMatrix;
+            const Matrix4f boneModelMatrix = meshWorldInv * boneTransform->GetLocalToWorldMatrix();
+            boneMatrices[i] = boneModelMatrix * skeletonBones[i].InverseBindMatrix * meshToRootTransform;
 
             if (i < 4 && !s_loggedSkinMatrices)
             {
@@ -333,13 +338,41 @@ namespace pulsar
     {
         base::OnDrawGizmo(painter, selected);
 
-        // Editor mode: update skinning matrices every frame so mesh deforms when bones are rotated
-        UpdateSkinningMatrices();
+        if (!selected) return;
 
         if (!m_skinnedMesh || !m_skinnedMesh->GetSkeleton()) return;
 
         const auto& bones = m_skinnedMesh->GetSkeleton()->GetBones();
         if (bones.empty()) return;
+
+        // Ensure bone references are up-to-date before drawing
+        if (m_root && m_bones)
+        {
+            bool needRebuild = false;
+            if (m_bones->size() != bones.size())
+            {
+                needRebuild = true;
+            }
+            else
+            {
+                for (int i = 0; i < (int)m_bones->size(); ++i)
+                {
+                    if (!m_bones->at(i) || !m_bones->at(i).IsValid())
+                    {
+                        needRebuild = true;
+                        break;
+                    }
+                }
+            }
+            if (needRebuild)
+            {
+                Logger::Log("SkinnedMeshRendererComponent::OnDrawGizmo - Rebuilding bone references for '" + GetNode()->GetName() + "'", LogLevel::Warning);
+                RebuildBoneReferences();
+            }
+        }
+
+        // Editor mode: update skinning matrices every frame so mesh deforms when bones are rotated
+        UpdateSkinningMatrices();
 
             painter->Context.LineTint = selected
                 ? Color4f{0.2f, 1.f, 0.4f, 1.f}
@@ -524,6 +557,8 @@ namespace pulsar
         base::OnTransformChanged();
         if (m_renderObject)
             m_renderObject->SetTransform(GetNode()->GetTransform()->GetLocalToWorldMatrix());
+        // Ensure skinning matrices stay correct when the renderer node is moved in editor
+        UpdateSkinningMatrices();
     }
 
     void SkinnedMeshRendererComponent::OnMeshChanged()
@@ -562,6 +597,8 @@ namespace pulsar
         auto sceneRoot = m_root;
         const int rootBoneIndex = m_skinnedMesh->GetSkeleton()->GetRootBoneIndex();
 
+        int unresolvedCount = 0;
+        string logDetail;
         for (int i = 0; i < (int)skeletonBones.size(); ++i)
         {
             const auto& bone = skeletonBones[i];
@@ -575,13 +612,40 @@ namespace pulsar
                 else if (!bone.Path.empty())
                 {
                     resolvedBone = SceneObjectPtr<TransformComponent>(sceneRoot->FindByPath(bone.Path));
+                    if (!resolvedBone)
+                    {
+                        resolvedBone = SceneObjectPtr<TransformComponent>(sceneRoot->FindByName(bone.Name));
+                        if (resolvedBone)
+                        {
+                            logDetail += "[" + bone.Name + "] FindByPath('" + bone.Path + "') failed, fallback FindByName succeeded; ";
+                        }
+                        else
+                        {
+                            logDetail += "[" + bone.Name + "] FindByPath('" + bone.Path + "') && FindByName both failed; ";
+                        }
+                    }
                 }
                 else
                 {
                     resolvedBone = SceneObjectPtr<TransformComponent>(sceneRoot->FindByName(bone.Name));
+                    if (!resolvedBone)
+                    {
+                        logDetail += "[" + bone.Name + "] FindByName failed (no path); ";
+                    }
                 }
             }
+            if (!resolvedBone)
+                ++unresolvedCount;
             m_bones->at(i) = resolvedBone;
+        }
+
+        if (unresolvedCount > 0)
+        {
+            Logger::Log(
+                "SkinnedMeshRendererComponent::RebuildBoneReferences - " +
+                std::to_string(unresolvedCount) + "/" + std::to_string(skeletonBones.size()) +
+                " bones unresolved under root '" + sceneRoot->GetNode()->GetName() + "' | details: " + logDetail,
+                LogLevel::Warning);
         }
     }
 

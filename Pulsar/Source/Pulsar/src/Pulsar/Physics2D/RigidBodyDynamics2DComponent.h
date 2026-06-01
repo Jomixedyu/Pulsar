@@ -9,11 +9,6 @@ namespace pulsar
 {
     class Physics2DObject;
 
-    struct Collision2D
-    {
-        ObjectPtr<Node> node;
-    };
-
     class RigidBodyDynamics2DComponent : public Component, public ISimulate
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::RigidBodyDynamics2DComponent, Component);
@@ -37,6 +32,7 @@ namespace pulsar
         void SetLinearVelocity(Vector2f velocity);
         void ApplyLinearImpulse(Vector2f impulse);
         void ApplyLinearImpulse(Vector2f impulse, Vector2f point);
+        void SetTransform(Vector2f position, float rotation);
     protected:
         array_list<Shape2DComponent_ref> CollectAttachedShapes() const;
     public:

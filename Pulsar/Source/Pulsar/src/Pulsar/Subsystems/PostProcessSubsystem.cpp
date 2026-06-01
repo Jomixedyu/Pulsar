@@ -13,7 +13,9 @@ namespace pulsar
 
     void PostProcessSubsystem::OnBeginPlay()
     {
-        m_volumes.clear();
+        // 不要在这里 clear m_volumes。
+        // VolumeComponent 在 BeginComponent/EndComponent 中自己注册/注销，
+        // PIE 场景复制后组件已经注册好了，clear 会把它们丢掉。
     }
 
     void PostProcessSubsystem::OnEndPlay()
