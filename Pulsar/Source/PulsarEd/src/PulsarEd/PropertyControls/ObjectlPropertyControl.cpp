@@ -15,6 +15,39 @@ namespace PImGui
 namespace pulsared
 {
 
+    static void RenderAssetPickerList(SPtr<AssetFileNode> node, Type* type, const string& searchLower, BoxingRCPtrBase* obj, bool& isChanged)
+    {
+        if (!node) return;
+        for (auto& child : node->GetChildren())
+        {
+            if (child->IsFolder)
+            {
+                RenderAssetPickerList(child, type, searchLower, obj, isChanged);
+                if (isChanged) return;
+                continue;
+            }
+            if (!child->GetAssetType() || !child->GetAssetType()->IsSubclassOf(type))
+                continue;
+            if (!searchLower.empty())
+            {
+                string nameLower;
+                for (char c : child->AssetName)
+                {
+                    nameLower += (char)std::tolower(c);
+                }
+                if (nameLower.find(searchLower) == string::npos)
+                    continue;
+            }
+            if (ImGui::Selectable(child->AssetName.c_str()))
+            {
+                obj->ptr = AssetDatabase::LoadAssetById(child->AssetMeta->Guid);
+                isChanged = true;
+                ImGui::CloseCurrentPopup();
+                return;
+            }
+        }
+    }
+
     static bool AssetObjectControl(BoxingRCPtrBase* obj, Type* type)
     {
         auto ptr = obj->ptr;
@@ -35,7 +68,12 @@ namespace pulsared
             StringUtil::strcpy(buf, StringUtil::Concat("[Missing Object)]"));
         }
 
-        ImGui::InputTextEx("##i", nullptr, buf, sizeof(buf), ImVec2(-50, 0), 0);
+        ImGui::InputTextEx("##i", nullptr, buf, sizeof(buf), ImVec2(-80, 0), 0);
+        ImGui::SameLine();
+        if (ImGui::Button("...##pick", ImVec2(30, 0)))
+        {
+            ImGui::OpenPopup("AssetPicker");
+        }
         bool isChanged = false;
         if (ImGui::BeginDragDropTarget())
         {
@@ -51,7 +89,6 @@ namespace pulsared
                     if ((payload = ImGui::AcceptDragDropPayload(AssetObjectDragInfo::Name.data())))
                     {
                         (void)payload;
-                        //obj->ptr = RuntimeAssetManager::GetLoadedAssetByGuid(dragData->AssetGuid);
                         obj->ptr = AssetDatabase::LoadAssetById(dragData->AssetGuid);
                         isChanged = true;
                     }
@@ -60,6 +97,42 @@ namespace pulsared
 
             ImGui::EndDragDropTarget();
         }
+
+        ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+        ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+        ImGui::SetNextWindowSize(ImVec2(450, 350), ImGuiCond_Appearing);
+        if (ImGui::BeginPopupModal("AssetPicker", nullptr, ImGuiWindowFlags_NoResize))
+        {
+            static char pickerSearch[256] = "";
+            ImGui::InputTextWithHint("##pickerSearch", "Search...", pickerSearch, sizeof(pickerSearch));
+
+            string searchLower;
+            for (char c : pickerSearch)
+            {
+                if (c == '\0') break;
+                searchLower += (char)std::tolower(c);
+            }
+
+            if (ImGui::BeginChild("AssetList", ImVec2(0, -30)))
+            {
+                RenderAssetPickerList(AssetDatabase::FileTree, type, searchLower, obj, isChanged);
+            }
+            ImGui::EndChild();
+
+            if (ImGui::Button("None"))
+            {
+                obj->ptr = nullptr;
+                isChanged = true;
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Cancel"))
+            {
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
+        }
+
         return isChanged;
     }
     static bool SceneObjectControl(BoxingSceneObjectPtrBase* obj, Type* type)
