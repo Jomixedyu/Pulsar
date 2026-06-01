@@ -37,7 +37,7 @@ namespace pulsar
         target->m_name = m_name + "_copy";
         for (auto& scene : m_scenes)
         {
-            target->m_scenes.push_back(InstantiateAsset(scene));
+            target->LoadScene(InstantiateAsset(scene));
         }
     }
 
@@ -208,6 +208,10 @@ namespace pulsar
         m_scenes.push_back(scene);
         this->OnSceneLoading(scene);
         scene->BeginScene(this);
+        if (m_scenes.size() == 1)
+        {
+            OnLoadingResidentScene(scene);
+        }
     }
 
     void World::UnloadScene(RCPtr<NodeCollection> scene)
@@ -219,6 +223,10 @@ namespace pulsar
         }
         if (it == m_scenes.begin())
         {
+            if (m_scenes.size() > 1)
+            {
+                return;
+            }
             OnUnloadingResidentScene(scene);
         }
         else
@@ -239,7 +247,6 @@ namespace pulsar
         scene->SetObjectFlags(scene->GetObjectFlags() | OF_Transient & ~OF_Instantiable);
 
         LoadScene(scene);
-        OnLoadingResidentScene(scene);
     }
 
     void World::UnloadAllScene(bool unloadResidentScene)
@@ -284,7 +291,10 @@ namespace pulsar
 
     void World::OnWorldBegin()
     {
-        InitializeResidentScene();
+        if (m_scenes.empty())
+        {
+            InitializeResidentScene();
+        }
         m_focusScene = GetResidentScene();
 
         m_physicsWorld2D = new PhysicsWorld2D;
