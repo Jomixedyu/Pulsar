@@ -3,6 +3,8 @@
 
 float4 _TintColor;
 float4 _EmissiveColor;
+float4 _Color;
+float _Lerp;
 
 Texture2D _BaseColorMap;
 SamplerState Sampler__BaseColorMap;
@@ -36,6 +38,7 @@ float4 PSMain(StandardVaryings v) : SV_Target
     float4 tex = _BaseColorMap.Sample(Sampler__BaseColorMap, uv);
     float4 final = tex.rgba * _TintColor.rgba;
     final.rgb += _EmissiveColor.rgb * tex.rgb;
+    final = lerp(final, _Color, _Lerp);
     return final;
 }
 

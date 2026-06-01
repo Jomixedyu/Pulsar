@@ -58,6 +58,19 @@
             "Name": "_Index",
             "Type": "Float",
             "DefaultValue": "0"
+        },
+        {
+            "Label": "Color",
+            "Name": "_Color",
+            "Type": "Float4",
+            "DefaultValue": "1,1,1,1",
+            "Style": "Color"
+        },
+        {
+            "Label": "Lerp",
+            "Name": "_Lerp",
+            "Type": "Float",
+            "DefaultValue": "0"
         }
     ]
 }
