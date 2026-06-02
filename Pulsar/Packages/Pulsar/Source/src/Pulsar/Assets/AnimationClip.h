@@ -59,7 +59,7 @@ namespace pulsar
     class AnimationClip : public AssetObject
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::AnimationClip, AssetObject);
-        CORELIB_CLASS_ATTR(new AssetIconAttribute("Editor/Icons/animationclip.png"))
+        CORELIB_CLASS_ATTR(new AssetIconAttribute("PulsarEd/Icons/animationclip.png"))
     public:
         using ThisClass = AnimationClip;
 

@@ -21,7 +21,7 @@ namespace pulsar
     class Skeleton : public AssetObject
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::Skeleton, AssetObject);
-        CORELIB_CLASS_ATTR(new AssetIconAttribute("Editor/Icons/skeleton.png"))
+        CORELIB_CLASS_ATTR(new AssetIconAttribute("PulsarEd/Icons/skeleton.png"))
     public:
         using ThisClass = Skeleton;
 

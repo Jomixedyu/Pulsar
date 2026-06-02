@@ -6,7 +6,7 @@ namespace pulsar
     class Prefab : public NodeCollection
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::Prefab, NodeCollection);
-        CORELIB_CLASS_ATTR(new AssetIconAttribute("Editor/Icons/prefab.png"))
+        CORELIB_CLASS_ATTR(new AssetIconAttribute("PulsarEd/Icons/prefab.png"))
     public:
         static RCPtr<Prefab> StaticCreate(string_view name);
 

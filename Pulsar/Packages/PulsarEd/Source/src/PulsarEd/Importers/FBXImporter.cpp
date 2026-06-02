@@ -310,7 +310,7 @@ namespace pulsared
             if (!foundMaterial && (policy == MatchPolicy::MatchOrCreate || policy == MatchPolicy::AlwaysCreate))
             {
                 // 创建新材质（使用 Lambert shader）
-                auto shader = AssetManager::Get()->LoadAsset<Shader>("Engine/Shaders/Lambert");
+                auto shader = AssetManager::Get()->LoadAsset<Shader>("Pulsar/Shaders/Lambert");
                 if (shader)
                 {
                     foundMaterial = Material::StaticCreate(shader, matName);

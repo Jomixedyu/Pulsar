@@ -28,7 +28,7 @@ namespace pulsar
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::Shader, AssetObject);
         CORELIB_CLASS_ATTR(
             new CreateAssetAttribute(BuiltinAsset::Shader_Missing),
-            new AssetIconAttribute("Editor/Icons/shader.png")
+            new AssetIconAttribute("PulsarEd/Icons/shader.png")
             );
     public:
         virtual void Serialize(AssetSerializer* s) override;

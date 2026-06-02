@@ -103,7 +103,7 @@ namespace pulsar
         batch.State.VertexLayouts = {StaticMesh::StaticGetVertexLayout()};
         batch.IsUsedIndices = false;
         batch.IsDepthTestDisabled = !m_depthTestEnabled;
-        batch.Material = AssetManager::Get()->LoadAsset<Material>("Engine/Materials/VertexColor");
+        batch.Material = AssetManager::Get()->LoadAsset<Material>("Pulsar/Materials/VertexColor");
         if (batch.Material)
             batch.Material->SetQueue(m_renderQueue);
     }

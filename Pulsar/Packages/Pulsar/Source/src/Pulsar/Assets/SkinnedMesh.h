@@ -35,7 +35,7 @@ namespace pulsar
     {
         friend class SkinnedMeshAssetSerializer;
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::SkinnedMesh, Mesh);
-        CORELIB_CLASS_ATTR(new AssetIconAttribute("Editor/Icons/skinnedmesh.png"))
+        CORELIB_CLASS_ATTR(new AssetIconAttribute("PulsarEd/Icons/skinnedmesh.png"))
     public:
         constexpr static int32_t SerializeVersion = 2; // v2: 独立 Skeleton 引用
         SkinnedMesh() = default;

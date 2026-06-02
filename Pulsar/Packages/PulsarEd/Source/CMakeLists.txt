@@ -1,6 +1,29 @@
-
 cmake_minimum_required(VERSION 3.20)
 project("PulsarEd")
+
+set(CMAKE_CXX_STANDARD 26)
+
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+    add_compile_options("/utf-8")
+endif ()
+
+if (WIN32)
+    add_compile_definitions(WIN32)
+endif ()
+
+file(GLOB_RECURSE Pulsared_SRC "src/*.h" "src/*.hpp" "src/*.cpp")
+
+add_library(PulsarEdLib STATIC ${Pulsared_SRC})
+
+if(MSVC)
+    target_compile_options(PulsarEdLib PRIVATE /bigobj)
+endif()
+
+target_include_directories(PulsarEdLib PUBLIC "./src")
+target_include_directories(PulsarEdLib PUBLIC "./src/PulsarEd")
+
+target_link_libraries(PulsarEdLib PUBLIC Pulsar)
+target_compile_definitions(PulsarEdLib PRIVATE API_EXPORTS)
 
 set(PUBLIC_MODULE
         fbxsdk
@@ -9,34 +32,6 @@ set(PUBLIC_MODULE
 )
 set(PRIVATE_MODULE
 )
-
-
-set(CMAKE_CXX_STANDARD 26)
-
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-    add_compile_options("/utf-8")
-endif ()
-
-
-#add_library(${PROJECT_NAME} STATIC ${Pulsared_SRC})
-file(GLOB_RECURSE Pulsared_SRC "src/*.h" "src/*.hpp" "src/*.cpp")
-add_executable(${PROJECT_NAME} ${Pulsared_SRC})
-
-if(MSVC)
-    target_compile_options(${PROJECT_NAME} PRIVATE /bigobj)
-endif()
-
-target_include_directories(${PROJECT_NAME} PUBLIC "./src")
-target_include_directories(${PROJECT_NAME} PRIVATE "./src/PulsarEd")
-
-
-#link pulsar
-set(Pulsar_BUILD_EXECUTABLE OFF)
-add_subdirectory("../Pulsar" Pulsar.out)
-target_link_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}/Pulsar.out")
-target_link_libraries(${PROJECT_NAME} PUBLIC Pulsar)
-target_link_options(${PROJECT_NAME} PUBLIC "/WHOLEARCHIVE:Pulsar$<$<CONFIG:Debug>:${CMAKE_DEBUG_POSTFIX}>")
-
 
 # assimp options (must be set before add_subdirectory)
 set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE BOOL "" FORCE)
@@ -54,11 +49,13 @@ foreach (module ${AllModule})
 endforeach ()
 
 foreach (module ${PUBLIC_MODULE})
-    target_link_libraries(${PROJECT_NAME} PUBLIC ${module})
+    target_link_libraries(PulsarEdLib PUBLIC ${module})
 endforeach ()
 
 foreach (module ${PRIVATE_MODULE})
-    target_link_libraries(${PROJECT_NAME} PRIVATE ${module})
+    target_link_libraries(PulsarEdLib PRIVATE ${module})
 endforeach ()
 
-
+add_executable(${PROJECT_NAME} src/PulsarEd/main.cpp)
+target_link_libraries(${PROJECT_NAME} PRIVATE PulsarEdLib)
+target_link_options(${PROJECT_NAME} PUBLIC "/WHOLEARCHIVE:Pulsar$<$<CONFIG:Debug>:${CMAKE_DEBUG_POSTFIX}>")

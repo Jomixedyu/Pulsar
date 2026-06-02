@@ -349,7 +349,7 @@ namespace pulsared
             auto includeDir = hlslPhysicsPath.parent_path();
 
             // 收集所有 Package 的父目录作为额外的 include 路径，
-            // 使得 #include "Engine/Assets/Shaders/..." 形式的引用可以跨 Package 解析
+            // 使得 #include "Pulsar/Assets/Shaders/..." 形式的引用可以跨 Package 解析
             std::vector<std::filesystem::path> includePaths = { includeDir };
             {
                 auto packages = AssetDatabase::GetPackageInfos();

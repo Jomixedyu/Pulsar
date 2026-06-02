@@ -53,8 +53,8 @@ namespace pulsar
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::Material, AssetObject);
         CORELIB_CLASS_ATTR(
-            new CreateAssetAttribute("Engine/Materials/Error"),
-            new AssetIconAttribute("Editor/Icons/material.png")
+            new CreateAssetAttribute("Pulsar/Materials/Error"),
+            new AssetIconAttribute("PulsarEd/Icons/material.png")
             );
 
     public:

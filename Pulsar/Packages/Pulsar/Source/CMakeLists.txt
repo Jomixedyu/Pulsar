@@ -1,4 +1,3 @@
-
 cmake_minimum_required(VERSION 3.20)
 project("Pulsar")
 
@@ -26,15 +25,14 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     add_compile_options("/utf-8")
 endif ()
 
-option(${PROJECT_NAME}_BUILD_EXECUTABLE "enable executable mode" ON)
+if (WIN32)
+    add_compile_definitions(WIN32)
+endif ()
 
 file(GLOB_RECURSE Pulsar_SRC "src/*.h" "src/*.hpp" "src/*.cpp" "src/*.natvis")
 
-if (${PROJECT_NAME}_BUILD_EXECUTABLE)
-    add_executable(${PROJECT_NAME} ${Pulsar_SRC} "main.cpp")
-else ()
-    add_library(${PROJECT_NAME} ${Pulsar_SRC})
-endif ()
+add_library(${PROJECT_NAME} STATIC ${Pulsar_SRC})
+
 target_compile_definitions(${PROJECT_NAME} PUBLIC PULSAR_GFX_BUILD_VULKAN)
 target_link_options(${PROJECT_NAME} PUBLIC /NATVIS:${CMAKE_CURRENT_LIST_DIR}/src/Pulsar/pulsar.natvis)
 
@@ -52,7 +50,7 @@ endforeach ()
 
 
 target_include_directories(${PROJECT_NAME} PUBLIC "./src")
-target_include_directories(${PROJECT_NAME} PRIVATE "./src/${PROJECT_NAME}")
+target_include_directories(${PROJECT_NAME} PUBLIC "./src/${PROJECT_NAME}")
 
 foreach (module ${PUBLIC_MODULE})
     target_link_libraries(${PROJECT_NAME} PUBLIC ${module})
@@ -63,4 +61,3 @@ foreach (module ${PRIVATE_MODULE})
 endforeach ()
 
 target_link_libraries(${PROJECT_NAME} PUBLIC mimalloc-static)
-

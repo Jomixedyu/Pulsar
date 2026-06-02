@@ -128,9 +128,9 @@ namespace pulsared
         {
             if (material == nullptr)
             {
-                material = AssetManager::Get()->LoadAsset<Material>("Engine/Materials/Lambert", true);
+                material = AssetManager::Get()->LoadAsset<Material>("Pulsar/Materials/Lambert", true);
             }
-            auto cube = AssetManager::Get()->LoadAsset<StaticMesh>("Engine/Shapes/Cube", true);
+            auto cube = AssetManager::Get()->LoadAsset<StaticMesh>("Pulsar/Shapes/Cube", true);
 
             auto node = scene->NewNode(name);
             node->AddComponent<BoxShape3DComponent>();
@@ -156,10 +156,10 @@ namespace pulsared
             Vector3f rotation = Vector3f(),
             Vector3f scale = Vector3f(1.0f, 1.0f, 1.0f))
         {
-            auto sphere = AssetManager::Get()->LoadAsset<StaticMesh>("Engine/Shapes/Sphere", true);
+            auto sphere = AssetManager::Get()->LoadAsset<StaticMesh>("Pulsar/Shapes/Sphere", true);
             if (material == nullptr)
             {
-                material = AssetManager::Get()->LoadAsset<Material>("Engine/Materials/Lambert", true);
+                material = AssetManager::Get()->LoadAsset<Material>("Pulsar/Materials/Lambert", true);
             }
 
             auto node = scene->NewNode(name);
@@ -252,14 +252,14 @@ namespace pulsared
 //            auto sphere = AssetManager::Get()->LoadAsset<StaticMesh>(BuiltinAsset::Shapes_Sphere);
 //            auto renderer = skySphere->AddComponent<StaticMeshRendererComponent>();
 //            renderer->SetStaticMesh(sphere);
-//            renderer->SetMaterial(0, AssetManager::Get()->LoadAsset<Material>("Engine/Materials/SkySphere"));
+//            renderer->SetMaterial(0, AssetManager::Get()->LoadAsset<Material>("Pulsar/Materials/SkySphere"));
 //        }
 
         // default scene
-        auto cube = AssetManager::Get()->LoadAsset<StaticMesh>("Engine/Shapes/Cube", true);
-        auto sphere = AssetManager::Get()->LoadAsset<StaticMesh>("Engine/Shapes/Sphere", true);
-        auto gridMat = AssetManager::Get()->LoadAsset<Material>("Engine/Materials/WorldGrid", true);
-        auto litMat = AssetManager::Get()->LoadAsset<Material>("Engine/Materials/Lambert", true);
+        auto cube = AssetManager::Get()->LoadAsset<StaticMesh>("Pulsar/Shapes/Cube", true);
+        auto sphere = AssetManager::Get()->LoadAsset<StaticMesh>("Pulsar/Shapes/Sphere", true);
+        auto gridMat = AssetManager::Get()->LoadAsset<Material>("Pulsar/Materials/WorldGrid", true);
+        auto litMat = AssetManager::Get()->LoadAsset<Material>("Pulsar/Materials/Lambert", true);
         ShapeMeshUtils::CreateCube(scene, "floor", gridMat, false, {0, -0.25f, 0},{}, { 10.f, 0.5f, 10.f});
         return;
         {
@@ -371,8 +371,8 @@ namespace pulsared
             };
 
             pulsar::ShaderInstanceCache::Instance().Initialize(
-                LoadBuiltinShader("Engine/Shaders/Pending"),
-                LoadBuiltinShader("Engine/Shaders/Error"));
+                LoadBuiltinShader("Pulsar/Shaders/Pending"),
+                LoadBuiltinShader("Pulsar/Shaders/Error"));
 
             Logger::Log("ShaderInstanceCache initialized");
         }
@@ -397,12 +397,12 @@ namespace pulsared
 
         // TODO: setup layout
         {
-            const auto defaultLayoutPath = AssetDatabase::PackagePathToPhysicsPath("Editor/Layout/Default.ini");
+            const auto defaultLayoutPath = AssetDatabase::PackagePathToPhysicsPath("PulsarEd/Layout/Default.ini");
             m_gui->SetLayoutInfo(FileUtil::ReadAllText(defaultLayoutPath));
         }
 
         AutoRegisterAssetIcons();
-        _RegisterIcon("WorkspaceWindow.Dirty", "Editor/Icons/Star.png");
+        _RegisterIcon("WorkspaceWindow.Dirty", "PulsarEd/Icons/Star.png");
 
 
         Logger::Log("initialize subsystems");

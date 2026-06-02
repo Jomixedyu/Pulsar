@@ -114,7 +114,7 @@ namespace pulsar
         if (!m_iconBatchRenderObject)
         {
             m_iconBatchRenderObject = mksptr(new GizmoIconBatchRenderObject);
-            m_iconBatchRenderObject->SetMesh(AssetManager::Get()->LoadAsset<StaticMesh>("Engine/Shapes/Plane"));
+            m_iconBatchRenderObject->SetMesh(AssetManager::Get()->LoadAsset<StaticMesh>("Pulsar/Shapes/Plane"));
             m_world->AddRenderObject(m_iconBatchRenderObject);
         }
 
@@ -123,7 +123,7 @@ namespace pulsar
             // Ensure billboard shader ready
             if (!m_billboardShader)
             {
-                m_billboardShader = AssetManager::Get()->LoadAsset<Shader>("Engine/Shaders/UnlitBillboard");
+                m_billboardShader = AssetManager::Get()->LoadAsset<Shader>("Pulsar/Shaders/UnlitBillboard");
             }
 
             // Expand material pool if needed

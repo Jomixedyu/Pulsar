@@ -72,7 +72,7 @@ namespace pulsar
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::AnimatorController, AssetObject);
         CORELIB_CLASS_ATTR(
             new CreateAssetAttribute,
-            new AssetIconAttribute("Editor/Icons/animatorcontroller.png")
+            new AssetIconAttribute("PulsarEd/Icons/animatorcontroller.png")
             )
     public:
 

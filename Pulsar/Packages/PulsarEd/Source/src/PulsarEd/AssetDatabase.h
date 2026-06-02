@@ -54,7 +54,7 @@ namespace pulsared
     class FolderAsset : public Object
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsared, pulsared::FolderAsset, Object);
-        CORELIB_CLASS_ATTR(new AssetIconAttribute("Editor/Icons/folder.png"));
+        CORELIB_CLASS_ATTR(new AssetIconAttribute("PulsarEd/Icons/folder.png"));
     public:
     };
 

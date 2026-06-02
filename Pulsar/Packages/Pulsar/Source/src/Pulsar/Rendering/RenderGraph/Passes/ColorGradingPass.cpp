@@ -14,7 +14,7 @@ namespace pulsar
         if (m_material)
             return;
 
-        auto shader = AssetManager::Get()->LoadAsset<Shader>("Engine/Shaders/LUT");
+        auto shader = AssetManager::Get()->LoadAsset<Shader>("Pulsar/Shaders/LUT");
         if (!shader)
             return;
 

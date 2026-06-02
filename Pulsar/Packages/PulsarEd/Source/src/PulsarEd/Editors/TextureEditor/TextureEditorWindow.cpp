@@ -39,7 +39,7 @@ namespace pulsared
         RCPtr<Texture> tex = cast<Texture>(m_assetObject);
         tex->CreateGPUResource();
 
-        auto shader = AssetManager::Get()->LoadAsset<Shader>("Engine/Shaders/PreviewImage");
+        auto shader = AssetManager::Get()->LoadAsset<Shader>("Pulsar/Shaders/PreviewImage");
         m_ppMat = Material::StaticCreate(shader);
 
         m_ppMat->SetTexture("_Image", tex);

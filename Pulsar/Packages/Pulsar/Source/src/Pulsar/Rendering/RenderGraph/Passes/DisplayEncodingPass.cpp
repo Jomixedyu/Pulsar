@@ -14,7 +14,7 @@ namespace pulsar
         if (m_material)
             return;
 
-        auto shader = AssetManager::Get()->LoadAsset<Shader>("Engine/Shaders/DisplayEncoding");
+        auto shader = AssetManager::Get()->LoadAsset<Shader>("Pulsar/Shaders/DisplayEncoding");
         if (!shader)
             return;
 

@@ -156,7 +156,7 @@ namespace pulsar
     {
         friend class RuntimeObjectManager;
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::ObjectBase, Object);
-        CORELIB_CLASS_ATTR(new AssetIconAttribute("Editor/Icons/object.png"))
+        CORELIB_CLASS_ATTR(new AssetIconAttribute("PulsarEd/Icons/object.png"))
     public:
         ObjectBase();
         ~ObjectBase() noexcept override;

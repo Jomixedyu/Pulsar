@@ -58,7 +58,7 @@ namespace pulsar
 
     public:
         ShaderVariantKey m_key;
-        std::string m_shaderName;   // human-readable name for debugging (e.g. "Engine/Shaders/PreviewImage.hlsl [PostProcess|RENDERER_IMAGEPROCESS]")
+        std::string m_shaderName;   // human-readable name for debugging (e.g. "Pulsar/Shaders/PreviewImage.hlsl [PostProcess|RENDERER_IMAGEPROCESS]")
         ShaderPropertyLayout m_layout;
 
         std::vector<gfx::GFXGpuProgram_sp> m_gpuPrograms;

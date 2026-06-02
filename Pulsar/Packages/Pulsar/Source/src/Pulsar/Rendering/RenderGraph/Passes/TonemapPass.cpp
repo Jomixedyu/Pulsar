@@ -14,7 +14,7 @@ namespace pulsar
         if (m_material)
             return;
 
-        auto shader = AssetManager::Get()->LoadAsset<Shader>("Engine/Shaders/Tonemap");
+        auto shader = AssetManager::Get()->LoadAsset<Shader>("Pulsar/Shaders/Tonemap");
         if (!shader)
             return;
 

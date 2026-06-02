@@ -17,7 +17,7 @@ namespace pulsar
         m_far = 1000.0f;
         m_backgroundColor = Color4f{0.1f, 0.1f, 0.1f, 1.0f};
         m_canDrawGizmo = true;
-        m_gizmoTexture = AssetManager::Get()->LoadAsset<Texture2D>("Editor/Gizmos/cinema");
+        m_gizmoTexture = AssetManager::Get()->LoadAsset<Texture2D>("PulsarEd/Gizmos/cinema");
     }
 
     static gfx::GFXDescriptorSetLayout_wp _CameraDescriptorLayout;
