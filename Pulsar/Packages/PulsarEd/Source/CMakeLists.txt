@@ -58,4 +58,4 @@ endforeach ()
 
 add_executable(${PROJECT_NAME} src/PulsarEd/main.cpp)
 target_link_libraries(${PROJECT_NAME} PRIVATE PulsarEdLib)
-target_link_options(${PROJECT_NAME} PUBLIC "/WHOLEARCHIVE:Pulsar$<$<CONFIG:Debug>:${CMAKE_DEBUG_POSTFIX}>")
+target_link_options(${PROJECT_NAME} PUBLIC "/WHOLEARCHIVE:$<TARGET_FILE:Pulsar>")

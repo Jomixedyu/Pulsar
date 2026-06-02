@@ -1,4 +1,4 @@
-﻿#include "EditorAppInstance.h"
+#include "EditorAppInstance.h"
 #include <Pulsar/Input.h>
 #include "EditorAssetManager.h"
 #include "EditorRenderPipeline.h"
@@ -322,11 +322,32 @@ namespace pulsared
         namespace fs = std::filesystem;
 
         fs::path curPath = fs::current_path();
-        while (!fs::exists(curPath / p))
+        while (true)
         {
+            fs::path candidate = curPath / p;
+            if (fs::exists(candidate) && fs::is_directory(candidate))
+            {
+                // Skip pure CMake build directories: a valid package root must
+                // contain at least one subdirectory with Assets/ or Source/.
+                bool hasValidPackage = false;
+                for (const auto& entry : fs::directory_iterator(candidate))
+                {
+                    if (entry.is_directory() && (
+                        fs::exists(entry.path() / "Assets") ||
+                        fs::exists(entry.path() / "Source")))
+                    {
+                        hasValidPackage = true;
+                        break;
+                    }
+                }
+                if (hasValidPackage)
+                    return candidate.make_preferred();
+            }
+            if (!curPath.has_parent_path() || curPath.parent_path() == curPath)
+                break;
             curPath = curPath.parent_path();
         }
-        return curPath / p;
+        return {};
     }
 
 
@@ -355,8 +376,8 @@ namespace pulsared
         AssetDatabase::AddProgramPackageSearchPath(_SearchUpFolder("Packages"));
 
         // add package
-        AssetDatabase::AddPackage("Engine");
-        AssetDatabase::AddPackage("Editor");
+        AssetDatabase::AddPackage("Pulsar");
+        AssetDatabase::AddPackage("PulsarEd");
         AssetDatabase::AddPackage("Project");
 
         // 注册 Shader 编译服务
