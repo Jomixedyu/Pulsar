@@ -12,18 +12,19 @@ if (WIN32)
 endif ()
 
 file(GLOB_RECURSE Pulsared_SRC "Source/src/*.h" "Source/src/*.hpp" "Source/src/*.cpp")
+list(REMOVE_ITEM Pulsared_SRC "${CMAKE_CURRENT_LIST_DIR}/Source/src/PulsarEd/main.cpp")
 
-add_executable(${PROJECT_NAME} ${Pulsared_SRC})
+add_library(PulsarEdLib OBJECT ${Pulsared_SRC})
 
 if(MSVC)
-    target_compile_options(${PROJECT_NAME} PRIVATE /bigobj)
+    target_compile_options(PulsarEdLib PRIVATE /bigobj)
 endif()
 
-target_include_directories(${PROJECT_NAME} PUBLIC "Source/src")
-target_include_directories(${PROJECT_NAME} PUBLIC "Source/src/PulsarEd")
+target_include_directories(PulsarEdLib PUBLIC "Source/src")
+target_include_directories(PulsarEdLib PUBLIC "Source/src/PulsarEd")
 
-target_link_libraries(${PROJECT_NAME} PUBLIC Pulsar)
-target_compile_definitions(${PROJECT_NAME} PRIVATE API_EXPORTS)
+target_link_libraries(PulsarEdLib PUBLIC PulsarLib)
+target_compile_definitions(PulsarEdLib PRIVATE API_EXPORTS)
 
 set(PUBLIC_MODULE
         fbxsdk
@@ -49,9 +50,12 @@ foreach (module ${AllModule})
 endforeach ()
 
 foreach (module ${PUBLIC_MODULE})
-    target_link_libraries(${PROJECT_NAME} PUBLIC ${module})
+    target_link_libraries(PulsarEdLib PUBLIC ${module})
 endforeach ()
 
 foreach (module ${PRIVATE_MODULE})
-    target_link_libraries(${PROJECT_NAME} PRIVATE ${module})
+    target_link_libraries(PulsarEdLib PRIVATE ${module})
 endforeach ()
+
+add_executable(${PROJECT_NAME} Source/src/PulsarEd/main.cpp)
+target_link_libraries(${PROJECT_NAME} PRIVATE PulsarEdLib)

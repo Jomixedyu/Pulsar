@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project("Pulsar")
+project("PulsarLib")
 
 set(PUBLIC_MODULE
         jxcorlib
@@ -31,10 +31,10 @@ endif ()
 
 file(GLOB_RECURSE Pulsar_SRC "Source/src/*.h" "Source/src/*.hpp" "Source/src/*.cpp" "Source/src/*.natvis")
 
-add_library(${PROJECT_NAME} OBJECT ${Pulsar_SRC})
+add_library(PulsarLib OBJECT ${Pulsar_SRC})
 
-target_compile_definitions(${PROJECT_NAME} PUBLIC PULSAR_GFX_BUILD_VULKAN)
-target_link_options(${PROJECT_NAME} PUBLIC /NATVIS:${CMAKE_CURRENT_LIST_DIR}/Source/src/Pulsar/pulsar.natvis)
+target_compile_definitions(PulsarLib PUBLIC PULSAR_GFX_BUILD_VULKAN)
+target_link_options(PulsarLib PUBLIC /NATVIS:${CMAKE_CURRENT_LIST_DIR}/Source/src/Pulsar/pulsar.natvis)
 
 # mimalloc: disable shared lib and tests for faster build
 set(MI_BUILD_SHARED OFF CACHE BOOL "" FORCE)
@@ -49,15 +49,15 @@ foreach (module ${AllModule})
 endforeach ()
 
 
-target_include_directories(${PROJECT_NAME} PUBLIC "Source/src")
-target_include_directories(${PROJECT_NAME} PUBLIC "Source/src/${PROJECT_NAME}")
+target_include_directories(PulsarLib PUBLIC "Source/src")
+target_include_directories(PulsarLib PUBLIC "Source/src/Pulsar")
 
 foreach (module ${PUBLIC_MODULE})
-    target_link_libraries(${PROJECT_NAME} PUBLIC ${module})
+    target_link_libraries(PulsarLib PUBLIC ${module})
 endforeach ()
 
 foreach (module ${PRIVATE_MODULE})
-    target_link_libraries(${PROJECT_NAME} PRIVATE ${module})
+    target_link_libraries(PulsarLib PRIVATE ${module})
 endforeach ()
 
-target_link_libraries(${PROJECT_NAME} PUBLIC mimalloc-static)
+target_link_libraries(PulsarLib PUBLIC mimalloc-static)
