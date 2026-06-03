@@ -6,6 +6,8 @@
 #include <Windows.h>
 #include <iostream>
 
+namespace project { void InitializeProjectTypes(); }
+
 using namespace std;
 using namespace pulsar;
 using namespace pulsared;
@@ -26,6 +28,7 @@ std::wstring String2Wstring(std::string wstr)
 
 int main(int argc, char** argv)
 {
+    project::InitializeProjectTypes();
     int code = Application::Exec(new EditorAppInstance, "Pulsar ProjectEd", { 1280, 720 }, argc, argv);
     return code;
 }
