@@ -58,4 +58,4 @@ foreach (module ${PRIVATE_MODULE})
 endforeach ()
 
 add_executable(${PROJECT_NAME} Source/src/PulsarEd/main.cpp)
-target_link_libraries(${PROJECT_NAME} PRIVATE PulsarEdLib)
+target_link_libraries(${PROJECT_NAME} PRIVATE PulsarEdLib PulsarLib)
