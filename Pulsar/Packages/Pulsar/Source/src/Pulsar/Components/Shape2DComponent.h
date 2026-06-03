@@ -26,6 +26,7 @@ namespace pulsar
         void SetFriction(float v) { m_friction = v; }
         bool GetIsSensor() const { return m_isSensor; }
         void SetIsSensor(bool v);
+        uint32_t GetShapeVersion() const { return m_shapeVersion; }
 
     protected:
         CORELIB_REFL_DECL_FIELD(m_offset);
@@ -41,6 +42,7 @@ namespace pulsar
         float m_friction = 0.6f;
         CORELIB_REFL_DECL_FIELD(m_isSensor);
         bool m_isSensor = false;
+        uint32_t m_shapeVersion = 0;
     };
     DECL_PTR(Shape2DComponent);
 } // namespace pulsar

@@ -101,6 +101,7 @@ namespace pulsar
             shape.m_isSensor = comp->GetIsSensor();
         }
 
+        m_lastShapeVersion = ComputeShapeVersion();
         GetWorld()->GetPhysicsWorld2D()->AddObject(m_physics);
     }
 
@@ -113,13 +114,17 @@ namespace pulsar
 
     void RigidBodyDynamics2DComponent::SimulateTick(float dt)
     {
-        if (m_needsRebuild)
+        if (!m_physics)
+            return;
+
+        uint32_t currentVersion = ComputeShapeVersion();
+        if (currentVersion != m_lastShapeVersion)
         {
             RebuildPhysicsObject();
-            m_needsRebuild = false;
+            m_lastShapeVersion = currentVersion;
         }
 
-        if (!m_physics || m_mode == RigidBody2DMode::Dynamic)
+        if (m_mode == RigidBody2DMode::Dynamic)
             return;
 
         auto transform = GetTransform();
@@ -132,15 +137,21 @@ namespace pulsar
         );
     }
 
-    void RigidBodyDynamics2DComponent::RequestRebuild()
-    {
-        m_needsRebuild = true;
-    }
-
     void RigidBodyDynamics2DComponent::RebuildPhysicsObject()
     {
         EndSimulate();
         BeginSimulate();
+    }
+
+    uint32_t RigidBodyDynamics2DComponent::ComputeShapeVersion() const
+    {
+        uint32_t version = 0;
+        for (auto& compRef : CollectAttachedShapes())
+        {
+            if (auto comp = compRef.GetPtr())
+                version += comp->GetShapeVersion();
+        }
+        return version;
     }
 
     void RigidBodyDynamics2DComponent::OnAttachedShapeChanged(Shape2DComponent* shape)

@@ -1,6 +1,4 @@
 #include "Components/Shape2DComponent.h"
-#include "Node.h"
-#include "Physics2D/RigidBodyDynamics2DComponent.h"
 
 namespace pulsar
 {
@@ -14,16 +12,6 @@ namespace pulsar
         if (m_isSensor == v)
             return;
         m_isSensor = v;
-
-        auto node = GetNode();
-        while (node)
-        {
-            if (auto rb = node->GetComponent<RigidBodyDynamics2DComponent>())
-            {
-                rb->RequestRebuild();
-                break;
-            }
-            node = node->GetParent();
-        }
+        ++m_shapeVersion;
     }
 } // namespace pulsar
