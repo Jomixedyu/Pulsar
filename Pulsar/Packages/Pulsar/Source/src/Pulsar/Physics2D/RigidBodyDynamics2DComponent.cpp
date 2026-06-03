@@ -96,9 +96,9 @@ namespace pulsar
 
             shape.size = comp->GetSize();
             shape.radius = comp->GetRadius();
-            shape.m_density = comp->m_density;
-            shape.m_friction = comp->m_friction;
-            shape.m_isSensor = comp->m_isSensor;
+            shape.m_density = comp->GetDensity();
+            shape.m_friction = comp->GetFriction();
+            shape.m_isSensor = comp->GetIsSensor();
         }
 
         GetWorld()->GetPhysicsWorld2D()->AddObject(m_physics);

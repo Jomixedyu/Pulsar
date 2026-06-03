@@ -20,8 +20,14 @@ namespace pulsar
 
         Vector2f GetSize() const { return m_size; }
         float GetRadius() const { return m_radius; }
+        float GetDensity() const { return m_density; }
+        void SetDensity(float v) { m_density = v; }
+        float GetFriction() const { return m_friction; }
+        void SetFriction(float v) { m_friction = v; }
+        bool GetIsSensor() const { return m_isSensor; }
+        void SetIsSensor(bool v) { m_isSensor = v; }
 
-    public:
+    protected:
         CORELIB_REFL_DECL_FIELD(m_offset);
         Vector2f m_offset{};
         CORELIB_REFL_DECL_FIELD(m_size);
