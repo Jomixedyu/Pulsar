@@ -25,7 +25,7 @@ namespace pulsar
         float GetFriction() const { return m_friction; }
         void SetFriction(float v) { m_friction = v; }
         bool GetIsSensor() const { return m_isSensor; }
-        void SetIsSensor(bool v) { m_isSensor = v; }
+        void SetIsSensor(bool v);
 
     protected:
         CORELIB_REFL_DECL_FIELD(m_offset);

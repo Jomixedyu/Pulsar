@@ -113,6 +113,12 @@ namespace pulsar
 
     void RigidBodyDynamics2DComponent::SimulateTick(float dt)
     {
+        if (m_needsRebuild)
+        {
+            RebuildPhysicsObject();
+            m_needsRebuild = false;
+        }
+
         if (!m_physics || m_mode == RigidBody2DMode::Dynamic)
             return;
 
@@ -124,6 +130,17 @@ namespace pulsar
             Vector2f(pos.x, pos.y),
             euler.z * math::deg2rad()
         );
+    }
+
+    void RigidBodyDynamics2DComponent::RequestRebuild()
+    {
+        m_needsRebuild = true;
+    }
+
+    void RigidBodyDynamics2DComponent::RebuildPhysicsObject()
+    {
+        EndSimulate();
+        BeginSimulate();
     }
 
     void RigidBodyDynamics2DComponent::OnAttachedShapeChanged(Shape2DComponent* shape)
