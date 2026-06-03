@@ -49,10 +49,24 @@ namespace pulsar
             auto objA = (Physics2DObject*)b2Body_GetUserData(bodyA);
             auto objB = (Physics2DObject*)b2Body_GetUserData(bodyB);
 
-            if (objA && objA->OnCollisionEnter)
-                objA->OnCollisionEnter(objB ? objB->CallbackObject : ObjectHandle{});
-            if (objB && objB->OnCollisionEnter)
-                objB->OnCollisionEnter(objA ? objA->CallbackObject : ObjectHandle{});
+            bool sensorA = b2Shape_IsSensor(event.shapeIdA);
+            bool sensorB = b2Shape_IsSensor(event.shapeIdB);
+            bool isOverlap = sensorA || sensorB;
+
+            if (isOverlap)
+            {
+                if (objA && objA->OnOverlapEnter)
+                    objA->OnOverlapEnter(objB ? objB->CallbackObject : ObjectHandle{});
+                if (objB && objB->OnOverlapEnter)
+                    objB->OnOverlapEnter(objA ? objA->CallbackObject : ObjectHandle{});
+            }
+            else
+            {
+                if (objA && objA->OnCollisionEnter)
+                    objA->OnCollisionEnter(objB ? objB->CallbackObject : ObjectHandle{});
+                if (objB && objB->OnCollisionEnter)
+                    objB->OnCollisionEnter(objA ? objA->CallbackObject : ObjectHandle{});
+            }
         }
 
         for (int i = 0; i < contactEvents.endCount; ++i)
@@ -64,10 +78,24 @@ namespace pulsar
             auto objA = (Physics2DObject*)b2Body_GetUserData(bodyA);
             auto objB = (Physics2DObject*)b2Body_GetUserData(bodyB);
 
-            if (objA && objA->OnCollisionExit)
-                objA->OnCollisionExit(objB ? objB->CallbackObject : ObjectHandle{});
-            if (objB && objB->OnCollisionExit)
-                objB->OnCollisionExit(objA ? objA->CallbackObject : ObjectHandle{});
+            bool sensorA = b2Shape_IsSensor(event.shapeIdA);
+            bool sensorB = b2Shape_IsSensor(event.shapeIdB);
+            bool isOverlap = sensorA || sensorB;
+
+            if (isOverlap)
+            {
+                if (objA && objA->OnOverlapExit)
+                    objA->OnOverlapExit(objB ? objB->CallbackObject : ObjectHandle{});
+                if (objB && objB->OnOverlapExit)
+                    objB->OnOverlapExit(objA ? objA->CallbackObject : ObjectHandle{});
+            }
+            else
+            {
+                if (objA && objA->OnCollisionExit)
+                    objA->OnCollisionExit(objB ? objB->CallbackObject : ObjectHandle{});
+                if (objB && objB->OnCollisionExit)
+                    objB->OnCollisionExit(objA ? objA->CallbackObject : ObjectHandle{});
+            }
         }
     }
 

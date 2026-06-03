@@ -59,6 +59,22 @@ namespace pulsar
                 this->OnCollisionExit2D.Invoke(collision);
             }
         };
+        m_physics->OnOverlapEnter = [this](ObjectHandle otherHandle) {
+            auto otherComp = ObjectPtr<RigidBodyDynamics2DComponent>::UnsafeCreate(otherHandle);
+            if (otherComp)
+            {
+                Collision2D collision{ otherComp->GetNode() };
+                this->OnOverlapEnter2D.Invoke(collision);
+            }
+        };
+        m_physics->OnOverlapExit = [this](ObjectHandle otherHandle) {
+            auto otherComp = ObjectPtr<RigidBodyDynamics2DComponent>::UnsafeCreate(otherHandle);
+            if (otherComp)
+            {
+                Collision2D collision{ otherComp->GetNode() };
+                this->OnOverlapExit2D.Invoke(collision);
+            }
+        };
 
         for (auto& compRef : CollectAttachedShapes())
         {
@@ -97,6 +113,17 @@ namespace pulsar
 
     void RigidBodyDynamics2DComponent::SimulateTick(float dt)
     {
+        if (!m_physics || m_mode == RigidBody2DMode::Dynamic)
+            return;
+
+        auto transform = GetTransform();
+        auto pos = transform->GetWorldPosition();
+        auto euler = transform->GetEuler();
+        GetWorld()->GetPhysicsWorld2D()->SetTransform(
+            m_physics,
+            Vector2f(pos.x, pos.y),
+            euler.z * math::deg2rad()
+        );
     }
 
     void RigidBodyDynamics2DComponent::OnAttachedShapeChanged(Shape2DComponent* shape)

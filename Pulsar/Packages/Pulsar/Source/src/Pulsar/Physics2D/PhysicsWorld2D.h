@@ -44,6 +44,8 @@ namespace pulsar
         std::function<void(Vector2f pos, float rot)> OnTransformChanged;
         std::function<void(ObjectHandle otherHandle)> OnCollisionEnter;
         std::function<void(ObjectHandle otherHandle)> OnCollisionExit;
+        std::function<void(ObjectHandle otherHandle)> OnOverlapEnter;
+        std::function<void(ObjectHandle otherHandle)> OnOverlapExit;
 
         RigidBody2DMode m_rigidMode{};
         Vector2f m_position{};

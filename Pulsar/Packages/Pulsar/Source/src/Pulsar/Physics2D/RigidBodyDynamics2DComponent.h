@@ -38,8 +38,8 @@ namespace pulsar
     public:
         Action<const Collision2D&> OnCollisionEnter2D;
         Action<const Collision2D&> OnCollisionExit2D;
-        Action<const Collision2D&> OnOverlap2D;
-        Action<const Collision2D&> OnExitEnter2D;
+        Action<const Collision2D&> OnOverlapEnter2D;
+        Action<const Collision2D&> OnOverlapExit2D;
     protected:
 
         // CORELIB_REFL_DECL_FIELD(m_density);
