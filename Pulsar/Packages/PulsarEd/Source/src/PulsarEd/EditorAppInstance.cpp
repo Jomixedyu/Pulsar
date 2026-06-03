@@ -327,14 +327,12 @@ namespace pulsared
             fs::path candidate = curPath / p;
             if (fs::exists(candidate) && fs::is_directory(candidate))
             {
-                // Skip pure CMake build directories: a valid package root must
-                // contain at least one subdirectory with Assets/ or Source/.
+                // A valid package root contains subdirectories with
+                // CMakeLists.txt (each package has one at its root).
                 bool hasValidPackage = false;
                 for (const auto& entry : fs::directory_iterator(candidate))
                 {
-                    if (entry.is_directory() && (
-                        fs::exists(entry.path() / "Assets") ||
-                        fs::exists(entry.path() / "Source")))
+                    if (entry.is_directory() && fs::exists(entry.path() / "CMakeLists.txt"))
                     {
                         hasValidPackage = true;
                         break;
@@ -438,7 +436,7 @@ namespace pulsared
             sceneEditor->CreateEditorWindow()->Open();
         }
 
-        Workspace::OpenWorkspace(_SearchUpFolder("Project") / "Project.peproj");
+        Workspace::OpenWorkspace(_SearchUpFolder("Packages") / "Project" / "Project.peproj");
 
         // Create initial editing scene as focus scene
         {

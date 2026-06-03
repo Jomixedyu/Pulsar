@@ -11,19 +11,19 @@ if (WIN32)
     add_compile_definitions(WIN32)
 endif ()
 
-file(GLOB_RECURSE Pulsared_SRC "src/*.h" "src/*.hpp" "src/*.cpp")
+file(GLOB_RECURSE Pulsared_SRC "Source/src/*.h" "Source/src/*.hpp" "Source/src/*.cpp")
 
-add_library(PulsarEdLib STATIC ${Pulsared_SRC})
+add_executable(${PROJECT_NAME} ${Pulsared_SRC})
 
 if(MSVC)
-    target_compile_options(PulsarEdLib PRIVATE /bigobj)
+    target_compile_options(${PROJECT_NAME} PRIVATE /bigobj)
 endif()
 
-target_include_directories(PulsarEdLib PUBLIC "./src")
-target_include_directories(PulsarEdLib PUBLIC "./src/PulsarEd")
+target_include_directories(${PROJECT_NAME} PUBLIC "Source/src")
+target_include_directories(${PROJECT_NAME} PUBLIC "Source/src/PulsarEd")
 
-target_link_libraries(PulsarEdLib PUBLIC Pulsar)
-target_compile_definitions(PulsarEdLib PRIVATE API_EXPORTS)
+target_link_libraries(${PROJECT_NAME} PUBLIC Pulsar)
+target_compile_definitions(${PROJECT_NAME} PRIVATE API_EXPORTS)
 
 set(PUBLIC_MODULE
         fbxsdk
@@ -45,17 +45,13 @@ set(AllModule ${PUBLIC_MODULE})
 list(APPEND AllModule ${PRIVATE_MODULE})
 
 foreach (module ${AllModule})
-    add_subdirectory("./third/${module}")
+    add_subdirectory("Source/third/${module}")
 endforeach ()
 
 foreach (module ${PUBLIC_MODULE})
-    target_link_libraries(PulsarEdLib PUBLIC ${module})
+    target_link_libraries(${PROJECT_NAME} PUBLIC ${module})
 endforeach ()
 
 foreach (module ${PRIVATE_MODULE})
-    target_link_libraries(PulsarEdLib PRIVATE ${module})
+    target_link_libraries(${PROJECT_NAME} PRIVATE ${module})
 endforeach ()
-
-add_executable(${PROJECT_NAME} src/PulsarEd/main.cpp)
-target_link_libraries(${PROJECT_NAME} PRIVATE PulsarEdLib)
-target_link_options(${PROJECT_NAME} PUBLIC "/WHOLEARCHIVE:$<TARGET_FILE:Pulsar>")

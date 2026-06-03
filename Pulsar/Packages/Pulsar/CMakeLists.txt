@@ -29,28 +29,28 @@ if (WIN32)
     add_compile_definitions(WIN32)
 endif ()
 
-file(GLOB_RECURSE Pulsar_SRC "src/*.h" "src/*.hpp" "src/*.cpp" "src/*.natvis")
+file(GLOB_RECURSE Pulsar_SRC "Source/src/*.h" "Source/src/*.hpp" "Source/src/*.cpp" "Source/src/*.natvis")
 
-add_library(${PROJECT_NAME} STATIC ${Pulsar_SRC})
+add_library(${PROJECT_NAME} OBJECT ${Pulsar_SRC})
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC PULSAR_GFX_BUILD_VULKAN)
-target_link_options(${PROJECT_NAME} PUBLIC /NATVIS:${CMAKE_CURRENT_LIST_DIR}/src/Pulsar/pulsar.natvis)
+target_link_options(${PROJECT_NAME} PUBLIC /NATVIS:${CMAKE_CURRENT_LIST_DIR}/Source/src/Pulsar/pulsar.natvis)
 
 # mimalloc: disable shared lib and tests for faster build
 set(MI_BUILD_SHARED OFF CACHE BOOL "" FORCE)
 set(MI_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-add_subdirectory("./third/mimalloc")
+add_subdirectory("Source/third/mimalloc")
 
 set(AllModule ${PUBLIC_MODULE})
 list(APPEND AllModule ${PRIVATE_MODULE})
 
 foreach (module ${AllModule})
-    add_subdirectory("./third/${module}")
+    add_subdirectory("Source/third/${module}")
 endforeach ()
 
 
-target_include_directories(${PROJECT_NAME} PUBLIC "./src")
-target_include_directories(${PROJECT_NAME} PUBLIC "./src/${PROJECT_NAME}")
+target_include_directories(${PROJECT_NAME} PUBLIC "Source/src")
+target_include_directories(${PROJECT_NAME} PUBLIC "Source/src/${PROJECT_NAME}")
 
 foreach (module ${PUBLIC_MODULE})
     target_link_libraries(${PROJECT_NAME} PUBLIC ${module})
