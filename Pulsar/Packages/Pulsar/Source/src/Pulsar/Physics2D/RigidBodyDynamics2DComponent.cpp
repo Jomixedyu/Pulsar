@@ -101,7 +101,6 @@ namespace pulsar
             shape.m_isSensor = comp->GetIsSensor();
         }
 
-        m_lastShapeVersion = ComputeShapeVersion();
         GetWorld()->GetPhysicsWorld2D()->AddObject(m_physics);
     }
 
@@ -117,11 +116,9 @@ namespace pulsar
         if (!m_physics)
             return;
 
-        uint32_t currentVersion = ComputeShapeVersion();
-        if (currentVersion != m_lastShapeVersion)
+        if (NeedsRebuild())
         {
             RebuildPhysicsObject();
-            m_lastShapeVersion = currentVersion;
         }
 
         if (m_mode == RigidBody2DMode::Dynamic)
@@ -143,15 +140,34 @@ namespace pulsar
         BeginSimulate();
     }
 
-    uint32_t RigidBodyDynamics2DComponent::ComputeShapeVersion() const
+    bool RigidBodyDynamics2DComponent::NeedsRebuild() const
     {
-        uint32_t version = 0;
-        for (auto& compRef : CollectAttachedShapes())
+        auto shapes = CollectAttachedShapes();
+        if (shapes.size() != m_physics->m_shapes.size())
+            return true;
+
+        for (size_t i = 0; i < shapes.size(); ++i)
         {
-            if (auto comp = compRef.GetPtr())
-                version += comp->GetShapeVersion();
+            auto comp = shapes[i].GetPtr();
+            if (!comp) return true;
+            const auto& cached = m_physics->m_shapes[i];
+
+            Physics2DObject::ShapeType expectedType;
+            switch (comp->GetShapeType())
+            {
+            case Shape2DType::Box:   expectedType = Physics2DObject::BOX;     break;
+            case Shape2DType::Circle: expectedType = Physics2DObject::CIRCLE; break;
+            case Shape2DType::Capsule: expectedType = Physics2DObject::CAPSULE; break;
+            }
+
+            if (cached.type != expectedType) return true;
+            if (cached.size != comp->GetSize()) return true;
+            if (cached.radius != comp->GetRadius()) return true;
+            if (cached.m_density != comp->GetDensity()) return true;
+            if (cached.m_friction != comp->GetFriction()) return true;
+            if (cached.m_isSensor != comp->GetIsSensor()) return true;
         }
-        return version;
+        return false;
     }
 
     void RigidBodyDynamics2DComponent::OnAttachedShapeChanged(Shape2DComponent* shape)

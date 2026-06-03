@@ -6,12 +6,4 @@ namespace pulsar
     {
         m_canDrawGizmo = true;
     }
-
-    void Shape2DComponent::SetIsSensor(bool v)
-    {
-        if (m_isSensor == v)
-            return;
-        m_isSensor = v;
-        ++m_shapeVersion;
-    }
 } // namespace pulsar
