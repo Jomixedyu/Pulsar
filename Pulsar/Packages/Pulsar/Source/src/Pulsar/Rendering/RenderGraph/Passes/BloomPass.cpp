@@ -16,9 +16,7 @@ namespace pulsar
 {
     BloomPass::BloomPass()
     {
-        auto shader = AssetManager::Get()->LoadAsset<Shader>("Project/Shaders/NapBloom");
-        if (!shader)
-            shader = AssetManager::Get()->LoadAsset<Shader>("Shaders/NapBloom");
+        auto shader = AssetManager::Get()->LoadAsset<Shader>("Pulsar/Shaders/NapBloom");
         if (!shader)
             return;
 
@@ -116,9 +114,7 @@ namespace pulsar
         if (m_material)
             return;
 
-        auto shader = AssetManager::Get()->LoadAsset<Shader>("Project/Shaders/NapBloom");
-        if (!shader)
-            shader = AssetManager::Get()->LoadAsset<Shader>("Shaders/NapBloom");
+        auto shader = AssetManager::Get()->LoadAsset<Shader>("Pulsar/Shaders/NapBloom");
         if (!shader)
             return;
 
