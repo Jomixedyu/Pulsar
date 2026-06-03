@@ -19,7 +19,9 @@ namespace pulsar
         virtual Shape2DType GetShapeType() = 0;
 
         Vector2f GetSize() const { return m_size; }
+        void SetSize(Vector2f v) { m_size = v; ++m_shapeVersion; }
         float GetRadius() const { return m_radius; }
+        void SetRadius(float v) { m_radius = v; ++m_shapeVersion; }
         float GetDensity() const { return m_density; }
         void SetDensity(float v) { m_density = v; }
         float GetFriction() const { return m_friction; }

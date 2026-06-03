@@ -27,6 +27,7 @@ namespace pulsar
         void OnAttachedShapeChanged(Shape2DComponent* shape);
 
         RigidBody2DMode GetMode() const { return m_mode; }
+        void SetMode(RigidBody2DMode mode) { m_mode = mode; }
 
         Vector2f GetLinearVelocity() const;
         void SetLinearVelocity(Vector2f velocity);
