@@ -12,4 +12,4 @@ if (WIN32)
 endif ()
 
 add_executable(${PROJECT_NAME} Source/main.cpp)
-target_link_libraries(${PROJECT_NAME} PUBLIC Project PulsarEdLib PulsarLib psc)
+target_link_libraries(${PROJECT_NAME} PUBLIC Project PulsarEdLib psc)

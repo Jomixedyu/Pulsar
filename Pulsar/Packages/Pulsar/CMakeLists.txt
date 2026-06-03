@@ -31,10 +31,14 @@ endif ()
 
 file(GLOB_RECURSE Pulsar_SRC "Source/src/*.h" "Source/src/*.hpp" "Source/src/*.cpp" "Source/src/*.natvis")
 
-add_library(PulsarLib OBJECT ${Pulsar_SRC})
+add_library(PulsarLib STATIC ${Pulsar_SRC})
 
 target_compile_definitions(PulsarLib PUBLIC PULSAR_GFX_BUILD_VULKAN)
 target_link_options(PulsarLib PUBLIC /NATVIS:${CMAKE_CURRENT_LIST_DIR}/Source/src/Pulsar/pulsar.natvis)
+
+if(MSVC)
+    target_link_options(PulsarLib INTERFACE "/WHOLEARCHIVE:$<TARGET_FILE:PulsarLib>")
+endif()
 
 # mimalloc: disable shared lib and tests for faster build
 set(MI_BUILD_SHARED OFF CACHE BOOL "" FORCE)
