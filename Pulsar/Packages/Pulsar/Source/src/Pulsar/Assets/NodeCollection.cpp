@@ -489,7 +489,8 @@ namespace pulsar
 
     void NodeCollection::Tick(Ticker ticker)
     {
-        for (auto& node : *m_nodes)
+        auto nodes = *m_nodes;
+        for (auto& node : nodes)
         {
             if (node && node->GetIsActive())
             {
@@ -500,7 +501,8 @@ namespace pulsar
 
     void NodeCollection::BeginPlay()
     {
-        for (auto& node : *m_nodes)
+        auto nodes = *m_nodes;
+        for (auto& node : nodes)
         {
             if (node && node->GetIsActive())
             {
@@ -511,7 +513,8 @@ namespace pulsar
 
     void NodeCollection::EndPlay()
     {
-        for (auto& node : *m_nodes)
+        auto nodes = *m_nodes;
+        for (auto& node : nodes)
         {
             if (node && node->GetIsActive())
             {
