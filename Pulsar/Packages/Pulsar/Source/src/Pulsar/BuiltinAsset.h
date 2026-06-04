@@ -13,6 +13,7 @@ namespace pulsar
         static inline const char* Shapes_Sphere = "Pulsar/Shapes/Sphere";
         static inline const char* Shapes_Cube = "Pulsar/Shapes/Cube";
         static inline const char* Shapes_Plane = "Pulsar/Shapes/Plane";
+        static inline const char* Shapes_XYPlane = "Pulsar/Shapes/XYPlane";
         static inline const char* Shader_Missing = "Pulsar/Shaders/Error";
 
         static inline const char* Material_Lambert = "Pulsar/Materials/Lambert";

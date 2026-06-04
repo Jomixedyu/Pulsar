@@ -69,11 +69,6 @@ namespace pulsared
         }
 
         ImGui::InputTextEx("##i", nullptr, buf, sizeof(buf), ImVec2(-80, 0), 0);
-        ImGui::SameLine();
-        if (ImGui::Button("...##pick", ImVec2(30, 0)))
-        {
-            ImGui::OpenPopup("AssetPicker");
-        }
         bool isChanged = false;
         if (ImGui::BeginDragDropTarget())
         {
@@ -97,13 +92,21 @@ namespace pulsared
 
             ImGui::EndDragDropTarget();
         }
-
+        ImGui::SameLine();
+        if (ImGui::Button("...##pick", ImVec2(30, 0)))
+        {
+            ImGui::OpenPopup("AssetPicker");
+        }
         ImVec2 center = ImGui::GetMainViewport()->GetCenter();
         ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
         ImGui::SetNextWindowSize(ImVec2(450, 350), ImGuiCond_Appearing);
         if (ImGui::BeginPopupModal("AssetPicker", nullptr, ImGuiWindowFlags_NoResize))
         {
-            static char pickerSearch[256] = "";
+            static char pickerSearch[256];
+            if (ImGui::IsWindowAppearing())
+            {
+                pickerSearch[0] = '\0';
+            }
             ImGui::InputTextWithHint("##pickerSearch", "Search...", pickerSearch, sizeof(pickerSearch));
 
             string searchLower;
