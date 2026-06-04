@@ -449,7 +449,8 @@ namespace pulsar
 
     void Node::OnTick(Ticker ticker)
     {
-        for (auto& comp : *this->m_components)
+        auto comps = *this->m_components;
+        for (auto& comp : comps)
         {
             if (comp)
             {
