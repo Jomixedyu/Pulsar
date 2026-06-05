@@ -27,11 +27,13 @@ namespace pulsared
 
         if (!cam)
         {
-            auto avail = ImGui::GetContentRegionAvail();
-            ImGui::SetWindowFontScale(5.0f);
-            auto textSize = ImGui::CalcTextSize("No Camera");
-            ImGui::SetCursorPosX((avail.x - textSize.x) * 0.5f);
-            ImGui::SetCursorPosY((avail.y - textSize.y) * 0.5f);
+            const float startX = ImGui::GetCursorPosX();
+            const float startY = ImGui::GetCursorPosY();
+            const auto avail = ImGui::GetContentRegionAvail();
+            ImGui::SetWindowFontScale(3.0f);
+            const auto textSize = ImGui::CalcTextSize("No Camera");
+            ImGui::SetCursorPosX(startX + (avail.x - textSize.x) * 0.5f);
+            ImGui::SetCursorPosY(startY + (avail.y - textSize.y) * 0.5f);
             ImGui::Text("No Camera");
             ImGui::SetWindowFontScale(1.0f);
             return false;

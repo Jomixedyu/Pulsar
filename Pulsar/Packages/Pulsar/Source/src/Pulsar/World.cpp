@@ -66,6 +66,7 @@ namespace pulsar
         if (!m_isPlaying)
             return;
         m_isPlaying = false;
+        m_isPaused = false;
         for (auto& scene : m_scenes)
         {
             if (scene)
@@ -124,14 +125,17 @@ namespace pulsar
 
     void World::Tick(float dt)
     {
-        m_ticker += dt;
+        if (!m_isPaused)
+        {
+            m_ticker += dt;
+        }
         m_totalTime += dt;
 
         m_lightManager->Update();
 
         m_gizmosManager.Draw();
 
-        if (m_isPlaying)
+        if (m_isPlaying && !m_isPaused)
         {
             for (auto& scene : m_scenes)
             {
@@ -141,7 +145,7 @@ namespace pulsar
                 }
             }
         }
-        if (m_isPlaying || m_isSimulating)
+        if ((m_isPlaying && !m_isPaused) || m_isSimulating)
         {
             m_physicsWorld2D->Tick(dt);
             m_physicsWorld3D->StepSimulate(dt);

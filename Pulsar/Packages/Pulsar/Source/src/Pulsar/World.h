@@ -78,6 +78,8 @@ namespace pulsar
         RCPtr<NodeCollection>        GetResidentScene() const { return m_scenes[0]; }
 
         bool GetPlaying() const { return m_isPlaying; }
+        bool GetPaused() const { return m_isPaused; }
+        void SetPaused(bool paused) { m_isPaused = paused; }
 
         InputContext* GetInputContext() const { return m_inputContext; }
 
@@ -135,6 +137,7 @@ namespace pulsar
         string   m_name;
         bool     m_isPlaying{};
         bool     m_isSimulating = false;
+        bool     m_isPaused = false;
         InputContext* m_inputContext;
     };
 }

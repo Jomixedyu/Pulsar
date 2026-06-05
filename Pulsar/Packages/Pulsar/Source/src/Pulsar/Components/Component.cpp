@@ -2,6 +2,7 @@
 
 #include "CoreLib.Serialization/JsonSerializer.h"
 
+#include <Pulsar/AssetObject.h>
 #include <Pulsar/Components/Component.h>
 #include <Pulsar/Components/RendererComponent.h>
 #include <Pulsar/Node.h>
@@ -55,6 +56,43 @@ namespace pulsar
         {
             ComponentSerializeHook hook{s};
             ser::JsonSerializer::Deserialize(s->Object->ToString(false), GetType(), self(), &hook);
+        }
+    }
+
+    void Component::GetDependenciesAsset(array_list<guid_t>& deps) const
+    {
+        SceneObject::GetDependenciesAsset(deps);
+
+        for (FieldInfo* field : this->GetType()->GetFieldInfos())
+        {
+            auto value = field->GetValue(this);
+            if (!value) continue;
+
+            // 单个 RCPtr 字段
+            if (auto* rcBox = dynamic_cast<BoxingRCPtrBase*>(value.get()))
+            {
+                if (rcBox->ptr.IsValid())
+                {
+                    deps.push_back(rcBox->ptr.GetGuid());
+                }
+                continue;
+            }
+
+            // List / 容器字段：遍历元素检查是否是 RCPtr
+            if (auto* list = dynamic_cast<IList*>(value.get()))
+            {
+                for (int32_t i = 0; i < list->GetCount(); ++i)
+                {
+                    auto item = list->At(i);
+                    if (auto* itemRcBox = dynamic_cast<BoxingRCPtrBase*>(item.get()))
+                    {
+                        if (itemRcBox->ptr.IsValid())
+                        {
+                            deps.push_back(itemRcBox->ptr.GetGuid());
+                        }
+                    }
+                }
+            }
         }
     }
 

@@ -73,6 +73,16 @@ namespace pulsared
                 ImGui::EndDisabled();
 
                 ImGui::BeginDisabled(!isPlaying);
+                if (ImGui::Button(ICON_FK_PAUSE))
+                {
+                    if (auto* world = sceneEditor->GetPreviewWorld())
+                    {
+                        world->SetPaused(!world->GetPaused());
+                    }
+                }
+                ImGui::EndDisabled();
+
+                ImGui::BeginDisabled(!isPlaying);
                 if (ImGui::Button(ICON_FK_STOP))
                 {
                     sceneEditor->EndPlayInEditor();

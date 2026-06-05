@@ -457,6 +457,102 @@ if (auto casted = ptr_cast<MyComponent>(obj)) { /* ... */ }
 if (auto sp = sptr_cast<MyComponent>(obj_sp)) { /* ... */ }
 ```
 
+### 基础类型与 Boxing 系统
+
+`jxcorlib` 中所有反射字段的原始值类型都会被自动**装箱（Boxing）**为 `BoxingObject` 的派生类。反射字段的 `GetValue()` / `SetValue()` 操作的是装箱后的对象，需要通过 `UnboxUtil` 还原，或使用 `BoxUtil` / `mkbox` 构造。
+
+#### 基础值类型的 Boxing 映射
+
+| 原始类型 | Boxing 类型 | 头文件 |
+|---|---|---|
+| `bool` | `Boolean` | `<CoreLib/BasicTypes.h>` |
+| `char` | `CharObject` | `<CoreLib/BasicTypes.h>` |
+| `int8_t` / `uint8_t` | `Integer8` / `UInteger8` | `<CoreLib/BasicTypes.h>` |
+| `int16_t` / `uint16_t` | `Integer16` / `UInteger16` | `<CoreLib/BasicTypes.h>` |
+| `int32_t` / `uint32_t` | `Integer32` / `UInteger32` | `<CoreLib/BasicTypes.h>` |
+| `int64_t` / `uint64_t` | `Integer64` / `UInteger64` | `<CoreLib/BasicTypes.h>` |
+| `float` | `Single32` | `<CoreLib/BasicTypes.h>` |
+| `double` | `Double64` | `<CoreLib/BasicTypes.h>` |
+| `string` / `string_view` | `String` (`jxcorlib::String`) | `<CoreLib/BasicTypes.h>` |
+| `guid_t` | `Guid` (`jxcorlib::Guid`) | `<CoreLib/Guid.h>` |
+
+#### 数学类型的 Boxing 映射
+
+| 原始类型 | Boxing 类型 | 头文件 |
+|---|---|---|
+| `Vector2f` | `BoxingVector2f` | `<CoreLib.Math/Math.h>` |
+| `Vector3f` | `BoxingVector3f` | `<CoreLib.Math/Math.h>` |
+| `Vector4f` | `BoxingVector4f` | `<CoreLib.Math/Math.h>` |
+| `Quat4f` | `BoxingQuat4f` | `<CoreLib.Math/Math.h>` |
+| `Matrix4f` | `BoxingMatrix4f` | `<CoreLib.Math/Math.h>` |
+| `Color4f` | `BoxingColor4f` | `<CoreLib.Math/Math.h>` |
+
+#### 引擎对象指针的 Boxing 映射
+
+| 原始类型 | Boxing 类型 | 头文件 |
+|---|---|---|
+| `ObjectHandle` | `BoxingObjectHandle` | `<Pulsar/ObjectBase.h>` |
+| `ObjectPtrBase` | `BoxingObjectPtrBase` | `<Pulsar/ObjectBase.h>` |
+| `SceneObjectPtrBase` | `BoxingSceneObjectPtrBase` | `<Pulsar/SceneObject.h>` |
+| `RCPtrBase` | `BoxingRCPtrBase` | `<Pulsar/AssetObject.h>` |
+
+#### Boxing / Unboxing API
+
+```cpp
+// 将原始值装箱为 Object_sp
+auto boxed = BoxUtil::Box(3.14f);              // -> SPtr<Object> (实际为 Single32)
+auto boxed2 = mkbox(Vector3f(1, 2, 3));       // -> SPtr<BoxingVector3f>
+auto boxed3 = mksptr(new Single32(42.0f));    // 直接构造
+
+// 从 Object_sp 还原原始值
+float f = UnboxUtil::Unbox<float>(boxed);
+Vector3f v = UnboxUtil::Unbox<Vector3f>(boxed2);
+
+// 字段反射读写时自动 boxing/unboxing
+FieldInfo* fi = type->GetFieldInfo("m_speed");
+fi->SetValue(obj, mkbox(50.0f));              // float -> Single32 -> 字段
+auto value = fi->GetValue(obj);
+float current = UnboxUtil::Unbox<float>(value);
+```
+
+#### 自定义类型的 Boxing
+
+如果需要在反射字段中使用自定义值类型，需要显式声明 Boxing 映射：
+
+```cpp
+// 假设自定义枚举
+enum class MyEnum { A, B, C };
+class BoxingMyEnum : public BoxingObject, public IStringify
+{
+    CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::BoxingMyEnum, BoxingObject);
+    CORELIB_IMPL_INTERFACES(IStringify)
+public:
+    using unboxing_type = MyEnum;
+    MyEnum value;
+    MyEnum get_unboxing_value() { return value; }
+    BoxingMyEnum(MyEnum v) : value(v) {}
+    void IStringify_Parse(const string& s) override { /* ... */ }
+    string IStringify_Stringify() override { /* ... */ }
+};
+CORELIB_DECL_BOXING(pulsar::MyEnum, pulsar::BoxingMyEnum);
+```
+
+### 序列化与 `IStringify`
+
+`IStringify` 是 `jxcorlib` 提供的纯虚接口，用于自定义类型的字符串序列化/反序列化：
+
+```cpp
+class IStringify : public IInterface
+{
+    virtual void IStringify_Parse(const string& value) = 0;   // 字符串 -> 对象
+    virtual string IStringify_Stringify() = 0;                // 对象 -> 字符串
+};
+```
+
+实现了 `IStringify` 的 Boxing 类型（如 `BoxingVector3f`、`BoxingObjectHandle` 等）可以被 `JsonSerializer` 自动序列化为文本资产。引擎中所有纯文本资产（场景、材质、Prefab）的序列化都依赖这一层。
+
+自定义值类型若需要支持纯文本序列化，需要在 Boxing 类上实现 `IStringify` 并调用 `CORELIB_IMPL_INTERFACES(IStringify)`。
+
 ---
 
 ## Code Style Guidelines（代码风格指南）

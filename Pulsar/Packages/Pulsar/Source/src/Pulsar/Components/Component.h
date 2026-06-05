@@ -82,6 +82,7 @@ namespace pulsar
         virtual void BeginPlay() {}
         virtual void EndPlay() {}
 
+        void GetDependenciesAsset(array_list<guid_t>& deps) const override;
         virtual NodeCollection* GetOwnerNodeCollection() const override;
     public:
         // ITickable interface
