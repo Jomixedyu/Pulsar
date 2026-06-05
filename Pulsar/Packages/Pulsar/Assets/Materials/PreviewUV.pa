@@ -1,0 +1,12 @@
+{
+    "Features": [],
+    "Parameters": [
+        {
+            "Name": "_ChannelIndex",
+            "Type": "Int",
+            "Value": 0
+        }
+    ],
+    "Queue": "Opaque",
+    "Shader": "e3c8a1b2f4d5402e9a7c6e5d3b8f1a0c"
+}

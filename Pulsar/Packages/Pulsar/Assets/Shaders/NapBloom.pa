@@ -1,0 +1,48 @@
+{
+    "$schema": "../../../Pulsar/Assets/Shaders/SbfSchema.json",
+    "Interfaces": [
+        "RENDERER_IMAGEPROCESS"
+    ],
+    "Passes": [
+        {
+            "Name": "BloomDownsample",
+            "Entry": {
+                "Vertex": "BlitVSMain",
+                "Fragment": "DownsamplePSMain"
+            },
+            "Features": [],
+            "GraphicsPipeline": {
+                "CullMode": "None",
+                "ZWriteEnabled": false,
+                "ZTestOp": "Never"
+            }
+        },
+        {
+            "Name": "BloomGaussFilter",
+            "Entry": {
+                "Vertex": "BlitVSMain",
+                "Fragment": "GaussFilterPSMain"
+            },
+            "Features": [],
+            "GraphicsPipeline": {
+                "CullMode": "None",
+                "ZWriteEnabled": false,
+                "ZTestOp": "Never"
+            }
+        },
+        {
+            "Name": "BloomCombine",
+            "Entry": {
+                "Vertex": "BlitVSMain",
+                "Fragment": "CombinePSMain"
+            },
+            "Features": [],
+            "GraphicsPipeline": {
+                "CullMode": "None",
+                "ZWriteEnabled": false,
+                "ZTestOp": "Never"
+            }
+        }
+    ],
+    "Properties": []
+}

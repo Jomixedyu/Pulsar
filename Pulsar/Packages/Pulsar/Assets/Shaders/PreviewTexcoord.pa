@@ -1,0 +1,28 @@
+{
+    "$schema": "SbfSchema.json",
+    "Interfaces": [
+        "RENDERER_STATICMESH"
+    ],
+    "Passes": [
+        {
+            "Name": "Forward",
+            "Entry": {
+                "Vertex": "VSMain",
+                "Fragment": "PSMain"
+            },
+            "GraphicsPipeline": {
+                "CullMode": "Back",
+                "ZWriteEnabled": true,
+                "ZTestOp": "Less"
+            }
+        }
+    ],
+    "Properties": [
+        {
+            "Label": "Channel Index",
+            "Name": "_ChannelIndex",
+            "Type": "Int",
+            "DefaultValue": "0"
+        }
+    ]
+}
