@@ -49,7 +49,7 @@ namespace pulsar
             fontConfig.MergeMode = false;
             fontConfig.OversampleH = 2;
             fontConfig.OversampleV = 2;
-            fontConfig.GlyphExtraSpacing.x = 0.5f;
+            fontConfig.GlyphExtraAdvanceX = 0.5f;
             strcpy(fontConfig.Name, "ForkAwesome");
             static const ImWchar icon_ranges[] = { ICON_MIN_FK, ICON_MAX_FK, 0 };
             io.Fonts->AddFontFromMemoryTTF(FILE_forkawesome_webfont_ttf, sizeof(FILE_forkawesome_webfont_ttf), 13 * dpiScale, &fontConfig, icon_ranges);
@@ -60,7 +60,7 @@ namespace pulsar
             fontConfig.MergeMode = true;
             fontConfig.OversampleH = 2;
             fontConfig.OversampleV = 2;
-            fontConfig.GlyphExtraSpacing.x = 0.5f;
+            fontConfig.GlyphExtraAdvanceX = 0.5f;
             strcpy(fontConfig.Name, "DroidSans");
             io.Fonts->AddFontFromMemoryTTF(FILE_DroidSans_ttf, sizeof(FILE_DroidSans_ttf), 14.f * dpiScale, &fontConfig);
         }
@@ -153,7 +153,14 @@ namespace pulsar
 
             ImGui_ImplSDL2_InitForVulkan((SDL_Window*)m_app->GetWindow()->GetUserPoint());
 
+            VkFormat colorFormat = m_app->GetVulkanViewport()->GetVkSwapChainImageFormat();
+            VkPipelineRenderingCreateInfoKHR renderingInfo{};
+            renderingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR;
+            renderingInfo.colorAttachmentCount = 1;
+            renderingInfo.pColorAttachmentFormats = &colorFormat;
+
             ImGui_ImplVulkan_InitInfo init_info = {};
+            init_info.ApiVersion = VK_API_VERSION_1_3;
             init_info.Instance = m_app->GetVkInstance();
             init_info.PhysicalDevice = m_app->GetVkPhysicalDevice();
             init_info.Device = m_app->GetVkDevice();
@@ -165,33 +172,9 @@ namespace pulsar
             init_info.DescriptorPool = m_app->GetVulkanDescriptorManager()->GetCommonDescriptorSetPool()->GetVkDescriptorPool();
             init_info.Allocator = VK_NULL_HANDLE;
             init_info.UseDynamicRendering = true;
-            init_info.ColorAttachmentFormat = m_app->GetVulkanViewport()->GetVkSwapChainImageFormat();
+            init_info.PipelineInfoMain.PipelineRenderingCreateInfo = renderingInfo;
 
-            ImGui_ImplVulkan_Init(&init_info, VK_NULL_HANDLE);
-
-            {
-                gfx::GFXVulkanCommandBuffer font(m_app);
-                VkCommandBufferBeginInfo beginInfo{};
-                {
-                    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-                    beginInfo.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-                }
-                font.Begin();
-                ImGui_ImplVulkan_CreateFontsTexture(font.GetVkCommandBuffer());
-                font.End();
-                VkSubmitInfo submitInfo{};
-                {
-                    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-                    submitInfo.commandBufferCount = 1;
-                    submitInfo.pCommandBuffers = &font.GetVkCommandBuffer();
-                }
-
-                auto err = vkQueueSubmit(m_app->GetVkGraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE);
-                assert(err == VkResult::VK_SUCCESS);
-                err = vkQueueWaitIdle(m_app->GetVkGraphicsQueue());
-                assert(err == VkResult::VK_SUCCESS);
-                ImGui_ImplVulkan_DestroyFontUploadObjects();
-            }
+            ImGui_ImplVulkan_Init(&init_info);
 
         }
         virtual void NewFrame() override

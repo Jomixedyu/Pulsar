@@ -1,4 +1,4 @@
-﻿#include "DragInfo.h"
+#include "DragInfo.h"
 
 #include <PulsarEd/Editors/CommonPanel/WorkspaceWindow.h>
 
@@ -740,8 +740,8 @@ namespace pulsared
             const bool isDirty = isFolder ? false : AssetDatabase::IsDirtyHandle(child->AssetMeta->Guid);
 
             const auto iconSize = ImVec2(m_iconSize, m_iconSize);
-            ImTextureID iconDesc = reinterpret_cast<void*>(descSet.lock()->GetId());
-            ImTextureID dirtyDesc = reinterpret_cast<void*>(dirtySet.lock()->GetId());
+            ImTextureID iconDesc = static_cast<ImTextureID>(descSet.lock()->GetId());
+            ImTextureID dirtyDesc = static_cast<ImTextureID>(dirtySet.lock()->GetId());
 
             // const string dragData = StringUtil::Concat(
             //     child->GetAssetType()->GetName(),
