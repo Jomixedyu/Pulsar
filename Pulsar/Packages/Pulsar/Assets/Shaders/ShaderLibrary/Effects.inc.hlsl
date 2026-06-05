@@ -21,3 +21,12 @@ float FoamTravelingWave(float distToShore, float time,
     foam *= pow(1.0 - d, 0.3);
     return saturate(foam);
 }
+
+
+float TwoSideAlpha(float v, float offset = -0.5, float scale = 1, float softness = 1)
+{
+    float c = abs((v - offset) * 2);
+    float start = 1 - scale;
+    float soft = softness * scale;
+    return saturate(1 - smoothstep(start, start + soft, c));
+}
