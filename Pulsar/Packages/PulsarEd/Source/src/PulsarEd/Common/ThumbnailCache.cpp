@@ -20,7 +20,7 @@ namespace pulsared
         : m_app(app)
     {
         gfx::GFXDescriptorSetLayoutDesc info{
-            gfx::GFXDescriptorSetLayoutDesc(gfx::GFXDescriptorType::CombinedImageSampler, gfx::GFXGpuProgramStageFlags::Fragment, 0)};
+            gfx::GFXDescriptorSetLayoutDesc(gfx::GFXDescriptorType::Texture2D, gfx::GFXGpuProgramStageFlags::Fragment, 0)};
         m_descriptorLayout = m_app->CreateDescriptorSetLayout(&info, 1);
     }
 
@@ -180,7 +180,7 @@ namespace pulsared
         auto desc = descSet->FindByBinding(0);
         if (!desc)
             desc = descSet->AddDescriptor("p", 0);
-        desc->SetTextureSampler2D(tex2d->Get2DView().get());
+        desc->SetTexture2D(tex2d.get());
         descSet->Submit();
 
         m_textures.emplace(assetGuid, tex2d);
@@ -240,7 +240,7 @@ namespace pulsared
                             auto desc = descSet->FindByBinding(0);
                             if (!desc)
                                 desc = descSet->AddDescriptor("p", 0);
-                            desc->SetTextureSampler2D(tex2d->Get2DView().get());
+                            desc->SetTexture2D(tex2d.get());
                             descSet->Submit();
 
                             m_textures.emplace(assetGuid, tex2d);
@@ -279,7 +279,7 @@ namespace pulsared
                         auto desc = descSet->FindByBinding(0);
                         if (!desc)
                             desc = descSet->AddDescriptor("p", 0);
-                        desc->SetTextureSampler2D(tex2d->Get2DView().get());
+                        desc->SetTexture2D(tex2d.get());
                         descSet->Submit();
 
                         m_textures.emplace(assetGuid, tex2d);

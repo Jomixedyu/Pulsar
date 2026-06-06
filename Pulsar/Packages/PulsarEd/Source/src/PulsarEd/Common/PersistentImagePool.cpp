@@ -38,7 +38,7 @@ namespace pulsared
         if (!desc)
             desc = descSet->AddDescriptor("p", 0);
 
-        desc->SetTextureSampler2D(tex->Get2DView().get());
+        desc->SetTexture2D(tex.get());
 
         descSet->Submit();
 
@@ -55,7 +55,7 @@ namespace pulsared
         : m_app(app)
     {
         gfx::GFXDescriptorSetLayoutDesc info{
-            gfx::GFXDescriptorSetLayoutDesc(gfx::GFXDescriptorType::CombinedImageSampler, gfx::GFXGpuProgramStageFlags::Fragment, 0)};
+            gfx::GFXDescriptorSetLayoutDesc(gfx::GFXDescriptorType::Texture2D, gfx::GFXGpuProgramStageFlags::Fragment, 0)};
         m_descriptorLayout = m_app->CreateDescriptorSetLayout(&info, 1);
     }
 
