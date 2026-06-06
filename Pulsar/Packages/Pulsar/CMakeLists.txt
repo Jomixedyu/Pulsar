@@ -10,6 +10,7 @@ set(PUBLIC_MODULE
         jaudio
         uinput
         mikktspace
+        angelscript
 )
 set(PRIVATE_MODULE
         DirectXTex
