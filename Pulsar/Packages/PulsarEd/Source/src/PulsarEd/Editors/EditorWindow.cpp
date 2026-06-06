@@ -112,7 +112,7 @@ namespace pulsared
 
             ImGuiWindowClass dockspaceClass{};
             dockspaceClass.ClassId = m_dockspaceClassId;
-            dockspaceClass.DockingAllowUnclassed = false;
+            dockspaceClass.DockingAllowUnclassed = true;  // 允许 panel（无 ClassId）dock 进来
 
             ImGui::DockSpace(dockId, {}, {}, &dockspaceClass);
         }

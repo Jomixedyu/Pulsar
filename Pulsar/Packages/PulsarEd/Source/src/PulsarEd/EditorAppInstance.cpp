@@ -414,11 +414,8 @@ namespace pulsared
         m_gui->Initialize();
         renderPipeline->ImGuiObject = m_gui;
 
-        // TODO: setup layout
-        {
-            const auto defaultLayoutPath = AssetDatabase::PackagePathToPhysicsPath("PulsarEd/Layout/Default.ini");
-            m_gui->SetLayoutInfo(FileUtil::ReadAllText(defaultLayoutPath));
-        }
+        // imgui 自动管理布局 ini（imgui 1.90+ 哈希算法变了，内置 Default.ini 失效）
+        ImGui::GetIO().IniFilename = "imgui.ini";
 
         AutoRegisterAssetIcons();
         _RegisterIcon("WorkspaceWindow.Dirty", "PulsarEd/Icons/Star.png");

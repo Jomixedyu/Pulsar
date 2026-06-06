@@ -147,6 +147,17 @@ namespace pulsar
         m_currentStateName = name;
         m_currentTime      = 0.f;
         m_isPlaying        = !name.empty();
+
+        // 预解析当前 clip 的所有 track 目标
+        m_resolvedTransformTracks.clear();
+        m_resolvedPropertyTracks.clear();
+
+        if (m_controller)
+        {
+            if (const AnimatorState* state = m_controller->FindState(m_currentStateName))
+                if (state->Clip)
+                    ResolveTracks(state->Clip.GetPtr());
+        }
     }
 
     bool AnimatorComponent::EvaluateConditions(const AnimatorTransition& tr) const
@@ -264,117 +275,128 @@ namespace pulsar
     // Sampling helpers
     // -----------------------------------------------------------------------
 
+    void AnimatorComponent::ResolveTracks(const AnimationClip* clip)
+    {
+        if (!clip) return;
+
+        auto node = GetNode();
+        if (!node) return;
+
+        // Resolve transform tracks
+        TransformComponent* rootTransform = node->GetTransform().GetPtr();
+        if (auto renderer = node->GetComponent<SkinnedMeshRendererComponent>())
+        {
+            if (auto root = renderer->GetRoot())
+                rootTransform = root.GetPtr();
+        }
+
+        for (auto& trackBase : clip->GetTracks())
+        {
+            switch (trackBase->TrackType)
+            {
+            case AnimationTrackType::Transform:
+            {
+                auto t = sptr_cast<TransformAnimationTrack>(trackBase);
+                if (!t || !rootTransform) continue;
+
+                auto target = rootTransform->FindByName(t->TargetName);
+                if (!target)
+                {
+                    static hash_set<string> s_loggedTargets;
+                    if (s_loggedTargets.insert(t->TargetName).second)
+                        Logger::Log("AnimatorComponent::ResolveTracks - node not found for target: " + t->TargetName, LogLevel::Warning);
+                    continue;
+                }
+                m_resolvedTransformTracks.push_back({t.get(), target.GetPtr()});
+                break;
+            }
+            case AnimationTrackType::Property:
+            {
+                auto t = sptr_cast<PropertyAnimationTrack>(trackBase);
+                if (!t) continue;
+
+                // 解析 Component 类型
+                static hash_map<string, Type*> s_typeCache;
+                Type* compType = nullptr;
+                auto it = s_typeCache.find(t->ComponentTypeName);
+                if (it != s_typeCache.end())
+                    compType = it->second;
+                else
+                {
+                    compType = AssemblyManager::GlobalFindType(t->ComponentTypeName);
+                    if (compType) s_typeCache[t->ComponentTypeName] = compType;
+                }
+                if (!compType)
+                {
+                    static hash_set<string> s_loggedTypes;
+                    if (s_loggedTypes.insert(t->ComponentTypeName).second)
+                        Logger::Log("AnimatorComponent::ResolveTracks - component type not found: " + t->ComponentTypeName, LogLevel::Warning);
+                    continue;
+                }
+
+                // 查找 Component 实例
+                Object* compInstance = nullptr;
+                for (auto comp : node->GetAllComponentArray())
+                {
+                    if (comp->GetType() == compType || comp->GetType()->IsSubclassOf(compType))
+                    {
+                        compInstance = comp.GetPtr();
+                        break;
+                    }
+                }
+                if (!compInstance)
+                {
+                    static hash_set<string> s_loggedComps;
+                    auto key = t->ComponentTypeName + "::" + t->FieldName;
+                    if (s_loggedComps.insert(key).second)
+                        Logger::Log("AnimatorComponent::ResolveTracks - component not found on node: " + t->ComponentTypeName, LogLevel::Warning);
+                    continue;
+                }
+
+                // 查找 FieldInfo
+                auto fieldInfo = compType->GetFieldInfo(t->FieldName);
+                if (!fieldInfo)
+                {
+                    static hash_set<string> s_loggedFields;
+                    auto key = t->ComponentTypeName + "::" + t->FieldName;
+                    if (s_loggedFields.insert(key).second)
+                        Logger::Log("AnimatorComponent::ResolveTracks - field not found: " + key, LogLevel::Warning);
+                    continue;
+                }
+
+                m_resolvedPropertyTracks.push_back({t.get(), compInstance, fieldInfo});
+                break;
+            }
+            }
+        }
+    }
+
     void AnimatorComponent::SampleAt(float time)
     {
         if (!m_controller) return;
         const AnimatorState* state = m_controller->FindState(m_currentStateName);
         if (!state || !state->Clip) return;
 
-        for (auto& trackBase : state->Clip->GetTracks())
-        {
-            switch (trackBase->TrackType)
-            {
-            case AnimationTrackType::Bone:
-                if (auto boneTrack = sptr_cast<BoneAnimationTrack>(trackBase))
-                    SampleBoneTrack(boneTrack.get(), time);
-                break;
-            case AnimationTrackType::Property:
-                if (auto propTrack = sptr_cast<PropertyAnimationTrack>(trackBase))
-                    SamplePropertyTrack(propTrack.get(), time);
-                break;
-            }
-        }
+        for (auto& resolved : m_resolvedTransformTracks)
+            SampleTransformTrack(resolved.Track, resolved.Target, time);
+
+        for (auto& resolved : m_resolvedPropertyTracks)
+            SamplePropertyTrack(resolved.Track, resolved.ComponentInstance, resolved.Field, time);
     }
 
-    void AnimatorComponent::SampleBoneTrack(BoneAnimationTrack* track, float time)
+    void AnimatorComponent::SampleTransformTrack(TransformAnimationTrack* track, TransformComponent* target, float time)
     {
-        auto* rootTransform = GetNode()->GetTransform().GetPtr();
-        if (!rootTransform) return;
-
-        // Use SkinnedMeshRendererComponent's root bone as search root if available
-        if (auto renderer = GetNode()->GetComponent<SkinnedMeshRendererComponent>())
-        {
-            if (auto root = renderer->GetRoot())
-            {
-                rootTransform = root.GetPtr();
-            }
-        }
-
-        auto boneTransform = rootTransform->FindByName(track->BoneName);
-        if (!boneTransform)
-        {
-            static hash_set<string> s_loggedBones;
-            if (s_loggedBones.insert(track->BoneName).second)
-                Logger::Log("AnimatorComponent::SampleBoneTrack - node not found for bone: " + track->BoneName, LogLevel::Warning);
-            return;
-        }
-
         Vector3f pos   = SampleVector3(track->PositionKeys, time);
         Quat4f   rot   = SampleQuat   (track->RotationKeys, time);
         Vector3f scale = SampleVector3(track->ScaleKeys,    time);
 
-        boneTransform->SetPosition(pos);
-        boneTransform->SetRotation(rot);
-        boneTransform->SetScale(scale);
+        target->SetPosition(pos);
+        target->SetRotation(rot);
+        target->SetScale(scale);
     }
 
-    void AnimatorComponent::SamplePropertyTrack(PropertyAnimationTrack* track, float time)
+    void AnimatorComponent::SamplePropertyTrack(PropertyAnimationTrack* track, Object* compInstance, FieldInfo* fieldInfo, float time)
     {
-        auto node = GetNode();
-        if (!node) return;
-
-        // 解析 Component 类型名 -> Type*
-        static hash_map<string, Type*> s_typeCache;
-        Type* compType = nullptr;
-        auto it = s_typeCache.find(track->ComponentTypeName);
-        if (it != s_typeCache.end())
-        {
-            compType = it->second;
-        }
-        else
-        {
-            compType = AssemblyManager::GlobalFindType(track->ComponentTypeName);
-            if (compType) s_typeCache[track->ComponentTypeName] = compType;
-        }
-        if (!compType)
-        {
-            static hash_set<string> s_loggedTypes;
-            if (s_loggedTypes.insert(track->ComponentTypeName).second)
-                Logger::Log("AnimatorComponent::SamplePropertyTrack - component type not found: " + track->ComponentTypeName, LogLevel::Warning);
-            return;
-        }
-
-        // 查找目标 Component 实例
-        Object* compInstance = nullptr;
-        for (auto& comp : node->GetAllComponentArray())
-        {
-            if (comp->GetType() == compType || comp->GetType()->IsSubclassOf(compType))
-            {
-                compInstance = comp.GetPtr();
-                break;
-            }
-        }
-        if (!compInstance)
-        {
-            static hash_set<string> s_loggedComps;
-            auto key = track->ComponentTypeName + "::" + track->FieldName;
-            if (s_loggedComps.insert(key).second)
-                Logger::Log("AnimatorComponent::SamplePropertyTrack - component not found on node: " + track->ComponentTypeName, LogLevel::Warning);
-            return;
-        }
-
-        // 获取 FieldInfo
-        auto* fieldInfo = compType->GetFieldInfo(track->FieldName);
-        if (!fieldInfo)
-        {
-            static hash_set<string> s_loggedFields;
-            auto key = track->ComponentTypeName + "::" + track->FieldName;
-            if (s_loggedFields.insert(key).second)
-                Logger::Log("AnimatorComponent::SamplePropertyTrack - field not found: " + key, LogLevel::Warning);
-            return;
-        }
-
-        // 根据字段类型采样并写入
         Type* fieldType = fieldInfo->GetFieldType();
         if (fieldType == cltypeof<jxcorlib::Single32>())
         {
@@ -393,13 +415,6 @@ namespace pulsar
             if (track->QuatKeys.empty()) return;
             Quat4f value = SampleQuat(track->QuatKeys, time);
             fieldInfo->SetValue(compInstance, BoxUtil::Box(value));
-        }
-        else
-        {
-            static hash_set<string> s_loggedTypes;
-            auto key = track->ComponentTypeName + "::" + track->FieldName + " [type=" + fieldType->GetShortName() + "]";
-            if (s_loggedTypes.insert(key).second)
-                Logger::Log("AnimatorComponent::SamplePropertyTrack - unsupported field type: " + key, LogLevel::Warning);
         }
     }
 

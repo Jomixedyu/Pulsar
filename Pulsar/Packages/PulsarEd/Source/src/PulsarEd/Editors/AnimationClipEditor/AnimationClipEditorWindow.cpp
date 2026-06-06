@@ -62,21 +62,21 @@ namespace pulsared
                 {
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0);
-                    if (trackBase->TrackType == pulsar::AnimationTrackType::Bone)
+                    if (trackBase->TrackType == pulsar::AnimationTrackType::Transform)
                     {
-                        ImGui::TextUnformatted("Bone");
+                        ImGui::TextUnformatted("Transform");
                         ImGui::TableSetColumnIndex(1);
-                        auto boneTrack = pulsar::sptr_cast<pulsar::BoneAnimationTrack>(trackBase);
-                        ImGui::TextUnformatted(boneTrack ? boneTrack->BoneName.c_str() : "");
+                        auto transformTrack = pulsar::sptr_cast<pulsar::TransformAnimationTrack>(trackBase);
+                        ImGui::TextUnformatted(transformTrack ? transformTrack->TargetName.c_str() : "");
                         ImGui::TableSetColumnIndex(2);
                         ImGui::Text("-");
                         ImGui::TableSetColumnIndex(3);
-                        if (boneTrack)
+                        if (transformTrack)
                         {
                             ImGui::Text("P:%d R:%d S:%d",
-                                (int)boneTrack->PositionKeys.size(),
-                                (int)boneTrack->RotationKeys.size(),
-                                (int)boneTrack->ScaleKeys.size());
+                                (int)transformTrack->PositionKeys.size(),
+                                (int)transformTrack->RotationKeys.size(),
+                                (int)transformTrack->ScaleKeys.size());
                         }
                     }
                     else

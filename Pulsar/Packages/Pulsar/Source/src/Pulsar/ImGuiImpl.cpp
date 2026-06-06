@@ -33,9 +33,7 @@ namespace pulsar
 
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-        io.ConfigFlags |= ImGuiWindowFlags_MenuBar;
         //io.ConfigFlags |= ImGuiConfigFlags_IsSRGB;
-        //io.ConfigFlags |= ImGuiWindowFlags_NoTitleBar;
         io.ConfigFlags &= ~ImGuiConfigFlags_ViewportsEnable;
 
         io.ConfigWindowsMoveFromTitleBarOnly = true;

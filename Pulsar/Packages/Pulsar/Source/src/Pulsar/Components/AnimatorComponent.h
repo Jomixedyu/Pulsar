@@ -66,8 +66,9 @@ namespace pulsar
         void EnterState(const string& name);
         bool EvaluateConditions(const AnimatorTransition& transition) const;
         void ConsumeTriggersOfTransition(const AnimatorTransition& transition);
-        void SampleBoneTrack(BoneAnimationTrack* track, float time);
-        void SamplePropertyTrack(PropertyAnimationTrack* track, float time);
+        void ResolveTracks(const AnimationClip* clip);
+        void SampleTransformTrack(TransformAnimationTrack* track, TransformComponent* target, float time);
+        void SamplePropertyTrack(PropertyAnimationTrack* track, Object* comp, FieldInfo* field, float time);
 
     protected:
         CORELIB_REFL_DECL_FIELD(m_controller);
@@ -80,6 +81,24 @@ namespace pulsar
         float m_speed = 1.0f;
 
     private:
+        // -------------------------------------------------------------------
+        // Pre-resolved track targets (cached at EnterState, avoids per-frame
+        // reflection / string lookups)
+        // -------------------------------------------------------------------
+        struct ResolvedTransformTrack
+        {
+            TransformAnimationTrack* Track;
+            TransformComponent*      Target;
+        };
+        struct ResolvedPropertyTrack
+        {
+            PropertyAnimationTrack* Track;
+            Object*                 ComponentInstance;
+            FieldInfo*              Field;
+        };
+        array_list<ResolvedTransformTrack> m_resolvedTransformTracks;
+        array_list<ResolvedPropertyTrack>  m_resolvedPropertyTracks;
+
         array_list<AnimatorParam> m_runtimeParams;
         array_list<Matrix4f>      m_boneMatrices;
 

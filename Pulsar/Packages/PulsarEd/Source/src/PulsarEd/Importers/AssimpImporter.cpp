@@ -526,15 +526,15 @@ namespace pulsared
                 if (boneIndex < 0)
                     continue; // Skip non-bone animation channels for now
 
-                auto boneTrack = mksptr(new BoneAnimationTrack());
-                boneTrack->TrackType = AnimationTrackType::Bone;
-                boneTrack->Name = nodeName;
-                boneTrack->BoneName = nodeName;
+                auto transformTrack = mksptr(new TransformAnimationTrack());
+                transformTrack->TrackType = AnimationTrackType::Transform;
+                transformTrack->Name = nodeName;
+                transformTrack->TargetName = nodeName;
 
                 for (uint32_t k = 0; k < channel->mNumPositionKeys; ++k)
                 {
                     auto& key = channel->mPositionKeys[k];
-                    boneTrack->PositionKeys.push_back({
+                    transformTrack->PositionKeys.push_back({
                         static_cast<float>(key.mTime / anim->mTicksPerSecond),
                         ToVector3f(key.mValue)
                     });
@@ -542,7 +542,7 @@ namespace pulsared
                 for (uint32_t k = 0; k < channel->mNumRotationKeys; ++k)
                 {
                     auto& key = channel->mRotationKeys[k];
-                    boneTrack->RotationKeys.push_back({
+                    transformTrack->RotationKeys.push_back({
                         static_cast<float>(key.mTime / anim->mTicksPerSecond),
                         ToQuat(key.mValue)
                     });
@@ -550,13 +550,13 @@ namespace pulsared
                 for (uint32_t k = 0; k < channel->mNumScalingKeys; ++k)
                 {
                     auto& key = channel->mScalingKeys[k];
-                    boneTrack->ScaleKeys.push_back({
+                    transformTrack->ScaleKeys.push_back({
                         static_cast<float>(key.mTime / anim->mTicksPerSecond),
                         ToVector3f(key.mValue)
                     });
                 }
 
-                tracks.push_back(boneTrack);
+                tracks.push_back(transformTrack);
             }
 
             if (!tracks.empty())
