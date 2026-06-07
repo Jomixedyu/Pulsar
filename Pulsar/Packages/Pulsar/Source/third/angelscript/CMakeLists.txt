@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 3.23)
-project(angelscript LANGUAGES CXX)
+
+if(MSVC AND CMAKE_SIZEOF_VOID_P EQUAL 8)
+    project(angelscript LANGUAGES CXX ASM_MASM)
+else()
+    project(angelscript LANGUAGES CXX)
+endif()
 
 set(AS_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/source)
 set(AS_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
@@ -40,6 +45,7 @@ file(GLOB AS_CORE_SOURCES
 if(MSVC)
     if(CMAKE_SIZEOF_VOID_P EQUAL 8)
         list(APPEND AS_CORE_SOURCES ${AS_SOURCE_DIR}/as_callfunc_x64_msvc.cpp)
+        list(APPEND AS_CORE_SOURCES ${AS_SOURCE_DIR}/as_callfunc_x64_msvc_asm.asm)
     else()
         list(APPEND AS_CORE_SOURCES ${AS_SOURCE_DIR}/as_callfunc_x86.cpp)
     endif()
