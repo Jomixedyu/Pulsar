@@ -1,6 +1,7 @@
 #include "Pulsar/Assets/RenderTextureCube.h"
 
 #include "Application.h"
+#include <gfx/GFXResourceManager.h>
 
 namespace pulsar
 {
@@ -16,9 +17,12 @@ namespace pulsar
         {
             return true;
         }
-        m_texture = Application::GetGfxApp()->CreateTextureCube(m_width);
+        auto* resMgr = Application::GetGfxApp()->GetResourceManager();
+        m_textureHandle = resMgr->AllocHandle<gfx::TextureHandle>();
+        resMgr->CreateTextureCube(m_textureHandle, m_width);
 
         m_isCreated = true;
+        return true;
     }
 
     void RenderTextureCube::DestroyGPUResource()
@@ -28,7 +32,12 @@ namespace pulsar
             return;
         }
         m_isCreated = false;
-        m_texture.reset();
+        if (m_textureHandle.IsValid())
+        {
+            auto* resMgr = Application::GetGfxApp()->GetResourceManager();
+            resMgr->Destroy(m_textureHandle);
+            m_textureHandle = {};
+        }
     }
 
     bool RenderTextureCube::IsCreatedGPUResource() const

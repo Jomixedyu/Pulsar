@@ -2,7 +2,9 @@
 #include <Pulsar/Application.h>
 #include <Pulsar/Assets/Texture2D.h>
 #include <Pulsar/Util/TextureCompressionUtil.h>
+#include <Pulsar/Rendering/RenderThread.h>
 #include <gfx/GFXImage.h>
+#include <gfx/GFXResourceManager.h>
 
 namespace pulsar
 {
@@ -140,14 +142,30 @@ namespace pulsar
         samplerConfig.Filter = GetSamplerFilter();
         samplerConfig.AddressMode = GetSamplerAddressMode();
 
-        m_tex = Application::GetGfxApp()->CreateTexture2DFromMemory(
-            data.data(),
-            data.size(),
-            m_textureSize.x, m_textureSize.y,
-            targetGfxFormat,
-            samplerConfig);
+        // 句柄分配线程安全，主线程立即拿到句柄；纹理创建与数据上传投递到渲染线程异步执行。
+        auto* resMgr = Application::GetGfxApp()->GetResourceManager();
+        auto* renderThread = Application::GetRenderThread();
+        m_texHandle = resMgr->AllocHandle<gfx::TextureHandle>();
+        renderThread->EnqueueUpdate_AnyThread(
+            [h = m_texHandle, w = m_textureSize.x, ht = m_textureSize.y,
+             fmt = targetGfxFormat, samplerConfig, data = std::move(data)](gfx::GFXResourceManager* mgr)
+            {
+                gfx::GFXTextureCreateDesc desc{};
+                desc.ImageData  = data.data();
+                desc.DataLength = data.size();
+                desc.Width      = w;
+                desc.Height     = ht;
+                desc.Format     = fmt;
+                desc.SamplerCfg = samplerConfig;
+                mgr->CreateTexture2D(h, desc);
+            });
 
         return true;
+    }
+
+    gfx::TextureHandle Texture2D::GetTextureHandle() const
+    {
+        return m_texHandle;
     }
 
     void Texture2D::DestroyGPUResource()
@@ -157,7 +175,14 @@ namespace pulsar
             return;
         }
         m_isCreatedGPUResource = false;
-        m_tex.reset();
+
+        auto* renderThread = Application::GetRenderThread();
+        renderThread->EnqueueUpdate_AnyThread(
+            [h = m_texHandle](gfx::GFXResourceManager* mgr)
+            {
+                mgr->Destroy(h);
+            });
+        m_texHandle = gfx::TextureHandle{};
     }
 
     bool Texture2D::IsCreatedGPUResource() const

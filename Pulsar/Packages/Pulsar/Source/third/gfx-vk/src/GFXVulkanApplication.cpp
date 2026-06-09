@@ -417,66 +417,12 @@ namespace gfx
         m_graphicsPipelineManager = new GFXVulkanGraphicsPipelineManager(this);
 
         m_resourceManager = std::make_unique<GFXResourceManager>(this);
-        m_commandList = std::make_unique<GFXCommandListDeferred>(m_resourceManager.get());
-        m_immediateCommandList = std::make_unique<GFXCommandListImmediate>(m_resourceManager.get());
-    }
-
-    void GFXVulkanApplication::ExecLoop()
-    {
-        m_startTime = std::chrono::high_resolution_clock::now();
-        m_lastTime = std::chrono::high_resolution_clock::now();
-        while (!m_isAppEnding)
-        {
-            auto currentTime = std::chrono::high_resolution_clock::now();
-            float deltaTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - m_lastTime).count();
-
-            // bool recivedClose = glfwWindowShouldClose(m_window);
-            bool recivedClose = m_window->WantToClose();
-            if (recivedClose)
-            {
-                if (OnExitWindow)
-                {
-                    if (OnExitWindow())
-                    {
-                        m_isAppEnding = true;
-                    }
-                }
-                else
-                {
-                    m_isAppEnding = true;
-                }
-            }
-            m_window->PollEvent();
-            // glfwPollEvents();
-
-            if (OnPreRender)
-            {
-                OnPreRender(deltaTime);
-            }
-            if (m_isAppEnding)
-            {
-                break;
-            }
-            TickRender(deltaTime);
-            if (OnPostRender)
-            {
-                OnPostRender(deltaTime);
-            }
-
-            m_lastTime = currentTime;
-            ++m_framecount;
-        }
-        vkDeviceWaitIdle(m_device);
     }
 
     void GFXVulkanApplication::TickRender(float deltaTime)
     {
         m_renderer->Render(deltaTime);
-    }
-
-    void GFXVulkanApplication::RequestStop()
-    {
-        m_isAppEnding = true;
+        ++m_framecount;
     }
 
     void GFXVulkanApplication::Terminate()
@@ -487,8 +433,6 @@ namespace gfx
         vkDeviceWaitIdle(m_device);
 
         // Release handle-managed resources before destroying the device
-        m_immediateCommandList.reset();
-        m_commandList.reset();
         m_resourceManager.reset();
 
         delete m_renderer;
@@ -528,12 +472,6 @@ namespace gfx
     {
         return gfxmksptr(new GFXVulkanCommandBuffer(this));
     }
-    GFXVertexLayoutDescription_sp gfx::GFXVulkanApplication::CreateVertexLayoutDescription()
-    {
-        return gfxmksptr(new GFXVulkanVertexLayoutDescription());
-    }
-
-
     std::shared_ptr<GFXTexture> gfx::GFXVulkanApplication::CreateTexture2DFromMemory(
         const uint8_t* imageData, size_t length, int width, int height, GFXTextureFormat format, const GFXSamplerConfig& samplerConfig)
     {

@@ -4,6 +4,7 @@
 #include <Pulsar/IGPUResource.h>
 #include <Pulsar/AssetObject.h>
 #include <gfx/GFXTexture.h>
+#include <gfx/GFXHandle.h>
 
 
 
@@ -49,7 +50,7 @@ namespace pulsar
         void DestroyGPUResource() override;
         bool IsCreatedGPUResource() const override;
 
-        std::shared_ptr<gfx::GFXTexture> GetGFXTexture() const override { return m_tex; }
+        gfx::TextureHandle GetTextureHandle() const override;
 
     public:
         bool IsSRGB() const;
@@ -73,7 +74,7 @@ namespace pulsar
         bool m_enableReadWrite{};
         gfx::GFXTextureFormat m_format{};
 
-        std::shared_ptr<gfx::GFXTexture> m_tex;
+        gfx::TextureHandle m_texHandle{};
         bool m_init = false;
 
         bool m_isCreatedGPUResource = false;

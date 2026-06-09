@@ -41,7 +41,7 @@ namespace pulsar
         SkinnedMesh() = default;
         ~SkinnedMesh() override;
     public:
-        static gfx::GFXVertexLayoutDescription_sp StaticGetVertexLayout();
+        static gfx::GFXVertexLayoutDescription StaticGetVertexLayout();
 
         virtual void Serialize(AssetSerializer* s) override;
 

@@ -32,8 +32,6 @@ namespace gfx
         virtual GFXRenderer* GetRenderer() override;
 
         virtual void Initialize() override;
-        virtual void ExecLoop() override;
-        virtual void RequestStop() override;
         virtual void Terminate() override;
 
         virtual GFXApi GetApiType() const override { return GFXApi::Vulkan; }
@@ -42,7 +40,6 @@ namespace gfx
         void TickRender(float deltaTime);
         virtual GFXBuffer_sp CreateBuffer(const GFXBufferDesc& desc) override;
         virtual GFXCommandBuffer_sp CreateCommandBuffer() override;
-        virtual GFXVertexLayoutDescription_sp CreateVertexLayoutDescription() override;
         virtual GFXGpuProgram_sp CreateGpuProgram(GFXGpuProgramStageFlags stage, const uint8_t* code, size_t length) override;
 
 
@@ -150,13 +147,7 @@ namespace gfx
         array_list<const char*> m_extensions;
         size_t m_count = 0;
 
-        bool m_isAppEnding = false;
-
         uint32_t m_framecount = 0;
-
-        std::chrono::steady_clock::time_point m_startTime;
-        std::chrono::steady_clock::time_point m_lastTime;
-
 
         std::vector<GFXTextureFormat> m_depthFormatCache;
     };

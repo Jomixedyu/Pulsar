@@ -2,6 +2,7 @@
 #include <Pulsar/IGPUResource.h>
 #include <Pulsar/AssetObject.h>
 #include <gfx/GFXTexture.h>
+#include <gfx/GFXHandle.h>
 
 namespace pulsar
 {
@@ -47,7 +48,7 @@ namespace pulsar
         virtual int32_t GetHeight() const = 0;
         virtual Vector2i GetSize2di() const { return { this->GetWidth(), this->GetHeight() }; }
         virtual Vector2f GetSize2df() const { return Vector2f((float)this->GetWidth(), (float)this->GetHeight()); }
-        virtual std::shared_ptr<gfx::GFXTexture> GetGFXTexture() const { return nullptr; }
+        virtual gfx::TextureHandle GetTextureHandle() const { return {}; }
         virtual TextureCompressionFormat GetCompressedFormat() const { return TextureCompressionFormat::BitmapRGBA8; }
         virtual size_t GetOriginCompressedBinarySize() const { return 0; }
         virtual size_t GetRawBinarySize() const { return 0; }

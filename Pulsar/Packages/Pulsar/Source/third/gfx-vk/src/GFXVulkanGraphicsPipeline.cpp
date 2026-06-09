@@ -116,10 +116,9 @@ namespace gfx
 
         for (auto& vertLayout : vertLayouts)
         {
-            auto vertBinding = std::static_pointer_cast<gfx::GFXVulkanVertexLayoutDescription>(vertLayout);
-            bindingDescriptions.push_back(vertBinding->GetVkBindingDescription());
+            bindingDescriptions.push_back(gfx::GetVkVertexBindingDescription(vertLayout));
         }
-        attributeDescriptions = gfx::GFXVulkanVertexLayoutDescription::GetCombinedAttributes(vertLayouts);
+        attributeDescriptions = gfx::GetCombinedVkVertexAttributes(vertLayouts);
 
         vertexInputInfo.vertexBindingDescriptionCount = static_cast<uint32_t>(bindingDescriptions.size());
         vertexInputInfo.pVertexBindingDescriptions = bindingDescriptions.data();

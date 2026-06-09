@@ -1,6 +1,7 @@
 #pragma once
 #include "CurveLinearColor.h"
 #include "Texture2DBase.h"
+#include <gfx/GFXHandle.h>
 
 namespace pulsar
 {
@@ -17,7 +18,7 @@ namespace pulsar
         bool IsCreatedGPUResource() const override { return m_isCreatedGpuResource; }
         int32_t GetWidth() const override;
         int32_t GetHeight() const override;
-        std::shared_ptr<gfx::GFXTexture> GetGFXTexture() const override { return m_gfxTexture; }
+        gfx::TextureHandle GetTextureHandle() const override;
 
         void PostEditChange(FieldInfo* info) override;
         void OnNotifyObserver(ObjectHandle inDependency, DependencyObjectState msg) override;
@@ -38,7 +39,7 @@ namespace pulsar
         bool m_isCreatedGpuResource = false;
         array_list<Color4b> m_bitmap;
 
-        gfx::GFXTexture_sp m_gfxTexture;
+        gfx::TextureHandle m_texHandle{};
 
     };
 }

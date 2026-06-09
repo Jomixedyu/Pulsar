@@ -3,6 +3,7 @@
 #include "Assets/StaticMesh.h"
 
 #include <Pulsar/Rendering/LineRenderObject.h>
+#include <gfx/GFXResourceManager.h>
 
 namespace pulsar
 {
@@ -30,7 +31,6 @@ namespace pulsar
     }
     void LineRenderObject::Fill()
     {
-        auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
         auto* resMgr  = Application::GetGfxApp()->GetResourceManager();
 
         if (m_vertBuffer.IsValid())
@@ -38,7 +38,7 @@ namespace pulsar
             auto* buffer = resMgr->GetBuffer(m_vertBuffer);
             if (buffer && sizeof(StaticMeshVertex) * m_verties.size() > buffer->GetSize())
             {
-                cmdList.Destroy(m_vertBuffer);
+                resMgr->Destroy(m_vertBuffer);
                 m_vertBuffer = gfx::BufferHandle{};
             }
         }
@@ -51,12 +51,13 @@ namespace pulsar
             desc.BufferSize   = m_verties.size() * sizeof(StaticMeshVertex);
             desc.ElementSize  = sizeof(StaticMeshVertex);
 
-            m_vertBuffer = cmdList.CreateBuffer(desc);
+            m_vertBuffer = resMgr->AllocHandle<gfx::BufferHandle>();
+            resMgr->CreateBuffer(m_vertBuffer, desc);
         }
 
         if (m_vertBuffer.IsValid() && !m_verties.empty())
         {
-            cmdList.UploadBuffer(m_vertBuffer, m_verties.data(), m_verties.size() * sizeof(StaticMeshVertex));
+            resMgr->UploadBuffer(m_vertBuffer, m_verties.data(), m_verties.size() * sizeof(StaticMeshVertex));
         }
     }
 
@@ -85,9 +86,10 @@ namespace pulsar
             vertexBufferDesc.BufferSize  = m_verties.size() * sizeof(StaticMeshVertex);
             vertexBufferDesc.ElementSize = sizeof(StaticMeshVertex);
 
-            auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
-            m_vertBuffer = cmdList.CreateBuffer(vertexBufferDesc);
-            cmdList.UploadBuffer(m_vertBuffer, m_verties.data(), m_verties.size() * sizeof(StaticMeshVertex));
+            auto* resMgr = Application::GetGfxApp()->GetResourceManager();
+            m_vertBuffer = resMgr->AllocHandle<gfx::BufferHandle>();
+            resMgr->CreateBuffer(m_vertBuffer, vertexBufferDesc);
+            resMgr->UploadBuffer(m_vertBuffer, m_verties.data(), m_verties.size() * sizeof(StaticMeshVertex));
         }
 
         m_batchs.resize(1);
@@ -113,8 +115,8 @@ namespace pulsar
         base::OnDestroyResource();
         if (m_vertBuffer.IsValid())
         {
-            auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
-            cmdList.Destroy(m_vertBuffer);
+            auto* resMgr = Application::GetGfxApp()->GetResourceManager();
+            resMgr->Destroy(m_vertBuffer);
             m_vertBuffer = gfx::BufferHandle{};
         }
     }

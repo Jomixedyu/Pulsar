@@ -1,5 +1,6 @@
 #include "Assets/RenderTexture.h"
 #include <Pulsar/Application.h>
+#include <gfx/GFXResourceManager.h>
 #include <optional>
 
 namespace pulsar
@@ -75,12 +76,39 @@ namespace pulsar
         }
     }
 
-    std::shared_ptr<gfx::GFXTexture> RenderTexture::GetGFXTexture() const
+    gfx::TextureHandle RenderTexture::GetTextureHandle() const
     {
-        if (m_renderTargets.empty())
-            return nullptr;
+        if (m_renderTargetHandles.empty())
+            return {};
         // Return first color attachment for preview/sampling
-        return m_renderTargets[0];
+        return m_renderTargetHandles[0];
+    }
+
+    std::shared_ptr<gfx::GFXTexture2DView> RenderTexture::GetGfxRenderTarget0() const
+    {
+        if (m_renderTargetHandles.empty())
+            return nullptr;
+        auto* resMgr = Application::GetGfxApp()->GetResourceManager();
+        auto tex = resMgr->GetTextureShared(m_renderTargetHandles[0]);
+        return tex ? tex->Get2DView(0) : nullptr;
+    }
+
+    std::shared_ptr<gfx::GFXFrameBufferObject> RenderTexture::GetGfxFrameBufferObject() const
+    {
+        auto* resMgr = Application::GetGfxApp()->GetResourceManager();
+        return resMgr->GetFrameBufferObjectShared(m_framebufferHandle);
+    }
+
+    array_list<gfx::GFXTexture_sp> RenderTexture::GetRenderTargets() const
+    {
+        auto* resMgr = Application::GetGfxApp()->GetResourceManager();
+        array_list<gfx::GFXTexture_sp> result;
+        result.reserve(m_renderTargetHandles.size());
+        for (auto& h : m_renderTargetHandles)
+        {
+            result.push_back(resMgr->GetTextureShared(h));
+        }
+        return result;
     }
 
     void RenderTexture::Serialize(AssetSerializer* s)
@@ -148,6 +176,8 @@ namespace pulsar
         if (!gfx)
             return false;
 
+        auto* resMgr = gfx->GetResourceManager();
+
         // Ensure at least one color format
         if (m_colorFormats->empty())
         {
@@ -161,8 +191,18 @@ namespace pulsar
         // Create color attachments (MRT)
         for (auto& fmt : *m_colorFormats)
         {
-            auto rt = gfx->CreateRenderTarget(m_width, m_height, gfx::GFXTextureTargetType::ColorTarget, ToGFXFormat(fmt), samplerCfg, m_sampleCount, false);
-            m_renderTargets.push_back(rt);
+            gfx::GFXTextureCreateDesc desc{};
+            desc.Width = m_width;
+            desc.Height = m_height;
+            desc.TargetType = gfx::GFXTextureTargetType::ColorTarget;
+            desc.Format = ToGFXFormat(fmt);
+            desc.SamplerCfg = samplerCfg;
+            desc.SampleCount = m_sampleCount;
+            desc.IsTransientAttachment = false;
+
+            auto h = resMgr->AllocHandle<gfx::TextureHandle>();
+            resMgr->CreateRenderTarget(h, desc);
+            m_renderTargetHandles.push_back(h);
         }
 
         // Create depth attachment if specified
@@ -171,17 +211,30 @@ namespace pulsar
             auto depthFmt = ToGFXFormat(m_depthFormat);
             bool isDepthStencil = (m_depthFormat == RenderTextureDepthFormat::D32_SFloat_S8_UInt || m_depthFormat == RenderTextureDepthFormat::D24_UNorm_S8_UInt);
             auto targetType = isDepthStencil ? gfx::GFXTextureTargetType::DepthStencilTarget : gfx::GFXTextureTargetType::DepthTarget;
-            auto rt = gfx->CreateRenderTarget(m_width, m_height, targetType, depthFmt, samplerCfg, m_sampleCount, false);
-            m_renderTargets.push_back(rt);
+
+            gfx::GFXTextureCreateDesc desc{};
+            desc.Width = m_width;
+            desc.Height = m_height;
+            desc.TargetType = targetType;
+            desc.Format = depthFmt;
+            desc.SamplerCfg = samplerCfg;
+            desc.SampleCount = m_sampleCount;
+            desc.IsTransientAttachment = false;
+
+            auto h = resMgr->AllocHandle<gfx::TextureHandle>();
+            resMgr->CreateRenderTarget(h, desc);
+            m_renderTargetHandles.push_back(h);
         }
 
         // Build FBO
         std::vector<gfx::GFXTexture2DView_sp> views;
-        for (auto& rt : m_renderTargets)
+        for (auto& h : m_renderTargetHandles)
         {
-            views.push_back(rt->Get2DView(0));
+            auto tex = resMgr->GetTextureShared(h);
+            views.push_back(tex ? tex->Get2DView(0) : nullptr);
         }
-        m_framebuffer = gfx->CreateFrameBufferObject(views);
+        m_framebufferHandle = resMgr->AllocHandle<gfx::FrameBufferObjectHandle>();
+        resMgr->CreateFrameBufferObject(m_framebufferHandle, views);
 
         m_createdGPUResource = true;
         return true;
@@ -192,8 +245,17 @@ namespace pulsar
         if (!IsCreatedGPUResource())
             return;
 
-        m_framebuffer.reset();
-        m_renderTargets.clear();
+        auto* resMgr = Application::GetGfxApp()->GetResourceManager();
+        if (m_framebufferHandle.IsValid())
+        {
+            resMgr->Destroy(m_framebufferHandle);
+            m_framebufferHandle = {};
+        }
+        for (auto& h : m_renderTargetHandles)
+        {
+            resMgr->Destroy(h);
+        }
+        m_renderTargetHandles.clear();
         m_createdGPUResource = false;
     }
 

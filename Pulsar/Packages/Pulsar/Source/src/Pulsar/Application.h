@@ -7,6 +7,8 @@
 
 namespace pulsar
 {
+    class RenderThread;
+
     class Application
     {
     private:
@@ -14,6 +16,7 @@ namespace pulsar
     public:
         static AppInstance* inst();
         static gfx::GFXApplication* GetGfxApp();
+        static RenderThread* GetRenderThread();
         static int argc();
         static const char* const* argv();
         static bool TryGetCommandLineArg(string_view prefix, string* outValue);

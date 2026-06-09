@@ -1,5 +1,6 @@
 #include "PerRenderObjectDataManager.h"
 #include <Pulsar/Application.h>
+#include <gfx/GFXResourceManager.h>
 
 namespace pulsar
 {
@@ -27,8 +28,8 @@ namespace pulsar
         if (!m_buffer.IsValid()) return; // already destroyed
         m_dummyExtraSet.reset();
         m_dummyExtraLayout.reset();
-        auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
-        cmdList.Destroy(m_buffer);
+        auto* resMgr = Application::GetGfxApp()->GetResourceManager();
+        resMgr->Destroy(m_buffer);
         m_buffer = gfx::BufferHandle{};
         m_cpuData.clear();
         m_slotUsed.clear();
@@ -41,23 +42,24 @@ namespace pulsar
     {
         if (newCapacity <= m_capacity) return;
 
-        auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
+        auto* resMgr = Application::GetGfxApp()->GetResourceManager();
 
         gfx::GFXBufferDesc desc{};
         desc.Usage = gfx::GFXBufferUsage::ConstantBuffer;
         desc.StorageType = gfx::GFXBufferMemoryPosition::VisibleOnHost;
         desc.BufferSize = newCapacity * sizeof(PerRenderObjectData);
         desc.ElementSize = sizeof(PerRenderObjectData);
-        auto newBuffer = cmdList.CreateBuffer(desc);
+        auto newBuffer = resMgr->AllocHandle<gfx::BufferHandle>();
+        resMgr->CreateBuffer(newBuffer, desc);
 
         // Copy existing data if any
         if (m_buffer.IsValid() && m_capacity > 0)
         {
-            if (auto* oldBuffer = Application::GetGfxApp()->GetResourceManager()->GetBuffer(m_buffer))
+            if (auto* oldBuffer = resMgr->GetBuffer(m_buffer))
             {
                 // TODO: copy old data to new buffer
             }
-            cmdList.Destroy(m_buffer);
+            resMgr->Destroy(m_buffer);
         }
 
         m_buffer = newBuffer;

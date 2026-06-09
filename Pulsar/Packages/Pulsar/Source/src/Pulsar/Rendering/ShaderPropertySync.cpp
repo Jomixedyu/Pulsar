@@ -6,9 +6,12 @@
 #include "AppInstance.h"
 #include "AssetManager.h"
 #include <Pulsar/Logger.h>
+#include <Pulsar/Rendering/RenderThread.h>
 
 #include <gfx/GFXTexture.h>
+#include <gfx/GFXResourceManager.h>
 
+#include <cassert>
 #include <cstring>
 
 namespace pulsar
@@ -19,6 +22,7 @@ namespace pulsar
         gfx::GFXBuffer* cbuffer,
         gfx::GFXDescriptorSet* descriptorSet)
     {
+        assert(Application::GetRenderThread()->IsRenderThread() && "ShaderPropertySync must run on the render thread");
         SyncConstants(sheet, layout, cbuffer);
         SyncTextures(sheet, layout, descriptorSet);
     }
@@ -76,12 +80,17 @@ namespace pulsar
             if (tex && !tex->IsCreatedGPUResource())
                 tex->CreateGPUResource();
 
-            if (tex && tex->GetGFXTexture())
+            gfx::TextureHandle texHandle = tex ? tex->GetTextureHandle() : gfx::TextureHandle{};
+            gfx::GFXTexture* gfxTex = nullptr;
+            if (texHandle.IsValid())
+                gfxTex = Application::GetGfxApp()->GetResourceManager()->GetTexture(texHandle);
+
+            if (gfxTex)
             {
                 auto* descriptor = descriptorSet->FindByBinding(entry.m_bindingPoint);
                 if (descriptor)
                 {
-                    auto view = tex->GetGFXTexture()->Get2DView(0);
+                    auto view = gfxTex->Get2DView(0);
                     if (view)
                         descriptor->SetTextureSampler2D(view.get());
                     else

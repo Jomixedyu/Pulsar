@@ -92,7 +92,7 @@ namespace gfx
     {
         GFXPrimitiveTopology Topology{};
         float LineWidth{1.0};
-        array_list<GFXVertexLayoutDescription_sp> VertexLayouts;
+        array_list<GFXVertexLayoutDescription> VertexLayouts;
 
         size_t GetHashCode() const
         {

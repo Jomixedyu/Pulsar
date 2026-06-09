@@ -1,6 +1,8 @@
 #include "Pulsar/Assets/CurveLinearColorAtlas.h"
 
 #include "Application.h"
+#include <Pulsar/Rendering/RenderThread.h>
+#include <gfx/GFXResourceManager.h>
 
 namespace pulsar
 {
@@ -76,9 +78,38 @@ namespace pulsar
             SamplerConfig cfg;
             cfg.Filter = GetSamplerFilter();
             cfg.AddressMode = GetSamplerAddressMode();
-            m_gfxTexture = Application::GetGfxApp()->CreateTexture2DFromMemory((uint8_t*)m_bitmap.data(), bitmapDataSize, m_width, m_height, gfx::GFXTextureFormat::R8G8B8A8_UNorm, cfg);
+
+            auto* resMgr = Application::GetGfxApp()->GetResourceManager();
+            auto* renderThread = Application::GetRenderThread();
+
+            // 重新生成：先投递销毁旧句柄，再分配新句柄并投递创建。
+            if (m_texHandle.IsValid())
+            {
+                renderThread->EnqueueUpdate_AnyThread(
+                    [h = m_texHandle](gfx::GFXResourceManager* mgr) { mgr->Destroy(h); });
+            }
+
+            array_list<Color4b> bitmapCopy = m_bitmap;
+            m_texHandle = resMgr->AllocHandle<gfx::TextureHandle>();
+            renderThread->EnqueueUpdate_AnyThread(
+                [h = m_texHandle, w = m_width, ht = m_height, cfg, bitmap = std::move(bitmapCopy)](gfx::GFXResourceManager* mgr)
+                {
+                    gfx::GFXTextureCreateDesc desc{};
+                    desc.ImageData  = reinterpret_cast<const uint8_t*>(bitmap.data());
+                    desc.DataLength = bitmap.size() * sizeof(Color4b);
+                    desc.Width      = w;
+                    desc.Height     = ht;
+                    desc.Format     = gfx::GFXTextureFormat::R8G8B8A8_UNorm;
+                    desc.SamplerCfg = cfg;
+                    mgr->CreateTexture2D(h, desc);
+                });
         }
         RuntimeObjectManager::NotifyDependencySource(GetObjectHandle(), DependencyObjectState::Modified);
+    }
+
+    gfx::TextureHandle CurveLinearColorAtlas::GetTextureHandle() const
+    {
+        return m_texHandle;
     }
 
     bool CurveLinearColorAtlas::CreateGPUResource()
@@ -98,7 +129,13 @@ namespace pulsar
         {
             return;
         }
-        m_gfxTexture.reset();
+        if (m_texHandle.IsValid())
+        {
+            auto* renderThread = Application::GetRenderThread();
+            renderThread->EnqueueUpdate_AnyThread(
+                [h = m_texHandle](gfx::GFXResourceManager* mgr) { mgr->Destroy(h); });
+            m_texHandle = gfx::TextureHandle{};
+        }
         m_isCreatedGpuResource = false;
     }
     int32_t CurveLinearColorAtlas::GetWidth() const

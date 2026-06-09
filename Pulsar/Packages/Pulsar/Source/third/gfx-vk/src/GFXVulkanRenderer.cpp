@@ -23,10 +23,6 @@ namespace gfx
             return;
         }
 
-        auto& cmdList = m_app->GetCommandList();
-        cmdList.BeginFrame(m_app->GetFrameCount());
-        cmdList.Flush();
-
         vkWaitForFences(m_app->GetVkDevice(), 1, &viewport->GetQueue()->GetVkFence(), VK_TRUE, UINT64_MAX);
 
         uint32_t imageIndex;
@@ -79,7 +75,6 @@ namespace gfx
             throw std::runtime_error("failed to present swap chain image!");
         }
 
-        cmdList.EndFrame(m_app->GetFrameCount());
     }
     void GFXVulkanRenderer::WaitExecuteRender(const std::function<void(GFXRenderContext*)>& func)
     {

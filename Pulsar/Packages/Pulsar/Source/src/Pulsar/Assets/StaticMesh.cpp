@@ -6,23 +6,25 @@
 #include "EngineMath.h"
 #include <Pulsar/Assets/Shader.h>
 #include <Pulsar/Assets/Texture2D.h>
+#include <Pulsar/Rendering/RenderThread.h>
+#include <gfx/GFXResourceManager.h>
 
 namespace pulsar
 {
-    static auto _GetVertexLayout()
+    static gfx::GFXVertexLayoutDescription _GetVertexLayout()
     {
-        auto vertDescLayout = Application::GetGfxApp()->CreateVertexLayoutDescription();
-        vertDescLayout->BindingPoint = 0;
-        vertDescLayout->Stride = sizeof(StaticMeshVertex);
+        gfx::GFXVertexLayoutDescription vertDescLayout;
+        vertDescLayout.BindingPoint = 0;
+        vertDescLayout.Stride = sizeof(StaticMeshVertex);
 
-        vertDescLayout->Attributes.push_back({(int)EngineInputSemantic::POSITION,  gfx::GFXVertexInputDataFormat::R32G32B32_SFloat, offsetof(StaticMeshVertex, Position)});
-        vertDescLayout->Attributes.push_back({(int)EngineInputSemantic::NORMAL,    gfx::GFXVertexInputDataFormat::R32G32B32_SFloat, offsetof(StaticMeshVertex, Normal)});
-        vertDescLayout->Attributes.push_back({(int)EngineInputSemantic::TANGENT,   gfx::GFXVertexInputDataFormat::R32G32B32A32_SFloat, offsetof(StaticMeshVertex, Tangent)});
-        vertDescLayout->Attributes.push_back({(int)EngineInputSemantic::COLOR,     gfx::GFXVertexInputDataFormat::R8G8B8A8_UNorm,   offsetof(StaticMeshVertex, Color)});
+        vertDescLayout.Attributes.push_back({(int)EngineInputSemantic::POSITION,  offsetof(StaticMeshVertex, Position), gfx::GFXVertexInputDataFormat::R32G32B32_SFloat});
+        vertDescLayout.Attributes.push_back({(int)EngineInputSemantic::NORMAL,    offsetof(StaticMeshVertex, Normal), gfx::GFXVertexInputDataFormat::R32G32B32_SFloat});
+        vertDescLayout.Attributes.push_back({(int)EngineInputSemantic::TANGENT,   offsetof(StaticMeshVertex, Tangent), gfx::GFXVertexInputDataFormat::R32G32B32A32_SFloat});
+        vertDescLayout.Attributes.push_back({(int)EngineInputSemantic::COLOR,     offsetof(StaticMeshVertex, Color), gfx::GFXVertexInputDataFormat::R8G8B8A8_UNorm});
 
         for (size_t i = 0; i < STATICMESH_MAX_TEXTURE_COORDS; i++)
         {
-            vertDescLayout->Attributes.push_back({(int)EngineInputSemantic::TEXCOORD0 + i, gfx::GFXVertexInputDataFormat::R32G32_SFloat, offsetof(StaticMeshVertex, TexCoords[i])});
+            vertDescLayout.Attributes.push_back({(uint32_t)((int)EngineInputSemantic::TEXCOORD0 + i), (uint32_t)offsetof(StaticMeshVertex, TexCoords[i]), gfx::GFXVertexInputDataFormat::R32G32_SFloat});
         }
 
         return vertDescLayout;
@@ -59,7 +61,10 @@ namespace pulsar
         }
         m_isCreatedResource = true;
 
-        auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
+        // 句柄分配是线程安全的，主线程立即拿到句柄供后续渲染引用；
+        // 实际的 Buffer 创建与数据上传投递到渲染线程的更新队列异步执行。
+        auto* resMgr = Application::GetGfxApp()->GetResourceManager();
+        auto* renderThread = Application::GetRenderThread();
         for (auto& section : m_sections)
         {
             // 从分离属性数据合并为交错格式再上传（GPU 侧暂时保持单 Buffer）
@@ -73,9 +78,15 @@ namespace pulsar
                 vertexDesc.BufferSize  = vertSize;
                 vertexDesc.ElementSize = sizeof(StaticMeshVertex);
 
-                auto vertBuffer = cmdList.CreateBuffer(vertexDesc);
-                cmdList.UploadBuffer(vertBuffer, interleavedVerts.data(), vertSize);
+                auto vertBuffer = resMgr->AllocHandle<gfx::BufferHandle>();
                 m_vertexBuffers.push_back(vertBuffer);
+
+                renderThread->EnqueueUpdate_AnyThread(
+                    [vertBuffer, vertexDesc, verts = std::move(interleavedVerts), vertSize](gfx::GFXResourceManager* mgr)
+                    {
+                        mgr->CreateBuffer(vertBuffer, vertexDesc);
+                        mgr->UploadBuffer(vertBuffer, verts.data(), vertSize);
+                    });
             }
 
             {
@@ -85,9 +96,18 @@ namespace pulsar
                 indicesDesc.BufferSize  = section.GetIndicesAllocSize();
                 indicesDesc.ElementSize = sizeof(MeshIndicesType);
 
-                auto indicesBuffer = cmdList.CreateBuffer(indicesDesc);
-                cmdList.UploadBuffer(indicesBuffer, section.Indices.data(), section.GetIndicesAllocSize());
+                const size_t indicesSize = section.GetIndicesAllocSize();
+                array_list<MeshIndicesType> indices = section.Indices;
+
+                auto indicesBuffer = resMgr->AllocHandle<gfx::BufferHandle>();
                 m_indicesBuffers.push_back(indicesBuffer);
+
+                renderThread->EnqueueUpdate_AnyThread(
+                    [indicesBuffer, indicesDesc, indices = std::move(indices), indicesSize](gfx::GFXResourceManager* mgr)
+                    {
+                        mgr->CreateBuffer(indicesBuffer, indicesDesc);
+                        mgr->UploadBuffer(indicesBuffer, indices.data(), indicesSize);
+                    });
             }
         }
         return true;
@@ -98,11 +118,16 @@ namespace pulsar
             return;
         m_isCreatedResource = false;
 
-        auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
-        for (auto& h : m_vertexBuffers)
-            cmdList.Destroy(h);
-        for (auto& h : m_indicesBuffers)
-            cmdList.Destroy(h);
+        // 销毁同样投递到渲染线程，确保在 GPU 不再使用这些资源时再释放 slot。
+        auto* renderThread = Application::GetRenderThread();
+        renderThread->EnqueueUpdate_AnyThread(
+            [vbs = std::move(m_vertexBuffers), ibs = std::move(m_indicesBuffers)](gfx::GFXResourceManager* mgr)
+            {
+                for (auto& h : vbs)
+                    mgr->Destroy(h);
+                for (auto& h : ibs)
+                    mgr->Destroy(h);
+            });
         m_vertexBuffers.clear();
         m_indicesBuffers.clear();
     }
@@ -113,16 +138,10 @@ namespace pulsar
 
     StaticMesh::~StaticMesh() = default;
 
-    gfx::GFXVertexLayoutDescription_sp StaticMesh::StaticGetVertexLayout()
+    gfx::GFXVertexLayoutDescription StaticMesh::StaticGetVertexLayout()
     {
-        static gfx::GFXVertexLayoutDescription_wp layout;
-        if (layout.expired())
-        {
-            auto newLayout = _GetVertexLayout();
-            layout = newLayout;
-            return newLayout;
-        }
-        return layout.lock();
+        static gfx::GFXVertexLayoutDescription layout = _GetVertexLayout();
+        return layout;
     }
 
     void StaticMesh::Serialize(AssetSerializer* s)
@@ -211,5 +230,6 @@ namespace pulsar
         sser::ReadWriteStream(stream, isWrite, data.MaterialIndex);
         return stream;
     }
+
 
 } // namespace pulsar

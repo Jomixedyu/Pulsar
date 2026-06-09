@@ -1,11 +1,11 @@
 #pragma once
 #include <cstdint>
 #include <vector>
-#include "GFXResource.h"
+#include "GFXInclude.h"
 
 namespace gfx
 {
-    enum class GFXVertexInputDataFormat
+    enum class GFXVertexInputDataFormat : uint32_t
     {
         R8G8B8A8_UInt,
         R8G8B8A8_UNorm,
@@ -17,20 +17,17 @@ namespace gfx
 
     struct GFXVertexInputAttribute
     {
-        size_t Location;
+        uint32_t Location;
+        uint32_t Offset;
         GFXVertexInputDataFormat Format;
-        size_t Offset;
     };
 
-    class GFXVertexLayoutDescription : public GFXResource
+    // Pure CPU-side description of a vertex layout. Not a GPU resource:
+    // it is consumed when building a graphics pipeline.
+    struct GFXVertexLayoutDescription
     {
-    public:
-        uint32_t BindingPoint;
-        uint32_t Stride;
+        uint32_t BindingPoint = 0;
+        uint32_t Stride = 0;
         array_list<GFXVertexInputAttribute> Attributes;
-    public:
-        ~GFXVertexLayoutDescription() override {}
-        GFXResourceType GetResourceType() const override { return GFXResourceType::VertexLayoutDescription; }
     };
-    GFX_DECL_SPTR(GFXVertexLayoutDescription)
 }

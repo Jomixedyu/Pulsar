@@ -7,6 +7,7 @@
 #include <Pulsar/Logger.h>
 #include <Pulsar/Rendering/ShaderConfig.h>
 #include <gfx/GFXBuffer.h>
+#include <gfx/GFXResourceManager.h>
 
 namespace pulsar
 {
@@ -51,8 +52,8 @@ namespace pulsar
             for (size_t i = 0; i < count; ++i)
                 data.BoneMatrices[i] = boneMatrices[i];
 
-            auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
-            cmdList.UploadBuffer(m_skinningBuffer, &data, sizeof(data));
+            auto* resMgr = Application::GetGfxApp()->GetResourceManager();
+            resMgr->UploadBuffer(m_skinningBuffer, &data, sizeof(data));
         }
 
         void SubmitChange();
@@ -63,8 +64,7 @@ namespace pulsar
             m_descriptorSetLayout.reset();
             if (m_skinningBuffer.IsValid())
             {
-                auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
-                cmdList.Destroy(m_skinningBuffer);
+                Application::GetGfxApp()->GetResourceManager()->Destroy(m_skinningBuffer);
                 m_skinningBuffer = gfx::BufferHandle{};
             }
         }
@@ -102,14 +102,15 @@ namespace pulsar
             desc.StorageType = gfx::GFXBufferMemoryPosition::VisibleOnDevice;
             desc.BufferSize  = sizeof(SkinnedRenderObjectData);
             desc.ElementSize = sizeof(SkinnedRenderObjectData);
-            auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
-            m_skinningBuffer = cmdList.CreateBuffer(desc);
+            auto* resMgr = Application::GetGfxApp()->GetResourceManager();
+            m_skinningBuffer = resMgr->AllocHandle<gfx::BufferHandle>();
+            resMgr->CreateBuffer(m_skinningBuffer, desc);
 
             // 默认骨骼矩阵全部为单位矩阵（静止姿势）
             SkinnedRenderObjectData defaultData{};
             for (auto& mat : defaultData.BoneMatrices)
                 mat = Matrix4f(1);
-            cmdList.UploadBuffer(m_skinningBuffer, &defaultData, sizeof(defaultData));
+            resMgr->UploadBuffer(m_skinningBuffer, &defaultData, sizeof(defaultData));
         }
 
         m_descriptorSet = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_descriptorSetLayout);

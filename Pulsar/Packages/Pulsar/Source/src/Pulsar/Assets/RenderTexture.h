@@ -5,6 +5,7 @@
 #include <Pulsar/IGPUResource.h>
 #include <gfx/GFXFrameBufferObject.h>
 #include <gfx/GFXTexture.h>
+#include <gfx/GFXHandle.h>
 
 namespace pulsar
 {
@@ -26,7 +27,7 @@ namespace pulsar
         // Texture
         int32_t GetWidth() const override { return m_width; }
         int32_t GetHeight() const override { return m_height; }
-        std::shared_ptr<gfx::GFXTexture> GetGFXTexture() const override;
+        gfx::TextureHandle GetTextureHandle() const override;
 
         void PostEditChange(FieldInfo* info) override;
 
@@ -45,15 +46,15 @@ namespace pulsar
         void EnableRenderTarget();
         void DisableRenderTarget();
 
-        std::shared_ptr<gfx::GFXTexture2DView> GetGfxRenderTarget0() const { return m_renderTargets[0]->Get2DView(0); }
-        const std::shared_ptr<gfx::GFXFrameBufferObject>& GetGfxFrameBufferObject() const { return m_framebuffer; }
-        const array_list<gfx::GFXTexture_sp>& GetRenderTargets() const { return m_renderTargets; }
+        std::shared_ptr<gfx::GFXTexture2DView> GetGfxRenderTarget0() const;
+        std::shared_ptr<gfx::GFXFrameBufferObject> GetGfxFrameBufferObject() const;
+        array_list<gfx::GFXTexture_sp> GetRenderTargets() const;
 
     protected:
         void RebuildGPUResources();
 
-        array_list<gfx::GFXTexture_sp> m_renderTargets;
-        std::shared_ptr<gfx::GFXFrameBufferObject> m_framebuffer;
+        array_list<gfx::TextureHandle> m_renderTargetHandles;
+        gfx::FrameBufferObjectHandle m_framebufferHandle{};
 
         bool m_createdGPUResource = false;
 

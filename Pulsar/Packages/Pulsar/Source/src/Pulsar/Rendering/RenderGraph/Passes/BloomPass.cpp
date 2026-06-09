@@ -8,6 +8,7 @@
 #include <Pulsar/Application.h>
 #include <gfx/GFXCommandBuffer.h>
 #include <gfx/GFXApplication.h>
+#include <gfx/GFXResourceManager.h>
 #include <gfx/GFXGraphicsPipelineManager.h>
 #include <gfx/GFXDescriptorManager.h>
 #include <gfx/TextureClasses.h>
@@ -69,13 +70,12 @@ namespace pulsar
         desc.Usage = gfx::GFXBufferUsage::ConstantBuffer;
         desc.StorageType = gfx::GFXBufferMemoryPosition::VisibleOnDevice;
         desc.BufferSize = sizeof(BloomParams);
-        auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
+        auto* resMgr = Application::GetGfxApp()->GetResourceManager();
         for (uint32_t i = 0; i < PassCount; ++i)
         {
-            m_bloomParamBuffers[i] = cmdList.CreateBuffer(desc);
+            m_bloomParamBuffers[i] = resMgr->AllocHandle<gfx::BufferHandle>();
+            resMgr->CreateBuffer(m_bloomParamBuffers[i], desc);
         }
-
-        auto* resMgr = Application::GetGfxApp()->GetResourceManager();
 
         // Bind each buffer to its corresponding set
         for (int i = 0; i < 16; ++i)
@@ -97,10 +97,10 @@ namespace pulsar
 
     void BloomPass::Destroy()
     {
-        auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
+        auto* resMgr = Application::GetGfxApp()->GetResourceManager();
         for (auto& h : m_bloomParamBuffers)
         {
-            if (h.IsValid()) cmdList.Destroy(h);
+            if (h.IsValid()) resMgr->Destroy(h);
         }
         m_bloomParamBuffers.clear();
         m_bloomSets.clear();

@@ -4,11 +4,11 @@
 
 namespace gfx
 {
-    VkVertexInputBindingDescription GFXVulkanVertexLayoutDescription::GetVkBindingDescription() const
+    VkVertexInputBindingDescription GetVkVertexBindingDescription(const GFXVertexLayoutDescription& layout)
     {
         VkVertexInputBindingDescription bindingDescription{};
-        bindingDescription.binding = this->BindingPoint;
-        bindingDescription.stride = this->Stride;
+        bindingDescription.binding = layout.BindingPoint;
+        bindingDescription.stride = layout.Stride;
         bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
         return bindingDescription;
     }
@@ -27,15 +27,15 @@ namespace gfx
         return it->second;
     }
 
-    array_list<VkVertexInputAttributeDescription> GFXVulkanVertexLayoutDescription::GetVkAttributeDescriptions() const
+    array_list<VkVertexInputAttributeDescription> GetVkVertexAttributeDescriptions(const GFXVertexLayoutDescription& layout)
     {
         array_list<VkVertexInputAttributeDescription> attributeDescriptions;
 
-        for (size_t i = 0; i < this->Attributes.size(); i++)
+        for (size_t i = 0; i < layout.Attributes.size(); i++)
         {
-            auto& item = this->Attributes[i];
+            auto& item = layout.Attributes[i];
             VkVertexInputAttributeDescription description;
-            description.binding = this->BindingPoint;
+            description.binding = layout.BindingPoint;
             description.location = static_cast<uint32_t>(item.Location);
             description.format = _GetVkFormat(item.Format);
             description.offset = item.Offset;
@@ -45,18 +45,18 @@ namespace gfx
         return attributeDescriptions;
     }
 
-    array_list<VkVertexInputAttributeDescription> GFXVulkanVertexLayoutDescription::GetCombinedAttributes(
-        const array_list<GFXVertexLayoutDescription_sp>& attributes)
+    array_list<VkVertexInputAttributeDescription> GetCombinedVkVertexAttributes(
+        const array_list<GFXVertexLayoutDescription>& layouts)
     {
         array_list<VkVertexInputAttributeDescription> attributeDescriptions;
 
-        for (auto& attrDesc : attributes)
+        for (auto& layout : layouts)
         {
-            for (size_t i = 0; i < attrDesc->Attributes.size(); i++)
+            for (size_t i = 0; i < layout.Attributes.size(); i++)
             {
-                auto& item = attrDesc->Attributes[i];
+                auto& item = layout.Attributes[i];
                 VkVertexInputAttributeDescription description;
-                description.binding = attrDesc->BindingPoint;
+                description.binding = layout.BindingPoint;
                 description.location = static_cast<uint32_t>(item.Location);
                 description.format = _GetVkFormat(item.Format);
                 description.offset = item.Offset;

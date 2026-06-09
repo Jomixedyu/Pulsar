@@ -16,7 +16,7 @@
 #include "GFXVertexLayoutDescription.h"
 #include "GFXGlobalShaderManager.h"
 #include "GFXSurface.h"
-#include "GFXCommandList.h"
+#include "GFXResourceManager.h"
 #include <functional>
 #include <memory>
 
@@ -26,23 +26,11 @@ namespace gfx
     class GFXApplication
     {
     public:
-        using LoopEvent = std::function<void(float)>;
-
-        // using LoopEvent = void(*)(GFXApplication*, float);
-        using ExitWindowEvent = bool (*)();
-
-    public:
         GFXApplication(const GFXApplication&) = delete;
         GFXApplication(GFXApplication&&) = delete;
         virtual ~GFXApplication();
 
         virtual void Initialize()
-        {
-        }
-        virtual void ExecLoop()
-        {
-        }
-        virtual void RequestStop()
         {
         }
         virtual void Terminate()
@@ -61,17 +49,12 @@ namespace gfx
         virtual void SetRenderPipeline(GFXRenderPipeline* pipeline) = 0;
         virtual GFXRenderPipeline* GetRenderPipeline() const = 0;
 
-        LoopEvent OnPreRender = nullptr;
-        LoopEvent OnPostRender = nullptr;
-        ExitWindowEvent OnExitWindow = nullptr;
-
     public:
 
         virtual GFXRenderer* GetRenderer() = 0;
 
         virtual GFXBuffer_sp CreateBuffer(const GFXBufferDesc& desc) = 0;
         virtual GFXCommandBuffer_sp CreateCommandBuffer() = 0;
-        virtual GFXVertexLayoutDescription_sp CreateVertexLayoutDescription() = 0;
         virtual GFXGpuProgram_sp CreateGpuProgram(GFXGpuProgramStageFlags stage, const uint8_t* code, size_t length) = 0;
 
         virtual GFXDescriptorManager* GetDescriptorManager() = 0;
@@ -111,8 +94,6 @@ namespace gfx
 
         virtual GFXSwapchain* GetViewport() = 0;
 
-        GFXCommandList& GetCommandList() const { return *m_commandList; }
-        GFXCommandList& GetImmediateCommandList() const { return *m_immediateCommandList; }
         GFXResourceManager* GetResourceManager() const { return m_resourceManager.get(); }
 
         GFXGlobalShaderManager& GetGlobalShaderManager() { return m_shaderManager; }
@@ -124,8 +105,6 @@ namespace gfx
         GFXGlobalConfig m_config{};
         GFXGlobalShaderManager m_shaderManager;
         std::unique_ptr<GFXResourceManager> m_resourceManager;
-        std::unique_ptr<GFXCommandList> m_commandList;
-        std::unique_ptr<GFXCommandList> m_immediateCommandList;
     };
 
 } // namespace gfx

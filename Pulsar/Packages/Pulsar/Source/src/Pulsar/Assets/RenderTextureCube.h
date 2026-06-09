@@ -1,5 +1,6 @@
 #pragma once
 #include "Texture.h"
+#include <gfx/GFXHandle.h>
 
 namespace pulsar
 {
@@ -24,7 +25,7 @@ namespace pulsar
         CORELIB_REFL_DECL_FIELD(m_width);
         int32_t m_width;
 
-        gfx::GFXTexture_sp m_texture;
+        gfx::TextureHandle m_textureHandle{};
         bool m_isCreated = false;
     };
 } // namespace pulsar

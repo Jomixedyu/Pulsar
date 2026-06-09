@@ -10,6 +10,7 @@
 #include <Pulsar/Assets/Material.h>
 #include <Pulsar/Rendering/ShaderInstanceCache.h>
 #include <Pulsar/Rendering/ShaderPropertySync.h>
+#include <Pulsar/Rendering/RenderThread.h>
 #include <gfx/GFXResourceManager.h>
 #include <mutex>
 #include <utility>
@@ -370,8 +371,7 @@ namespace pulsar
             binding.m_descriptorSet.reset();
             if (binding.m_descriptorSetLayout.IsValid())
             {
-                auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
-                cmdList.Destroy(binding.m_descriptorSetLayout);
+                Application::GetGfxApp()->GetResourceManager()->Destroy(binding.m_descriptorSetLayout);
             }
             binding.m_descriptorSetLayout = gfx::DescriptorSetLayoutHandle{};
             binding.m_materialConstantBuffer.reset();
@@ -409,6 +409,11 @@ namespace pulsar
         // initial sync inside PrepareForRendering when they eventually become ready.
         ApplyShaderDefaults();
 
+        // The property sheet lives on the game thread; hand the GPU writes
+        // (cbuffer fill, descriptor update/submit) to the render thread, capturing
+        // a copy of the current sheet values.
+        auto* renderThread = Application::GetRenderThread();
+
         bool anyUploaded = false;
         for (auto& [key, binding] : m_passBindings)
         {
@@ -417,14 +422,21 @@ namespace pulsar
             auto program = binding.GetCurrentProgram();
             if (!program) continue;
 
-            ShaderPropertySync::SyncSheetToGpu(
-                m_sheet,
-                program->m_layout,
-                binding.m_materialConstantBuffer.get(),
-                binding.m_descriptorSet.get());
+            auto cbuffer = binding.m_materialConstantBuffer;
+            auto descriptorSet = binding.m_descriptorSet;
 
-            if (binding.m_descriptorSet)
-                binding.m_descriptorSet->Submit();
+            renderThread->EnqueueUpdate_AnyThread(
+                [sheet = m_sheet, program, cbuffer, descriptorSet](gfx::GFXResourceManager*)
+                {
+                    ShaderPropertySync::SyncSheetToGpu(
+                        sheet,
+                        program->m_layout,
+                        cbuffer.get(),
+                        descriptorSet.get());
+
+                    if (descriptorSet)
+                        descriptorSet->Submit();
+                });
 
             anyUploaded = true;
         }
@@ -542,11 +554,13 @@ namespace pulsar
             descLayoutInfos.push_back(texDesc);
         }
 
-        auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
+        auto* resMgr = Application::GetGfxApp()->GetResourceManager();
 
         // 即使没有任何 binding 也创建空 layout，确保 set 0 始终存在以保证 set 编号对齐
-        binding.m_descriptorSetLayout = cmdList.CreateDescriptorSetLayout(descLayoutInfos);
-        binding.m_descriptorSet = gfxApp->GetDescriptorManager()->GetDescriptorSet(binding.m_descriptorSetLayout.Lock());
+        binding.m_descriptorSetLayout = resMgr->AllocHandle<gfx::DescriptorSetLayoutHandle>();
+        resMgr->CreateDescriptorSetLayout(binding.m_descriptorSetLayout, descLayoutInfos);
+        binding.m_descriptorSet = gfxApp->GetDescriptorManager()->GetDescriptorSet(
+            resMgr->GetDescriptorSetLayoutShared(binding.m_descriptorSetLayout));
 
         if (binding.m_materialConstantBuffer)
         {
@@ -565,11 +579,11 @@ namespace pulsar
     void Material::ClearPassBindings()
     {
         // Explicitly destroy handle-managed resources before clearing the map
-        auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
+        auto* resMgr = Application::GetGfxApp()->GetResourceManager();
         for (auto& [key, binding] : m_passBindings)
         {
             if (binding.m_descriptorSetLayout.IsValid())
-                cmdList.Destroy(binding.m_descriptorSetLayout);
+                resMgr->Destroy(binding.m_descriptorSetLayout);
         }
         m_passBindings.clear();
     }

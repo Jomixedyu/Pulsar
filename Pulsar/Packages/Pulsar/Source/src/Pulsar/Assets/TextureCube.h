@@ -1,5 +1,6 @@
 #pragma once
 #include "Texture.h"
+#include <gfx/GFXHandle.h>
 
 
 namespace pulsar
@@ -16,7 +17,7 @@ namespace pulsar
     public:
         array_list<uint8_t> m_originData;
 
-        gfx::GFXTexture_sp m_cube;
+        gfx::TextureHandle m_cubeHandle{};
 
         bool m_isCreatedGPUResource{};
 

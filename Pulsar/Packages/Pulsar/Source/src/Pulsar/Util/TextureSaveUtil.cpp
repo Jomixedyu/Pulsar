@@ -7,6 +7,7 @@
 #include <Pulsar/Logger.h>
 #include <gfx/GFXImage.h>
 #include <gfx/GFXTexture.h>
+#include <gfx/GFXResourceManager.h>
 #include <CoreLib/File.h>
 
 #include <chrono>
@@ -75,24 +76,26 @@ namespace pulsar
 
         std::vector<uint8_t> rgbaData;
 
+        auto* resMgr = Application::GetGfxApp()->GetResourceManager();
+
         if (texture->GetCompressedFormat() == TextureCompressionFormat::HDR_Compressed)
         {
-            auto gfxTex = texture->GetGFXTexture();
+            auto* gfxTex = resMgr->GetTexture(texture->GetTextureHandle());
             if (!gfxTex)
             {
                 Logger::Log("TextureSaveUtil::SaveTexture2DToPng: HDR texture GPU resource not available", LogLevel::Error);
                 return false;
             }
             int32_t outW, outH;
-            rgbaData = ReadbackGFXTexture(gfxTex.get(), &outW, &outH);
+            rgbaData = ReadbackGFXTexture(gfxTex, &outW, &outH);
         }
         else
         {
-            auto gfxTex = texture->GetGFXTexture();
+            auto* gfxTex = resMgr->GetTexture(texture->GetTextureHandle());
             if (gfxTex)
             {
                 int32_t outW, outH;
-                rgbaData = ReadbackGFXTexture(gfxTex.get(), &outW, &outH);
+                rgbaData = ReadbackGFXTexture(gfxTex, &outW, &outH);
             }
         }
 
@@ -122,7 +125,7 @@ namespace pulsar
         const int32_t width = renderTexture->GetWidth();
         const int32_t height = renderTexture->GetHeight();
 
-        auto& renderTargets = renderTexture->GetRenderTargets();
+        auto renderTargets = renderTexture->GetRenderTargets();
         if (renderTargets.empty())
         {
             Logger::Log("TextureSaveUtil::SaveRenderTextureToPng: no render targets", LogLevel::Error);

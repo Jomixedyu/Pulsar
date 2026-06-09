@@ -4,15 +4,9 @@
 
 namespace gfx
 {
-    class GFXVulkanVertexLayoutDescription : public GFXVertexLayoutDescription
-    {
-        using base = GFXVertexLayoutDescription;
-    public:
-        VkVertexInputBindingDescription GetVkBindingDescription() const;
-        array_list<VkVertexInputAttributeDescription> GetVkAttributeDescriptions() const;
-
-        static array_list<VkVertexInputAttributeDescription> GetCombinedAttributes(
-            const array_list<GFXVertexLayoutDescription_sp>& attributes);
-    };
-    GFX_DECL_SPTR(GFXVulkanVertexLayoutDescription);
+    // Free helpers that convert the CPU-side vertex layout description into
+    // Vulkan structures at pipeline-creation time.
+    VkVertexInputBindingDescription GetVkVertexBindingDescription(const GFXVertexLayoutDescription& layout);
+    array_list<VkVertexInputAttributeDescription> GetVkVertexAttributeDescriptions(const GFXVertexLayoutDescription& layout);
+    array_list<VkVertexInputAttributeDescription> GetCombinedVkVertexAttributes(const array_list<GFXVertexLayoutDescription>& layouts);
 }

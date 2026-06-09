@@ -10,8 +10,8 @@ namespace gfx
 
     GFXResourceManager::~GFXResourceManager()
     {
-        // Ensure all deferred destroys are processed
-        std::lock_guard<std::mutex> lock(m_mutex);
+        // Force-free any remaining resources
+        std::lock_guard<std::shared_mutex> lock(m_mutex);
         for (auto& slot : m_slots)
         {
             if (slot.resource)
@@ -28,13 +28,12 @@ namespace gfx
     {
         if (index >= slots.size()) return false;
         if (slots[index].generation != generation) return false;
-        if (slots[index].isPendingDestroy) return false;
         return true;
     }
 
     void GFXResourceManager::CreateBuffer(BufferHandle handle, const GFXBufferDesc& desc)
     {
-        std::lock_guard<std::mutex> lock(m_mutex);
+        std::shared_lock<std::shared_mutex> lock(m_mutex);
         if (!ValidateHandleForCreation(m_slots, handle.index, handle.generation)) return;
         auto gfxBuffer = m_app->CreateBuffer(desc);
         if (gfxBuffer)
@@ -46,7 +45,7 @@ namespace gfx
 
     void GFXResourceManager::CreateTexture2D(TextureHandle handle, const GFXTextureCreateDesc& desc)
     {
-        std::lock_guard<std::mutex> lock(m_mutex);
+        std::shared_lock<std::shared_mutex> lock(m_mutex);
         if (!ValidateHandleForCreation(m_slots, handle.index, handle.generation)) return;
         auto gfxTex = m_app->CreateTexture2DFromMemory(
             desc.ImageData, desc.DataLength,
@@ -61,7 +60,7 @@ namespace gfx
 
     void GFXResourceManager::CreateTextureCube(TextureHandle handle, int32_t size)
     {
-        std::lock_guard<std::mutex> lock(m_mutex);
+        std::shared_lock<std::shared_mutex> lock(m_mutex);
         if (!ValidateHandleForCreation(m_slots, handle.index, handle.generation)) return;
         auto gfxTex = m_app->CreateTextureCube(size);
         if (gfxTex)
@@ -73,7 +72,7 @@ namespace gfx
 
     void GFXResourceManager::CreateRenderTarget(TextureHandle handle, const GFXTextureCreateDesc& desc)
     {
-        std::lock_guard<std::mutex> lock(m_mutex);
+        std::shared_lock<std::shared_mutex> lock(m_mutex);
         if (!ValidateHandleForCreation(m_slots, handle.index, handle.generation)) return;
         auto gfxTex = m_app->CreateRenderTarget(
             desc.Width, desc.Height, desc.TargetType,
@@ -88,7 +87,7 @@ namespace gfx
 
     void GFXResourceManager::CreateFrameBufferObject(FrameBufferObjectHandle handle, const array_list<GFXTexture2DView_sp>& attachments)
     {
-        std::lock_guard<std::mutex> lock(m_mutex);
+        std::shared_lock<std::shared_mutex> lock(m_mutex);
         if (!ValidateHandleForCreation(m_slots, handle.index, handle.generation)) return;
         auto fbo = m_app->CreateFrameBufferObject(attachments);
         if (fbo)
@@ -100,7 +99,7 @@ namespace gfx
 
     void GFXResourceManager::CreateGpuProgram(GpuProgramHandle handle, GFXGpuProgramStageFlags stage, const void* code, size_t length)
     {
-        std::lock_guard<std::mutex> lock(m_mutex);
+        std::shared_lock<std::shared_mutex> lock(m_mutex);
         if (!ValidateHandleForCreation(m_slots, handle.index, handle.generation)) return;
         auto gfxProg = m_app->CreateGpuProgram(stage, static_cast<const uint8_t*>(code), length);
         if (gfxProg)
@@ -112,7 +111,7 @@ namespace gfx
 
     void GFXResourceManager::CreateDescriptorSetLayout(DescriptorSetLayoutHandle handle, const std::vector<GFXDescriptorSetLayoutDesc>& bindings)
     {
-        std::lock_guard<std::mutex> lock(m_mutex);
+        std::shared_lock<std::shared_mutex> lock(m_mutex);
         if (!ValidateHandleForCreation(m_slots, handle.index, handle.generation)) return;
         auto gfxLayout = m_app->CreateDescriptorSetLayout(bindings.data(), bindings.size());
         if (gfxLayout)
@@ -122,32 +121,21 @@ namespace gfx
         }
     }
 
-    void GFXResourceManager::CreateVertexLayoutDescription(VertexLayoutDescriptionHandle handle)
-    {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        if (!ValidateHandleForCreation(m_slots, handle.index, handle.generation)) return;
-        auto gfxLayout = m_app->CreateVertexLayoutDescription();
-        if (gfxLayout)
-        {
-            gfxLayout->SetResourceId(handle.index);
-            m_slots[handle.index].resource = std::static_pointer_cast<GFXResource>(gfxLayout);
-        }
-    }
-
     void GFXResourceManager::DestroyResource(uint32_t resourceId, uint16_t generation)
     {
-        std::lock_guard<std::mutex> lock(m_mutex);
+        // Mutates the free-list / generation, shared with AllocHandle (any thread).
+        std::lock_guard<std::shared_mutex> lock(m_mutex);
         if (ValidateHandle(resourceId, generation))
         {
-            m_slots[resourceId].isPendingDestroy = true;
-            m_deferredDestroyQueue.push_back({ m_currentFrame + kDeferredDestroyFrames, resourceId });
+            FreeSlot(resourceId);
         }
     }
 
     void GFXResourceManager::UploadBuffer(BufferHandle handle, const void* data, size_t /*size*/)
     {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        auto* buffer = GetBuffer(handle);
+        std::shared_lock<std::shared_mutex> lock(m_mutex);
+        if (!ValidateHandle(handle.index, handle.generation)) return;
+        auto* buffer = static_cast<GFXBuffer*>(m_slots[handle.index].resource.get());
         if (buffer)
         {
             buffer->Fill(data);
@@ -156,8 +144,9 @@ namespace gfx
 
     void GFXResourceManager::UploadTexture(TextureHandle handle, const void* /*data*/, uint32_t /*width*/, uint32_t /*height*/, GFXTextureFormat /*format*/)
     {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        auto* texture = GetTexture(handle);
+        std::shared_lock<std::shared_mutex> lock(m_mutex);
+        if (!ValidateHandle(handle.index, handle.generation)) return;
+        auto* texture = static_cast<GFXTexture*>(m_slots[handle.index].resource.get());
         if (texture)
         {
             // TODO: implement texture upload via gfx app
@@ -169,38 +158,37 @@ namespace gfx
     // -------------------------------------------------------------------------
     GFXBuffer* GFXResourceManager::GetBuffer(BufferHandle handle) const
     {
+        std::shared_lock<std::shared_mutex> lock(m_mutex);
         if (!ValidateHandle(handle.index, handle.generation)) return nullptr;
         return static_cast<GFXBuffer*>(m_slots[handle.index].resource.get());
     }
 
     GFXTexture* GFXResourceManager::GetTexture(TextureHandle handle) const
     {
+        std::shared_lock<std::shared_mutex> lock(m_mutex);
         if (!ValidateHandle(handle.index, handle.generation)) return nullptr;
         return static_cast<GFXTexture*>(m_slots[handle.index].resource.get());
     }
 
     GFXFrameBufferObject* GFXResourceManager::GetFrameBufferObject(FrameBufferObjectHandle handle) const
     {
+        std::shared_lock<std::shared_mutex> lock(m_mutex);
         if (!ValidateHandle(handle.index, handle.generation)) return nullptr;
         return static_cast<GFXFrameBufferObject*>(m_slots[handle.index].resource.get());
     }
 
     GFXGpuProgram* GFXResourceManager::GetGpuProgram(GpuProgramHandle handle) const
     {
+        std::shared_lock<std::shared_mutex> lock(m_mutex);
         if (!ValidateHandle(handle.index, handle.generation)) return nullptr;
         return static_cast<GFXGpuProgram*>(m_slots[handle.index].resource.get());
     }
 
     GFXDescriptorSetLayout* GFXResourceManager::GetDescriptorSetLayout(DescriptorSetLayoutHandle handle) const
     {
+        std::shared_lock<std::shared_mutex> lock(m_mutex);
         if (!ValidateHandle(handle.index, handle.generation)) return nullptr;
         return static_cast<GFXDescriptorSetLayout*>(m_slots[handle.index].resource.get());
-    }
-
-    GFXVertexLayoutDescription* GFXResourceManager::GetVertexLayoutDescription(VertexLayoutDescriptionHandle handle) const
-    {
-        if (!ValidateHandle(handle.index, handle.generation)) return nullptr;
-        return static_cast<GFXVertexLayoutDescription*>(m_slots[handle.index].resource.get());
     }
 
     GFXGpuProgram_sp GFXResourceManager::GetGpuProgramShared(GpuProgramHandle handle) const
@@ -223,33 +211,11 @@ namespace gfx
         return GetSharedPtr<GFXFrameBufferObject>(handle.index, handle.generation);
     }
 
-    GFXVertexLayoutDescription_sp GFXResourceManager::GetVertexLayoutDescriptionShared(VertexLayoutDescriptionHandle handle) const
-    {
-        return GetSharedPtr<GFXVertexLayoutDescription>(handle.index, handle.generation);
-    }
-
     GFXResource* GFXResourceManager::GetResource(uint32_t resourceId) const
     {
-        std::lock_guard<std::mutex> lock(m_mutex);
+        std::shared_lock<std::shared_mutex> lock(m_mutex);
         if (resourceId >= m_slots.size()) return nullptr;
         return m_slots[resourceId].resource.get();
-    }
-
-    // -------------------------------------------------------------------------
-    // Frame lifecycle
-    // -------------------------------------------------------------------------
-    void GFXResourceManager::BeginFrame(uint64_t frameIndex)
-    {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        m_currentFrame = frameIndex;
-        ProcessDeferredDestroys();
-    }
-
-    void GFXResourceManager::EndFrame(uint64_t frameIndex)
-    {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        m_currentFrame = frameIndex;
-        ProcessDeferredDestroys();
     }
 
     // -------------------------------------------------------------------------
@@ -262,7 +228,6 @@ namespace gfx
             uint32_t index = m_freeSlots.back();
             m_freeSlots.pop_back();
             m_slots[index].generation++;
-            m_slots[index].isPendingDestroy = false;
             return index;
         }
 
@@ -276,7 +241,6 @@ namespace gfx
     {
         if (index >= m_slots.size()) return;
         m_slots[index].resource.reset();
-        m_slots[index].isPendingDestroy = false;
         m_freeSlots.push_back(index);
     }
 
@@ -285,25 +249,7 @@ namespace gfx
         if (index >= m_slots.size()) return false;
         if (m_slots[index].generation != generation) return false;
         if (!m_slots[index].resource) return false;
-        if (m_slots[index].isPendingDestroy) return false;
         return true;
-    }
-
-    void GFXResourceManager::ProcessDeferredDestroys()
-    {
-        auto it = m_deferredDestroyQueue.begin();
-        while (it != m_deferredDestroyQueue.end())
-        {
-            if (it->first <= m_currentFrame)
-            {
-                FreeSlot(it->second);
-                it = m_deferredDestroyQueue.erase(it);
-            }
-            else
-            {
-                ++it;
-            }
-        }
     }
 
 } // namespace gfx

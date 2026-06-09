@@ -4,6 +4,7 @@
 #include "Node.h"
 #include "AssetManager.h"
 #include "Assets/StaticMesh.h"
+#include <gfx/GFXResourceManager.h>
 
 namespace pulsar
 {
@@ -49,10 +50,11 @@ namespace pulsar
         perCameraBufferDesc.BufferSize  = sizeof(PerCaptureShaderParameter);
         perCameraBufferDesc.ElementSize = sizeof(PerCaptureShaderParameter);
 
-        auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
-        m_cameraDataBuffer = cmdList.CreateBuffer(perCameraBufferDesc);
+        auto* resMgr = Application::GetGfxApp()->GetResourceManager();
+        m_cameraDataBuffer = resMgr->AllocHandle<gfx::BufferHandle>();
+        resMgr->CreateBuffer(m_cameraDataBuffer, perCameraBufferDesc);
         m_cameraDescriptorSet = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_camDescriptorLayout);
-        if (auto* buffer = Application::GetGfxApp()->GetResourceManager()->GetBuffer(m_cameraDataBuffer))
+        if (auto* buffer = resMgr->GetBuffer(m_cameraDataBuffer))
         {
             m_cameraDescriptorSet->AddDescriptor("Target", 0)->SetConstantBuffer(buffer);
         }
@@ -62,8 +64,7 @@ namespace pulsar
     {
         if (m_cameraDataBuffer.IsValid())
         {
-            auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
-            cmdList.Destroy(m_cameraDataBuffer);
+            Application::GetGfxApp()->GetResourceManager()->Destroy(m_cameraDataBuffer);
             m_cameraDataBuffer = gfx::BufferHandle{};
         }
         SceneCaptureComponent::EndComponent();
