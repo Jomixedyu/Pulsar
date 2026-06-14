@@ -1,8 +1,8 @@
 #include "TranslucencyPass.h"
-#include <Pulsar/Components/SceneCapture2DComponent.h>
 #include <Pulsar/World.h>
 #include <Pulsar/Scene.h>
 #include <Pulsar/Rendering/RenderObject.h>
+#include <Pulsar/Rendering/SceneView.h>
 #include <Pulsar/Rendering/ShaderPass.h>
 #include <Pulsar/Assets/Material.h>
 #include <Pulsar/Node.h>
@@ -16,12 +16,15 @@ namespace pulsar
     RGTextureHandle TranslucencyPass::AddToGraph(RenderGraph& graph,
                                                  RGTextureHandle input,
                                                  RGTextureHandle output,
-                                                 SceneCapture2DComponent* capture2D,
+                                                 const RenderCaptureContext& ctx,
                                                  PerPassResources* perPass)
     {
-        auto* world = capture2D->GetWorld();
-        if (!world)
+        auto* world = ctx.world;
+        if (!world || !ctx.view)
             return output;
+
+        const Vector3f camPos     = ctx.view->CameraPosition;
+        const Vector3f camForward = ctx.view->CameraForward;
 
         auto preparedTransparent = std::make_shared<array_list<PreparedBatch>>();
 
@@ -40,11 +43,8 @@ namespace pulsar
             passBuilder.Read(m_hOpaqueDepth);
         }
 
-        passBuilder.Prepare([perPass, capture2D, world, preparedTransparent, this](RGPassContext& ctx)
+        passBuilder.Prepare([perPass, camPos, camForward, world, preparedTransparent, this](RGPassContext& ctx)
         {
-            const Vector3f camPos     = capture2D->GetNode()->GetTransform()->GetWorldPosition();
-            const Vector3f camForward = capture2D->GetNode()->GetTransform()->GetForward();
-
             for (const rendering::RenderObject_sp& ro : world->GetRenderObjects())
             {
                 const float depth = jmath::Dot(camForward, ro->GetWorldPosition() - camPos);
@@ -78,7 +78,7 @@ namespace pulsar
 
             perPass->Submit(this->m_perPassSet.get());
         })
-        .Execute([perPass, capture2D, preparedTransparent, this]
+        .Execute([perPass, preparedTransparent, this]
                  (RGPassContext& ctx, gfx::GFXCommandBuffer& cmdBuffer)
         {
 

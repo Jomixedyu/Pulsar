@@ -49,7 +49,7 @@ namespace pulsared
             return false;
         }
 
-        array_list<ObjectPtr<RendererComponent>> components;
+        array_list<ObjectPtr<RenderComponent>> components;
         selected->GetComponentsInChildren(components);
 
         if (components.empty())

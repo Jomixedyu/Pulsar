@@ -4,7 +4,7 @@
 #include "Pulsar/Application.h"
 
 #include "Component.h"
-#include "RendererComponent.h"
+#include "RenderComponent.h"
 #include <Pulsar/Assets/Material.h>
 #include <Pulsar/Assets/StaticMesh.h>
 #include <Pulsar/Node.h>
@@ -19,13 +19,13 @@ namespace pulsar
 
 
 
-    class StaticMeshRendererComponent : public RendererComponent
+    class StaticMeshRendererComponent : public RenderComponent
     {
-        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::StaticMeshRendererComponent, RendererComponent);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::StaticMeshRendererComponent, RenderComponent);
         CORELIB_CLASS_ATTR(new CategoryAttribute("Renderer"), new ComponentIconAttribute(ICON_FK_CUBE));
         DECL_OBJECTPTR_SELF
     public:
-        SPtr<rendering::RenderObject> CreateRenderObject() override;
+        SPtr<rendering::RenderProxy> CreateRenderProxy() override;
     public:
         void GetSubscribeObserverHandles(array_list<ObjectHandle>& out) override;
         List_sp<RCPtr<Material>> GetMaterials() const { return this->m_materials; }
@@ -69,6 +69,7 @@ namespace pulsar
         void OnTransformChanged() override;
         void OnMeshChanged();
         void OnMaterialChanged();
+        void SyncRenderProxy() override;
     protected:
         CORELIB_REFL_DECL_FIELD(m_materials, new ListItemAttribute(cltypeof<Material>()));
         List_sp<RCPtr<Material>> m_materials;

@@ -15,20 +15,16 @@ namespace pulsar
 {
 
     /**
-     * @brief 渲染线程主控类。
+     * @brief 渲染线程主控类（lockstep 模型）。
      *
      * 设计原则：
      * - 所有直接操作 GPU 的函数（vkCreate* / vkCmd* / vkDestroy*）必须在渲染线程执行。
-     * - 无后缀的函数默认 asserts 当前是渲染线程。
-     * - _AnyThread 后缀的函数可在任意线程调用（通常是主线程），内部通过命令队列异步提交给渲染线程。
+     * - _AnyThread 后缀的函数可在任意线程调用（通常是主线程）：资源创建/上传/销毁通过
+     *   update / destroy 队列异步提交，渲染线程在每帧开头按序 drain。
+     * - 主线程在游戏 tick 后调用 RunFrame_AnyThread 派发一帧并阻塞至完成；game tick 与
+     *   渲染不重叠，故渲染线程可安全直接读取活动场景数据。
      *
-     * 示例：
-     *   // 主线程调用
-     *   TextureHandle h = renderThread->CreateTexture_AnyThread(desc);
-     *   renderThread->UploadTexture_AnyThread(h, pixels, size);
-     *
-     *   // 渲染线程内部调用（如 RenderGraph Execute 时）
-     *   TextureEntry* tex = renderThread->GetTexture(h);   // 无后缀，asserts 渲染线程
+     * 帧内执行顺序：drain update -> (可选 vkDeviceWaitIdle) -> drain destroy -> renderFn。
      */
     class RenderThread
     {
@@ -44,7 +40,13 @@ namespace pulsar
         bool IsRenderThread() const;
 
         /**
-         * @brief 主线程等待渲染线程完成当前所有工作（用于退出或 Resize）。
+         * @brief 主线程等待渲染线程完成当前所有工作并等 GPU 空闲（用于退出 / 卸载 World / Resize）。
+         *
+         * 派发一个不绘制的帧，渲染线程会：
+         *   1. drain update 队列；
+         *   2. vkDeviceWaitIdle —— 等 GPU 把已提交命令全部执行完；
+         *   3. drain destroy 队列 —— 此时无 in-flight 命令引用待销毁资源，安全释放。
+         * 调用返回后，所有已入队的销毁均已在 GPU 完成后执行完毕。
          */
         void WaitForIdle_AnyThread();
 
@@ -61,6 +63,14 @@ namespace pulsar
          */
         void EnqueueUpdate_AnyThread(ResourceUpdateFn fn);
 
+        /**
+         * @brief 提交一个销毁操作到渲染线程的独立销毁队列。
+         * 与 update 队列分离：销毁在每帧 update 之后、渲染之前统一处理，
+         * 保证销毁顺序晚于本帧所有 add/update（FIFO 内部 + 队列间有序）。
+         * 主线程调用，线程安全。
+         */
+        void EnqueueDestroy_AnyThread(ResourceUpdateFn fn);
+
         // ========== 帧驱动（Lockstep）==========
         /**
          * @brief 派发一帧渲染到渲染线程并阻塞直到完成（lockstep）。
@@ -72,25 +82,21 @@ namespace pulsar
 
     private:
         void RenderLoop();
-        void ProcessCommands();         // 处理 m_commands 队列
         void ProcessResourceUpdates();  // 处理 m_resourceUpdates 队列
-        void FlushDestroyedResources(); // vkWaitForFences 后释放 pending destroy
+        void ProcessDestroys();         // 处理 m_destroys 队列（update 之后）
 
         // 线程
         std::thread m_thread;
         std::thread::id m_renderThreadId;
         std::atomic<bool> m_running{false};
 
-        // 命令队列（主线程写，渲染线程读）
-        struct Command {
-            std::function<void()> execute;
-        };
-        std::vector<Command> m_commands;
-        std::mutex m_commandMutex;
-
         // 资源更新队列（主线程写，渲染线程读）
         std::vector<ResourceUpdateFn> m_resourceUpdates;
         std::mutex m_resourceUpdateMutex;
+
+        // 独立销毁队列（主线程写，渲染线程读）。每帧 update 之后处理。
+        std::vector<ResourceUpdateFn> m_destroys;
+        std::mutex m_destroyMutex;
 
         // 帧驱动（lockstep）：主线程提交一帧并等待渲染线程完成
         std::mutex m_frameMutex;
@@ -99,14 +105,10 @@ namespace pulsar
         bool m_frameRequested = false;
         bool m_frameDone = false;
 
+        // WaitForIdle 请求：渲染线程在 ProcessDestroys 前执行 vkDeviceWaitIdle。
+        std::atomic<bool> m_waitDeviceIdle{false};
+
 
     };
 
 } // namespace pulsar
-
-// 渲染线程断言宏
-#ifndef RENDER_THREAD_ASSERT
-#define RENDER_THREAD_ASSERT() \
-    assert(IsRenderThread() && "This function must be called on the render thread. " \
-           "Use the _AnyThread version if calling from the game thread.")
-#endif

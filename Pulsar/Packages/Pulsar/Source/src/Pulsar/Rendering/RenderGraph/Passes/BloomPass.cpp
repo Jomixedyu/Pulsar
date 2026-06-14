@@ -1,6 +1,6 @@
 #include "BloomPass.h"
 #include <Pulsar/Assets/BloomSettings.h>
-#include <Pulsar/Components/CameraComponent.h>
+#include <Pulsar/Rendering/SceneView.h>
 #include <Pulsar/Assets/RenderTexture.h>
 #include <Pulsar/Assets/Material.h>
 #include <Pulsar/Assets/Shader.h>
@@ -203,10 +203,10 @@ namespace pulsar
     RGTextureHandle BloomPass::AddToGraph(RenderGraph& graph,
                                           RGTextureHandle input,
                                           RGTextureHandle output,
-                                          SceneCapture2DComponent* capture2D,
+                                          const RenderCaptureContext& ctx,
                                           PerPassResources* perPass)
     {
-        if (!capture2D)
+        if (!ctx.view)
             return input;
 
         EnsureMaterial();
@@ -214,7 +214,7 @@ namespace pulsar
             return input;
         m_material->SubmitParameters();
 
-        auto* camRT = capture2D->GetRenderTexture().GetPtr();
+        auto* camRT = ctx.view->RenderTarget.GetPtr();
         if (!camRT)
             return input;
 

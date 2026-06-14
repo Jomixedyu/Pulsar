@@ -2,19 +2,20 @@
 
 #include "Pulsar/Components/StaticMeshRendererComponent.h"
 
+#include "Pulsar/Application.h"
 #include "Pulsar/AssetManager.h"
 #include "Pulsar/Assets/StaticMesh.h"
 #include "Pulsar/Rendering/LineRenderObject.h"
+#include "Pulsar/Rendering/RenderThread.h"
 #include "PulsarEd/Editors/CommonPanel/SceneWindow.h"
 #include "PulsarEd/Windows/EditorWindowManager.h"
+#include <gfx/GFXResourceManager.h>
 
 namespace pulsared
 {
 
     void Grid3DComponent::BeginComponent()
     {
-        base::BeginComponent();
-
         int line_count = 20;
         float detail_distance = 1;
         float total_width = detail_distance * line_count;
@@ -77,23 +78,35 @@ namespace pulsared
         m_colors.push_back(jmath::MakeColor4b(0.f, 1, 0, 1));
         m_colors.push_back(jmath::MakeColor4b(0.f, 1, 0, 1));
 
-        m_renderObject = CreateRenderObject();
-        GetNode()->GetRuntimeWorld()->AddRenderObject(m_renderObject);
+        // Verts are ready: base::BeginComponent registers the proxy (CreateRenderProxy).
+        base::BeginComponent();
+        m_renderObject = sptr_static_cast<LineRenderObject>(m_proxy);
         OnTransformChanged();
     }
     void Grid3DComponent::EndComponent()
     {
-        base::EndComponent();
-        GetNode()->GetRuntimeWorld()->RemoveRenderObject(m_renderObject);
         m_renderObject.reset();
+        base::EndComponent();
     }
     void Grid3DComponent::OnTransformChanged()
     {
         base::OnTransformChanged();
-        m_renderObject->SetTransform(GetNode()->GetTransform()->GetLocalToWorldMatrix());
+        MarkRenderStateDirty();
+    }
+    void Grid3DComponent::SyncRenderProxy()
+    {
+        if (!m_renderObject)
+            return;
+        Matrix4f localToWorld = GetNode()->GetTransform()->GetLocalToWorldMatrix();
+        auto ro = m_renderObject;
+        Application::GetRenderThread()->EnqueueUpdate_AnyThread(
+            [ro, localToWorld](gfx::GFXResourceManager*) mutable
+            {
+                ro->SetTransform(localToWorld);
+            });
     }
 
-    SPtr<rendering::RenderObject> Grid3DComponent::CreateRenderObject()
+    SPtr<rendering::RenderProxy> Grid3DComponent::CreateRenderProxy()
     {
         auto ro = new LineRenderObject();
         ro->SetDepthTestEnabled(true);

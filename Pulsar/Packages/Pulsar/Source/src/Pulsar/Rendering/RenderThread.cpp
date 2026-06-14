@@ -1,5 +1,4 @@
 #include "RenderThread.h"
-#include "RenderingScene.h"
 #include <Pulsar/Logger.h>
 #include <Pulsar/Application.h>
 #include <gfx/GFXResourceManager.h>
@@ -37,8 +36,12 @@ namespace pulsar
 
     void RenderThread::WaitForIdle_AnyThread()
     {
-        // TODO: 实现等待渲染线程完成当前所有工作的逻辑
-        // 可以通过额外的 condition_variable 或 fence 实现
+        if (!m_running) return;
+        // 派发一个不绘制的帧：渲染线程会先 drain update/command 队列，
+        // 然后 vkDeviceWaitIdle 等 GPU 执行完已提交命令，最后 drain destroy 队列。
+        // 用于退出 / 卸载 World：返回后所有入队销毁均已在 GPU 完成后执行完毕。
+        m_waitDeviceIdle.store(true, std::memory_order_relaxed);
+        RunFrame_AnyThread(nullptr);
     }
 
     // ========== 资源更新队列（_AnyThread）==========
@@ -46,6 +49,12 @@ namespace pulsar
     {
         std::lock_guard<std::mutex> lock(m_resourceUpdateMutex);
         m_resourceUpdates.push_back(std::move(fn));
+    }
+
+    void RenderThread::EnqueueDestroy_AnyThread(ResourceUpdateFn fn)
+    {
+        std::lock_guard<std::mutex> lock(m_destroyMutex);
+        m_destroys.push_back(std::move(fn));
     }
 
     // ========== 帧驱动（Lockstep）==========
@@ -62,21 +71,6 @@ namespace pulsar
     }
 
     // ========== 命令队列处理 ==========
-    void RenderThread::ProcessCommands()
-    {
-        std::vector<Command> localCommands;
-        {
-            std::lock_guard<std::mutex> lock(m_commandMutex);
-            localCommands.swap(m_commands);
-        }
-
-        for (auto& cmd : localCommands)
-        {
-            if (cmd.execute)
-                cmd.execute();
-        }
-    }
-
     void RenderThread::ProcessResourceUpdates()
     {
         std::vector<ResourceUpdateFn> localUpdates;
@@ -90,6 +84,22 @@ namespace pulsar
         {
             if (update)
                 update(resMgr);
+        }
+    }
+
+    void RenderThread::ProcessDestroys()
+    {
+        std::vector<ResourceUpdateFn> localDestroys;
+        {
+            std::lock_guard<std::mutex> lock(m_destroyMutex);
+            localDestroys.swap(m_destroys);
+        }
+
+        auto* resMgr = Application::GetGfxApp()->GetResourceManager();
+        for (auto& destroy : localDestroys)
+        {
+            if (destroy)
+                destroy(resMgr);
         }
     }
 
@@ -112,10 +122,17 @@ namespace pulsar
                 m_frameRequested = false;
             }
 
-            // 1. 先抽干资源更新队列（创建/上传/销毁），形成帧屏障：
+            // 1. 先抽干资源更新队列（创建/上传），形成帧屏障：
             //    保证本帧渲染用到的资源已就绪。
             ProcessResourceUpdates();
-            ProcessCommands();
+
+            // 1.5 若收到 WaitForIdle 请求，先等 GPU 把已提交命令全部执行完，
+            //     再处理销毁队列，避免释放仍被 in-flight 命令引用的资源。
+            if (m_waitDeviceIdle.exchange(false, std::memory_order_relaxed))
+                Application::GetGfxApp()->WaitDeviceIdle();
+
+            // 1.6 处理独立销毁队列（晚于本帧所有 add/update）。
+            ProcessDestroys();
 
             // 2. 执行本帧渲染（acquire / RenderGraph / present）。
             if (frame)
@@ -129,13 +146,12 @@ namespace pulsar
             m_frameCv.notify_all();
         }
 
-        Logger::Log("Render thread stopped");
-    }
+        // 退出前，调用方（World::OnWorldEnd / Application）已先调用 WaitForIdle_AnyThread
+        // 派发空帧，把入队的 proxy 移除 / RenderScene 销毁全部执行完（GFX device 仍存活）。
+        // 因此停止时队列通常已空；万一仍有残留命令，随 ~RenderThread 一起析构
+        // （捕获的对象在此销毁，GPU 资源由 gfxApp->Terminate 兜底回收）。
 
-    void RenderThread::FlushDestroyedResources()
-    {
-        RENDER_THREAD_ASSERT();
-        // TODO: 执行 pending 的 vkDestroy*
+        Logger::Log("Render thread stopped");
     }
 
 } // namespace pulsar

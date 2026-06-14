@@ -5,8 +5,8 @@
 
 namespace pulsar
 {
-    class SceneCapture2DComponent;
     class PerPassResources;
+    class RenderTexture;
 
     class PostProcessPass : public RenderFeature
     {
@@ -20,7 +20,7 @@ namespace pulsar
         RGTextureHandle AddToGraph(RenderGraph& graph,
                                    RGTextureHandle hSrc,
                                    RGTextureHandle hDst,
-                                   SceneCapture2DComponent* capture2D,
+                                   const RenderCaptureContext& ctx,
                                    PerPassResources* perPass) override;
 
         void SetMaterial(RCPtr<Material> material) { m_material = material; }
@@ -29,13 +29,13 @@ namespace pulsar
         bool IsPassEnabled() const { return IsEnabled(); }
 
     protected:
-        virtual void PrepareMaterial(SceneCapture2DComponent* capture2D) {}
+        virtual void PrepareMaterial(const RenderCaptureContext& ctx) {}
         virtual bool IsEnabled() const { return m_material != nullptr; }
         virtual const char* GetPassName() const = 0;
 
         void DrawFullscreen(RGPassContext& passCtx, gfx::GFXCommandBuffer& cmdBuffer,
                             RGTextureHandle hSrc, RGTextureHandle hDst,
-                            SceneCapture2DComponent* capture2D, PerPassResources* perPass);
+                            RenderTexture* fallbackRT, PerPassResources* perPass);
 
         gfx::GFXDescriptorSetLayout_sp GetInputSamplerLayout();
 

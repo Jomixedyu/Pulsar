@@ -1,4 +1,4 @@
-﻿#include <Pulsar/Application.h>
+#include <Pulsar/Application.h>
 #include <Pulsar/Logger.h>
 #include <gfx-vk/GFXVulkanApplication.h>
 #include "AppInstance.h"
@@ -180,6 +180,12 @@ namespace pulsar
         }
 
         instance->OnTerminate();
+
+        // World::OnWorldEnd already drained its own teardown synchronously. This is a
+        // backstop: any destroys enqueued by the rest of OnTerminate (e.g. shader cache
+        // clear / transient RT pool shutdown) run here, after vkDeviceWaitIdle, while the
+        // GFX device + resource manager are still alive, before we stop the thread.
+        g_renderThread->WaitForIdle_AnyThread();
 
         g_renderThread->Stop_AnyThread();
         delete g_renderThread;

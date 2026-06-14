@@ -5,7 +5,6 @@
 
 namespace pulsar
 {
-    class SceneCapture2DComponent;
     class PerPassResources;
 
     // Generic render feature interface.
@@ -33,7 +32,7 @@ namespace pulsar
         virtual RGTextureHandle AddToGraph(RenderGraph& graph,
                                            RGTextureHandle input,
                                            RGTextureHandle output,
-                                           SceneCapture2DComponent* capture2D,
+                                           const RenderCaptureContext& ctx,
                                            PerPassResources* perPass) = 0;
     };
 

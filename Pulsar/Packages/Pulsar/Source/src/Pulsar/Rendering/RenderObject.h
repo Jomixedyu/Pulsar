@@ -1,5 +1,6 @@
 #pragma once
 #include "PrimitiveStruct.h"
+#include "RenderProxy.h"
 #include "ShaderConfig.h"
 
 #include <Pulsar/Assets/Material.h>
@@ -71,7 +72,7 @@ namespace pulsar::rendering
     };
 
 
-    class RenderObject
+    class RenderObject : public RenderProxy
     {
     public:
         static constexpr uint32_t kInvalidSlot = UINT32_MAX;
@@ -84,8 +85,8 @@ namespace pulsar::rendering
 
         }
 
-        virtual void OnCreateResource() {}
-        virtual void OnDestroyResource() {}
+        void OnCreateResource() override {}
+        void OnDestroyResource() override {}
 
         virtual array_list<MeshBatch> GetMeshBatches() = 0;
         virtual std::string GetInterface() const { return {}; }

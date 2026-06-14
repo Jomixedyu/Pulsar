@@ -1,8 +1,8 @@
 #include "OutlinePass.h"
-#include <Pulsar/Components/SceneCapture2DComponent.h>
 #include <Pulsar/World.h>
 #include <Pulsar/Scene.h>
 #include <Pulsar/Rendering/RenderObject.h>
+#include <Pulsar/Rendering/SceneView.h>
 #include <Pulsar/Rendering/ShaderPass.h>
 #include <Pulsar/Rendering/ShaderConfig.h>
 #include <Pulsar/Assets/Material.h>
@@ -36,12 +36,15 @@ namespace pulsar
     RGTextureHandle OutlinePass::AddToGraph(RenderGraph& graph,
                                             RGTextureHandle input,
                                             RGTextureHandle output,
-                                            SceneCapture2DComponent* capture2D,
+                                            const RenderCaptureContext& ctx,
                                             PerPassResources* perPass)
     {
-        auto* world = capture2D->GetWorld();
-        if (!world)
+        auto* world = ctx.world;
+        if (!world || !ctx.view)
             return output;
+
+        const Vector3f camPos     = ctx.view->CameraPosition;
+        const Vector3f camForward = ctx.view->CameraForward;
 
         auto preparedOutline = std::make_shared<array_list<PreparedBatch>>();
 
@@ -53,13 +56,10 @@ namespace pulsar
                 .depthStoreOp = gfx::GFXRenderPassStoreOp::Store,
             })
             .WithPerPass(perPass)
-            .Prepare([capture2D, world, preparedOutline, perPass, this](RGPassContext&)
+            .Prepare([world, camPos, camForward, preparedOutline, perPass, this](RGPassContext&)
             {
                 perPass->WriteStandardBuffers(this->m_perPassSet.get(), world->GetPerRenderObjectDataManager().GetBuffer());
                 perPass->Submit(this->m_perPassSet.get());
-
-                const Vector3f camPos     = capture2D->GetNode()->GetTransform()->GetWorldPosition();
-                const Vector3f camForward = capture2D->GetNode()->GetTransform()->GetForward();
 
                 for (const rendering::RenderObject_sp& ro : world->GetRenderObjects())
                 {
@@ -100,7 +100,7 @@ namespace pulsar
                 };
                 std::sort(preparedOutline->begin(), preparedOutline->end(), sortAsc);
             })
-            .Execute([capture2D, perPass, preparedOutline, this]
+            .Execute([perPass, preparedOutline, this]
                      (RGPassContext& ctx, gfx::GFXCommandBuffer& cmdBuffer)
             {
                 auto* targetFBO = cmdBuffer.GetFrameBuffer();

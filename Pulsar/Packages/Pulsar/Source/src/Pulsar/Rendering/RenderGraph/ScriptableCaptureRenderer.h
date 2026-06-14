@@ -4,11 +4,11 @@
 namespace pulsar
 {
     class World;
-    class SceneCaptureComponent;
+    struct SceneViewData;
 
     struct RenderCaptureContext
     {
-        SceneCaptureComponent* capture    = nullptr;
+        const SceneViewData*   view       = nullptr;
         World*                 world      = nullptr;
         uint64_t               frameIndex = 0;
     };

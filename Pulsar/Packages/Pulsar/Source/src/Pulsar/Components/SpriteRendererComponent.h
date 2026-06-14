@@ -1,13 +1,13 @@
 #pragma once
 #include <Pulsar/IconsForkAwesome.h>
 #include "Assets/SpriteAtlas.h"
-#include "RendererComponent.h"
+#include "RenderComponent.h"
 
 namespace pulsar
 {
-    class SpriteRendererComponent : public RendererComponent
+    class SpriteRendererComponent : public RenderComponent
     {
-        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::SpriteRendererComponent, RendererComponent);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::SpriteRendererComponent, RenderComponent);
         CORELIB_CLASS_ATTR(new CategoryAttribute("Renderer"), new ComponentIconAttribute(ICON_FK_PICTURE_O));
     public:
         SpriteRendererComponent() = default;
@@ -15,7 +15,7 @@ namespace pulsar
         void BeginComponent() override;
         void EndComponent() override;
 
-        SPtr<rendering::RenderObject> CreateRenderObject() override;
+        SPtr<rendering::RenderProxy> CreateRenderProxy() override;
 
         CORELIB_REFL_DECL_FIELD(m_material);
         RCPtr<Material> m_material;

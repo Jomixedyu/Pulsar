@@ -38,6 +38,9 @@ namespace gfx
             m_shaderManager.Clear();
         }
 
+        // Block until the GPU has finished all submitted work.
+        virtual void WaitDeviceIdle() = 0;
+
         const GFXGlobalConfig& GetConfig() const
         {
             return m_config;

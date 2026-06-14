@@ -6,9 +6,13 @@
 #include <Pulsar/Scene.h>
 #include <Pulsar/Assets/NodeCollection.h>
 
+#include "Components/RenderComponent.h"
+#include "Components/SceneCaptureComponent.h"
 #include "Physics2D/PhysicsWorld2D.h"
 #include "Physics3D/PhysicsWorld3D.h"
 #include "Rendering/LightingData.h"
+#include "Rendering/RenderThread.h"
+#include "Rendering/SceneView.h"
 #include "Subsystems/Subsystem.h"
 #include "Subsystems/WorldSubsystem.h"
 
@@ -29,7 +33,7 @@ namespace pulsar
     {
         delete m_inputContext;
         gWorlds.erase(this);
-        m_perRenderObjectDataManager.Destroy();
+        TeardownRenderScene();
     }
 
     void World::OnDuplicated(World* target)
@@ -154,6 +158,10 @@ namespace pulsar
         {
             m_simulateManager.SimulateTick(dt);
         }
+
+        // Extraction phase: runs unconditionally every frame (play or not), after all
+        // node ticks/tools/gizmos have mutated state. Drains the proxy-update list.
+        SyncRenderProxies();
     }
 
     bool World::IsSelectedNode(const ObjectPtr<Node>& node) const
@@ -262,32 +270,156 @@ namespace pulsar
     void World::OnUnloadingResidentScene(RCPtr<NodeCollection> scene)
     {
     }
-    void World::AddRenderObject(const rendering::RenderObject_sp& renderObject)
+    void World::AddRenderObject(const rendering::RenderObject_sp& ro)
     {
-        auto slot = m_perRenderObjectDataManager.AllocSlot();
-        renderObject->SetRenderObjectIndex(slot);
-        renderObject->SetPerRenderObjectDataManager(&m_perRenderObjectDataManager);
-        m_perRenderObjectDataManager.SetData(slot, renderObject->GetPerRenderObjectData());
-        renderObject->OnCreateResource();
-        m_renderObjects.insert(renderObject);
-    }
-    void World::RemoveRenderObject(rendering::RenderObject_rsp renderObject)
-    {
-        const auto it = m_renderObjects.find(renderObject);
-        if (it != m_renderObjects.end())
+        if (!m_renderScene || !ro)
+            return;
+        auto* rt = Application::GetRenderThread();
+        if (rt && !rt->IsRenderThread())
         {
-            (*it)->OnDestroyResource();
-            auto slot = (*it)->GetRenderObjectIndex();
-            if (slot != rendering::RenderObject::kInvalidSlot)
+            rt->EnqueueUpdate_AnyThread(
+                [scene = m_renderScene.get(), p = ro](gfx::GFXResourceManager*) mutable
+                {
+                    scene->AddProxy_RenderThread(std::move(p));
+                });
+        }
+        else
+        {
+            m_renderScene->AddProxy_RenderThread(ro);
+        }
+    }
+    void World::RemoveRenderObject(const rendering::RenderObject_sp& ro)
+    {
+        if (!m_renderScene || !ro)
+            return;
+        auto* rt = Application::GetRenderThread();
+        if (rt && !rt->IsRenderThread())
+        {
+            rt->EnqueueUpdate_AnyThread(
+                [scene = m_renderScene.get(), p = ro](gfx::GFXResourceManager*) mutable
+                {
+                    scene->RemoveProxy_RenderThread(p);
+                });
+        }
+        else
+        {
+            m_renderScene->RemoveProxy_RenderThread(ro);
+        }
+    }
+    void World::RegisterProxy(RenderComponent* comp)
+    {
+        if (!m_renderScene || !comp)
+            return;
+        // Build the proxy from the component and store it back on the component.
+        auto proxy = comp->CreateRenderProxy();
+        comp->m_proxy = proxy;
+        if (!proxy)
+            return;
+
+        auto* rt = Application::GetRenderThread();
+        if (rt && !rt->IsRenderThread())
+        {
+            rt->EnqueueUpdate_AnyThread(
+                [scene = m_renderScene.get(), p = std::move(proxy)](gfx::GFXResourceManager*) mutable
+                {
+                    scene->AddProxy_RenderThread(std::move(p));
+                });
+        }
+        else
+        {
+            m_renderScene->AddProxy_RenderThread(proxy);
+        }
+    }
+    void World::UnregisterProxy(RenderComponent* comp)
+    {
+        if (!comp || !comp->m_proxy)
+            return;
+        auto proxy = std::move(comp->m_proxy);
+        comp->m_proxy.reset();
+        if (!m_renderScene)
+            return;
+
+        auto* rt = Application::GetRenderThread();
+        if (rt && !rt->IsRenderThread())
+        {
+            rt->EnqueueUpdate_AnyThread(
+                [scene = m_renderScene.get(), p = std::move(proxy)](gfx::GFXResourceManager*) mutable
+                {
+                    scene->RemoveProxy_RenderThread(p);
+                });
+        }
+        else
+        {
+            m_renderScene->RemoveProxy_RenderThread(proxy);
+        }
+    }
+    void World::UpdateSceneView(const SPtr<SceneView>& view, SceneViewData data)
+    {
+        if (!m_renderScene || !view)
+            return;
+        // Submission API: game thread only. The view proxy is kept alive by the
+        // render scene; the captured SPtr keeps it alive until the update runs.
+        Application::GetRenderThread()->EnqueueUpdate_AnyThread(
+            [view, data = std::move(data)](gfx::GFXResourceManager*) mutable
             {
-                m_perRenderObjectDataManager.FreeSlot(slot);
-            }
-            m_renderObjects.erase(it);
+                view->Data = std::move(data);
+            });
+    }
+    void World::TeardownRenderScene()
+    {
+        if (!m_renderScene)
+            return;
+
+        // 有 m_renderScene 就意味着 World 跑在带渲染线程的 Application 里（OnWorldBegin 创建）。
+        // headless 不创建 RenderScene，上面已 early return，故此处渲染线程必然存活。
+        // 把 scene 交给独立销毁通道：它在每帧 update 之后 drain，scene 因而晚于先前入队的
+        // 所有 proxy add/remove。OnWorldEnd 紧随其后 WaitForIdle —— 在 vkDeviceWaitIdle 之后
+        // drain 该销毁，此时 GFX device 仍存活。
+        Application::GetRenderThread()->EnqueueDestroy_AnyThread(
+            [scene = std::move(m_renderScene)](gfx::GFXResourceManager*) mutable
+            {
+                scene->Destroy_RenderThread();
+            });
+    }
+
+    void World::MarkProxyDirty(RenderComponent* comp)
+    {
+        // Dedup is guaranteed by RenderComponent::m_renderStateDirty (set before this
+        // is called), so a plain push_back never produces duplicates.
+        m_pendingProxyUpdates.push_back(comp);
+    }
+
+    void World::UnmarkProxyDirty(RenderComponent* comp)
+    {
+        auto it = std::ranges::find(m_pendingProxyUpdates, comp);
+        if (it != m_pendingProxyUpdates.end())
+        {
+            *it = m_pendingProxyUpdates.back();
+            m_pendingProxyUpdates.pop_back();
+        }
+    }
+
+    void World::SyncRenderProxies()
+    {
+        if (m_pendingProxyUpdates.empty())
+            return;
+        // Move out so a SyncRenderProxy() that re-marks dirty re-registers into a fresh
+        // list (processed next frame) rather than mutating the one we iterate.
+        auto pending = std::move(m_pendingProxyUpdates);
+        m_pendingProxyUpdates.clear();
+        for (auto* comp : pending)
+        {
+            comp->m_renderStateDirty = false;
+            comp->SyncRenderProxy();
         }
     }
 
     void World::OnWorldBegin()
     {
+        if (!m_renderScene)
+        {
+            m_renderScene = std::make_unique<RenderScene>();
+        }
         if (m_scenes.empty())
         {
             InitializeResidentScene();
@@ -341,7 +473,12 @@ namespace pulsar
         delete m_lightManager;
         m_lightManager = nullptr;
 
-        m_perRenderObjectDataManager.Destroy();
+        TeardownRenderScene();
+
+        // 同步卸载语义：drain 渲染线程，执行上面入队的所有 proxy 移除 / RenderScene 销毁，
+        // 并 vkDeviceWaitIdle 等 GPU 执行完。返回后 World 才算真正卸载完毕。
+        if (auto* rt = Application::GetRenderThread())
+            rt->WaitForIdle_AnyThread();
     }
 
     void World::OnSceneLoading(RCPtr<NodeCollection> scene)

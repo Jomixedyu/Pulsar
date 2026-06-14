@@ -1,4 +1,4 @@
-﻿#include "EngineAppInstance.h"
+#include "EngineAppInstance.h"
 #include "Assets/StaticMesh.h"
 #include <algorithm>
 #include "Components/CameraComponent.h"
@@ -8,6 +8,8 @@
 #include "Rendering/LightingData.h"
 #include "Rendering/PerPassResources.h"
 #include "Rendering/RenderObject.h"
+#include "Rendering/RenderScene.h"
+#include "Rendering/SceneView.h"
 #include "Rendering/RenderGraph/TransientRTPool.h"
 #include "Rendering/RenderGraph/RenderGraph.h"
 #include "Rendering/RenderGraph/ScriptableCaptureRenderer.h"
@@ -48,20 +50,26 @@ namespace pulsar
         {
             cmdBuffer.CmdPushDebugInfo("SceneRenderer");
 
-            for (const auto& cam : world->GetCameraManager().GetCameras())
+            auto* scene = world->GetRenderScene();
+            if (scene)
             {
-                RenderGraph graph;
+                for (const auto& view : scene->GetViews())
+                {
+                    if (!view->Renderer)
+                        continue;
 
-                RenderCaptureContext captureCtx;
-                captureCtx.capture    = cam.GetPtr();
-                captureCtx.world      = world;
-                captureCtx.frameIndex = s_frameIndex;
+                    RenderGraph graph;
 
-                if (cam->m_captureRenderer)
-                    cam->m_captureRenderer->Render(graph, captureCtx);
+                    RenderCaptureContext captureCtx;
+                    captureCtx.view       = &view->Data;
+                    captureCtx.world      = world;
+                    captureCtx.frameIndex = s_frameIndex;
 
-                if (graph.Compile())
-                    graph.Execute(cmdBuffer);
+                    view->Renderer->Render(graph, captureCtx);
+
+                    if (graph.Compile())
+                        graph.Execute(cmdBuffer);
+                }
             }
 
             cmdBuffer.CmdPopDebugInfo();
@@ -126,13 +134,17 @@ namespace pulsar
     {
         uinput::InputManager::GetInstance()->Terminate();
 
-        ShaderInstanceCache::Instance().Clear();
+        // 先拆 World：移除所有 proxy / RenderScene，drain 渲染线程并等 GPU 空闲。
+        // 此时再无 renderobject 引用 ShaderInstance / 使用 TransientRT。
         if (m_world)
         {
             m_world->OnWorldEnd();
             delete m_world;
             m_world = nullptr;
         }
+
+        // World 拆完后清理：依赖顺序诚实。两者都需在 gfxApp->Terminate() 之前执行。
+        ShaderInstanceCache::Instance().Clear();
         TransientRTPool::Shutdown();
     }
 

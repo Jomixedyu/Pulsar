@@ -43,6 +43,8 @@ namespace pulsar
         bool IsGizmoPassEnabled() const { return m_gizmoPassEnabled; }
         void SetGizmoPassEnabled(bool value) { m_gizmoPassEnabled = value; }
 
+        bool ExtractViewData(SceneViewData& outData) override;
+
         CORELIB_REFL_DECL_METHOD(ResetToDefault, new ToolFunctionAttribute("Reset to Default"));
         void ResetToDefault();
 

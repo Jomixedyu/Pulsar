@@ -33,6 +33,7 @@ namespace gfx
 
         virtual void Initialize() override;
         virtual void Terminate() override;
+        virtual void WaitDeviceIdle() override;
 
         virtual GFXApi GetApiType() const override { return GFXApi::Vulkan; }
         virtual const char* GetApiLevelName() const override { return "Vulkan 1.3"; }

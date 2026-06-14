@@ -1,7 +1,8 @@
 #pragma once
 
+#include <Pulsar/IconsForkAwesome.h>
 #include <Pulsar/Assets/SkinnedMesh.h>
-#include "RendererComponent.h"
+#include "RenderComponent.h"
 #include <Pulsar/Node.h>
 #include <Pulsar/Assets/Material.h>
 
@@ -9,14 +10,14 @@ namespace pulsar
 {
     class SkinnedMeshRenderObject;
 
-    class SkinnedMeshRendererComponent : public RendererComponent
+    class SkinnedMeshRendererComponent : public RenderComponent
     {
-        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::SkinnedMeshRendererComponent, RendererComponent);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::SkinnedMeshRendererComponent, RenderComponent);
         CORELIB_CLASS_ATTR(new CategoryAttribute("Renderer"), new ComponentIconAttribute(ICON_FK_CUBES));
     public:
         SkinnedMeshRendererComponent();
 
-        SPtr<rendering::RenderObject> CreateRenderObject() override;
+        SPtr<rendering::RenderProxy> CreateRenderProxy() override;
 
         void BeginComponent() override;
         void EndComponent() override;

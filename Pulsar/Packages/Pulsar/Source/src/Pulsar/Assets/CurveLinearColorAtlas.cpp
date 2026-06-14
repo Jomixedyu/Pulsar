@@ -83,6 +83,7 @@ namespace pulsar
             auto* renderThread = Application::GetRenderThread();
 
             // 重新生成：先投递销毁旧句柄，再分配新句柄并投递创建。
+            // Generate 只在游戏线程调用，投递保证渲染线程消费快照前资源已就绪。
             if (m_texHandle.IsValid())
             {
                 renderThread->EnqueueUpdate_AnyThread(
@@ -91,6 +92,7 @@ namespace pulsar
 
             array_list<Color4b> bitmapCopy = m_bitmap;
             m_texHandle = resMgr->AllocHandle<gfx::TextureHandle>();
+
             renderThread->EnqueueUpdate_AnyThread(
                 [h = m_texHandle, w = m_width, ht = m_height, cfg, bitmap = std::move(bitmapCopy)](gfx::GFXResourceManager* mgr)
                 {

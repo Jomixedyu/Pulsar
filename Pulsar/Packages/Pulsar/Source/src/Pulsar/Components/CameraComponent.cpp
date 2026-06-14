@@ -4,6 +4,7 @@
 #include "Logger.h"
 #include "Scene.h"
 #include "Assets/StaticMesh.h"
+#include "Rendering/SceneView.h"
 #include <Pulsar/AppInstance.h>
 #include <Pulsar/Application.h>
 #include <Pulsar/Node.h>
@@ -243,6 +244,14 @@ namespace pulsar
     void CameraComponent::OnTransformChanged()
     {
         base::OnTransformChanged();
+    }
+
+    bool CameraComponent::ExtractViewData(SceneViewData& outData)
+    {
+        if (!base::ExtractViewData(outData))
+            return false;
+        outData.GizmoPassEnabled = m_gizmoPassEnabled;
+        return true;
     }
 
     void CameraComponent::ResetToDefault()

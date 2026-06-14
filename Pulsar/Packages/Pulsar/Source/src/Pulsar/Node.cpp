@@ -1,7 +1,6 @@
 #include "Node.h"
 #include "Scene.h"
 #include "World.h"
-#include <Components/RendererComponent.h>
 #include <Pulsar/Components/Component.h>
 #include <Pulsar/Logger.h>
 #include <Pulsar/TransformUtil.h>

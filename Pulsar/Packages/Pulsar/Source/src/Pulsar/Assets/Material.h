@@ -3,6 +3,7 @@
 #include <gfx/GFXDescriptorSet.h>
 #include <gfx/GFXHandle.h>
 #include <Pulsar/Rendering/ShaderPropertySheet.h>
+#include <Pulsar/Rendering/ShaderPropertyRenderData.h>
 #include <Pulsar/Rendering/ShaderInstance.h>
 #include <Pulsar/AssetObject.h>
 #include <Pulsar/Assets/Shader.h>
@@ -156,6 +157,8 @@ namespace pulsar
     private:
         void ClearPassBindings();
         void EnsureGPUResources(MaterialPassBinding& binding, const ShaderPropertyLayout& layout);
+        // 【游戏线程】从 m_sheet 重建渲染线程专用快照 m_renderData。
+        void RebuildRenderData();
 
     private:
         CORELIB_REFL_DECL_FIELD(m_shader);
@@ -171,6 +174,9 @@ namespace pulsar
         SPtr<ObjectPropertyOverride> m_graphicsPipelineOverrideFields;
 
         ShaderPropertySheet m_sheet;
+        // 游戏线程从 m_sheet 解析的渲染线程专用快照（纹理已解析为 GPU 句柄、常量纯值）。
+        // 渲染线程的 PrepareForRendering / SubmitParameters 回调只消费此快照，不触碰 m_sheet。
+        ShaderPropertyRenderData m_renderData;
         std::vector<std::string> m_activeFeatures;
 
         // Per-pass ShaderInstance cache (lazy-created); each binding owns its own GPU resources

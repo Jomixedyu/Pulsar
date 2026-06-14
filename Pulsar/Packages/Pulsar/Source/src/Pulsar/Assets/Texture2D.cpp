@@ -143,9 +143,12 @@ namespace pulsar
         samplerConfig.AddressMode = GetSamplerAddressMode();
 
         // 句柄分配线程安全，主线程立即拿到句柄；纹理创建与数据上传投递到渲染线程异步执行。
+        // CreateGPUResource 只在游戏线程调用（由 Material::BuildRenderData 等驱动），
+        // 投递创建保证渲染线程消费快照前资源已就绪。
         auto* resMgr = Application::GetGfxApp()->GetResourceManager();
         auto* renderThread = Application::GetRenderThread();
         m_texHandle = resMgr->AllocHandle<gfx::TextureHandle>();
+
         renderThread->EnqueueUpdate_AnyThread(
             [h = m_texHandle, w = m_textureSize.x, ht = m_textureSize.y,
              fmt = targetGfxFormat, samplerConfig, data = std::move(data)](gfx::GFXResourceManager* mgr)

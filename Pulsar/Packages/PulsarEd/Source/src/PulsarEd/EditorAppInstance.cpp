@@ -467,17 +467,19 @@ namespace pulsared
             m_shaderHotReloadWatcher = nullptr;
         }
 
-        // 在 World 和 GFX Device 销毁前清理 ShaderInstanceCache，
-        // 否则 GpuProgram 析构时 VkDevice 已经无效
-        pulsar::ShaderInstanceCache::Instance().Clear();
-        pulsar::TransientRTPool::Shutdown();
-
+        // 先拆 World：移除所有 proxy / RenderScene，drain 渲染线程并等 GPU 空闲。
+        // 此时再无 renderobject 引用 ShaderInstance / 使用 TransientRT。
         if (m_world)
         {
             m_world->OnWorldEnd();
             delete m_world;
             m_world = nullptr;
         }
+
+        // World 拆完后清理：依赖顺序诚实。两者都需在 gfxApp->Terminate() 之前执行，
+        // 否则 GpuProgram / RT 析构时 VkDevice 已无效。
+        pulsar::ShaderInstanceCache::Instance().Clear();
+        pulsar::TransientRTPool::Shutdown();
 
         m_gui->Terminate();
         m_gui.reset();

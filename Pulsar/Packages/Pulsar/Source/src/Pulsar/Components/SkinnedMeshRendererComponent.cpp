@@ -2,7 +2,6 @@
 #include "Rendering/SimplePrimitiveUtils.h"
 
 #include "AssetManager.h"
-#include "Components/RendererComponent.h"
 #include <Pulsar/Application.h>
 #include <Pulsar/Logger.h>
 #include <Pulsar/Rendering/ShaderConfig.h>
@@ -186,7 +185,7 @@ namespace pulsar
         init_sptr_member(m_priorities);
     }
 
-    SPtr<rendering::RenderObject> SkinnedMeshRendererComponent::CreateRenderObject()
+    SPtr<rendering::RenderProxy> SkinnedMeshRendererComponent::CreateRenderProxy()
     {
         auto ro = mksptr(new SkinnedMeshRenderObject());
         if (m_skinnedMesh)
@@ -207,8 +206,7 @@ namespace pulsar
     void SkinnedMeshRendererComponent::BeginComponent()
     {
         base::BeginComponent();
-        m_renderObject = sptr_static_cast<SkinnedMeshRenderObject>(CreateRenderObject());
-        GetWorld()->AddRenderObject(m_renderObject);
+        m_renderObject = sptr_static_cast<SkinnedMeshRenderObject>(m_proxy);
         ResizeMaterials(m_materials->size());
         RebuildBoneReferences();
         OnTransformChanged();
@@ -216,9 +214,8 @@ namespace pulsar
 
     void SkinnedMeshRendererComponent::EndComponent()
     {
-        base::EndComponent();
-        GetWorld()->RemoveRenderObject(m_renderObject);
         m_renderObject.reset();
+        base::EndComponent();
     }
 
     void SkinnedMeshRendererComponent::UpdateSkinningMatrices()

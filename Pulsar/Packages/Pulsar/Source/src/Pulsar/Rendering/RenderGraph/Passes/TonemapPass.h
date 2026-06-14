@@ -12,7 +12,7 @@ namespace pulsar
         void ReadSettings(const VolumeStack& stack) override;
 
     protected:
-        void PrepareMaterial(SceneCapture2DComponent* capture2D) override;
+        void PrepareMaterial(const RenderCaptureContext& ctx) override;
         bool IsEnabled() const override { return m_settings != nullptr && m_settings->m_enabled; }
         const char* GetPassName() const override { return "PostProcess_Tonemap"; }
 

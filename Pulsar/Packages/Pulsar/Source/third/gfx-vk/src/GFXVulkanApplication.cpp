@@ -425,6 +425,11 @@ namespace gfx
         ++m_framecount;
     }
 
+    void GFXVulkanApplication::WaitDeviceIdle()
+    {
+        vkDeviceWaitIdle(m_device);
+    }
+
     void GFXVulkanApplication::Terminate()
     {
         base::Terminate();

@@ -1,9 +1,9 @@
 #include "Components/StaticMeshRendererComponent.h"
 
 #include "AssetManager.h"
-#include "Components/RendererComponent.h"
 #include <Pulsar/Application.h>
 #include <Pulsar/Logger.h>
+#include <Pulsar/Rendering/RenderThread.h>
 #include <gfx/GFXBuffer.h>
 
 #include <Pulsar/Rendering/ShaderConfig.h>
@@ -138,7 +138,7 @@ namespace pulsar
 
 
 
-    SPtr<rendering::RenderObject> StaticMeshRendererComponent::CreateRenderObject()
+    SPtr<rendering::RenderProxy> StaticMeshRendererComponent::CreateRenderProxy()
     {
         auto ro = mksptr(new StaticMeshRenderObject());
         // m_staticMesh->CreateGPUResource();
@@ -250,8 +250,8 @@ namespace pulsar
     void StaticMeshRendererComponent::BeginComponent()
     {
         base::BeginComponent();
-        m_renderObject = sptr_static_cast<StaticMeshRenderObject>(CreateRenderObject());
-        GetWorld()->AddRenderObject(m_renderObject);
+        // base::BeginComponent created + registered m_proxy via CreateRenderProxy().
+        m_renderObject = sptr_static_cast<StaticMeshRenderObject>(m_proxy);
         ResizeMaterials(m_materials->size());
 
         m_canDrawGizmo = true;
@@ -261,15 +261,14 @@ namespace pulsar
     }
     void StaticMeshRendererComponent::EndComponent()
     {
-        base::EndComponent();
-
         if (m_canDrawGizmo)
         {
             GetWorld()->GetGizmosManager().RemoveGizmoComponent(self_ptr());
         }
 
-        GetWorld()->RemoveRenderObject(m_renderObject);
         m_renderObject.reset();
+        // base::EndComponent removes + drops m_proxy.
+        base::EndComponent();
     }
 
     // void StaticMeshRendererComponent::BeginListenMaterialStateChanged(size_t index)
@@ -427,7 +426,7 @@ namespace pulsar
     void StaticMeshRendererComponent::OnTransformChanged()
     {
         base::OnTransformChanged();
-        m_renderObject->SetTransform(GetNode()->GetTransform()->GetLocalToWorldMatrix());
+        MarkRenderStateDirty();
     }
 
     void StaticMeshRendererComponent::OnMeshChanged()
@@ -441,19 +440,42 @@ namespace pulsar
             }
         }
 
-        if (m_renderObject)
-        {
-            m_renderObject->SetStaticMesh(m_staticMesh)->SubmitChange();
-        }
+        MarkRenderStateDirty();
         RebuildObserver();
     }
     void StaticMeshRendererComponent::OnMaterialChanged()
     {
-        if (m_renderObject)
-        {
-            m_renderObject->SetMaterials(*m_materials, *m_priorities)->SubmitChange();
-        }
+        MarkRenderStateDirty();
         RebuildObserver();
+    }
+
+    void StaticMeshRendererComponent::SyncRenderProxy()
+    {
+        if (!m_renderObject)
+            return;
+
+        Matrix4f localToWorld = GetNode()->GetTransform()->GetLocalToWorldMatrix();
+        RCPtr<StaticMesh> mesh = m_staticMesh;
+        array_list<RCPtr<Material>> materials = *m_materials;
+        array_list<int32_t> priorities = *m_priorities;
+
+        // GPU resources are still created on the game thread (matches current behavior);
+        // moving these into the resource queue is tracked separately.
+        if (mesh)
+            mesh->CreateGPUResource();
+        for (auto& mat : materials)
+        {
+            if (mat)
+                mat->CreateGPUResource();
+        }
+
+        auto ro = m_renderObject;
+        Application::GetRenderThread()->EnqueueUpdate_AnyThread(
+            [ro, localToWorld, mesh = std::move(mesh), materials = std::move(materials), priorities = std::move(priorities)](gfx::GFXResourceManager*) mutable
+            {
+                ro->SetTransform(localToWorld);
+                ro->SetStaticMesh(std::move(mesh))->SetMaterials(materials, priorities)->SubmitChange();
+            });
     }
 
 } // namespace pulsar

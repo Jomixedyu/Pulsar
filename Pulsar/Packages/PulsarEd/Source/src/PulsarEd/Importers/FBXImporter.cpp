@@ -7,7 +7,6 @@
 #include <Pulsar/Assets/NodeCollection.h>
 #include <Pulsar/Assets/Material.h>
 #include <CoreLib/UString.h>
-#include <Pulsar/Components/RendererComponent.h>
 #include <Pulsar/Components/StaticMeshRendererComponent.h>
 #include <Pulsar/Components/SkinnedMeshRendererComponent.h>
 #include <Pulsar/TransformUtil.h>

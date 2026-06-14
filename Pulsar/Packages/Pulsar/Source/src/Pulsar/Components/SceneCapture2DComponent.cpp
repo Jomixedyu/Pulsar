@@ -4,6 +4,7 @@
 #include "Node.h"
 #include "AssetManager.h"
 #include "Assets/StaticMesh.h"
+#include "Rendering/SceneView.h"
 #include <gfx/GFXResourceManager.h>
 
 namespace pulsar
@@ -142,6 +143,25 @@ namespace pulsar
         UpdateCBuffer();
     }
 
+    bool SceneCapture2DComponent::ExtractViewData(SceneViewData& outData)
+    {
+        if (!m_renderTarget)
+            return false;
+
+        outData.ViewMatrix       = GetViewMat();
+        outData.ProjectionMatrix = GetProjectionMat();
+        outData.CameraPosition   = GetNode()->GetTransform()->GetWorldPosition();
+        outData.CameraForward    = GetNode()->GetTransform()->GetForward();
+        outData.Near             = m_near;
+        outData.Far              = m_far;
+        outData.Resolution       = m_renderTarget->GetSize2df();
+        outData.BackgroundColor  = m_backgroundColor;
+        outData.MSAASamples      = std::max(1, m_msaaSamples);
+        outData.GizmoPassEnabled = false;
+        outData.RenderTarget     = m_renderTarget;
+        return true;
+    }
+
     void SceneCapture2DComponent::OnDrawGizmo(GizmoPainter* painter, bool selected)
     {
         auto pos = GetNode()->GetTransform()->GetWorldPosition();
@@ -166,6 +186,9 @@ namespace pulsar
 
     void SceneCapture2DComponent::UpdateCBuffer()
     {
+        // Any param/transform change re-snapshots the view proxy next frame.
+        MarkRenderStateDirty();
+
         m_debugViewMat = GetViewMat();
 
         PerCaptureShaderParameter target{};

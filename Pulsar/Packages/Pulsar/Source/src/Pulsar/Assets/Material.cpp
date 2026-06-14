@@ -45,6 +45,9 @@ namespace pulsar
         }
         m_createdGpuResource = true;
         // 轻量初始化: GPU 资源将在第一个 ShaderInstance Ready 后通过 EnsureGPUResources 懒创建
+        // 游戏线程：从当前 sheet 解析渲染线程专用快照，供 PrepareForRendering（渲染线程）首帧同步消费。
+        ApplyShaderDefaults();
+        RebuildRenderData();
         return true;
     }
 
@@ -379,10 +382,10 @@ namespace pulsar
             EnsureGPUResources(binding, program->m_layout);
             binding.m_builtWithProgram = program;
 
-            // Initial parameter sync: push current sheet values into freshly created GPU resources
-            ApplyShaderDefaults();
-            ShaderPropertySync::SyncSheetToGpu(
-                m_sheet,
+            // Initial parameter sync: push current sheet values into freshly created GPU resources.
+            // 快照由游戏线程构建（见 RebuildRenderData / SubmitParameters）；渲染线程只消费。
+            ShaderPropertySync::ApplyRenderData(
+                m_renderData,
                 program->m_layout,
                 binding.m_materialConstantBuffer.get(),
                 binding.m_descriptorSet.get());
@@ -409,9 +412,10 @@ namespace pulsar
         // initial sync inside PrepareForRendering when they eventually become ready.
         ApplyShaderDefaults();
 
-        // The property sheet lives on the game thread; hand the GPU writes
-        // (cbuffer fill, descriptor update/submit) to the render thread, capturing
-        // a copy of the current sheet values.
+        // 游戏线程：把 sheet 解析成渲染线程专用快照（纹理->句柄、常量纯值）。
+        // 纹理的 CreateGPUResource 在此（游戏线程）触发，渲染线程不再触碰资产。
+        RebuildRenderData();
+
         auto* renderThread = Application::GetRenderThread();
 
         bool anyUploaded = false;
@@ -426,10 +430,10 @@ namespace pulsar
             auto descriptorSet = binding.m_descriptorSet;
 
             renderThread->EnqueueUpdate_AnyThread(
-                [sheet = m_sheet, program, cbuffer, descriptorSet](gfx::GFXResourceManager*)
+                [renderData = m_renderData, program, cbuffer, descriptorSet](gfx::GFXResourceManager*)
                 {
-                    ShaderPropertySync::SyncSheetToGpu(
-                        sheet,
+                    ShaderPropertySync::ApplyRenderData(
+                        renderData,
                         program->m_layout,
                         cbuffer.get(),
                         descriptorSet.get());
@@ -660,6 +664,12 @@ namespace pulsar
         }
     }
 
+    void Material::RebuildRenderData()
+    {
+        // 游戏线程：解析纹理资产为 GPU 句柄、拷贝常量纯值。渲染线程消费 m_renderData。
+        m_renderData = ShaderPropertySync::BuildRenderData(m_sheet);
+    }
+
     void Material::SetShader(RCPtr<Shader> value)
     {
         m_shader = std::move(value);
@@ -676,6 +686,9 @@ namespace pulsar
         {
             DestroyGPUResource();
             CreateGPUResource();
+            // 游戏线程：shader 默认值已写入 sheet，重建渲染线程快照，
+            // 供 PrepareForRendering 的首帧同步（渲染线程）消费。
+            RebuildRenderData();
         }
 
         OnShaderChanged.Invoke();

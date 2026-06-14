@@ -1,12 +1,9 @@
 #include "DefaultSceneCaptureRenderer.h"
 #include <Pulsar/Logger.h>
 #include <Pulsar/Node.h>
-#include <Pulsar/Components/CameraComponent.h>
-#include <Pulsar/Components/SceneCaptureComponent.h>
-#include <Pulsar/Components/SceneCapture2DComponent.h>
-#include <Pulsar/Components/VolumeComponent.h>
 #include <Pulsar/World.h>
 #include <Pulsar/Scene.h>
+#include <Pulsar/Rendering/SceneView.h>
 #include <Pulsar/Subsystems/PostProcessSubsystem.h>
 #include <gfx/GFXCommandBuffer.h>
 #include <gfx/TextureClasses.h>
@@ -62,13 +59,13 @@ namespace pulsar
 
     void DefaultSceneCaptureRenderer::Render(RenderGraph& graph, const RenderCaptureContext& ctx)
     {
-        auto* capture2D = dynamic_cast<SceneCapture2DComponent*>(ctx.capture);
+        const SceneViewData* view = ctx.view;
         auto* world = ctx.world;
 
-        if (!capture2D || !world)
+        if (!view || !world)
             return;
 
-        auto* camRenderTexture = capture2D->GetRenderTexture().GetPtr();
+        auto* camRenderTexture = view->RenderTarget.GetPtr();
         if (!camRenderTexture)
             return;
 
@@ -78,16 +75,16 @@ namespace pulsar
         auto* perPass = &m_perPassResources;
 
         PerPassCameraData camData{};
-        camData.MatrixV     = capture2D->GetViewMat();
-        camData.MatrixP     = capture2D->GetProjectionMat();
+        camData.MatrixV     = view->ViewMatrix;
+        camData.MatrixP     = view->ProjectionMatrix;
         camData.MatrixVP    = camData.MatrixP * camData.MatrixV;
         camData.InvMatrixV  = jmath::Inverse(camData.MatrixV);
         camData.InvMatrixP  = jmath::Inverse(camData.MatrixP);
         camData.InvMatrixVP = jmath::Inverse(camData.MatrixVP);
-        camData.CamPosition = Vector4f(capture2D->GetNode()->GetTransform()->GetWorldPosition(), 1.f);
-        camData.CamNear     = capture2D->GetNear();
-        camData.CamFar      = capture2D->GetFar();
-        camData.Resolution  = capture2D->GetRenderTexture()->GetSize2df();
+        camData.CamPosition = Vector4f(view->CameraPosition, 1.f);
+        camData.CamNear     = view->Near;
+        camData.CamFar      = view->Far;
+        camData.Resolution  = view->Resolution;
         perPass->UpdateCamera(camData);
 
         {
@@ -126,11 +123,7 @@ namespace pulsar
 
         RGTextureHandle hFinal = graph.ImportTexture("FinalOutput", camRenderTexture);
 
-        uint32_t msaaSamples = 1;
-        if (auto* capture2D = dynamic_cast<SceneCapture2DComponent*>(ctx.capture))
-        {
-            msaaSamples = std::max(1u, capture2D->GetMSAASamples());
-        }
+        uint32_t msaaSamples = std::max(1u, view->MSAASamples);
 
         RGTextureHandle hSceneColor = hFinal;
         gfx::GFXTexture2DView* resolveTargetView = nullptr;
@@ -152,14 +145,14 @@ namespace pulsar
         // OpaquePass (auto-resolve to final RT if MSAA is enabled)
         m_opaquePass.OnSetup(ctx);
         m_opaquePass.SetResolveTargetView(resolveTargetView);
-        hSceneColor = m_opaquePass.AddToGraph(graph, hSceneColor, hSceneColor, capture2D, perPass);
+        hSceneColor = m_opaquePass.AddToGraph(graph, hSceneColor, hSceneColor, ctx, perPass);
 
         // OutlinePass: draws vertex-expanded back-faces for materials with a VertexOutline pass
         m_outlinePass.OnSetup(ctx);
-        hSceneColor = m_outlinePass.AddToGraph(graph, hSceneColor, hSceneColor, capture2D, perPass);
+        hSceneColor = m_outlinePass.AddToGraph(graph, hSceneColor, hSceneColor, ctx, perPass);
 
         // ---- Translucency: copy opaque scene color for refraction/distortion sampling ----
-        auto* camRT = capture2D->GetRenderTexture().GetPtr();
+        auto* camRT = camRenderTexture;
         auto hdrFormat = gfx::GFXTextureFormat::R16G16B16A16_SFloat;
 
         RGTextureDesc opaqueColorDesc{};
@@ -186,14 +179,13 @@ namespace pulsar
         // TranslucencyPass continues drawing onto the final target
         m_translucencyPass.OnSetup(ctx);
         m_translucencyPass.SetOpaqueColor(hOpaqueColor);
-        hSceneColor = m_translucencyPass.AddToGraph(graph, hSceneColor, hSceneColor, capture2D, perPass);
+        hSceneColor = m_translucencyPass.AddToGraph(graph, hSceneColor, hSceneColor, ctx, perPass);
 
         // ---- Post-Process Features ----
         VolumeStack stack;
         if (auto* ppSub = world->GetSubsystem<PostProcessSubsystem>())
         {
-            auto camPos = capture2D->GetNode()->GetTransform()->GetWorldPosition();
-            stack = ppSub->QuerySettings(camPos);
+            stack = ppSub->QuerySettings(view->CameraPosition);
         }
 
         RGTextureDesc pingPongDesc{};
@@ -213,7 +205,7 @@ namespace pulsar
             feature->ReadSettings(stack);
             if (feature->IsEnabled())
             {
-                hDst = feature->AddToGraph(graph, hSrc, hDst, capture2D, perPass);
+                hDst = feature->AddToGraph(graph, hSrc, hDst, ctx, perPass);
                 std::swap(hSrc, hDst);
                 if (hDst == hFinal)
                     hDst = (hSrc == hPingPongA) ? hPingPongB : hPingPongA;
@@ -223,11 +215,12 @@ namespace pulsar
         // Copy final result back to camera RT if needed
         if (hSrc != hFinal)
         {
+            RenderTexture* fallbackRT = camRenderTexture;
             graph.AddPass("PostProcess_CopyToFinal")
                 .Read(hSrc)
                 .Write(hFinal)
                 .NoRenderPass()
-                .Execute([hSrc, hFinal, capture2D](RGPassContext& passCtx, gfx::GFXCommandBuffer& cmdBuffer)
+                .Execute([hSrc, hFinal, fallbackRT](RGPassContext& passCtx, gfx::GFXCommandBuffer& cmdBuffer)
                 {
                     const auto* srcRT   = passCtx.Get(hSrc);
                     const auto* finalRT = passCtx.Get(hFinal);
@@ -236,11 +229,9 @@ namespace pulsar
                     {
                         finalView = finalRT->GetRenderTarget0().get();
                     }
-                    else
+                    else if (fallbackRT)
                     {
-                        auto* persistentRT = capture2D->GetRenderTexture().GetPtr();
-                        if (persistentRT)
-                            finalView = persistentRT->GetGfxRenderTarget0().get();
+                        finalView = fallbackRT->GetGfxRenderTarget0().get();
                     }
                     if (!srcRT || !finalView) return;
 
@@ -252,13 +243,10 @@ namespace pulsar
         }
 
         // Draw gizmos after all post-processing so they remain unaffected
-        if (auto* camera = dynamic_cast<CameraComponent*>(ctx.capture))
+        if (view->GizmoPassEnabled)
         {
-            if (camera->IsGizmoPassEnabled())
-            {
-                m_gizmoOverlayPass.OnSetup(ctx);
-                m_gizmoOverlayPass.AddToGraph(graph, hFinal, hFinal, capture2D, perPass);
-            }
+            m_gizmoOverlayPass.OnSetup(ctx);
+            m_gizmoOverlayPass.AddToGraph(graph, hFinal, hFinal, ctx, perPass);
         }
 
         perRenderObjectMgr.EndFrame();

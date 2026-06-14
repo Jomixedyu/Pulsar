@@ -1,5 +1,5 @@
 #include "PostProcessPass.h"
-#include <Pulsar/Components/SceneCapture2DComponent.h>
+#include <Pulsar/Rendering/SceneView.h>
 #include <Pulsar/Rendering/PerPassResources.h>
 #include <Pulsar/Assets/RenderTexture.h>
 #include <gfx/GFXCommandBuffer.h>
@@ -43,19 +43,21 @@ namespace pulsar
     RGTextureHandle PostProcessPass::AddToGraph(RenderGraph& graph,
                                                 RGTextureHandle hSrc,
                                                 RGTextureHandle hDst,
-                                                SceneCapture2DComponent* capture2D,
+                                                const RenderCaptureContext& ctx,
                                                 PerPassResources* perPass)
     {
-        if (!IsEnabled() || !capture2D)
+        if (!IsEnabled() || !ctx.view)
             return hSrc;
 
-        PrepareMaterial(capture2D);
+        PrepareMaterial(ctx);
         if (!m_material)
             return hSrc;
         m_material->SubmitParameters();
 
         auto curSrc = hSrc;
         auto curDst = hDst;
+
+        RenderTexture* fallbackRT = ctx.view->RenderTarget.GetPtr();
 
         graph.AddPass(GetPassName())
             .Read(curSrc)
@@ -69,10 +71,10 @@ namespace pulsar
                 if (m_material)
                     m_material->PrepareForRendering("PostProcess", "RENDERER_IMAGEPROCESS");
             })
-            .Execute([this, curSrc, curDst, capture2D, perPass]
+            .Execute([this, curSrc, curDst, fallbackRT, perPass]
                      (RGPassContext& passCtx, gfx::GFXCommandBuffer& cmdBuffer)
             {
-                DrawFullscreen(passCtx, cmdBuffer, curSrc, curDst, capture2D, perPass);
+                DrawFullscreen(passCtx, cmdBuffer, curSrc, curDst, fallbackRT, perPass);
             });
 
         return hDst;
@@ -80,7 +82,7 @@ namespace pulsar
 
     void PostProcessPass::DrawFullscreen(RGPassContext& passCtx, gfx::GFXCommandBuffer& cmdBuffer,
                                          RGTextureHandle hSrc, RGTextureHandle hDst,
-                                         SceneCapture2DComponent* capture2D, PerPassResources* perPass)
+                                         RenderTexture* fallbackRT, PerPassResources* perPass)
     {
         if (!m_material) return;
         auto shader = m_material->GetShader();
@@ -101,11 +103,9 @@ namespace pulsar
         {
             dstFBO = dstRT->GetFrameBufferObject().get();
         }
-        else
+        else if (fallbackRT)
         {
-            auto* persistentRT = capture2D->GetRenderTexture().GetPtr();
-            if (persistentRT)
-                dstFBO = persistentRT->GetGfxFrameBufferObject().get();
+            dstFBO = fallbackRT->GetGfxFrameBufferObject().get();
         }
         if (!dstFBO) return;
 
@@ -119,14 +119,10 @@ namespace pulsar
         {
             srcView = srcRT->GetRenderTarget0().get();
         }
-        else
+        else if (fallbackRT)
         {
-            auto* persistentRT = capture2D->GetRenderTexture().GetPtr();
-            if (persistentRT)
-            {
-                auto view = persistentRT->GetGfxRenderTarget0();
-                if (view) srcView = view.get();
-            }
+            auto view = fallbackRT->GetGfxRenderTarget0();
+            if (view) srcView = view.get();
         }
         if (srcView)
             perPass->WriteTexture(m_perPassSet.get(), 3, srcView);

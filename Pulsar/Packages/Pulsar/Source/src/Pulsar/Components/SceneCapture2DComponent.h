@@ -45,6 +45,8 @@ namespace pulsar
 
         void OnTransformChanged() override;
 
+        bool ExtractViewData(SceneViewData& outData) override;
+
 
     protected:
         void UpdateRTBackgroundColor();
