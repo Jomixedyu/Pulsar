@@ -63,8 +63,8 @@ namespace pulsar
         if (!view || !scene)
             return;
 
-        auto* camRenderTexture = view->RenderTarget.GetPtr();
-        if (!camRenderTexture)
+        const RenderTargetSnapshot& camRenderTexture = view->RenderTarget;
+        if (!camRenderTexture.IsValid())
             return;
 
         auto& perRenderObjectMgr = ctx.scene->GetPerRenderObjectData();
@@ -124,7 +124,9 @@ namespace pulsar
             perPass->UpdateLights(lightsData);
         }
 
-        RGTextureHandle hFinal = graph.ImportTexture("FinalOutput", camRenderTexture);
+        RGTextureHandle hFinal = graph.ImportTexture("FinalOutput",
+            camRenderTexture.Width, camRenderTexture.Height,
+            camRenderTexture.Attachments, camRenderTexture.Framebuffer);
 
         uint32_t msaaSamples = std::max(1u, view->MSAASamples);
 
@@ -133,16 +135,16 @@ namespace pulsar
         if (msaaSamples > 1)
         {
             RGTextureDesc msDesc{};
-            msDesc.Width = camRenderTexture->GetWidth();
-            msDesc.Height = camRenderTexture->GetHeight();
+            msDesc.Width = camRenderTexture.Width;
+            msDesc.Height = camRenderTexture.Height;
             msDesc.SampleCount = msaaSamples;
-            for (auto& rt : camRenderTexture->GetRenderTargets())
+            for (auto& rt : camRenderTexture.Attachments)
             {
                 bool isTransient = (rt->GetTargetType() == gfx::GFXTextureTargetType::ColorTarget);
                 msDesc.TargetInfos.push_back({ rt->GetTargetType(), rt->GetFormat(), msaaSamples, isTransient });
             }
             hSceneColor = graph.CreateTransient("MSSceneColor", msDesc);
-            resolveTargetView = camRenderTexture->GetGfxRenderTarget0().get();
+            resolveTargetView = camRenderTexture.GetRenderTarget0().get();
         }
 
         // OpaquePass (auto-resolve to final RT if MSAA is enabled)
@@ -155,12 +157,12 @@ namespace pulsar
         hSceneColor = m_outlinePass.AddToGraph(graph, hSceneColor, hSceneColor, ctx, perPass);
 
         // ---- Translucency: copy opaque scene color for refraction/distortion sampling ----
-        auto* camRT = camRenderTexture;
+        const RenderTargetSnapshot& camRT = camRenderTexture;
         auto hdrFormat = gfx::GFXTextureFormat::R16G16B16A16_SFloat;
 
         RGTextureDesc opaqueColorDesc{};
-        opaqueColorDesc.Width  = camRT->GetWidth();
-        opaqueColorDesc.Height = camRT->GetHeight();
+        opaqueColorDesc.Width  = camRT.Width;
+        opaqueColorDesc.Height = camRT.Height;
         opaqueColorDesc.TargetInfos.push_back({ gfx::GFXTextureTargetType::ColorTarget, hdrFormat });
         auto hOpaqueColor = graph.CreateTransient("OpaqueColorTexture", opaqueColorDesc);
 
@@ -188,8 +190,8 @@ namespace pulsar
         const VolumeStack& stack = view->PostProcessStack;
 
         RGTextureDesc pingPongDesc{};
-        pingPongDesc.Width  = camRT->GetWidth();
-        pingPongDesc.Height = camRT->GetHeight();
+        pingPongDesc.Width  = camRT.Width;
+        pingPongDesc.Height = camRT.Height;
         pingPongDesc.TargetInfos.push_back({ gfx::GFXTextureTargetType::ColorTarget, hdrFormat });
 
         RGTextureHandle hPingPongA = graph.CreateTransient("PostProcessPingPongA", pingPongDesc);
@@ -214,12 +216,12 @@ namespace pulsar
         // Copy final result back to camera RT if needed
         if (hSrc != hFinal)
         {
-            RenderTexture* fallbackRT = camRenderTexture;
+            gfx::GFXTexture2DView_sp fallbackView = camRenderTexture.GetRenderTarget0();
             graph.AddPass("PostProcess_CopyToFinal")
                 .Read(hSrc)
                 .Write(hFinal)
                 .NoRenderPass()
-                .Execute([hSrc, hFinal, fallbackRT](RGPassContext& passCtx, gfx::GFXCommandBuffer& cmdBuffer)
+                .Execute([hSrc, hFinal, fallbackView](RGPassContext& passCtx, gfx::GFXCommandBuffer& cmdBuffer)
                 {
                     const auto* srcRT   = passCtx.Get(hSrc);
                     const auto* finalRT = passCtx.Get(hFinal);
@@ -228,9 +230,9 @@ namespace pulsar
                     {
                         finalView = finalRT->GetRenderTarget0().get();
                     }
-                    else if (fallbackRT)
+                    else if (fallbackView)
                     {
-                        finalView = fallbackRT->GetGfxRenderTarget0().get();
+                        finalView = fallbackView.get();
                     }
                     if (!srcRT || !finalView) return;
 

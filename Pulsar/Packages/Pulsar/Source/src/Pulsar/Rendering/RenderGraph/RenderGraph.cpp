@@ -1,6 +1,5 @@
 #include "RenderGraph.h"
 #include <Pulsar/Logger.h>
-#include <Pulsar/Assets/RenderTexture.h>
 #include <gfx/GFXCommandBuffer.h>
 #include <gfx/GFXTexture.h>
 #include <algorithm>
@@ -31,14 +30,19 @@ namespace pulsar
         return h;
     }
 
-    RGTextureHandle RenderGraph::ImportTexture(const std::string& name, RenderTexture* external)
+    RGTextureHandle RenderGraph::ImportTexture(const std::string& name,
+                                               int32_t width, int32_t height,
+                                               const array_list<gfx::GFXTexture_sp>& attachments,
+                                               const gfx::GFXFrameBufferObject_sp& fbo)
     {
-        assert(external && "ImportTexture: external RT must not be null");
         RGTextureHandle h{ NextHandleId() };
         RGResourceDesc res;
         res.name     = name;
         res.kind     = RGResourceKind::Persistent;
-        res.external = external;
+        res.externalWidth       = width;
+        res.externalHeight      = height;
+        res.externalAttachments = attachments;
+        res.externalFramebuffer = fbo;
         m_resources.push_back(std::move(res));
         return h;
     }
@@ -130,10 +134,10 @@ namespace pulsar
             if (res.kind == RGResourceKind::Persistent)
             {
                 auto pt = std::make_shared<RGPhysicalTexture>();
-                pt->width  = res.external->GetWidth();
-                pt->height = res.external->GetHeight();
-                pt->attachments = res.external->GetRenderTargets();
-                pt->fbo = res.external->GetGfxFrameBufferObject();
+                pt->width  = res.externalWidth;
+                pt->height = res.externalHeight;
+                pt->attachments = res.externalAttachments;
+                pt->fbo = res.externalFramebuffer;
                 m_physicalRTs[rid] = std::move(pt);
                 m_handleToRTIndex[static_cast<uint32_t>(rid)] = rid;
             }

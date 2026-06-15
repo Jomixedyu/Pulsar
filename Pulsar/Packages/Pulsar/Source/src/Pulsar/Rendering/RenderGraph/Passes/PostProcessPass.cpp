@@ -57,7 +57,8 @@ namespace pulsar
         auto curSrc = hSrc;
         auto curDst = hDst;
 
-        RenderTexture* fallbackRT = ctx.view->RenderTarget.GetPtr();
+        gfx::GFXFrameBufferObject_sp fallbackFBO  = ctx.view->RenderTarget.Framebuffer;
+        gfx::GFXTexture2DView_sp     fallbackView = ctx.view->RenderTarget.GetRenderTarget0();
 
         graph.AddPass(GetPassName())
             .Read(curSrc)
@@ -71,10 +72,10 @@ namespace pulsar
                 if (m_material)
                     m_material->PrepareForRendering("PostProcess", "RENDERER_IMAGEPROCESS");
             })
-            .Execute([this, curSrc, curDst, fallbackRT, perPass]
+            .Execute([this, curSrc, curDst, fallbackFBO, fallbackView, perPass]
                      (RGPassContext& passCtx, gfx::GFXCommandBuffer& cmdBuffer)
             {
-                DrawFullscreen(passCtx, cmdBuffer, curSrc, curDst, fallbackRT, perPass);
+                DrawFullscreen(passCtx, cmdBuffer, curSrc, curDst, fallbackFBO, fallbackView, perPass);
             });
 
         return hDst;
@@ -82,7 +83,9 @@ namespace pulsar
 
     void PostProcessPass::DrawFullscreen(RGPassContext& passCtx, gfx::GFXCommandBuffer& cmdBuffer,
                                          RGTextureHandle hSrc, RGTextureHandle hDst,
-                                         RenderTexture* fallbackRT, PerPassResources* perPass)
+                                         const gfx::GFXFrameBufferObject_sp& fallbackFBO,
+                                         const gfx::GFXTexture2DView_sp& fallbackView,
+                                         PerPassResources* perPass)
     {
         if (!m_material) return;
         auto shader = m_material->GetShader();
@@ -103,9 +106,9 @@ namespace pulsar
         {
             dstFBO = dstRT->GetFrameBufferObject().get();
         }
-        else if (fallbackRT)
+        else if (fallbackFBO)
         {
-            dstFBO = fallbackRT->GetGfxFrameBufferObject().get();
+            dstFBO = fallbackFBO.get();
         }
         if (!dstFBO) return;
 
@@ -119,10 +122,9 @@ namespace pulsar
         {
             srcView = srcRT->GetRenderTarget0().get();
         }
-        else if (fallbackRT)
+        else if (fallbackView)
         {
-            auto view = fallbackRT->GetGfxRenderTarget0();
-            if (view) srcView = view.get();
+            srcView = fallbackView.get();
         }
         if (srcView)
             perPass->WriteTexture(m_perPassSet.get(), 3, srcView);

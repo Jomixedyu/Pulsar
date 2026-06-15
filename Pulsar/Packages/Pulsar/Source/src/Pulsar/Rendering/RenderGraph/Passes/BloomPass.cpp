@@ -214,12 +214,12 @@ namespace pulsar
             return input;
         m_material->SubmitParameters();
 
-        auto* camRT = ctx.view->RenderTarget.GetPtr();
-        if (!camRT)
+        const RenderTargetSnapshot& camRT = ctx.view->RenderTarget;
+        if (!camRT.IsValid())
             return input;
 
-        uint32_t w = camRT->GetWidth();
-        uint32_t h = camRT->GetHeight();
+        uint32_t w = camRT.Width;
+        uint32_t h = camRT.Height;
         if (w == 0 || h == 0)
             return input;
 

@@ -2,11 +2,12 @@
 #include "RenderFeature.h"
 #include <Pulsar/Assets/Material.h>
 #include <gfx/GFXDescriptorSet.h>
+#include <gfx/GFXFrameBufferObject.h>
+#include <gfx/GFXTexture.h>
 
 namespace pulsar
 {
     class PerPassResources;
-    class RenderTexture;
 
     class PostProcessPass : public RenderFeature
     {
@@ -35,7 +36,9 @@ namespace pulsar
 
         void DrawFullscreen(RGPassContext& passCtx, gfx::GFXCommandBuffer& cmdBuffer,
                             RGTextureHandle hSrc, RGTextureHandle hDst,
-                            RenderTexture* fallbackRT, PerPassResources* perPass);
+                            const gfx::GFXFrameBufferObject_sp& fallbackFBO,
+                            const gfx::GFXTexture2DView_sp& fallbackView,
+                            PerPassResources* perPass);
 
         gfx::GFXDescriptorSetLayout_sp GetInputSamplerLayout();
 

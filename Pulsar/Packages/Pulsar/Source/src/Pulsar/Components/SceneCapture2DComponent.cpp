@@ -158,7 +158,10 @@ namespace pulsar
         outData.BackgroundColor  = m_backgroundColor;
         outData.MSAASamples      = std::max(1, m_msaaSamples);
         outData.GizmoPassEnabled = false;
-        outData.RenderTarget     = m_renderTarget;
+        outData.RenderTarget.Width       = m_renderTarget->GetWidth();
+        outData.RenderTarget.Height      = m_renderTarget->GetHeight();
+        outData.RenderTarget.Attachments = m_renderTarget->GetRenderTargets();
+        outData.RenderTarget.Framebuffer = m_renderTarget->GetGfxFrameBufferObject();
         return true;
     }
 

@@ -1,14 +1,33 @@
 #pragma once
 #include <Pulsar/EngineMath.h>
-#include <Pulsar/Assets/RenderTexture.h>
 #include <Pulsar/Assets/Material.h>
 #include <Pulsar/Subsystems/VolumeStack.h>
 #include "RenderProxy.h"
+#include <gfx/GFXTexture.h>
+#include <gfx/GFXFrameBufferObject.h>
 #include <memory>
 
 namespace pulsar
 {
     class ScriptableCaptureRenderer;
+
+    // GFX resource bundle for a view's render target, resolved on the game thread from
+    // the RenderTexture asset. Holds only gfx shared resources (no RCPtr / AssetObject),
+    // so it is safe for the render thread to read and to destruct across threads.
+    struct RenderTargetSnapshot
+    {
+        int32_t Width = 0;
+        int32_t Height = 0;
+        array_list<gfx::GFXTexture_sp>          Attachments;
+        gfx::GFXFrameBufferObject_sp            Framebuffer;
+
+        bool IsValid() const { return Framebuffer != nullptr; }
+        gfx::GFXTexture2DView_sp GetRenderTarget0() const
+        {
+            if (Attachments.empty()) return nullptr;
+            return Attachments[0]->Get2DView(0);
+        }
+    };
 
     // Per-view parameter snapshot, extracted from the game-side capture component
     // at the end of World::Tick and written on the render thread. The render path
@@ -25,7 +44,8 @@ namespace pulsar
         Color4f  BackgroundColor{};
         uint32_t MSAASamples = 1;
         bool     GizmoPassEnabled = false;
-        RCPtr<RenderTexture> RenderTarget;
+        // Render target resolved to gfx resources on the game thread (no RCPtr).
+        RenderTargetSnapshot RenderTarget;
 
         // Post-process settings blended for this view's camera position, snapshotted on
         // the game thread (SyncRenderProxy) so the render thread never touches the live
