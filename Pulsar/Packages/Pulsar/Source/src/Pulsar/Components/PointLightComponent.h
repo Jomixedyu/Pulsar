@@ -19,6 +19,9 @@ namespace pulsar
         float GetRadius() const { return m_radius; }
         void SetRadius(float value);
     protected:
+        SPtr<rendering::RenderProxy> CreateRenderProxy() override;
+        void SyncRenderProxy() override;
+
         void OnDrawGizmo(GizmoPainter* painter, bool selected) override;
 
         void OnTransformChanged() override;

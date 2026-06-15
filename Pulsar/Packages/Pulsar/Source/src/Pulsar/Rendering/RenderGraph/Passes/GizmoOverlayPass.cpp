@@ -1,7 +1,6 @@
 #include "GizmoOverlayPass.h"
-#include <Pulsar/World.h>
-#include <Pulsar/Node.h>
 #include <Pulsar/Rendering/RenderObject.h>
+#include <Pulsar/Rendering/RenderScene.h>
 #include <Pulsar/Rendering/SceneView.h>
 #include <Pulsar/Rendering/ShaderPass.h>
 #include <Pulsar/Assets/Material.h>
@@ -18,8 +17,8 @@ namespace pulsar
                                                  const RenderCaptureContext& ctx,
                                                  PerPassResources* perPass)
     {
-        auto* world = ctx.world;
-        if (!world || !ctx.view)
+        auto* scene = ctx.scene;
+        if (!scene || !ctx.view)
             return output;
 
         const Vector3f camPos     = ctx.view->CameraPosition;
@@ -35,12 +34,12 @@ namespace pulsar
                 .depthStoreOp = gfx::GFXRenderPassStoreOp::DontCare,
             })
             .WithPerPass(perPass)
-            .Prepare([world, camPos, camForward, preparedOverlay, perPass, this](RGPassContext&)
+            .Prepare([scene, camPos, camForward, preparedOverlay, perPass, this](RGPassContext&)
             {
-                perPass->WriteStandardBuffers(this->m_perPassSet.get(), world->GetPerRenderObjectDataManager().GetBuffer());
+                perPass->WriteStandardBuffers(this->m_perPassSet.get(), scene->GetPerRenderObjectData().GetBuffer());
                 perPass->Submit(this->m_perPassSet.get());
 
-                for (const rendering::RenderObject_sp& ro : world->GetRenderObjects())
+                for (const rendering::RenderObject_sp& ro : scene->GetRenderObjects())
                 {
                     const float depth = jmath::Dot(camForward, ro->GetWorldPosition() - camPos);
                     for (auto batch : ro->GetMeshBatches())

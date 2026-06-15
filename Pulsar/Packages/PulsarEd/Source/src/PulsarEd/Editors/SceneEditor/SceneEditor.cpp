@@ -11,7 +11,6 @@
 #include "Pulsar/Components/DirectionalLightComponent.h"
 #include "Pulsar/Components/CameraComponent.h"
 #include "Pulsar/Components/PointLightComponent.h"
-#include "Pulsar/Components/SkyLightComponent.h"
 #include "Pulsar/Components/SphereShape3DComponent.h"
 #include "Pulsar/Components/StaticMeshRendererComponent.h"
 #include "Pulsar/Scene.h"
@@ -133,14 +132,6 @@ namespace pulsared
 
             auto light3dMenu = mksptr(new MenuEntrySubMenu("Light3d"));
             menu->AddEntry(light3dMenu);
-            {
-                auto entry = mksptr(new MenuEntryButton("Create Sky Light"));
-                light3dMenu->AddEntry(entry);
-                entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
-                    GetEdApp()->GetEditorWorld()->GetFocusScene()->NewNode("New Sky Light")
-                        ->AddComponent<SkyLightComponent>();
-                });
-            }
             {
                 auto entry = mksptr(new MenuEntryButton("Create Directional Light"));
                 light3dMenu->AddEntry(entry);

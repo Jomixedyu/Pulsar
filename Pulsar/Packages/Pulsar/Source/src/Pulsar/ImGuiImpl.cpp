@@ -23,6 +23,35 @@
 namespace pulsar
 {
 
+    void ImGuiDrawDataSnapshot::Clear()
+    {
+        for (ImDrawList* list : m_clonedLists)
+            IM_DELETE(list);
+        m_clonedLists.clear();
+        m_drawData.CmdLists.clear();
+        m_valid = false;
+    }
+
+    void ImGuiDrawDataSnapshot::CopyFrom(ImDrawData* src)
+    {
+        Clear();
+        if (!src || !src->Valid)
+            return;
+
+        // Copy header fields; CmdLists is re-pointed to our owned clones below.
+        m_drawData = *src;
+        m_drawData.CmdLists.clear();
+
+        for (int i = 0; i < src->CmdListsCount; ++i)
+        {
+            ImDrawList* clone = src->CmdLists[i]->CloneOutput();
+            m_clonedLists.push_back(clone);
+            m_drawData.CmdLists.push_back(clone);
+        }
+        m_drawData.CmdListsCount = m_drawData.CmdLists.Size;
+        m_valid = true;
+    }
+
 
 
     void ImGui_Style_Initialize()
@@ -198,10 +227,16 @@ namespace pulsar
             ImGui_ImplSDL2_Shutdown();
             ImGui::DestroyContext();
         }
-        virtual void Render(gfx::GFXCommandBuffer* cmd) override
+        virtual void PrepareDrawData(ImGuiDrawDataSnapshot& snapshot) override
         {
             ImGui::Render();
-            ImDrawData* draw_data = ImGui::GetDrawData();
+            snapshot.CopyFrom(ImGui::GetDrawData());
+        }
+        virtual void Render(gfx::GFXCommandBuffer* cmd, ImGuiDrawDataSnapshot& snapshot) override
+        {
+            ImDrawData* draw_data = snapshot.GetDrawData();
+            if (!draw_data)
+                return;
             const bool is_minimized = (draw_data->DisplaySize.x <= 0.0f || draw_data->DisplaySize.y <= 0.0f);
             if (!is_minimized)
             {

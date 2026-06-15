@@ -21,7 +21,6 @@ namespace pulsar
     class PhysicsWorld2D;
     class PhysicsWorld3D;
     class WorldSubsystem;
-    class LightManager;
     struct InputContext;
 
     class World
@@ -103,7 +102,6 @@ namespace pulsar
     public: //rendering
         array_list<ObjectPtrBase>&      GetDeferredDestroyedQueue() { return m_deferredDestroyedQueue; }
         RenderScene*    GetRenderScene() const { return m_renderScene.get(); }
-        const hash_set<rendering::RenderObject_sp>& GetRenderObjects() const { return m_renderScene->GetRenderObjects(); }
 
         // Raw render objects without an owning RenderComponent (gizmos, editor grids,
         // light gizmos). Enqueued straight to the render thread.
@@ -129,11 +127,9 @@ namespace pulsar
         CameraManager&        GetCameraManager() { return m_cameraManager; }
         SceneCaptureManager&  GetCaptureManager() { return m_captureManager; }
         GizmosManager&        GetGizmosManager() { return m_gizmosManager; }
-        PerRenderObjectDataManager& GetPerRenderObjectDataManager() { return m_renderScene->GetPerRenderObjectData(); }
         SimulateManager&      GetSimulateManager() { return m_simulateManager; }
         PhysicsWorld2D*       GetPhysicsWorld2D() const { return m_physicsWorld2D; }
         PhysicsWorld3D*       GetPhysicsWorld3D() const { return m_physicsWorld3D; }
-        LightManager*         GetLightManager() const { return m_lightManager; }
     protected:
         void TeardownRenderScene();
 
@@ -141,8 +137,6 @@ namespace pulsar
     protected:
         PhysicsWorld2D* m_physicsWorld2D = nullptr;
         PhysicsWorld3D* m_physicsWorld3D = nullptr;
-        LightManager*   m_lightManager = nullptr;
-
         RCPtr<Material>                       m_defaultMaterial;
         std::unique_ptr<RenderScene>          m_renderScene = std::make_unique<RenderScene>();
         array_list<RenderComponent*>          m_pendingProxyUpdates;

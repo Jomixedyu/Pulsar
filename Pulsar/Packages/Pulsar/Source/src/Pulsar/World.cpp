@@ -135,8 +135,6 @@ namespace pulsar
         }
         m_totalTime += dt;
 
-        m_lightManager->Update();
-
         m_gizmosManager.Draw();
 
         if (m_isPlaying && !m_isPaused)
@@ -274,37 +272,21 @@ namespace pulsar
     {
         if (!m_renderScene || !ro)
             return;
-        auto* rt = Application::GetRenderThread();
-        if (rt && !rt->IsRenderThread())
-        {
-            rt->EnqueueUpdate_AnyThread(
-                [scene = m_renderScene.get(), p = ro](gfx::GFXResourceManager*) mutable
-                {
-                    scene->AddProxy_RenderThread(std::move(p));
-                });
-        }
-        else
-        {
-            m_renderScene->AddProxy_RenderThread(ro);
-        }
+        Application::GetRenderThread()->EnqueueUpdate_AnyThread(
+            [scene = m_renderScene.get(), p = ro](gfx::GFXResourceManager*) mutable
+            {
+                scene->AddProxy_RenderThread(std::move(p));
+            });
     }
     void World::RemoveRenderObject(const rendering::RenderObject_sp& ro)
     {
         if (!m_renderScene || !ro)
             return;
-        auto* rt = Application::GetRenderThread();
-        if (rt && !rt->IsRenderThread())
-        {
-            rt->EnqueueUpdate_AnyThread(
-                [scene = m_renderScene.get(), p = ro](gfx::GFXResourceManager*) mutable
-                {
-                    scene->RemoveProxy_RenderThread(p);
-                });
-        }
-        else
-        {
-            m_renderScene->RemoveProxy_RenderThread(ro);
-        }
+        Application::GetRenderThread()->EnqueueUpdate_AnyThread(
+            [scene = m_renderScene.get(), p = ro](gfx::GFXResourceManager*) mutable
+            {
+                scene->RemoveProxy_RenderThread(p);
+            });
     }
     void World::RegisterProxy(RenderComponent* comp)
     {
@@ -316,19 +298,11 @@ namespace pulsar
         if (!proxy)
             return;
 
-        auto* rt = Application::GetRenderThread();
-        if (rt && !rt->IsRenderThread())
-        {
-            rt->EnqueueUpdate_AnyThread(
-                [scene = m_renderScene.get(), p = std::move(proxy)](gfx::GFXResourceManager*) mutable
-                {
-                    scene->AddProxy_RenderThread(std::move(p));
-                });
-        }
-        else
-        {
-            m_renderScene->AddProxy_RenderThread(proxy);
-        }
+        Application::GetRenderThread()->EnqueueUpdate_AnyThread(
+            [scene = m_renderScene.get(), p = std::move(proxy)](gfx::GFXResourceManager*) mutable
+            {
+                scene->AddProxy_RenderThread(std::move(p));
+            });
     }
     void World::UnregisterProxy(RenderComponent* comp)
     {
@@ -339,19 +313,11 @@ namespace pulsar
         if (!m_renderScene)
             return;
 
-        auto* rt = Application::GetRenderThread();
-        if (rt && !rt->IsRenderThread())
-        {
-            rt->EnqueueUpdate_AnyThread(
-                [scene = m_renderScene.get(), p = std::move(proxy)](gfx::GFXResourceManager*) mutable
-                {
-                    scene->RemoveProxy_RenderThread(p);
-                });
-        }
-        else
-        {
-            m_renderScene->RemoveProxy_RenderThread(proxy);
-        }
+        Application::GetRenderThread()->EnqueueUpdate_AnyThread(
+            [scene = m_renderScene.get(), p = std::move(proxy)](gfx::GFXResourceManager*) mutable
+            {
+                scene->RemoveProxy_RenderThread(p);
+            });
     }
     void World::UpdateSceneView(const SPtr<SceneView>& view, SceneViewData data)
     {
@@ -401,6 +367,17 @@ namespace pulsar
 
     void World::SyncRenderProxies()
     {
+        // Push the world-level time snapshot to the render scene every frame (it changes
+        // each tick), so renderers read it from the render thread instead of live World.
+        if (m_renderScene)
+        {
+            Application::GetRenderThread()->EnqueueUpdate_AnyThread(
+                [scene = m_renderScene.get(), totalTime = m_totalTime, deltaTime = m_ticker.deltatime](gfx::GFXResourceManager*) mutable
+                {
+                    scene->SetTime_RenderThread(totalTime, deltaTime);
+                });
+        }
+
         if (m_pendingProxyUpdates.empty())
             return;
         // Move out so a SyncRenderProxy() that re-marks dirty re-registers into a fresh
@@ -428,8 +405,6 @@ namespace pulsar
 
         m_physicsWorld2D = new PhysicsWorld2D;
         m_physicsWorld3D = new PhysicsWorld3D;
-
-        m_lightManager = new LightManager;
 
         for (auto& item : SubsystemManager::GetAllSubsystems())
         {
@@ -469,9 +444,6 @@ namespace pulsar
 
         delete m_physicsWorld3D;
         m_physicsWorld3D = nullptr;
-
-        delete m_lightManager;
-        m_lightManager = nullptr;
 
         TeardownRenderScene();
 

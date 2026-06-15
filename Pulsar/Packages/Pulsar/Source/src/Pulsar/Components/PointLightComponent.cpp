@@ -2,7 +2,10 @@
 
 #include "Node.h"
 #include "Rendering/LineRenderObject.h"
+#include "Rendering/LightProxy.h"
 #include "Rendering/PrimitiveStruct.h"
+#include "Application.h"
+#include "Rendering/RenderThread.h"
 #include "World.h"
 
 namespace pulsar
@@ -61,15 +64,29 @@ namespace pulsar
         OnTransformChanged();
         OnLightColorChanged();
         OnRadiusChanged();
-
-        GetWorld()->GetLightManager()->AddLight(&m_runtimeLightData);
-
     }
 
     void PointLightComponent::EndComponent()
     {
         base::EndComponent();
-        GetWorld()->GetLightManager()->RemoveLight(&m_runtimeLightData);
+    }
+
+    SPtr<rendering::RenderProxy> PointLightComponent::CreateRenderProxy()
+    {
+        return mksptr(new PointLightProxy());
+    }
+
+    void PointLightComponent::SyncRenderProxy()
+    {
+        auto proxy = std::static_pointer_cast<PointLightProxy>(m_proxy);
+        if (!proxy)
+            return;
+        LightShaderParameter param = m_runtimeLightData;
+        Application::GetRenderThread()->EnqueueUpdate_AnyThread(
+            [proxy, param](gfx::GFXResourceManager*) mutable
+            {
+                proxy->Param = param;
+            });
     }
 
     BoxSphereBounds3f PointLightComponent::GetBoundsWS()
@@ -98,27 +115,27 @@ namespace pulsar
     {
         base::OnTransformChanged();
         m_runtimeLightData.WorldPosition = GetTransform()->GetWorldPosition();
-        MarkRenderingDirty();
+        MarkRenderStateDirty();
     }
 
     void PointLightComponent::OnRadiusChanged()
     {
         base::OnLightColorChanged();
         m_runtimeLightData.SourceAndSoftSourceRadius.x = m_radius;
-        MarkRenderingDirty();
+        MarkRenderStateDirty();
     }
 
     void PointLightComponent::OnLightColorChanged()
     {
         base::OnLightColorChanged();
         m_runtimeLightData.Color = Vector4f(m_lightColor.r, m_lightColor.g, m_lightColor.b, m_intensity);
-        MarkRenderingDirty();
+        MarkRenderStateDirty();
     }
     void PointLightComponent::OnIntensityChanged()
     {
         base::OnIntensityChanged();
         m_runtimeLightData.Color = Vector4f(m_lightColor.r, m_lightColor.g, m_lightColor.b, m_intensity);
-        MarkRenderingDirty();
+        MarkRenderStateDirty();
     }
 
     void PointLightComponent::PostEditChange(FieldInfo* info)

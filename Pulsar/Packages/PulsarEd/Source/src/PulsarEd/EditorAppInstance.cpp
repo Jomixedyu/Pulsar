@@ -561,6 +561,12 @@ namespace pulsared
             OnRenderTick.Invoke(dt);
 
             m_gui->EndFrame();
+
+            // [Main thread] Finalize ImGui and deep-copy the draw data into the pipeline's
+            // snapshot. The render thread renders from the snapshot, so the next NewFrame
+            // is free to overwrite the global ImGui context.
+            if (auto* pipeline = static_cast<EditorRenderPipeline*>(Application::GetGfxApp()->GetRenderPipeline()))
+                m_gui->PrepareDrawData(pipeline->ImGuiDrawSnapshot);
         }
         else
         {

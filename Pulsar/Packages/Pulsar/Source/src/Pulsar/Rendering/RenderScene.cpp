@@ -27,6 +27,16 @@ namespace pulsar
         {
             AddView(view);
         }
+        else if (auto point = std::dynamic_pointer_cast<PointLightProxy>(proxy))
+        {
+            point->OnCreateResource();
+            m_pointLights.push_back(point);
+        }
+        else if (auto dir = std::dynamic_pointer_cast<DirectionalLightProxy>(proxy))
+        {
+            dir->OnCreateResource();
+            m_directionalLights.push_back(dir);
+        }
     }
 
     void RenderScene::RemoveProxy_RenderThread(const SPtr<rendering::RenderProxy>& proxy)
@@ -42,6 +52,24 @@ namespace pulsar
         else if (auto view = std::dynamic_pointer_cast<SceneView>(proxy))
         {
             RemoveView(view);
+        }
+        else if (auto point = std::dynamic_pointer_cast<PointLightProxy>(proxy))
+        {
+            const auto it = std::ranges::find(m_pointLights, point);
+            if (it != m_pointLights.end())
+            {
+                (*it)->OnDestroyResource();
+                m_pointLights.erase(it);
+            }
+        }
+        else if (auto dir = std::dynamic_pointer_cast<DirectionalLightProxy>(proxy))
+        {
+            const auto it = std::ranges::find(m_directionalLights, dir);
+            if (it != m_directionalLights.end())
+            {
+                (*it)->OnDestroyResource();
+                m_directionalLights.erase(it);
+            }
         }
     }
 
@@ -89,6 +117,8 @@ namespace pulsar
     {
         AssertRenderThread();
         m_views.clear();
+        m_pointLights.clear();
+        m_directionalLights.clear();
         m_renderObjects.clear();
         m_perObjectData.Destroy();
     }

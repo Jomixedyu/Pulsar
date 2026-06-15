@@ -3,13 +3,13 @@
 
 namespace pulsar
 {
-    class World;
+    class RenderScene;
     struct SceneViewData;
 
     struct RenderCaptureContext
     {
         const SceneViewData*   view       = nullptr;
-        World*                 world      = nullptr;
+        RenderScene*           scene      = nullptr;
         uint64_t               frameIndex = 0;
     };
 

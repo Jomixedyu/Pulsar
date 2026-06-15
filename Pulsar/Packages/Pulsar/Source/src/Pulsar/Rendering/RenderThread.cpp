@@ -58,7 +58,7 @@ namespace pulsar
     }
 
     // ========== 帧驱动（Lockstep）==========
-    void RenderThread::RunFrame_AnyThread(std::move_only_function<void()> renderFn)
+    void RenderThread::Dispatch_AnyThread(std::move_only_function<void()> renderFn)
     {
         if (!m_running) return;
 
@@ -66,8 +66,24 @@ namespace pulsar
         m_pendingFrame = std::move(renderFn);
         m_frameRequested = true;
         m_frameDone = false;
+        m_frameInFlight = true;
         m_frameCv.notify_all();
+    }
+
+    void RenderThread::WaitFrame_AnyThread()
+    {
+        if (!m_running) return;
+
+        std::unique_lock<std::mutex> lock(m_frameMutex);
+        if (!m_frameInFlight) return; // nothing dispatched since last wait
         m_frameCv.wait(lock, [this] { return m_frameDone || !m_running; });
+        m_frameInFlight = false;
+    }
+
+    void RenderThread::RunFrame_AnyThread(std::move_only_function<void()> renderFn)
+    {
+        Dispatch_AnyThread(std::move(renderFn));
+        WaitFrame_AnyThread();
     }
 
     // ========== 命令队列处理 ==========

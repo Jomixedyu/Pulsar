@@ -4,7 +4,10 @@
 #include "Scene.h"
 #include "TransformUtil.h"
 #include "World.h"
+#include "Application.h"
 #include <Pulsar/Rendering/LineRenderObject.h>
+#include <Pulsar/Rendering/LightProxy.h>
+#include <Pulsar/Rendering/RenderThread.h>
 
 namespace pulsar
 {
@@ -45,9 +48,7 @@ namespace pulsar
         m_gizmos = ro;
         GetWorld()->AddRenderObject(m_gizmos);
 
-        m_sceneInfo = std::make_unique<DirectionalLightSceneInfo>();
-        if (auto* env = GetOwnerNodeCollection()->GetRuntimeEnvironment())
-            env->AddDirectionalLight(m_sceneInfo.get());
+        OnTransformChanged();
         OnIntensityChanged();
         OnLightColorChanged();
     }
@@ -56,10 +57,29 @@ namespace pulsar
     {
         base::EndComponent();
         GetWorld()->RemoveRenderObject(m_gizmos);
-        if (auto* env = GetOwnerNodeCollection()->GetRuntimeEnvironment())
-            env->RemoveDirectionalLight(m_sceneInfo.get());
-        m_sceneInfo.reset();
         m_gizmos.reset();
+    }
+
+    SPtr<rendering::RenderProxy> DirectionalLightComponent::CreateRenderProxy()
+    {
+        return mksptr(new DirectionalLightProxy());
+    }
+
+    void DirectionalLightComponent::SyncRenderProxy()
+    {
+        auto proxy = std::static_pointer_cast<DirectionalLightProxy>(m_proxy);
+        if (!proxy)
+            return;
+        Vector3f vector = m_vector;
+        Color4f  color = m_lightColor;
+        float    intensity = m_intensity;
+        Application::GetRenderThread()->EnqueueUpdate_AnyThread(
+            [proxy, vector, color, intensity](gfx::GFXResourceManager*) mutable
+            {
+                proxy->Vector = vector;
+                proxy->Color = color;
+                proxy->Intensity = intensity;
+            });
     }
 
     void DirectionalLightComponent::PostEditChange(FieldInfo* info)
@@ -70,21 +90,22 @@ namespace pulsar
     void DirectionalLightComponent::OnIntensityChanged()
     {
         base::OnIntensityChanged();
-        m_sceneInfo->Intensity = m_intensity;
+        MarkRenderStateDirty();
     }
 
     void DirectionalLightComponent::OnLightColorChanged()
     {
         base::OnLightColorChanged();
-        m_sceneInfo->Color = m_lightColor;
+        MarkRenderStateDirty();
     }
 
     void DirectionalLightComponent::OnTransformChanged()
     {
         base::OnTransformChanged();
 
-        m_sceneInfo->Vector = GetNode()->GetTransform()->GetForward();
+        m_vector = GetNode()->GetTransform()->GetForward();
         m_gizmos->SetTransform(GetNode()->GetTransform()->GetLocalToWorldMatrix());
+        MarkRenderStateDirty();
     }
 
 } // namespace pulsar

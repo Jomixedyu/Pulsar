@@ -1,11 +1,10 @@
 #include "TranslucencyPass.h"
-#include <Pulsar/World.h>
 #include <Pulsar/Scene.h>
 #include <Pulsar/Rendering/RenderObject.h>
+#include <Pulsar/Rendering/RenderScene.h>
 #include <Pulsar/Rendering/SceneView.h>
 #include <Pulsar/Rendering/ShaderPass.h>
 #include <Pulsar/Assets/Material.h>
-#include <Pulsar/Node.h>
 #include <gfx/GFXCommandBuffer.h>
 #include <gfx/GFXApplication.h>
 #include <gfx/GFXGraphicsPipelineManager.h>
@@ -19,8 +18,8 @@ namespace pulsar
                                                  const RenderCaptureContext& ctx,
                                                  PerPassResources* perPass)
     {
-        auto* world = ctx.world;
-        if (!world || !ctx.view)
+        auto* scene = ctx.scene;
+        if (!scene || !ctx.view)
             return output;
 
         const Vector3f camPos     = ctx.view->CameraPosition;
@@ -43,9 +42,9 @@ namespace pulsar
             passBuilder.Read(m_hOpaqueDepth);
         }
 
-        passBuilder.Prepare([perPass, camPos, camForward, world, preparedTransparent, this](RGPassContext& ctx)
+        passBuilder.Prepare([perPass, camPos, camForward, scene, preparedTransparent, this](RGPassContext& ctx)
         {
-            for (const rendering::RenderObject_sp& ro : world->GetRenderObjects())
+            for (const rendering::RenderObject_sp& ro : scene->GetRenderObjects())
             {
                 const float depth = jmath::Dot(camForward, ro->GetWorldPosition() - camPos);
                 for (auto batch : ro->GetMeshBatches())
@@ -69,7 +68,7 @@ namespace pulsar
             std::sort(preparedTransparent->begin(), preparedTransparent->end(), sortDesc);
 
             // Update per-pass textures for this pass's own descriptor set
-            perPass->WriteStandardBuffers(this->m_perPassSet.get(), world->GetPerRenderObjectDataManager().GetBuffer());
+            perPass->WriteStandardBuffers(this->m_perPassSet.get(), scene->GetPerRenderObjectData().GetBuffer());
 
             gfx::GFXTexture2DView* colorView = nullptr;
             if (auto* colorRT = ctx.Get(m_hOpaqueColor))

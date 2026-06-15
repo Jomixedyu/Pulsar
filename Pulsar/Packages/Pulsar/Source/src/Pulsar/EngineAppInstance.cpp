@@ -62,7 +62,7 @@ namespace pulsar
 
                     RenderCaptureContext captureCtx;
                     captureCtx.view       = &view->Data;
-                    captureCtx.world      = world;
+                    captureCtx.scene      = scene;
                     captureCtx.frameIndex = s_frameIndex;
 
                     view->Renderer->Render(graph, captureCtx);

@@ -1,9 +1,6 @@
 #include "CustomPostProcessChain.h"
 #include "CustomPostProcessPass.h"
 #include <Pulsar/Rendering/SceneView.h>
-#include <Pulsar/Subsystems/PostProcessSubsystem.h>
-#include <Pulsar/World.h>
-#include <Pulsar/Node.h>
 
 namespace pulsar
 {
@@ -13,14 +10,10 @@ namespace pulsar
     void CustomPostProcessChain::OnSetup(const RenderCaptureContext& ctx)
     {
         m_materials.clear();
-        if (!ctx.view || !ctx.world)
+        if (!ctx.view)
             return;
 
-        if (auto* ppSub = ctx.world->GetSubsystem<PostProcessSubsystem>())
-        {
-            auto camPos = ctx.view->CameraPosition;
-            m_materials = ppSub->QueryPostProcessMaterials(camPos);
-        }
+        m_materials = ctx.view->PostProcessMaterials;
     }
 
     bool CustomPostProcessChain::IsEnabled() const

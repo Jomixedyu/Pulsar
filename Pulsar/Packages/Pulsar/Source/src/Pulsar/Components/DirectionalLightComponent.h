@@ -16,6 +16,8 @@ namespace pulsar
 
 
     protected:
+        SPtr<rendering::RenderProxy> CreateRenderProxy() override;
+        void SyncRenderProxy() override;
 
         void PostEditChange(FieldInfo* info) override;
 
@@ -25,6 +27,6 @@ namespace pulsar
         void OnTransformChanged() override;
         SPtr<rendering::RenderObject> m_gizmos;
 
-        std::unique_ptr<DirectionalLightSceneInfo> m_sceneInfo;
+        Vector3f m_vector{};
     };
 }

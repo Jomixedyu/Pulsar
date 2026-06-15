@@ -16,6 +16,10 @@ namespace pulsared
 
         std::shared_ptr<ImGuiObject> ImGuiObject;
 
+        // ImGui draw data deep-copied on the main thread (PrepareDrawData) and consumed
+        // here on the render thread, so the next NewFrame can overwrite the context.
+        ImGuiDrawDataSnapshot ImGuiDrawSnapshot;
+
         void OnRender(gfx::GFXRenderContext* context, gfx::GFXFrameBufferObject* backbuffer) override
         {
             auto& cmd = context->AddCommandBuffer();
@@ -41,7 +45,7 @@ namespace pulsared
 
             cmd.CmdBeginRenderPass("Editor UI");
             cmd.CmdSetViewport(0, 0, (float)backbuffer->GetWidth(), (float)backbuffer->GetHeight());
-            ImGuiObject->Render(&cmd);
+            ImGuiObject->Render(&cmd, ImGuiDrawSnapshot);
             cmd.CmdEndRenderPass();
             cmd.SetFrameBuffer(nullptr);
 

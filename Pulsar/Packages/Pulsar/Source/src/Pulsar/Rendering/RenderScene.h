@@ -2,6 +2,7 @@
 #include "PerRenderObjectDataManager.h"
 #include "RenderObject.h"
 #include "RenderProxy.h"
+#include "LightProxy.h"
 #include "SceneView.h"
 
 namespace pulsar
@@ -29,7 +30,15 @@ namespace pulsar
 
         const hash_set<rendering::RenderObject_sp>& GetRenderObjects() const { return m_renderObjects; }
         const array_list<SPtr<SceneView>>& GetViews() const { return m_views; }
+        const array_list<SPtr<PointLightProxy>>& GetPointLights() const { return m_pointLights; }
+        const array_list<SPtr<DirectionalLightProxy>>& GetDirectionalLights() const { return m_directionalLights; }
         PerRenderObjectDataManager& GetPerRenderObjectData() { return m_perObjectData; }
+
+        // World-level time snapshot. Written on the render thread via the update queue
+        // (World pushes it at end of Tick), read by renderers. Avoids touching live World.
+        void SetTime_RenderThread(float totalTime, float deltaTime) { m_totalTime = totalTime; m_deltaTime = deltaTime; }
+        float GetTotalTime() const { return m_totalTime; }
+        float GetDeltaTime() const { return m_deltaTime; }
 
     private:
         void AddRenderObject(const rendering::RenderObject_sp& ro);
@@ -39,6 +48,10 @@ namespace pulsar
 
         hash_set<rendering::RenderObject_sp> m_renderObjects;
         array_list<SPtr<SceneView>>          m_views;
+        array_list<SPtr<PointLightProxy>>       m_pointLights;
+        array_list<SPtr<DirectionalLightProxy>> m_directionalLights;
         PerRenderObjectDataManager           m_perObjectData;
+        float                                m_totalTime = 0.f;
+        float                                m_deltaTime = 0.f;
     };
 }

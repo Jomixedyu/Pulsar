@@ -1,6 +1,7 @@
 #include "Components/SceneCaptureComponent.h"
 #include "World.h"
 #include <Pulsar/Rendering/SceneView.h>
+#include <Pulsar/Subsystems/PostProcessSubsystem.h>
 #include <Pulsar/Rendering/RenderGraph/DefaultSceneCaptureRenderer.h>
 
 namespace pulsar
@@ -26,6 +27,15 @@ namespace pulsar
         SceneViewData data{};
         if (!ExtractViewData(data))
             return;
+
+        // Snapshot post-process settings on the game thread for this view's camera
+        // position, so the render thread reads the blended stack instead of querying
+        // the live PostProcessSubsystem.
+        if (auto* ppSub = GetWorld()->GetSubsystem<PostProcessSubsystem>())
+        {
+            data.PostProcessStack = ppSub->QuerySettings(data.CameraPosition);
+            data.PostProcessMaterials = ppSub->QueryPostProcessMaterials(data.CameraPosition);
+        }
 
         GetWorld()->UpdateSceneView(m_sceneView, std::move(data));
     }

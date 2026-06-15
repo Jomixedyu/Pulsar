@@ -73,12 +73,24 @@ namespace pulsar
 
         // ========== 帧驱动（Lockstep）==========
         /**
-         * @brief 派发一帧渲染到渲染线程并阻塞直到完成（lockstep）。
+         * @brief 派发一帧渲染到渲染线程并阻塞直到完成（= Dispatch + WaitFrame）。
          * 主线程在游戏 tick 后调用：渲染线程会先抽干资源更新队列（帧屏障，
          * 保证本帧用到的资源已就绪），再执行 renderFn（实际绘制+present）。
          * 由于 game tick 与渲染不重叠，渲染线程可安全直接读取活动场景数据。
          */
         void RunFrame_AnyThread(std::move_only_function<void()> renderFn);
+
+        /**
+         * @brief 派发一帧到渲染线程，不阻塞（与 WaitFrame_AnyThread 配对）。
+         * 主线程派发后可继续 tick 下一帧，与渲染线程并行。每次 Dispatch 后
+         * 必须在下一次 Dispatch 前调用 WaitFrame_AnyThread。
+         */
+        void Dispatch_AnyThread(std::move_only_function<void()> renderFn);
+
+        /**
+         * @brief 阻塞直到上一个 Dispatch 的帧完成。无在途帧则立即返回。
+         */
+        void WaitFrame_AnyThread();
 
     private:
         void RenderLoop();
@@ -104,6 +116,7 @@ namespace pulsar
         std::move_only_function<void()> m_pendingFrame;
         bool m_frameRequested = false;
         bool m_frameDone = false;
+        bool m_frameInFlight = false;  // Dispatch 后置位，WaitFrame 清除
 
         // WaitForIdle 请求：渲染线程在 ProcessDestroys 前执行 vkDeviceWaitIdle。
         std::atomic<bool> m_waitDeviceIdle{false};

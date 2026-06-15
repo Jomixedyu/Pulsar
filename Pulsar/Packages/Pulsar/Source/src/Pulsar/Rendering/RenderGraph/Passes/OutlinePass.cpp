@@ -1,13 +1,12 @@
 #include "OutlinePass.h"
-#include <Pulsar/World.h>
 #include <Pulsar/Scene.h>
 #include <Pulsar/Rendering/RenderObject.h>
+#include <Pulsar/Rendering/RenderScene.h>
 #include <Pulsar/Rendering/SceneView.h>
 #include <Pulsar/Rendering/ShaderPass.h>
 #include <Pulsar/Rendering/ShaderConfig.h>
 #include <Pulsar/Assets/Material.h>
 #include <Pulsar/Assets/Shader.h>
-#include <Pulsar/Node.h>
 #include <gfx/GFXCommandBuffer.h>
 #include <gfx/GFXApplication.h>
 #include <gfx/GFXGraphicsPipelineManager.h>
@@ -39,8 +38,8 @@ namespace pulsar
                                             const RenderCaptureContext& ctx,
                                             PerPassResources* perPass)
     {
-        auto* world = ctx.world;
-        if (!world || !ctx.view)
+        auto* scene = ctx.scene;
+        if (!scene || !ctx.view)
             return output;
 
         const Vector3f camPos     = ctx.view->CameraPosition;
@@ -56,12 +55,12 @@ namespace pulsar
                 .depthStoreOp = gfx::GFXRenderPassStoreOp::Store,
             })
             .WithPerPass(perPass)
-            .Prepare([world, camPos, camForward, preparedOutline, perPass, this](RGPassContext&)
+            .Prepare([scene, camPos, camForward, preparedOutline, perPass, this](RGPassContext&)
             {
-                perPass->WriteStandardBuffers(this->m_perPassSet.get(), world->GetPerRenderObjectDataManager().GetBuffer());
+                perPass->WriteStandardBuffers(this->m_perPassSet.get(), scene->GetPerRenderObjectData().GetBuffer());
                 perPass->Submit(this->m_perPassSet.get());
 
-                for (const rendering::RenderObject_sp& ro : world->GetRenderObjects())
+                for (const rendering::RenderObject_sp& ro : scene->GetRenderObjects())
                 {
                     const float depth = jmath::Dot(camForward, ro->GetWorldPosition() - camPos);
                     for (auto batch : ro->GetMeshBatches())

@@ -1,10 +1,8 @@
 #include "DefaultSceneCaptureRenderer.h"
 #include <Pulsar/Logger.h>
-#include <Pulsar/Node.h>
-#include <Pulsar/World.h>
-#include <Pulsar/Scene.h>
 #include <Pulsar/Rendering/SceneView.h>
-#include <Pulsar/Subsystems/PostProcessSubsystem.h>
+#include <Pulsar/Rendering/RenderScene.h>
+#include <Pulsar/Rendering/LightProxy.h>
 #include <gfx/GFXCommandBuffer.h>
 #include <gfx/TextureClasses.h>
 
@@ -60,16 +58,16 @@ namespace pulsar
     void DefaultSceneCaptureRenderer::Render(RenderGraph& graph, const RenderCaptureContext& ctx)
     {
         const SceneViewData* view = ctx.view;
-        auto* world = ctx.world;
+        auto* scene = ctx.scene;
 
-        if (!view || !world)
+        if (!view || !scene)
             return;
 
         auto* camRenderTexture = view->RenderTarget.GetPtr();
         if (!camRenderTexture)
             return;
 
-        auto& perRenderObjectMgr = world->GetPerRenderObjectDataManager();
+        auto& perRenderObjectMgr = ctx.scene->GetPerRenderObjectData();
         perRenderObjectMgr.BeginFrame();
 
         auto* perPass = &m_perPassResources;
@@ -89,34 +87,39 @@ namespace pulsar
 
         {
             PerPassWorldData worldData{};
-            worldData.TotalTime  = world->GetTotalTime();
-            worldData.DeltaTime  = world->GetTicker().deltatime;
+            worldData.TotalTime  = ctx.scene ? ctx.scene->GetTotalTime() : 0.f;
+            worldData.DeltaTime  = ctx.scene ? ctx.scene->GetDeltaTime() : 0.f;
 
-            if (auto* env = world->GetFocusScene()->GetRuntimeEnvironment())
+            if (ctx.scene)
             {
-                if (const auto* dirLight = env->GetDirectionalLight())
+                const DirectionalLightProxy* brightest = nullptr;
+                for (const auto& dir : ctx.scene->GetDirectionalLights())
                 {
-                    worldData.WorldSpaceLightVector = -dirLight->Vector;
-                    auto& c = dirLight->Color;
-                    worldData.WorldSpaceLightColor  = {c.r, c.g, c.b, dirLight->Intensity};
+                    if (!brightest || dir->Intensity > brightest->Intensity)
+                        brightest = dir.get();
                 }
+                if (brightest)
                 {
-                    auto skyLight = env->GetSkyLight();
-                    worldData.SkyLightColor = {skyLight.Color.r, skyLight.Color.g, skyLight.Color.b, skyLight.Intensity};
+                    worldData.WorldSpaceLightVector = -brightest->Vector;
+                    auto& c = brightest->Color;
+                    worldData.WorldSpaceLightColor  = {c.r, c.g, c.b, brightest->Intensity};
                 }
             }
-            worldData.LightParameterCount = static_cast<uint32_t>(world->GetLightManager()->GetLightCount());
+            worldData.SkyLightColor = {0, 0, 0, 0};
+            worldData.LightParameterCount = ctx.scene ? static_cast<uint32_t>(ctx.scene->GetPointLights().size()) : 0;
             perPass->UpdateWorld(worldData);
         }
 
         {
             PerPassLightsBufferData lightsData{};
-            auto* lightMgr = ctx.world->GetLightManager();
-            int lightCount = std::min(lightMgr->GetLightCount(), 63);
-            for (int i = 0; i < lightCount; ++i)
+            if (ctx.scene)
             {
-                auto& src = lightMgr->GetLightParameter(i);
-                lightsData.Lights[i] = src;
+                auto& pointLights = ctx.scene->GetPointLights();
+                int lightCount = std::min(static_cast<int>(pointLights.size()), 63);
+                for (int i = 0; i < lightCount; ++i)
+                {
+                    lightsData.Lights[i] = pointLights[i]->Param;
+                }
             }
             perPass->UpdateLights(lightsData);
         }
@@ -182,11 +185,7 @@ namespace pulsar
         hSceneColor = m_translucencyPass.AddToGraph(graph, hSceneColor, hSceneColor, ctx, perPass);
 
         // ---- Post-Process Features ----
-        VolumeStack stack;
-        if (auto* ppSub = world->GetSubsystem<PostProcessSubsystem>())
-        {
-            stack = ppSub->QuerySettings(view->CameraPosition);
-        }
+        const VolumeStack& stack = view->PostProcessStack;
 
         RGTextureDesc pingPongDesc{};
         pingPongDesc.Width  = camRT->GetWidth();

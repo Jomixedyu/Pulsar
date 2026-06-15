@@ -1,6 +1,8 @@
 #pragma once
 #include <Pulsar/EngineMath.h>
 #include <Pulsar/Assets/RenderTexture.h>
+#include <Pulsar/Assets/Material.h>
+#include <Pulsar/Subsystems/VolumeStack.h>
 #include "RenderProxy.h"
 #include <memory>
 
@@ -24,6 +26,15 @@ namespace pulsar
         uint32_t MSAASamples = 1;
         bool     GizmoPassEnabled = false;
         RCPtr<RenderTexture> RenderTarget;
+
+        // Post-process settings blended for this view's camera position, snapshotted on
+        // the game thread (SyncRenderProxy) so the render thread never touches the live
+        // PostProcessSubsystem / volume components.
+        VolumeStack PostProcessStack;
+
+        // Custom post-process materials collected for this view, snapshotted on the game
+        // thread for the same reason.
+        array_list<RCPtr<Material>> PostProcessMaterials;
     };
 
     // Render-thread-owned per-view proxy (capture proxy). Owns the GPU pass pipeline
