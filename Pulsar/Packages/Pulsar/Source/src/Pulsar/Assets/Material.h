@@ -5,6 +5,7 @@
 #include <Pulsar/Rendering/ShaderPropertySheet.h>
 #include <Pulsar/Rendering/ShaderPropertyRenderData.h>
 #include <Pulsar/Rendering/ShaderInstance.h>
+#include <Pulsar/Rendering/MaterialProxy.h>
 #include <Pulsar/AssetObject.h>
 #include <Pulsar/Assets/Shader.h>
 #include <Pulsar/Assets/Texture.h>
@@ -18,38 +19,6 @@
 
 namespace pulsar
 {
-    // Per-pass binding key
-    struct PassKey
-    {
-        std::string m_passName;
-        std::string m_interface;
-
-        bool operator==(const PassKey& other) const = default;
-        bool operator<(const PassKey& other) const
-        {
-            if (m_passName != other.m_passName) return m_passName < other.m_passName;
-            return m_interface < other.m_interface;
-        }
-    };
-
-    // Per-pass binding: holds a ShaderInstance AND its own GPU resources for a specific (pass, interface) combination
-    struct MaterialPassBinding
-    {
-        std::shared_ptr<ShaderInstance> m_instance;
-
-        // Per-binding GPU resources (lazily created when this interface's shader is ready)
-        gfx::GFXDescriptorSet_sp             m_descriptorSet;
-        gfx::DescriptorSetLayoutHandle       m_descriptorSetLayout;
-        gfx::GFXBuffer_sp                    m_materialConstantBuffer;
-        bool                                 m_gpuResourcesInitialized = false;
-        std::weak_ptr<ShaderProgramResource> m_builtWithProgram;
-
-        std::shared_ptr<ShaderProgramResource> GetCurrentProgram() const
-        {
-            return m_instance ? m_instance->GetCurrentProgram() : nullptr;
-        }
-    };
-
     class Material final : public AssetObject, public IGPUResource
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::Material, AssetObject);
@@ -85,23 +54,14 @@ namespace pulsar
         Vector4f GetVector4(const index_string& name);
         RCPtr<Texture> GetTexture(const index_string& name);
 
-        // User-triggered: upload dirty parameters to all ready bindings.
+        // User-triggered: upload dirty parameters to the render proxy.
         // Call this after modifying material parameters (SetFloat / SetTexture / etc.).
         void SubmitParameters(bool force = false);
 
-        // Renderer-triggered: called once per frame before drawing with this (pass, interface).
-        // Detects async shader compilation completing, creates GPU resources, and does the
-        // initial parameter sync into freshly created resources.
-        // Returns nullptr if the shader for this binding is not yet ready.
-        const MaterialPassBinding* PrepareForRendering(
-            const std::string& passName,
-            const std::string& interface_);
-
-        // Per-pass binding: lazily creates ShaderInstance for (pass, interface)
-        // The binding owns its own GPU resources (descriptor set, cbuffer), created when the shader is ready.
-        const MaterialPassBinding& GetPassBinding(
-            const std::string& passName,
-            const std::string& interface_);
+        // Render-thread mirror of this material's render state (1:1). Created in CreateGPUResource.
+        // Render-side code (mesh batches, post-process passes) references this proxy instead of
+        // the Material so the render thread never holds an RCPtr<Material>.
+        const std::shared_ptr<MaterialProxy>& GetRenderProxy() const { return m_renderProxy; }
 
     public:
         RCPtr<Shader> GetShader() const;
@@ -111,13 +71,13 @@ namespace pulsar
         void SetGraphicsPipelineOverride(const SPtr<ShaderConfigGraphicsPipeline>& value)
         {
             m_graphicsPipelineOverride = value;
-            m_cachedEffectiveGraphicsPipeline.clear();
+            EnqueueProxyStateUpdate();
         }
 
         void SetGraphicsPipelineOverrideFields(const SPtr<ObjectPropertyOverride>& value)
         {
             m_graphicsPipelineOverrideFields = value;
-            m_cachedEffectiveGraphicsPipeline.clear();
+            EnqueueProxyStateUpdate();
         }
 
         const std::vector<std::string>& GetActiveFeatures() const { return m_activeFeatures; }
@@ -127,15 +87,13 @@ namespace pulsar
         const ShaderPropertySheet& GetSheet() const { return m_sheet; }
 
         ShaderPassRenderQueueType GetQueue() const { return m_queue; }
-        void SetQueue(ShaderPassRenderQueueType value) { m_queue = value; }
+        void SetQueue(ShaderPassRenderQueueType value) { if (m_queue == value) return; m_queue = value; EnqueueProxyStateUpdate(); }
 
-        void InvalidateGraphicsPipelineCache() { m_cachedEffectiveGraphicsPipeline.clear(); }
+        void InvalidateGraphicsPipelineCache() { EnqueueProxyStateUpdate(); }
 
         SPtr<ShaderConfigGraphicsPipeline> GetGraphicsPipelineOverride() const { return m_graphicsPipelineOverride; }
 
         SPtr<ObjectPropertyOverride> GetGraphicsPipelineOverrideFields() const { return m_graphicsPipelineOverrideFields; }
-
-        SPtr<ShaderConfigGraphicsPipeline> GetEffectiveGraphicsPipeline(const std::string& passName) const;
 
         CORELIB_REFL_DECL_METHOD(SetOpaqueOverride, new ToolFunctionAttribute("Set Opaque"));
         void SetOpaqueOverride();
@@ -155,10 +113,14 @@ namespace pulsar
         void PostEditChange(FieldInfo* info) override;
 
     private:
-        void ClearPassBindings();
-        void EnsureGPUResources(MaterialPassBinding& binding, const ShaderPropertyLayout& layout);
         // 【游戏线程】从 m_sheet 重建渲染线程专用快照 m_renderData。
         void RebuildRenderData();
+        // 【游戏线程】把 shader/feature 快照入队，喂给渲染线程的 proxy（清 bindings，触发重编译）。
+        void EnqueueProxyShaderUpdate();
+        // 【游戏线程】把 queue/GP override 等轻量状态入队，喂给渲染线程的 proxy（不清 bindings）。
+        void EnqueueProxyStateUpdate();
+        // 【游戏线程】把当前参数快照入队，喂给渲染线程的 proxy。
+        void EnqueueProxyRenderData();
 
     private:
         CORELIB_REFL_DECL_FIELD(m_shader);
@@ -175,14 +137,12 @@ namespace pulsar
 
         ShaderPropertySheet m_sheet;
         // 游戏线程从 m_sheet 解析的渲染线程专用快照（纹理已解析为 GPU 句柄、常量纯值）。
-        // 渲染线程的 PrepareForRendering / SubmitParameters 回调只消费此快照，不触碰 m_sheet。
+        // 该快照经渲染队列喂给 m_renderProxy；渲染线程只消费 proxy 内的拷贝。
         ShaderPropertyRenderData m_renderData;
         std::vector<std::string> m_activeFeatures;
 
-        // Per-pass ShaderInstance cache (lazy-created); each binding owns its own GPU resources
-        std::map<PassKey, MaterialPassBinding> m_passBindings;
-
-        mutable std::map<std::string, SPtr<ShaderConfigGraphicsPipeline>> m_cachedEffectiveGraphicsPipeline;
+        // 渲染线程独占镜像（1:1）。承载所有 (pass×interface×feature) 变体 binding 与 GPU 资源。
+        std::shared_ptr<MaterialProxy> m_renderProxy;
 
         bool m_createdGpuResource = false;
         bool m_isDirtyParameter{};

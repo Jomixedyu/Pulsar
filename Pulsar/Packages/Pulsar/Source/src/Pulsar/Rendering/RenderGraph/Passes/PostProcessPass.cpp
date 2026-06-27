@@ -53,6 +53,9 @@ namespace pulsar
         if (!m_material)
             return hSrc;
         m_material->SubmitParameters();
+        m_proxy = m_material->GetRenderProxy();
+        if (!m_proxy)
+            return hSrc;
 
         auto curSrc = hSrc;
         auto curDst = hDst;
@@ -69,8 +72,8 @@ namespace pulsar
             .WithPerPass(perPass)
             .Prepare([this, perPass](RGPassContext&)
             {
-                if (m_material)
-                    m_material->PrepareForRendering("PostProcess", "RENDERER_IMAGEPROCESS");
+                if (m_proxy)
+                    m_proxy->PrepareForRendering("PostProcess", "RENDERER_IMAGEPROCESS");
             })
             .Execute([this, curSrc, curDst, fallbackFBO, fallbackView, perPass]
                      (RGPassContext& passCtx, gfx::GFXCommandBuffer& cmdBuffer)
@@ -87,18 +90,18 @@ namespace pulsar
                                          const gfx::GFXTexture2DView_sp& fallbackView,
                                          PerPassResources* perPass)
     {
-        if (!m_material) return;
-        auto shader = m_material->GetShader();
-        if (!shader || !shader->GetConfig()) return;
+        if (!m_proxy) return;
+        if (!m_proxy->GetShaderConfig()) return;
 
-        const auto* ppPassBinding = m_material->GetPassBinding("PostProcess", "RENDERER_IMAGEPROCESS")
+        const auto* ppPassBinding = m_proxy->GetPassBinding("PostProcess", "RENDERER_IMAGEPROCESS")
                                         .m_gpuResourcesInitialized
-                                    ? &m_material->GetPassBinding("PostProcess", "RENDERER_IMAGEPROCESS")
+                                    ? &m_proxy->GetPassBinding("PostProcess", "RENDERER_IMAGEPROCESS")
                                     : nullptr;
         if (!ppPassBinding) return;
 
         auto program = ppPassBinding->GetCurrentProgram();
         if (!program) return;
+        if (program->GetGpuPrograms().empty()) return;
 
         const auto* dstRT = passCtx.Get(hDst);
         gfx::GFXFrameBufferObject* dstFBO = nullptr;

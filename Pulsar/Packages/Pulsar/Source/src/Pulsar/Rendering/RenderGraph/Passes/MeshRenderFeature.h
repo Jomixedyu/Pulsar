@@ -63,8 +63,7 @@ namespace pulsar
             if (!pb.binding)
                 continue;
 
-            auto shader = pb.batch.Material->GetShader();
-            if (!shader || !shader->GetConfig())
+            if (!pb.batch.Material || !pb.batch.Material->GetShaderConfig())
                 continue;
 
             auto effectiveGP = getEffectiveGP(pb);

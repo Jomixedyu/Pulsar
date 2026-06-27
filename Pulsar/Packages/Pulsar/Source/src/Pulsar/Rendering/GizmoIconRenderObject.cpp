@@ -28,7 +28,6 @@ namespace pulsar
             return;
 
         rendering::MeshBatch batch{};
-        batch.Material = m_material;
         batch.Interface = "RENDERER_STATICMESH";
         batch.DescriptorSetLayout = m_descriptorSetLayout;
         batch.RenderObjectIndex = m_renderObjectIndex;
@@ -82,10 +81,12 @@ namespace pulsar
 
     array_list<rendering::MeshBatch> GizmoIconRenderObject::GetMeshBatches()
     {
+        if (m_material && !m_material->IsCreatedGPUResource())
+            m_material->CreateGPUResource();
+
         for (auto& batch : m_batches)
         {
-            if (batch.Material && !batch.Material->IsCreatedGPUResource())
-                batch.Material->CreateGPUResource();
+            batch.Material = m_material ? m_material->GetRenderProxy() : nullptr;
         }
         return m_batches;
     }

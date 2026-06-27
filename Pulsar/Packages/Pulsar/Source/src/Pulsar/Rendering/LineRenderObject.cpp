@@ -105,9 +105,9 @@ namespace pulsar
         batch.State.VertexLayouts = {StaticMesh::StaticGetVertexLayout()};
         batch.IsUsedIndices = false;
         batch.IsDepthTestDisabled = !m_depthTestEnabled;
-        batch.Material = AssetManager::Get()->LoadAsset<Material>("Pulsar/Materials/VertexColor");
-        if (batch.Material)
-            batch.Material->SetQueue(m_renderQueue);
+        m_material = AssetManager::Get()->LoadAsset<Material>("Pulsar/Materials/VertexColor");
+        if (m_material)
+            m_material->SetQueue(m_renderQueue);
     }
 
     void LineRenderObject::OnDestroyResource()
@@ -127,12 +127,12 @@ namespace pulsar
 
     array_list<rendering::MeshBatch> LineRenderObject::GetMeshBatches()
     {
-        for (const auto& batch : m_batchs)
+        if (m_material && !m_material->IsCreatedGPUResource())
+            m_material->CreateGPUResource();
+
+        for (auto& batch : m_batchs)
         {
-            if (batch.Material && !batch.Material->IsCreatedGPUResource())
-            {
-                batch.Material->CreateGPUResource();
-            }
+            batch.Material = m_material ? m_material->GetRenderProxy() : nullptr;
         }
         return m_batchs;
     }

@@ -73,7 +73,7 @@ namespace pulsar
 
                 auto getEffectiveGP = [](const PreparedBatch& pb) -> SPtr<ShaderConfigGraphicsPipeline>
                 {
-                    auto shaderConfig = pb.batch.Material->GetShader()->GetConfig();
+                    auto shaderConfig = pb.batch.Material->GetShaderConfig();
                     // GizmoOverlay pass 直接读 shader 原始配置，不应用 material override
                     if (shaderConfig->Passes && shaderConfig->Passes->size() > 0)
                     {

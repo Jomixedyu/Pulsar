@@ -17,6 +17,7 @@ namespace pulsar
         gfx::GFXDescriptorSetLayout_sp m_meshDescriptorSetLayout;
 
         array_list<rendering::MeshBatch> m_batchs;
+        RCPtr<Material> m_material;
         bool m_depthTestEnabled = false;
         ShaderPassRenderQueueType m_renderQueue = ShaderPassRenderQueueType::Overlay;
 

@@ -34,7 +34,17 @@ namespace pulsar
                 for (const auto& pass : *config->Passes)
                     if (pass && pass->Entry && pass->Name == passName)
                         return pass->Entry;
-                // fallback: 第一个有 Entry 的 pass
+                // interface-aware fallback: builtin shaders (Pending/Error) only declare
+                // "Forward" (mesh entries: VSMain/PSMain) and "PostProcess" (blit entries:
+                // BlitVSMain/BlitPSMain). The entry points live behind RENDERER_* #if guards,
+                // so the fallback pass MUST match the requested interface — otherwise the
+                // chosen entry won't exist under the active define and compilation fails.
+                const std::string fallbackName =
+                    (requestedKey.m_interface == "RENDERER_IMAGEPROCESS") ? "PostProcess" : "Forward";
+                for (const auto& pass : *config->Passes)
+                    if (pass && pass->Entry && pass->Name == fallbackName)
+                        return pass->Entry;
+                // last resort: 第一个有 Entry 的 pass
                 for (const auto& pass : *config->Passes)
                     if (pass && pass->Entry)
                         return pass->Entry;

@@ -51,6 +51,8 @@ namespace pulsar
         };
 
         RCPtr<Material> m_material;
+        // Render-side mirror resolved from m_material in AddToGraph (game thread).
+        std::shared_ptr<MaterialProxy> m_proxy;
 
         bool  m_bloomEnabled = true;
         float m_bloomThreshold = 0.44922f;

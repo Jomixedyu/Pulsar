@@ -28,7 +28,7 @@ namespace pulsar::rendering
         array_list<MeshBatchElement> Elements;
         gfx::GFXDescriptorSetLayout_sp DescriptorSetLayout;
         gfx::GFXDescriptorSet_sp ExtraDescriptorSet; // set2 (dummy or skinning)
-        RCPtr<Material> Material;
+        std::shared_ptr<MaterialProxy> Material; // render-thread material mirror (resolved on game thread)
         std::string Interface; // Renderer interface name (e.g. "RENDERER_STATICMESH")
 
         gfx::GFXGraphicsPipelineState State{};
@@ -46,7 +46,7 @@ namespace pulsar::rendering
         {
             constexpr size_t prime = 16777619;
             return (2166136261 * prime
-                ^ std::hash<RCPtrBase>()(Material)) * prime
+                ^ std::hash<const void*>()(Material.get())) * prime
                 ^ State.GetHashCode() * prime;
         }
 

@@ -14,22 +14,11 @@
 
 namespace pulsar
 {
-    static bool MaterialHasOutlinePass(const Material* material)
+    static bool MaterialHasOutlinePass(const MaterialProxy* material)
     {
         if (!material)
             return false;
-        auto shader = material->GetShader();
-        if (!shader)
-            return false;
-        auto config = shader->GetConfig();
-        if (!config || !config->Passes)
-            return false;
-        for (const auto& pass : *config->Passes)
-        {
-            if (pass && pass->Name == "VertexOutline")
-                return true;
-        }
-        return false;
+        return material->HasPass("VertexOutline");
     }
 
     RGTextureHandle OutlinePass::AddToGraph(RenderGraph& graph,
@@ -75,7 +64,7 @@ namespace pulsar
                             continue;
                         }
 
-                        if (!MaterialHasOutlinePass(batch.Material.GetPtr()))
+                        if (!MaterialHasOutlinePass(batch.Material.get()))
                             continue;
 
                         batch.Depth = depth;
@@ -111,7 +100,7 @@ namespace pulsar
 
                 auto getEffectiveGP = [](const PreparedBatch& pb) -> SPtr<ShaderConfigGraphicsPipeline>
                 {
-                    auto shaderConfig = pb.batch.Material->GetShader()->GetConfig();
+                    auto shaderConfig = pb.batch.Material->GetShaderConfig();
                     // Outline pass 直接读 shader 原始配置，不应用 material override
                     if (auto pass = shaderConfig->FindPass("VertexOutline"))
                         return pass->GraphicsPipeline;

@@ -76,26 +76,29 @@ namespace pulsar
             batch.IsUsedIndices = true;
             batch.IsCastShadow = true;
 
-            batch.Material  = slot;
+            batch.Material  = nullptr;
             batch.Priority  = (matIndex < (int)m_priorities.size()) ? m_priorities.at(matIndex) : 0;
 
             // null / invalid material → fallback to Error material
-            bool isInvalidMaterial = !batch.Material
-                || !batch.Material->GetShader()
-                || !batch.Material->CreateGPUResource();
+            RCPtr<Material> mat = slot;
+            bool isInvalidMaterial = !mat
+                || !mat->GetShader()
+                || !mat->CreateGPUResource();
             if (isInvalidMaterial)
             {
-                batch.Material = AssetManager::Get()->LoadAsset<Material>("Pulsar/Materials/Error");
-                if (batch.Material)
-                    batch.Material->CreateGPUResource();
+                mat = AssetManager::Get()->LoadAsset<Material>("Pulsar/Materials/Error");
+                if (mat)
+                    mat->CreateGPUResource();
             }
 
             // still no valid material after fallback, skip
-            if (!batch.Material || !batch.Material->GetShader())
+            if (!mat || !mat->GetShader())
             {
                 m_batches.pop_back();
                 continue;
             }
+
+            batch.Material = mat->GetRenderProxy();
 
             batch.Interface = GetInterface();
             batch.RenderObjectIndex = m_renderObjectIndex;

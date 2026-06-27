@@ -213,6 +213,9 @@ namespace pulsar
         if (!m_material)
             return input;
         m_material->SubmitParameters();
+        m_proxy = m_material->GetRenderProxy();
+        if (!m_proxy)
+            return input;
 
         const RenderTargetSnapshot& camRT = ctx.view->RenderTarget;
         if (!camRT.IsValid())
@@ -275,18 +278,19 @@ namespace pulsar
                 })
                 .Prepare([this, shaderPassName](RGPassContext&)
                 {
-                    if (m_material)
-                        m_material->PrepareForRendering(shaderPassName, "RENDERER_IMAGEPROCESS");
+                    if (m_proxy)
+                        m_proxy->PrepareForRendering(shaderPassName, "RENDERER_IMAGEPROCESS");
                 })
                 .Execute([this, hSrc, hDst, shaderPassName, texelSize, direction, sampleMode, bloomSet, bufIdx, passName]
                          (RGPassContext& passCtx, gfx::GFXCommandBuffer& cmdBuffer)
                 {
-                    if (!m_material) return;
-                    auto& binding = m_material->GetPassBinding(shaderPassName, "RENDERER_IMAGEPROCESS");
+                    if (!m_proxy) return;
+                    auto& binding = m_proxy->GetPassBinding(shaderPassName, "RENDERER_IMAGEPROCESS");
                     if (!binding.m_gpuResourcesInitialized) return;
 
                     auto program = binding.GetCurrentProgram();
                     if (!program) return;
+                    if (program->GetGpuPrograms().empty()) return;
 
                     const auto* dstRT = passCtx.Get(hDst);
                     if (!dstRT) return;
@@ -397,18 +401,19 @@ namespace pulsar
             })
             .Prepare([this](RGPassContext&)
             {
-                if (m_material)
-                    m_material->PrepareForRendering("BloomCombine", "RENDERER_IMAGEPROCESS");
+                if (m_proxy)
+                    m_proxy->PrepareForRendering("BloomCombine", "RENDERER_IMAGEPROCESS");
             })
             .Execute([this, input, hBloom0V, hBloom1V, hBloom2V, hBloom3V, output]
                      (RGPassContext& passCtx, gfx::GFXCommandBuffer& cmdBuffer)
             {
-                if (!m_material) return;
-                auto& binding = m_material->GetPassBinding("BloomCombine", "RENDERER_IMAGEPROCESS");
+                if (!m_proxy) return;
+                auto& binding = m_proxy->GetPassBinding("BloomCombine", "RENDERER_IMAGEPROCESS");
                 if (!binding.m_gpuResourcesInitialized) return;
 
                 auto program = binding.GetCurrentProgram();
                 if (!program) return;
+                if (program->GetGpuPrograms().empty()) return;
 
                 const auto* dstRT = passCtx.Get(output);
                 if (!dstRT) return;

@@ -98,7 +98,6 @@ namespace pulsar
             m_pPerRenderObjectDataManager->SetData(slot, data);
 
             rendering::MeshBatch batch{};
-            batch.Material = item.Material;
             batch.Interface = "RENDERER_STATICMESH";
             batch.DescriptorSetLayout = m_descriptorSetLayout;
             batch.RenderObjectIndex = slot;
@@ -122,10 +121,12 @@ namespace pulsar
         if (m_dirty)
             _Rebuild();
 
-        for (auto& batch : m_batches)
+        for (size_t i = 0; i < m_batches.size() && i < m_items.size(); ++i)
         {
-            if (batch.Material && !batch.Material->IsCreatedGPUResource())
-                batch.Material->CreateGPUResource();
+            auto& mat = m_items[i].Material;
+            if (mat && !mat->IsCreatedGPUResource())
+                mat->CreateGPUResource();
+            m_batches[i].Material = mat ? mat->GetRenderProxy() : nullptr;
         }
         return m_batches;
     }

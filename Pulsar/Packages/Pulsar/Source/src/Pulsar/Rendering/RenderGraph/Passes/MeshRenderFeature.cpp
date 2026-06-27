@@ -26,8 +26,10 @@ namespace pulsar
         if (!program)
             return;
 
-        auto shader = pb.batch.Material->GetShader();
-        if (!shader || !shader->GetConfig())
+        if (program->GetGpuPrograms().empty())
+            return;
+
+        if (!pb.batch.Material->GetShaderConfig())
             return;
 
         auto& gpuPrograms = program->GetGpuPrograms();

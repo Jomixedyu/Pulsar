@@ -43,6 +43,9 @@ namespace pulsar
         gfx::GFXDescriptorSetLayout_sp GetInputSamplerLayout();
 
         RCPtr<Material> m_material;
+        // Render-side mirror resolved from m_material in AddToGraph (game thread).
+        // Render-thread lambdas consume this instead of the RCPtr<Material>.
+        std::shared_ptr<MaterialProxy> m_proxy;
         gfx::GFXDescriptorSet_sp m_descriptorSet;
         gfx::GFXDescriptorSet_sp m_perPassSet;
         gfx::GFXDescriptorSetLayout_sp m_inputSamplerLayout;

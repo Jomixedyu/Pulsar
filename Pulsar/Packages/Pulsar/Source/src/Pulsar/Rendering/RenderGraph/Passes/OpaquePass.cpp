@@ -96,7 +96,7 @@ namespace pulsar
 
                 auto getEffectiveGP = [](const PreparedBatch& pb) -> SPtr<ShaderConfigGraphicsPipeline>
                 {
-                    auto shaderConfig = pb.batch.Material->GetShader()->GetConfig();
+                    auto shaderConfig = pb.batch.Material->GetShaderConfig();
                     if (shaderConfig->Passes && shaderConfig->Passes->size() > 0)
                     {
                         auto& passConfig = (*shaderConfig->Passes)[0];
