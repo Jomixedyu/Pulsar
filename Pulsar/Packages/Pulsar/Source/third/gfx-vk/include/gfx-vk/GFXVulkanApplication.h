@@ -71,7 +71,7 @@ namespace gfx
             GFXTextureFormat format, const GFXSamplerConfig& samplerCfg,
             uint32_t sampleCount = 1, bool isTransientAttachment = false) override;
 
-        virtual GFXDescriptorSetLayout_sp CreateDescriptorSetLayout(
+        virtual GFXDescriptorSetLayout_sp GetOrCreateDescriptorSetLayout(
             const GFXDescriptorLayoutDesc* layouts,
             size_t layoutCount) override;
 

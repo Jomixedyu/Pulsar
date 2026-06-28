@@ -2,7 +2,7 @@
 
 gfx::GFXApplication::~GFXApplication() = default;
 
-gfx::GFXDescriptorSetLayout_sp gfx::GFXApplication::CreateDescriptorSetLayout(std::initializer_list<GFXDescriptorLayoutDesc> layouts)
+gfx::GFXDescriptorSetLayout_sp gfx::GFXApplication::GetOrCreateDescriptorSetLayout(std::initializer_list<GFXDescriptorLayoutDesc> layouts)
 {
-    return CreateDescriptorSetLayout(layouts.begin(), layouts.size());
+    return GetOrCreateDescriptorSetLayout(layouts.begin(), layouts.size());
 }

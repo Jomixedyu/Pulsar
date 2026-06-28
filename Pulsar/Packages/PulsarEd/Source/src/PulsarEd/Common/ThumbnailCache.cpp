@@ -21,7 +21,7 @@ namespace pulsared
     {
         gfx::GFXDescriptorLayoutDesc info{
             gfx::GFXDescriptorLayoutDesc(gfx::GFXDescriptorType::Texture2D, gfx::GFXGpuProgramStageFlags::Fragment, 0)};
-        m_descriptorLayout = m_app->CreateDescriptorSetLayout(&info, 1);
+        m_descriptorLayout = m_app->GetOrCreateDescriptorSetLayout(&info, 1);
     }
 
     ThumbnailCache::~ThumbnailCache() = default;

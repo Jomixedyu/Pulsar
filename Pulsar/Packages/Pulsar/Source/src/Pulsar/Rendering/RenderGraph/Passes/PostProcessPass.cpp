@@ -34,7 +34,7 @@ namespace pulsar
                 gfx::GFXGpuProgramStageFlags::Fragment,
                 0, 1
             };
-            m_inputSamplerLayout = gfxApp->CreateDescriptorSetLayout(&desc, 1);
+            m_inputSamplerLayout = gfxApp->GetOrCreateDescriptorSetLayout(&desc, 1);
         }
         return m_inputSamplerLayout;
     }

@@ -39,7 +39,7 @@ namespace pulsar
                 {gfx::GFXDescriptorType::CombinedImageSampler, gfx::GFXGpuProgramStageFlags::Fragment, 3, 1},
                 {gfx::GFXDescriptorType::ConstantBuffer,       gfx::GFXGpuProgramStageFlags::Fragment, 8, 1},
             };
-            m_bloomLayout = gfxApp->CreateDescriptorSetLayout(descs.data(), static_cast<uint32_t>(descs.size()));
+            m_bloomLayout = gfxApp->GetOrCreateDescriptorSetLayout(descs.data(), static_cast<uint32_t>(descs.size()));
             for (int i = 0; i < 16; ++i)
             {
                 auto set = m_bloomLayout->AllocateSet();
@@ -57,7 +57,7 @@ namespace pulsar
                 {gfx::GFXDescriptorType::CombinedImageSampler, gfx::GFXGpuProgramStageFlags::Fragment, 7, 1},
                 {gfx::GFXDescriptorType::ConstantBuffer,       gfx::GFXGpuProgramStageFlags::Fragment, 8, 1},
             };
-            m_combineLayout = gfxApp->CreateDescriptorSetLayout(descs.data(), static_cast<uint32_t>(descs.size()));
+            m_combineLayout = gfxApp->GetOrCreateDescriptorSetLayout(descs.data(), static_cast<uint32_t>(descs.size()));
             m_combineSet = m_combineLayout->AllocateSet();
         }
 

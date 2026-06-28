@@ -439,6 +439,12 @@ namespace gfx
         // Release handle-managed resources before destroying the device
         m_resourceManager.reset();
 
+        // Release cached descriptor set layouts (own their pools) before destroying the device
+        {
+            std::lock_guard<std::mutex> lock(m_layoutCacheMutex);
+            m_layoutCache.clear();
+        }
+
         delete m_renderer;
         delete m_viewport;
         delete m_graphicsPipelineManager;
@@ -536,7 +542,7 @@ namespace gfx
         return gfxmksptr(rt);
     }
 
-    GFXDescriptorSetLayout_sp GFXVulkanApplication::CreateDescriptorSetLayout(
+    GFXDescriptorSetLayout_sp GFXVulkanApplication::GetOrCreateDescriptorSetLayout(
         const GFXDescriptorLayoutDesc* layouts,
         size_t layoutCount)
     {

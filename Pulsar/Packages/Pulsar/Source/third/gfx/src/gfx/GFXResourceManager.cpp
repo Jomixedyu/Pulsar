@@ -113,7 +113,7 @@ namespace gfx
     {
         std::shared_lock<std::shared_mutex> lock(m_mutex);
         if (!ValidateHandleForCreation(m_slots, handle.index, handle.generation)) return;
-        auto gfxLayout = m_app->CreateDescriptorSetLayout(bindings.data(), bindings.size());
+        auto gfxLayout = m_app->GetOrCreateDescriptorSetLayout(bindings.data(), bindings.size());
         if (gfxLayout)
         {
             gfxLayout->SetResourceId(handle.index);

@@ -37,7 +37,7 @@ namespace pulsar
                 gfx::GFXGpuProgramStageFlags::VertexFragment,
                 0,
                 kRenderingDescriptorSpace_Camera};
-            m_camDescriptorLayout = Application::GetGfxApp()->CreateDescriptorSetLayout(&info, 1);
+            m_camDescriptorLayout = Application::GetGfxApp()->GetOrCreateDescriptorSetLayout(&info, 1);
             _CameraDescriptorLayout = m_camDescriptorLayout;
         }
         else
