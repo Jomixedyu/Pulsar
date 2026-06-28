@@ -176,7 +176,7 @@ namespace pulsared
             return;
         }
 
-        auto descSet = m_app->GetDescriptorManager()->GetDescriptorSet(m_descriptorLayout);
+        auto descSet = m_descriptorLayout->AllocateSet();
         auto desc = descSet->FindByBinding(0);
         if (!desc)
             desc = descSet->AddDescriptor("p", 0);
@@ -236,7 +236,7 @@ namespace pulsared
 
                         if (tex2d)
                         {
-                            auto descSet = m_app->GetDescriptorManager()->GetDescriptorSet(m_descriptorLayout);
+                            auto descSet = m_descriptorLayout->AllocateSet();
                             auto desc = descSet->FindByBinding(0);
                             if (!desc)
                                 desc = descSet->AddDescriptor("p", 0);
@@ -275,7 +275,7 @@ namespace pulsared
 
                     if (tex2d)
                     {
-                        auto descSet = m_app->GetDescriptorManager()->GetDescriptorSet(m_descriptorLayout);
+                        auto descSet = m_descriptorLayout->AllocateSet();
                         auto desc = descSet->FindByBinding(0);
                         if (!desc)
                             desc = descSet->AddDescriptor("p", 0);

@@ -10,7 +10,6 @@
 #include <gfx/GFXApplication.h>
 #include <gfx/GFXResourceManager.h>
 #include <gfx/GFXGraphicsPipelineManager.h>
-#include <gfx/GFXDescriptorManager.h>
 #include <gfx/TextureClasses.h>
 
 namespace pulsar
@@ -33,7 +32,6 @@ namespace pulsar
     void BloomPass::Initialize()
     {
         auto gfxApp = Application::GetGfxApp();
-        auto* descMgr = gfxApp->GetDescriptorManager();
 
         // Layout for Downsample / GaussFilter: binding 3 (texture) + binding 8 (cbuffer)
         {
@@ -44,7 +42,7 @@ namespace pulsar
             m_bloomLayout = gfxApp->CreateDescriptorSetLayout(descs.data(), static_cast<uint32_t>(descs.size()));
             for (int i = 0; i < 16; ++i)
             {
-                auto set = descMgr->GetDescriptorSet(m_bloomLayout);
+                auto set = m_bloomLayout->AllocateSet();
                 m_bloomSets.push_back(set);
             }
         }
@@ -60,7 +58,7 @@ namespace pulsar
                 {gfx::GFXDescriptorType::ConstantBuffer,       gfx::GFXGpuProgramStageFlags::Fragment, 8, 1},
             };
             m_combineLayout = gfxApp->CreateDescriptorSetLayout(descs.data(), static_cast<uint32_t>(descs.size()));
-            m_combineSet = descMgr->GetDescriptorSet(m_combineLayout);
+            m_combineSet = m_combineLayout->AllocateSet();
         }
 
         // Create 13 independent param buffers (one per pass)

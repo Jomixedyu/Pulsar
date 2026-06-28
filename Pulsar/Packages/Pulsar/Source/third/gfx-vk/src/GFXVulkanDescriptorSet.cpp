@@ -1,7 +1,6 @@
 #include <cassert>
 #include <gfx-vk/GFXVulkanApplication.h>
 #include <gfx-vk/GFXVulkanBuffer.h>
-#include <gfx-vk/GFXVulkanDescriptorPool.h>
 #include <gfx-vk/GFXVulkanDescriptorSet.h>
 #include <gfx-vk/GFXVulkanTexture.h>
 #include <gfx-vk/GFXVulkanTextureView.h>
@@ -9,20 +8,6 @@
 
 namespace gfx
 {
-    static std::unordered_map<VkDescriptorType, float> DefaultPoolSizes{
-        {VkDescriptorType::VK_DESCRIPTOR_TYPE_SAMPLER, 2},
-        {VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2},
-        {VkDescriptorType::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 2},
-        {VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1 / 8.0f},
-        {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1 / 2.0f},
-        {VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1 / 8.0f},
-        {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 / 4.0f},
-        {VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1 / 8.0f},
-        {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 4},
-        {VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1 / 8.0f},
-        {VkDescriptorType::VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1 / 8.0f},
-    };
-
     static VkDescriptorType _GetDescriptorType(GFXDescriptorType type)
     {
         switch (type)
@@ -80,6 +65,9 @@ namespace gfx
             binding.stageFlags      = _GetShaderStage(layoutInfo.Stage);
             binding.pImmutableSamplers = nullptr;
 
+            // Tally per-type descriptor counts so this layout's own pool can be sized exactly.
+            m_typeCounts[binding.descriptorType] += 1;
+
             // Sanity-check: log if a CombinedImageSampler layout ends up mapped to UNIFORM_BUFFER
             assert(!(layoutInfo.Type == GFXDescriptorType::CombinedImageSampler &&
                      binding.descriptorType != VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER));
@@ -97,12 +85,96 @@ namespace gfx
 
     GFXVulkanDescriptorSetLayout::~GFXVulkanDescriptorSetLayout()
     {
+        // Destroying the pools implicitly frees every set ever allocated from them,
+        // so recycled handles in m_freeSets need no individual vkFreeDescriptorSets.
+        for (auto pool : m_pools)
+        {
+            vkDestroyDescriptorPool(m_app->GetVkDevice(), pool, nullptr);
+        }
+        m_pools.clear();
+
         if (m_descriptorSetLayout != VK_NULL_HANDLE)
         {
             vkDestroyDescriptorSetLayout(m_app->GetVkDevice(), m_descriptorSetLayout, nullptr);
         }
-
     }
+
+    static constexpr uint32_t kSetsPerPool = 128;
+
+    VkDescriptorPool GFXVulkanDescriptorSetLayout::CreatePool()
+    {
+        std::vector<VkDescriptorPoolSize> sizes;
+        for (const auto& [type, count] : m_typeCounts)
+        {
+            sizes.push_back(VkDescriptorPoolSize{type, count * kSetsPerPool});
+        }
+        // An empty layout (zero bindings, used to keep set numbering aligned) still needs a
+        // valid pool to allocate empty sets from; a token size keeps vkCreateDescriptorPool legal.
+        if (sizes.empty())
+        {
+            sizes.push_back(VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, kSetsPerPool});
+        }
+
+        VkDescriptorPoolCreateInfo poolInfo{};
+        poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+        poolInfo.poolSizeCount = static_cast<uint32_t>(sizes.size());
+        poolInfo.pPoolSizes = sizes.data();
+        poolInfo.maxSets = kSetsPerPool;
+        // No FREE_DESCRIPTOR_SET_BIT: sets are recycled via m_freeSets, never freed one-by-one.
+
+        VkDescriptorPool pool = VK_NULL_HANDLE;
+        if (vkCreateDescriptorPool(m_app->GetVkDevice(), &poolInfo, nullptr, &pool) != VK_SUCCESS)
+        {
+            throw std::runtime_error("failed to create descriptor pool!");
+        }
+        return pool;
+    }
+
+    VkDescriptorSet GFXVulkanDescriptorSetLayout::AcquireVkSet()
+    {
+        std::lock_guard<std::mutex> lock(m_poolMutex);
+
+        if (!m_freeSets.empty())
+        {
+            VkDescriptorSet recycled = m_freeSets.back();
+            m_freeSets.pop_back();
+            return recycled;
+        }
+
+        if (m_pools.empty() || m_currentPoolRemaining == 0)
+        {
+            m_pools.push_back(CreatePool());
+            m_currentPoolRemaining = kSetsPerPool;
+        }
+
+        VkDescriptorSetAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        allocInfo.descriptorPool = m_pools.back();
+        allocInfo.descriptorSetCount = 1;
+        allocInfo.pSetLayouts = &m_descriptorSetLayout;
+
+        VkDescriptorSet set = VK_NULL_HANDLE;
+        const auto result = vkAllocateDescriptorSets(m_app->GetVkDevice(), &allocInfo, &set);
+        assert(result == VK_SUCCESS);
+        --m_currentPoolRemaining;
+        return set;
+    }
+
+    void GFXVulkanDescriptorSetLayout::RecycleVkSet(VkDescriptorSet set)
+    {
+        if (set == VK_NULL_HANDLE)
+            return;
+        std::lock_guard<std::mutex> lock(m_poolMutex);
+        m_freeSets.push_back(set);
+    }
+
+    std::shared_ptr<GFXDescriptorSet> GFXVulkanDescriptorSetLayout::AllocateSet()
+    {
+        auto self = std::static_pointer_cast<GFXVulkanDescriptorSetLayout>(shared_from_this());
+        VkDescriptorSet handle = AcquireVkSet();
+        return std::shared_ptr<GFXVulkanDescriptorSet>(new GFXVulkanDescriptorSet(self, handle));
+    }
+
 
     void GFXVulkanDescriptor::SetConstantBuffer(GFXBuffer* buffer)
     {
@@ -208,28 +280,21 @@ namespace gfx
     }
 
 
-    GFXVulkanDescriptorSet::GFXVulkanDescriptorSet(GFXVulkanDescriptorPool* pool, const GFXDescriptorSetLayout_sp& layout)
-        : m_pool(pool)
+    GFXVulkanDescriptorSet::GFXVulkanDescriptorSet(const GFXDescriptorSetLayout_sp& layout, VkDescriptorSet handle)
+        : m_descriptorSet(handle)
     {
+        // The VkDescriptorSet is already allocated by the owning layout's pool chain.
         m_setlayout = std::static_pointer_cast<GFXVulkanDescriptorSetLayout>(layout);
-
-        VkDescriptorSetAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        allocInfo.descriptorPool = pool->GetVkDescriptorPool();
-        allocInfo.descriptorSetCount = 1;
-        allocInfo.pSetLayouts = &m_setlayout->GetVkDescriptorSetLayout();
-
-        const auto result = vkAllocateDescriptorSets(pool->GetApplication()->GetVkDevice(), &allocInfo, &m_descriptorSet);
-        assert(result == VK_SUCCESS);
     }
 
     GFXVulkanDescriptorSet::~GFXVulkanDescriptorSet()
     {
         m_descriptors.clear();
 
-        vkFreeDescriptorSets(this->GetApplication()->GetVkDevice(), m_pool->GetVkDescriptorPool(), 1, &m_descriptorSet);
+        // Return the handle to the owning layout's free list for reuse instead of freeing it.
+        if (m_setlayout)
+            m_setlayout->RecycleVkSet(m_descriptorSet);
         m_descriptorSet = VK_NULL_HANDLE;
-        m_pool->ReleaseDescriptorSet();
     }
 
     GFXDescriptor* GFXVulkanDescriptorSet::AddDescriptor(std::string_view name, uint32_t bindingPoint)
@@ -286,7 +351,7 @@ namespace gfx
         if (!writeInfos.empty())
         {
             vkUpdateDescriptorSets(
-                m_pool->GetApplication()->GetVkDevice(),
+                GetApplication()->GetVkDevice(),
                 static_cast<uint32_t>(writeInfos.size()),
                 writeInfos.data(),
                 0,
@@ -299,7 +364,7 @@ namespace gfx
     }
     GFXVulkanApplication* GFXVulkanDescriptorSet::GetApplication() const
     {
-        return m_pool->GetApplication();
+        return m_setlayout ? m_setlayout->GetApplication() : nullptr;
     }
     GFXDescriptorSetLayout_sp GFXVulkanDescriptorSet::GetDescriptorSetLayout() const
     {

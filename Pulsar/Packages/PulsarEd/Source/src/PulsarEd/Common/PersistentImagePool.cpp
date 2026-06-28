@@ -32,7 +32,7 @@ namespace pulsared
             return {};
         }
         auto tex = texIt->second;
-        auto descSet = m_app->GetDescriptorManager()->GetDescriptorSet(m_descriptorLayout);
+        auto descSet = m_descriptorLayout->AllocateSet();
 
         auto desc = descSet->FindByBinding(0);
         if (!desc)

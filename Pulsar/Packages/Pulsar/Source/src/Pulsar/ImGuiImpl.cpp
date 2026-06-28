@@ -15,7 +15,6 @@
 #include <imgui/imgui_impl_vulkan.h>
 #include <imgui/imgui_impl_sdl2.h>
 #include <gfx-vk/GFXVulkanApplication.h>
-#include <gfx-vk/GFXVulkanDescriptorManager.h>
 #include <gfx-vk/GFXVulkanCommandBuffer.h>
 #endif
 #include <imgui/imgui_impl_win32.h>
@@ -196,7 +195,7 @@ namespace pulsar
             init_info.PipelineCache = VK_NULL_HANDLE;
             init_info.MinImageCount = 2;
             init_info.ImageCount = 2;
-            init_info.DescriptorPool = m_app->GetVulkanDescriptorManager()->GetCommonDescriptorSetPool()->GetVkDescriptorPool();
+            init_info.DescriptorPoolSize = 256;
             init_info.Allocator = VK_NULL_HANDLE;
             init_info.UseDynamicRendering = true;
             init_info.PipelineInfoMain.PipelineRenderingCreateInfo = renderingInfo;

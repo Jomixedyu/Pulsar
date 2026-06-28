@@ -111,7 +111,7 @@ namespace pulsared
             gfx::GFXDescriptorType::Texture2D,
             gfx::GFXGpuProgramStageFlags::Fragment,
             0)});
-        m_descriptorSet = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_descriptorLayout);
+        m_descriptorSet = m_descriptorLayout->AllocateSet();
     }
 
     void ViewportFrame::Terminate()

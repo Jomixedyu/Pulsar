@@ -112,7 +112,7 @@ namespace pulsar
             resMgr->UploadBuffer(m_skinningBuffer, &defaultData, sizeof(defaultData));
         }
 
-        m_descriptorSet = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_descriptorSetLayout);
+        m_descriptorSet = m_descriptorSetLayout->AllocateSet();
         if (auto* buffer = Application::GetGfxApp()->GetResourceManager()->GetBuffer(m_skinningBuffer))
         {
             m_descriptorSet->AddDescriptor("SkinningData", kRenderingDescriptorBinding_SkinningData)

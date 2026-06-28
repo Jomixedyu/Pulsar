@@ -2,15 +2,20 @@
 #include <gfx/GFXDescriptorSet.h>
 #include "VulkanInclude.h"
 
+#include <memory>
+#include <mutex>
+#include <unordered_map>
+#include <vector>
+
 namespace gfx
 {
     class GFXVulkanApplication;
     class GFXVulkanDescriptorSet;
-    class GFXVulkanDescriptorPool;
 
     class GFXVulkanDescriptorSetLayout : public GFXDescriptorSetLayout
     {
         using base = GFXDescriptorSetLayout;
+        friend class GFXVulkanDescriptorSet;
     public:
         GFXVulkanDescriptorSetLayout(
             GFXVulkanApplication* app,
@@ -21,11 +26,30 @@ namespace gfx
 
     public:
         const VkDescriptorSetLayout& GetVkDescriptorSetLayout() const { return m_descriptorSetLayout; }
+        GFXVulkanApplication* GetApplication() const { return m_app; }
+
+        // Allocate a descriptor set from this layout's own, exactly-sized pool chain.
+        // Uses shared_from_this() so the returned set holds the owning layout: the layout
+        // (and its pools) outlive the set, and the set recycles itself on destroy.
+        std::shared_ptr<GFXDescriptorSet> AllocateSet() override;
+
+    private:
+        VkDescriptorSet AcquireVkSet();          // reuse from free list, else alloc from current/new pool
+        void RecycleVkSet(VkDescriptorSet set);  // return to free list (never individually vkFree'd)
+        VkDescriptorPool CreatePool();
 
     protected:
         array_list<GFXDescriptorSetLayoutDesc> m_debugInfo;
         VkDescriptorSetLayout m_descriptorSetLayout;
         GFXVulkanApplication* m_app;
+
+        // Per-layout descriptor pool: poolSize is computed exactly from this layout's bindings
+        // (no global type-ratio guessing), grows by appending pools, recycles freed sets.
+        std::unordered_map<VkDescriptorType, uint32_t> m_typeCounts; // descriptors per set, per type
+        std::vector<VkDescriptorPool> m_pools;
+        std::vector<VkDescriptorSet>  m_freeSets;
+        uint32_t m_currentPoolRemaining = 0;
+        std::mutex m_poolMutex;
     };
     GFX_DECL_SPTR(GFXVulkanDescriptorSetLayout);
 
@@ -60,9 +84,9 @@ namespace gfx
     class GFXVulkanDescriptorSet : public GFXDescriptorSet
     {
         using base = GFXDescriptorSet;
-        friend class GFXVulkanDescriptorPool;
+        friend class GFXVulkanDescriptorSetLayout;
     private:
-        GFXVulkanDescriptorSet(GFXVulkanDescriptorPool* pool, const GFXDescriptorSetLayout_sp& layout);
+        GFXVulkanDescriptorSet(const GFXDescriptorSetLayout_sp& layout, VkDescriptorSet handle);
     public:
         virtual ~GFXVulkanDescriptorSet() override;
         GFXVulkanDescriptorSet(const GFXVulkanDescriptorSet&) = delete;
@@ -80,7 +104,6 @@ namespace gfx
         GFXVulkanDescriptorSetLayout_sp GetVkDescriptorSetLayout() const { return m_setlayout; }
         virtual GFXDescriptorSetLayout_sp GetDescriptorSetLayout() const override;
     protected:
-        GFXVulkanDescriptorPool* m_pool;
         std::vector<std::unique_ptr<GFXVulkanDescriptor>> m_descriptors;
         VkDescriptorSet m_descriptorSet = VK_NULL_HANDLE;
         GFXVulkanDescriptorSetLayout_sp m_setlayout;

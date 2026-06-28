@@ -230,8 +230,7 @@ namespace pulsar
         // 即使没有任何 binding 也创建空 layout，确保 set 0 始终存在以保证 set 编号对齐
         binding.m_descriptorSetLayout = resMgr->AllocHandle<gfx::DescriptorSetLayoutHandle>();
         resMgr->CreateDescriptorSetLayout(binding.m_descriptorSetLayout, descLayoutInfos);
-        binding.m_descriptorSet = gfxApp->GetDescriptorManager()->GetDescriptorSet(
-            resMgr->GetDescriptorSetLayoutShared(binding.m_descriptorSetLayout));
+        binding.m_descriptorSet = resMgr->GetDescriptorSetLayoutShared(binding.m_descriptorSetLayout)->AllocateSet();
 
         if (binding.m_materialConstantBuffer)
         {

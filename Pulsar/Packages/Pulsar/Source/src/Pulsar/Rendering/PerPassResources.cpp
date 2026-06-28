@@ -130,8 +130,7 @@ namespace pulsar
     gfx::GFXDescriptorSet_sp PerPassResources::AllocateSet(gfx::DescriptorSetLayoutHandle layout) const
     {
         auto gfxApp = Application::GetGfxApp();
-        return gfxApp->GetDescriptorManager()->GetDescriptorSet(
-            gfxApp->GetResourceManager()->GetDescriptorSetLayoutShared(layout));
+        return gfxApp->GetResourceManager()->GetDescriptorSetLayoutShared(layout)->AllocateSet();
     }
 
     void PerPassResources::WriteCameraToSet(gfx::GFXDescriptorSet* set) const

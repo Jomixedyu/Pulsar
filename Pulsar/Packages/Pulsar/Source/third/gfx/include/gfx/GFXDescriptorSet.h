@@ -4,9 +4,11 @@
 #include "GFXResource.h"
 #include "GFXGpuProgram.h"
 #include <string_view>
+#include <memory>
 
 namespace gfx
 {
+    class GFXDescriptorSet;
     enum class GFXDescriptorType
     {
         ConstantBuffer,
@@ -37,7 +39,7 @@ namespace gfx
         }
     };
 
-    class GFXDescriptorSetLayout : public GFXResource
+    class GFXDescriptorSetLayout : public GFXResource, public std::enable_shared_from_this<GFXDescriptorSetLayout>
     {
     protected:
         GFXDescriptorSetLayout()
@@ -45,6 +47,9 @@ namespace gfx
         }
         ~GFXDescriptorSetLayout() override {}
         GFXResourceType GetResourceType() const override { return GFXResourceType::DescriptorSetLayout; }
+    public:
+        // Allocate a descriptor set from this layout's own, exactly-sized pool chain.
+        virtual std::shared_ptr<GFXDescriptorSet> AllocateSet() = 0;
     };
     GFX_DECL_SPTR(GFXDescriptorSetLayout);
 

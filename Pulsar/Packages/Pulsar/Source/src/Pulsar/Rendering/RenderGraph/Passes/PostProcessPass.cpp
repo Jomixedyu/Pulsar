@@ -5,7 +5,6 @@
 #include <gfx/GFXCommandBuffer.h>
 #include <gfx/GFXApplication.h>
 #include <gfx/GFXGraphicsPipelineManager.h>
-#include <gfx/GFXDescriptorManager.h>
 #include <Pulsar/Application.h>
 
 namespace pulsar

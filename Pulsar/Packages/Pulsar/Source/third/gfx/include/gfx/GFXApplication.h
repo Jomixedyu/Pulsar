@@ -2,7 +2,7 @@
 #include "GFXApi.h"
 #include "GFXBuffer.h"
 #include "GFXCommandBuffer.h"
-#include "GFXDescriptorManager.h"
+#include "GFXDescriptorSet.h"
 #include "GFXExtensions.h"
 #include "GFXGlobalConfig.h"
 #include "GFXGpuProgram.h"
@@ -59,8 +59,6 @@ namespace gfx
         virtual GFXBuffer_sp CreateBuffer(const GFXBufferDesc& desc) = 0;
         virtual GFXCommandBuffer_sp CreateCommandBuffer() = 0;
         virtual GFXGpuProgram_sp CreateGpuProgram(GFXGpuProgramStageFlags stage, const uint8_t* code, size_t length) = 0;
-
-        virtual GFXDescriptorManager* GetDescriptorManager() = 0;
 
         virtual GFXDescriptorSetLayout_sp CreateDescriptorSetLayout(
             const GFXDescriptorSetLayoutDesc* layouts,

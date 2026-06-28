@@ -67,8 +67,6 @@ namespace gfx
             GFXTextureFormat format, const GFXSamplerConfig& samplerCfg,
             uint32_t sampleCount = 1, bool isTransientAttachment = false) override;
 
-        virtual GFXDescriptorManager* GetDescriptorManager() override;
-
         virtual GFXDescriptorSetLayout_sp CreateDescriptorSetLayout(
             const GFXDescriptorSetLayoutDesc* layouts,
             size_t layoutCount) override;
@@ -77,7 +75,6 @@ namespace gfx
 
         virtual std::vector<uint8_t> ReadbackTexture(GFXTexture* texture, int32_t width, int32_t height) override;
 
-        class GFXVulkanDescriptorManager* GetVulkanDescriptorManager() const { return m_descriptorManager; }
         virtual GFXExtensions GetExtensionNames() override;
         virtual intptr_t GetWindowHandle() override;
         virtual GFXSurface* GetWindow() override { return m_window; }
@@ -138,7 +135,6 @@ namespace gfx
         VkQueue m_graphicsQueue = VK_NULL_HANDLE;
         VkQueue m_presentQueue = VK_NULL_HANDLE;
 
-        class GFXVulkanDescriptorManager* m_descriptorManager = nullptr;
         class GFXVulkanRenderer* m_renderer = nullptr;
 
         class GFXVulkanCommandBufferPool* m_cmdPool = nullptr;

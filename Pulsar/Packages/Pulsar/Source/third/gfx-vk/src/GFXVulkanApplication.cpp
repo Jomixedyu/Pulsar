@@ -5,7 +5,7 @@
 #include "GFXVulkanBuffer.h"
 #include "GFXVulkanCommandBuffer.h"
 #include "GFXVulkanCommandBufferPool.h"
-#include "GFXVulkanDescriptorManager.h"
+#include "GFXVulkanDescriptorSet.h"
 #include "GFXVulkanGpuProgram.h"
 #include "GFXVulkanGraphicsPipeline.h"
 #include "GFXVulkanGraphicsPipelineManager.h"
@@ -408,8 +408,6 @@ namespace gfx
 
         m_cmdPool = new GFXVulkanCommandBufferPool(this);
 
-        m_descriptorManager = new GFXVulkanDescriptorManager(this);
-
         m_viewport = new GFXVulkanSwapchain(this, m_window);
 
         m_renderer = new GFXVulkanRenderer(this);
@@ -443,7 +441,6 @@ namespace gfx
         delete m_renderer;
         delete m_viewport;
         delete m_graphicsPipelineManager;
-        delete m_descriptorManager;
         delete m_cmdPool;
 
         vkDestroyDevice(m_device, nullptr);
@@ -536,11 +533,6 @@ namespace gfx
 
         auto rt = new GFXVulkanTexture(this, info);
         return gfxmksptr(rt);
-    }
-
-    GFXDescriptorManager* GFXVulkanApplication::GetDescriptorManager()
-    {
-        return m_descriptorManager;
     }
 
     GFXDescriptorSetLayout_sp GFXVulkanApplication::CreateDescriptorSetLayout(

@@ -54,7 +54,7 @@ namespace pulsar
         auto* resMgr = Application::GetGfxApp()->GetResourceManager();
         m_cameraDataBuffer = resMgr->AllocHandle<gfx::BufferHandle>();
         resMgr->CreateBuffer(m_cameraDataBuffer, perCameraBufferDesc);
-        m_cameraDescriptorSet = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_camDescriptorLayout);
+        m_cameraDescriptorSet = m_camDescriptorLayout->AllocateSet();
         if (auto* buffer = resMgr->GetBuffer(m_cameraDataBuffer))
         {
             m_cameraDescriptorSet->AddDescriptor("Target", 0)->SetConstantBuffer(buffer);
