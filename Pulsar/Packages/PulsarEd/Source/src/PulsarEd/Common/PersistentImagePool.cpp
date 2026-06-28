@@ -54,8 +54,8 @@ namespace pulsared
     PersistentImagePool::PersistentImagePool(gfx::GFXApplication* app)
         : m_app(app)
     {
-        gfx::GFXDescriptorSetLayoutDesc info{
-            gfx::GFXDescriptorSetLayoutDesc(gfx::GFXDescriptorType::Texture2D, gfx::GFXGpuProgramStageFlags::Fragment, 0)};
+        gfx::GFXDescriptorLayoutDesc info{
+            gfx::GFXDescriptorLayoutDesc(gfx::GFXDescriptorType::Texture2D, gfx::GFXGpuProgramStageFlags::Fragment, 0)};
         m_descriptorLayout = m_app->CreateDescriptorSetLayout(&info, 1);
     }
 

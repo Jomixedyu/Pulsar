@@ -32,7 +32,7 @@ namespace pulsar
 
         if (_CameraDescriptorLayout.expired())
         {
-            gfx::GFXDescriptorSetLayoutDesc info{
+            gfx::GFXDescriptorLayoutDesc info{
                 gfx::GFXDescriptorType::ConstantBuffer,
                 gfx::GFXGpuProgramStageFlags::VertexFragment,
                 0,

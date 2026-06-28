@@ -35,7 +35,7 @@ namespace pulsar
 
         // Layout for Downsample / GaussFilter: binding 3 (texture) + binding 8 (cbuffer)
         {
-            std::vector<gfx::GFXDescriptorSetLayoutDesc> descs = {
+            std::vector<gfx::GFXDescriptorLayoutDesc> descs = {
                 {gfx::GFXDescriptorType::CombinedImageSampler, gfx::GFXGpuProgramStageFlags::Fragment, 3, 1},
                 {gfx::GFXDescriptorType::ConstantBuffer,       gfx::GFXGpuProgramStageFlags::Fragment, 8, 1},
             };
@@ -49,7 +49,7 @@ namespace pulsar
 
         // Layout for Combine: binding 3,4,5,6,7 (textures) + binding 8 (cbuffer)
         {
-            std::vector<gfx::GFXDescriptorSetLayoutDesc> descs = {
+            std::vector<gfx::GFXDescriptorLayoutDesc> descs = {
                 {gfx::GFXDescriptorType::CombinedImageSampler, gfx::GFXGpuProgramStageFlags::Fragment, 3, 1},
                 {gfx::GFXDescriptorType::CombinedImageSampler, gfx::GFXGpuProgramStageFlags::Fragment, 4, 1},
                 {gfx::GFXDescriptorType::CombinedImageSampler, gfx::GFXGpuProgramStageFlags::Fragment, 5, 1},

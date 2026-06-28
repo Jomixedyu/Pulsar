@@ -29,7 +29,7 @@ namespace pulsar
         if (!m_inputSamplerLayout)
         {
             auto* gfxApp = Application::GetGfxApp();
-            gfx::GFXDescriptorSetLayoutDesc desc{
+            gfx::GFXDescriptorLayoutDesc desc{
                 gfx::GFXDescriptorType::CombinedImageSampler,
                 gfx::GFXGpuProgramStageFlags::Fragment,
                 0, 1

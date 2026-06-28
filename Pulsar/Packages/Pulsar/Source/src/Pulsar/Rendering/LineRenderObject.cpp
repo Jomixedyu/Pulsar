@@ -69,7 +69,7 @@ namespace pulsar
 
         if (s_dummyLayout.expired())
         {
-            gfx::GFXDescriptorSetLayoutDesc info{};
+            gfx::GFXDescriptorLayoutDesc info{};
             m_meshDescriptorSetLayout = Application::GetGfxApp()->CreateDescriptorSetLayout(&info, 0);
             s_dummyLayout = m_meshDescriptorSetLayout;
         }

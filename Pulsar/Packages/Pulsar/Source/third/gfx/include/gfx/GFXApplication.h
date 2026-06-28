@@ -61,10 +61,10 @@ namespace gfx
         virtual GFXGpuProgram_sp CreateGpuProgram(GFXGpuProgramStageFlags stage, const uint8_t* code, size_t length) = 0;
 
         virtual GFXDescriptorSetLayout_sp CreateDescriptorSetLayout(
-            const GFXDescriptorSetLayoutDesc* layouts,
+            const GFXDescriptorLayoutDesc* layouts,
             size_t layoutCount) = 0;
         virtual GFXDescriptorSetLayout_sp CreateDescriptorSetLayout(
-            std::initializer_list<GFXDescriptorSetLayoutDesc> layouts);
+            std::initializer_list<GFXDescriptorLayoutDesc> layouts);
 
         virtual GFXGraphicsPipelineManager* GetGraphicsPipelineManager() const = 0;
 

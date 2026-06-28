@@ -81,7 +81,7 @@ namespace pulsar
             return it->second;
 
         auto* resMgr = Application::GetGfxApp()->GetResourceManager();
-        std::vector<gfx::GFXDescriptorSetLayoutDesc> descs;
+        std::vector<gfx::GFXDescriptorLayoutDesc> descs;
 
         if (passName == "Forward")
         {

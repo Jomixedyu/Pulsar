@@ -19,7 +19,7 @@ namespace gfx
     public:
         GFXVulkanDescriptorSetLayout(
             GFXVulkanApplication* app,
-            const GFXDescriptorSetLayoutDesc* layouts,
+            const GFXDescriptorLayoutDesc* layouts,
             size_t layoutCount = 1);
 
         virtual ~GFXVulkanDescriptorSetLayout() override;
@@ -39,7 +39,7 @@ namespace gfx
         VkDescriptorPool CreatePool();
 
     protected:
-        array_list<GFXDescriptorSetLayoutDesc> m_debugInfo;
+        array_list<GFXDescriptorLayoutDesc> m_debugInfo;
         VkDescriptorSetLayout m_descriptorSetLayout;
         GFXVulkanApplication* m_app;
 

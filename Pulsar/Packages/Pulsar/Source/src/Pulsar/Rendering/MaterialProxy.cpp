@@ -194,11 +194,11 @@ namespace pulsar
         auto gfxApp = Application::GetGfxApp();
 
         // 创建该 binding 专属的 descriptor set layout (set 0)
-        array_list<gfx::GFXDescriptorSetLayoutDesc> descLayoutInfos;
+        array_list<gfx::GFXDescriptorLayoutDesc> descLayoutInfos;
 
         if (layout.m_totalCBufferSize > 0)
         {
-            gfx::GFXDescriptorSetLayoutDesc cbDesc{};
+            gfx::GFXDescriptorLayoutDesc cbDesc{};
             cbDesc.Type = gfx::GFXDescriptorType::ConstantBuffer;
             cbDesc.Stage = (layout.m_cbufferStageFlags != gfx::GFXGpuProgramStageFlags::None)
                 ? layout.m_cbufferStageFlags
@@ -216,7 +216,7 @@ namespace pulsar
 
         for (const auto& texEntry : layout.m_textureEntries)
         {
-            gfx::GFXDescriptorSetLayoutDesc texDesc{};
+            gfx::GFXDescriptorLayoutDesc texDesc{};
             texDesc.Type = texEntry.m_isCombinedImageSampler
                 ? gfx::GFXDescriptorType::CombinedImageSampler
                 : gfx::GFXDescriptorType::Texture2D;

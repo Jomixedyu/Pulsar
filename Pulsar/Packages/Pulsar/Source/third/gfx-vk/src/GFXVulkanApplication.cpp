@@ -20,6 +20,7 @@
 #include <array>
 #include <cassert>
 #include <cmath>
+#include <cstdio>
 #include <iostream>
 #include <set>
 #include <stdexcept>
@@ -536,10 +537,43 @@ namespace gfx
     }
 
     GFXDescriptorSetLayout_sp GFXVulkanApplication::CreateDescriptorSetLayout(
-        const GFXDescriptorSetLayoutDesc* layouts,
+        const GFXDescriptorLayoutDesc* layouts,
         size_t layoutCount)
     {
-        return gfxmksptr(new GFXVulkanDescriptorSetLayout(this, layouts, layoutCount));
+        // Build a content key from the bindings, sorted by binding point so that
+        // array ordering does not produce distinct keys for the same Vulkan layout.
+        std::vector<const GFXDescriptorLayoutDesc*> sorted;
+        sorted.reserve(layoutCount);
+        
+        
+        
+        
+        
+        
+        
+        
+        for (size_t i = 0; i < layoutCount; ++i)
+            sorted.push_back(&layouts[i]);
+        std::sort(sorted.begin(), sorted.end(),
+            [](const GFXDescriptorLayoutDesc* a, const GFXDescriptorLayoutDesc* b)
+            { return a->BindingPoint < b->BindingPoint; });
+
+        std::string key;
+        char buf[64];
+        for (const GFXDescriptorLayoutDesc* d : sorted)
+        {
+            snprintf(buf, sizeof(buf), "%u:%d:%u;", d->BindingPoint, (int)d->Type, (uint32_t)d->Stage);
+            key += buf;
+        }
+
+        std::lock_guard<std::mutex> lock(m_layoutCacheMutex);
+        auto it = m_layoutCache.find(key);
+        if (it != m_layoutCache.end())
+            return it->second;
+
+        auto layout = gfxmksptr(new GFXVulkanDescriptorSetLayout(this, layouts, layoutCount));
+        m_layoutCache.emplace(std::move(key), layout);
+        return layout;
     }
 
     array_list<GFXTextureFormat> GFXVulkanApplication::GetSupportedDepthFormats()

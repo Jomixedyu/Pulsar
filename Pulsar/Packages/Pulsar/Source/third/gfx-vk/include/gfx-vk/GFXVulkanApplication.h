@@ -1,6 +1,10 @@
 #pragma once
 #include <gfx/GFXApplication.h>
 
+#include <unordered_map>
+#include <string>
+#include <mutex>
+
 #include <gfx/GFXSurface.h>
 #include "VulkanInclude.h"
 // #define GLFW_INCLUDE_VULKAN
@@ -68,7 +72,7 @@ namespace gfx
             uint32_t sampleCount = 1, bool isTransientAttachment = false) override;
 
         virtual GFXDescriptorSetLayout_sp CreateDescriptorSetLayout(
-            const GFXDescriptorSetLayoutDesc* layouts,
+            const GFXDescriptorLayoutDesc* layouts,
             size_t layoutCount) override;
 
         virtual array_list<GFXTextureFormat> GetSupportedDepthFormats() override;
@@ -147,6 +151,10 @@ namespace gfx
         uint32_t m_framecount = 0;
 
         std::vector<GFXTextureFormat> m_depthFormatCache;
+
+        // Content-addressed descriptor set layout cache: identical binding content -> one shared object.
+        std::unordered_map<std::string, GFXDescriptorSetLayout_sp> m_layoutCache;
+        std::mutex m_layoutCacheMutex;
     };
 
 

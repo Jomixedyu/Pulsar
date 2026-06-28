@@ -19,17 +19,17 @@ namespace gfx
     };
 
 
-    struct GFXDescriptorSetLayoutDesc final
+    struct GFXDescriptorLayoutDesc final
     {
     public:
         uint32_t BindingPoint;
         GFXDescriptorType Type;
         GFXGpuProgramStageFlags Stage;
-        GFXDescriptorSetLayoutDesc()
+        GFXDescriptorLayoutDesc()
             : BindingPoint(0), Type(), Stage()
         {
         }
-        GFXDescriptorSetLayoutDesc(
+        GFXDescriptorLayoutDesc(
             GFXDescriptorType type,
             GFXGpuProgramStageFlags stage,
             uint32_t bindingPoint = 0,

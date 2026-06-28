@@ -83,7 +83,7 @@ namespace pulsar
         // set2 layout: binding1=SkinnedRenderObjectData
         if (SkinnedMeshDescriptorSetLayout.expired())
         {
-            gfx::GFXDescriptorSetLayoutDesc binding{
+            gfx::GFXDescriptorLayoutDesc binding{
                 gfx::GFXDescriptorType::ConstantBuffer, gfx::GFXGpuProgramStageFlags::VertexFragment,
                 kRenderingDescriptorBinding_SkinningData, kRenderingDescriptorSpace_PerRenderObject};
             m_descriptorSetLayout = Application::GetGfxApp()->CreateDescriptorSetLayout(&binding, 1);

@@ -109,7 +109,7 @@ namespace gfx
         }
     }
 
-    void GFXResourceManager::CreateDescriptorSetLayout(DescriptorSetLayoutHandle handle, const std::vector<GFXDescriptorSetLayoutDesc>& bindings)
+    void GFXResourceManager::CreateDescriptorSetLayout(DescriptorSetLayoutHandle handle, const std::vector<GFXDescriptorLayoutDesc>& bindings)
     {
         std::shared_lock<std::shared_mutex> lock(m_mutex);
         if (!ValidateHandleForCreation(m_slots, handle.index, handle.generation)) return;

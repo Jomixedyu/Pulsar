@@ -17,7 +17,7 @@ namespace pulsar
         Grow(kInitialCapacity);
 
         // Create dummy extra set (set2 for renderers without extra data)
-        gfx::GFXDescriptorSetLayoutDesc dummyDesc{};
+        gfx::GFXDescriptorLayoutDesc dummyDesc{};
         m_dummyExtraLayout = Application::GetGfxApp()->CreateDescriptorSetLayout(&dummyDesc, 0);
         m_dummyExtraSet = m_dummyExtraLayout->AllocateSet();
         m_dummyExtraSet->Submit();

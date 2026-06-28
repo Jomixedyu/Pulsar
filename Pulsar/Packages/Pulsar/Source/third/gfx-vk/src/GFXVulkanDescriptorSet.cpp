@@ -48,7 +48,7 @@ namespace gfx
 
     GFXVulkanDescriptorSetLayout::GFXVulkanDescriptorSetLayout(
         GFXVulkanApplication* app,
-        const GFXDescriptorSetLayoutDesc* layouts,
+        const GFXDescriptorLayoutDesc* layouts,
         size_t layoutCount)
         : m_app(app)
     {

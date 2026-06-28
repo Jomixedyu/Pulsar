@@ -57,7 +57,7 @@ namespace gfx
         void CreateRenderTarget(TextureHandle handle, const GFXTextureCreateDesc& desc);
         void CreateFrameBufferObject(FrameBufferObjectHandle handle, const array_list<GFXTexture2DView_sp>& attachments);
         void CreateGpuProgram(GpuProgramHandle handle, GFXGpuProgramStageFlags stage, const void* code, size_t length);
-        void CreateDescriptorSetLayout(DescriptorSetLayoutHandle handle, const std::vector<GFXDescriptorSetLayoutDesc>& bindings);
+        void CreateDescriptorSetLayout(DescriptorSetLayoutHandle handle, const std::vector<GFXDescriptorLayoutDesc>& bindings);
 
         void DestroyResource(uint32_t resourceId, uint16_t generation);
 
