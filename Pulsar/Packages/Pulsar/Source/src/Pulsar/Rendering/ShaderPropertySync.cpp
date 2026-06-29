@@ -59,37 +59,55 @@ namespace pulsar
 
     void ShaderPropertySync::ApplyRenderData(
         const ShaderPropertyRenderData& data,
-        const ShaderPropertyLayout& layout,
+        const ShaderLayout& layout,
         gfx::GFXBuffer* cbuffer,
         gfx::GFXDescriptorSet* descriptorSet)
     {
         assert(Application::GetRenderThread()->IsRenderThread() && "ApplyRenderData must run on the render thread");
 
-        // 常量：按 layout 打包成字节缓冲
-        if (cbuffer && layout.m_totalCBufferSize > 0)
-        {
-            std::vector<uint8_t> buffer(layout.m_totalCBufferSize, 0);
+        const ShaderPropertySetLayout* set0 = layout.FindSet(0);
 
-            for (const auto& entry : layout.m_constantEntries)
+        // 常量：找到 set0 的材质 cbuffer，按其成员打包成字节缓冲
+        if (cbuffer && set0)
+        {
+            const DescriptorBinding* matCbuffer = nullptr;
+            for (const auto& b : set0->m_bindings)
             {
-                auto it = data.Constants.find(entry.m_name);
-                if (it != data.Constants.end() && it->second.Type == entry.m_type)
+                if (b.IsBuffer() && b.m_size > 0)
                 {
-                    WritePropertyToBuffer(buffer.data(), entry, it->second);
+                    matCbuffer = &b;
+                    break;
                 }
-                // 没有值：保持 zero-initialized
             }
 
-            cbuffer->Fill(buffer.data());
+            if (matCbuffer)
+            {
+                std::vector<uint8_t> buffer(matCbuffer->m_size, 0);
+
+                for (const auto& entry : matCbuffer->m_members)
+                {
+                    auto it = data.Constants.find(entry.m_name);
+                    if (it != data.Constants.end() && it->second.Type == entry.m_type)
+                    {
+                        WritePropertyToBuffer(buffer.data(), entry, it->second);
+                    }
+                    // 没有值：保持 zero-initialized
+                }
+
+                cbuffer->Fill(buffer.data());
+            }
         }
 
         // 纹理：按 layout 的 bindingPoint 绑定
-        if (!descriptorSet)
+        if (!descriptorSet || !set0)
             return;
 
         auto* resMgr = Application::GetGfxApp()->GetResourceManager();
-        for (const auto& entry : layout.m_textureEntries)
+        for (const auto& entry : set0->m_bindings)
         {
+            if (entry.IsBuffer())
+                continue;
+
             gfx::TextureHandle handle{};
             auto it = data.Textures.find(entry.m_name);
             if (it != data.Textures.end() && it->second.IsValid())
@@ -120,7 +138,7 @@ namespace pulsar
         }
     }
 
-    void ShaderPropertySync::WritePropertyToBuffer(uint8_t* buffer, const CBufferEntry& entry, const ShaderPropertyValue& prop)
+    void ShaderPropertySync::WritePropertyToBuffer(uint8_t* buffer, const BufferMember& entry, const ShaderPropertyValue& prop)
     {
         switch (entry.m_type)
         {

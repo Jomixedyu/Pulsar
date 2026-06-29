@@ -186,7 +186,7 @@ namespace pulsar
         return insertIt->second;
     }
 
-    void MaterialProxy::EnsureGPUResources(MaterialPassBinding& binding, const ShaderPropertyLayout& layout)
+    void MaterialProxy::EnsureGPUResources(MaterialPassBinding& binding, const ShaderLayout& layout)
     {
         if (binding.m_gpuResourcesInitialized)
             return;
@@ -196,33 +196,36 @@ namespace pulsar
         // 创建该 binding 专属的 descriptor set layout (set 0)
         array_list<gfx::GFXDescriptorLayoutDesc> descLayoutInfos;
 
-        if (layout.m_totalCBufferSize > 0)
-        {
-            gfx::GFXDescriptorLayoutDesc cbDesc{};
-            cbDesc.Type = gfx::GFXDescriptorType::ConstantBuffer;
-            cbDesc.Stage = (layout.m_cbufferStageFlags != gfx::GFXGpuProgramStageFlags::None)
-                ? layout.m_cbufferStageFlags
-                : gfx::GFXGpuProgramStageFlags::VertexFragment;
-            cbDesc.BindingPoint = layout.m_cbufferBindingPoint;
-            descLayoutInfos.push_back(cbDesc);
+        // Material params live in set0; convention is a single material cbuffer.
+        const ShaderPropertySetLayout* set0 = layout.FindSet(0);
+        const DescriptorBinding* matCbuffer = nullptr;
 
+        if (set0)
+        {
+            for (const auto& b : set0->m_bindings)
+            {
+                gfx::GFXDescriptorLayoutDesc desc{};
+                desc.Type = b.m_type;
+                desc.Stage = (b.m_stageFlags != gfx::GFXGpuProgramStageFlags::None)
+                    ? b.m_stageFlags
+                    : gfx::GFXGpuProgramStageFlags::VertexFragment;
+                desc.BindingPoint = b.m_bindingPoint;
+                descLayoutInfos.push_back(desc);
+
+                // First non-empty buffer drives the material constant buffer allocation.
+                if (!matCbuffer && b.IsBuffer() && b.m_size > 0)
+                    matCbuffer = &b;
+            }
+        }
+
+        if (matCbuffer)
+        {
             // 创建该 binding 专属的 cbuffer
             gfx::GFXBufferDesc bufferDesc{};
             bufferDesc.Usage = gfx::GFXBufferUsage::ConstantBuffer;
             bufferDesc.StorageType = gfx::GFXBufferMemoryPosition::VisibleOnDevice;
-            bufferDesc.BufferSize = layout.m_totalCBufferSize;
+            bufferDesc.BufferSize = matCbuffer->m_size;
             binding.m_materialConstantBuffer = gfxApp->CreateBuffer(bufferDesc);
-        }
-
-        for (const auto& texEntry : layout.m_textureEntries)
-        {
-            gfx::GFXDescriptorLayoutDesc texDesc{};
-            texDesc.Type = texEntry.m_isCombinedImageSampler
-                ? gfx::GFXDescriptorType::CombinedImageSampler
-                : gfx::GFXDescriptorType::Texture2D;
-            texDesc.Stage = texEntry.m_stageFlags;
-            texDesc.BindingPoint = texEntry.m_bindingPoint;
-            descLayoutInfos.push_back(texDesc);
         }
 
         auto* resMgr = Application::GetGfxApp()->GetResourceManager();
@@ -234,13 +237,18 @@ namespace pulsar
 
         if (binding.m_materialConstantBuffer)
         {
-            binding.m_descriptorSet->AddDescriptor("ConstantProperties", 0)
+            binding.m_descriptorSet->AddDescriptor("ConstantProperties", matCbuffer->m_bindingPoint)
                 ->SetConstantBuffer(binding.m_materialConstantBuffer.get());
         }
 
-        for (const auto& texEntry : layout.m_textureEntries)
+        if (set0)
         {
-            binding.m_descriptorSet->AddDescriptor(texEntry.m_name, texEntry.m_bindingPoint);
+            for (const auto& b : set0->m_bindings)
+            {
+                if (b.IsBuffer())
+                    continue;
+                binding.m_descriptorSet->AddDescriptor(b.m_name, b.m_bindingPoint);
+            }
         }
 
         binding.m_gpuResourcesInitialized = true;

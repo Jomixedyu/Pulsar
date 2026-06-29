@@ -152,34 +152,44 @@ namespace pulsared
 
     void EditorShaderCompileService::ExtractLayout(
         const psc::ReflectedShaderResources& reflected,
-        pulsar::ShaderPropertyLayout& layout)
+        pulsar::ShaderLayout& layout)
     {
-        // 材质参数所在的 descriptor set（space0 = set 0）
-        constexpr uint32_t kMaterialDescSet = 0;
-
         // Convert psc::ShaderStageFlags to gfx::GFXGpuProgramStageFlags.
         // The two enums share the same bit values by design, so a static_cast is safe.
         auto toGfxStage = [](psc::ShaderStageFlags f) {
             return static_cast<gfx::GFXGpuProgramStageFlags>(static_cast<uint32_t>(f));
         };
+        auto mergeStage = [](gfx::GFXGpuProgramStageFlags a, gfx::GFXGpuProgramStageFlags b) {
+            return static_cast<gfx::GFXGpuProgramStageFlags>(
+                static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
+        };
+
+        // Find an existing binding at (set, bindingPoint) or append a new one.
+        auto findOrAddBinding = [&](uint32_t set, uint32_t bindingPoint) -> pulsar::DescriptorBinding& {
+            pulsar::ShaderPropertySetLayout& setLayout = layout.FindOrAddSet(set);
+            for (auto& b : setLayout.m_bindings)
+            {
+                if (b.m_bindingPoint == bindingPoint)
+                    return b;
+            }
+            pulsar::DescriptorBinding binding{};
+            binding.m_bindingPoint = bindingPoint;
+            setLayout.m_bindings.push_back(std::move(binding));
+            return setLayout.m_bindings.back();
+        };
 
         for (const auto& ub : reflected.UniformBuffers)
         {
-            if (ub.Set != kMaterialDescSet)
-                continue;
-
-            layout.m_totalCBufferSize = std::max(layout.m_totalCBufferSize, ub.Size);
-            layout.m_cbufferBindingPoint = ub.Binding;
-
-            // Merge cbuffer stage flags across all SPIR-V stages
-            layout.m_cbufferStageFlags = static_cast<gfx::GFXGpuProgramStageFlags>(
-                static_cast<uint32_t>(layout.m_cbufferStageFlags) |
-                static_cast<uint32_t>(toGfxStage(ub.StageFlags)));
+            pulsar::DescriptorBinding& binding = findOrAddBinding(ub.Set, ub.Binding);
+            binding.m_name = ub.Name;
+            binding.m_type = gfx::GFXDescriptorType::ConstantBuffer;
+            binding.m_size = std::max(binding.m_size, ub.Size);
+            binding.m_stageFlags = mergeStage(binding.m_stageFlags, toGfxStage(ub.StageFlags));
 
             for (const auto& member : ub.Members)
             {
                 bool found = false;
-                for (auto& existing : layout.m_constantEntries)
+                for (auto& existing : binding.m_members)
                 {
                     if (existing.m_name == member.Name)
                     {
@@ -189,7 +199,7 @@ namespace pulsared
                 }
                 if (!found)
                 {
-                    pulsar::CBufferEntry entry{};
+                    pulsar::BufferMember entry{};
                     entry.m_name   = member.Name;
                     entry.m_offset = member.Offset;
                     entry.m_size   = member.Size;
@@ -207,40 +217,19 @@ namespace pulsared
                             : pulsar::ShaderPropertyType::Float;
                     }
 
-                    layout.m_constantEntries.push_back(std::move(entry));
+                    binding.m_members.push_back(std::move(entry));
                 }
             }
         }
 
         for (const auto& img : reflected.SampledImages)
         {
-            if (img.Set != kMaterialDescSet)
-                continue;
-
-            auto gfxStage = toGfxStage(img.StageFlags);
-
-            bool found = false;
-            for (auto& existing : layout.m_textureEntries)
-            {
-                if (existing.m_name == img.Name)
-                {
-                    // Merge stage flags
-                    existing.m_stageFlags = static_cast<gfx::GFXGpuProgramStageFlags>(
-                        static_cast<uint32_t>(existing.m_stageFlags) |
-                        static_cast<uint32_t>(gfxStage));
-                    found = true;
-                    break;
-                }
-            }
-            if (!found)
-            {
-                pulsar::TextureEntry entry{};
-                entry.m_name = img.Name;
-                entry.m_bindingPoint = img.Binding;
-                entry.m_isCombinedImageSampler = img.IsCombined;
-                entry.m_stageFlags = gfxStage;
-                layout.m_textureEntries.push_back(std::move(entry));
-            }
+            pulsar::DescriptorBinding& binding = findOrAddBinding(img.Set, img.Binding);
+            binding.m_name = img.Name;
+            binding.m_type = img.IsCombined
+                ? gfx::GFXDescriptorType::CombinedImageSampler
+                : gfx::GFXDescriptorType::Texture2D;
+            binding.m_stageFlags = mergeStage(binding.m_stageFlags, toGfxStage(img.StageFlags));
         }
     }
 

@@ -110,7 +110,7 @@ namespace pulsar
             SPtr<ObjectPropertyOverride> gpOverrideFields);
 
     private:
-        void EnsureGPUResources(MaterialPassBinding& binding, const ShaderPropertyLayout& layout);
+        void EnsureGPUResources(MaterialPassBinding& binding, const ShaderLayout& layout);
         void ClearPassBindings();
 
     private:

@@ -20,11 +20,11 @@ namespace pulsar
         // 只消费 POD 句柄与字节，不访问任何资产。
         static void ApplyRenderData(
             const ShaderPropertyRenderData& data,
-            const ShaderPropertyLayout& layout,
+            const ShaderLayout& layout,
             gfx::GFXBuffer* cbuffer,
             gfx::GFXDescriptorSet* descriptorSet);
 
     private:
-        static void WritePropertyToBuffer(uint8_t* buffer, const CBufferEntry& entry, const ShaderPropertyValue& prop);
+        static void WritePropertyToBuffer(uint8_t* buffer, const BufferMember& entry, const ShaderPropertyValue& prop);
     };
 }

@@ -51,7 +51,7 @@ namespace pulsar
 
         const ShaderVariantKey& GetKey() const { return m_key; }
         const std::string& GetShaderName() const { return m_shaderName; }
-        const ShaderPropertyLayout& GetLayout() const { return m_layout; }
+        const ShaderLayout& GetLayout() const { return m_layout; }
 
         const std::vector<gfx::GFXGpuProgram_sp>& GetGpuPrograms() const { return m_gpuPrograms; }
         const gfx::GFXDescriptorSetLayout_sp& GetDescriptorSetLayout() const { return m_descriptorSetLayout; }
@@ -59,7 +59,7 @@ namespace pulsar
     public:
         ShaderVariantKey m_key;
         std::string m_shaderName;   // human-readable name for debugging (e.g. "Pulsar/Shaders/PreviewImage.hlsl [PostProcess|RENDERER_IMAGEPROCESS]")
-        ShaderPropertyLayout m_layout;
+        ShaderLayout m_layout;
 
         std::vector<gfx::GFXGpuProgram_sp> m_gpuPrograms;
         gfx::GFXDescriptorSetLayout_sp m_descriptorSetLayout;
