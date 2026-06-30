@@ -1,13 +1,15 @@
 #pragma once
 #include "GFXInclude.h"
+#include "GFXResource.h"
 #include "TextureClasses.h"
 
 namespace gfx
 {
-    class GFXTextureView
+    class GFXTextureView : public GFXResource
     {
     public:
-        virtual ~GFXTextureView() = default;
+        GFXResourceType GetResourceType() const override { return GFXResourceType::TextureView; }
+
         virtual bool IsWritable() const = 0;
         virtual bool IsReadable() const = 0;
         virtual GFXTextureFormat GetFormat() const = 0;
