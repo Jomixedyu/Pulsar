@@ -18,7 +18,7 @@ namespace pulsar
         ClearVariants();
     }
 
-    const MaterialVariant* MaterialProxy::PrepareForRendering(
+    const MaterialVariant* MaterialProxy::ResolveRenderVariant(
         const std::string& passName,
         const std::string& interface_)
     {
@@ -69,7 +69,7 @@ namespace pulsar
 
         // Upload the new snapshot to every variant that already has GPU resources ready.
         // Variants whose shaders haven't compiled yet receive the values via the initial sync
-        // inside PrepareForRendering when they eventually become ready.
+        // inside ResolveRenderVariant when they eventually become ready.
         for (auto& [key, variant] : m_variants)
         {
             if (!variant.m_gpuResourcesInitialized) continue;
@@ -77,7 +77,7 @@ namespace pulsar
             // 必须用 set 当初据以创建的 program 的 layout，而非 GetCurrentProgram()。
             // 异步重编后 current 可能领先于 set 的 layout，错配会把 descriptor 写到不存在的
             // binding 上（VUID-VkWriteDescriptorSet-dstBinding-10009）。错配的变体由
-            // PrepareForRendering 重建 set 时再同步。
+            // ResolveRenderVariant 重建 set 时再同步。
             auto program = variant.m_builtWithProgram.lock();
             if (!program) continue;
 

@@ -72,7 +72,7 @@ namespace pulsar
             .Prepare([this, perPass](RGPassContext&)
             {
                 if (m_proxy)
-                    m_proxy->PrepareForRendering("PostProcess", "RENDERER_IMAGEPROCESS");
+                    m_proxy->ResolveRenderVariant("PostProcess", "RENDERER_IMAGEPROCESS");
             })
             .Execute([this, curSrc, curDst, fallbackFBO, fallbackView, perPass]
                      (RGPassContext& passCtx, gfx::GFXCommandBuffer& cmdBuffer)

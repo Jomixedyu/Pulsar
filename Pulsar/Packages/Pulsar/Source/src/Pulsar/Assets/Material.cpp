@@ -44,7 +44,7 @@ namespace pulsar
             return true;
         }
         m_createdGpuResource = true;
-        // 轻量初始化: GPU 资源将在 proxy 的 PrepareForRendering（渲染线程）于 shader Ready 后懒创建。
+        // 轻量初始化: GPU 资源将在 proxy 的 ResolveRenderVariant（渲染线程）于 shader Ready 后懒创建。
         // 游戏线程：从当前 sheet 解析渲染线程专用快照。
         ApplyShaderDefaults();
         RebuildRenderData();

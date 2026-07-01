@@ -277,7 +277,7 @@ namespace pulsar
                 .Prepare([this, shaderPassName](RGPassContext&)
                 {
                     if (m_proxy)
-                        m_proxy->PrepareForRendering(shaderPassName, "RENDERER_IMAGEPROCESS");
+                        m_proxy->ResolveRenderVariant(shaderPassName, "RENDERER_IMAGEPROCESS");
                 })
                 .Execute([this, hSrc, hDst, shaderPassName, texelSize, direction, sampleMode, bloomSet, bufIdx, passName]
                          (RGPassContext& passCtx, gfx::GFXCommandBuffer& cmdBuffer)
@@ -400,7 +400,7 @@ namespace pulsar
             .Prepare([this](RGPassContext&)
             {
                 if (m_proxy)
-                    m_proxy->PrepareForRendering("BloomCombine", "RENDERER_IMAGEPROCESS");
+                    m_proxy->ResolveRenderVariant("BloomCombine", "RENDERER_IMAGEPROCESS");
             })
             .Execute([this, input, hBloom0V, hBloom1V, hBloom2V, hBloom3V, output]
                      (RGPassContext& passCtx, gfx::GFXCommandBuffer& cmdBuffer)

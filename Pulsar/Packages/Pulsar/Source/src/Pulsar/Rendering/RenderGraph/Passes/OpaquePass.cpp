@@ -51,7 +51,7 @@ namespace pulsar
                     {
                         batch.Depth = depth;
                         const MaterialVariant* binding = batch.Material
-                            ? batch.Material->PrepareForRendering("Forward", batch.Interface)
+                            ? batch.Material->ResolveRenderVariant("Forward", batch.Interface)
                             : nullptr;
 
                         if (!batch.Material)

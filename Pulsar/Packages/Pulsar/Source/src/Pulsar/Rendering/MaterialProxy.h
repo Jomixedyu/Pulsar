@@ -75,10 +75,10 @@ namespace pulsar
         // Detects async shader compilation completing, creates GPU resources, and does the
         // initial parameter sync into freshly created resources.
         // Returns nullptr if the shader for this binding is not yet ready.
-        const MaterialVariant* PrepareForRendering(const std::string& passName, const std::string& interface_);
+        const MaterialVariant* ResolveRenderVariant(const std::string& passName, const std::string& interface_);
 
         // Lazily creates the variant for (pass, interface) without forcing GPU
-        // resource creation. Callers that need the GPU resources ready should use PrepareForRendering.
+        // resource creation. Callers that need the GPU resources ready should use ResolveRenderVariant.
         const MaterialVariant& GetVariant(const std::string& passName, const std::string& interface_);
 
         ShaderPassRenderQueueType GetQueue() const { return m_queue; }
