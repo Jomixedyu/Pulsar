@@ -15,7 +15,7 @@ namespace pulsar
     struct PreparedBatch
     {
         rendering::MeshBatch batch;
-        const MaterialShaderInstance* binding = nullptr;
+        const MaterialVariant* binding = nullptr;
     };
 
     class MeshRenderFeature : public RenderFeature

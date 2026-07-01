@@ -32,12 +32,12 @@ namespace pulsar
     };
 
     // A material's unique shader variant (guid + pass + interface + features):
-    // holds its ShaderInstance AND the GPU resources built for that variant.
-    struct MaterialShaderInstance
+    // references its ShaderInstance AND owns the GPU resources built for that variant.
+    struct MaterialVariant
     {
-        std::shared_ptr<ShaderInstance> m_instance;
+        std::shared_ptr<ShaderInstance> m_shader;
 
-        // Per-binding GPU resources (lazily created when this interface's shader is ready)
+        // Per-variant GPU resources (lazily created when this variant's shader is ready)
         gfx::GFXDescriptorSet_sp             m_descriptorSet;
         gfx::DescriptorSetLayoutHandle       m_descriptorSetLayout;
         gfx::GFXBuffer_sp                    m_materialConstantBuffer;
@@ -46,7 +46,7 @@ namespace pulsar
 
         std::shared_ptr<ShaderProgramResource> GetCurrentProgram() const
         {
-            return m_instance ? m_instance->GetCurrentProgram() : nullptr;
+            return m_shader ? m_shader->GetCurrentProgram() : nullptr;
         }
     };
 
@@ -75,11 +75,11 @@ namespace pulsar
         // Detects async shader compilation completing, creates GPU resources, and does the
         // initial parameter sync into freshly created resources.
         // Returns nullptr if the shader for this binding is not yet ready.
-        const MaterialShaderInstance* PrepareForRendering(const std::string& passName, const std::string& interface_);
+        const MaterialVariant* PrepareForRendering(const std::string& passName, const std::string& interface_);
 
-        // Lazily creates the ShaderInstance binding for (pass, interface) without forcing GPU
+        // Lazily creates the variant for (pass, interface) without forcing GPU
         // resource creation. Callers that need the GPU resources ready should use PrepareForRendering.
-        const MaterialShaderInstance& GetPassBinding(const std::string& passName, const std::string& interface_);
+        const MaterialVariant& GetVariant(const std::string& passName, const std::string& interface_);
 
         ShaderPassRenderQueueType GetQueue() const { return m_queue; }
 
@@ -111,8 +111,8 @@ namespace pulsar
             SPtr<ObjectPropertyOverride> gpOverrideFields);
 
     private:
-        void EnsureGPUResources(MaterialShaderInstance& shaderInst, const ShaderLayout& layout);
-        void ClearPassBindings();
+        void EnsureGPUResources(MaterialVariant& variant, const ShaderLayout& layout);
+        void ClearVariants();
 
     private:
         // Snapshot fed by the game thread (immutable plain data / SPtr to non-ObjectBase data; no RCPtr).
@@ -125,7 +125,7 @@ namespace pulsar
         SPtr<ObjectPropertyOverride>       m_graphicsPipelineOverrideFields;
 
         // Render-thread-owned GPU state.
-        std::map<PassKey, MaterialShaderInstance> m_shaderInstances;
+        std::map<PassKey, MaterialVariant> m_variants;
         mutable std::map<std::string, SPtr<ShaderConfigGraphicsPipeline>> m_cachedEffectiveGraphicsPipeline;
     };
 

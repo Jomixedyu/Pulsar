@@ -15,17 +15,17 @@ namespace pulsar
     {
         // Runs on whichever thread drops the last shared_ptr; callers route this to the
         // render thread (see Material::DestroyGPUResource) so GPU handles are released there.
-        ClearPassBindings();
+        ClearVariants();
     }
 
-    const MaterialShaderInstance* MaterialProxy::PrepareForRendering(
+    const MaterialVariant* MaterialProxy::PrepareForRendering(
         const std::string& passName,
         const std::string& interface_)
     {
-        // GetPassBinding lazily creates the ShaderInstance for this (pass, interface) if not yet exist
-        auto& shaderInst = const_cast<MaterialShaderInstance&>(GetPassBinding(passName, interface_));
+        // GetVariant lazily creates the variant for this (pass, interface) if not yet exist
+        auto& variant = const_cast<MaterialVariant&>(GetVariant(passName, interface_));
 
-        auto program = shaderInst.GetCurrentProgram();
+        auto program = variant.GetCurrentProgram();
         if (!program)
             return nullptr; // shader still compiling
 
@@ -35,32 +35,32 @@ namespace pulsar
             return nullptr;
 
         // Detect async compilation completing or shader hot-reload for this specific variant
-        if (program != shaderInst.m_builtWithProgram.lock())
+        if (program != variant.m_builtWithProgram.lock())
         {
             // Rebuild GPU resources for this variant with the new program's layout
-            shaderInst.m_descriptorSet.reset();
-            if (shaderInst.m_descriptorSetLayout.IsValid())
+            variant.m_descriptorSet.reset();
+            if (variant.m_descriptorSetLayout.IsValid())
             {
-                Application::GetGfxApp()->GetResourceManager()->Destroy(shaderInst.m_descriptorSetLayout);
+                Application::GetGfxApp()->GetResourceManager()->Destroy(variant.m_descriptorSetLayout);
             }
-            shaderInst.m_descriptorSetLayout = gfx::DescriptorSetLayoutHandle{};
-            shaderInst.m_materialConstantBuffer.reset();
-            shaderInst.m_gpuResourcesInitialized = false;
-            EnsureGPUResources(shaderInst, program->m_layout);
-            shaderInst.m_builtWithProgram = program;
+            variant.m_descriptorSetLayout = gfx::DescriptorSetLayoutHandle{};
+            variant.m_materialConstantBuffer.reset();
+            variant.m_gpuResourcesInitialized = false;
+            EnsureGPUResources(variant, program->m_layout);
+            variant.m_builtWithProgram = program;
 
             // Initial parameter sync: push the current snapshot into freshly created GPU resources.
             ShaderPropertySync::ApplyRenderData(
                 m_renderData,
                 program->m_layout,
-                shaderInst.m_materialConstantBuffer.get(),
-                shaderInst.m_descriptorSet.get());
+                variant.m_materialConstantBuffer.get(),
+                variant.m_descriptorSet.get());
         }
 
-        if (!shaderInst.m_gpuResourcesInitialized)
+        if (!variant.m_gpuResourcesInitialized)
             return nullptr;
 
-        return &shaderInst;
+        return &variant;
     }
 
     void MaterialProxy::ApplyRenderData(ShaderPropertyRenderData renderData)
@@ -70,22 +70,22 @@ namespace pulsar
         // Upload the new snapshot to every variant that already has GPU resources ready.
         // Variants whose shaders haven't compiled yet receive the values via the initial sync
         // inside PrepareForRendering when they eventually become ready.
-        for (auto& [key, shaderInst] : m_shaderInstances)
+        for (auto& [key, variant] : m_variants)
         {
-            if (!shaderInst.m_gpuResourcesInitialized) continue;
+            if (!variant.m_gpuResourcesInitialized) continue;
 
             // 必须用 set 当初据以创建的 program 的 layout，而非 GetCurrentProgram()。
             // 异步重编后 current 可能领先于 set 的 layout，错配会把 descriptor 写到不存在的
             // binding 上（VUID-VkWriteDescriptorSet-dstBinding-10009）。错配的变体由
             // PrepareForRendering 重建 set 时再同步。
-            auto program = shaderInst.m_builtWithProgram.lock();
+            auto program = variant.m_builtWithProgram.lock();
             if (!program) continue;
 
             ShaderPropertySync::ApplyRenderData(
                 m_renderData,
                 program->m_layout,
-                shaderInst.m_materialConstantBuffer.get(),
-                shaderInst.m_descriptorSet.get());
+                variant.m_materialConstantBuffer.get(),
+                variant.m_descriptorSet.get());
         }
     }
 
@@ -105,7 +105,7 @@ namespace pulsar
         m_graphicsPipelineOverrideFields = std::move(gpOverrideFields);
 
         m_cachedEffectiveGraphicsPipeline.clear();
-        ClearPassBindings();
+        ClearVariants();
     }
 
     void MaterialProxy::UpdateStateSnapshot(
@@ -119,18 +119,18 @@ namespace pulsar
         m_cachedEffectiveGraphicsPipeline.clear();
     }
 
-    const MaterialShaderInstance& MaterialProxy::GetPassBinding(
+    const MaterialVariant& MaterialProxy::GetVariant(
         const std::string& passName,
         const std::string& interface_)
     {
         PassKey key{passName, interface_};
-        auto it = m_shaderInstances.find(key);
-        if (it != m_shaderInstances.end())
+        auto it = m_variants.find(key);
+        if (it != m_variants.end())
             return it->second;
 
         if (!m_shaderConfig)
         {
-            static MaterialShaderInstance empty{};
+            static MaterialVariant empty{};
             return empty;
         }
 
@@ -178,16 +178,16 @@ namespace pulsar
         }
 
         auto instance = ShaderInstanceCache::Instance().GetOrCreate(variantKey, task);
-        MaterialShaderInstance shaderInst;
-        shaderInst.m_instance = instance;
-        auto [insertIt, _] = m_shaderInstances.emplace(key, std::move(shaderInst));
+        MaterialVariant variant;
+        variant.m_shader = instance;
+        auto [insertIt, _] = m_variants.emplace(key, std::move(variant));
 
         return insertIt->second;
     }
 
-    void MaterialProxy::EnsureGPUResources(MaterialShaderInstance& shaderInst, const ShaderLayout& layout)
+    void MaterialProxy::EnsureGPUResources(MaterialVariant& variant, const ShaderLayout& layout)
     {
-        if (shaderInst.m_gpuResourcesInitialized)
+        if (variant.m_gpuResourcesInitialized)
             return;
 
         auto gfxApp = Application::GetGfxApp();
@@ -224,34 +224,34 @@ namespace pulsar
             bufferDesc.Usage = gfx::GFXBufferUsage::ConstantBuffer;
             bufferDesc.StorageType = gfx::GFXBufferMemoryPosition::VisibleOnDevice;
             bufferDesc.BufferSize = matCbuffer->m_size;
-            shaderInst.m_materialConstantBuffer = gfxApp->CreateBuffer(bufferDesc);
+            variant.m_materialConstantBuffer = gfxApp->CreateBuffer(bufferDesc);
         }
 
         auto* resMgr = Application::GetGfxApp()->GetResourceManager();
 
         // 即使没有任何 binding 也创建空 layout，确保 set 0 始终存在以保证 set 编号对齐
-        shaderInst.m_descriptorSetLayout = resMgr->AllocHandle<gfx::DescriptorSetLayoutHandle>();
-        resMgr->CreateDescriptorSetLayout(shaderInst.m_descriptorSetLayout, descLayoutInfos);
-        shaderInst.m_descriptorSet = resMgr->GetDescriptorSetLayoutShared(shaderInst.m_descriptorSetLayout)->AllocateSet();
+        variant.m_descriptorSetLayout = resMgr->AllocHandle<gfx::DescriptorSetLayoutHandle>();
+        resMgr->CreateDescriptorSetLayout(variant.m_descriptorSetLayout, descLayoutInfos);
+        variant.m_descriptorSet = resMgr->GetDescriptorSetLayoutShared(variant.m_descriptorSetLayout)->AllocateSet();
 
         // descriptor 由首次 ShaderPropertySync::ApplyRenderData 的 assembler 装配（FindByBinding-then-Add）
 
-        shaderInst.m_gpuResourcesInitialized = true;
+        variant.m_gpuResourcesInitialized = true;
     }
 
-    void MaterialProxy::ClearPassBindings()
+    void MaterialProxy::ClearVariants()
     {
-        if (m_shaderInstances.empty())
+        if (m_variants.empty())
             return;
 
         // Explicitly destroy handle-managed resources before clearing the map
         auto* resMgr = Application::GetGfxApp()->GetResourceManager();
-        for (auto& [key, shaderInst] : m_shaderInstances)
+        for (auto& [key, variant] : m_variants)
         {
-            if (shaderInst.m_descriptorSetLayout.IsValid())
-                resMgr->Destroy(shaderInst.m_descriptorSetLayout);
+            if (variant.m_descriptorSetLayout.IsValid())
+                resMgr->Destroy(variant.m_descriptorSetLayout);
         }
-        m_shaderInstances.clear();
+        m_variants.clear();
     }
 
     bool MaterialProxy::HasPass(const std::string& passName) const

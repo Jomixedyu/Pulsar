@@ -48,7 +48,7 @@ namespace pulsar
                             continue;
 
                         batch.Depth = depth;
-                        const MaterialShaderInstance* binding = batch.Material
+                        const MaterialVariant* binding = batch.Material
                             ->PrepareForRendering("Forward", batch.Interface);
 
                         preparedOverlay->push_back(PreparedBatch{ std::move(batch), binding });

@@ -92,9 +92,9 @@ namespace pulsar
         if (!m_proxy) return;
         if (!m_proxy->GetShaderConfig()) return;
 
-        const auto* ppPassBinding = m_proxy->GetPassBinding("PostProcess", "RENDERER_IMAGEPROCESS")
+        const auto* ppPassBinding = m_proxy->GetVariant("PostProcess", "RENDERER_IMAGEPROCESS")
                                         .m_gpuResourcesInitialized
-                                    ? &m_proxy->GetPassBinding("PostProcess", "RENDERER_IMAGEPROCESS")
+                                    ? &m_proxy->GetVariant("PostProcess", "RENDERER_IMAGEPROCESS")
                                     : nullptr;
         if (!ppPassBinding) return;
 

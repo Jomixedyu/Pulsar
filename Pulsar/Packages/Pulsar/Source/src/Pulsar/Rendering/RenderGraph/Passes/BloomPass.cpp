@@ -283,7 +283,7 @@ namespace pulsar
                          (RGPassContext& passCtx, gfx::GFXCommandBuffer& cmdBuffer)
                 {
                     if (!m_proxy) return;
-                    auto& binding = m_proxy->GetPassBinding(shaderPassName, "RENDERER_IMAGEPROCESS");
+                    auto& binding = m_proxy->GetVariant(shaderPassName, "RENDERER_IMAGEPROCESS");
                     if (!binding.m_gpuResourcesInitialized) return;
 
                     auto program = binding.GetCurrentProgram();
@@ -406,7 +406,7 @@ namespace pulsar
                      (RGPassContext& passCtx, gfx::GFXCommandBuffer& cmdBuffer)
             {
                 if (!m_proxy) return;
-                auto& binding = m_proxy->GetPassBinding("BloomCombine", "RENDERER_IMAGEPROCESS");
+                auto& binding = m_proxy->GetVariant("BloomCombine", "RENDERER_IMAGEPROCESS");
                 if (!binding.m_gpuResourcesInitialized) return;
 
                 auto program = binding.GetCurrentProgram();
