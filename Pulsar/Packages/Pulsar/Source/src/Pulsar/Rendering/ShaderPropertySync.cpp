@@ -1,6 +1,8 @@
 #include "ShaderPropertySync.h"
 #include "BuiltinAsset.h"
 #include "Assets/Texture2D.h"
+#include "Rendering/DescriptorSetAssembler.h"
+#include "Rendering/RenderResourceRegistry.h"
 
 #include "Application.h"
 #include "AppInstance.h"
@@ -66,76 +68,66 @@ namespace pulsar
         assert(Application::GetRenderThread()->IsRenderThread() && "ApplyRenderData must run on the render thread");
 
         const ShaderPropertySetLayout* set0 = layout.FindSet(0);
+        if (!set0)
+            return;
 
-        // 常量：找到 set0 的材质 cbuffer，按其成员打包成字节缓冲
-        if (cbuffer && set0)
+        // 找到 set0 的材质 cbuffer（首个有尺寸的 buffer binding）
+        const DescriptorBinding* matCbuffer = nullptr;
+        for (const auto& b : set0->m_bindings)
         {
-            const DescriptorBinding* matCbuffer = nullptr;
-            for (const auto& b : set0->m_bindings)
+            if (b.IsBuffer() && b.m_size > 0)
             {
-                if (b.IsBuffer() && b.m_size > 0)
-                {
-                    matCbuffer = &b;
-                    break;
-                }
-            }
-
-            if (matCbuffer)
-            {
-                std::vector<uint8_t> buffer(matCbuffer->m_size, 0);
-
-                for (const auto& entry : matCbuffer->m_members)
-                {
-                    auto it = data.Constants.find(entry.m_name);
-                    if (it != data.Constants.end() && it->second.Type == entry.m_type)
-                    {
-                        WritePropertyToBuffer(buffer.data(), entry, it->second);
-                    }
-                    // 没有值：保持 zero-initialized
-                }
-
-                cbuffer->Fill(buffer.data());
+                matCbuffer = &b;
+                break;
             }
         }
 
-        // 纹理：按 layout 的 bindingPoint 绑定
-        if (!descriptorSet || !set0)
+        // 常量：按成员 offset 打包成字节缓冲并上传
+        if (cbuffer && matCbuffer)
+        {
+            std::vector<uint8_t> buffer(matCbuffer->m_size, 0);
+            for (const auto& entry : matCbuffer->m_members)
+            {
+                auto it = data.Constants.find(entry.m_name);
+                if (it != data.Constants.end() && it->second.Type == entry.m_type)
+                    WritePropertyToBuffer(buffer.data(), entry, it->second);
+                // 没有值：保持 zero-initialized
+            }
+            cbuffer->Fill(buffer.data());
+        }
+
+        if (!descriptorSet)
             return;
 
+        // 填入渲染资源注册表：cbuffer + 已解析纹理 view（含 fallback），交给 assembler 按反射装配
+        RenderResourceRegistry reg;
+        if (cbuffer && matCbuffer)
+            reg.Set(matCbuffer->m_name, cbuffer);
+
         auto* resMgr = Application::GetGfxApp()->GetResourceManager();
-        for (const auto& entry : set0->m_bindings)
+        for (const auto& b : set0->m_bindings)
         {
-            if (entry.IsBuffer())
+            if (b.IsBuffer())
                 continue;
 
             gfx::TextureHandle handle{};
-            auto it = data.Textures.find(entry.m_name);
+            auto it = data.Textures.find(b.m_name);
             if (it != data.Textures.end() && it->second.IsValid())
                 handle = it->second;
             else
                 handle = data.FallbackTexture;
 
-            gfx::GFXTexture* gfxTex = nullptr;
-            if (handle.IsValid())
-                gfxTex = resMgr->GetTexture(handle);
+            if (!handle.IsValid())
+                continue;
 
-            if (gfxTex)
+            if (auto* gfxTex = resMgr->GetTexture(handle))
             {
-                auto* descriptor = descriptorSet->FindByBinding(entry.m_bindingPoint);
-                if (descriptor)
-                {
-                    auto view = gfxTex->Get2DView(0);
-                    if (view)
-                        descriptor->SetTextureSampler2D(view.get());
-                    else
-                        Logger::Log("ApplyRenderData: view is null, binding=" + std::to_string(entry.m_bindingPoint), LogLevel::Warning);
-                }
-                else
-                    Logger::Log("ApplyRenderData: FindByBinding(" + std::to_string(entry.m_bindingPoint) + ") returned null", LogLevel::Warning);
+                if (auto view = gfxTex->Get2DView(0))
+                    reg.Set(b.m_name, view.get());
             }
-            else
-                Logger::Log("ApplyRenderData: no valid texture for entry=" + entry.m_name, LogLevel::Warning);
         }
+
+        DescriptorSetAssembler::Write(descriptorSet, *set0, reg);
     }
 
     void ShaderPropertySync::WritePropertyToBuffer(uint8_t* buffer, const BufferMember& entry, const ShaderPropertyValue& prop)

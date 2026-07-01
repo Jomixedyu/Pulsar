@@ -50,7 +50,7 @@ namespace pulsar
                     for (auto batch : ro->GetMeshBatches())
                     {
                         batch.Depth = depth;
-                        const MaterialPassBinding* binding = batch.Material
+                        const MaterialShaderInstance* binding = batch.Material
                             ? batch.Material->PrepareForRendering("Forward", batch.Interface)
                             : nullptr;
 

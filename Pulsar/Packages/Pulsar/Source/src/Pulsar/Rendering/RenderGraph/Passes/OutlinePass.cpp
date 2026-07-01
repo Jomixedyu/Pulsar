@@ -68,7 +68,7 @@ namespace pulsar
                             continue;
 
                         batch.Depth = depth;
-                        const MaterialPassBinding* binding = batch.Material
+                        const MaterialShaderInstance* binding = batch.Material
                             ? batch.Material->PrepareForRendering("VertexOutline", batch.Interface)
                             : nullptr;
 

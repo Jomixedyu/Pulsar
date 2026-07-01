@@ -18,14 +18,14 @@ namespace pulsar
         ClearPassBindings();
     }
 
-    const MaterialPassBinding* MaterialProxy::PrepareForRendering(
+    const MaterialShaderInstance* MaterialProxy::PrepareForRendering(
         const std::string& passName,
         const std::string& interface_)
     {
         // GetPassBinding lazily creates the ShaderInstance for this (pass, interface) if not yet exist
-        auto& binding = const_cast<MaterialPassBinding&>(GetPassBinding(passName, interface_));
+        auto& shaderInst = const_cast<MaterialShaderInstance&>(GetPassBinding(passName, interface_));
 
-        auto program = binding.GetCurrentProgram();
+        auto program = shaderInst.GetCurrentProgram();
         if (!program)
             return nullptr; // shader still compiling
 
@@ -34,59 +34,58 @@ namespace pulsar
         if (program->GetGpuPrograms().empty())
             return nullptr;
 
-        // Detect async compilation completing or shader hot-reload for this specific binding
-        if (program != binding.m_builtWithProgram.lock())
+        // Detect async compilation completing or shader hot-reload for this specific variant
+        if (program != shaderInst.m_builtWithProgram.lock())
         {
-            // Rebuild GPU resources for this binding with the new program's layout
-            binding.m_descriptorSet.reset();
-            if (binding.m_descriptorSetLayout.IsValid())
+            // Rebuild GPU resources for this variant with the new program's layout
+            shaderInst.m_descriptorSet.reset();
+            if (shaderInst.m_descriptorSetLayout.IsValid())
             {
-                Application::GetGfxApp()->GetResourceManager()->Destroy(binding.m_descriptorSetLayout);
+                Application::GetGfxApp()->GetResourceManager()->Destroy(shaderInst.m_descriptorSetLayout);
             }
-            binding.m_descriptorSetLayout = gfx::DescriptorSetLayoutHandle{};
-            binding.m_materialConstantBuffer.reset();
-            binding.m_gpuResourcesInitialized = false;
-            EnsureGPUResources(binding, program->m_layout);
-            binding.m_builtWithProgram = program;
+            shaderInst.m_descriptorSetLayout = gfx::DescriptorSetLayoutHandle{};
+            shaderInst.m_materialConstantBuffer.reset();
+            shaderInst.m_gpuResourcesInitialized = false;
+            EnsureGPUResources(shaderInst, program->m_layout);
+            shaderInst.m_builtWithProgram = program;
 
             // Initial parameter sync: push the current snapshot into freshly created GPU resources.
             ShaderPropertySync::ApplyRenderData(
                 m_renderData,
                 program->m_layout,
-                binding.m_materialConstantBuffer.get(),
-                binding.m_descriptorSet.get());
-            if (binding.m_descriptorSet)
-                binding.m_descriptorSet->Submit();
+                shaderInst.m_materialConstantBuffer.get(),
+                shaderInst.m_descriptorSet.get());
         }
 
-        if (!binding.m_gpuResourcesInitialized)
+        if (!shaderInst.m_gpuResourcesInitialized)
             return nullptr;
 
-        return &binding;
+        return &shaderInst;
     }
 
     void MaterialProxy::ApplyRenderData(ShaderPropertyRenderData renderData)
     {
         m_renderData = std::move(renderData);
 
-        // Upload the new snapshot to every binding that already has GPU resources ready.
-        // Bindings whose shaders haven't compiled yet receive the values via the initial sync
+        // Upload the new snapshot to every variant that already has GPU resources ready.
+        // Variants whose shaders haven't compiled yet receive the values via the initial sync
         // inside PrepareForRendering when they eventually become ready.
-        for (auto& [key, binding] : m_passBindings)
+        for (auto& [key, shaderInst] : m_shaderInstances)
         {
-            if (!binding.m_gpuResourcesInitialized) continue;
+            if (!shaderInst.m_gpuResourcesInitialized) continue;
 
-            auto program = binding.GetCurrentProgram();
+            // 必须用 set 当初据以创建的 program 的 layout，而非 GetCurrentProgram()。
+            // 异步重编后 current 可能领先于 set 的 layout，错配会把 descriptor 写到不存在的
+            // binding 上（VUID-VkWriteDescriptorSet-dstBinding-10009）。错配的变体由
+            // PrepareForRendering 重建 set 时再同步。
+            auto program = shaderInst.m_builtWithProgram.lock();
             if (!program) continue;
 
             ShaderPropertySync::ApplyRenderData(
                 m_renderData,
                 program->m_layout,
-                binding.m_materialConstantBuffer.get(),
-                binding.m_descriptorSet.get());
-
-            if (binding.m_descriptorSet)
-                binding.m_descriptorSet->Submit();
+                shaderInst.m_materialConstantBuffer.get(),
+                shaderInst.m_descriptorSet.get());
         }
     }
 
@@ -120,18 +119,18 @@ namespace pulsar
         m_cachedEffectiveGraphicsPipeline.clear();
     }
 
-    const MaterialPassBinding& MaterialProxy::GetPassBinding(
+    const MaterialShaderInstance& MaterialProxy::GetPassBinding(
         const std::string& passName,
         const std::string& interface_)
     {
         PassKey key{passName, interface_};
-        auto it = m_passBindings.find(key);
-        if (it != m_passBindings.end())
+        auto it = m_shaderInstances.find(key);
+        if (it != m_shaderInstances.end())
             return it->second;
 
         if (!m_shaderConfig)
         {
-            static MaterialPassBinding empty{};
+            static MaterialShaderInstance empty{};
             return empty;
         }
 
@@ -179,21 +178,21 @@ namespace pulsar
         }
 
         auto instance = ShaderInstanceCache::Instance().GetOrCreate(variantKey, task);
-        MaterialPassBinding binding;
-        binding.m_instance = instance;
-        auto [insertIt, _] = m_passBindings.emplace(key, std::move(binding));
+        MaterialShaderInstance shaderInst;
+        shaderInst.m_instance = instance;
+        auto [insertIt, _] = m_shaderInstances.emplace(key, std::move(shaderInst));
 
         return insertIt->second;
     }
 
-    void MaterialProxy::EnsureGPUResources(MaterialPassBinding& binding, const ShaderLayout& layout)
+    void MaterialProxy::EnsureGPUResources(MaterialShaderInstance& shaderInst, const ShaderLayout& layout)
     {
-        if (binding.m_gpuResourcesInitialized)
+        if (shaderInst.m_gpuResourcesInitialized)
             return;
 
         auto gfxApp = Application::GetGfxApp();
 
-        // 创建该 binding 专属的 descriptor set layout (set 0)
+        // 创建该变体专属的 descriptor set layout (set 0)
         array_list<gfx::GFXDescriptorLayoutDesc> descLayoutInfos;
 
         // Material params live in set0; convention is a single material cbuffer.
@@ -220,53 +219,39 @@ namespace pulsar
 
         if (matCbuffer)
         {
-            // 创建该 binding 专属的 cbuffer
+            // 创建该变体专属的 cbuffer
             gfx::GFXBufferDesc bufferDesc{};
             bufferDesc.Usage = gfx::GFXBufferUsage::ConstantBuffer;
             bufferDesc.StorageType = gfx::GFXBufferMemoryPosition::VisibleOnDevice;
             bufferDesc.BufferSize = matCbuffer->m_size;
-            binding.m_materialConstantBuffer = gfxApp->CreateBuffer(bufferDesc);
+            shaderInst.m_materialConstantBuffer = gfxApp->CreateBuffer(bufferDesc);
         }
 
         auto* resMgr = Application::GetGfxApp()->GetResourceManager();
 
         // 即使没有任何 binding 也创建空 layout，确保 set 0 始终存在以保证 set 编号对齐
-        binding.m_descriptorSetLayout = resMgr->AllocHandle<gfx::DescriptorSetLayoutHandle>();
-        resMgr->CreateDescriptorSetLayout(binding.m_descriptorSetLayout, descLayoutInfos);
-        binding.m_descriptorSet = resMgr->GetDescriptorSetLayoutShared(binding.m_descriptorSetLayout)->AllocateSet();
+        shaderInst.m_descriptorSetLayout = resMgr->AllocHandle<gfx::DescriptorSetLayoutHandle>();
+        resMgr->CreateDescriptorSetLayout(shaderInst.m_descriptorSetLayout, descLayoutInfos);
+        shaderInst.m_descriptorSet = resMgr->GetDescriptorSetLayoutShared(shaderInst.m_descriptorSetLayout)->AllocateSet();
 
-        if (binding.m_materialConstantBuffer)
-        {
-            binding.m_descriptorSet->AddDescriptor("ConstantProperties", matCbuffer->m_bindingPoint)
-                ->SetConstantBuffer(binding.m_materialConstantBuffer.get());
-        }
+        // descriptor 由首次 ShaderPropertySync::ApplyRenderData 的 assembler 装配（FindByBinding-then-Add）
 
-        if (set0)
-        {
-            for (const auto& b : set0->m_bindings)
-            {
-                if (b.IsBuffer())
-                    continue;
-                binding.m_descriptorSet->AddDescriptor(b.m_name, b.m_bindingPoint);
-            }
-        }
-
-        binding.m_gpuResourcesInitialized = true;
+        shaderInst.m_gpuResourcesInitialized = true;
     }
 
     void MaterialProxy::ClearPassBindings()
     {
-        if (m_passBindings.empty())
+        if (m_shaderInstances.empty())
             return;
 
         // Explicitly destroy handle-managed resources before clearing the map
         auto* resMgr = Application::GetGfxApp()->GetResourceManager();
-        for (auto& [key, binding] : m_passBindings)
+        for (auto& [key, shaderInst] : m_shaderInstances)
         {
-            if (binding.m_descriptorSetLayout.IsValid())
-                resMgr->Destroy(binding.m_descriptorSetLayout);
+            if (shaderInst.m_descriptorSetLayout.IsValid())
+                resMgr->Destroy(shaderInst.m_descriptorSetLayout);
         }
-        m_passBindings.clear();
+        m_shaderInstances.clear();
     }
 
     bool MaterialProxy::HasPass(const std::string& passName) const

@@ -31,8 +31,9 @@ namespace pulsar
         }
     };
 
-    // Per-pass binding: holds a ShaderInstance AND its own GPU resources for a specific (pass, interface) combination.
-    struct MaterialPassBinding
+    // A material's unique shader variant (guid + pass + interface + features):
+    // holds its ShaderInstance AND the GPU resources built for that variant.
+    struct MaterialShaderInstance
     {
         std::shared_ptr<ShaderInstance> m_instance;
 
@@ -74,11 +75,11 @@ namespace pulsar
         // Detects async shader compilation completing, creates GPU resources, and does the
         // initial parameter sync into freshly created resources.
         // Returns nullptr if the shader for this binding is not yet ready.
-        const MaterialPassBinding* PrepareForRendering(const std::string& passName, const std::string& interface_);
+        const MaterialShaderInstance* PrepareForRendering(const std::string& passName, const std::string& interface_);
 
         // Lazily creates the ShaderInstance binding for (pass, interface) without forcing GPU
         // resource creation. Callers that need the GPU resources ready should use PrepareForRendering.
-        const MaterialPassBinding& GetPassBinding(const std::string& passName, const std::string& interface_);
+        const MaterialShaderInstance& GetPassBinding(const std::string& passName, const std::string& interface_);
 
         ShaderPassRenderQueueType GetQueue() const { return m_queue; }
 
@@ -110,7 +111,7 @@ namespace pulsar
             SPtr<ObjectPropertyOverride> gpOverrideFields);
 
     private:
-        void EnsureGPUResources(MaterialPassBinding& binding, const ShaderLayout& layout);
+        void EnsureGPUResources(MaterialShaderInstance& shaderInst, const ShaderLayout& layout);
         void ClearPassBindings();
 
     private:
@@ -124,7 +125,7 @@ namespace pulsar
         SPtr<ObjectPropertyOverride>       m_graphicsPipelineOverrideFields;
 
         // Render-thread-owned GPU state.
-        std::map<PassKey, MaterialPassBinding> m_passBindings;
+        std::map<PassKey, MaterialShaderInstance> m_shaderInstances;
         mutable std::map<std::string, SPtr<ShaderConfigGraphicsPipeline>> m_cachedEffectiveGraphicsPipeline;
     };
 
