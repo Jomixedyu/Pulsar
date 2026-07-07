@@ -17,6 +17,7 @@
 #include "GFXGlobalShaderManager.h"
 #include "GFXSurface.h"
 #include "GFXResourceManager.h"
+#include "GFXBuiltinResources.h"
 #include <functional>
 #include <memory>
 
@@ -97,6 +98,8 @@ namespace gfx
 
         GFXResourceManager* GetResourceManager() const { return m_resourceManager.get(); }
 
+        GFXBuiltinResources& GetBuiltinResources() { return m_builtinResources; }
+
         GFXGlobalShaderManager& GetGlobalShaderManager() { return m_shaderManager; }
 
     protected:
@@ -106,6 +109,7 @@ namespace gfx
         GFXGlobalConfig m_config{};
         GFXGlobalShaderManager m_shaderManager;
         std::unique_ptr<GFXResourceManager> m_resourceManager;
+        GFXBuiltinResources m_builtinResources;
     };
 
 } // namespace gfx

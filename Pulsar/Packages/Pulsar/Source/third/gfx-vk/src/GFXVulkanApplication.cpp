@@ -416,6 +416,8 @@ namespace gfx
         m_graphicsPipelineManager = new GFXVulkanGraphicsPipelineManager(this);
 
         m_resourceManager = std::make_unique<GFXResourceManager>(this);
+
+        m_builtinResources.Initialize(this);
     }
 
     void GFXVulkanApplication::TickRender(float deltaTime)
@@ -435,6 +437,9 @@ namespace gfx
 
         // Ensure all GPU work is finished before releasing resources
         vkDeviceWaitIdle(m_device);
+
+        // Release builtin fallback resources while the device is still alive
+        m_builtinResources.Terminate();
 
         // Release handle-managed resources before destroying the device
         m_resourceManager.reset();
