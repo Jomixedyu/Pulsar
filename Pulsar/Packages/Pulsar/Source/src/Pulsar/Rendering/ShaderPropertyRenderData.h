@@ -23,7 +23,5 @@ namespace pulsar
         std::map<std::string, ShaderPropertyValue> Constants;
         // 已解析的纹理 GPU 句柄（值类型，跨线程安全）
         std::map<std::string, gfx::TextureHandle> Textures;
-        // 游戏线程预解析的 fallback 纹理句柄（黑色），用于 layout 中存在但 sheet 未提供的纹理项
-        gfx::TextureHandle FallbackTexture;
     };
 }

@@ -15,9 +15,9 @@ namespace pulsar::DescriptorSetAssembler
 
         for (const auto& b : setLayout.m_bindings)
         {
-            gfx::GFXResource* r = reg.Find(b.m_name);
+            gfx::GFXResource* r = reg.Resolve(b);
             if (!r)
-                continue;
+                continue; // unsupported binding type
 
             auto* desc = set->FindByBinding(b.m_bindingPoint);
             if (!desc)

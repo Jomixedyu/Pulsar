@@ -1,5 +1,4 @@
 #include "ShaderPropertySync.h"
-#include "BuiltinAsset.h"
 #include "Assets/Texture2D.h"
 #include "Rendering/DescriptorSetAssembler.h"
 #include "Rendering/RenderResourceRegistry.h"
@@ -45,15 +44,6 @@ namespace pulsar
             default:
                 break;
             }
-        }
-
-        // 预解析 fallback：layout 中存在但 sheet 未提供的纹理项，渲染线程用此句柄兜底
-        RCPtr<Texture2D> fallback = BuiltinAsset::GetTextureBlack();
-        if (fallback)
-        {
-            if (!fallback->IsCreatedGPUResource())
-                fallback->CreateGPUResource();
-            data.FallbackTexture = fallback->GetTextureHandle();
         }
 
         return data;
@@ -110,17 +100,12 @@ namespace pulsar
             if (b.IsBuffer())
                 continue;
 
-            gfx::TextureHandle handle{};
+            // 缺失的纹理项：不写入 registry，交给 assembler 回落到 gfx 内建兜底
             auto it = data.Textures.find(b.m_name);
-            if (it != data.Textures.end() && it->second.IsValid())
-                handle = it->second;
-            else
-                handle = data.FallbackTexture;
-
-            if (!handle.IsValid())
+            if (it == data.Textures.end() || !it->second.IsValid())
                 continue;
 
-            if (auto* gfxTex = resMgr->GetTexture(handle))
+            if (auto* gfxTex = resMgr->GetTexture(it->second))
             {
                 if (auto view = gfxTex->Get2DView(0))
                     reg.Set(b.m_name, view.get());
