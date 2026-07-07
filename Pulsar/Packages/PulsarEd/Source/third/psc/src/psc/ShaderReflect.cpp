@@ -7,6 +7,19 @@
 
 namespace psc
 {
+    // Map SPIR-V image dimensionality + arrayed flag to our TextureDimension enum.
+    static TextureDimension ResolveTextureDimension(const spirv_cross::SPIRType& type)
+    {
+        const bool arrayed = type.image.arrayed;
+        switch (type.image.dim)
+        {
+        case spv::Dim2D:   return arrayed ? TextureDimension::Tex2DArray : TextureDimension::Tex2D;
+        case spv::DimCube: return TextureDimension::Cube;
+        case spv::Dim3D:   return TextureDimension::Tex3D;
+        default:           return TextureDimension::Unknown;
+        }
+    }
+
     ReflectedShaderResources ReflectSpirvResources(const std::vector<char>& spirvData)
     {
         ReflectedShaderResources result{};
@@ -94,6 +107,7 @@ namespace psc
             reflected.Set = compiler.get_decoration(img.id, spv::DecorationDescriptorSet);
             reflected.Binding = compiler.get_decoration(img.id, spv::DecorationBinding);
             reflected.IsCombined = true;
+            reflected.Dimension = ResolveTextureDimension(compiler.get_type(img.type_id));
             reflected.StageFlags = stageFlag;
             result.SampledImages.push_back(std::move(reflected));
         }
@@ -106,6 +120,7 @@ namespace psc
             reflected.Set = compiler.get_decoration(img.id, spv::DecorationDescriptorSet);
             reflected.Binding = compiler.get_decoration(img.id, spv::DecorationBinding);
             reflected.IsCombined = (pairedSamplerTexNames.count(reflected.Name) > 0);
+            reflected.Dimension = ResolveTextureDimension(compiler.get_type(img.type_id));
             reflected.StageFlags = stageFlag;
             result.SampledImages.push_back(std::move(reflected));
         }

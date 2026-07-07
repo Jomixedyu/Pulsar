@@ -33,6 +33,16 @@ namespace psc
         Float,  // float32
     };
 
+    // The image view dimensionality of a sampled texture, reflected from SPIR-V.
+    enum class TextureDimension : uint8_t
+    {
+        Unknown,
+        Tex2D,
+        Tex2DArray,
+        Cube,
+        Tex3D,
+    };
+
     struct ReflectedCBufferMember
     {
         std::string Name;
@@ -58,6 +68,7 @@ namespace psc
         uint32_t Set;
         uint32_t Binding;
         bool IsCombined = false;
+        TextureDimension Dimension = TextureDimension::Unknown;
         ShaderStageFlags StageFlags = ShaderStageFlags::None;
     };
 

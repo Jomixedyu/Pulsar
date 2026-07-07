@@ -2,6 +2,7 @@
 #include <Pulsar/Rendering/Types.h>
 #include <gfx/GFXGpuProgram.h>
 #include <gfx/GFXDescriptorSet.h>
+#include <gfx/TextureClasses.h>
 
 #include <string>
 #include <vector>
@@ -29,6 +30,10 @@ namespace pulsar
         gfx::GFXGpuProgramStageFlags m_stageFlags = gfx::GFXGpuProgramStageFlags::None;
         uint32_t m_size{};                    // buffer byte size; 0 for textures/samplers
         std::vector<BufferMember> m_members;  // buffer members; empty for textures/samplers
+
+        // Image view dimensionality for texture bindings; used to pick the matching
+        // fallback view when a texture is missing. None for buffers/samplers.
+        gfx::GFXTextureDataType m_viewDimension = gfx::GFXTextureDataType::None;
 
         bool IsBuffer() const
         {

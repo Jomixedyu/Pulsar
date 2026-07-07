@@ -164,6 +164,18 @@ namespace pulsared
                 static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
         };
 
+        // Map psc::TextureDimension to the gfx texture view dimensionality.
+        auto toGfxViewDimension = [](psc::TextureDimension d) {
+            switch (d)
+            {
+            case psc::TextureDimension::Tex2D:      return gfx::GFXTextureDataType::Texture2D;
+            case psc::TextureDimension::Tex2DArray: return gfx::GFXTextureDataType::Texture2DArray;
+            case psc::TextureDimension::Cube:       return gfx::GFXTextureDataType::TextureCube;
+            case psc::TextureDimension::Tex3D:      return gfx::GFXTextureDataType::Texture3D;
+            default:                                return gfx::GFXTextureDataType::None;
+            }
+        };
+
         // Find an existing binding at (set, bindingPoint) or append a new one.
         auto findOrAddBinding = [&](uint32_t set, uint32_t bindingPoint) -> pulsar::DescriptorBinding& {
             pulsar::ShaderPropertySetLayout& setLayout = layout.FindOrAddSet(set);
@@ -229,6 +241,7 @@ namespace pulsared
             binding.m_type = img.IsCombined
                 ? gfx::GFXDescriptorType::CombinedImageSampler
                 : gfx::GFXDescriptorType::Texture2D;
+            binding.m_viewDimension = toGfxViewDimension(img.Dimension);
             binding.m_stageFlags = mergeStage(binding.m_stageFlags, toGfxStage(img.StageFlags));
         }
     }
