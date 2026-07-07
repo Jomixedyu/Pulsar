@@ -17,6 +17,7 @@
 #include "GFXGlobalShaderManager.h"
 #include "GFXSurface.h"
 #include "GFXResourceManager.h"
+#include "GFXSampler.h"
 #include "GFXBuiltinResources.h"
 #include <functional>
 #include <memory>
@@ -78,6 +79,8 @@ namespace gfx
             ) = 0;
 
         virtual GFXTexture_sp CreateTextureCube(int32_t size) = 0;
+
+        virtual GFXSampler_sp CreateSampler(const GFXSamplerConfig& config) = 0;
 
         virtual GFXTexture_sp CreateRenderTarget(
             int32_t width, int32_t height, GFXTextureTargetType type,

@@ -9,8 +9,10 @@ namespace gfx
 {
     struct GFXSamplerConfig
     {
-        GFXSamplerFilter Filter;
-        GFXSamplerAddressMode AddressMode;
+        GFXSamplerFilter Filter = GFXSamplerFilter::Linear;
+        GFXSamplerAddressMode AddressMode = GFXSamplerAddressMode::Repeat;
+
+        bool operator==(const GFXSamplerConfig&) const = default;
     };
 
 

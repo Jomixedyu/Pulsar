@@ -47,7 +47,6 @@ namespace gfx
 
         VkImage GetVkImage() const { return m_textureImage; }
         VkImageView GetVkImageView() const { return m_textureImageView; }
-        VkSampler GetVkSampler() const { return m_textureSampler; }
         VkFormat GetVkImageFormat() const { return m_imageFormat; }
         VkImageLayout GetVkImageLayout() const { return m_imageLayout; }
         VkImageLayout GetVkTargetFinalLayout() const { return m_targetFinalLayout; }
@@ -68,7 +67,6 @@ namespace gfx
         VkImageLayout m_targetFinalLayout;
         VkDeviceMemory m_textureImageMemory{};
         VkImageView m_textureImageView{};
-        VkSampler m_textureSampler{};
         VkFormat m_imageFormat;
         VkImageAspectFlags m_aspectFlags{};
         VkImageUsageFlags m_usageFlags{};

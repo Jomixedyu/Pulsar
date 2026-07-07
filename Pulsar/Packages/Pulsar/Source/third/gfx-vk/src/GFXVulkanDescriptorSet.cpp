@@ -2,6 +2,7 @@
 #include <gfx-vk/GFXVulkanApplication.h>
 #include <gfx-vk/GFXVulkanBuffer.h>
 #include <gfx-vk/GFXVulkanDescriptorSet.h>
+#include <gfx-vk/GFXVulkanSampler.h>
 #include <gfx-vk/GFXVulkanTexture.h>
 #include <gfx-vk/GFXVulkanTextureView.h>
 #include <stdexcept>
@@ -235,7 +236,13 @@ namespace gfx
         auto vkView = dynamic_cast<GFXVulkanTexture2DView*>(texture);
 
         VkImageView imageView = vkView->GetVkImageView();
-        VkSampler sampler = vkView->GetVkTexture()->GetVkSampler();
+
+        // Samplers are no longer baked into textures; pull one from the shared
+        // cache keyed on the texture's sampler config.
+        auto app = m_descriptorSet->GetApplication();
+        const auto& samplerCfg = vkView->GetVkTexture()->GetSamplerConfig();
+        auto vkSampler = static_cast<GFXVulkanSampler*>(app->GetBuiltinResources().GetSampler(samplerCfg));
+        VkSampler sampler = vkSampler->GetVkSampler();
 
         ImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         ImageInfo.imageView = imageView;

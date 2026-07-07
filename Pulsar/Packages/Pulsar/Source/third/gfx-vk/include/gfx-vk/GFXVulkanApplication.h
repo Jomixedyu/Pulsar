@@ -66,6 +66,8 @@ namespace gfx
 
         virtual GFXTexture_sp CreateTextureCube(int32_t size) override;
 
+        virtual GFXSampler_sp CreateSampler(const GFXSamplerConfig& config) override;
+
         virtual GFXTexture_sp CreateRenderTarget(
             int32_t width, int32_t height, GFXTextureTargetType type,
             GFXTextureFormat format, const GFXSamplerConfig& samplerCfg,

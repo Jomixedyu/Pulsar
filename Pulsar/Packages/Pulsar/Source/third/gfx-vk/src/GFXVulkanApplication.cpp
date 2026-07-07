@@ -10,6 +10,7 @@
 #include "GFXVulkanGraphicsPipeline.h"
 #include "GFXVulkanGraphicsPipelineManager.h"
 #include "GFXVulkanRenderer.h"
+#include "GFXVulkanSampler.h"
 #include "GFXVulkanSwapchain.h"
 #include "GFXVulkanTexture.h"
 #include "GFXVulkanVertexLayoutDescription.h"
@@ -526,6 +527,11 @@ namespace gfx
         info.TargetType = GFXTextureTargetType::ColorTarget;
         info.DataType = GFXTextureDataType::TextureCube;
         return gfxmksptr(new GFXVulkanTexture(this, info));
+    }
+
+    GFXSampler_sp GFXVulkanApplication::CreateSampler(const GFXSamplerConfig& config)
+    {
+        return gfxmksptr(new GFXVulkanSampler(this, config));
     }
 
     GFXTexture_sp GFXVulkanApplication::CreateRenderTarget(

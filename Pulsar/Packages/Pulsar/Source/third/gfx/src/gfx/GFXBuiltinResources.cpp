@@ -33,10 +33,31 @@ namespace gfx
         m_black2D = app->CreateTexture2DFromMemory(
             black, sizeof(black), 2, 2, GFXTextureFormat::R8G8B8A8_UNorm, sampler);
         m_black2DView = m_black2D->Get2DView(0);
+
+        // Default sampler used when a texture is sampled but no sampler reflected.
+        m_defaultSampler = GetSampler(GFXSamplerConfig{});
+    }
+
+    GFXSampler* GFXBuiltinResources::GetSampler(const GFXSamplerConfig& config)
+    {
+        for (const auto& [cfg, sampler] : m_samplers)
+        {
+            if (cfg == config)
+            {
+                return sampler.get();
+            }
+        }
+
+        auto sampler = m_app->CreateSampler(config);
+        auto* raw = sampler.get();
+        m_samplers.emplace_back(config, std::move(sampler));
+        return raw;
     }
 
     void GFXBuiltinResources::Terminate()
     {
+        m_defaultSampler = nullptr;
+        m_samplers.clear();
         m_black2DView.reset();
         m_black2D.reset();
         m_zeroBuffer.reset();

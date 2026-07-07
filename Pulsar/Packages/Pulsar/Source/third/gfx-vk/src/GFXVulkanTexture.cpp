@@ -23,7 +23,6 @@ namespace gfx
                 vkFreeMemory(m_app->GetVkDevice(), m_textureImageMemory, nullptr);
                 vkDestroyImageView(m_app->GetVkDevice(), m_textureImageView, nullptr);
             }
-            vkDestroySampler(m_app->GetVkDevice(), m_textureSampler, nullptr);
         }
     }
 
@@ -108,11 +107,6 @@ namespace gfx
         auto viewInfo = ImageHelper::ImageViewCreateInfoTexture2D(m_textureImage, m_imageFormat, m_aspectFlags);
         m_textureImageView = ImageHelper::CreateImageView(app, &viewInfo);
 
-        auto filter = BufferHelper::GetVkFilter(m_samplerConfig.Filter);
-        auto addressMode = BufferHelper::GetVkAddressMode(m_samplerConfig.AddressMode);
-
-        m_textureSampler = BufferHelper::CreateTextureSampler(m_app, filter, addressMode);
-
         m_inited = true;
     }
 
@@ -127,7 +121,6 @@ namespace gfx
         m_aspectFlags = ImageHelper::GetAspectFlags(info.usage);
 
         m_textureImageView = info.view;
-        m_textureSampler = BufferHelper::CreateTextureSampler(m_app, VkFilter::VK_FILTER_LINEAR, VkSamplerAddressMode::VK_SAMPLER_ADDRESS_MODE_REPEAT);
         m_inited = true;
     }
 
