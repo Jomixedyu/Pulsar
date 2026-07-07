@@ -59,19 +59,19 @@ namespace pulsar
     void PerPassResources::UpdateCamera(const PerPassCameraData& data)
     {
         if (auto* buffer = Application::GetGfxApp()->GetResourceManager()->GetBuffer(m_cameraBuffer))
-            buffer->Fill(&data);
+            buffer->Update(&data);
     }
 
     void PerPassResources::UpdateWorld(const PerPassWorldData& data)
     {
         if (auto* buffer = Application::GetGfxApp()->GetResourceManager()->GetBuffer(m_worldBuffer))
-            buffer->Fill(&data);
+            buffer->Update(&data);
     }
 
     void PerPassResources::UpdateLights(const PerPassLightsBufferData& data)
     {
         if (auto* buffer = Application::GetGfxApp()->GetResourceManager()->GetBuffer(m_lightsBuffer))
-            buffer->Fill(&data);
+            buffer->Update(&data);
     }
 
     gfx::DescriptorSetLayoutHandle PerPassResources::GetLayout(const std::string& passName)

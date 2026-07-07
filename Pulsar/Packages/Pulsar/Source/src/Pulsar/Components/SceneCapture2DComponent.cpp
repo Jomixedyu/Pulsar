@@ -208,7 +208,7 @@ namespace pulsar
         target.Resolution = m_renderTarget->GetSize2df();
         if (auto* buffer = Application::GetGfxApp()->GetResourceManager()->GetBuffer(m_cameraDataBuffer))
         {
-            buffer->Fill(&target);
+            buffer->Update(&target);
         }
     }
 } // namespace pulsar

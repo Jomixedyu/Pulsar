@@ -156,7 +156,7 @@ namespace pulsar
         params.Threshold = threshold;
         params.Intensity = m_bloomIntensity;
         params.SampleMode = sampleMode;
-        buffer->Fill(&params);
+        buffer->Update(&params);
     }
 
     void BloomPass::SetupBloomSet(gfx::GFXDescriptorSet* set, gfx::GFXTexture2DView* srcView)

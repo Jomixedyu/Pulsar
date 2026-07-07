@@ -93,7 +93,7 @@ namespace pulsar
                     WritePropertyToBuffer(buffer.data(), entry, it->second);
                 // 没有值：保持 zero-initialized
             }
-            cbuffer->Fill(buffer.data());
+            cbuffer->Update(buffer.data());
         }
 
         if (!descriptorSet)

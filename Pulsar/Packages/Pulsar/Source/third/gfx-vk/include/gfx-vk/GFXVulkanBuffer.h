@@ -13,11 +13,10 @@ namespace gfx
         GFXVulkanBuffer(GFXVulkanApplication* app, const GFXBufferDesc& desc);
         virtual ~GFXVulkanBuffer() override;
     public:
-        virtual void Fill(const void* data) override;
+        virtual void Update(const void* data) override;
         virtual void Release() override;
         const VkBuffer& GetVkBuffer() const { return m_vkBuffer; }
         VkBufferUsageFlags GetVkUsage() const;
-        bool IsGpuLocalMemory() const;
         GFXVulkanApplication* GetApplication() const { return m_app; }
     public:
         /* GFXBuffer */

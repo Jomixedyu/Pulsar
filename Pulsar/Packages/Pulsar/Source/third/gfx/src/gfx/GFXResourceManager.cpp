@@ -138,7 +138,7 @@ namespace gfx
         auto* buffer = static_cast<GFXBuffer*>(m_slots[handle.index].resource.get());
         if (buffer)
         {
-            buffer->Fill(data);
+            buffer->Update(data);
         }
     }
 

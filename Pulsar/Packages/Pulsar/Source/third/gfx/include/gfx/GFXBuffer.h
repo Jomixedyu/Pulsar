@@ -3,12 +3,13 @@
 
 namespace gfx
 {
-    enum class GFXBufferUsage
+    enum class GFXBufferUsage : uint32_t
     {
-        Vertex,
-        Indices,
-        ConstantBuffer,
-        StructuredBuffer,
+        None = 0,
+        Vertex = 1 << 0,
+        Indices = 1 << 1,
+        ConstantBuffer = 1 << 2,
+        StructuredBuffer = 1 << 3,
     };
 
     enum class GFXBufferMemoryPosition
@@ -36,7 +37,9 @@ namespace gfx
         ~GFXBuffer() override = default;
         GFXResourceType GetResourceType() const override { return GFXResourceType::Buffer; }
     public:
-        virtual void Fill(const void* data) = 0;
+        // Uploads data into the buffer. Host-visible memory is mapped and copied directly;
+        // device-local memory is uploaded through a transient staging buffer.
+        virtual void Update(const void* data) = 0;
         virtual void Release() = 0;
     public:
         virtual size_t GetSize() const = 0;
@@ -44,6 +47,8 @@ namespace gfx
         size_t GetElementCount() const { return m_desc.BufferSize / m_desc.ElementSize; }
         size_t GetElementSize() const { return m_desc.ElementSize; }
         const GFXBufferDesc& GetDesc() const { return m_desc; }
+        // True when the buffer memory is device-local (not host-visible).
+        bool IsDeviceLocal() const { return m_desc.StorageType == GFXBufferMemoryPosition::DeviceLocal; }
     protected:
         GFXBufferDesc m_desc;
     };

@@ -1,6 +1,7 @@
 #include <gfx-vk/GFXVulkanBuffer.h>
 #include <gfx-vk/GFXVulkanApplication.h>
 #include <gfx-vk/BufferHelper.h>
+#include <gfx/GFXInclude.h>
 #include <cassert>
 #include <stdexcept>
 
@@ -44,11 +45,11 @@ namespace gfx
 
 
 
-    void GFXVulkanBuffer::Fill(const void* data)
+    void GFXVulkanBuffer::Update(const void* data)
     {
-        if (IsGpuLocalMemory())
+        if (IsDeviceLocal())
         {
-            //create staging buffer
+            // Device-local memory can't be mapped; upload through a transient staging buffer.
             VkBuffer stagingBuffer;
             VkDeviceMemory stagingBufferMemory;
             BufferHelper::CreateBuffer(m_app, m_desc.BufferSize,
@@ -63,7 +64,6 @@ namespace gfx
             memcpy(memData, data, m_desc.BufferSize);
             vkUnmapMemory(m_app->GetVkDevice(), stagingBufferMemory);
 
-            //transfer
             BufferHelper::TransferBuffer(m_app, stagingBuffer, m_vkBuffer, m_desc.BufferSize);
             BufferHelper::DestroyBuffer(m_app, stagingBuffer, stagingBufferMemory);
         }
@@ -74,7 +74,6 @@ namespace gfx
             memcpy(gpuData, data, m_desc.BufferSize);
             vkUnmapMemory(m_app->GetVkDevice(), m_vkBufferMemory);
         }
-
     }
 
     void GFXVulkanBuffer::Release()
@@ -88,31 +87,17 @@ namespace gfx
 
     VkBufferUsageFlags GFXVulkanBuffer::GetVkUsage() const
     {
-        VkBufferUsageFlags vkUsage;
-        switch (m_desc.Usage)
-        {
-        case gfx::GFXBufferUsage::Vertex:
-            vkUsage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-            break;
-        case gfx::GFXBufferUsage::Indices:
-            vkUsage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-            break;
-        case GFXBufferUsage::ConstantBuffer:
-            vkUsage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-            break;
-        case GFXBufferUsage::StructuredBuffer:
-            vkUsage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-            break;
-        default:
-            assert(false);
-            break;
-        }
+        VkBufferUsageFlags vkUsage = 0;
+        if (HasFlag(m_desc.Usage, GFXBufferUsage::Vertex))
+            vkUsage |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+        if (HasFlag(m_desc.Usage, GFXBufferUsage::Indices))
+            vkUsage |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+        if (HasFlag(m_desc.Usage, GFXBufferUsage::ConstantBuffer))
+            vkUsage |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+        if (HasFlag(m_desc.Usage, GFXBufferUsage::StructuredBuffer))
+            vkUsage |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+        assert(vkUsage != 0 && "buffer usage not specified");
         return vkUsage;
-    }
-
-    bool GFXVulkanBuffer::IsGpuLocalMemory() const
-    {
-        return m_desc.Usage != GFXBufferUsage::ConstantBuffer && m_desc.Usage != GFXBufferUsage::StructuredBuffer;
     }
 
     bool GFXVulkanBuffer::IsValid() const

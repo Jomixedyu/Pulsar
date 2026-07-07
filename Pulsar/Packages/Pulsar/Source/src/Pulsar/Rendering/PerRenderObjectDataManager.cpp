@@ -117,7 +117,7 @@ namespace pulsar
         auto* buffer = Application::GetGfxApp()->GetResourceManager()->GetBuffer(m_buffer);
         if (buffer)
         {
-            buffer->Fill(m_cpuData.data());
+            buffer->Update(m_cpuData.data());
         }
     }
 }
