@@ -19,6 +19,10 @@ namespace pulsar
             return builtin.GetZeroBuffer();
 
         // Texture / combined-image-sampler: black view of the matching dimension.
+        // TODO: cube / 2DArray fallbacks are deferred until the vk backend gains
+        // cube/array texture+view support (lands with set1 perPass wiring). Until
+        // then every dimension falls back to the black 2D view; set0 materials only
+        // use Texture2D, so this stopgap is never hit by a non-2D binding today.
         switch (binding.m_viewDimension)
         {
         case gfx::GFXTextureDataType::Texture2D:
