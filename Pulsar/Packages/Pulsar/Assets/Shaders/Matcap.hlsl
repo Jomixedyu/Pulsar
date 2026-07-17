@@ -18,7 +18,8 @@ StandardVaryings VSMain(StandardAttributes a)
 
 float4 PSMain(StandardVaryings v) : SV_Target
 {
-    float2 uv = map_MatCapMapping(TransformWorldToViewDir(v.WorldNormal));
+    float3 N = normalize(v.WorldNormal);
+    float2 uv = map_MatCapMapping(TransformWorldToViewDir(N));
 
     float4 tex = _BaseColorMap.Sample(Sampler__BaseColorMap, uv);
     
