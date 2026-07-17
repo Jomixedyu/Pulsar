@@ -1,6 +1,6 @@
 #include "Common.inc.hlsl"
 #include "MeshRenderer.inc.hlsl"
-
+#include "ShaderLibrary/Mapping.inc.hlsl"
 
 Texture2D _BaseColorMap;
 SamplerState Sampler__BaseColorMap;
@@ -17,8 +17,10 @@ StandardVaryings VSMain(StandardAttributes a)
 
 float4 PSMain(StandardVaryings v) : SV_Target
 {
-    float4 tex = _BaseColorMap.Sample(Sampler__BaseColorMap, v.TexCoord0);
+    float2 uv = map_MatCapMapping(TransformWorldToViewDir(v.WorldNormal));
 
+    float4 tex = _BaseColorMap.Sample(Sampler__BaseColorMap, uv);
+    
     return tex;
 }
 
