@@ -11,6 +11,7 @@ StandardVaryings VSMain(StandardAttributes a)
 {
     StandardVaryings v = (StandardVaryings)0;
     v.Position = TransformObjectToClip(a.Position);
+    v.WorldNormal = TransformObjectNormalToWorld(a.Normal);
     v.TexCoord0 = a.TexCoord0;
     return v;
 }
