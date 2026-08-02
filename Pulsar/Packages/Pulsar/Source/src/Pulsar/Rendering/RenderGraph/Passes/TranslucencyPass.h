@@ -4,8 +4,6 @@
 
 namespace pulsar
 {
-    class PerPassResources;
-
     class TranslucencyPass : public MeshRenderFeature
     {
     public:
@@ -15,8 +13,7 @@ namespace pulsar
         RGTextureHandle AddToGraph(RenderGraph& graph,
                                    RGTextureHandle input,
                                    RGTextureHandle output,
-                                   const RenderCaptureContext& ctx,
-                                   PerPassResources* perPass) override;
+                                   const RenderCaptureContext& ctx) override;
 
     private:
         RGTextureHandle m_hOpaqueColor;

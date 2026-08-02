@@ -15,4 +15,8 @@ namespace pulsar::DescriptorSetAssembler
     void Write(gfx::GFXDescriptorSet* set,
                const ShaderPropertySetLayout& setLayout,
                const RenderResourceRegistry& reg);
+
+    // 反射 set layout → 全局去重的 gfx descriptor set layout。
+    // 缺失的 stage flag 回落为 VertexFragment。空 layout 也照建(保持 set-index 对齐)。
+    gfx::GFXDescriptorSetLayout_sp BuildLayout(const ShaderPropertySetLayout* setLayout);
 }

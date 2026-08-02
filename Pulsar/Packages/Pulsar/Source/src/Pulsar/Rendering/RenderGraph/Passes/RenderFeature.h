@@ -5,8 +5,6 @@
 
 namespace pulsar
 {
-    class PerPassResources;
-
     // Generic render feature interface.
     // Any render logic that can be injected into the pipeline (post-processing, SSAO, SSR, etc.)
     // implements this interface. The DefaultSceneCaptureRenderer iterates over registered features
@@ -32,8 +30,7 @@ namespace pulsar
         virtual RGTextureHandle AddToGraph(RenderGraph& graph,
                                            RGTextureHandle input,
                                            RGTextureHandle output,
-                                           const RenderCaptureContext& ctx,
-                                           PerPassResources* perPass) = 0;
+                                           const RenderCaptureContext& ctx) = 0;
     };
 
 } // namespace pulsar

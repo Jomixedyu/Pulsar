@@ -24,8 +24,7 @@ namespace pulsar
     RGTextureHandle CustomPostProcessChain::AddToGraph(RenderGraph& graph,
                                                        RGTextureHandle input,
                                                        RGTextureHandle output,
-                                                       const RenderCaptureContext& ctx,
-                                                       PerPassResources* perPass)
+                                                       const RenderCaptureContext& ctx)
     {
         if (m_materials.empty())
             return input;
@@ -38,7 +37,7 @@ namespace pulsar
             for (size_t i = oldSize; i < m_passPool.size(); ++i)
             {
                 m_passPool[i] = std::make_unique<CustomPostProcessPass>();
-                m_passPool[i]->Initialize(perPass);
+                m_passPool[i]->Initialize();
             }
         }
 
@@ -54,7 +53,7 @@ namespace pulsar
             auto& pass = m_passPool[i];
             pass->SetMaterial(m_materials[i]);
             pass->SetPassName(std::string("PostProcess_PPCompMat_") + std::to_string(i));
-            curDst = pass->AddToGraph(graph, curSrc, curDst, ctx, perPass);
+            curDst = pass->AddToGraph(graph, curSrc, curDst, ctx);
             std::swap(curSrc, curDst);
         }
 

@@ -21,8 +21,7 @@ namespace pulsar
         RGTextureHandle AddToGraph(RenderGraph& graph,
                                    RGTextureHandle input,
                                    RGTextureHandle output,
-                                   const RenderCaptureContext& ctx,
-                                   PerPassResources* perPass) override;
+                                   const RenderCaptureContext& ctx) override;
 
     public:
         bool IsEnabled() const override;

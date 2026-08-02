@@ -207,7 +207,7 @@ namespace pulsar
                 break;
             }
 
-            RGPassContext ctx(m_physicalRTs, m_handleToRTIndex, pass.perPassResources);
+            RGPassContext ctx(m_physicalRTs, m_handleToRTIndex);
 
             // Prepare: runs after Compile, before BeginRenderPass.
             // Safe place for GPU resource creation, material preparation, descriptor set updates.

@@ -2,6 +2,7 @@
 #include "RenderFeature.h"
 #include <Pulsar/Rendering/RenderObject.h>
 #include <Pulsar/Rendering/ShaderPass.h>
+#include <Pulsar/Rendering/RenderResourceRegistry.h>
 #include <Pulsar/Assets/Material.h>
 #include <gfx/GFXDescriptorSet.h>
 #include <gfx/GFXCommandBuffer.h>
@@ -10,8 +11,6 @@
 
 namespace pulsar
 {
-    class PerPassResources;
-
     struct PreparedBatch
     {
         rendering::MeshBatch batch;
@@ -28,18 +27,22 @@ namespace pulsar
     public:
         ~MeshRenderFeature() override { Destroy(); }
 
-        void Initialize(PerPassResources* perPass);
+        void Initialize();
         void Destroy();
 
     protected:
         virtual std::string GetPerPassLayoutName() const { return "Forward"; }
 
-        gfx::GFXDescriptorSet_sp m_perPassSet;
+        // Resolve the per-pass (set1) descriptor set for a draw from the global content cache,
+        // using the draw's program reflection (set1 layout may differ per shader) + the shared
+        // per-pass registry (camera/world/lights/perObject buffers). Bound as set 1.
+        static gfx::GFXDescriptorSet* ResolvePerPassSet(
+            const PreparedBatch& pb, const RenderResourceRegistry& reg);
 
         static void DrawPreparedBatch(
             gfx::GFXCommandBuffer& cmdBuffer,
             const PreparedBatch& pb,
-            gfx::GFXDescriptorSet* perPassSet,
+            const RenderResourceRegistry& reg,
             const SPtr<ShaderConfigGraphicsPipeline>& effectiveGP,
             gfx::GFXGraphicsPipelineManager* pipelineMgr,
             const gfx::GFXRenderTargetDesc& rtDesc);
@@ -48,7 +51,7 @@ namespace pulsar
         static void DrawPreparedBatchList(
             gfx::GFXCommandBuffer& cmdBuffer,
             const array_list<PreparedBatch>& entries,
-            gfx::GFXDescriptorSet* perPassSet,
+            const RenderResourceRegistry& reg,
             gfx::GFXGraphicsPipelineManager* pipelineMgr,
             const gfx::GFXRenderTargetDesc& rtDesc,
             TGetEffectiveGP getEffectiveGP);
@@ -58,7 +61,7 @@ namespace pulsar
     inline void MeshRenderFeature::DrawPreparedBatchList(
         gfx::GFXCommandBuffer& cmdBuffer,
         const array_list<PreparedBatch>& entries,
-        gfx::GFXDescriptorSet* perPassSet,
+        const RenderResourceRegistry& reg,
         gfx::GFXGraphicsPipelineManager* pipelineMgr,
         const gfx::GFXRenderTargetDesc& rtDesc,
         TGetEffectiveGP getEffectiveGP)
@@ -72,7 +75,7 @@ namespace pulsar
                 continue;
 
             auto effectiveGP = getEffectiveGP(pb);
-            DrawPreparedBatch(cmdBuffer, pb, perPassSet, effectiveGP,
+            DrawPreparedBatch(cmdBuffer, pb, reg, effectiveGP,
                               pipelineMgr, rtDesc);
         }
     }

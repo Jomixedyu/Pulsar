@@ -1,6 +1,9 @@
 #include "PostProcessPass.h"
 #include <Pulsar/Rendering/SceneView.h>
-#include <Pulsar/Rendering/PerPassResources.h>
+#include <Pulsar/Rendering/RenderScene.h>
+#include <Pulsar/Rendering/RenderResourceRegistry.h>
+#include <Pulsar/Rendering/DescriptorSetCache.h>
+#include <Pulsar/Rendering/DescriptorSetAssembler.h>
 #include <Pulsar/Assets/RenderTexture.h>
 #include <gfx/GFXCommandBuffer.h>
 #include <gfx/GFXApplication.h>
@@ -14,14 +17,12 @@ namespace pulsar
     {
     }
 
-    void PostProcessPass::Initialize(PerPassResources* perPass)
+    void PostProcessPass::Initialize()
     {
-        m_perPassSet = perPass->AllocateSet(perPass->GetLayout("PostProcess"));
     }
 
     void PostProcessPass::Destroy()
     {
-        m_perPassSet.reset();
     }
 
     gfx::GFXDescriptorSetLayout_sp PostProcessPass::GetInputSamplerLayout()
@@ -42,8 +43,7 @@ namespace pulsar
     RGTextureHandle PostProcessPass::AddToGraph(RenderGraph& graph,
                                                 RGTextureHandle hSrc,
                                                 RGTextureHandle hDst,
-                                                const RenderCaptureContext& ctx,
-                                                PerPassResources* perPass)
+                                                const RenderCaptureContext& ctx)
     {
         if (!IsEnabled() || !ctx.view)
             return hSrc;
@@ -62,22 +62,24 @@ namespace pulsar
         gfx::GFXFrameBufferObject_sp fallbackFBO  = ctx.view->RenderTarget.Framebuffer;
         gfx::GFXTexture2DView_sp     fallbackView = ctx.view->RenderTarget.GetRenderTarget0();
 
+        gfx::GFXBuffer* cameraBuffer = ctx.viewProxy ? ctx.viewProxy->GetCameraBuffer() : nullptr;
+        gfx::GFXBuffer* worldBuffer  = ctx.scene ? ctx.scene->GetWorldBuffer() : nullptr;
+
         graph.AddPass(GetPassName())
             .Read(curSrc)
             .Write(curDst, RGAttachmentDesc{
                 .colorLoadOp  = gfx::GFXRenderPassLoadOp::DontCare,
                 .colorStoreOp = gfx::GFXRenderPassStoreOp::Store,
             })
-            .WithPerPass(perPass)
-            .Prepare([this, perPass](RGPassContext&)
+            .Prepare([this](RGPassContext&)
             {
                 if (m_proxy)
                     m_proxy->ResolveRenderVariant("PostProcess", "RENDERER_IMAGEPROCESS");
             })
-            .Execute([this, curSrc, curDst, fallbackFBO, fallbackView, perPass]
+            .Execute([this, curSrc, curDst, fallbackFBO, fallbackView, cameraBuffer, worldBuffer]
                      (RGPassContext& passCtx, gfx::GFXCommandBuffer& cmdBuffer)
             {
-                DrawFullscreen(passCtx, cmdBuffer, curSrc, curDst, fallbackFBO, fallbackView, perPass);
+                DrawFullscreen(passCtx, cmdBuffer, curSrc, curDst, fallbackFBO, fallbackView, cameraBuffer, worldBuffer);
             });
 
         return hDst;
@@ -87,7 +89,8 @@ namespace pulsar
                                          RGTextureHandle hSrc, RGTextureHandle hDst,
                                          const gfx::GFXFrameBufferObject_sp& fallbackFBO,
                                          const gfx::GFXTexture2DView_sp& fallbackView,
-                                         PerPassResources* perPass)
+                                         gfx::GFXBuffer* cameraBuffer,
+                                         gfx::GFXBuffer* worldBuffer)
     {
         if (!m_proxy) return;
         if (!m_proxy->GetShaderConfig()) return;
@@ -109,10 +112,6 @@ namespace pulsar
         }
         if (!dstFBO) return;
 
-        // Write per-pass data (Camera + World + SourceTexture) into set 1
-        perPass->WriteCameraToSet(m_perPassSet.get());
-        perPass->WriteWorldToSet(m_perPassSet.get());
-
         const auto* srcRT = passCtx.Get(hSrc);
         gfx::GFXTexture2DView* srcView = nullptr;
         if (srcRT)
@@ -123,15 +122,23 @@ namespace pulsar
         {
             srcView = fallbackView.get();
         }
-        if (srcView)
-            perPass->WriteTexture(m_perPassSet.get(), 3, srcView);
-        perPass->Submit(m_perPassSet.get());
+
+        // Build the per-pass registry and resolve set 1 via the content-addressed cache.
+        RenderResourceRegistry reg;
+        reg.Set("CameraBuffer", cameraBuffer);
+        reg.Set("WorldBuffer", worldBuffer);
+        reg.Set("PP_InColor", srcView);
+
+        const ShaderPropertySetLayout* set1 = program->m_layout.FindSet(1);
+        auto set1Layout = DescriptorSetAssembler::BuildLayout(set1);
+        gfx::GFXDescriptorSet* perPassSet = DescriptorSetCache::Instance().Get(set1Layout, set1, reg);
+        if (!perPassSet) return;
 
         auto* gfxApp = cmdBuffer.GetApplication();
         auto* pipelineMgr = gfxApp->GetGraphicsPipelineManager();
         array_list<gfx::GFXDescriptorSetLayout_sp> descLayouts;
         descLayouts.push_back(resolved.m_set0Layout); // set 0: material
-        descLayouts.push_back(m_perPassSet->GetDescriptorSetLayout()); // set 1: per-pass (Camera/World/Source)
+        descLayouts.push_back(set1Layout);            // set 1: per-pass (Camera/World/Source)
 
         auto& gpuPrograms = program->GetGpuPrograms();
 
@@ -150,7 +157,7 @@ namespace pulsar
 
         array_list<gfx::GFXDescriptorSet*> descSets;
         descSets.push_back(resolved.m_set0); // set 0
-        descSets.push_back(m_perPassSet.get());                    // set 1
+        descSets.push_back(perPassSet);      // set 1
         cmdBuffer.CmdBindDescriptorSets(descSets, gfxPipeline.get());
 
         cmdBuffer.CmdDraw(3);

@@ -1,5 +1,7 @@
 #include "DescriptorSetAssembler.h"
 
+#include <Pulsar/Application.h>
+#include <gfx/GFXApplication.h>
 #include <gfx/GFXDescriptorSet.h>
 #include <gfx/GFXBuffer.h>
 #include <gfx/GFXTextureView.h>
@@ -44,5 +46,24 @@ namespace pulsar::DescriptorSetAssembler
         }
 
         set->Submit();
+    }
+
+    gfx::GFXDescriptorSetLayout_sp BuildLayout(const ShaderPropertySetLayout* setLayout)
+    {
+        std::vector<gfx::GFXDescriptorLayoutDesc> descs;
+        if (setLayout)
+        {
+            for (const auto& b : setLayout->m_bindings)
+            {
+                gfx::GFXDescriptorLayoutDesc desc{};
+                desc.Type = b.m_type;
+                desc.Stage = (b.m_stageFlags != gfx::GFXGpuProgramStageFlags::None)
+                    ? b.m_stageFlags
+                    : gfx::GFXGpuProgramStageFlags::VertexFragment;
+                desc.BindingPoint = b.m_bindingPoint;
+                descs.push_back(desc);
+            }
+        }
+        return Application::GetGfxApp()->GetOrCreateDescriptorSetLayout(descs.data(), static_cast<uint32_t>(descs.size()));
     }
 }

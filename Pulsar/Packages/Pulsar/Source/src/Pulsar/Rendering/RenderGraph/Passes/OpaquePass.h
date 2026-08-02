@@ -7,8 +7,6 @@ namespace gfx { class GFXTexture2DView; }
 
 namespace pulsar
 {
-    class PerPassResources;
-
     class OpaquePass : public MeshRenderFeature
     {
     public:
@@ -17,8 +15,7 @@ namespace pulsar
         RGTextureHandle AddToGraph(RenderGraph& graph,
                                    RGTextureHandle input,
                                    RGTextureHandle output,
-                                   const RenderCaptureContext& ctx,
-                                   PerPassResources* perPass) override;
+                                   const RenderCaptureContext& ctx) override;
 
     private:
         gfx::GFXTexture2DView* m_resolveTargetView = nullptr;

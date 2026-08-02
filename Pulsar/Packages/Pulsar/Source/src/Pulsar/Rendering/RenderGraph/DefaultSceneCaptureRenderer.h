@@ -6,7 +6,7 @@
 #include "Passes/BloomPass.h"
 #include "Passes/RenderFeature.h"
 #include "Passes/GizmoOverlayPass.h"
-#include "../PerPassResources.h"
+#include "../PerPassData.h"
 #include <memory>
 #include <vector>
 
@@ -23,7 +23,6 @@ namespace pulsar
         void Render(RenderGraph& graph, const RenderCaptureContext& ctx) override;
 
     private:
-        PerPassResources m_perPassResources;
         OpaquePass m_opaquePass;
         OutlinePass m_outlinePass;
         TranslucencyPass m_translucencyPass;

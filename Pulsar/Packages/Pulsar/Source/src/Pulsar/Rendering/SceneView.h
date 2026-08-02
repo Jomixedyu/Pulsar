@@ -3,8 +3,10 @@
 #include <Pulsar/Assets/Material.h>
 #include <Pulsar/Subsystems/VolumeStack.h>
 #include "RenderProxy.h"
+#include "PerPassData.h"
 #include <gfx/GFXTexture.h>
 #include <gfx/GFXFrameBufferObject.h>
+#include <gfx/GFXBuffer.h>
 #include <memory>
 
 namespace pulsar
@@ -69,7 +71,17 @@ namespace pulsar
         SceneView(const SceneView&) = delete;
         SceneView& operator=(const SceneView&) = delete;
 
+        void OnDestroyResource() override;
+
+        // Per-view camera cbuffer (owned here). Lazily created on first upload
+        // (render thread, GFX alive).
+        void UploadCamera(const PerPassCameraData& data);
+        gfx::GFXBuffer* GetCameraBuffer() const;
+
         SceneViewData                               Data;
         std::unique_ptr<ScriptableCaptureRenderer>  Renderer;
+
+    private:
+        gfx::GFXBuffer_sp m_cameraBuffer;
     };
 }

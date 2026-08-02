@@ -48,11 +48,12 @@ namespace pulsar
 
         // Look up (or build) the set for the given (de-duplicated) layout + reflected set layout +
         // resolved resources. The key is extracted from reg by resolving each reflected binding.
-        // Returns a set ready to bind (its lifetime is managed by the cache — do not store it past
-        // the current frame; re-Get() each frame instead).
+        // A null reflection means an empty set (layout with no bindings). Returns a set ready to
+        // bind (its lifetime is managed by the cache — do not store it past the current frame;
+        // re-Get() each frame instead).
         gfx::GFXDescriptorSet* Get(
             const gfx::GFXDescriptorSetLayout_sp& layout,
-            const ShaderPropertySetLayout& reflection,
+            const ShaderPropertySetLayout* reflection,
             const RenderResourceRegistry& reg);
 
         // Advance the frame and reclaim sets untouched for GRACE frames.

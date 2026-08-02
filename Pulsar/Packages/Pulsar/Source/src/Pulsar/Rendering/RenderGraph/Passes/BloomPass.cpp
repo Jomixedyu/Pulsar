@@ -201,8 +201,7 @@ namespace pulsar
     RGTextureHandle BloomPass::AddToGraph(RenderGraph& graph,
                                           RGTextureHandle input,
                                           RGTextureHandle output,
-                                          const RenderCaptureContext& ctx,
-                                          PerPassResources* perPass)
+                                          const RenderCaptureContext& ctx)
     {
         if (!ctx.view)
             return input;

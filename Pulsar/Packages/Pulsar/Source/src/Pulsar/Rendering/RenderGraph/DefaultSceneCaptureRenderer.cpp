@@ -16,11 +16,10 @@ namespace pulsar
 {
     DefaultSceneCaptureRenderer::DefaultSceneCaptureRenderer()
     {
-        m_perPassResources.Initialize();
-        m_opaquePass.Initialize(&m_perPassResources);
-        m_outlinePass.Initialize(&m_perPassResources);
-        m_translucencyPass.Initialize(&m_perPassResources);
-        m_gizmoOverlayPass.Initialize(&m_perPassResources);
+        m_opaquePass.Initialize();
+        m_outlinePass.Initialize();
+        m_translucencyPass.Initialize();
+        m_gizmoOverlayPass.Initialize();
 
         m_postProcessFeatures.push_back(std::make_unique<TonemapPass>());
         m_postProcessFeatures.push_back(std::make_unique<CustomPostProcessChain>());
@@ -35,7 +34,7 @@ namespace pulsar
         for (auto& feature : m_postProcessFeatures)
         {
             if (auto* pp = dynamic_cast<PostProcessPass*>(feature.get()))
-                pp->Initialize(&m_perPassResources);
+                pp->Initialize();
         }
     }
 
@@ -52,7 +51,6 @@ namespace pulsar
         m_translucencyPass.Destroy();
         m_outlinePass.Destroy();
         m_opaquePass.Destroy();
-        m_perPassResources.Destroy();
     }
 
     void DefaultSceneCaptureRenderer::Render(RenderGraph& graph, const RenderCaptureContext& ctx)
@@ -70,8 +68,6 @@ namespace pulsar
         auto& perRenderObjectMgr = ctx.scene->GetPerRenderObjectData();
         perRenderObjectMgr.BeginFrame();
 
-        auto* perPass = &m_perPassResources;
-
         PerPassCameraData camData{};
         camData.MatrixV     = view->ViewMatrix;
         camData.MatrixP     = view->ProjectionMatrix;
@@ -83,7 +79,8 @@ namespace pulsar
         camData.CamNear     = view->Near;
         camData.CamFar      = view->Far;
         camData.Resolution  = view->Resolution;
-        perPass->UpdateCamera(camData);
+        if (ctx.viewProxy)
+            ctx.viewProxy->UploadCamera(camData);
 
         {
             PerPassWorldData worldData{};
@@ -107,7 +104,8 @@ namespace pulsar
             }
             worldData.SkyLightColor = {0, 0, 0, 0};
             worldData.LightParameterCount = ctx.scene ? static_cast<uint32_t>(ctx.scene->GetPointLights().size()) : 0;
-            perPass->UpdateWorld(worldData);
+            if (ctx.scene)
+                ctx.scene->UploadWorld(worldData);
         }
 
         {
@@ -121,7 +119,8 @@ namespace pulsar
                     lightsData.Lights[i] = pointLights[i]->Param;
                 }
             }
-            perPass->UpdateLights(lightsData);
+            if (ctx.scene)
+                ctx.scene->UploadLights(lightsData);
         }
 
         RGTextureHandle hFinal = graph.ImportTexture("FinalOutput",
@@ -150,11 +149,11 @@ namespace pulsar
         // OpaquePass (auto-resolve to final RT if MSAA is enabled)
         m_opaquePass.OnSetup(ctx);
         m_opaquePass.SetResolveTargetView(resolveTargetView);
-        hSceneColor = m_opaquePass.AddToGraph(graph, hSceneColor, hSceneColor, ctx, perPass);
+        hSceneColor = m_opaquePass.AddToGraph(graph, hSceneColor, hSceneColor, ctx);
 
         // OutlinePass: draws vertex-expanded back-faces for materials with a VertexOutline pass
         m_outlinePass.OnSetup(ctx);
-        hSceneColor = m_outlinePass.AddToGraph(graph, hSceneColor, hSceneColor, ctx, perPass);
+        hSceneColor = m_outlinePass.AddToGraph(graph, hSceneColor, hSceneColor, ctx);
 
         // ---- Translucency: copy opaque scene color for refraction/distortion sampling ----
         const RenderTargetSnapshot& camRT = camRenderTexture;
@@ -184,7 +183,7 @@ namespace pulsar
         // TranslucencyPass continues drawing onto the final target
         m_translucencyPass.OnSetup(ctx);
         m_translucencyPass.SetOpaqueColor(hOpaqueColor);
-        hSceneColor = m_translucencyPass.AddToGraph(graph, hSceneColor, hSceneColor, ctx, perPass);
+        hSceneColor = m_translucencyPass.AddToGraph(graph, hSceneColor, hSceneColor, ctx);
 
         // ---- Post-Process Features ----
         const VolumeStack& stack = view->PostProcessStack;
@@ -206,7 +205,7 @@ namespace pulsar
             feature->ReadSettings(stack);
             if (feature->IsEnabled())
             {
-                hDst = feature->AddToGraph(graph, hSrc, hDst, ctx, perPass);
+                hDst = feature->AddToGraph(graph, hSrc, hDst, ctx);
                 std::swap(hSrc, hDst);
                 if (hDst == hFinal)
                     hDst = (hSrc == hPingPongA) ? hPingPongB : hPingPongA;
@@ -247,7 +246,7 @@ namespace pulsar
         if (view->GizmoPassEnabled)
         {
             m_gizmoOverlayPass.OnSetup(ctx);
-            m_gizmoOverlayPass.AddToGraph(graph, hFinal, hFinal, ctx, perPass);
+            m_gizmoOverlayPass.AddToGraph(graph, hFinal, hFinal, ctx);
         }
 
         perRenderObjectMgr.EndFrame();

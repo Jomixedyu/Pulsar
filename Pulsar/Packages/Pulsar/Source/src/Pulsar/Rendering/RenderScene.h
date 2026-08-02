@@ -1,9 +1,11 @@
 #pragma once
 #include "PerRenderObjectDataManager.h"
+#include "PerPassData.h"
 #include "RenderObject.h"
 #include "RenderProxy.h"
 #include "LightProxy.h"
 #include "SceneView.h"
+#include <gfx/GFXBuffer.h>
 
 namespace pulsar
 {
@@ -40,11 +42,20 @@ namespace pulsar
         float GetTotalTime() const { return m_totalTime; }
         float GetDeltaTime() const { return m_deltaTime; }
 
+        // Scene-wide per-pass cbuffers (owned here; camera lives on SceneView).
+        // Buffers are lazily created on first upload (render thread, GFX alive).
+        void UploadWorld(const PerPassWorldData& data);
+        void UploadLights(const PerPassLightsBufferData& data);
+        gfx::GFXBuffer* GetWorldBuffer() const;
+        gfx::GFXBuffer* GetLightsBuffer() const;
+
     private:
         void AddRenderObject(const rendering::RenderObject_sp& ro);
         void RemoveRenderObject(const rendering::RenderObject_sp& ro);
         void AddView(const SPtr<SceneView>& view);
         void RemoveView(const SPtr<SceneView>& view);
+
+        void EnsureBuffers();
 
         hash_set<rendering::RenderObject_sp> m_renderObjects;
         array_list<SPtr<SceneView>>          m_views;
@@ -53,5 +64,7 @@ namespace pulsar
         PerRenderObjectDataManager           m_perObjectData;
         float                                m_totalTime = 0.f;
         float                                m_deltaTime = 0.f;
+        gfx::GFXBuffer_sp                    m_worldBuffer;
+        gfx::GFXBuffer_sp                    m_lightsBuffer;
     };
 }

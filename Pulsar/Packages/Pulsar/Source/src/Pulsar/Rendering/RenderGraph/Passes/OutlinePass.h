@@ -4,15 +4,12 @@
 
 namespace pulsar
 {
-    class PerPassResources;
-
     class OutlinePass : public MeshRenderFeature
     {
     public:
         RGTextureHandle AddToGraph(RenderGraph& graph,
                                    RGTextureHandle input,
                                    RGTextureHandle output,
-                                   const RenderCaptureContext& ctx,
-                                   PerPassResources* perPass) override;
+                                   const RenderCaptureContext& ctx) override;
     };
 }

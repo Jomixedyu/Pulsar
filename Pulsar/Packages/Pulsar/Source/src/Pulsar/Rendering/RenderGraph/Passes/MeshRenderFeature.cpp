@@ -1,23 +1,30 @@
 #include "MeshRenderFeature.h"
-#include <Pulsar/Rendering/PerPassResources.h>
+#include <Pulsar/Rendering/DescriptorSetCache.h>
+#include <Pulsar/Rendering/DescriptorSetAssembler.h>
 #include <Pulsar/Application.h>
 
 namespace pulsar
 {
-    void MeshRenderFeature::Initialize(PerPassResources* perPass)
+    void MeshRenderFeature::Initialize()
     {
-        m_perPassSet = perPass->AllocateSet(perPass->GetLayout(GetPerPassLayoutName()));
     }
 
     void MeshRenderFeature::Destroy()
     {
-        m_perPassSet.reset();
+    }
+
+    gfx::GFXDescriptorSet* MeshRenderFeature::ResolvePerPassSet(
+        const PreparedBatch& pb, const RenderResourceRegistry& reg)
+    {
+        const ShaderPropertySetLayout* set1 = pb.program->m_layout.FindSet(1);
+        auto layout = DescriptorSetAssembler::BuildLayout(set1);
+        return DescriptorSetCache::Instance().Get(layout, set1, reg);
     }
 
     void MeshRenderFeature::DrawPreparedBatch(
         gfx::GFXCommandBuffer& cmdBuffer,
         const PreparedBatch& pb,
-        gfx::GFXDescriptorSet* perPassSet,
+        const RenderResourceRegistry& reg,
         const SPtr<ShaderConfigGraphicsPipeline>& effectiveGP,
         gfx::GFXGraphicsPipelineManager* pipelineMgr,
         const gfx::GFXRenderTargetDesc& rtDesc)
@@ -30,6 +37,10 @@ namespace pulsar
             return;
 
         if (!pb.batch.Material->GetShaderConfig())
+            return;
+
+        gfx::GFXDescriptorSet* perPassSet = ResolvePerPassSet(pb, reg);
+        if (!perPassSet)
             return;
 
         auto& gpuPrograms = program->GetGpuPrograms();

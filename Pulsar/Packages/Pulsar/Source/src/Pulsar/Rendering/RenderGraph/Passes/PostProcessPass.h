@@ -7,22 +7,19 @@
 
 namespace pulsar
 {
-    class PerPassResources;
-
     class PostProcessPass : public RenderFeature
     {
     public:
         explicit PostProcessPass(RCPtr<Material> material);
         virtual ~PostProcessPass() = default;
 
-        void Initialize(PerPassResources* perPass);
+        void Initialize();
         void Destroy();
 
         RGTextureHandle AddToGraph(RenderGraph& graph,
                                    RGTextureHandle hSrc,
                                    RGTextureHandle hDst,
-                                   const RenderCaptureContext& ctx,
-                                   PerPassResources* perPass) override;
+                                   const RenderCaptureContext& ctx) override;
 
         void SetMaterial(RCPtr<Material> material) { m_material = material; }
 
@@ -38,7 +35,8 @@ namespace pulsar
                             RGTextureHandle hSrc, RGTextureHandle hDst,
                             const gfx::GFXFrameBufferObject_sp& fallbackFBO,
                             const gfx::GFXTexture2DView_sp& fallbackView,
-                            PerPassResources* perPass);
+                            gfx::GFXBuffer* cameraBuffer,
+                            gfx::GFXBuffer* worldBuffer);
 
         gfx::GFXDescriptorSetLayout_sp GetInputSamplerLayout();
 
@@ -47,7 +45,6 @@ namespace pulsar
         // Render-thread lambdas consume this instead of the RCPtr<Material>.
         std::shared_ptr<MaterialProxy> m_proxy;
         gfx::GFXDescriptorSet_sp m_descriptorSet;
-        gfx::GFXDescriptorSet_sp m_perPassSet;
         gfx::GFXDescriptorSetLayout_sp m_inputSamplerLayout;
     };
 }

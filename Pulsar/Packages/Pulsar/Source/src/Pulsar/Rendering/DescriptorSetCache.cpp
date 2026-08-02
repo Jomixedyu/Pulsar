@@ -14,7 +14,7 @@ namespace pulsar
 
     gfx::GFXDescriptorSet* DescriptorSetCache::Get(
         const gfx::GFXDescriptorSetLayout_sp& layout,
-        const ShaderPropertySetLayout& reflection,
+        const ShaderPropertySetLayout* reflection,
         const RenderResourceRegistry& reg)
     {
         if (!layout)
@@ -24,9 +24,12 @@ namespace pulsar
         // (the same resource the assembler will bind, incl. gfx built-in fallbacks).
         Key key;
         key.m_layout = layout.get();
-        key.m_bindings.reserve(reflection.m_bindings.size());
-        for (const auto& binding : reflection.m_bindings)
-            key.m_bindings.push_back(reg.Resolve(binding));
+        if (reflection)
+        {
+            key.m_bindings.reserve(reflection->m_bindings.size());
+            for (const auto& binding : reflection->m_bindings)
+                key.m_bindings.push_back(reg.Resolve(binding));
+        }
 
         auto [it, inserted] = m_entries.try_emplace(std::move(key));
         Entry& entry = it->second;
@@ -34,7 +37,8 @@ namespace pulsar
         if (inserted)
         {
             entry.m_set = layout->AllocateSet();
-            DescriptorSetAssembler::Write(entry.m_set.get(), reflection, reg);
+            if (reflection)
+                DescriptorSetAssembler::Write(entry.m_set.get(), *reflection, reg);
         }
 
         entry.m_lastUsedFrame = m_frame;

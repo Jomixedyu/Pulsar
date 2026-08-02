@@ -7,15 +7,13 @@
 #include <gfx/GFXCommandBuffer.h>
 #include <gfx/GFXApplication.h>
 #include <gfx/GFXGraphicsPipelineManager.h>
-#include <Pulsar/Rendering/PerPassResources.h>
 
 namespace pulsar
 {
     RGTextureHandle GizmoOverlayPass::AddToGraph(RenderGraph& graph,
                                                  RGTextureHandle input,
                                                  RGTextureHandle output,
-                                                 const RenderCaptureContext& ctx,
-                                                 PerPassResources* perPass)
+                                                 const RenderCaptureContext& ctx)
     {
         auto* scene = ctx.scene;
         if (!scene || !ctx.view)
@@ -23,6 +21,7 @@ namespace pulsar
 
         const Vector3f camPos     = ctx.view->CameraPosition;
         const Vector3f camForward = ctx.view->CameraForward;
+        SceneView* viewProxy      = ctx.viewProxy;
 
         auto preparedOverlay = std::make_shared<array_list<PreparedBatch>>();
 
@@ -33,12 +32,8 @@ namespace pulsar
                 .depthLoadOp  = gfx::GFXRenderPassLoadOp::Load,
                 .depthStoreOp = gfx::GFXRenderPassStoreOp::DontCare,
             })
-            .WithPerPass(perPass)
-            .Prepare([scene, camPos, camForward, preparedOverlay, perPass, this](RGPassContext&)
+            .Prepare([scene, camPos, camForward, preparedOverlay, this](RGPassContext&)
             {
-                perPass->WriteStandardBuffers(this->m_perPassSet.get(), scene->GetPerRenderObjectData().GetBuffer());
-                perPass->Submit(this->m_perPassSet.get());
-
                 for (const rendering::RenderObject_sp& ro : scene->GetRenderObjects())
                 {
                     const float depth = jmath::Dot(camForward, ro->GetWorldPosition() - camPos);
@@ -68,7 +63,7 @@ namespace pulsar
                 };
                 std::sort(preparedOverlay->begin(), preparedOverlay->end(), sortAsc);
             })
-            .Execute([perPass, preparedOverlay, this]
+            .Execute([scene, viewProxy, preparedOverlay, this]
                      (RGPassContext& ctx, gfx::GFXCommandBuffer& cmdBuffer)
             {
                 auto* targetFBO = cmdBuffer.GetFrameBuffer();
@@ -76,6 +71,12 @@ namespace pulsar
 
                 auto* pipelineMgr = cmdBuffer.GetApplication()->GetGraphicsPipelineManager();
                 cmdBuffer.CmdSetViewport(0, 0, (float)targetFBO->GetWidth(), (float)targetFBO->GetHeight());
+
+                RenderResourceRegistry reg;
+                reg.Set("CameraBuffer", viewProxy ? viewProxy->GetCameraBuffer() : nullptr);
+                reg.Set("WorldBuffer", scene->GetWorldBuffer());
+                reg.Set("LightBuffer", scene->GetLightsBuffer());
+                reg.Set("RenderObjectBuffer", scene->GetPerRenderObjectData().GetBuffer());
 
                 auto getEffectiveGP = [](const PreparedBatch& pb) -> SPtr<ShaderConfigGraphicsPipeline>
                 {
@@ -89,7 +90,7 @@ namespace pulsar
                     return nullptr;
                 };
 
-                DrawPreparedBatchList(cmdBuffer, *preparedOverlay, this->m_perPassSet.get(),
+                DrawPreparedBatchList(cmdBuffer, *preparedOverlay, reg,
                                       pipelineMgr, targetFBO->GetRenderTargetDesc(), getEffectiveGP);
             });
 

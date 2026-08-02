@@ -6,6 +6,7 @@
 #include <Pulsar/Rendering/ShaderInstanceCache.h>
 #include <Pulsar/Rendering/ShaderPropertySync.h>
 #include <Pulsar/Rendering/DescriptorSetCache.h>
+#include <Pulsar/Rendering/DescriptorSetAssembler.h>
 #include <Pulsar/Rendering/RenderResourceRegistry.h>
 #include <gfx/GFXResourceManager.h>
 
@@ -17,25 +18,9 @@ namespace pulsar
     namespace
     {
         // Reflected set0 → the (globally de-duplicated) descriptor set layout for it.
-        // Missing stage flags default to VertexFragment (set0 may be sampled by either stage).
         gfx::GFXDescriptorSetLayout_sp BuildSet0Layout(const ShaderLayout& layout)
         {
-            array_list<gfx::GFXDescriptorLayoutDesc> descs;
-            if (const ShaderPropertySetLayout* set0 = layout.FindSet(0))
-            {
-                for (const auto& b : set0->m_bindings)
-                {
-                    gfx::GFXDescriptorLayoutDesc desc{};
-                    desc.Type = b.m_type;
-                    desc.Stage = (b.m_stageFlags != gfx::GFXGpuProgramStageFlags::None)
-                        ? b.m_stageFlags
-                        : gfx::GFXGpuProgramStageFlags::VertexFragment;
-                    desc.BindingPoint = b.m_bindingPoint;
-                    descs.push_back(desc);
-                }
-            }
-            // Always create the (possibly empty) layout so set 0 stays present for set-index alignment.
-            return Application::GetGfxApp()->GetOrCreateDescriptorSetLayout(descs.data(), static_cast<uint32_t>(descs.size()));
+            return DescriptorSetAssembler::BuildLayout(layout.FindSet(0));
         }
 
         const DescriptorBinding* FindMaterialCBuffer(const ShaderLayout& layout)
@@ -94,19 +79,14 @@ namespace pulsar
         resolved.m_set0Layout = BuildSet0Layout(program->m_layout);
 
         const ShaderPropertySetLayout* set0 = program->m_layout.FindSet(0);
+        RenderResourceRegistry reg;
+        std::vector<gfx::GFXTexture2DView_sp> keepAlive;
         if (set0)
         {
-            RenderResourceRegistry reg;
-            auto keepAlive = ShaderPropertySync::BuildSet0Registry(
+            keepAlive = ShaderPropertySync::BuildSet0Registry(
                 m_renderData, *set0, m_perMaterialCBuffer.get(), reg);
-            resolved.m_set0 = DescriptorSetCache::Instance().Get(resolved.m_set0Layout, *set0, reg);
         }
-        else
-        {
-            ShaderPropertySetLayout empty;
-            RenderResourceRegistry reg;
-            resolved.m_set0 = DescriptorSetCache::Instance().Get(resolved.m_set0Layout, empty, reg);
-        }
+        resolved.m_set0 = DescriptorSetCache::Instance().Get(resolved.m_set0Layout, set0, reg);
         return resolved;
     }
 

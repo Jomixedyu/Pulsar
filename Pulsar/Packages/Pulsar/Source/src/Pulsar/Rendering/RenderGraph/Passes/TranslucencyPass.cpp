@@ -8,15 +8,13 @@
 #include <gfx/GFXCommandBuffer.h>
 #include <gfx/GFXApplication.h>
 #include <gfx/GFXGraphicsPipelineManager.h>
-#include <Pulsar/Rendering/PerPassResources.h>
 
 namespace pulsar
 {
     RGTextureHandle TranslucencyPass::AddToGraph(RenderGraph& graph,
                                                  RGTextureHandle input,
                                                  RGTextureHandle output,
-                                                 const RenderCaptureContext& ctx,
-                                                 PerPassResources* perPass)
+                                                 const RenderCaptureContext& ctx)
     {
         auto* scene = ctx.scene;
         if (!scene || !ctx.view)
@@ -24,6 +22,7 @@ namespace pulsar
 
         const Vector3f camPos     = ctx.view->CameraPosition;
         const Vector3f camForward = ctx.view->CameraForward;
+        SceneView* viewProxy      = ctx.viewProxy;
 
         auto preparedTransparent = std::make_shared<array_list<PreparedBatch>>();
 
@@ -34,15 +33,14 @@ namespace pulsar
                 .colorStoreOp = gfx::GFXRenderPassStoreOp::Store,
                 .depthLoadOp  = gfx::GFXRenderPassLoadOp::Load,
                 .depthStoreOp = gfx::GFXRenderPassStoreOp::DontCare,
-            })
-            .WithPerPass(perPass);
+            });
 
         if (m_hOpaqueDepth.IsValid())
         {
             passBuilder.Read(m_hOpaqueDepth);
         }
 
-        passBuilder.Prepare([perPass, camPos, camForward, scene, preparedTransparent, this](RGPassContext& ctx)
+        passBuilder.Prepare([camPos, camForward, scene, preparedTransparent, this](RGPassContext& ctx)
         {
             for (const rendering::RenderObject_sp& ro : scene->GetRenderObjects())
             {
@@ -72,18 +70,8 @@ namespace pulsar
                 return a.batch.Depth > b.batch.Depth;
             };
             std::sort(preparedTransparent->begin(), preparedTransparent->end(), sortDesc);
-
-            // Update per-pass textures for this pass's own descriptor set
-            perPass->WriteStandardBuffers(this->m_perPassSet.get(), scene->GetPerRenderObjectData().GetBuffer());
-
-            gfx::GFXTexture2DView* colorView = nullptr;
-            if (auto* colorRT = ctx.Get(m_hOpaqueColor))
-                colorView = colorRT->GetRenderTarget0().get();
-            perPass->WriteTexture(this->m_perPassSet.get(), 3, colorView);
-
-            perPass->Submit(this->m_perPassSet.get());
         })
-        .Execute([perPass, preparedTransparent, this]
+        .Execute([scene, viewProxy, preparedTransparent, this]
                  (RGPassContext& ctx, gfx::GFXCommandBuffer& cmdBuffer)
         {
 
@@ -92,6 +80,17 @@ namespace pulsar
 
             auto* pipelineMgr = cmdBuffer.GetApplication()->GetGraphicsPipelineManager();
             cmdBuffer.CmdSetViewport(0, 0, (float)targetFBO->GetWidth(), (float)targetFBO->GetHeight());
+
+            RenderResourceRegistry reg;
+            reg.Set("CameraBuffer", viewProxy ? viewProxy->GetCameraBuffer() : nullptr);
+            reg.Set("WorldBuffer", scene->GetWorldBuffer());
+            reg.Set("LightBuffer", scene->GetLightsBuffer());
+            reg.Set("RenderObjectBuffer", scene->GetPerRenderObjectData().GetBuffer());
+            if (auto* colorRT = ctx.Get(m_hOpaqueColor))
+            {
+                if (auto colorView = colorRT->GetRenderTarget0())
+                    reg.Set("PP_InColor", colorView.get());
+            }
 
             auto getEffectiveGP = [](const PreparedBatch& pb) -> SPtr<ShaderConfigGraphicsPipeline>
             {
@@ -104,7 +103,7 @@ namespace pulsar
                 return nullptr;
             };
 
-            DrawPreparedBatchList(cmdBuffer, *preparedTransparent, this->m_perPassSet.get(),
+            DrawPreparedBatchList(cmdBuffer, *preparedTransparent, reg,
                                   pipelineMgr, targetFBO->GetRenderTargetDesc(), getEffectiveGP);
         });
 

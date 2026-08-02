@@ -6,7 +6,7 @@
 #include "Components/AnimatorComponent.h"
 #include "Node.h"
 #include "Rendering/LightingData.h"
-#include "Rendering/PerPassResources.h"
+#include "Rendering/PerPassData.h"
 #include "Rendering/RenderObject.h"
 #include "Rendering/RenderScene.h"
 #include "Rendering/SceneView.h"
@@ -63,6 +63,7 @@ namespace pulsar
 
                     RenderCaptureContext captureCtx;
                     captureCtx.view       = &view->Data;
+                    captureCtx.viewProxy  = view.get();
                     captureCtx.scene      = scene;
                     captureCtx.frameIndex = s_frameIndex;
 

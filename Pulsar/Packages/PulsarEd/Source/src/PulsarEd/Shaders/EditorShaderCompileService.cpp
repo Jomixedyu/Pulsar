@@ -194,7 +194,14 @@ namespace pulsared
         {
             pulsar::DescriptorBinding& binding = findOrAddBinding(ub.Set, ub.Binding);
             binding.m_name = ub.Name;
-            binding.m_type = gfx::GFXDescriptorType::ConstantBuffer;
+            // RenderObjectBuffer (set1 b6) is bound per-draw via a dynamic UBO offset; HLSL
+            // cannot express that, so the engine tags it dynamic by its reflected name.
+            // TODO: hardcoding the buffer name here is fragile. Redesign so dynamic-UBO
+            // semantics come from an explicit HLSL annotation / naming convention / shader
+            // metadata instead of a hardcoded string match.
+            binding.m_type = (ub.Name == "RenderObjectBuffer")
+                ? gfx::GFXDescriptorType::ConstantBufferDynamic
+                : gfx::GFXDescriptorType::ConstantBuffer;
             binding.m_size = std::max(binding.m_size, ub.Size);
             binding.m_stageFlags = mergeStage(binding.m_stageFlags, toGfxStage(ub.StageFlags));
 

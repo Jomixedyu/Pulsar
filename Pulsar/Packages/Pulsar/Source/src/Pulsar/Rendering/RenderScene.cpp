@@ -2,6 +2,7 @@
 
 #include <Pulsar/Application.h>
 #include <Pulsar/Rendering/RenderThread.h>
+#include <gfx/GFXResourceManager.h>
 
 namespace pulsar
 {
@@ -121,5 +122,49 @@ namespace pulsar
         m_directionalLights.clear();
         m_renderObjects.clear();
         m_perObjectData.Destroy();
+
+        m_worldBuffer.reset();
+        m_lightsBuffer.reset();
+    }
+
+    void RenderScene::EnsureBuffers()
+    {
+        if (m_worldBuffer)
+            return;
+
+        auto* gfxApp = Application::GetGfxApp();
+        gfx::GFXBufferDesc desc{};
+        desc.Usage = gfx::GFXBufferUsage::ConstantBuffer;
+        desc.StorageType = gfx::GFXBufferMemoryPosition::VisibleOnDevice;
+
+        desc.BufferSize = sizeof(PerPassWorldData);
+        m_worldBuffer = gfxApp->CreateBuffer(desc);
+
+        desc.BufferSize = sizeof(PerPassLightsBufferData);
+        m_lightsBuffer = gfxApp->CreateBuffer(desc);
+    }
+
+    void RenderScene::UploadWorld(const PerPassWorldData& data)
+    {
+        EnsureBuffers();
+        if (m_worldBuffer)
+            m_worldBuffer->Update(&data);
+    }
+
+    void RenderScene::UploadLights(const PerPassLightsBufferData& data)
+    {
+        EnsureBuffers();
+        if (m_lightsBuffer)
+            m_lightsBuffer->Update(&data);
+    }
+
+    gfx::GFXBuffer* RenderScene::GetWorldBuffer() const
+    {
+        return m_worldBuffer.get();
+    }
+
+    gfx::GFXBuffer* RenderScene::GetLightsBuffer() const
+    {
+        return m_lightsBuffer.get();
     }
 }
