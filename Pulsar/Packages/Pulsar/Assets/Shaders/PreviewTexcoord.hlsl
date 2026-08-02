@@ -1,7 +1,10 @@
 #include "Common.inc.hlsl"
 #include "DefaultVSImpl.inc.hlsl"
 
-int _ChannelIndex;
+cbuffer PerMaterial
+{
+    int _ChannelIndex;
+}
 
 float4 PSMain(StandardVaryings v) : SV_Target
 {

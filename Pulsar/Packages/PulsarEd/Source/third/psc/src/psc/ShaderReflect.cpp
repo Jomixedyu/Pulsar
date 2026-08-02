@@ -47,7 +47,15 @@ namespace psc
         for (auto& ub : resources.uniform_buffers)
         {
             ReflectedUniformBuffer reflected{};
+            // Prefer the instance name; HLSL global cbuffers often have an empty instance name,
+            // in which case fall back to the block type name. glslang/spirv-cross may prefix the
+            // block type name with "type." (e.g. "type.PerMaterial") — strip it so the reflected
+            // name matches the source cbuffer name the engine binds by.
             reflected.Name = compiler.get_name(ub.id);
+            if (reflected.Name.empty())
+                reflected.Name = compiler.get_name(ub.base_type_id);
+            if (reflected.Name.rfind("type.", 0) == 0)
+                reflected.Name = reflected.Name.substr(5);
             reflected.Set = compiler.get_decoration(ub.id, spv::DecorationDescriptorSet);
             reflected.Binding = compiler.get_decoration(ub.id, spv::DecorationBinding);
             reflected.StageFlags = stageFlag;

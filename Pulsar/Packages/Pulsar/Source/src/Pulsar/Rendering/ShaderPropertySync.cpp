@@ -63,16 +63,8 @@ namespace pulsar
         if (!set0)
             return;
 
-        // 找到 set0 的材质 cbuffer（首个有尺寸的 buffer binding）
-        const DescriptorBinding* matCbuffer = nullptr;
-        for (const auto& b : set0->m_bindings)
-        {
-            if (b.IsBuffer() && b.m_size > 0)
-            {
-                matCbuffer = &b;
-                break;
-            }
-        }
+        // 找到 set0 的材质 cbuffer（名为 PerMaterial 的 binding）
+        const DescriptorBinding* matCbuffer = set0->FindBinding(kPerMaterialCBufferName);
         if (!matCbuffer)
             return;
 
@@ -99,16 +91,8 @@ namespace pulsar
 
         std::vector<gfx::GFXTexture2DView_sp> keepAlive;
 
-        // set0 的材质 cbuffer binding（首个有尺寸的 buffer）：绑定材质共享的那一份 cbuffer
-        const DescriptorBinding* matCbuffer = nullptr;
-        for (const auto& b : set0.m_bindings)
-        {
-            if (b.IsBuffer() && b.m_size > 0)
-            {
-                matCbuffer = &b;
-                break;
-            }
-        }
+        // set0 的材质 cbuffer binding（名为 PerMaterial）：绑定材质共享的那一份 cbuffer
+        const DescriptorBinding* matCbuffer = set0.FindBinding(kPerMaterialCBufferName);
         if (cbuffer && matCbuffer)
             reg.Set(matCbuffer->m_name, cbuffer);
 

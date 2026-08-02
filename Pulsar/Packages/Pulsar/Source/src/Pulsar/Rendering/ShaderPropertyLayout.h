@@ -5,11 +5,17 @@
 #include <gfx/TextureClasses.h>
 
 #include <string>
+#include <string_view>
 #include <vector>
 #include <cstdint>
 
 namespace pulsar
 {
+    // Reflected name of the set0 material constant buffer. Shaders declare their material
+    // parameters in `cbuffer PerMaterial { ... }`; the C++ side binds by this name (a shader
+    // without such a cbuffer simply has no PerMaterial binding and is unaffected).
+    inline constexpr const char* kPerMaterialCBufferName = "PerMaterial";
+
     // A single member inside a buffer block (offset/size/type for CPU-side packing).
     struct BufferMember
     {
@@ -48,6 +54,16 @@ namespace pulsar
     struct ShaderPropertySetLayout
     {
         std::vector<DescriptorBinding> m_bindings;
+
+        const DescriptorBinding* FindBinding(std::string_view name) const
+        {
+            for (const auto& b : m_bindings)
+            {
+                if (b.m_name == name)
+                    return &b;
+            }
+            return nullptr;
+        }
     };
 
     // Full reflected layout across every descriptor set, indexed by set number.

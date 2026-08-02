@@ -1,8 +1,11 @@
 #include "Common.inc.hlsl"
 #include "MeshRenderer.inc.hlsl"
 
-float4 _TintColor;
-float4 _EmissiveColor;
+cbuffer PerMaterial
+{
+    float4 _TintColor;
+    float4 _EmissiveColor;
+}
 
 Texture2D _BaseColorMap;
 SamplerState Sampler__BaseColorMap;

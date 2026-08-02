@@ -1,17 +1,19 @@
 #include "Common.inc.hlsl"
 #include "MeshRenderer.inc.hlsl"
 
-float4 _TintColor;
-float4 _EmissiveColor;
-float4 _Color;
-float _Lerp;
+cbuffer PerMaterial
+{
+    float4 _TintColor;
+    float4 _EmissiveColor;
+    float4 _Color;
+    float _Lerp;
+    float _Rows;
+    float _Columns;
+    float _Index;
+}
 
 Texture2D _BaseColorMap;
 SamplerState Sampler__BaseColorMap;
-
-float _Rows;
-float _Columns;
-float _Index;
 
 StandardVaryings VSMain(StandardAttributes a)
 {

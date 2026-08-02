@@ -40,15 +40,8 @@ namespace pulsar
 
         const DescriptorBinding* FindMaterialCBuffer(const ShaderLayout& layout)
         {
-            if (const ShaderPropertySetLayout* set0 = layout.FindSet(0))
-            {
-                for (const auto& b : set0->m_bindings)
-                {
-                    if (b.IsBuffer() && b.m_size > 0)
-                        return &b;
-                }
-            }
-            return nullptr;
+            const ShaderPropertySetLayout* set0 = layout.FindSet(0);
+            return set0 ? set0->FindBinding(kPerMaterialCBufferName) : nullptr;
         }
     }
 
