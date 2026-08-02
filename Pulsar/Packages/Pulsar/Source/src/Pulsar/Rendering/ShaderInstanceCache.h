@@ -3,8 +3,10 @@
 #include <Pulsar/Rendering/IShaderCompileService.h>
 #include <Pulsar/Assets/Shader.h>
 
+#include <map>
 #include <memory>
 #include <mutex>
+#include <string>
 #include <unordered_map>
 
 namespace pulsar
@@ -43,8 +45,20 @@ namespace pulsar
             std::unordered_map<std::string, std::shared_ptr<ShaderProgramResource>>& cache,
             const ShaderVariantKey& requestedKey);
 
+        // Validate a freshly compiled program's set0 (PerMaterial) layout against the canonical
+        // layout established by the first compiled variant of this shader (by guid). Returns true
+        // if it matches (or establishes it as the canonical); false if it diverges (=> treat the
+        // variant as a compile error). A whole material shares ONE set0 block, so all its variants
+        // MUST agree on the set0 layout. Thread-safe (takes its own lock).
+        bool ValidateOrRegisterPerMaterialLayout(
+            const guid_t& shaderGuid,
+            const ShaderProgramResource& program);
+
         mutable std::mutex m_mutex;
         std::unordered_map<ShaderVariantKey, std::shared_ptr<ShaderInstance>, ShaderVariantKeyHash> m_cache;
+
+        // Canonical PerMaterial (set0) layout fingerprint per shader guid (stage flags ignored).
+        std::unordered_map<guid_t, std::string> m_canonicalPerMaterial;
 
         RCPtr<Shader> m_pendingShader;
         RCPtr<Shader> m_errorShader;

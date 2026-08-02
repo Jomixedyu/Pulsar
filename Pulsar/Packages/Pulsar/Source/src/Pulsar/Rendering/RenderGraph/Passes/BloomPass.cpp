@@ -283,11 +283,9 @@ namespace pulsar
                          (RGPassContext& passCtx, gfx::GFXCommandBuffer& cmdBuffer)
                 {
                     if (!m_proxy) return;
-                    auto& binding = m_proxy->GetVariant(shaderPassName, "RENDERER_IMAGEPROCESS");
-                    if (!binding.m_gpuResourcesInitialized) return;
-
-                    auto program = binding.GetCurrentProgram();
-                    if (!program) return;
+                    auto resolved = m_proxy->ResolveRenderVariant(shaderPassName, "RENDERER_IMAGEPROCESS");
+                    if (!resolved) return;
+                    auto program = resolved.m_program;
                     if (program->GetGpuPrograms().empty()) return;
 
                     const auto* dstRT = passCtx.Get(hDst);
@@ -309,10 +307,9 @@ namespace pulsar
 
                     auto* gfxApp = cmdBuffer.GetApplication();
                     auto* pipelineMgr = gfxApp->GetGraphicsPipelineManager();
-                    auto* resMgr = gfxApp->GetResourceManager();
 
                     array_list<gfx::GFXDescriptorSetLayout_sp> descLayouts;
-                    descLayouts.push_back(resMgr->GetDescriptorSetLayoutShared(binding.m_descriptorSetLayout));
+                    descLayouts.push_back(resolved.m_set0Layout);
                     descLayouts.push_back(m_bloomLayout);
 
                     gfx::GFXGraphicsPipelineStateParams psoParams{};
@@ -330,7 +327,7 @@ namespace pulsar
                     cmdBuffer.CmdSetCullMode(gfx::GFXCullMode::None);
 
                     array_list<gfx::GFXDescriptorSet*> descSets;
-                    descSets.push_back(binding.m_descriptorSet.get());
+                    descSets.push_back(resolved.m_set0);
                     descSets.push_back(bloomSet);
                     cmdBuffer.CmdBindDescriptorSets(descSets, gfxPipeline.get());
 
@@ -406,11 +403,9 @@ namespace pulsar
                      (RGPassContext& passCtx, gfx::GFXCommandBuffer& cmdBuffer)
             {
                 if (!m_proxy) return;
-                auto& binding = m_proxy->GetVariant("BloomCombine", "RENDERER_IMAGEPROCESS");
-                if (!binding.m_gpuResourcesInitialized) return;
-
-                auto program = binding.GetCurrentProgram();
-                if (!program) return;
+                auto resolved = m_proxy->ResolveRenderVariant("BloomCombine", "RENDERER_IMAGEPROCESS");
+                if (!resolved) return;
+                auto program = resolved.m_program;
                 if (program->GetGpuPrograms().empty()) return;
 
                 const auto* dstRT = passCtx.Get(output);
@@ -437,9 +432,8 @@ namespace pulsar
 
                 auto* gfxApp = cmdBuffer.GetApplication();
                 auto* pipelineMgr = gfxApp->GetGraphicsPipelineManager();
-                auto* resMgr = gfxApp->GetResourceManager();
                 array_list<gfx::GFXDescriptorSetLayout_sp> descLayouts;
-                descLayouts.push_back(resMgr->GetDescriptorSetLayoutShared(binding.m_descriptorSetLayout));
+                descLayouts.push_back(resolved.m_set0Layout);
                 descLayouts.push_back(m_combineLayout);
 
                 gfx::GFXGraphicsPipelineStateParams psoParams{};
@@ -457,7 +451,7 @@ namespace pulsar
                 cmdBuffer.CmdSetCullMode(gfx::GFXCullMode::None);
 
                 array_list<gfx::GFXDescriptorSet*> descSets;
-                descSets.push_back(binding.m_descriptorSet.get());
+                descSets.push_back(resolved.m_set0);
                 descSets.push_back(m_combineSet.get());
                 cmdBuffer.CmdBindDescriptorSets(descSets, gfxPipeline.get());
 

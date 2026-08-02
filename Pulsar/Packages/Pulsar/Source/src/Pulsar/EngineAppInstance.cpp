@@ -22,6 +22,7 @@
 #include <Pulsar/Logger.h>
 #include <Pulsar/World.h>
 #include <Pulsar/Rendering/ShaderInstanceCache.h>
+#include <Pulsar/Rendering/DescriptorSetCache.h>
 #include <filesystem>
 
 namespace pulsar
@@ -36,7 +37,7 @@ namespace pulsar
     }
 
 
-    void EngineRenderPipeline::OnRender(
+    void EngineRenderPipeline::OnRecord(
         gfx::GFXRenderContext* context, gfx::GFXFrameBufferObject* backbuffer)
     {
         static uint64_t s_frameIndex = 0;
@@ -143,7 +144,8 @@ namespace pulsar
             m_world = nullptr;
         }
 
-        // World 拆完后清理：依赖顺序诚实。两者都需在 gfxApp->Terminate() 之前执行。
+        // World 拆完后清理：依赖顺序诚实。三者都需在 gfxApp->Terminate() 之前执行（device 仍活）。
+        DescriptorSetCache::Instance().Clear();
         ShaderInstanceCache::Instance().Clear();
         TransientRTPool::Shutdown();
     }

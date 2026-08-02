@@ -22,7 +22,7 @@ namespace pulsar
         gfx::GFXGraphicsPipelineManager* pipelineMgr,
         const gfx::GFXRenderTargetDesc& rtDesc)
     {
-        auto program = pb.binding->GetCurrentProgram();
+        auto program = pb.program;
         if (!program)
             return;
 
@@ -57,7 +57,7 @@ namespace pulsar
         auto* resMgr = Application::GetGfxApp()->GetResourceManager();
 
         array_list<gfx::GFXDescriptorSetLayout_sp> descLayouts;
-        descLayouts.push_back(resMgr->GetDescriptorSetLayoutShared(pb.binding->m_descriptorSetLayout));
+        descLayouts.push_back(pb.set0Layout);
         descLayouts.push_back(perPassSet->GetDescriptorSetLayout());
         descLayouts.push_back(pb.batch.DescriptorSetLayout);
 
@@ -77,7 +77,7 @@ namespace pulsar
         for (const auto& element : pb.batch.Elements)
         {
             array_list<gfx::GFXDescriptorSet*> descSets;
-            descSets.push_back(pb.binding->m_descriptorSet.get());
+            descSets.push_back(pb.set0);
             descSets.push_back(perPassSet);
             descSets.push_back(pb.batch.ExtraDescriptorSet.get());
             cmdBuffer.CmdBindDescriptorSets(descSets, gfxPipeline.get(), &dynOffsets);

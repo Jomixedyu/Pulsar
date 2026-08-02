@@ -20,11 +20,11 @@ namespace pulsared
         // here on the render thread, so the next NewFrame can overwrite the context.
         ImGuiDrawDataSnapshot ImGuiDrawSnapshot;
 
-        void OnRender(gfx::GFXRenderContext* context, gfx::GFXFrameBufferObject* backbuffer) override
+        void OnRecord(gfx::GFXRenderContext* context, gfx::GFXFrameBufferObject* backbuffer) override
         {
             auto& cmd = context->AddCommandBuffer();
             cmd.Begin();
-            base::OnRender(context, backbuffer);
+            base::OnRecord(context, backbuffer);
 
             // render editor ui
 

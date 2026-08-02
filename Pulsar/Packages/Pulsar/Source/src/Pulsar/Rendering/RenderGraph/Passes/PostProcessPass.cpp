@@ -92,14 +92,9 @@ namespace pulsar
         if (!m_proxy) return;
         if (!m_proxy->GetShaderConfig()) return;
 
-        const auto* ppPassBinding = m_proxy->GetVariant("PostProcess", "RENDERER_IMAGEPROCESS")
-                                        .m_gpuResourcesInitialized
-                                    ? &m_proxy->GetVariant("PostProcess", "RENDERER_IMAGEPROCESS")
-                                    : nullptr;
-        if (!ppPassBinding) return;
-
-        auto program = ppPassBinding->GetCurrentProgram();
-        if (!program) return;
+        auto resolved = m_proxy->ResolveRenderVariant("PostProcess", "RENDERER_IMAGEPROCESS");
+        if (!resolved) return;
+        auto program = resolved.m_program;
         if (program->GetGpuPrograms().empty()) return;
 
         const auto* dstRT = passCtx.Get(hDst);
@@ -134,9 +129,8 @@ namespace pulsar
 
         auto* gfxApp = cmdBuffer.GetApplication();
         auto* pipelineMgr = gfxApp->GetGraphicsPipelineManager();
-        auto* resMgr = gfxApp->GetResourceManager();
         array_list<gfx::GFXDescriptorSetLayout_sp> descLayouts;
-        descLayouts.push_back(resMgr->GetDescriptorSetLayoutShared(ppPassBinding->m_descriptorSetLayout)); // set 0: material
+        descLayouts.push_back(resolved.m_set0Layout); // set 0: material
         descLayouts.push_back(m_perPassSet->GetDescriptorSetLayout()); // set 1: per-pass (Camera/World/Source)
 
         auto& gpuPrograms = program->GetGpuPrograms();
@@ -155,7 +149,7 @@ namespace pulsar
         cmdBuffer.CmdBindGraphicsPipeline(gfxPipeline.get());
 
         array_list<gfx::GFXDescriptorSet*> descSets;
-        descSets.push_back(ppPassBinding->m_descriptorSet.get()); // set 0
+        descSets.push_back(resolved.m_set0); // set 0
         descSets.push_back(m_perPassSet.get());                    // set 1
         cmdBuffer.CmdBindDescriptorSets(descSets, gfxPipeline.get());
 

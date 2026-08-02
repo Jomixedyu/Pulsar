@@ -1,8 +1,39 @@
 #include "ShaderInstanceCache.h"
 #include <Pulsar/Rendering/IShaderCompileService.h>
+#include <Pulsar/Logger.h>
+
+#include <sstream>
 
 namespace pulsar
 {
+    namespace
+    {
+        // Canonical string fingerprint of a set0 (PerMaterial) layout. Encodes each binding's
+        // bindingPoint/type/size and buffer members (name/offset/size/type), EXCLUDING stage flags
+        // (which legitimately differ per pass — set0 may be referenced by different stages).
+        std::string FingerprintPerMaterialLayout(const ShaderLayout& layout)
+        {
+            std::ostringstream os;
+            const ShaderPropertySetLayout* set0 = layout.FindSet(0);
+            if (!set0)
+                return {};
+
+            for (const auto& b : set0->m_bindings)
+            {
+                os << 'b' << b.m_bindingPoint
+                   << ':' << static_cast<int>(b.m_type)
+                   << ':' << b.m_size << '{';
+                for (const auto& m : b.m_members)
+                {
+                    os << m.m_name << ',' << m.m_offset << ',' << m.m_size
+                       << ',' << static_cast<int>(m.m_type) << ';';
+                }
+                os << '}';
+            }
+            return os.str();
+        }
+    }
+
     ShaderInstanceCache& ShaderInstanceCache::Instance()
     {
         static ShaderInstanceCache instance;
@@ -116,13 +147,27 @@ namespace pulsar
         {
             ShaderCompileTask task = compileTask;
             std::weak_ptr<ShaderInstance> weakInstance = instance;
-            task.m_callback = [weakInstance, errorProgram](const ShaderCompileResult& result)
+            const guid_t shaderGuid = key.m_shaderGuid;
+            task.m_callback = [this, weakInstance, errorProgram, shaderGuid](const ShaderCompileResult& result)
             {
                 auto inst = weakInstance.lock();
                 if (!inst) return;
 
-                if (result.m_success)
+                if (result.m_success && result.m_program)
+                {
+                    // Enforce identical PerMaterial (set0) layout across all variants of this shader.
+                    if (!ValidateOrRegisterPerMaterialLayout(shaderGuid, *result.m_program))
+                    {
+                        Logger::Log(
+                            "Shader variant PerMaterial (set0) layout diverges from the shader's "
+                            "canonical layout; rejecting variant. All passes/variants of one material "
+                            "must share an identical set0 layout.",
+                            LogLevel::Error);
+                        inst->ReplaceProgram(errorProgram, ShaderCompileState::Error);
+                        return;
+                    }
                     inst->ReplaceProgram(result.m_program, ShaderCompileState::Ready);
+                }
                 else
                     inst->ReplaceProgram(errorProgram, ShaderCompileState::Error);
             };
@@ -133,10 +178,27 @@ namespace pulsar
         return instance;
     }
 
+    bool ShaderInstanceCache::ValidateOrRegisterPerMaterialLayout(
+        const guid_t& shaderGuid,
+        const ShaderProgramResource& program)
+    {
+        const std::string fingerprint = FingerprintPerMaterialLayout(program.m_layout);
+
+        std::lock_guard lock(m_mutex);
+        auto it = m_canonicalPerMaterial.find(shaderGuid);
+        if (it == m_canonicalPerMaterial.end())
+        {
+            m_canonicalPerMaterial.emplace(shaderGuid, fingerprint);
+            return true;
+        }
+        return it->second == fingerprint;
+    }
+
     void ShaderInstanceCache::Clear()
     {
         std::lock_guard lock(m_mutex);
         m_cache.clear();
+        m_canonicalPerMaterial.clear();
         m_pendingByInterface.clear();
         m_errorByInterface.clear();
     }
@@ -151,6 +213,7 @@ namespace pulsar
             else
                 ++it;
         }
+        m_canonicalPerMaterial.erase(shaderGuid);
     }
 
 }

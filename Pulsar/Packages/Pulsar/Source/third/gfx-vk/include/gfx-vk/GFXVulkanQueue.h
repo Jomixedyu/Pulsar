@@ -1,10 +1,13 @@
 #pragma once
 #include <gfx/GFXQueue.h>
 #include "VulkanInclude.h"
+#include <memory>
+#include <vector>
 
 namespace gfx
 {
     class GFXVulkanApplication;
+    class GFXVulkanCommandBuffer;
 
     class GFXVulkanQueue : public GFXQueue
     {
@@ -12,7 +15,7 @@ namespace gfx
         GFXVulkanQueue(GFXVulkanApplication* app, VkSemaphore waitSemaphore, VkSemaphore signalSemaphore, VkFence fence);
     public:
         virtual void Submit(const std::vector<const GFXCommandBuffer*>& buffer);
-        void VkSubmit(class GFXVulkanCommandBuffer* buffers, size_t count);
+        void VkSubmit(const std::vector<std::unique_ptr<GFXVulkanCommandBuffer>>& buffers);
     public:
         const VkFence& GetVkFence() const { return m_fence; }
         const VkSemaphore& GetVkWaitSemaphore() const { return m_waitSemaphore; }

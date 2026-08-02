@@ -50,15 +50,19 @@ namespace pulsar
                     for (auto batch : ro->GetMeshBatches())
                     {
                         batch.Depth = depth;
-                        const MaterialVariant* binding = batch.Material
-                            ? batch.Material->ResolveRenderVariant("Forward", batch.Interface)
-                            : nullptr;
-
                         if (!batch.Material)
                             continue;
 
+                        auto resolved = batch.Material->ResolveRenderVariant("Forward", batch.Interface);
+
                         auto queue = batch.Material->GetQueue();
-                        PreparedBatch pb{ std::move(batch), binding };
+                        PreparedBatch pb{ std::move(batch) };
+                        if (resolved)
+                        {
+                            pb.program = resolved.m_program;
+                            pb.set0 = resolved.m_set0;
+                            pb.set0Layout = resolved.m_set0Layout;
+                        }
                         switch (queue)
                         {
                         case ShaderPassRenderQueueType::AlphaTest:

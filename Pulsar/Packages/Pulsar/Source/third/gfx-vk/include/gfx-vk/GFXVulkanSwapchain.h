@@ -36,13 +36,11 @@ namespace gfx
         VkExtent2D GetVkSwapChainExtent() const { return m_swapChainExtent; }
         VkFormat GetVkSwapChainImageFormat() const { return m_swapChainImageFormat; }
         GFXVulkanApplication* GetApplication() const { return m_app; }
-        GFXVulkanQueue* GetQueue() const { return m_queues[m_currentFrame].get(); }
+        GFXVulkanQueue* GetQueue() const;
         VkResult AcquireNextImage(uint32_t* outIndex);
     public:
         virtual GFXFrameBufferObject* GetFrameBufferObject() override;
     protected:
-        static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
-
         std::vector<VkSemaphore> m_imageAvailableSemaphores;
         std::vector<VkSemaphore> m_renderFinishedSemaphores;
         std::vector<VkFence> m_inFlightFences;
@@ -65,8 +63,6 @@ namespace gfx
 
         uint32_t m_imageIndex = 0;
     public:
-        int32_t m_currentFrame = 0;
-
         GFXVulkanApplication* m_app;
         GFXSurface* m_window = nullptr;
     };

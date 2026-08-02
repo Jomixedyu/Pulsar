@@ -3,6 +3,7 @@
 #include "ImageHelper.h"
 #include "GFXSurfaceSDL2.h"
 #include "GFXVulkanBuffer.h"
+#include "GFXVulkanBufferUploadQueue.h"
 #include "GFXVulkanCommandBuffer.h"
 #include "GFXVulkanCommandBufferPool.h"
 #include "GFXVulkanDescriptorSet.h"
@@ -410,6 +411,8 @@ namespace gfx
 
         m_cmdPool = new GFXVulkanCommandBufferPool(this);
 
+        m_uploadQueue = new GFXVulkanBufferUploadQueue(this);
+
         m_viewport = new GFXVulkanSwapchain(this, m_window);
 
         m_renderer = new GFXVulkanRenderer(this);
@@ -423,13 +426,18 @@ namespace gfx
 
     void GFXVulkanApplication::TickRender(float deltaTime)
     {
-        m_renderer->Render(deltaTime);
-        ++m_framecount;
+        if (m_renderer->Render(deltaTime))
+            ++m_framecount;
     }
 
     void GFXVulkanApplication::WaitDeviceIdle()
     {
         vkDeviceWaitIdle(m_device);
+    }
+
+    void GFXVulkanApplication::RequestBufferUpload(GFXBuffer* dst, const void* data, size_t size, size_t dstOffset)
+    {
+        m_uploadQueue->RequestUpload(static_cast<GFXVulkanBuffer*>(dst), data, size, dstOffset);
     }
 
     void GFXVulkanApplication::Terminate()
@@ -454,6 +462,7 @@ namespace gfx
         delete m_renderer;
         delete m_viewport;
         delete m_graphicsPipelineManager;
+        delete m_uploadQueue;
         delete m_cmdPool;
 
         vkDestroyDevice(m_device, nullptr);

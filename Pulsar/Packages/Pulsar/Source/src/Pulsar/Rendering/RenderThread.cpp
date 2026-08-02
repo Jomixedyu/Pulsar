@@ -1,6 +1,7 @@
 #include "RenderThread.h"
 #include <Pulsar/Logger.h>
 #include <Pulsar/Application.h>
+#include <Pulsar/Rendering/DescriptorSetCache.h>
 #include <gfx/GFXResourceManager.h>
 #include <gfx/GFXApplication.h>
 
@@ -141,6 +142,9 @@ namespace pulsar
             // 1. 先抽干资源更新队列（创建/上传），形成帧屏障：
             //    保证本帧渲染用到的资源已就绪。
             ProcessResourceUpdates();
+
+            // 1.1 回收长时间未用的 descriptor set 缓存项（上帧 present 后已 vkQueueWaitIdle，GPU 不再引用）。
+            DescriptorSetCache::Instance().Tick();
 
             // 1.5 若收到 WaitForIdle 请求，先等 GPU 把已提交命令全部执行完，
             //     再处理销毁队列，避免释放仍被 in-flight 命令引用的资源。

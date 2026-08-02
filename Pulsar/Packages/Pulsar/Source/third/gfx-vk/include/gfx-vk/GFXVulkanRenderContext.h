@@ -3,6 +3,8 @@
 #include "GFXVulkanQueue.h"
 #include <gfx/GFXRenderContext.h>
 #include "GFXVulkanCommandBuffer.h"
+#include <memory>
+#include <vector>
 
 namespace gfx
 {
@@ -19,23 +21,24 @@ namespace gfx
     public:
         virtual void Submit() override
         {
-            //std::vector<const GFXCommandBuffer*> buffer;
-            //for (auto& buf : m_buffers)
-            //{
-            //    buffer.push_back(&buf);
-            //}
-            //m_queue->Submit(buffer);
-            m_queue->VkSubmit(m_buffers.data(), m_buffers.size());
+            m_queue->VkSubmit(m_buffers);
         }
         virtual GFXApplication* GetApplication() override;
 
         virtual GFXCommandBuffer& AddCommandBuffer() override
         {
-            return m_buffers.emplace_back(m_app);
+            return *m_buffers.emplace_back(std::make_unique<GFXVulkanCommandBuffer>(m_app));
+        }
+        // Insert a command buffer at the front so it is submitted (and executed) before all others.
+        // Used for the frame-head staging->device transfer, which must complete before render passes
+        // read the uploaded buffers. Call after OnRecord so index-0 lookups during recording are unaffected.
+        GFXVulkanCommandBuffer& PrependCommandBuffer()
+        {
+            return *m_buffers.emplace(m_buffers.begin(), std::make_unique<GFXVulkanCommandBuffer>(m_app))->get();
         }
         virtual GFXCommandBuffer& GetCommandBuffer(size_t index) override
         {
-            return m_buffers[index];
+            return *m_buffers[index];
         }
     public:
         GFXVulkanQueue* GetQueue() const { return m_queue; }
@@ -43,6 +46,6 @@ namespace gfx
     protected:
         GFXVulkanApplication* m_app;
         GFXVulkanQueue* m_queue;
-        std::vector<GFXVulkanCommandBuffer> m_buffers;
+        std::vector<std::unique_ptr<GFXVulkanCommandBuffer>> m_buffers;
     };
 }

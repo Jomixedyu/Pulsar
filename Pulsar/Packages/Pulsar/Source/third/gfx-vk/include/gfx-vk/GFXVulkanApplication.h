@@ -38,6 +38,7 @@ namespace gfx
         virtual void Initialize() override;
         virtual void Terminate() override;
         virtual void WaitDeviceIdle() override;
+        virtual void RequestBufferUpload(GFXBuffer* dst, const void* data, size_t size, size_t dstOffset = 0) override;
 
         virtual GFXApi GetApiType() const override { return GFXApi::Vulkan; }
         virtual const char* GetApiLevelName() const override { return "Vulkan 1.3"; }
@@ -109,7 +110,18 @@ namespace gfx
             return m_cmdPool;
         }
 
-        uint32_t GetFrameCount() const { return m_framecount; }
+        class GFXVulkanBufferUploadQueue* GetBufferUploadQueue() const
+        {
+            return m_uploadQueue;
+        }
+
+        // Single monotonic frame counter owned by the gfx layer. Incremented once per successful
+        // frame (skipped/early-out frames do not advance it). All in-flight indices are derived
+        // from this via (GetFrameCount() % MAX_FRAMES_IN_FLIGHT).
+        uint64_t GetFrameCount() const { return m_framecount; }
+        uint32_t GetFrameInFlightIndex() const { return static_cast<uint32_t>(m_framecount % MAX_FRAMES_IN_FLIGHT); }
+
+        static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 
     private:
         void InitVkInstance();
@@ -120,8 +132,6 @@ namespace gfx
     public:
 
     protected:
-
-        static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 
         GFXSurface* m_window = nullptr;
         // bool m_framebufferResized = false;
@@ -145,12 +155,14 @@ namespace gfx
 
         class GFXVulkanCommandBufferPool* m_cmdPool = nullptr;
 
+        class GFXVulkanBufferUploadQueue* m_uploadQueue = nullptr;
+
         GFXGraphicsPipelineManager* m_graphicsPipelineManager = nullptr;
 
         array_list<const char*> m_extensions;
         size_t m_count = 0;
 
-        uint32_t m_framecount = 0;
+        uint64_t m_framecount = 0;
 
         std::vector<GFXTextureFormat> m_depthFormatCache;
 

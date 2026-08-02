@@ -48,10 +48,16 @@ namespace pulsar
                             continue;
 
                         batch.Depth = depth;
-                        const MaterialVariant* binding = batch.Material
-                            ->ResolveRenderVariant("Forward", batch.Interface);
+                        auto resolved = batch.Material->ResolveRenderVariant("Forward", batch.Interface);
 
-                        preparedOverlay->push_back(PreparedBatch{ std::move(batch), binding });
+                        PreparedBatch pb{ std::move(batch) };
+                        if (resolved)
+                        {
+                            pb.program = resolved.m_program;
+                            pb.set0 = resolved.m_set0;
+                            pb.set0Layout = resolved.m_set0Layout;
+                        }
+                        preparedOverlay->push_back(std::move(pb));
                     }
                 }
 

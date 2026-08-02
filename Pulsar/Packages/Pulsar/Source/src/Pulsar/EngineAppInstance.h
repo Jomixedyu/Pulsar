@@ -10,7 +10,7 @@ namespace pulsar
     {
     public:
         EngineRenderPipeline(const std::initializer_list<World*>& worlds);
-        void OnRender(gfx::GFXRenderContext* context, gfx::GFXFrameBufferObject* backbuffer) override;
+        void OnRecord(gfx::GFXRenderContext* context, gfx::GFXFrameBufferObject* backbuffer) override;
 
         void AddWorld(World* world);
         void RemoveWorld(World* world);

@@ -49,13 +49,15 @@ namespace pulsar
         return data;
     }
 
-    void ShaderPropertySync::ApplyRenderData(
+    void ShaderPropertySync::UploadPerMaterialCBuffer(
         const ShaderPropertyRenderData& data,
         const ShaderLayout& layout,
-        gfx::GFXBuffer* cbuffer,
-        gfx::GFXDescriptorSet* descriptorSet)
+        gfx::GFXBuffer* cbuffer)
     {
-        assert(Application::GetRenderThread()->IsRenderThread() && "ApplyRenderData must run on the render thread");
+        assert(Application::GetRenderThread()->IsRenderThread() && "UploadPerMaterialCBuffer must run on the render thread");
+
+        if (!cbuffer)
+            return;
 
         const ShaderPropertySetLayout* set0 = layout.FindSet(0);
         if (!set0)
@@ -71,31 +73,47 @@ namespace pulsar
                 break;
             }
         }
-
-        // 常量：按成员 offset 打包成字节缓冲并上传
-        if (cbuffer && matCbuffer)
-        {
-            std::vector<uint8_t> buffer(matCbuffer->m_size, 0);
-            for (const auto& entry : matCbuffer->m_members)
-            {
-                auto it = data.Constants.find(entry.m_name);
-                if (it != data.Constants.end() && it->second.Type == entry.m_type)
-                    WritePropertyToBuffer(buffer.data(), entry, it->second);
-                // 没有值：保持 zero-initialized
-            }
-            cbuffer->Update(buffer.data());
-        }
-
-        if (!descriptorSet)
+        if (!matCbuffer)
             return;
 
-        // 填入渲染资源注册表：cbuffer + 已解析纹理 view（含 fallback），交给 assembler 按反射装配
-        RenderResourceRegistry reg;
+        // 常量：按成员 offset 打包成字节缓冲，经 ring staging 队列上传到 device-local cbuffer
+        // （帧头批量 transfer，无 per-update submit/wait）。
+        std::vector<uint8_t> buffer(matCbuffer->m_size, 0);
+        for (const auto& entry : matCbuffer->m_members)
+        {
+            auto it = data.Constants.find(entry.m_name);
+            if (it != data.Constants.end() && it->second.Type == entry.m_type)
+                WritePropertyToBuffer(buffer.data(), entry, it->second);
+            // 没有值：保持 zero-initialized
+        }
+        Application::GetGfxApp()->RequestBufferUpload(cbuffer, buffer.data(), matCbuffer->m_size);
+    }
+
+    std::vector<gfx::GFXTexture2DView_sp> ShaderPropertySync::BuildSet0Registry(
+        const ShaderPropertyRenderData& data,
+        const ShaderPropertySetLayout& set0,
+        gfx::GFXBuffer* cbuffer,
+        RenderResourceRegistry& reg)
+    {
+        assert(Application::GetRenderThread()->IsRenderThread() && "BuildSet0Registry must run on the render thread");
+
+        std::vector<gfx::GFXTexture2DView_sp> keepAlive;
+
+        // set0 的材质 cbuffer binding（首个有尺寸的 buffer）：绑定材质共享的那一份 cbuffer
+        const DescriptorBinding* matCbuffer = nullptr;
+        for (const auto& b : set0.m_bindings)
+        {
+            if (b.IsBuffer() && b.m_size > 0)
+            {
+                matCbuffer = &b;
+                break;
+            }
+        }
         if (cbuffer && matCbuffer)
             reg.Set(matCbuffer->m_name, cbuffer);
 
         auto* resMgr = Application::GetGfxApp()->GetResourceManager();
-        for (const auto& b : set0->m_bindings)
+        for (const auto& b : set0.m_bindings)
         {
             if (b.IsBuffer())
                 continue;
@@ -108,11 +126,14 @@ namespace pulsar
             if (auto* gfxTex = resMgr->GetTexture(it->second))
             {
                 if (auto view = gfxTex->Get2DView(0))
+                {
                     reg.Set(b.m_name, view.get());
+                    keepAlive.push_back(std::move(view)); // registry 存裸指针，须保活到使用完毕
+                }
             }
         }
 
-        DescriptorSetAssembler::Write(descriptorSet, *set0, reg);
+        return keepAlive;
     }
 
     void ShaderPropertySync::WritePropertyToBuffer(uint8_t* buffer, const BufferMember& entry, const ShaderPropertyValue& prop)

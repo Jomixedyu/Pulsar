@@ -104,11 +104,9 @@ namespace gfx
         this->InitSwapChain();
         //this->InitDepthTestBuffer();
 
-        m_currentFrame = MAX_FRAMES_IN_FLIGHT - 1;
-
-        m_imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-        m_renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-        m_inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
+        m_imageAvailableSemaphores.resize(GFXVulkanApplication::MAX_FRAMES_IN_FLIGHT);
+        m_renderFinishedSemaphores.resize(GFXVulkanApplication::MAX_FRAMES_IN_FLIGHT);
+        m_inFlightFences.resize(GFXVulkanApplication::MAX_FRAMES_IN_FLIGHT);
 
         VkSemaphoreCreateInfo semaphoreInfo{};
         semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -117,7 +115,7 @@ namespace gfx
         fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
         fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+        for (size_t i = 0; i < GFXVulkanApplication::MAX_FRAMES_IN_FLIGHT; i++)
         {
             if (vkCreateSemaphore(app->GetVkDevice(), &semaphoreInfo, nullptr, &m_imageAvailableSemaphores[i]) != VK_SUCCESS ||
                 vkCreateSemaphore(app->GetVkDevice(), &semaphoreInfo, nullptr, &m_renderFinishedSemaphores[i]) != VK_SUCCESS ||
@@ -127,7 +125,7 @@ namespace gfx
             }
         }
 
-        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+        for (size_t i = 0; i < GFXVulkanApplication::MAX_FRAMES_IN_FLIGHT; i++)
         {
             m_queues.push_back(std::unique_ptr<GFXVulkanQueue>{new GFXVulkanQueue(m_app, m_imageAvailableSemaphores[i], m_renderFinishedSemaphores[i], m_inFlightFences[i])});
         }
@@ -138,7 +136,7 @@ namespace gfx
 
         m_queues.clear();
 
-        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+        for (size_t i = 0; i < GFXVulkanApplication::MAX_FRAMES_IN_FLIGHT; i++)
         {
             vkDestroySemaphore(m_app->GetVkDevice(), m_imageAvailableSemaphores[i], nullptr);
             vkDestroySemaphore(m_app->GetVkDevice(), m_renderFinishedSemaphores[i], nullptr);
@@ -335,14 +333,19 @@ namespace gfx
         *width = m_swapChainExtent.width;
         *height = m_swapChainExtent.height;
     }
+    GFXVulkanQueue* GFXVulkanSwapchain::GetQueue() const
+    {
+        return m_queues[m_app->GetFrameInFlightIndex()].get();
+    }
+
     VkResult GFXVulkanSwapchain::AcquireNextImage(uint32_t* outIndex)
     {
         if (m_swapChain == VK_NULL_HANDLE)
         {
             return VK_ERROR_OUT_OF_DATE_KHR;
         }
-        m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
-        auto result = vkAcquireNextImageKHR(m_app->GetVkDevice(), GetVkSwapChain(), UINT64_MAX, m_imageAvailableSemaphores[m_currentFrame], VK_NULL_HANDLE, &m_imageIndex);
+        const uint32_t frameIndex = m_app->GetFrameInFlightIndex();
+        auto result = vkAcquireNextImageKHR(m_app->GetVkDevice(), GetVkSwapChain(), UINT64_MAX, m_imageAvailableSemaphores[frameIndex], VK_NULL_HANDLE, &m_imageIndex);
         *outIndex = m_imageIndex;
         return result;
     }

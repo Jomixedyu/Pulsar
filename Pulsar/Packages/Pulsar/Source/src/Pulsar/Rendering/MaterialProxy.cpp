@@ -5,12 +5,53 @@
 
 #include <Pulsar/Rendering/ShaderInstanceCache.h>
 #include <Pulsar/Rendering/ShaderPropertySync.h>
+#include <Pulsar/Rendering/DescriptorSetCache.h>
+#include <Pulsar/Rendering/RenderResourceRegistry.h>
 #include <gfx/GFXResourceManager.h>
 
+#include <cassert>
 #include <utility>
 
 namespace pulsar
 {
+    namespace
+    {
+        // Reflected set0 → the (globally de-duplicated) descriptor set layout for it.
+        // Missing stage flags default to VertexFragment (set0 may be sampled by either stage).
+        gfx::GFXDescriptorSetLayout_sp BuildSet0Layout(const ShaderLayout& layout)
+        {
+            array_list<gfx::GFXDescriptorLayoutDesc> descs;
+            if (const ShaderPropertySetLayout* set0 = layout.FindSet(0))
+            {
+                for (const auto& b : set0->m_bindings)
+                {
+                    gfx::GFXDescriptorLayoutDesc desc{};
+                    desc.Type = b.m_type;
+                    desc.Stage = (b.m_stageFlags != gfx::GFXGpuProgramStageFlags::None)
+                        ? b.m_stageFlags
+                        : gfx::GFXGpuProgramStageFlags::VertexFragment;
+                    desc.BindingPoint = b.m_bindingPoint;
+                    descs.push_back(desc);
+                }
+            }
+            // Always create the (possibly empty) layout so set 0 stays present for set-index alignment.
+            return Application::GetGfxApp()->GetOrCreateDescriptorSetLayout(descs.data(), static_cast<uint32_t>(descs.size()));
+        }
+
+        const DescriptorBinding* FindMaterialCBuffer(const ShaderLayout& layout)
+        {
+            if (const ShaderPropertySetLayout* set0 = layout.FindSet(0))
+            {
+                for (const auto& b : set0->m_bindings)
+                {
+                    if (b.IsBuffer() && b.m_size > 0)
+                        return &b;
+                }
+            }
+            return nullptr;
+        }
+    }
+
     MaterialProxy::~MaterialProxy()
     {
         // Runs on whichever thread drops the last shared_ptr; callers route this to the
@@ -18,75 +59,70 @@ namespace pulsar
         ClearVariants();
     }
 
-    const MaterialVariant* MaterialProxy::ResolveRenderVariant(
+    ResolvedVariant MaterialProxy::ResolveRenderVariant(
         const std::string& passName,
         const std::string& interface_)
     {
-        // GetVariant lazily creates the variant for this (pass, interface) if not yet exist
-        auto& variant = const_cast<MaterialVariant&>(GetVariant(passName, interface_));
+        auto instance = GetOrCreateInstance(passName, interface_);
+        if (!instance)
+            return {};
 
-        auto program = variant.GetCurrentProgram();
-        if (!program)
-            return nullptr; // shader still compiling
+        auto program = instance->GetCurrentProgram();
+        // A ShaderInstance always holds a program (Pending/Error builtin fallback at worst);
+        // it is never null. A null here means the instance invariant was violated.
+        assert(program && "ShaderInstance returned a null program");
 
         // A program with no compiled stages (failed builtin/error fallback or empty pending)
         // must never reach pipeline creation — that yields a stageCount==0 VkPipeline.
         if (program->GetGpuPrograms().empty())
-            return nullptr;
+            return {};
 
-        // Detect async compilation completing or shader hot-reload for this specific variant
-        if (program != variant.m_builtWithProgram.lock())
+        // The single shared PerMaterial cbuffer is sized from the first ready program that
+        // declares a material cbuffer. All variants share one cbuffer (layout forced identical,
+        // validated in the shader compile layer).
+        EnsurePerMaterialCBuffer(program->m_layout);
+        if (m_cbufferDirty)
         {
-            // Rebuild GPU resources for this variant with the new program's layout
-            variant.m_descriptorSet.reset();
-            if (variant.m_descriptorSetLayout.IsValid())
-            {
-                Application::GetGfxApp()->GetResourceManager()->Destroy(variant.m_descriptorSetLayout);
-            }
-            variant.m_descriptorSetLayout = gfx::DescriptorSetLayoutHandle{};
-            variant.m_materialConstantBuffer.reset();
-            variant.m_gpuResourcesInitialized = false;
-            EnsureGPUResources(variant, program->m_layout);
-            variant.m_builtWithProgram = program;
-
-            // Initial parameter sync: push the current snapshot into freshly created GPU resources.
-            ShaderPropertySync::ApplyRenderData(
-                m_renderData,
-                program->m_layout,
-                variant.m_materialConstantBuffer.get(),
-                variant.m_descriptorSet.get());
+            UploadCBuffer(program->m_layout);
+            m_cbufferDirty = false;
         }
 
-        if (!variant.m_gpuResourcesInitialized)
-            return nullptr;
+        // Resolve this variant's set0 descriptor set from the global content cache. Build the set0
+        // resource registry (shared cbuffer + resolved textures), then Get() a cache-owned set keyed
+        // by the (de-duplicated) layout + bound resource identities. Content changes (textures,
+        // async-compile swapping the reflected layout) automatically pick a different set — no
+        // explicit rebuild/dirty decision, and no "builtin vs compiled" branching.
+        ResolvedVariant resolved;
+        resolved.m_program = program;
 
-        return &variant;
+        // set 0 must always be present for set-index alignment, even when the shader declares no
+        // set0 bindings — BuildSet0Layout returns a (possibly empty) de-duplicated layout, and the
+        // cache hands back a set for it (empty reg -> gfx builtin fallbacks / no writes).
+        resolved.m_set0Layout = BuildSet0Layout(program->m_layout);
+
+        const ShaderPropertySetLayout* set0 = program->m_layout.FindSet(0);
+        if (set0)
+        {
+            RenderResourceRegistry reg;
+            auto keepAlive = ShaderPropertySync::BuildSet0Registry(
+                m_renderData, *set0, m_perMaterialCBuffer.get(), reg);
+            resolved.m_set0 = DescriptorSetCache::Instance().Get(resolved.m_set0Layout, *set0, reg);
+        }
+        else
+        {
+            ShaderPropertySetLayout empty;
+            RenderResourceRegistry reg;
+            resolved.m_set0 = DescriptorSetCache::Instance().Get(resolved.m_set0Layout, empty, reg);
+        }
+        return resolved;
     }
 
     void MaterialProxy::ApplyRenderData(ShaderPropertyRenderData renderData)
     {
         m_renderData = std::move(renderData);
-
-        // Upload the new snapshot to every variant that already has GPU resources ready.
-        // Variants whose shaders haven't compiled yet receive the values via the initial sync
-        // inside ResolveRenderVariant when they eventually become ready.
-        for (auto& [key, variant] : m_variants)
-        {
-            if (!variant.m_gpuResourcesInitialized) continue;
-
-            // 必须用 set 当初据以创建的 program 的 layout，而非 GetCurrentProgram()。
-            // 异步重编后 current 可能领先于 set 的 layout，错配会把 descriptor 写到不存在的
-            // binding 上（VUID-VkWriteDescriptorSet-dstBinding-10009）。错配的变体由
-            // ResolveRenderVariant 重建 set 时再同步。
-            auto program = variant.m_builtWithProgram.lock();
-            if (!program) continue;
-
-            ShaderPropertySync::ApplyRenderData(
-                m_renderData,
-                program->m_layout,
-                variant.m_materialConstantBuffer.get(),
-                variant.m_descriptorSet.get());
-        }
+        // Parameter/texture change: mark the cbuffer for re-upload. Set resolution is content-
+        // addressed (re-Get each frame), so texture changes need no explicit set rebuild here.
+        m_cbufferDirty = true;
     }
 
     void MaterialProxy::UpdateShader(
@@ -119,20 +155,17 @@ namespace pulsar
         m_cachedEffectiveGraphicsPipeline.clear();
     }
 
-    const MaterialVariant& MaterialProxy::GetVariant(
+    std::shared_ptr<ShaderInstance> MaterialProxy::GetOrCreateInstance(
         const std::string& passName,
         const std::string& interface_)
     {
-        PassKey key{passName, interface_};
+        VariantKey key{passName, interface_};
         auto it = m_variants.find(key);
         if (it != m_variants.end())
             return it->second;
 
         if (!m_shaderConfig)
-        {
-            static MaterialVariant empty{};
-            return empty;
-        }
+            return nullptr;
 
         ShaderVariantKey variantKey;
         variantKey.m_shaderGuid = m_shaderGuid;
@@ -178,79 +211,40 @@ namespace pulsar
         }
 
         auto instance = ShaderInstanceCache::Instance().GetOrCreate(variantKey, task);
-        MaterialVariant variant;
-        variant.m_shader = instance;
-        auto [insertIt, _] = m_variants.emplace(key, std::move(variant));
+        m_variants.emplace(key, instance);
 
-        return insertIt->second;
+        return instance;
     }
 
-    void MaterialProxy::EnsureGPUResources(MaterialVariant& variant, const ShaderLayout& layout)
+    void MaterialProxy::EnsurePerMaterialCBuffer(const ShaderLayout& layout)
     {
-        if (variant.m_gpuResourcesInitialized)
+        if (m_perMaterialCBuffer)
             return;
 
-        auto gfxApp = Application::GetGfxApp();
+        const DescriptorBinding* matCbuffer = FindMaterialCBuffer(layout);
+        if (!matCbuffer)
+            return;
 
-        // 创建该变体专属的 descriptor set layout (set 0)
-        array_list<gfx::GFXDescriptorLayoutDesc> descLayoutInfos;
+        // 材质唯一 cbuffer（device-local，经 ring staging 队列 transfer 更新）
+        gfx::GFXBufferDesc bufferDesc{};
+        bufferDesc.Usage = gfx::GFXBufferUsage::ConstantBuffer;
+        bufferDesc.StorageType = gfx::GFXBufferMemoryPosition::DeviceLocal;
+        bufferDesc.BufferSize = matCbuffer->m_size;
+        m_perMaterialCBuffer = Application::GetGfxApp()->CreateBuffer(bufferDesc);
+        m_cbufferDirty = true; // seed with the current snapshot on the next resolve
+    }
 
-        // Material params live in set0; convention is a single material cbuffer.
-        const ShaderPropertySetLayout* set0 = layout.FindSet(0);
-        const DescriptorBinding* matCbuffer = nullptr;
-
-        if (set0)
-        {
-            for (const auto& b : set0->m_bindings)
-            {
-                gfx::GFXDescriptorLayoutDesc desc{};
-                desc.Type = b.m_type;
-                desc.Stage = (b.m_stageFlags != gfx::GFXGpuProgramStageFlags::None)
-                    ? b.m_stageFlags
-                    : gfx::GFXGpuProgramStageFlags::VertexFragment;
-                desc.BindingPoint = b.m_bindingPoint;
-                descLayoutInfos.push_back(desc);
-
-                // First non-empty buffer drives the material constant buffer allocation.
-                if (!matCbuffer && b.IsBuffer() && b.m_size > 0)
-                    matCbuffer = &b;
-            }
-        }
-
-        if (matCbuffer)
-        {
-            // 创建该变体专属的 cbuffer
-            gfx::GFXBufferDesc bufferDesc{};
-            bufferDesc.Usage = gfx::GFXBufferUsage::ConstantBuffer;
-            bufferDesc.StorageType = gfx::GFXBufferMemoryPosition::VisibleOnDevice;
-            bufferDesc.BufferSize = matCbuffer->m_size;
-            variant.m_materialConstantBuffer = gfxApp->CreateBuffer(bufferDesc);
-        }
-
-        auto* resMgr = Application::GetGfxApp()->GetResourceManager();
-
-        // 即使没有任何 binding 也创建空 layout，确保 set 0 始终存在以保证 set 编号对齐
-        variant.m_descriptorSetLayout = resMgr->AllocHandle<gfx::DescriptorSetLayoutHandle>();
-        resMgr->CreateDescriptorSetLayout(variant.m_descriptorSetLayout, descLayoutInfos);
-        variant.m_descriptorSet = resMgr->GetDescriptorSetLayoutShared(variant.m_descriptorSetLayout)->AllocateSet();
-
-        // descriptor 由首次 ShaderPropertySync::ApplyRenderData 的 assembler 装配（FindByBinding-then-Add）
-
-        variant.m_gpuResourcesInitialized = true;
+    void MaterialProxy::UploadCBuffer(const ShaderLayout& layout)
+    {
+        if (!m_perMaterialCBuffer)
+            return;
+        ShaderPropertySync::UploadPerMaterialCBuffer(m_renderData, layout, m_perMaterialCBuffer.get());
     }
 
     void MaterialProxy::ClearVariants()
     {
-        if (m_variants.empty())
-            return;
-
-        // Explicitly destroy handle-managed resources before clearing the map
-        auto* resMgr = Application::GetGfxApp()->GetResourceManager();
-        for (auto& [key, variant] : m_variants)
-        {
-            if (variant.m_descriptorSetLayout.IsValid())
-                resMgr->Destroy(variant.m_descriptorSetLayout);
-        }
+        m_perMaterialCBuffer.reset();
+        m_cbufferDirty = false;
         m_variants.clear();
     }
 

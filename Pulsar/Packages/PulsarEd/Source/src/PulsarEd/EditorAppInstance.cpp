@@ -13,6 +13,7 @@
 #include "Utils/PrefabUtil.h"
 
 #include <Pulsar/Rendering/ShaderInstanceCache.h>
+#include <Pulsar/Rendering/DescriptorSetCache.h>
 #include <Pulsar/Rendering/RenderGraph/TransientRTPool.h>
 
 #include <fstream>
@@ -476,8 +477,9 @@ namespace pulsared
             m_world = nullptr;
         }
 
-        // World 拆完后清理：依赖顺序诚实。两者都需在 gfxApp->Terminate() 之前执行，
-        // 否则 GpuProgram / RT 析构时 VkDevice 已无效。
+        // World 拆完后清理：依赖顺序诚实。三者都需在 gfxApp->Terminate() 之前执行，
+        // 否则 GpuProgram / descriptor set / RT 析构时 VkDevice 已无效。
+        pulsar::DescriptorSetCache::Instance().Clear();
         pulsar::ShaderInstanceCache::Instance().Clear();
         pulsar::TransientRTPool::Shutdown();
 

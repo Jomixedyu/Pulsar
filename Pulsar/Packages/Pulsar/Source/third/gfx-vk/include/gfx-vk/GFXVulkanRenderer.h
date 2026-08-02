@@ -16,7 +16,10 @@ namespace gfx
         GFXVulkanRenderer(GFXVulkanApplication* app);
         ~GFXVulkanRenderer();
     public:
-        void Render(float deltaTime);
+        // Returns true if a frame was actually rendered+presented; false on an early-out
+        // (minimized, swapchain out-of-date, no render target). The caller uses this to
+        // advance the gfx frame counter only on successful frames.
+        bool Render(float deltaTime);
 
         void WaitExecuteRender(const std::function<void(GFXRenderContext*)>& func) override;
 
@@ -24,8 +27,6 @@ namespace gfx
         GFXVulkanApplication* m_app;
 
         bool m_framebufferResized = false;
-        uint32_t m_currentFrame = 0;
-        const int MAX_FRAMES_IN_FLIGHT = 2;
 
     };
 }

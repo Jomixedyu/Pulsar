@@ -68,14 +68,17 @@ namespace pulsar
                             continue;
 
                         batch.Depth = depth;
-                        const MaterialVariant* binding = batch.Material
-                            ? batch.Material->ResolveRenderVariant("VertexOutline", batch.Interface)
-                            : nullptr;
+                        ResolvedVariant resolved;
+                        if (batch.Material)
+                            resolved = batch.Material->ResolveRenderVariant("VertexOutline", batch.Interface);
 
-                        if (!binding)
+                        if (!resolved)
                             continue;
 
-                        PreparedBatch pb{ std::move(batch), binding };
+                        PreparedBatch pb{ std::move(batch) };
+                        pb.program = resolved.m_program;
+                        pb.set0 = resolved.m_set0;
+                        pb.set0Layout = resolved.m_set0Layout;
                         preparedOutline->push_back(std::move(pb));
                     }
                 }

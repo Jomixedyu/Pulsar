@@ -51,13 +51,13 @@ namespace gfx
         Internal_Submit(vkBuffers.data(), vkBuffers.size());
     }
 
-    void GFXVulkanQueue::VkSubmit(GFXVulkanCommandBuffer* buffers, size_t count)
+    void GFXVulkanQueue::VkSubmit(const std::vector<std::unique_ptr<GFXVulkanCommandBuffer>>& buffers)
     {
         std::vector<VkCommandBuffer> vkBuffers;
-        vkBuffers.reserve(count);
-        for (size_t i = 0; i < count; i++)
+        vkBuffers.reserve(buffers.size());
+        for (const auto& buffer : buffers)
         {
-            vkBuffers.push_back(buffers[i].GetVkCommandBuffer());
+            vkBuffers.push_back(buffer->GetVkCommandBuffer());
         }
 
         Internal_Submit(vkBuffers.data(), vkBuffers.size());

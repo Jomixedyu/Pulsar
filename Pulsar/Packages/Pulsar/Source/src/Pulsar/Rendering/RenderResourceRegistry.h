@@ -19,6 +19,10 @@ namespace pulsar
     class RenderResourceRegistry
     {
     public:
+        RenderResourceRegistry() = default;
+        // 构造时挂 override 链的上层 registry;本层查不到的 name 转交 parent。
+        explicit RenderResourceRegistry(const RenderResourceRegistry* parent) : m_parent(parent) {}
+
         void Set(std::string_view name, gfx::GFXResource* res)
         {
             m_map[std::string(name)] = res;

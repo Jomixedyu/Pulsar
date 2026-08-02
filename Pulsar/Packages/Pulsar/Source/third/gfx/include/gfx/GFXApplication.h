@@ -43,6 +43,11 @@ namespace gfx
         // Block until the GPU has finished all submitted work.
         virtual void WaitDeviceIdle() = 0;
 
+        // Queue a staging->device copy of `size` bytes from `data` into `dst` at `dstOffset`, batched
+        // and flushed at the next frame head (no per-call submit/wait). Must be called on the render
+        // thread between the frame's resource-update drain and that frame's render submit.
+        virtual void RequestBufferUpload(GFXBuffer* dst, const void* data, size_t size, size_t dstOffset = 0) = 0;
+
         const GFXGlobalConfig& GetConfig() const
         {
             return m_config;

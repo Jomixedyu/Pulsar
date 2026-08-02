@@ -15,7 +15,12 @@ namespace pulsar
     struct PreparedBatch
     {
         rendering::MeshBatch batch;
-        const MaterialVariant* binding = nullptr;
+        // Compiled program driving pipeline creation (null => shader not ready, skip).
+        std::shared_ptr<ShaderProgramResource> program;
+        // The PerMaterial (set0) descriptor set + layout resolved from the global content cache
+        // (via MaterialProxy::ResolveRenderVariant). Bound as set 0 for the draw.
+        gfx::GFXDescriptorSet*         set0 = nullptr;
+        gfx::GFXDescriptorSetLayout_sp set0Layout;
     };
 
     class MeshRenderFeature : public RenderFeature
@@ -60,7 +65,7 @@ namespace pulsar
     {
         for (const auto& pb : entries)
         {
-            if (!pb.binding)
+            if (!pb.program)
                 continue;
 
             if (!pb.batch.Material || !pb.batch.Material->GetShaderConfig())
