@@ -3,6 +3,7 @@
 #include "Components/Component.h"
 #include "Rendering/LineRenderObject.h"
 #include "Rendering/GizmoIconBatchRenderObject.h"
+#include "Rendering/SimplePrimitiveUtils.h"
 #include "Assets/StaticMesh.h"
 #include "Assets/Shader.h"
 #include "Assets/Material.h"
@@ -41,6 +42,37 @@ namespace pulsar
         req.Tint = tint;
         req.Texture = texture;
         Context.IconRequests.push_back(std::move(req));
+    }
+
+    void GizmoPainter::DrawWireSphere(const Matrix4f& localToWorld, const Color4b& color)
+    {
+        // TODO: CPU point expansion is temporary. Replace with GPU-instanced unit-sphere
+        // draw (submit only localToWorld + color) without changing this signature.
+        static const array_list<Vector3f> unitSphere = SimplePrimitiveUtils::CreateSphere<Vector3f>(16);
+
+        array_list<StaticMeshVertex> verts;
+        verts.reserve(unitSphere.size());
+        for (const auto& p : unitSphere)
+        {
+            auto& vert = verts.emplace_back();
+            vert.Position = localToWorld * p;
+            vert.Color = color;
+        }
+        DrawLineArray(verts);
+    }
+
+    void GizmoPainter::DrawWireCube(const Matrix4f& localToWorld, const Color4b& color)
+    {
+        // TODO: CPU point expansion is temporary. Replace with GPU-instanced unit-cube draw.
+        static const auto unitCube = SimplePrimitiveUtils::CreateBox<Vector3f>();
+
+        StaticMeshVertex verts[24];
+        for (int i = 0; i < 24; ++i)
+        {
+            verts[i].Position = localToWorld * unitCube[i];
+            verts[i].Color = color;
+        }
+        DrawLines(verts, 24);
     }
 
     GizmosManager::GizmosManager()
@@ -95,11 +127,14 @@ namespace pulsar
             if (m_lineRenderObject == nullptr)
             {
                 m_lineRenderObject = mksptr(new LineRenderObject);
+                m_lineRenderObject->SetVerties(linePoints);
+                m_lineRenderObject->SetTransform(Matrix4f{1});
+                m_world->AddRenderObject(m_lineRenderObject);
             }
-            m_lineRenderObject->SetVerties(linePoints);
-
-            m_world->AddRenderObject(m_lineRenderObject);
-            m_lineRenderObject->SetTransform(Matrix4f{1});
+            else
+            {
+                m_lineRenderObject->SetVerties(linePoints);
+            }
         }
         else
         {

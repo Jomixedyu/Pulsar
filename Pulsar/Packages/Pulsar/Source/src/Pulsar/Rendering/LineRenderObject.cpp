@@ -28,6 +28,14 @@ namespace pulsar
     {
         m_verties = verties;
         Fill();
+        // Buffer may have grown inside Fill(); keep the cached batch in sync. The buffer is
+        // never shrunk, so DrawCount pins the draw to the live vertex count and prevents
+        // stale trailing vertices (e.g. leftover lines after switching scenes).
+        if (!m_batchs.empty() && !m_batchs[0].Elements.empty())
+        {
+            m_batchs[0].Elements[0].Vertex = m_vertBuffer;
+            m_batchs[0].Elements[0].DrawCount = static_cast<uint32_t>(m_verties.size());
+        }
     }
     void LineRenderObject::Fill()
     {
@@ -36,6 +44,8 @@ namespace pulsar
         if (m_vertBuffer.IsValid())
         {
             auto* buffer = resMgr->GetBuffer(m_vertBuffer);
+            // Only grow: the buffer is reused across frames and the actual draw count comes
+            // from the batch's DrawCount, so a larger-than-needed buffer is harmless.
             if (buffer && sizeof(StaticMeshVertex) * m_verties.size() > buffer->GetSize())
             {
                 resMgr->Destroy(m_vertBuffer);
@@ -47,7 +57,10 @@ namespace pulsar
         {
             gfx::GFXBufferDesc desc{};
             desc.Usage        = gfx::GFXBufferUsage::Vertex;
-            desc.StorageType  = gfx::GFXBufferMemoryPosition::DeviceLocal;
+            // Gizmo lines are rebuilt every frame from the CPU. Host-visible memory maps and
+            // copies directly; device-local would round-trip through a staging buffer that ends
+            // in vkQueueWaitIdle (a full GPU sync point) on every update.
+            desc.StorageType  = gfx::GFXBufferMemoryPosition::VisibleOnHost;
             desc.BufferSize   = m_verties.size() * sizeof(StaticMeshVertex);
             desc.ElementSize  = sizeof(StaticMeshVertex);
 
@@ -82,7 +95,7 @@ namespace pulsar
         {
             gfx::GFXBufferDesc vertexBufferDesc{};
             vertexBufferDesc.Usage       = gfx::GFXBufferUsage::Vertex;
-            vertexBufferDesc.StorageType = gfx::GFXBufferMemoryPosition::DeviceLocal;
+            vertexBufferDesc.StorageType = gfx::GFXBufferMemoryPosition::VisibleOnHost;
             vertexBufferDesc.BufferSize  = m_verties.size() * sizeof(StaticMeshVertex);
             vertexBufferDesc.ElementSize = sizeof(StaticMeshVertex);
 
@@ -100,6 +113,7 @@ namespace pulsar
         batch.ExtraDescriptorSet = m_dummyExtraSet;
         batch.Elements.resize(1);
         batch.Elements[0].Vertex = m_vertBuffer;
+        batch.Elements[0].DrawCount = static_cast<uint32_t>(m_verties.size());
         batch.State.Topology = gfx::GFXPrimitiveTopology::LineList;
         batch.State.LineWidth = 1.f;
         batch.State.VertexLayouts = {StaticMesh::StaticGetVertexLayout()};

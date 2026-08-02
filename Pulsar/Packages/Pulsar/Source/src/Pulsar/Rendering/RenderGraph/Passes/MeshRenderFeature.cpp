@@ -104,16 +104,19 @@ namespace pulsar
                 if (indicesBuffer)
                 {
                     cmdBuffer.CmdBindIndexBuffer(indicesBuffer);
-                    cmdBuffer.CmdDrawIndexed(indicesBuffer->GetElementCount());
+                    uint32_t drawCount = element.DrawCount != 0 ? element.DrawCount : indicesBuffer->GetElementCount();
+                    cmdBuffer.CmdDrawIndexed(drawCount);
                 }
                 else
                 {
-                    cmdBuffer.CmdDraw(vertBuffer->GetElementCount());
+                    uint32_t drawCount = element.DrawCount != 0 ? element.DrawCount : vertBuffer->GetElementCount();
+                    cmdBuffer.CmdDraw(drawCount);
                 }
             }
             else
             {
-                cmdBuffer.CmdDraw(vertBuffer->GetElementCount());
+                uint32_t drawCount = element.DrawCount != 0 ? element.DrawCount : vertBuffer->GetElementCount();
+                cmdBuffer.CmdDraw(drawCount);
             }
         }
     }

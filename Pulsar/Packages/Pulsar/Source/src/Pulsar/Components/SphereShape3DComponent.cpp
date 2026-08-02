@@ -10,22 +10,12 @@ namespace pulsar
     {
         base::OnDrawGizmo(painter, selected);
 
-        static array_list<Vector3f> pos = SimplePrimitiveUtils::CreateSphere<Vector3f>(16);
-
         if (selected)
         {
-            array_list<StaticMeshVertex> verts;
-            verts.reserve(pos.size());
-            auto matrix = GetTransform()->GetLocalToWorldMatrix();
-
-            for (auto p : pos)
-            {
-                auto& vert = verts.emplace_back();
-                vert.Color = painter->DefaultSelectedLineColor;
-                vert.Position = matrix * (p * m_radius);
-            }
-            painter->DrawLineArray(verts);
+            Matrix4f scale{1};
+            transutil::NewScale(scale, Vector3f{m_radius, m_radius, m_radius});
+            auto matrix = GetTransform()->GetLocalToWorldMatrix() * scale;
+            painter->DrawWireSphere(matrix, painter->DefaultSelectedLineColor);
         }
-
     }
 } // namespace pulsar

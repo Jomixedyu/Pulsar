@@ -1,5 +1,5 @@
 #include "Components/SkinnedMeshRendererComponent.h"
-#include "Rendering/SimplePrimitiveUtils.h"
+#include "TransformUtil.h"
 
 #include "AssetManager.h"
 #include <Pulsar/Application.h>
@@ -380,12 +380,6 @@ namespace pulsar
                 : Color4f{0.2f, 0.6f, 1.f, 0.8f};
             painter->Context.LineModelMatrix = Matrix4f(1.f);
 
-            static array_list<Vector3f> jointSphere = []()
-            {
-                auto sphere = SimplePrimitiveUtils::CreateSphere<Vector3f>(12);
-                return array_list<Vector3f>(sphere.begin(), sphere.end());
-            }();
-
         const bool hasBoneRefs = m_root
             && m_bones
             && m_bones->size() == bones.size();
@@ -476,20 +470,10 @@ namespace pulsar
                 }
             }
 
-            auto drawSphere = [&](const Vector3f& center, float radius, Color4b color)
-            {
-                array_list<StaticMeshVertex> sphereVerts;
-                sphereVerts.reserve(jointSphere.size());
-                for (auto p : jointSphere)
-                {
-                    auto& v = sphereVerts.emplace_back();
-                    v.Position = center + p * radius;
-                    v.Color = color;
-                }
-                painter->DrawLineArray(sphereVerts);
-            };
-
-            drawSphere(bonePos, jointRadius, jointColor);
+            Matrix4f jointMatrix{1};
+            transutil::NewScale(jointMatrix, Vector3f{jointRadius, jointRadius, jointRadius});
+            transutil::NewTranslate(jointMatrix, bonePos);
+            painter->DrawWireSphere(jointMatrix, jointColor);
         }
     }
 

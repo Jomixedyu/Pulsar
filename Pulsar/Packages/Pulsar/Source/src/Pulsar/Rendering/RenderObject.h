@@ -21,6 +21,10 @@ namespace pulsar::rendering
     {
         gfx::BufferHandle Vertex;
         gfx::BufferHandle Indices;
+        // Explicit draw count. 0 = fall back to the buffer's element count. Set this when the
+        // backing buffer may be larger than the live data (e.g. a reused, non-shrinking buffer)
+        // so the draw doesn't emit stale trailing vertices/indices.
+        uint32_t DrawCount = 0;
     };
 
     struct MeshBatch
