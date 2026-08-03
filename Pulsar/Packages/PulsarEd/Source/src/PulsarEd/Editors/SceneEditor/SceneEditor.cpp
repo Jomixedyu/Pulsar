@@ -17,6 +17,7 @@
 #include "ToolWindows/FbxInfoViewer/FbxInfoViewer.h"
 #include "ToolWindows/MenuDebugTool.h"
 #include "ToolWindows/ObjectDebugTool.h"
+#include "ToolWindows/ProfilerTool.h"
 #include "ToolWindows/ShaderDebugTool.h"
 #include "ToolWindows/WorldDebugTool.h"
 #include "Editors/CommonPanel/ConsoleWindow.h"
@@ -241,6 +242,13 @@ namespace pulsared
                 auto entry = mksptr(new MenuEntryButton("WorldDebug"));
                 entry->Action = MenuAction::FromRaw([](SPtr<MenuContexts> ctx) {
                     ToolWindow::OpenToolWindow<WorldDebugTool>();
+                });
+                menu->AddEntry(entry);
+            }
+            {
+                auto entry = mksptr(new MenuEntryButton("Profiler"));
+                entry->Action = MenuAction::FromRaw([](SPtr<MenuContexts> ctx) {
+                    ToolWindow::OpenToolWindow<ProfilerTool>();
                 });
                 menu->AddEntry(entry);
             }

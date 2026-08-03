@@ -61,8 +61,7 @@ namespace pulsared
         virtual void OnPreInitialize(gfx::GFXGlobalConfig* config) override;
         virtual void OnInitialized() override;
         virtual void OnTerminate() override;
-        virtual void OnBeginRender(float dt) override;
-        virtual void OnEndRender(float dt) override;
+        virtual void OnAppLoop(float dt) override;
         virtual bool IsQuit() override;
         World* GetEditorWorld() const
         {

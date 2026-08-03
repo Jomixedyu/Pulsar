@@ -8,6 +8,7 @@
 #include "Menus/MenuRenderer.h"
 #include "Windows/EditorWindowManager.h"
 #include "Windows/PanelWindow.h"
+#include <Pulsar/Profiler.h>
 
 namespace pulsared
 {
@@ -136,6 +137,7 @@ namespace pulsared
 
             bool isOpened = true;
             const auto winName = StringUtil::Concat(panel->GetWindowDisplayName(), "###", panel->GetWindowName());
+            PROFILE_SCOPE(winName);
             auto winClass = panel->GetGuiWindowClass();
             ImGui::SetNextWindowClass(&winClass);
             auto winSize = panel->GetWinSize();

@@ -2,6 +2,7 @@
 #include <Pulsar/Logger.h>
 #include <gfx-vk/GFXVulkanApplication.h>
 #include "AppInstance.h"
+#include "Profiler.h"
 #include "Rendering/RenderThread.h"
 #include <chrono>
 #include <cstdlib>
@@ -144,6 +145,8 @@ namespace pulsar
             float dt = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - lastTime).count();
             lastTime = currentTime;
 
+            Profiler::Get().BeginFrame();
+
             if (window->WantToClose())
             {
                 g_currentInst->RequestQuit();
@@ -163,20 +166,22 @@ namespace pulsar
             }
 
             // game tick
-            g_currentInst->OnBeginRender(dt);
+            {
+                PROFILE_SCOPE("AppLoop");
+                g_currentInst->OnAppLoop(dt);
+            }
             if (g_currentInst->IsQuit())
             {
                 break;
             }
 
             // render on the render thread, block until done
-            g_renderThread->RunFrame_AnyThread([dt] { g_gfxApp->TickRender(dt); });
-
-            g_currentInst->OnEndRender(dt);
-            if (g_currentInst->IsQuit())
             {
-                break;
+                PROFILE_SCOPE("RenderDispatch");
+                g_renderThread->RunFrame_AnyThread([dt] { g_gfxApp->TickRender(dt); });
             }
+
+            Profiler::Get().EndFrame();
         }
 
         instance->OnTerminate();

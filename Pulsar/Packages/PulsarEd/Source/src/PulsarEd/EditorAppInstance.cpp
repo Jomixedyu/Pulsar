@@ -30,6 +30,7 @@
 #include <Pulsar/Assets/DisplayEncodingSettings.h>
 #include <Pulsar/ImGuiImpl.h>
 #include <Pulsar/Logger.h>
+#include <Pulsar/Profiler.h>
 #include <Pulsar/Physics3D/RigidBodyDynamics3DComponent.h>
 #include <Pulsar/Prefab.h>
 #include <Pulsar/Scene.h>
@@ -532,54 +533,79 @@ namespace pulsared
             world->Tick(dt);
     }
 
-    void EditorAppInstance::OnBeginRender(float dt)
+    void EditorAppInstance::OnAppLoop(float dt)
     {
-        // 刷新异步 shader 编译回调（主线程）
-        if (auto* compileService = dynamic_cast<EditorShaderCompileService*>(pulsar::ShaderCompileServiceLocator::Get()))
+        PROFILE_SCOPE("EditorApp::OnAppLoop");
+
         {
-            compileService->FlushCallbacks();
+            PROFILE_SCOPE("ShaderCallbacks");
+            if (auto* compileService = dynamic_cast<EditorShaderCompileService*>(pulsar::ShaderCompileServiceLocator::Get()))
+            {
+                compileService->FlushCallbacks();
+            }
         }
 
         if (m_shaderHotReloadWatcher)
         {
+            PROFILE_SCOPE("ShaderHotReload");
             m_shaderHotReloadWatcher->Tick(dt);
         }
 
         if (!m_gui->IsMinimized())
         {
-            m_gui->NewFrame();
+            {
+                PROFILE_SCOPE("ImGuiNewFrame");
+                m_gui->NewFrame();
+            }
 
-            pulsared::EditorWindowManager::Draw(dt);
-            TickWorld(dt);
-            pulsared::EditorTickerManager::Ticker.Invoke(dt);
+            {
+                PROFILE_SCOPE("EditorWindows");
+                pulsared::EditorWindowManager::Draw(dt);
+            }
+            {
+                PROFILE_SCOPE("TickWorld");
+                TickWorld(dt);
+            }
+            {
+                PROFILE_SCOPE("EditorTickers");
+                pulsared::EditorTickerManager::Ticker.Invoke(dt);
+            }
 
             if (m_modalDialog)
             {
+                PROFILE_SCOPE("ModalDialog");
                 m_modalDialog->Tick(dt);
                 if (m_modalDialog->m_shouldClose)
                     m_modalDialog.reset();
             }
 
-            OnRenderTick.Invoke(dt);
+            {
+                PROFILE_SCOPE("OnRenderTick");
+                OnRenderTick.Invoke(dt);
+            }
 
-            m_gui->EndFrame();
+            {
+                PROFILE_SCOPE("ImGuiEndFrame");
+                m_gui->EndFrame();
+            }
 
-            // [Main thread] Finalize ImGui and deep-copy the draw data into the pipeline's
-            // snapshot. The render thread renders from the snapshot, so the next NewFrame
-            // is free to overwrite the global ImGui context.
             if (auto* pipeline = static_cast<EditorRenderPipeline*>(Application::GetGfxApp()->GetRenderPipeline()))
+            {
+                PROFILE_SCOPE("PrepareDrawData");
                 m_gui->PrepareDrawData(pipeline->ImGuiDrawSnapshot);
+            }
         }
         else
         {
-            TickWorld(dt);
-            pulsared::EditorTickerManager::Ticker.Invoke(dt);
+            {
+                PROFILE_SCOPE("TickWorld");
+                TickWorld(dt);
+            }
+            {
+                PROFILE_SCOPE("EditorTickers");
+                pulsared::EditorTickerManager::Ticker.Invoke(dt);
+            }
         }
-    }
-
-    void EditorAppInstance::OnEndRender(float dt)
-    {
-        RuntimeObjectManager::TickGCollect();
     }
 
     bool EditorAppInstance::IsQuit()

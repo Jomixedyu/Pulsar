@@ -27,7 +27,7 @@ namespace pulsar
         virtual const char* AppType() override;
         virtual void OnInitialized() override;
         virtual void OnTerminate() override;
-        virtual void OnBeginRender(float dt) override;
+        virtual void OnAppLoop(float dt) override;
         virtual bool IsQuit() override;
         virtual void RequestQuit() override;
         virtual Vector2f GetOutputScreenSize() override;
@@ -39,8 +39,6 @@ namespace pulsar
         virtual AssetManager* GetAssetManager() override;
 
         virtual void OnPreInitialize(gfx::GFXGlobalConfig* cfg) override;
-
-        virtual void OnEndRender(float d4) override;
 
     protected:
         World* m_world = nullptr;

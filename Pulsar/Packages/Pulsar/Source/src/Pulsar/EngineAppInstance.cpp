@@ -151,7 +151,7 @@ namespace pulsar
         TransientRTPool::Shutdown();
     }
 
-    void EngineAppInstance::OnBeginRender(float dt)
+    void EngineAppInstance::OnAppLoop(float dt)
     {
         auto bgc = Color4f{0.2f, 0.2f, 0.2f, 0.2};
         // RenderInterface::Clear(bgc.r, bgc.g, bgc.b, bgc.a);
@@ -167,9 +167,6 @@ namespace pulsar
 
         // RenderInterface::Render();
         // SystemInterface::PollEvents();
-    }
-    void EngineAppInstance::OnEndRender(float d4)
-    {
     }
 
     bool EngineAppInstance::IsQuit()

@@ -56,6 +56,8 @@ endforeach ()
 
 target_include_directories(PulsarLib PUBLIC "Source/src")
 target_include_directories(PulsarLib PUBLIC "Source/src/Pulsar")
+target_include_directories(PulsarLib PUBLIC "Source/third/legit_profiler")
+target_include_directories(PulsarLib PUBLIC "Source/third/imgui/include/imgui")
 
 foreach (module ${PUBLIC_MODULE})
     target_link_libraries(PulsarLib PUBLIC ${module})
