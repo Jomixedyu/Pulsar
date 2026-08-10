@@ -1,32 +1,32 @@
 #pragma once
 #include "RenderFeature.h"
 #include <Pulsar/Assets/Material.h>
+#include <Pulsar/Subsystems/VolumeStack.h>
 #include <gfx/GFXDescriptorSet.h>
 #include <gfx/GFXBuffer.h>
 #include <gfx/GFXHandle.h>
 
 namespace pulsar
 {
-    class BloomPass : public RenderFeature
+    class BloomRenderFeature : public RenderFeature
     {
     public:
-        BloomPass();
-        ~BloomPass() override;
+        BloomRenderFeature();
+        ~BloomRenderFeature() override;
 
-        void Initialize();
-        void Destroy();
-
-        void ReadSettings(const VolumeStack& stack) override;
-
-        RGTextureHandle AddToGraph(RenderGraph& graph,
-                                   RGTextureHandle input,
-                                   RGTextureHandle output,
-                                   const RenderCaptureContext& ctx) override;
-
-    public:
-        bool IsEnabled() const override;
+        void Initialize() override;
+        void Destroy() override;
+        void OnRecord(RenderGraph& graph, RenderFrameData& frameData) override;
 
     private:
+        void ReadSettings(const VolumeStack& stack);
+        bool IsEnabled() const;
+
+        RGTextureHandle RecordBloomPasses(RenderGraph& graph,
+                                          RGTextureHandle input,
+                                          RGTextureHandle output,
+                                          const RenderCaptureContext& ctx);
+
         void EnsureMaterial();
         void SetupBloomSet(gfx::GFXDescriptorSet* set, gfx::GFXTexture2DView* srcView);
         void SetupCombineSet(gfx::GFXDescriptorSet* set,
@@ -50,7 +50,6 @@ namespace pulsar
         };
 
         RCPtr<Material> m_material;
-        // Render-side mirror resolved from m_material in AddToGraph (game thread).
         std::shared_ptr<MaterialProxy> m_proxy;
 
         bool  m_bloomEnabled = true;

@@ -27,8 +27,8 @@ namespace pulsar
     public:
         ~MeshRenderFeature() override { Destroy(); }
 
-        void Initialize();
-        void Destroy();
+        void Initialize() override;
+        void Destroy() override;
 
     protected:
         virtual std::string GetPerPassLayoutName() const { return "Forward"; }

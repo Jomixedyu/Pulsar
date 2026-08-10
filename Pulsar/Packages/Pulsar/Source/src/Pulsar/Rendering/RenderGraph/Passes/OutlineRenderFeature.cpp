@@ -1,4 +1,4 @@
-#include "OutlinePass.h"
+#include "OutlineRenderFeature.h"
 #include <Pulsar/Scene.h>
 #include <Pulsar/Rendering/RenderObject.h>
 #include <Pulsar/Rendering/RenderScene.h>
@@ -13,21 +13,23 @@
 
 namespace pulsar
 {
-    static bool MaterialHasOutlinePass(const MaterialProxy* material)
+    static bool MaterialHasOutlineRenderFeature(const MaterialProxy* material)
     {
         if (!material)
             return false;
         return material->HasPass("VertexOutline");
     }
 
-    RGTextureHandle OutlinePass::AddToGraph(RenderGraph& graph,
-                                            RGTextureHandle input,
-                                            RGTextureHandle output,
-                                            const RenderCaptureContext& ctx)
+    void OutlineRenderFeature::OnRecord(RenderGraph& graph, RenderFrameData& frameData)
     {
+        auto* sceneTarget = frameData.Get<SceneTargetFrameData>();
+        if (!sceneTarget)
+            return;
+
+        auto ctx = MakeRenderCaptureContext(frameData);
         auto* scene = ctx.scene;
         if (!scene || !ctx.view)
-            return output;
+            return;
 
         const Vector3f camPos     = ctx.view->CameraPosition;
         const Vector3f camForward = ctx.view->CameraForward;
@@ -35,8 +37,8 @@ namespace pulsar
 
         auto preparedOutline = std::make_shared<array_list<PreparedBatch>>();
 
-        graph.AddPass("OutlinePass")
-            .Write(output, RGAttachmentDesc{
+        graph.AddPass("OutlineRenderFeature")
+            .Write(sceneTarget->Target, RGAttachmentDesc{
                 .colorLoadOp  = gfx::GFXRenderPassLoadOp::Load,
                 .colorStoreOp = gfx::GFXRenderPassStoreOp::Store,
                 .depthLoadOp  = gfx::GFXRenderPassLoadOp::Load,
@@ -59,7 +61,7 @@ namespace pulsar
                             continue;
                         }
 
-                        if (!MaterialHasOutlinePass(batch.Material.get()))
+                        if (!MaterialHasOutlineRenderFeature(batch.Material.get()))
                             continue;
 
                         batch.Depth = depth;
@@ -105,7 +107,6 @@ namespace pulsar
                 auto getEffectiveGP = [](const PreparedBatch& pb) -> SPtr<ShaderConfigGraphicsPipeline>
                 {
                     auto shaderConfig = pb.batch.Material->GetShaderConfig();
-                    // Outline pass 直接读 shader 原始配置，不应用 material override
                     if (auto pass = shaderConfig->FindPass("VertexOutline"))
                         return pass->GraphicsPipeline;
                     return nullptr;
@@ -114,7 +115,5 @@ namespace pulsar
                 DrawPreparedBatchList(cmdBuffer, *preparedOutline, reg,
                                       pipelineMgr, targetFBO->GetRenderTargetDesc(), getEffectiveGP);
             });
-
-        return output;
     }
 }

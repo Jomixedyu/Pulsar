@@ -1,4 +1,4 @@
-#include "TranslucencyPass.h"
+#include "TranslucencyRenderFeature.h"
 #include <Pulsar/Scene.h>
 #include <Pulsar/Rendering/RenderObject.h>
 #include <Pulsar/Rendering/RenderScene.h>
@@ -11,7 +11,21 @@
 
 namespace pulsar
 {
-    RGTextureHandle TranslucencyPass::AddToGraph(RenderGraph& graph,
+    void TranslucencyRenderFeature::OnRecord(RenderGraph& graph, RenderFrameData& frameData)
+    {
+        auto* sceneTarget = frameData.Get<SceneTargetFrameData>();
+        if (!sceneTarget)
+            return;
+
+        if (auto* opaqueColor = frameData.Get<OpaqueColorFrameData>(); opaqueColor && opaqueColor->Color.IsValid())
+            SetOpaqueColor(opaqueColor->Color);
+
+        auto ctx = MakeRenderCaptureContext(frameData);
+        sceneTarget->Target = RecordTranslucency(graph, sceneTarget->Target, sceneTarget->Target, ctx);
+        
+    }
+
+    RGTextureHandle TranslucencyRenderFeature::RecordTranslucency(RenderGraph& graph,
                                                  RGTextureHandle input,
                                                  RGTextureHandle output,
                                                  const RenderCaptureContext& ctx)
@@ -26,7 +40,7 @@ namespace pulsar
 
         auto preparedTransparent = std::make_shared<array_list<PreparedBatch>>();
 
-        auto& passBuilder = graph.AddPass("TranslucencyPass")
+        auto& passBuilder = graph.AddPass("TranslucencyRenderFeature")
             .Read(m_hOpaqueColor)
             .Write(output, RGAttachmentDesc{
                 .colorLoadOp  = gfx::GFXRenderPassLoadOp::Load,

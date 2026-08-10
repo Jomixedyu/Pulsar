@@ -7,7 +7,7 @@
 namespace pulsar
 {
     // Holds blended VolumeSettings components, keyed by their runtime Type.
-    // Similar to URP's VolumeStack, each PostProcessPass reads its own settings
+    // Similar to URP's VolumeStack, each post-process render feature reads its own settings
     // directly from the stack via GetComponent<T>().
     class VolumeStack
     {

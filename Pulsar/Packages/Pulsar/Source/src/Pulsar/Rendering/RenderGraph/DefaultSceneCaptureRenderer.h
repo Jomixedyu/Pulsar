@@ -1,11 +1,11 @@
 #pragma once
 #include "ScriptableCaptureRenderer.h"
-#include "Passes/OpaquePass.h"
-#include "Passes/TranslucencyPass.h"
-#include "Passes/OutlinePass.h"
-#include "Passes/BloomPass.h"
+#include "Passes/OpaqueRenderFeature.h"
+#include "Passes/TranslucencyRenderFeature.h"
+#include "Passes/OutlineRenderFeature.h"
+#include "Passes/BloomRenderFeature.h"
 #include "Passes/RenderFeature.h"
-#include "Passes/GizmoOverlayPass.h"
+#include "Passes/GizmoOverlayRenderFeature.h"
 #include "../PerPassData.h"
 #include <memory>
 #include <vector>
@@ -23,11 +23,11 @@ namespace pulsar
         void Render(RenderGraph& graph, const RenderCaptureContext& ctx) override;
 
     private:
-        OpaquePass m_opaquePass;
-        OutlinePass m_outlinePass;
-        TranslucencyPass m_translucencyPass;
-        std::vector<std::unique_ptr<RenderFeature>> m_postProcessFeatures;
-        GizmoOverlayPass m_gizmoOverlayPass;
+        OpaqueRenderFeature m_opaqueFeature;
+        OutlineRenderFeature m_outlineFeature;
+        TranslucencyRenderFeature m_translucencyFeature;
+        std::vector<std::unique_ptr<RenderFeature>> m_postProcessRenderFeatures;
+        GizmoOverlayRenderFeature m_gizmoOverlayFeature;
     };
 
 } // namespace pulsar

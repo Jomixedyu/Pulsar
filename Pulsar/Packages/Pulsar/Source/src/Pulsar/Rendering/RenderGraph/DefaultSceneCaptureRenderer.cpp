@@ -6,51 +6,39 @@
 #include <gfx/GFXCommandBuffer.h>
 #include <gfx/TextureClasses.h>
 
-#include "Passes/TonemapPass.h"
-#include "Passes/DisplayEncodingPass.h"
-#include "Passes/ColorGradingPass.h"
-#include "Passes/CustomPostProcessChain.h"
-#include "Passes/GizmoOverlayPass.h"
+#include "Passes/TonemapRenderFeature.h"
+#include "Passes/DisplayEncodingRenderFeature.h"
+#include "Passes/ColorGradingRenderFeature.h"
+#include "Passes/CustomPostProcessRenderFeature.h"
+#include "Passes/GizmoOverlayRenderFeature.h"
 
 namespace pulsar
 {
     DefaultSceneCaptureRenderer::DefaultSceneCaptureRenderer()
     {
-        m_opaquePass.Initialize();
-        m_outlinePass.Initialize();
-        m_translucencyPass.Initialize();
-        m_gizmoOverlayPass.Initialize();
+        m_opaqueFeature.Initialize();
+        m_outlineFeature.Initialize();
+        m_translucencyFeature.Initialize();
+        m_gizmoOverlayFeature.Initialize();
 
-        m_postProcessFeatures.push_back(std::make_unique<TonemapPass>());
-        m_postProcessFeatures.push_back(std::make_unique<CustomPostProcessChain>());
-        m_postProcessFeatures.push_back(std::make_unique<ColorGradingPass>());
-        {
-            auto bloom = std::make_unique<BloomPass>();
-            bloom->Initialize();
-            m_postProcessFeatures.push_back(std::move(bloom));
-        }
-        m_postProcessFeatures.push_back(std::make_unique<DisplayEncodingPass>());
+        m_postProcessRenderFeatures.push_back(std::make_unique<TonemapRenderFeature>());
+        m_postProcessRenderFeatures.push_back(std::make_unique<CustomPostProcessRenderFeature>());
+        m_postProcessRenderFeatures.push_back(std::make_unique<ColorGradingRenderFeature>());
+        m_postProcessRenderFeatures.push_back(std::make_unique<BloomRenderFeature>());
+        m_postProcessRenderFeatures.push_back(std::make_unique<DisplayEncodingRenderFeature>());
 
-        for (auto& feature : m_postProcessFeatures)
-        {
-            if (auto* pp = dynamic_cast<PostProcessPass*>(feature.get()))
-                pp->Initialize();
-        }
+        for (auto& feature : m_postProcessRenderFeatures)
+            feature->Initialize();
     }
 
     DefaultSceneCaptureRenderer::~DefaultSceneCaptureRenderer()
     {
-        for (auto& feature : m_postProcessFeatures)
-        {
-            if (auto* pp = dynamic_cast<PostProcessPass*>(feature.get()))
-                pp->Destroy();
-            else if (auto* bloom = dynamic_cast<BloomPass*>(feature.get()))
-                bloom->Destroy();
-        }
-        m_gizmoOverlayPass.Destroy();
-        m_translucencyPass.Destroy();
-        m_outlinePass.Destroy();
-        m_opaquePass.Destroy();
+        for (auto& feature : m_postProcessRenderFeatures)
+            feature->Destroy();
+        m_gizmoOverlayFeature.Destroy();
+        m_translucencyFeature.Destroy();
+        m_outlineFeature.Destroy();
+        m_opaqueFeature.Destroy();
     }
 
     void DefaultSceneCaptureRenderer::Render(RenderGraph& graph, const RenderCaptureContext& ctx)
@@ -146,30 +134,40 @@ namespace pulsar
             resolveTargetView = camRenderTexture.GetRenderTarget0().get();
         }
 
-        // OpaquePass (auto-resolve to final RT if MSAA is enabled)
-        m_opaquePass.OnSetup(ctx);
-        m_opaquePass.SetResolveTargetView(resolveTargetView);
-        hSceneColor = m_opaquePass.AddToGraph(graph, hSceneColor, hSceneColor, ctx);
-
-        // OutlinePass: draws vertex-expanded back-faces for materials with a VertexOutline pass
-        m_outlinePass.OnSetup(ctx);
-        hSceneColor = m_outlinePass.AddToGraph(graph, hSceneColor, hSceneColor, ctx);
-
-        // ---- Translucency: copy opaque scene color for refraction/distortion sampling ----
-        const RenderTargetSnapshot& camRT = camRenderTexture;
         auto hdrFormat = gfx::GFXTextureFormat::R16G16B16A16_SFloat;
 
+        RenderFrameData frameData;
+        frameData.Set(ctx);
+        frameData.Set(ViewFrameData{ view, ctx.viewProxy, ctx.frameIndex });
+        frameData.Set(SceneFrameData{ scene });
+        frameData.Set(GpuFrameData{
+            ctx.viewProxy ? ctx.viewProxy->GetCameraBuffer() : nullptr,
+            scene->GetWorldBuffer(),
+            scene->GetLightsBuffer(),
+            scene->GetPerRenderObjectData().GetBuffer(),
+        });
+        auto& sceneTarget = frameData.Set(SceneTargetFrameData{ hSceneColor });
+
+        // OpaqueRenderFeature (auto-resolve to final RT if MSAA is enabled)
+        m_opaqueFeature.SetResolveTargetView(resolveTargetView);
+        m_opaqueFeature.OnRecord(graph, frameData);
+
+        // OutlineRenderFeature: draws vertex-expanded back-faces for materials with a VertexOutline pass
+        m_outlineFeature.OnRecord(graph, frameData);
+
+        // ---- Translucency: copy opaque scene color for refraction/distortion sampling ----
         RGTextureDesc opaqueColorDesc{};
-        opaqueColorDesc.Width  = camRT.Width;
-        opaqueColorDesc.Height = camRT.Height;
+        opaqueColorDesc.Width  = camRenderTexture.Width;
+        opaqueColorDesc.Height = camRenderTexture.Height;
         opaqueColorDesc.TargetInfos.push_back({ gfx::GFXTextureTargetType::ColorTarget, hdrFormat });
-        auto hOpaqueColor = graph.CreateTransient("OpaqueColorTexture", opaqueColorDesc);
+        auto& opaqueColor = frameData.Set(OpaqueColorFrameData{ graph.CreateTransient("OpaqueColorTexture", opaqueColorDesc) });
+
 
         graph.AddPass("CopyOpaqueColor")
-            .Read(hSceneColor)
-            .Write(hOpaqueColor)
+            .Read(sceneTarget.Target)
+            .Write(opaqueColor.Color)
             .NoRenderPass()
-            .Execute([hSceneColor, hOpaqueColor](RGPassContext& passCtx, gfx::GFXCommandBuffer& cmdBuffer)
+            .Execute([hSceneColor = sceneTarget.Target, hOpaqueColor = opaqueColor.Color](RGPassContext& passCtx, gfx::GFXCommandBuffer& cmdBuffer)
             {
                 auto* srcRT = passCtx.Get(hSceneColor);
                 auto* dstRT = passCtx.Get(hOpaqueColor);
@@ -180,47 +178,39 @@ namespace pulsar
                 cmdBuffer.CmdBlit(srcView.get(), dstView.get());
             });
 
-        // TranslucencyPass continues drawing onto the final target
-        m_translucencyPass.OnSetup(ctx);
-        m_translucencyPass.SetOpaqueColor(hOpaqueColor);
-        hSceneColor = m_translucencyPass.AddToGraph(graph, hSceneColor, hSceneColor, ctx);
+        // TranslucencyRenderFeature continues drawing onto the final target
+        m_translucencyFeature.OnRecord(graph, frameData);
+
+        // Preserve the old post-process input semantics: post-processing starts from the final camera RT.
 
         // ---- Post-Process Features ----
-        const VolumeStack& stack = view->PostProcessStack;
-
         RGTextureDesc pingPongDesc{};
-        pingPongDesc.Width  = camRT.Width;
-        pingPongDesc.Height = camRT.Height;
+        pingPongDesc.Width  = camRenderTexture.Width;
+        pingPongDesc.Height = camRenderTexture.Height;
         pingPongDesc.TargetInfos.push_back({ gfx::GFXTextureTargetType::ColorTarget, hdrFormat });
 
-        RGTextureHandle hPingPongA = graph.CreateTransient("PostProcessPingPongA", pingPongDesc);
-        RGTextureHandle hPingPongB = graph.CreateTransient("PostProcessPingPongB", pingPongDesc);
-
-        RGTextureHandle hSrc = hFinal;
-        RGTextureHandle hDst = hPingPongA;
-
-        for (auto& feature : m_postProcessFeatures)
+        auto hPostProcessA = graph.CreateTransient("PostProcessPingPongA", pingPongDesc);
+        auto hPostProcessB = graph.CreateTransient("PostProcessPingPongB", pingPongDesc);
+        auto& postProcess = frameData.Set(PostProcessFrameData{
+            .FinalTarget = hFinal,
+            .ActiveColor = hFinal,
+            .PingPongA = hPostProcessA,
+            .PingPongB = hPostProcessB,
+        });
+        for (auto& feature : m_postProcessRenderFeatures)
         {
-            feature->OnSetup(ctx);
-            feature->ReadSettings(stack);
-            if (feature->IsEnabled())
-            {
-                hDst = feature->AddToGraph(graph, hSrc, hDst, ctx);
-                std::swap(hSrc, hDst);
-                if (hDst == hFinal)
-                    hDst = (hSrc == hPingPongA) ? hPingPongB : hPingPongA;
-            }
+            feature->OnRecord(graph, frameData);
         }
 
         // Copy final result back to camera RT if needed
-        if (hSrc != hFinal)
+        if (postProcess.ActiveColor != postProcess.FinalTarget)
         {
             gfx::GFXTexture2DView_sp fallbackView = camRenderTexture.GetRenderTarget0();
             graph.AddPass("PostProcess_CopyToFinal")
-                .Read(hSrc)
-                .Write(hFinal)
+                .Read(postProcess.ActiveColor)
+                .Write(postProcess.FinalTarget)
                 .NoRenderPass()
-                .Execute([hSrc, hFinal, fallbackView](RGPassContext& passCtx, gfx::GFXCommandBuffer& cmdBuffer)
+                .Execute([hSrc = postProcess.ActiveColor, hFinal = postProcess.FinalTarget, fallbackView](RGPassContext& passCtx, gfx::GFXCommandBuffer& cmdBuffer)
                 {
                     const auto* srcRT   = passCtx.Get(hSrc);
                     const auto* finalRT = passCtx.Get(hFinal);
@@ -245,8 +235,7 @@ namespace pulsar
         // Draw gizmos after all post-processing so they remain unaffected
         if (view->GizmoPassEnabled)
         {
-            m_gizmoOverlayPass.OnSetup(ctx);
-            m_gizmoOverlayPass.AddToGraph(graph, hFinal, hFinal, ctx);
+            m_gizmoOverlayFeature.OnRecord(graph, frameData);
         }
 
         perRenderObjectMgr.EndFrame();
