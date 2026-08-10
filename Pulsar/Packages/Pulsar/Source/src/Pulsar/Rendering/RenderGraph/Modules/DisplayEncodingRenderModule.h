@@ -1,10 +1,10 @@
 #pragma once
-#include "RenderFeature.h"
+#include "RenderModule.h"
 #include <Pulsar/Assets/Material.h>
 
 namespace pulsar
 {
-    class TonemapRenderFeature : public RenderFeature
+    class DisplayEncodingRenderModule : public RenderModule
     {
     public:
         void OnRecord(RenderGraph& graph, RenderFrameData& frameData) override;

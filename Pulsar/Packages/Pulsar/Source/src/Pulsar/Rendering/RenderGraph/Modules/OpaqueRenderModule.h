@@ -1,5 +1,5 @@
 #pragma once
-#include "MeshRenderFeature.h"
+#include "MeshRenderModule.h"
 #include <Pulsar/Rendering/RenderGraph/RenderGraph.h>
 #include <Pulsar/EngineMath.h>
 
@@ -7,7 +7,7 @@ namespace gfx { class GFXTexture2DView; }
 
 namespace pulsar
 {
-    class OpaqueRenderFeature : public MeshRenderFeature
+    class OpaqueRenderModule : public MeshRenderModule
     {
     public:
         void SetResolveTargetView(gfx::GFXTexture2DView* view) { m_resolveTargetView = view; }

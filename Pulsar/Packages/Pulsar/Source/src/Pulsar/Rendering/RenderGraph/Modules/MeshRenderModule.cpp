@@ -1,19 +1,19 @@
-#include "MeshRenderFeature.h"
+#include "MeshRenderModule.h"
 #include <Pulsar/Rendering/DescriptorSetCache.h>
 #include <Pulsar/Rendering/DescriptorSetAssembler.h>
 #include <Pulsar/Application.h>
 
 namespace pulsar
 {
-    void MeshRenderFeature::Initialize()
+    void MeshRenderModule::Initialize()
     {
     }
 
-    void MeshRenderFeature::Destroy()
+    void MeshRenderModule::Destroy()
     {
     }
 
-    gfx::GFXDescriptorSet* MeshRenderFeature::ResolvePerPassSet(
+    gfx::GFXDescriptorSet* MeshRenderModule::ResolvePerPassSet(
         const PreparedBatch& pb, const RenderResourceRegistry& reg)
     {
         const ShaderPropertySetLayout* set1 = pb.program->m_layout.FindSet(1);
@@ -21,7 +21,7 @@ namespace pulsar
         return DescriptorSetCache::Instance().Get(layout, set1, reg);
     }
 
-    void MeshRenderFeature::DrawPreparedBatch(
+    void MeshRenderModule::DrawPreparedBatch(
         gfx::GFXCommandBuffer& cmdBuffer,
         const PreparedBatch& pb,
         const RenderResourceRegistry& reg,

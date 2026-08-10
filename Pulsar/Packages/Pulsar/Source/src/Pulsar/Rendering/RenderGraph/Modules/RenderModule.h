@@ -131,10 +131,10 @@ namespace pulsar
         }
         return ctx;
     }
-    class RenderFeature
+    class RenderModule
     {
     public:
-        virtual ~RenderFeature() = default;
+        virtual ~RenderModule() = default;
 
         virtual void Initialize() {}
         virtual void Destroy() {}

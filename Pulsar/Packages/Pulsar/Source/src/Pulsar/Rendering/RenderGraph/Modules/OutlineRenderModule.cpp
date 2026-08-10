@@ -1,4 +1,4 @@
-#include "OutlineRenderFeature.h"
+#include "OutlineRenderModule.h"
 #include <Pulsar/Scene.h>
 #include <Pulsar/Rendering/RenderObject.h>
 #include <Pulsar/Rendering/RenderScene.h>
@@ -13,14 +13,14 @@
 
 namespace pulsar
 {
-    static bool MaterialHasOutlineRenderFeature(const MaterialProxy* material)
+    static bool MaterialHasVertexOutlinePass(const MaterialProxy* material)
     {
         if (!material)
             return false;
         return material->HasPass("VertexOutline");
     }
 
-    void OutlineRenderFeature::OnRecord(RenderGraph& graph, RenderFrameData& frameData)
+    void OutlineRenderModule::OnRecord(RenderGraph& graph, RenderFrameData& frameData)
     {
         auto* sceneTarget = frameData.Get<SceneTargetFrameData>();
         if (!sceneTarget)
@@ -37,7 +37,7 @@ namespace pulsar
 
         auto preparedOutline = std::make_shared<array_list<PreparedBatch>>();
 
-        graph.AddPass("OutlineRenderFeature")
+        graph.AddPass("Outline")
             .Write(sceneTarget->Target, RGAttachmentDesc{
                 .colorLoadOp  = gfx::GFXRenderPassLoadOp::Load,
                 .colorStoreOp = gfx::GFXRenderPassStoreOp::Store,
@@ -61,7 +61,7 @@ namespace pulsar
                             continue;
                         }
 
-                        if (!MaterialHasOutlineRenderFeature(batch.Material.get()))
+                        if (!MaterialHasVertexOutlinePass(batch.Material.get()))
                             continue;
 
                         batch.Depth = depth;

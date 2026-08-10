@@ -1,10 +1,10 @@
 #pragma once
-#include "RenderFeature.h"
+#include "RenderModule.h"
 #include <Pulsar/Assets/Material.h>
 
 namespace pulsar
 {
-    class ColorGradingRenderFeature : public RenderFeature
+    class ColorGradingRenderModule : public RenderModule
     {
     public:
         void OnRecord(RenderGraph& graph, RenderFrameData& frameData) override;

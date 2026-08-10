@@ -1,4 +1,4 @@
-#include "BloomRenderFeature.h"
+#include "BloomRenderModule.h"
 #include <Pulsar/Assets/BloomSettings.h>
 #include <Pulsar/Rendering/SceneView.h>
 #include <Pulsar/Assets/RenderTexture.h>
@@ -14,7 +14,7 @@
 
 namespace pulsar
 {
-    void BloomRenderFeature::OnRecord(RenderGraph& graph, RenderFrameData& frameData)
+    void BloomRenderModule::OnRecord(RenderGraph& graph, RenderFrameData& frameData)
     {
         auto* postProcess = frameData.Get<PostProcessFrameData>();
         auto* view = frameData.Get<ViewFrameData>();
@@ -31,7 +31,7 @@ namespace pulsar
         postProcess->PushColor(result);
     }
 
-    BloomRenderFeature::BloomRenderFeature()
+    BloomRenderModule::BloomRenderModule()
     {
         auto shader = AssetManager::Get()->LoadAsset<Shader>("Pulsar/Shaders/NapBloom");
         if (!shader)
@@ -41,9 +41,9 @@ namespace pulsar
         m_material->CreateGPUResource();
     }
 
-    BloomRenderFeature::~BloomRenderFeature() = default;
+    BloomRenderModule::~BloomRenderModule() = default;
 
-    void BloomRenderFeature::Initialize()
+    void BloomRenderModule::Initialize()
     {
         auto gfxApp = Application::GetGfxApp();
 
@@ -107,7 +107,7 @@ namespace pulsar
         }
     }
 
-    void BloomRenderFeature::Destroy()
+    void BloomRenderModule::Destroy()
     {
         auto* resMgr = Application::GetGfxApp()->GetResourceManager();
         for (auto& h : m_bloomParamBuffers)
@@ -121,7 +121,7 @@ namespace pulsar
         m_combineLayout.reset();
     }
 
-    void BloomRenderFeature::EnsureMaterial()
+    void BloomRenderModule::EnsureMaterial()
     {
         if (m_material)
             return;
@@ -134,12 +134,12 @@ namespace pulsar
         m_material->CreateGPUResource();
     }
 
-    bool BloomRenderFeature::IsEnabled() const
+    bool BloomRenderModule::IsEnabled() const
     {
         return m_material != nullptr && m_bloomEnabled;
     }
 
-    void BloomRenderFeature::ReadSettings(const VolumeStack& stack)
+    void BloomRenderModule::ReadSettings(const VolumeStack& stack)
     {
         auto* settings = stack.GetComponent<BloomSettings>();
         if (settings)
@@ -156,7 +156,7 @@ namespace pulsar
         }
     }
 
-    void BloomRenderFeature::WriteBloomParams(uint32_t idx, const Vector2f& texelSize, const Vector2f& direction, int32_t sampleMode, float threshold)
+    void BloomRenderModule::WriteBloomParams(uint32_t idx, const Vector2f& texelSize, const Vector2f& direction, int32_t sampleMode, float threshold)
     {
         if (idx >= m_bloomParamBuffers.size() || !m_bloomParamBuffers[idx].IsValid())
             return;
@@ -173,7 +173,7 @@ namespace pulsar
         buffer->Update(&params);
     }
 
-    void BloomRenderFeature::SetupBloomSet(gfx::GFXDescriptorSet* set, gfx::GFXTexture2DView* srcView)
+    void BloomRenderModule::SetupBloomSet(gfx::GFXDescriptorSet* set, gfx::GFXTexture2DView* srcView)
     {
         if (!set)
             return;
@@ -186,7 +186,7 @@ namespace pulsar
         set->Submit();
     }
 
-    void BloomRenderFeature::SetupCombineSet(gfx::GFXDescriptorSet* set,
+    void BloomRenderModule::SetupCombineSet(gfx::GFXDescriptorSet* set,
                                     gfx::GFXTexture2DView* srcView,
                                     gfx::GFXTexture2DView* v0,
                                     gfx::GFXTexture2DView* v1,
@@ -212,7 +212,7 @@ namespace pulsar
         set->Submit();
     }
 
-    RGTextureHandle BloomRenderFeature::RecordBloomPasses(RenderGraph& graph,
+    RGTextureHandle BloomRenderModule::RecordBloomPasses(RenderGraph& graph,
                                           RGTextureHandle input,
                                           RGTextureHandle output,
                                           const RenderCaptureContext& ctx)

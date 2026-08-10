@@ -1,9 +1,9 @@
 #pragma once
-#include "MeshRenderFeature.h"
+#include "MeshRenderModule.h"
 
 namespace pulsar
 {
-    class GizmoOverlayRenderFeature : public MeshRenderFeature
+    class GizmoOverlayRenderModule : public MeshRenderModule
     {
     public:
         void OnRecord(RenderGraph& graph, RenderFrameData& frameData) override;

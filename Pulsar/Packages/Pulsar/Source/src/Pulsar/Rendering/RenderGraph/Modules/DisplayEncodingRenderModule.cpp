@@ -1,18 +1,18 @@
-#include "TonemapRenderFeature.h"
-#include "BlitPass.h"
+#include "DisplayEncodingRenderModule.h"
+#include "../Passes/BlitPass.h"
 #include <Pulsar/AssetManager.h>
+#include <Pulsar/Assets/DisplayEncodingSettings.h>
 #include <Pulsar/Assets/Shader.h>
-#include <Pulsar/Assets/TonemappingSettings.h>
 #include <Pulsar/Rendering/SceneView.h>
 
 namespace pulsar
 {
-    void TonemapRenderFeature::EnsureMaterial()
+    void DisplayEncodingRenderModule::EnsureMaterial()
     {
         if (m_material)
             return;
 
-        auto shader = AssetManager::Get()->LoadAsset<Shader>("Pulsar/Shaders/Tonemap");
+        auto shader = AssetManager::Get()->LoadAsset<Shader>("Pulsar/Shaders/DisplayEncoding");
         if (!shader)
             return;
 
@@ -20,14 +20,14 @@ namespace pulsar
         m_material->CreateGPUResource();
     }
 
-    void TonemapRenderFeature::OnRecord(RenderGraph& graph, RenderFrameData& frameData)
+    void DisplayEncodingRenderModule::OnRecord(RenderGraph& graph, RenderFrameData& frameData)
     {
         auto* view = frameData.Get<ViewFrameData>();
         auto* postProcess = frameData.Get<PostProcessFrameData>();
         if (!view || !view->ViewData || !postProcess)
             return;
 
-        auto* settings = view->ViewData->PostProcessStack.GetComponent<TonemappingSettings>();
+        auto* settings = view->ViewData->PostProcessStack.GetComponent<DisplayEncodingSettings>();
         if (!settings || !settings->m_enabled)
             return;
 
@@ -35,7 +35,6 @@ namespace pulsar
         if (!m_material)
             return;
 
-        m_material->SetIntScalar("_TonemappingMode", static_cast<int>(settings->m_mode));
         m_material->SubmitParameters();
 
         auto proxy = m_material->GetRenderProxy();
@@ -45,7 +44,7 @@ namespace pulsar
         auto destination = postProcess->AcquireTarget();
         auto* gpu = frameData.Get<GpuFrameData>();
         auto result = BlitPass::AddToGraph(graph, {
-            .Name = "PostProcess_Tonemap",
+            .Name = "PostProcess_DisplayEncoding",
             .Source = postProcess->ActiveColor,
             .Destination = destination,
             .Material = std::move(proxy),

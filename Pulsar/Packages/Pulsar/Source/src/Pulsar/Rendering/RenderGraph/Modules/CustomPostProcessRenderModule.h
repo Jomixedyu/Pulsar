@@ -1,9 +1,9 @@
 #pragma once
-#include "RenderFeature.h"
+#include "RenderModule.h"
 
 namespace pulsar
 {
-    class CustomPostProcessRenderFeature : public RenderFeature
+    class CustomPostProcessRenderModule : public RenderModule
     {
     public:
         void OnRecord(RenderGraph& graph, RenderFrameData& frameData) override;

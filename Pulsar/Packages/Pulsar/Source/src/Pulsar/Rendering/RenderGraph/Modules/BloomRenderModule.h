@@ -1,5 +1,5 @@
 #pragma once
-#include "RenderFeature.h"
+#include "RenderModule.h"
 #include <Pulsar/Assets/Material.h>
 #include <Pulsar/Subsystems/VolumeStack.h>
 #include <gfx/GFXDescriptorSet.h>
@@ -8,11 +8,11 @@
 
 namespace pulsar
 {
-    class BloomRenderFeature : public RenderFeature
+    class BloomRenderModule : public RenderModule
     {
     public:
-        BloomRenderFeature();
-        ~BloomRenderFeature() override;
+        BloomRenderModule();
+        ~BloomRenderModule() override;
 
         void Initialize() override;
         void Destroy() override;

@@ -6,39 +6,39 @@
 #include <gfx/GFXCommandBuffer.h>
 #include <gfx/TextureClasses.h>
 
-#include "Passes/TonemapRenderFeature.h"
-#include "Passes/DisplayEncodingRenderFeature.h"
-#include "Passes/ColorGradingRenderFeature.h"
-#include "Passes/CustomPostProcessRenderFeature.h"
-#include "Passes/GizmoOverlayRenderFeature.h"
+#include "Modules/TonemapRenderModule.h"
+#include "Modules/DisplayEncodingRenderModule.h"
+#include "Modules/ColorGradingRenderModule.h"
+#include "Modules/CustomPostProcessRenderModule.h"
+#include "Modules/GizmoOverlayRenderModule.h"
 
 namespace pulsar
 {
     DefaultSceneCaptureRenderer::DefaultSceneCaptureRenderer()
     {
-        m_opaqueFeature.Initialize();
-        m_outlineFeature.Initialize();
-        m_translucencyFeature.Initialize();
-        m_gizmoOverlayFeature.Initialize();
+        m_opaqueModule.Initialize();
+        m_outlineModule.Initialize();
+        m_translucencyModule.Initialize();
+        m_gizmoOverlayModule.Initialize();
 
-        m_postProcessRenderFeatures.push_back(std::make_unique<TonemapRenderFeature>());
-        m_postProcessRenderFeatures.push_back(std::make_unique<CustomPostProcessRenderFeature>());
-        m_postProcessRenderFeatures.push_back(std::make_unique<ColorGradingRenderFeature>());
-        m_postProcessRenderFeatures.push_back(std::make_unique<BloomRenderFeature>());
-        m_postProcessRenderFeatures.push_back(std::make_unique<DisplayEncodingRenderFeature>());
+        m_postProcessRenderModules.push_back(std::make_unique<TonemapRenderModule>());
+        m_postProcessRenderModules.push_back(std::make_unique<CustomPostProcessRenderModule>());
+        m_postProcessRenderModules.push_back(std::make_unique<ColorGradingRenderModule>());
+        m_postProcessRenderModules.push_back(std::make_unique<BloomRenderModule>());
+        m_postProcessRenderModules.push_back(std::make_unique<DisplayEncodingRenderModule>());
 
-        for (auto& feature : m_postProcessRenderFeatures)
-            feature->Initialize();
+        for (auto& module : m_postProcessRenderModules)
+            module->Initialize();
     }
 
     DefaultSceneCaptureRenderer::~DefaultSceneCaptureRenderer()
     {
-        for (auto& feature : m_postProcessRenderFeatures)
-            feature->Destroy();
-        m_gizmoOverlayFeature.Destroy();
-        m_translucencyFeature.Destroy();
-        m_outlineFeature.Destroy();
-        m_opaqueFeature.Destroy();
+        for (auto& module : m_postProcessRenderModules)
+            module->Destroy();
+        m_gizmoOverlayModule.Destroy();
+        m_translucencyModule.Destroy();
+        m_outlineModule.Destroy();
+        m_opaqueModule.Destroy();
     }
 
     void DefaultSceneCaptureRenderer::Render(RenderGraph& graph, const RenderCaptureContext& ctx)
@@ -148,12 +148,12 @@ namespace pulsar
         });
         auto& sceneTarget = frameData.Set(SceneTargetFrameData{ hSceneColor });
 
-        // OpaqueRenderFeature (auto-resolve to final RT if MSAA is enabled)
-        m_opaqueFeature.SetResolveTargetView(resolveTargetView);
-        m_opaqueFeature.OnRecord(graph, frameData);
+        // OpaqueRenderModule (auto-resolve to final RT if MSAA is enabled)
+        m_opaqueModule.SetResolveTargetView(resolveTargetView);
+        m_opaqueModule.OnRecord(graph, frameData);
 
-        // OutlineRenderFeature: draws vertex-expanded back-faces for materials with a VertexOutline pass
-        m_outlineFeature.OnRecord(graph, frameData);
+        // OutlineRenderModule: draws vertex-expanded back-faces for materials with a VertexOutline pass
+        m_outlineModule.OnRecord(graph, frameData);
 
         // ---- Translucency: copy opaque scene color for refraction/distortion sampling ----
         RGTextureDesc opaqueColorDesc{};
@@ -178,8 +178,8 @@ namespace pulsar
                 cmdBuffer.CmdBlit(srcView.get(), dstView.get());
             });
 
-        // TranslucencyRenderFeature continues drawing onto the final target
-        m_translucencyFeature.OnRecord(graph, frameData);
+        // TranslucencyRenderModule continues drawing onto the final target
+        m_translucencyModule.OnRecord(graph, frameData);
 
         // Preserve the old post-process input semantics: post-processing starts from the final camera RT.
 
@@ -197,9 +197,9 @@ namespace pulsar
             .PingPongA = hPostProcessA,
             .PingPongB = hPostProcessB,
         });
-        for (auto& feature : m_postProcessRenderFeatures)
+        for (auto& module : m_postProcessRenderModules)
         {
-            feature->OnRecord(graph, frameData);
+            module->OnRecord(graph, frameData);
         }
 
         // Copy final result back to camera RT if needed
@@ -235,7 +235,7 @@ namespace pulsar
         // Draw gizmos after all post-processing so they remain unaffected
         if (view->GizmoPassEnabled)
         {
-            m_gizmoOverlayFeature.OnRecord(graph, frameData);
+            m_gizmoOverlayModule.OnRecord(graph, frameData);
         }
 
         perRenderObjectMgr.EndFrame();

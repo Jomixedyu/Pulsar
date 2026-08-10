@@ -1,18 +1,18 @@
-#include "ColorGradingRenderFeature.h"
-#include "BlitPass.h"
+#include "TonemapRenderModule.h"
+#include "../Passes/BlitPass.h"
 #include <Pulsar/AssetManager.h>
-#include <Pulsar/Assets/ColorGradingSettings.h>
 #include <Pulsar/Assets/Shader.h>
+#include <Pulsar/Assets/TonemappingSettings.h>
 #include <Pulsar/Rendering/SceneView.h>
 
 namespace pulsar
 {
-    void ColorGradingRenderFeature::EnsureMaterial()
+    void TonemapRenderModule::EnsureMaterial()
     {
         if (m_material)
             return;
 
-        auto shader = AssetManager::Get()->LoadAsset<Shader>("Pulsar/Shaders/LUT");
+        auto shader = AssetManager::Get()->LoadAsset<Shader>("Pulsar/Shaders/Tonemap");
         if (!shader)
             return;
 
@@ -20,25 +20,22 @@ namespace pulsar
         m_material->CreateGPUResource();
     }
 
-    void ColorGradingRenderFeature::OnRecord(RenderGraph& graph, RenderFrameData& frameData)
+    void TonemapRenderModule::OnRecord(RenderGraph& graph, RenderFrameData& frameData)
     {
         auto* view = frameData.Get<ViewFrameData>();
         auto* postProcess = frameData.Get<PostProcessFrameData>();
         if (!view || !view->ViewData || !postProcess)
             return;
 
-        auto* settings = view->ViewData->PostProcessStack.GetComponent<ColorGradingSettings>();
-        if (!settings || !settings->m_enabled || !settings->m_lutTexture)
+        auto* settings = view->ViewData->PostProcessStack.GetComponent<TonemappingSettings>();
+        if (!settings || !settings->m_enabled)
             return;
 
         EnsureMaterial();
         if (!m_material)
             return;
 
-        m_material->SetTexture("_LUTTex", settings->m_lutTexture);
-        m_material->SetFloat("_Intensity", settings->m_intensity);
-        m_material->SetIntScalar("_LUTSize", settings->m_lutSize);
-        m_material->SetIntScalar("_ColorSpace", static_cast<int>(settings->m_colorSpace));
+        m_material->SetIntScalar("_TonemappingMode", static_cast<int>(settings->m_mode));
         m_material->SubmitParameters();
 
         auto proxy = m_material->GetRenderProxy();
@@ -48,7 +45,7 @@ namespace pulsar
         auto destination = postProcess->AcquireTarget();
         auto* gpu = frameData.Get<GpuFrameData>();
         auto result = BlitPass::AddToGraph(graph, {
-            .Name = "PostProcess_LUT",
+            .Name = "PostProcess_Tonemap",
             .Source = postProcess->ActiveColor,
             .Destination = destination,
             .Material = std::move(proxy),

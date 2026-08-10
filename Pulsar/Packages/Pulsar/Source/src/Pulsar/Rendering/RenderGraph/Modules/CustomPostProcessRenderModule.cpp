@@ -1,12 +1,12 @@
-#include "CustomPostProcessRenderFeature.h"
-#include "BlitPass.h"
+#include "CustomPostProcessRenderModule.h"
+#include "../Passes/BlitPass.h"
 #include <Pulsar/Assets/Material.h>
 #include <Pulsar/Rendering/SceneView.h>
 #include <string>
 
 namespace pulsar
 {
-    void CustomPostProcessRenderFeature::OnRecord(RenderGraph& graph, RenderFrameData& frameData)
+    void CustomPostProcessRenderModule::OnRecord(RenderGraph& graph, RenderFrameData& frameData)
     {
         auto* view = frameData.Get<ViewFrameData>();
         auto* postProcess = frameData.Get<PostProcessFrameData>();

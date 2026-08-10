@@ -1,5 +1,5 @@
 #pragma once
-#include "RenderFeature.h"
+#include "RenderModule.h"
 #include <Pulsar/Rendering/RenderObject.h>
 #include <Pulsar/Rendering/ShaderPass.h>
 #include <Pulsar/Rendering/RenderResourceRegistry.h>
@@ -22,10 +22,10 @@ namespace pulsar
         gfx::GFXDescriptorSetLayout_sp set0Layout;
     };
 
-    class MeshRenderFeature : public RenderFeature
+    class MeshRenderModule : public RenderModule
     {
     public:
-        ~MeshRenderFeature() override { Destroy(); }
+        ~MeshRenderModule() override { Destroy(); }
 
         void Initialize() override;
         void Destroy() override;
@@ -58,7 +58,7 @@ namespace pulsar
     };
 
     template<typename TGetEffectiveGP>
-    inline void MeshRenderFeature::DrawPreparedBatchList(
+    inline void MeshRenderModule::DrawPreparedBatchList(
         gfx::GFXCommandBuffer& cmdBuffer,
         const array_list<PreparedBatch>& entries,
         const RenderResourceRegistry& reg,

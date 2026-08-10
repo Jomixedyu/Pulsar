@@ -1,5 +1,4 @@
-#include "OpaqueRenderFeature.h"
-#include <Pulsar/Scene.h>
+#include "GizmoOverlayRenderModule.h"
 #include <Pulsar/Rendering/RenderObject.h>
 #include <Pulsar/Rendering/RenderScene.h>
 #include <Pulsar/Rendering/SceneView.h>
@@ -11,21 +10,20 @@
 
 namespace pulsar
 {
-    void OpaqueRenderFeature::OnRecord(RenderGraph& graph, RenderFrameData& frameData)
+    void GizmoOverlayRenderModule::OnRecord(RenderGraph& graph, RenderFrameData& frameData)
     {
-        auto* sceneTarget = frameData.Get<SceneTargetFrameData>();
-        if (!sceneTarget)
+        auto* postProcess = frameData.Get<PostProcessFrameData>();
+        if (!postProcess)
             return;
 
         auto ctx = MakeRenderCaptureContext(frameData);
-        sceneTarget->Target = RecordOpaque(graph, sceneTarget->Target, sceneTarget->Target, ctx);
-        
+        RecordOverlayPass(graph, postProcess->FinalTarget, postProcess->FinalTarget, ctx);
     }
 
-    RGTextureHandle OpaqueRenderFeature::RecordOpaque(RenderGraph& graph,
-                                           RGTextureHandle input,
-                                           RGTextureHandle output,
-                                           const RenderCaptureContext& ctx)
+    RGTextureHandle GizmoOverlayRenderModule::RecordOverlayPass(RenderGraph& graph,
+                                                 RGTextureHandle input,
+                                                 RGTextureHandle output,
+                                                 const RenderCaptureContext& ctx)
     {
         auto* scene = ctx.scene;
         if (!scene || !ctx.view)
@@ -35,33 +33,28 @@ namespace pulsar
         const Vector3f camForward = ctx.view->CameraForward;
         SceneView* viewProxy      = ctx.viewProxy;
 
-        auto preparedOpaque      = std::make_shared<array_list<PreparedBatch>>();
-        auto preparedAlphaTest   = std::make_shared<array_list<PreparedBatch>>();
+        auto preparedOverlay = std::make_shared<array_list<PreparedBatch>>();
 
-        graph.AddPass("Opaque")
+        graph.AddPass("GizmoOverlay")
             .Write(output, RGAttachmentDesc{
-                .colorLoadOp  = gfx::GFXRenderPassLoadOp::Clear,
-                .colorStoreOp = m_resolveTargetView ? gfx::GFXRenderPassStoreOp::DontCare : gfx::GFXRenderPassStoreOp::Store,
-                .clearColor   = {0.3f, 0.3f, 0.3f, 1.f},
-                .depthLoadOp  = gfx::GFXRenderPassLoadOp::Clear,
-                .depthStoreOp = gfx::GFXRenderPassStoreOp::Store,
-                .clearDepth   = 1.f,
-                .resolveTargetView = m_resolveTargetView,
+                .colorLoadOp  = gfx::GFXRenderPassLoadOp::Load,
+                .colorStoreOp = gfx::GFXRenderPassStoreOp::Store,
+                .depthLoadOp  = gfx::GFXRenderPassLoadOp::Load,
+                .depthStoreOp = gfx::GFXRenderPassStoreOp::DontCare,
             })
-            .Prepare([scene, camPos, camForward, preparedOpaque, preparedAlphaTest, this](RGPassContext&)
+            .Prepare([scene, camPos, camForward, preparedOverlay, this](RGPassContext&)
             {
                 for (const rendering::RenderObject_sp& ro : scene->GetRenderObjects())
                 {
                     const float depth = jmath::Dot(camForward, ro->GetWorldPosition() - camPos);
                     for (auto batch : ro->GetMeshBatches())
                     {
-                        batch.Depth = depth;
-                        if (!batch.Material)
+                        if (!batch.Material || batch.Material->GetQueue() != ShaderPassRenderQueueType::Overlay)
                             continue;
 
+                        batch.Depth = depth;
                         auto resolved = batch.Material->ResolveRenderVariant("Forward", batch.Interface);
 
-                        auto queue = batch.Material->GetQueue();
                         PreparedBatch pb{ std::move(batch) };
                         if (resolved)
                         {
@@ -69,33 +62,18 @@ namespace pulsar
                             pb.set0 = resolved.m_set0;
                             pb.set0Layout = resolved.m_set0Layout;
                         }
-                        switch (queue)
-                        {
-                        case ShaderPassRenderQueueType::AlphaTest:
-                            preparedAlphaTest->push_back(std::move(pb));
-                            break;
-                        case ShaderPassRenderQueueType::Transparency:
-                            // Transparency is handled by TranslucencyRenderFeature
-                            break;
-                        case ShaderPassRenderQueueType::Overlay:
-                            // Overlay batches are drawn after post-processing in GizmoOverlayRenderFeature
-                            break;
-                        default:
-                            preparedOpaque->push_back(std::move(pb));
-                            break;
-                        }
+                        preparedOverlay->push_back(std::move(pb));
                     }
                 }
 
-                auto sortAsc  = [](const PreparedBatch& a, const PreparedBatch& b)
+                auto sortAsc = [](const PreparedBatch& a, const PreparedBatch& b)
                 {
                     if (a.batch.Priority != b.batch.Priority) return a.batch.Priority < b.batch.Priority;
                     return a.batch.Depth < b.batch.Depth;
                 };
-                std::sort(preparedOpaque->begin(),      preparedOpaque->end(),      sortAsc);
-                std::sort(preparedAlphaTest->begin(),   preparedAlphaTest->end(),   sortAsc);
+                std::sort(preparedOverlay->begin(), preparedOverlay->end(), sortAsc);
             })
-            .Execute([scene, viewProxy, preparedOpaque, preparedAlphaTest, this]
+            .Execute([scene, viewProxy, preparedOverlay, this]
                      (RGPassContext& ctx, gfx::GFXCommandBuffer& cmdBuffer)
             {
                 auto* targetFBO = cmdBuffer.GetFrameBuffer();
@@ -113,17 +91,16 @@ namespace pulsar
                 auto getEffectiveGP = [](const PreparedBatch& pb) -> SPtr<ShaderConfigGraphicsPipeline>
                 {
                     auto shaderConfig = pb.batch.Material->GetShaderConfig();
+                    // GizmoOverlay pass 直接读 shader 原始配置，不应用 material override
                     if (shaderConfig->Passes && shaderConfig->Passes->size() > 0)
                     {
                         auto& passConfig = (*shaderConfig->Passes)[0];
-                        return pb.batch.Material->GetEffectiveGraphicsPipeline(passConfig->Name);
+                        return passConfig->GraphicsPipeline;
                     }
                     return nullptr;
                 };
 
-                DrawPreparedBatchList(cmdBuffer, *preparedOpaque, reg,
-                                      pipelineMgr, targetFBO->GetRenderTargetDesc(), getEffectiveGP);
-                DrawPreparedBatchList(cmdBuffer, *preparedAlphaTest, reg,
+                DrawPreparedBatchList(cmdBuffer, *preparedOverlay, reg,
                                       pipelineMgr, targetFBO->GetRenderTargetDesc(), getEffectiveGP);
             });
 

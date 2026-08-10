@@ -1,10 +1,10 @@
 #pragma once
-#include "MeshRenderFeature.h"
+#include "MeshRenderModule.h"
 #include <Pulsar/Rendering/RenderGraph/RenderGraph.h>
 
 namespace pulsar
 {
-    class TranslucencyRenderFeature : public MeshRenderFeature
+    class TranslucencyRenderModule : public MeshRenderModule
     {
     public:
         void SetOpaqueColor(RGTextureHandle h) { m_hOpaqueColor = h; }
