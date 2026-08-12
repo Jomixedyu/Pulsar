@@ -23,8 +23,8 @@ namespace pulsar
     }
 
     Scene::Scene()
+        : m_settings(mksptr(new SceneSettings()))
     {
-
     }
 
     RCPtr<Scene> Scene::StaticCreate(string_view name)

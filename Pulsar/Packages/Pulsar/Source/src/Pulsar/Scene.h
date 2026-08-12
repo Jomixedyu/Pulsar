@@ -7,6 +7,7 @@
 #include <Pulsar/Assets/NodeCollection.h>
 #include <Pulsar/Node.h>
 #include <Pulsar/ObjectBase.h>
+#include <Pulsar/Settings/SceneSettings.h>
 #include <vector>
 
 namespace pulsar
@@ -32,14 +33,15 @@ namespace pulsar
         static RCPtr<Scene> StaticCreate(string_view name);
 
         SceneRuntimeEnvironment* GetRuntimeEnvironment() override { return &m_runtimeEnvironment; }
+        SceneSettings* GetSettings() { return m_settings.get(); }
 
     protected:
         void OnDestroy() override;
     private:
         SceneRuntimeEnvironment m_runtimeEnvironment{};
 
-        CORELIB_REFL_DECL_FIELD(m_cubemap);
-        CubeMapAsset_ref m_cubemap;
+        CORELIB_REFL_DECL_FIELD(m_settings);
+        SPtr<SceneSettings> m_settings;
     };
     DECL_PTR(Scene);
 }

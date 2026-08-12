@@ -2,6 +2,7 @@
 #include <CoreLib/Events.hpp>
 #include <Pulsar/ObjectBase.h>
 #include <Pulsar/World.h>
+#include <Pulsar/Settings/GlobalSettings.h>
 #include <gfx/GFXApplication.h>
 #include <uinput/InputManager.h>
 
@@ -16,7 +17,8 @@ namespace pulsar
     {
         friend class Application;
     public:
-        virtual ~AppInstance() = default;
+        AppInstance();
+        virtual ~AppInstance();
         virtual const char* AppType() = 0;
         virtual void RequestQuit() = 0;
         virtual Vector2f GetOutputScreenSize() = 0;
@@ -39,6 +41,8 @@ namespace pulsar
 
         virtual AssetManager* GetAssetManager() = 0;
 
+        GlobalSettings* GetGlobalSettings() { return &m_globalSettings; }
+        RenderSettings* GetRenderSettings() { return m_globalSettings.GetRenderSettings(); }
         virtual void OnPreInitialize(gfx::GFXGlobalConfig* cfg) = 0;
         virtual void OnInitialized() = 0;
         virtual void OnTerminate() = 0;
@@ -48,6 +52,6 @@ namespace pulsar
         Action<float> OnRenderTick;
 
     protected:
-
+        GlobalSettings m_globalSettings;
     };
 }
