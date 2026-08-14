@@ -1,4 +1,6 @@
 #include "ViewPipelineAsset.h"
+#include <CoreLib/Assembly.h>
+#include <CoreLib.Serialization/JsonSerializer.h>
 
 namespace pulsar
 {
@@ -11,24 +13,41 @@ namespace pulsar
     {
         base::Serialize(serializer);
 
+        ser::JsonSerializerSettings settings{};
+        settings.SaveObjectType = true;
+
         if (serializer->IsWrite)
         {
-            auto features = serializer->Object->New(ser::VarientType::Array);
+            auto featuresArray = serializer->Object->New(ser::VarientType::Array);
             for (const auto& feature : *m_features)
-                features->Push(feature ? feature->GetAssetGuid().to_string() : "");
-            serializer->Object->Add("Features", features);
+            {
+                if (!feature)
+                    continue;
+
+                auto featureObject = featuresArray->New(ser::VarientType::Object);
+                auto featureJson = ser::JsonSerializer::Serialize(feature.get(), settings);
+                featureObject->AssignParse(featureJson);
+                featuresArray->Push(featureObject);
+            }
+            serializer->Object->Add("Features", featuresArray);
             return;
         }
 
         m_features->clear();
-        auto features = serializer->Object->At("Features");
-        if (!features)
+        auto featuresArray = serializer->Object->At("Features");
+        if (!featuresArray)
             return;
 
-        for (int index = 0; index < features->GetCount(); ++index)
+        for (int index = 0; index < featuresArray->GetCount(); ++index)
         {
-            auto guid = guid_t::parse(features->At(index)->AsString());
-            m_features->push_back(RuntimeAssetManager::GetLoadedAssetByGuid<RenderFeatureAsset>(guid));
+            auto featureObject = featuresArray->At(index);
+            if (!featureObject)
+                continue;
+
+            auto feature = sptr_cast<RenderFeatureSettings>(
+                ser::JsonSerializer::Deserialize(featureObject->ToString(), cltypeof<RenderFeatureSettings>()));
+            if (feature)
+                m_features->push_back(feature);
         }
     }
 
@@ -37,7 +56,7 @@ namespace pulsar
         for (const auto& feature : *m_features)
         {
             if (feature)
-                dependencies.push_back(feature->GetAssetGuid());
+                feature->CollectAssetDependencies(dependencies);
         }
     }
 

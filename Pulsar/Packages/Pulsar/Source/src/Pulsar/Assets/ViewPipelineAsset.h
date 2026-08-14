@@ -1,6 +1,6 @@
 #pragma once
 #include <Pulsar/AssetObject.h>
-#include <Pulsar/Assets/RenderFeatureAsset.h>
+#include <Pulsar/Rendering/RenderGraph/Features/RenderFeatureSettings.h>
 #include <Pulsar/Rendering/RenderGraph/Pipelines/ViewPipelineRenderData.h>
 
 namespace pulsar
@@ -17,12 +17,12 @@ namespace pulsar
         void OnCollectAssetDependencies(array_list<guid_t>& dependencies) override;
         void BuildRenderData(ViewPipelineRenderData& outData) const;
 
-        List_sp<RCPtr<RenderFeatureAsset>>& GetFeatures() { return m_features; }
-        const List_sp<RCPtr<RenderFeatureAsset>>& GetFeatures() const { return m_features; }
+        List_sp<SPtr<RenderFeatureSettings>>& GetFeatures() { return m_features; }
+        const List_sp<SPtr<RenderFeatureSettings>>& GetFeatures() const { return m_features; }
 
     private:
-        CORELIB_REFL_DECL_FIELD(m_features, new ListItemAttribute(cltypeof<RenderFeatureAsset>()));
-        List_sp<RCPtr<RenderFeatureAsset>> m_features;
+        CORELIB_REFL_DECL_FIELD(m_features, new ListItemAttribute(cltypeof<RenderFeatureSettings>()));
+        List_sp<SPtr<RenderFeatureSettings>> m_features;
     };
     DECL_PTR(ViewPipelineAsset);
 }

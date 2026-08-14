@@ -45,10 +45,8 @@ namespace pulsared
     }
     string_view AssetEditorWindow::GetWindowDisplayName() const
     {
-        if (m_assetObject)
-        {
-            return m_assetObject->GetName();
-        }
+        if (!m_assetWindowDisplayName.empty())
+            return m_assetWindowDisplayName;
         return base::GetWindowDisplayName();
     }
     // namespace

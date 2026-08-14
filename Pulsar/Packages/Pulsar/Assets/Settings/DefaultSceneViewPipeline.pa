@@ -1,0 +1,16 @@
+{
+    "$type": "pulsar::ViewPipelineAsset,pulsar",
+    "m_assetGuid": "f0feaef2d794b44eb53ea4de8d53b981",
+    "m_features": {
+        "$type": "jxcorlib::List<struct jxcorlib::TemplateTypePair<class std::shared_ptr<class pulsar::RenderFeatureSettings> >>,jxcorlib",
+        "$values": []
+    },
+    "m_importFiles": {
+        "$type": "jxcorlib::List<struct jxcorlib::TemplateTypePair<class std::shared_ptr<class pulsar::ImportedFileInfo> >>,jxcorlib",
+        "$values": []
+    },
+    "m_tags": {
+        "$type": "jxcorlib::List<struct jxcorlib::TemplateTypePair<class std::shared_ptr<class jxcorlib::String> >>,jxcorlib",
+        "$values": []
+    }
+}
