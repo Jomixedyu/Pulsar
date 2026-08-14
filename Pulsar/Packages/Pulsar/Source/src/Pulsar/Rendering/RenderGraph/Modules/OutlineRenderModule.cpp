@@ -22,18 +22,22 @@ namespace pulsar
 
     void OutlineRenderModule::OnRecord(RenderGraph& graph, RenderFrameData& frameData)
     {
-        auto* sceneTarget = frameData.Get<SceneTargetFrameData>();
+        auto* sceneTarget = frameData.Get<SceneRenderTargetFrameData>();
         if (!sceneTarget)
             return;
 
-        auto ctx = MakeRenderCaptureContext(frameData);
-        auto* scene = ctx.scene;
-        if (!scene || !ctx.view)
+        auto* capture = frameData.Get<SceneCaptureFrameData>();
+        if (!capture || !capture->scene || !capture->view)
             return;
 
-        const Vector3f camPos     = ctx.view->CameraPosition;
-        const Vector3f camForward = ctx.view->CameraForward;
-        SceneView* viewProxy      = ctx.viewProxy;
+        auto* culling = frameData.Get<SceneViewCullingFrameData>();
+        if (!culling || !culling->VisibleRenderers)
+            return;
+
+        auto* scene = capture->scene;
+        const Vector3f camPos     = capture->view->CameraPosition;
+        const Vector3f camForward = capture->view->CameraForward;
+        SceneView* viewProxy      = capture->viewProxy;
 
         auto preparedOutline = std::make_shared<array_list<PreparedBatch>>();
 
@@ -44,9 +48,9 @@ namespace pulsar
                 .depthLoadOp  = gfx::GFXRenderPassLoadOp::Load,
                 .depthStoreOp = gfx::GFXRenderPassStoreOp::Store,
             })
-            .Prepare([scene, camPos, camForward, preparedOutline, this](RGPassContext&)
+            .Prepare([camPos, camForward, visibleRenderers = culling->VisibleRenderers, preparedOutline, this](RGPassContext&)
             {
-                for (const rendering::RenderObject_sp& ro : scene->GetRenderObjects())
+                for (const rendering::RenderObject_sp& ro : *visibleRenderers)
                 {
                     const float depth = jmath::Dot(camForward, ro->GetWorldPosition() - camPos);
                     for (auto batch : ro->GetMeshBatches())

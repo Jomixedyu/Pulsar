@@ -22,12 +22,12 @@ namespace pulsar
 
     void DisplayEncodingRenderModule::OnRecord(RenderGraph& graph, RenderFrameData& frameData)
     {
-        auto* view = frameData.Get<ViewFrameData>();
-        auto* postProcess = frameData.Get<PostProcessFrameData>();
-        if (!view || !view->ViewData || !postProcess)
+        auto* capture = frameData.Get<SceneCaptureFrameData>();
+        auto* postProcess = frameData.Get<ScenePostProcessFrameData>();
+        if (!capture || !capture->view || !postProcess)
             return;
 
-        auto* settings = view->ViewData->PostProcessStack.GetComponent<DisplayEncodingSettings>();
+        auto* settings = capture->view->PostProcessStack.GetComponent<DisplayEncodingSettings>();
         if (!settings || !settings->m_enabled)
             return;
 
@@ -42,7 +42,7 @@ namespace pulsar
             return;
 
         auto destination = postProcess->AcquireTarget();
-        auto* gpu = frameData.Get<GpuFrameData>();
+        auto* gpu = frameData.Get<SceneCaptureGpuFrameData>();
         auto result = BlitPass::AddToGraph(graph, {
             .Name = "PostProcess_DisplayEncoding",
             .Source = postProcess->ActiveColor,

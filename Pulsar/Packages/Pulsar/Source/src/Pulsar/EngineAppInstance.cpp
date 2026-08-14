@@ -12,7 +12,9 @@
 #include "Rendering/SceneView.h"
 #include "Rendering/RenderGraph/TransientRTPool.h"
 #include "Rendering/RenderGraph/RenderGraph.h"
-#include "Rendering/RenderGraph/ScriptableCaptureRenderer.h"
+#include "Rendering/RenderGraph/RenderPipeline.h"
+#include "Rendering/RenderGraph/Pipelines/SceneCaptureFrameData.h"
+#include "Rendering/RenderGraph/Pipelines/SceneRenderPipeline.h"
 #include "Scene.h"
 
 #include <Pulsar/Application.h>
@@ -46,37 +48,20 @@ namespace pulsar
             TransientRTPool::Get()->TickGC(s_frameIndex);
 
         auto& cmdBuffer = context->GetCommandBuffer(0);
-
-        for (auto world : m_worlds)
+        for (auto* world : m_worlds)
         {
             cmdBuffer.CmdPushDebugInfo("SceneRenderer");
 
-            auto* scene = world->GetRenderScene();
-            if (scene)
+            if (auto* scene = world->GetRenderScene())
             {
-                for (const auto& view : scene->GetViews())
-                {
-                    if (!view->Renderer)
-                        continue;
-
-                    RenderGraph graph;
-
-                    RenderCaptureContext captureCtx;
-                    captureCtx.view       = &view->Data;
-                    captureCtx.viewProxy  = view.get();
-                    captureCtx.scene      = scene;
-                    captureCtx.frameIndex = s_frameIndex;
-
-                    view->Renderer->Render(graph, captureCtx);
-
-                    if (graph.Compile())
-                        graph.Execute(cmdBuffer);
-                }
+                RenderGraph graph;
+                scene->GetRenderPipeline().OnRecord(graph, *scene, s_frameIndex);
+                if (graph.Compile())
+                    graph.Execute(cmdBuffer);
             }
 
             cmdBuffer.CmdPopDebugInfo();
         }
-
     }
     void EngineRenderPipeline::AddWorld(World* world)
     {
@@ -136,8 +121,8 @@ namespace pulsar
     {
         uinput::InputManager::GetInstance()->Terminate();
 
-        // 先拆 World：移除所有 proxy / RenderScene，drain 渲染线程并等 GPU 空闲。
-        // 此时再无 renderobject 引用 ShaderInstance / 使用 TransientRT。
+        // Tear down World first: remove all proxies / RenderScene, drain render thread and wait for GPU idle.
+        // At this point no render object references ShaderInstance or uses TransientRT.
         if (m_world)
         {
             m_world->OnWorldEnd();
@@ -145,7 +130,7 @@ namespace pulsar
             m_world = nullptr;
         }
 
-        // World 拆完后清理：依赖顺序诚实。三者都需在 gfxApp->Terminate() 之前执行（device 仍活）。
+        // Cleanup after World teardown. These must run before gfxApp->Terminate() while the device is alive.
         DescriptorSetCache::Instance().Clear();
         ShaderInstanceCache::Instance().Clear();
         TransientRTPool::Shutdown();

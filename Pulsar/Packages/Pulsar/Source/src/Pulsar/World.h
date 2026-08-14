@@ -5,6 +5,7 @@
 #include "ObjectBase.h"
 #include "Rendering/RenderObject.h"
 #include "Rendering/RenderScene.h"
+#include "Rendering/RenderGraph/Pipelines/ViewPipelineRenderData.h"
 #include "SceneCaptureManager.h"
 #include "SelectionSet.h"
 #include "Simulate.h"
@@ -117,6 +118,7 @@ namespace pulsar
         // Per-view snapshot update. The caller passes the target view proxy directly
         // (the component caches it); the render thread writes Data with no lookup. Enqueued.
         void            UpdateSceneView(const SPtr<SceneView>& view, SceneViewData data);
+
 
         // Per-frame dirty extraction. Components mark themselves dirty when render state
         // changes; SyncRenderProxies() drains the pending list once per frame.

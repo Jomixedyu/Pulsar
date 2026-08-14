@@ -1,20 +1,60 @@
-#include "DefaultSceneCaptureRenderer.h"
+#include "ViewPipeline.h"
+#include "SceneCaptureFrameData.h"
 #include <Pulsar/Logger.h>
 #include <Pulsar/Rendering/SceneView.h>
 #include <Pulsar/Rendering/RenderScene.h>
 #include <Pulsar/Rendering/LightProxy.h>
 #include <gfx/GFXCommandBuffer.h>
 #include <gfx/TextureClasses.h>
+#include <cmath>
 
-#include "Modules/TonemapRenderModule.h"
-#include "Modules/DisplayEncodingRenderModule.h"
-#include "Modules/ColorGradingRenderModule.h"
-#include "Modules/CustomPostProcessRenderModule.h"
-#include "Modules/GizmoOverlayRenderModule.h"
+#include "../Modules/TonemapRenderModule.h"
+#include "../Modules/DisplayEncodingRenderModule.h"
+#include "../Modules/ColorGradingRenderModule.h"
+#include "../Modules/CustomPostProcessRenderModule.h"
+#include "../Modules/GizmoOverlayRenderModule.h"
 
 namespace pulsar
 {
-    DefaultSceneCaptureRenderer::DefaultSceneCaptureRenderer()
+    static bool IsRendererVisible(const rendering::RenderObject& renderer, const SceneViewData& view)
+    {
+        if (!renderer.HasBounds())
+            return true;
+
+        const auto bounds = renderer.GetBounds();
+        if (bounds.Radius <= 0.f)
+            return true;
+
+        const Matrix4f viewProjection = view.ProjectionMatrix * view.ViewMatrix;
+        const Vector4f clipCenter = viewProjection * Vector4f(bounds.Origin, 1.f);
+        const float clipW = std::abs(clipCenter.w);
+        if (clipW <= 0.0001f)
+            return false;
+
+        const float radiusX = std::abs(view.ProjectionMatrix[0][0]) * bounds.Radius;
+        const float radiusY = std::abs(view.ProjectionMatrix[1][1]) * bounds.Radius;
+        const float radiusZ = std::abs(view.ProjectionMatrix[2][2]) * bounds.Radius;
+        return clipCenter.x >= -clipW - radiusX
+            && clipCenter.x <= clipW + radiusX
+            && clipCenter.y >= -clipW - radiusY
+            && clipCenter.y <= clipW + radiusY
+            && clipCenter.z >= -radiusZ
+            && clipCenter.z <= clipW + radiusZ;
+    }
+
+    static SceneViewCullingFrameData CullRenderers(const RenderScene& scene, const SceneViewData& view)
+    {
+        auto renderers = std::make_shared<array_list<rendering::RenderObject_sp>>();
+        renderers->reserve(scene.GetRenderObjects().size());
+        for (const auto& renderer : scene.GetRenderObjects())
+        {
+            if (renderer && IsRendererVisible(*renderer, view))
+                renderers->push_back(renderer);
+        }
+        return { std::move(renderers) };
+    }
+
+    ViewPipeline::ViewPipeline()
     {
         m_opaqueModule.Initialize();
         m_outlineModule.Initialize();
@@ -31,8 +71,11 @@ namespace pulsar
             module->Initialize();
     }
 
-    DefaultSceneCaptureRenderer::~DefaultSceneCaptureRenderer()
+    ViewPipeline::~ViewPipeline()
     {
+        for (auto& feature : m_featureProxies)
+            feature->OnDestroyResource();
+
         for (auto& module : m_postProcessRenderModules)
             module->Destroy();
         m_gizmoOverlayModule.Destroy();
@@ -41,10 +84,51 @@ namespace pulsar
         m_opaqueModule.Destroy();
     }
 
-    void DefaultSceneCaptureRenderer::Render(RenderGraph& graph, const RenderCaptureContext& ctx)
+    void ViewPipeline::OnCreateResource(const ViewPipelineRenderData& data)
     {
-        const SceneViewData* view = ctx.view;
-        auto* scene = ctx.scene;
+        RebuildFeatureProxies(data);
+    }
+
+    void ViewPipeline::ApplyRenderData(const ViewPipelineRenderData& data)
+    {
+        RebuildFeatureProxies(data);
+    }
+
+    void ViewPipeline::RebuildFeatureProxies(const ViewPipelineRenderData& data)
+    {
+        for (auto& feature : m_featureProxies)
+            feature->OnDestroyResource();
+        m_featureProxies.clear();
+
+        for (const auto& featureData : data.Features)
+        {
+            if (!featureData)
+                continue;
+
+            auto feature = featureData->CreateProxy();
+            if (!feature)
+                continue;
+
+            feature->OnCreateResource();
+            m_featureProxies.push_back(std::move(feature));
+        }
+    }
+
+    void ViewPipeline::RecordFeatures(RenderGraph& graph, RenderFrameData& frameData)
+    {
+        for (const auto& feature : m_featureProxies)
+        {
+            feature->OnRecord(graph, frameData);
+        }
+    }
+    void ViewPipeline::OnRecord(RenderGraph& graph, RenderFrameData& frameData)
+    {
+        auto* capture = frameData.Get<SceneCaptureFrameData>();
+        if (!capture)
+            return;
+
+        const SceneViewData* view = capture->view;
+        auto* scene = capture->scene;
 
         if (!view || !scene)
             return;
@@ -52,64 +136,6 @@ namespace pulsar
         const RenderTargetSnapshot& camRenderTexture = view->RenderTarget;
         if (!camRenderTexture.IsValid())
             return;
-
-        auto& perRenderObjectMgr = ctx.scene->GetPerRenderObjectData();
-        perRenderObjectMgr.BeginFrame();
-
-        PerPassCameraData camData{};
-        camData.MatrixV     = view->ViewMatrix;
-        camData.MatrixP     = view->ProjectionMatrix;
-        camData.MatrixVP    = camData.MatrixP * camData.MatrixV;
-        camData.InvMatrixV  = jmath::Inverse(camData.MatrixV);
-        camData.InvMatrixP  = jmath::Inverse(camData.MatrixP);
-        camData.InvMatrixVP = jmath::Inverse(camData.MatrixVP);
-        camData.CamPosition = Vector4f(view->CameraPosition, 1.f);
-        camData.CamNear     = view->Near;
-        camData.CamFar      = view->Far;
-        camData.Resolution  = view->Resolution;
-        if (ctx.viewProxy)
-            ctx.viewProxy->UploadCamera(camData);
-
-        {
-            PerPassWorldData worldData{};
-            worldData.TotalTime  = ctx.scene ? ctx.scene->GetTotalTime() : 0.f;
-            worldData.DeltaTime  = ctx.scene ? ctx.scene->GetDeltaTime() : 0.f;
-
-            if (ctx.scene)
-            {
-                const DirectionalLightProxy* brightest = nullptr;
-                for (const auto& dir : ctx.scene->GetDirectionalLights())
-                {
-                    if (!brightest || dir->Intensity > brightest->Intensity)
-                        brightest = dir.get();
-                }
-                if (brightest)
-                {
-                    worldData.WorldSpaceLightVector = -brightest->Vector;
-                    auto& c = brightest->Color;
-                    worldData.WorldSpaceLightColor  = {c.r, c.g, c.b, brightest->Intensity};
-                }
-            }
-            worldData.SkyLightColor = {0, 0, 0, 0};
-            worldData.LightParameterCount = ctx.scene ? static_cast<uint32_t>(ctx.scene->GetPointLights().size()) : 0;
-            if (ctx.scene)
-                ctx.scene->UploadWorld(worldData);
-        }
-
-        {
-            PerPassLightsBufferData lightsData{};
-            if (ctx.scene)
-            {
-                auto& pointLights = ctx.scene->GetPointLights();
-                int lightCount = std::min(static_cast<int>(pointLights.size()), 63);
-                for (int i = 0; i < lightCount; ++i)
-                {
-                    lightsData.Lights[i] = pointLights[i]->Param;
-                }
-            }
-            if (ctx.scene)
-                ctx.scene->UploadLights(lightsData);
-        }
 
         RGTextureHandle hFinal = graph.ImportTexture("FinalOutput",
             camRenderTexture.Width, camRenderTexture.Height,
@@ -136,17 +162,16 @@ namespace pulsar
 
         auto hdrFormat = gfx::GFXTextureFormat::R16G16B16A16_SFloat;
 
-        RenderFrameData frameData;
-        frameData.Set(ctx);
-        frameData.Set(ViewFrameData{ view, ctx.viewProxy, ctx.frameIndex });
-        frameData.Set(SceneFrameData{ scene });
-        frameData.Set(GpuFrameData{
-            ctx.viewProxy ? ctx.viewProxy->GetCameraBuffer() : nullptr,
+        frameData.Set(SceneCaptureGpuFrameData{
+            capture->viewProxy ? capture->viewProxy->GetCameraBuffer() : nullptr,
             scene->GetWorldBuffer(),
             scene->GetLightsBuffer(),
             scene->GetPerRenderObjectData().GetBuffer(),
         });
-        auto& sceneTarget = frameData.Set(SceneTargetFrameData{ hSceneColor });
+        auto& sceneTarget = frameData.Set(SceneRenderTargetFrameData{ hSceneColor });
+        frameData.Set(CullRenderers(*scene, *view));
+
+        RecordFeatures(graph, frameData);
 
         // OpaqueRenderModule (auto-resolve to final RT if MSAA is enabled)
         m_opaqueModule.SetResolveTargetView(resolveTargetView);
@@ -160,7 +185,7 @@ namespace pulsar
         opaqueColorDesc.Width  = camRenderTexture.Width;
         opaqueColorDesc.Height = camRenderTexture.Height;
         opaqueColorDesc.TargetInfos.push_back({ gfx::GFXTextureTargetType::ColorTarget, hdrFormat });
-        auto& opaqueColor = frameData.Set(OpaqueColorFrameData{ graph.CreateTransient("OpaqueColorTexture", opaqueColorDesc) });
+        auto& opaqueColor = frameData.Set(SceneOpaqueColorFrameData{ graph.CreateTransient("OpaqueColorTexture", opaqueColorDesc) });
 
 
         graph.AddPass("CopyOpaqueColor")
@@ -191,7 +216,7 @@ namespace pulsar
 
         auto hPostProcessA = graph.CreateTransient("PostProcessPingPongA", pingPongDesc);
         auto hPostProcessB = graph.CreateTransient("PostProcessPingPongB", pingPongDesc);
-        auto& postProcess = frameData.Set(PostProcessFrameData{
+        auto& postProcess = frameData.Set(ScenePostProcessFrameData{
             .FinalTarget = hFinal,
             .ActiveColor = hFinal,
             .PingPongA = hPostProcessA,
@@ -238,7 +263,6 @@ namespace pulsar
             m_gizmoOverlayModule.OnRecord(graph, frameData);
         }
 
-        perRenderObjectMgr.EndFrame();
     }
 
 } // namespace pulsar

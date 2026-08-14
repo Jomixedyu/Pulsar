@@ -16,18 +16,17 @@ namespace pulsar
 {
     void BloomRenderModule::OnRecord(RenderGraph& graph, RenderFrameData& frameData)
     {
-        auto* postProcess = frameData.Get<PostProcessFrameData>();
-        auto* view = frameData.Get<ViewFrameData>();
-        if (!postProcess || !view || !view->ViewData)
+        auto* postProcess = frameData.Get<ScenePostProcessFrameData>();
+        auto* capture = frameData.Get<SceneCaptureFrameData>();
+        if (!postProcess || !capture || !capture->view)
             return;
 
-        ReadSettings(view->ViewData->PostProcessStack);
+        ReadSettings(capture->view->PostProcessStack);
         if (!IsEnabled())
             return;
 
-        auto ctx = MakeRenderCaptureContext(frameData);
         auto dst = postProcess->AcquireTarget();
-        auto result = RecordBloomPasses(graph, postProcess->ActiveColor, dst, ctx);
+        auto result = RecordBloomPasses(graph, postProcess->ActiveColor, dst, *capture);
         postProcess->PushColor(result);
     }
 
@@ -215,9 +214,9 @@ namespace pulsar
     RGTextureHandle BloomRenderModule::RecordBloomPasses(RenderGraph& graph,
                                           RGTextureHandle input,
                                           RGTextureHandle output,
-                                          const RenderCaptureContext& ctx)
+                                          const SceneCaptureFrameData& capture)
     {
-        if (!ctx.view)
+        if (!capture.view)
             return input;
 
         EnsureMaterial();
@@ -228,7 +227,7 @@ namespace pulsar
         if (!m_proxy)
             return input;
 
-        const RenderTargetSnapshot& camRT = ctx.view->RenderTarget;
+        const RenderTargetSnapshot& camRT = capture.view->RenderTarget;
         if (!camRT.IsValid())
             return input;
 

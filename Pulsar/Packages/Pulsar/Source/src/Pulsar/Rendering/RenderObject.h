@@ -108,6 +108,16 @@ namespace pulsar::rendering
         void SetRenderObjectIndex(uint32_t index) { m_renderObjectIndex = index; }
         uint32_t GetRenderObjectIndex() const { return m_renderObjectIndex; }
 
+
+        void SetBounds(const BoxSphereBounds3f& bounds)
+        {
+            m_bounds = bounds;
+            m_hasBounds = bounds.Radius > 0.f;
+        }
+        void ClearBounds() { m_hasBounds = false; }
+        bool HasBounds() const { return m_hasBounds; }
+        BoxSphereBounds3f GetBounds() const { return m_bounds; }
+
         void SetPerRenderObjectDataManager(PerRenderObjectDataManager* mgr) { m_pPerRenderObjectDataManager = mgr; }
         PerRenderObjectDataManager* GetPerRenderObjectDataManager() const { return m_pPerRenderObjectDataManager; }
 
@@ -121,6 +131,8 @@ namespace pulsar::rendering
         PerRenderObjectData  m_perRenderObjectData{};
         bool      m_isLocalToWorldDeterminantNegative{};
         int       m_lineWidth{1};
+        BoxSphereBounds3f m_bounds{};
+        bool      m_hasBounds = false;
         uint32_t  m_renderObjectIndex = kInvalidSlot;
         PerRenderObjectDataManager* m_pPerRenderObjectDataManager = nullptr;
     };

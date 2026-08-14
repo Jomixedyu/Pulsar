@@ -1,4 +1,5 @@
 #include "Rendering/RenderScene.h"
+#include "Rendering/RenderGraph/Pipelines/SceneRenderPipeline.h"
 
 #include <Pulsar/Application.h>
 #include <Pulsar/Rendering/RenderThread.h>
@@ -6,6 +7,9 @@
 
 namespace pulsar
 {
+    RenderScene::RenderScene() = default;
+    RenderScene::~RenderScene() = default;
+
     // Asserts the caller is on the render thread (or that no render thread exists yet,
     // e.g. during shutdown after the thread was torn down -> synchronous fallback).
     static void AssertRenderThread()
@@ -14,7 +18,14 @@ namespace pulsar
         assert((!rt || rt->IsRenderThread()) && "RenderScene must be mutated on the render thread");
     }
 
-    void RenderScene::AddProxy_RenderThread(SPtr<rendering::RenderProxy> proxy)
+    SceneRenderPipeline& RenderScene::GetRenderPipeline()
+    {
+        AssertRenderThread();
+        if (!m_renderPipeline)
+            m_renderPipeline = std::make_unique<SceneRenderPipeline>();
+        return *m_renderPipeline;
+    }
+    void RenderScene::AddProxy(SPtr<rendering::RenderProxy> proxy)
     {
         AssertRenderThread();
         if (!proxy)
@@ -40,7 +51,7 @@ namespace pulsar
         }
     }
 
-    void RenderScene::RemoveProxy_RenderThread(const SPtr<rendering::RenderProxy>& proxy)
+    void RenderScene::RemoveProxy(const SPtr<rendering::RenderProxy>& proxy)
     {
         AssertRenderThread();
         if (!proxy)
@@ -114,9 +125,10 @@ namespace pulsar
         m_views.erase(it);
     }
 
-    void RenderScene::Destroy_RenderThread()
+    void RenderScene::Destroy()
     {
         AssertRenderThread();
+        m_renderPipeline.reset();
         m_views.clear();
         m_pointLights.clear();
         m_directionalLights.clear();

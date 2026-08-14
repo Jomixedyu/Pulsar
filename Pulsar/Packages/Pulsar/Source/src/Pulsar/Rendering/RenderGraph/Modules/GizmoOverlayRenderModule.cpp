@@ -12,26 +12,34 @@ namespace pulsar
 {
     void GizmoOverlayRenderModule::OnRecord(RenderGraph& graph, RenderFrameData& frameData)
     {
-        auto* postProcess = frameData.Get<PostProcessFrameData>();
+        auto* postProcess = frameData.Get<ScenePostProcessFrameData>();
         if (!postProcess)
             return;
 
-        auto ctx = MakeRenderCaptureContext(frameData);
-        RecordOverlayPass(graph, postProcess->FinalTarget, postProcess->FinalTarget, ctx);
+        auto* capture = frameData.Get<SceneCaptureFrameData>();
+        if (!capture)
+            return;
+
+        auto* culling = frameData.Get<SceneViewCullingFrameData>();
+        if (!culling || !culling->VisibleRenderers)
+            return;
+
+        RecordOverlayPass(graph, postProcess->FinalTarget, postProcess->FinalTarget, *capture, culling->VisibleRenderers);
     }
 
     RGTextureHandle GizmoOverlayRenderModule::RecordOverlayPass(RenderGraph& graph,
                                                  RGTextureHandle input,
                                                  RGTextureHandle output,
-                                                 const RenderCaptureContext& ctx)
+                                                 const SceneCaptureFrameData& capture,
+                                                 const std::shared_ptr<array_list<rendering::RenderObject_sp>>& visibleRenderers)
     {
-        auto* scene = ctx.scene;
-        if (!scene || !ctx.view)
+        auto* scene = capture.scene;
+        if (!scene || !capture.view)
             return output;
 
-        const Vector3f camPos     = ctx.view->CameraPosition;
-        const Vector3f camForward = ctx.view->CameraForward;
-        SceneView* viewProxy      = ctx.viewProxy;
+        const Vector3f camPos     = capture.view->CameraPosition;
+        const Vector3f camForward = capture.view->CameraForward;
+        SceneView* viewProxy      = capture.viewProxy;
 
         auto preparedOverlay = std::make_shared<array_list<PreparedBatch>>();
 
@@ -42,9 +50,9 @@ namespace pulsar
                 .depthLoadOp  = gfx::GFXRenderPassLoadOp::Load,
                 .depthStoreOp = gfx::GFXRenderPassStoreOp::DontCare,
             })
-            .Prepare([scene, camPos, camForward, preparedOverlay, this](RGPassContext&)
+            .Prepare([camPos, camForward, visibleRenderers, preparedOverlay, this](RGPassContext&)
             {
-                for (const rendering::RenderObject_sp& ro : scene->GetRenderObjects())
+                for (const rendering::RenderObject_sp& ro : *visibleRenderers)
                 {
                     const float depth = jmath::Dot(camForward, ro->GetWorldPosition() - camPos);
                     for (auto batch : ro->GetMeshBatches())

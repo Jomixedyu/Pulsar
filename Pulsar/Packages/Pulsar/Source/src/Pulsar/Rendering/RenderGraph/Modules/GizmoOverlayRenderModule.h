@@ -1,5 +1,6 @@
 #pragma once
 #include "MeshRenderModule.h"
+#include "../Pipelines/SceneCaptureFrameData.h"
 
 namespace pulsar
 {
@@ -12,6 +13,7 @@ namespace pulsar
         RGTextureHandle RecordOverlayPass(RenderGraph& graph,
                                           RGTextureHandle input,
                                           RGTextureHandle output,
-                                          const RenderCaptureContext& ctx);
+                                          const SceneCaptureFrameData& capture,
+                                          const std::shared_ptr<array_list<rendering::RenderObject_sp>>& visibleRenderers);
     };
 }

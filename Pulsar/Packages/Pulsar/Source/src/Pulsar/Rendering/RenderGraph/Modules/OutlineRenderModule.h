@@ -1,5 +1,6 @@
 #pragma once
 #include "MeshRenderModule.h"
+#include "../Pipelines/SceneCaptureFrameData.h"
 #include <Pulsar/Rendering/RenderGraph/RenderGraph.h>
 
 namespace pulsar

@@ -1,5 +1,6 @@
 #pragma once
 #include "MeshRenderModule.h"
+#include "../Pipelines/SceneCaptureFrameData.h"
 #include <Pulsar/Rendering/RenderGraph/RenderGraph.h>
 
 namespace pulsar
@@ -15,7 +16,8 @@ namespace pulsar
         RGTextureHandle RecordTranslucency(RenderGraph& graph,
                                                RGTextureHandle input,
                                                RGTextureHandle output,
-                                               const RenderCaptureContext& ctx);
+                                               const SceneCaptureFrameData& capture,
+                                               const std::shared_ptr<array_list<rendering::RenderObject_sp>>& visibleRenderers);
 
         RGTextureHandle m_hOpaqueColor;
         RGTextureHandle m_hOpaqueDepth;

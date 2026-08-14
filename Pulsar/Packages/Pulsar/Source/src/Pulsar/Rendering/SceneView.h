@@ -4,6 +4,7 @@
 #include <Pulsar/Subsystems/VolumeStack.h>
 #include "RenderProxy.h"
 #include "PerPassData.h"
+#include "RenderGraph/Pipelines/ViewPipelineRenderData.h"
 #include <gfx/GFXTexture.h>
 #include <gfx/GFXFrameBufferObject.h>
 #include <gfx/GFXBuffer.h>
@@ -11,7 +12,7 @@
 
 namespace pulsar
 {
-    class ScriptableCaptureRenderer;
+    class ViewPipeline;
 
     // GFX resource bundle for a view's render target, resolved on the game thread from
     // the RenderTexture asset. Holds only gfx shared resources (no RCPtr / AssetObject),
@@ -46,6 +47,8 @@ namespace pulsar
         Color4f  BackgroundColor{};
         uint32_t MSAASamples = 1;
         bool     GizmoPassEnabled = false;
+        ViewPipelineRenderData ViewPipeline;
+
         // Render target resolved to gfx resources on the game thread (no RCPtr).
         RenderTargetSnapshot RenderTarget;
 
@@ -59,17 +62,19 @@ namespace pulsar
         array_list<RCPtr<Material>> PostProcessMaterials;
     };
 
-    // Render-thread-owned per-view proxy (capture proxy). Owns the GPU pass pipeline
-    // (Renderer) and the current-frame parameter snapshot (Data). One per game-side
+    // Render-thread-owned per-view proxy (capture proxy). Owns the view pipeline
+    // (Pipeline) and the current-frame parameter snapshot (Data). One per game-side
     // SceneCaptureComponent.
     class SceneView : public rendering::RenderProxy
     {
     public:
-        SceneView() = default;
+        SceneView();
         ~SceneView() override;
 
         SceneView(const SceneView&) = delete;
         SceneView& operator=(const SceneView&) = delete;
+
+        void OnCreateResource() override;
 
         void OnDestroyResource() override;
 
@@ -77,9 +82,11 @@ namespace pulsar
         // (render thread, GFX alive).
         void UploadCamera(const PerPassCameraData& data);
         gfx::GFXBuffer* GetCameraBuffer() const;
+        void SetData(SceneViewData data);
+
 
         SceneViewData                               Data;
-        std::unique_ptr<ScriptableCaptureRenderer>  Renderer;
+        std::unique_ptr<ViewPipeline>                Pipeline;
 
     private:
         gfx::GFXBuffer_sp m_cameraBuffer;

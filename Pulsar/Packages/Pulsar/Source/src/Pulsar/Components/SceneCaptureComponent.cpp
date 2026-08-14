@@ -2,7 +2,7 @@
 #include "World.h"
 #include <Pulsar/Rendering/SceneView.h>
 #include <Pulsar/Subsystems/PostProcessSubsystem.h>
-#include <Pulsar/Rendering/RenderGraph/DefaultSceneCaptureRenderer.h>
+
 
 namespace pulsar
 {
@@ -14,7 +14,8 @@ namespace pulsar
     SPtr<rendering::RenderProxy> SceneCaptureComponent::CreateRenderProxy()
     {
         auto view = mksptr(new SceneView());
-        view->Renderer = std::make_unique<DefaultSceneCaptureRenderer>();
+        if (m_viewPipeline)
+            m_viewPipeline->BuildRenderData(view->Data.ViewPipeline);
         m_sceneView = view;
         return view;
     }
@@ -27,6 +28,11 @@ namespace pulsar
         SceneViewData data{};
         if (!ExtractViewData(data))
             return;
+
+
+        if (m_viewPipeline)
+            m_viewPipeline->BuildRenderData(data.ViewPipeline);
+
 
         // Snapshot post-process settings on the game thread for this view's camera
         // position, so the render thread reads the blended stack instead of querying

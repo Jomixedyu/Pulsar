@@ -1,6 +1,7 @@
 #pragma once
 #include <Pulsar/IconsForkAwesome.h>
 #include "Pulsar/Assets/RenderTexture.h"
+#include "Pulsar/Assets/ViewPipelineAsset.h"
 #include "RenderComponent.h"
 #include <memory>
 
@@ -73,6 +74,7 @@ namespace pulsar
         // Returns false if this capture cannot produce a valid view this frame.
         virtual bool ExtractViewData(SceneViewData& outData) { return false; }
 
+
     protected:
         // Unified proxy hooks: the proxy is a SceneView owned by the render thread.
         SPtr<rendering::RenderProxy> CreateRenderProxy() override;
@@ -82,6 +84,10 @@ namespace pulsar
         // shared ref like mesh renderers' m_renderObject; the render scene owns the
         // canonical instance. Used to address this view's snapshot in UpdateSceneView.
         SPtr<SceneView> m_sceneView;
+
+        CORELIB_REFL_DECL_FIELD(m_viewPipeline)
+        RCPtr<ViewPipelineAsset> m_viewPipeline;
+
 
         CORELIB_REFL_DECL_FIELD(m_enabledCapture)
         bool m_enabledCapture = true;

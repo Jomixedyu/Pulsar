@@ -8,15 +8,15 @@ namespace pulsar
 {
     void CustomPostProcessRenderModule::OnRecord(RenderGraph& graph, RenderFrameData& frameData)
     {
-        auto* view = frameData.Get<ViewFrameData>();
-        auto* postProcess = frameData.Get<PostProcessFrameData>();
-        if (!view || !view->ViewData || !postProcess)
+        auto* capture = frameData.Get<SceneCaptureFrameData>();
+        auto* postProcess = frameData.Get<ScenePostProcessFrameData>();
+        if (!capture || !capture->view || !postProcess)
             return;
 
-        auto* gpu = frameData.Get<GpuFrameData>();
-        for (size_t index = 0; index < view->ViewData->PostProcessMaterials.size(); ++index)
+        auto* gpu = frameData.Get<SceneCaptureGpuFrameData>();
+        for (size_t index = 0; index < capture->view->PostProcessMaterials.size(); ++index)
         {
-            auto& material = view->ViewData->PostProcessMaterials[index];
+            auto& material = capture->view->PostProcessMaterials[index];
             if (!material)
                 continue;
 

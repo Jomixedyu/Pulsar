@@ -1,5 +1,6 @@
 #pragma once
 #include "RenderModule.h"
+#include "../Pipelines/SceneCaptureFrameData.h"
 #include <Pulsar/Assets/Material.h>
 
 namespace pulsar

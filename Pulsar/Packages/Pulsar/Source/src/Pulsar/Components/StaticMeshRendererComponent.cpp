@@ -79,7 +79,7 @@ namespace pulsar
             batch.Material  = nullptr;
             batch.Priority  = (matIndex < (int)m_priorities.size()) ? m_priorities.at(matIndex) : 0;
 
-            // null / invalid material → fallback to Error material
+            // null / invalid material fallback to Error material
             RCPtr<Material> mat = slot;
             bool isInvalidMaterial = !mat
                 || !mat->GetShader()
@@ -320,7 +320,7 @@ namespace pulsar
 
             const float baseLen = m_staticMesh->GetBounds().Radius * 0.05f * worldScale;
 
-            // 稀疏采样：顶点太多时跳过一些
+            // Sparse sampling: skip vertices when there are too many
             const size_t vertCount = section.Positions.size();
             const int step = std::max(1, static_cast<int>(vertCount / 2000));
 
@@ -458,6 +458,7 @@ namespace pulsar
             return;
 
         Matrix4f localToWorld = GetNode()->GetTransform()->GetLocalToWorldMatrix();
+        BoxSphereBounds3f bounds = GetBoundsWS();
         RCPtr<StaticMesh> mesh = m_staticMesh;
         array_list<RCPtr<Material>> materials = *m_materials;
         array_list<int32_t> priorities = *m_priorities;
@@ -474,9 +475,10 @@ namespace pulsar
 
         auto ro = m_renderObject;
         Application::GetRenderThread()->EnqueueUpdate_AnyThread(
-            [ro, localToWorld, mesh = std::move(mesh), materials = std::move(materials), priorities = std::move(priorities)](gfx::GFXResourceManager*) mutable
+            [ro, localToWorld, bounds, mesh = std::move(mesh), materials = std::move(materials), priorities = std::move(priorities)](gfx::GFXResourceManager*) mutable
             {
                 ro->SetTransform(localToWorld);
+                ro->SetBounds(bounds);
                 ro->SetStaticMesh(std::move(mesh))->SetMaterials(materials, priorities)->SubmitChange();
             });
     }

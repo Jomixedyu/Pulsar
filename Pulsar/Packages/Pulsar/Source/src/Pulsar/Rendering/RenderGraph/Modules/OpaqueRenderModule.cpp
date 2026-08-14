@@ -13,27 +13,35 @@ namespace pulsar
 {
     void OpaqueRenderModule::OnRecord(RenderGraph& graph, RenderFrameData& frameData)
     {
-        auto* sceneTarget = frameData.Get<SceneTargetFrameData>();
+        auto* sceneTarget = frameData.Get<SceneRenderTargetFrameData>();
         if (!sceneTarget)
             return;
 
-        auto ctx = MakeRenderCaptureContext(frameData);
-        sceneTarget->Target = RecordOpaque(graph, sceneTarget->Target, sceneTarget->Target, ctx);
+        auto* capture = frameData.Get<SceneCaptureFrameData>();
+        if (!capture)
+            return;
+
+        auto* culling = frameData.Get<SceneViewCullingFrameData>();
+        if (!culling || !culling->VisibleRenderers)
+            return;
+
+        sceneTarget->Target = RecordOpaque(graph, sceneTarget->Target, sceneTarget->Target, *capture, culling->VisibleRenderers);
         
     }
 
     RGTextureHandle OpaqueRenderModule::RecordOpaque(RenderGraph& graph,
                                            RGTextureHandle input,
                                            RGTextureHandle output,
-                                           const RenderCaptureContext& ctx)
+                                           const SceneCaptureFrameData& capture,
+                                           const std::shared_ptr<array_list<rendering::RenderObject_sp>>& visibleRenderers)
     {
-        auto* scene = ctx.scene;
-        if (!scene || !ctx.view)
+        auto* scene = capture.scene;
+        if (!scene || !capture.view)
             return output;
 
-        const Vector3f camPos     = ctx.view->CameraPosition;
-        const Vector3f camForward = ctx.view->CameraForward;
-        SceneView* viewProxy      = ctx.viewProxy;
+        const Vector3f camPos     = capture.view->CameraPosition;
+        const Vector3f camForward = capture.view->CameraForward;
+        SceneView* viewProxy      = capture.viewProxy;
 
         auto preparedOpaque      = std::make_shared<array_list<PreparedBatch>>();
         auto preparedAlphaTest   = std::make_shared<array_list<PreparedBatch>>();
@@ -48,9 +56,9 @@ namespace pulsar
                 .clearDepth   = 1.f,
                 .resolveTargetView = m_resolveTargetView,
             })
-            .Prepare([scene, camPos, camForward, preparedOpaque, preparedAlphaTest, this](RGPassContext&)
+            .Prepare([camPos, camForward, visibleRenderers, preparedOpaque, preparedAlphaTest, this](RGPassContext&)
             {
-                for (const rendering::RenderObject_sp& ro : scene->GetRenderObjects())
+                for (const rendering::RenderObject_sp& ro : *visibleRenderers)
                 {
                     const float depth = jmath::Dot(camForward, ro->GetWorldPosition() - camPos);
                     for (auto batch : ro->GetMeshBatches())

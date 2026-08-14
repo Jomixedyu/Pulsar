@@ -1,5 +1,6 @@
 #pragma once
 #include "RenderModule.h"
+#include "../Pipelines/SceneCaptureFrameData.h"
 #include <Pulsar/Assets/Material.h>
 #include <Pulsar/Subsystems/VolumeStack.h>
 #include <gfx/GFXDescriptorSet.h>
@@ -25,7 +26,7 @@ namespace pulsar
         RGTextureHandle RecordBloomPasses(RenderGraph& graph,
                                           RGTextureHandle input,
                                           RGTextureHandle output,
-                                          const RenderCaptureContext& ctx);
+                                          const SceneCaptureFrameData& capture);
 
         void EnsureMaterial();
         void SetupBloomSet(gfx::GFXDescriptorSet* set, gfx::GFXTexture2DView* srcView);

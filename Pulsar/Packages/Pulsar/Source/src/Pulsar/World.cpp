@@ -275,7 +275,7 @@ namespace pulsar
         Application::GetRenderThread()->EnqueueUpdate_AnyThread(
             [scene = m_renderScene.get(), p = ro](gfx::GFXResourceManager*) mutable
             {
-                scene->AddProxy_RenderThread(std::move(p));
+                scene->AddProxy(std::move(p));
             });
     }
     void World::RemoveRenderObject(const rendering::RenderObject_sp& ro)
@@ -285,7 +285,7 @@ namespace pulsar
         Application::GetRenderThread()->EnqueueUpdate_AnyThread(
             [scene = m_renderScene.get(), p = ro](gfx::GFXResourceManager*) mutable
             {
-                scene->RemoveProxy_RenderThread(p);
+                scene->RemoveProxy(p);
             });
     }
     void World::RegisterProxy(RenderComponent* comp)
@@ -301,7 +301,7 @@ namespace pulsar
         Application::GetRenderThread()->EnqueueUpdate_AnyThread(
             [scene = m_renderScene.get(), p = std::move(proxy)](gfx::GFXResourceManager*) mutable
             {
-                scene->AddProxy_RenderThread(std::move(p));
+                scene->AddProxy(std::move(p));
             });
     }
     void World::UnregisterProxy(RenderComponent* comp)
@@ -316,7 +316,7 @@ namespace pulsar
         Application::GetRenderThread()->EnqueueUpdate_AnyThread(
             [scene = m_renderScene.get(), p = std::move(proxy)](gfx::GFXResourceManager*) mutable
             {
-                scene->RemoveProxy_RenderThread(p);
+                scene->RemoveProxy(p);
             });
     }
     void World::UpdateSceneView(const SPtr<SceneView>& view, SceneViewData data)
@@ -328,7 +328,7 @@ namespace pulsar
         Application::GetRenderThread()->EnqueueUpdate_AnyThread(
             [view, data = std::move(data)](gfx::GFXResourceManager*) mutable
             {
-                view->Data = std::move(data);
+                view->SetData(std::move(data));
             });
     }
     void World::TeardownRenderScene()
@@ -336,15 +336,13 @@ namespace pulsar
         if (!m_renderScene)
             return;
 
-        // 有 m_renderScene 就意味着 World 跑在带渲染线程的 Application 里（OnWorldBegin 创建）。
-        // headless 不创建 RenderScene，上面已 early return，故此处渲染线程必然存活。
-        // 把 scene 交给独立销毁通道：它在每帧 update 之后 drain，scene 因而晚于先前入队的
-        // 所有 proxy add/remove。OnWorldEnd 紧随其后 WaitForIdle —— 在 vkDeviceWaitIdle 之后
-        // drain 该销毁，此时 GFX device 仍存活。
+        // Having m_renderScene means the World is running with a render thread.
+        // Headless worlds do not create RenderScene and return above.
+        // Use the destroy queue so the scene is destroyed after previously queued proxy updates.
         Application::GetRenderThread()->EnqueueDestroy_AnyThread(
             [scene = std::move(m_renderScene)](gfx::GFXResourceManager*) mutable
             {
-                scene->Destroy_RenderThread();
+                scene->Destroy();
             });
     }
 
@@ -374,7 +372,7 @@ namespace pulsar
             Application::GetRenderThread()->EnqueueUpdate_AnyThread(
                 [scene = m_renderScene.get(), totalTime = m_totalTime, deltaTime = m_ticker.deltatime](gfx::GFXResourceManager*) mutable
                 {
-                    scene->SetTime_RenderThread(totalTime, deltaTime);
+                    scene->SetTime(totalTime, deltaTime);
                 });
         }
 
@@ -447,8 +445,7 @@ namespace pulsar
 
         TeardownRenderScene();
 
-        // 同步卸载语义：drain 渲染线程，执行上面入队的所有 proxy 移除 / RenderScene 销毁，
-        // 并 vkDeviceWaitIdle 等 GPU 执行完。返回后 World 才算真正卸载完毕。
+        // Synchronous unload: drain proxy removals / RenderScene destroy, then wait for GPU idle.
         if (auto* rt = Application::GetRenderThread())
             rt->WaitForIdle_AnyThread();
     }
