@@ -65,7 +65,7 @@ namespace pulsar
         return mksptr(new DirectionalLightProxy());
     }
 
-    void DirectionalLightComponent::SyncRenderProxy()
+    void DirectionalLightComponent::ResolveRenderStateDirty()
     {
         auto proxy = std::static_pointer_cast<DirectionalLightProxy>(m_proxy);
         if (!proxy)

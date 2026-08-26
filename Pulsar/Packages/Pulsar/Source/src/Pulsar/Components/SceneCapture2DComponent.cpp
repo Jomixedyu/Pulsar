@@ -109,38 +109,52 @@ namespace pulsar
     {
         m_fov = value;
         UpdateCBuffer();
+        m_renderDirtyCamera = true;
+        MarkRenderStateDirty();
     }
     void SceneCapture2DComponent::SetNear(float value)
     {
         m_near = value;
         UpdateCBuffer();
+        m_renderDirtyCamera = true;
+        MarkRenderStateDirty();
     }
     void SceneCapture2DComponent::SetFar(float value)
     {
         m_far = value;
         UpdateCBuffer();
+        m_renderDirtyCamera = true;
+        MarkRenderStateDirty();
     }
     void SceneCapture2DComponent::SetBackgroundColor(const Color4f& value)
     {
         m_backgroundColor = value;
         UpdateRTBackgroundColor();
         UpdateCBuffer();
+        m_renderDirtyCamera = true;
+        MarkRenderStateDirty();
     }
     void SceneCapture2DComponent::SetProjectionMode(CaptureProjectionMode mode)
     {
         m_projectionMode = mode;
         UpdateCBuffer();
+        m_renderDirtyCamera = true;
+        MarkRenderStateDirty();
     }
     void SceneCapture2DComponent::SetOrthoSize(float value)
     {
         m_orthoSize = value;
         UpdateCBuffer();
+        m_renderDirtyCamera = true;
+        MarkRenderStateDirty();
     }
 
     void SceneCapture2DComponent::OnTransformChanged()
     {
         base::OnTransformChanged();
         UpdateCBuffer();
+        m_renderDirtyTransform = true;
+        MarkRenderStateDirty();
     }
 
     bool SceneCapture2DComponent::ExtractViewData(SceneViewData& outData)

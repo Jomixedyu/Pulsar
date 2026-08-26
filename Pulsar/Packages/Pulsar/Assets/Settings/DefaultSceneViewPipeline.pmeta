@@ -3,6 +3,6 @@
     "ExtraFiles": {},
     "Guid": "f0feaef2d794b44eb53ea4de8d53b981",
     "Tags": {},
-    "Type": "pulsar::ViewPipelineAsset",
+    "Type": "pulsar::ViewPipelineSettings",
     "WeakDependencies": {}
 }

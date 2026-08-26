@@ -4,6 +4,8 @@
 #include <gfx/GFXBuffer.h>
 #include <memory>
 
+namespace gfx { class GFXTexture2DView; }
+
 namespace pulsar
 {
     class RenderScene;
@@ -39,6 +41,11 @@ namespace pulsar
     struct SceneOpaqueColorFrameData
     {
         RGTextureHandle Color;
+    };
+
+    struct SceneResolveTargetFrameData
+    {
+        gfx::GFXTexture2DView* TargetView = nullptr;
     };
 
     struct ScenePostProcessFrameData

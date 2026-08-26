@@ -159,7 +159,7 @@ namespace pulsar
 
         // Extraction phase: runs unconditionally every frame (play or not), after all
         // node ticks/tools/gizmos have mutated state. Drains the proxy-update list.
-        SyncRenderProxies();
+        ResolveDirtyRenderStates();
     }
 
     bool World::IsSelectedNode(const ObjectPtr<Node>& node) const
@@ -346,24 +346,15 @@ namespace pulsar
             });
     }
 
-    void World::MarkProxyDirty(RenderComponent* comp)
+    void World::MarkRenderStateDirty(RenderComponent* comp)
     {
         // Dedup is guaranteed by RenderComponent::m_renderStateDirty (set before this
         // is called), so a plain push_back never produces duplicates.
-        m_pendingProxyUpdates.push_back(comp);
+        m_dirtyRenderComponents.push_back(ObjectPtr<RenderComponent>::UnsafeCreate(comp->GetObjectHandle()));
     }
 
-    void World::UnmarkProxyDirty(RenderComponent* comp)
-    {
-        auto it = std::ranges::find(m_pendingProxyUpdates, comp);
-        if (it != m_pendingProxyUpdates.end())
-        {
-            *it = m_pendingProxyUpdates.back();
-            m_pendingProxyUpdates.pop_back();
-        }
-    }
 
-    void World::SyncRenderProxies()
+    void World::ResolveDirtyRenderStates()
     {
         // Push the world-level time snapshot to the render scene every frame (it changes
         // each tick), so renderers read it from the render thread instead of live World.
@@ -376,16 +367,18 @@ namespace pulsar
                 });
         }
 
-        if (m_pendingProxyUpdates.empty())
+        if (m_dirtyRenderComponents.empty())
             return;
-        // Move out so a SyncRenderProxy() that re-marks dirty re-registers into a fresh
+        // Move out so a ResolveRenderStateDirty() that re-marks dirty re-registers into a fresh
         // list (processed next frame) rather than mutating the one we iterate.
-        auto pending = std::move(m_pendingProxyUpdates);
-        m_pendingProxyUpdates.clear();
-        for (auto* comp : pending)
+        auto pending = std::move(m_dirtyRenderComponents);
+        m_dirtyRenderComponents.clear();
+        for (auto& comp : pending)
         {
+            if (!comp)
+                continue;
             comp->m_renderStateDirty = false;
-            comp->SyncRenderProxy();
+            comp->ResolveRenderStateDirty();
         }
     }
 

@@ -69,7 +69,7 @@ namespace pulsar
         void OnTransformChanged() override;
         void OnMeshChanged();
         void OnMaterialChanged();
-        void SyncRenderProxy() override;
+        void ResolveRenderStateDirty() override;
     protected:
         CORELIB_REFL_DECL_FIELD(m_materials, new ListItemAttribute(cltypeof<Material>()));
         List_sp<RCPtr<Material>> m_materials;

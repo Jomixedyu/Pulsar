@@ -121,10 +121,9 @@ namespace pulsar
 
 
         // Per-frame dirty extraction. Components mark themselves dirty when render state
-        // changes; SyncRenderProxies() drains the pending list once per frame.
-        void            MarkProxyDirty(RenderComponent* comp);
-        void            UnmarkProxyDirty(RenderComponent* comp);
-        void            SyncRenderProxies();
+        // changes; ResolveDirtyRenderStates() drains the pending list once per frame.
+        void            MarkRenderStateDirty(RenderComponent* comp);
+        void            ResolveDirtyRenderStates();
 
         CameraManager&        GetCameraManager() { return m_cameraManager; }
         SceneCaptureManager&  GetCaptureManager() { return m_captureManager; }
@@ -141,7 +140,7 @@ namespace pulsar
         PhysicsWorld3D* m_physicsWorld3D = nullptr;
         RCPtr<Material>                       m_defaultMaterial;
         std::unique_ptr<RenderScene>          m_renderScene = std::make_unique<RenderScene>();
-        array_list<RenderComponent*>          m_pendingProxyUpdates;
+        array_list<ObjectPtr<RenderComponent>> m_dirtyRenderComponents;
         array_list<RCPtr<NodeCollection>>     m_scenes;
         RCPtr<NodeCollection>                 m_focusScene;
         CameraManager                         m_cameraManager;

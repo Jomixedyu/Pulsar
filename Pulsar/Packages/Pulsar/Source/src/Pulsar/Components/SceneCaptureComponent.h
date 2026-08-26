@@ -1,7 +1,7 @@
 #pragma once
 #include <Pulsar/IconsForkAwesome.h>
 #include "Pulsar/Assets/RenderTexture.h"
-#include "Pulsar/Assets/ViewPipelineAsset.h"
+#include "Pulsar/Assets/ViewPipelineSettings.h"
 #include "RenderComponent.h"
 #include <memory>
 
@@ -65,6 +65,7 @@ namespace pulsar
         SceneCaptureComponent();
         void BeginComponent() override;
         void EndComponent() override;
+        void PostEditChange(FieldInfo* info) override;
 
         virtual void Render(array_list<RenderCapturePassInfo*>& passes) { }
         virtual bool CanRender() const { return true; }
@@ -78,15 +79,23 @@ namespace pulsar
     protected:
         // Unified proxy hooks: the proxy is a SceneView owned by the render thread.
         SPtr<rendering::RenderProxy> CreateRenderProxy() override;
-        void SyncRenderProxy() override;
+        void ResolveRenderStateDirty() override;
+        void GetSubscribeObserverHandles(array_list<ObjectHandle>& out) override;
+        void OnNotifyObserver(ObjectHandle inDependency, DependencyObjectState msg) override;
 
         // Cached typed view of m_proxy (the SceneView this component owns). Kept as a
         // shared ref like mesh renderers' m_renderObject; the render scene owns the
         // canonical instance. Used to address this view's snapshot in UpdateSceneView.
         SPtr<SceneView> m_sceneView;
 
-        CORELIB_REFL_DECL_FIELD(m_viewPipeline)
-        RCPtr<ViewPipelineAsset> m_viewPipeline;
+        bool m_renderDirtyTransform = true;
+        bool m_renderDirtyCamera = true;
+        bool m_renderDirtyRenderTarget = true;
+        bool m_renderDirtyRenderFeature = true;
+        bool m_renderDirtyPostProcess = true;
+
+        CORELIB_REFL_DECL_FIELD(m_viewPipelineSettings)
+        RCPtr<ViewPipelineSettings> m_viewPipelineSettings;
 
 
         CORELIB_REFL_DECL_FIELD(m_enabledCapture)

@@ -452,7 +452,7 @@ namespace pulsar
         RebuildObserver();
     }
 
-    void StaticMeshRendererComponent::SyncRenderProxy()
+    void StaticMeshRendererComponent::ResolveRenderStateDirty()
     {
         if (!m_renderObject)
             return;

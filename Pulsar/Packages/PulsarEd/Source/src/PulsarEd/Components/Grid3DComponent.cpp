@@ -93,7 +93,7 @@ namespace pulsared
         base::OnTransformChanged();
         MarkRenderStateDirty();
     }
-    void Grid3DComponent::SyncRenderProxy()
+    void Grid3DComponent::ResolveRenderStateDirty()
     {
         if (!m_renderObject)
             return;

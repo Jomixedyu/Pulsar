@@ -1,18 +1,11 @@
 #include "ViewPipeline.h"
 #include "SceneCaptureFrameData.h"
-#include <Pulsar/Logger.h>
 #include <Pulsar/Rendering/SceneView.h>
 #include <Pulsar/Rendering/RenderScene.h>
 #include <Pulsar/Rendering/LightProxy.h>
-#include <gfx/GFXCommandBuffer.h>
 #include <gfx/TextureClasses.h>
+#include <gfx/GFXCommandBuffer.h>
 #include <cmath>
-
-#include "../Modules/TonemapRenderModule.h"
-#include "../Modules/DisplayEncodingRenderModule.h"
-#include "../Modules/ColorGradingRenderModule.h"
-#include "../Modules/CustomPostProcessRenderModule.h"
-#include "../Modules/GizmoOverlayRenderModule.h"
 
 namespace pulsar
 {
@@ -54,73 +47,65 @@ namespace pulsar
         return { std::move(renderers) };
     }
 
-    ViewPipeline::ViewPipeline()
-    {
-        m_opaqueModule.Initialize();
-        m_outlineModule.Initialize();
-        m_translucencyModule.Initialize();
-        m_gizmoOverlayModule.Initialize();
 
-        m_postProcessRenderModules.push_back(std::make_unique<TonemapRenderModule>());
-        m_postProcessRenderModules.push_back(std::make_unique<CustomPostProcessRenderModule>());
-        m_postProcessRenderModules.push_back(std::make_unique<ColorGradingRenderModule>());
-        m_postProcessRenderModules.push_back(std::make_unique<BloomRenderModule>());
-        m_postProcessRenderModules.push_back(std::make_unique<DisplayEncodingRenderModule>());
-
-        for (auto& module : m_postProcessRenderModules)
-            module->Initialize();
-    }
+    ViewPipeline::ViewPipeline() = default;
 
     ViewPipeline::~ViewPipeline()
     {
-        for (auto& feature : m_featureProxies)
+        for (auto& feature : m_features)
             feature->OnDestroyResource();
-
-        for (auto& module : m_postProcessRenderModules)
-            module->Destroy();
-        m_gizmoOverlayModule.Destroy();
-        m_translucencyModule.Destroy();
-        m_outlineModule.Destroy();
-        m_opaqueModule.Destroy();
     }
 
     void ViewPipeline::OnCreateResource(const ViewPipelineRenderData& data)
     {
-        RebuildFeatureProxies(data);
+        RebuildFeatures(data);
     }
 
     void ViewPipeline::ApplyRenderData(const ViewPipelineRenderData& data)
     {
-        RebuildFeatureProxies(data);
+        if (HasSameFeatures(data))
+            return;
+
+        RebuildFeatures(data);
     }
 
-    void ViewPipeline::RebuildFeatureProxies(const ViewPipelineRenderData& data)
+    bool ViewPipeline::HasSameFeatures(const ViewPipelineRenderData& data) const
     {
-        for (auto& feature : m_featureProxies)
-            feature->OnDestroyResource();
-        m_featureProxies.clear();
+        return m_featureTypes == data.FeatureTypes;
+    }
 
-        for (const auto& featureData : data.Features)
+    void ViewPipeline::RebuildFeatures(const ViewPipelineRenderData& data)
+    {
+        for (auto& feature : m_features)
+            feature->OnDestroyResource();
+        m_features.clear();
+        m_featureTypes.clear();
+
+        for (const auto& featureFactory : data.Features)
         {
-            if (!featureData)
+            if (!featureFactory)
                 continue;
 
-            auto feature = featureData->CreateProxy();
+            auto feature = featureFactory();
             if (!feature)
                 continue;
 
             feature->OnCreateResource();
-            m_featureProxies.push_back(std::move(feature));
+            m_features.push_back(std::move(feature));
+
         }
+
+        m_featureTypes = data.FeatureTypes;
     }
 
     void ViewPipeline::RecordFeatures(RenderGraph& graph, RenderFrameData& frameData)
     {
-        for (const auto& feature : m_featureProxies)
+        for (const auto& feature : m_features)
         {
             feature->OnRecord(graph, frameData);
         }
     }
+
     void ViewPipeline::OnRecord(RenderGraph& graph, RenderFrameData& frameData)
     {
         auto* capture = frameData.Get<SceneCaptureFrameData>();
@@ -160,59 +145,20 @@ namespace pulsar
             resolveTargetView = camRenderTexture.GetRenderTarget0().get();
         }
 
-        auto hdrFormat = gfx::GFXTextureFormat::R16G16B16A16_SFloat;
-
         frameData.Set(SceneCaptureGpuFrameData{
             capture->viewProxy ? capture->viewProxy->GetCameraBuffer() : nullptr,
             scene->GetWorldBuffer(),
             scene->GetLightsBuffer(),
             scene->GetPerRenderObjectData().GetBuffer(),
         });
-        auto& sceneTarget = frameData.Set(SceneRenderTargetFrameData{ hSceneColor });
+        frameData.Set(SceneRenderTargetFrameData{ hSceneColor });
+        frameData.Set(SceneResolveTargetFrameData{ resolveTargetView });
         frameData.Set(CullRenderers(*scene, *view));
 
-        RecordFeatures(graph, frameData);
-
-        // OpaqueRenderModule (auto-resolve to final RT if MSAA is enabled)
-        m_opaqueModule.SetResolveTargetView(resolveTargetView);
-        m_opaqueModule.OnRecord(graph, frameData);
-
-        // OutlineRenderModule: draws vertex-expanded back-faces for materials with a VertexOutline pass
-        m_outlineModule.OnRecord(graph, frameData);
-
-        // ---- Translucency: copy opaque scene color for refraction/distortion sampling ----
-        RGTextureDesc opaqueColorDesc{};
-        opaqueColorDesc.Width  = camRenderTexture.Width;
-        opaqueColorDesc.Height = camRenderTexture.Height;
-        opaqueColorDesc.TargetInfos.push_back({ gfx::GFXTextureTargetType::ColorTarget, hdrFormat });
-        auto& opaqueColor = frameData.Set(SceneOpaqueColorFrameData{ graph.CreateTransient("OpaqueColorTexture", opaqueColorDesc) });
-
-
-        graph.AddPass("CopyOpaqueColor")
-            .Read(sceneTarget.Target)
-            .Write(opaqueColor.Color)
-            .NoRenderPass()
-            .Execute([hSceneColor = sceneTarget.Target, hOpaqueColor = opaqueColor.Color](RGPassContext& passCtx, gfx::GFXCommandBuffer& cmdBuffer)
-            {
-                auto* srcRT = passCtx.Get(hSceneColor);
-                auto* dstRT = passCtx.Get(hOpaqueColor);
-                if (!srcRT || !dstRT) return;
-                auto srcView = srcRT->GetRenderTarget0();
-                auto dstView = dstRT->GetRenderTarget0();
-                if (!srcView || !dstView) return;
-                cmdBuffer.CmdBlit(srcView.get(), dstView.get());
-            });
-
-        // TranslucencyRenderModule continues drawing onto the final target
-        m_translucencyModule.OnRecord(graph, frameData);
-
-        // Preserve the old post-process input semantics: post-processing starts from the final camera RT.
-
-        // ---- Post-Process Features ----
         RGTextureDesc pingPongDesc{};
-        pingPongDesc.Width  = camRenderTexture.Width;
+        pingPongDesc.Width = camRenderTexture.Width;
         pingPongDesc.Height = camRenderTexture.Height;
-        pingPongDesc.TargetInfos.push_back({ gfx::GFXTextureTargetType::ColorTarget, hdrFormat });
+        pingPongDesc.TargetInfos.push_back({ gfx::GFXTextureTargetType::ColorTarget, gfx::GFXTextureFormat::R16G16B16A16_SFloat });
 
         auto hPostProcessA = graph.CreateTransient("PostProcessPingPongA", pingPongDesc);
         auto hPostProcessB = graph.CreateTransient("PostProcessPingPongB", pingPongDesc);
@@ -222,12 +168,9 @@ namespace pulsar
             .PingPongA = hPostProcessA,
             .PingPongB = hPostProcessB,
         });
-        for (auto& module : m_postProcessRenderModules)
-        {
-            module->OnRecord(graph, frameData);
-        }
 
-        // Copy final result back to camera RT if needed
+        RecordFeatures(graph, frameData);
+
         if (postProcess.ActiveColor != postProcess.FinalTarget)
         {
             gfx::GFXTexture2DView_sp fallbackView = camRenderTexture.GetRenderTarget0();
@@ -237,7 +180,7 @@ namespace pulsar
                 .NoRenderPass()
                 .Execute([hSrc = postProcess.ActiveColor, hFinal = postProcess.FinalTarget, fallbackView](RGPassContext& passCtx, gfx::GFXCommandBuffer& cmdBuffer)
                 {
-                    const auto* srcRT   = passCtx.Get(hSrc);
+                    const auto* srcRT = passCtx.Get(hSrc);
                     const auto* finalRT = passCtx.Get(hFinal);
                     gfx::GFXTexture2DView* finalView = nullptr;
                     if (finalRT)
@@ -256,13 +199,5 @@ namespace pulsar
                     cmdBuffer.CmdBlit(srcView.get(), finalView);
                 });
         }
-
-        // Draw gizmos after all post-processing so they remain unaffected
-        if (view->GizmoPassEnabled)
-        {
-            m_gizmoOverlayModule.OnRecord(graph, frameData);
-        }
-
     }
-
-} // namespace pulsar
+}

@@ -17,7 +17,7 @@ namespace pulsar
 
     protected:
         SPtr<rendering::RenderProxy> CreateRenderProxy() override;
-        void SyncRenderProxy() override;
+        void ResolveRenderStateDirty() override;
 
         void PostEditChange(FieldInfo* info) override;
 

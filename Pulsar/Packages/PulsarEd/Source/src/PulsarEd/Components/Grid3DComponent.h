@@ -18,7 +18,7 @@ namespace pulsared
         virtual void EndComponent() override;
 
         void OnTransformChanged() override;
-        void SyncRenderProxy() override;
+        void ResolveRenderStateDirty() override;
     private:
         array_list<Vector3f> m_vert;
         array_list<Color4b> m_colors;

@@ -41,7 +41,12 @@ namespace pulsar
         const RCPtr<RenderTexture>& GetRenderTexture() const { return m_renderTarget; }
 
         uint32_t GetMSAASamples() const { return m_msaaSamples; }
-        void SetMSAASamples(uint32_t value) { m_msaaSamples = value; }
+        void SetMSAASamples(uint32_t value)
+        {
+            m_msaaSamples = value;
+            m_renderDirtyRenderTarget = true;
+            MarkRenderStateDirty();
+        }
 
         void OnTransformChanged() override;
 

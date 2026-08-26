@@ -33,7 +33,7 @@ namespace pulsar
         return mksptr(new PointLightProxy());
     }
 
-    void PointLightComponent::SyncRenderProxy()
+    void PointLightComponent::ResolveRenderStateDirty()
     {
         auto proxy = std::static_pointer_cast<PointLightProxy>(m_proxy);
         if (!proxy)

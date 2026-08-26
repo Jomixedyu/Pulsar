@@ -93,7 +93,7 @@ namespace pulsared
         MarkRenderStateDirty();
     }
 
-    void Grid2DComponent::SyncRenderProxy()
+    void Grid2DComponent::ResolveRenderStateDirty()
     {
         if (!m_renderObject)
             return;

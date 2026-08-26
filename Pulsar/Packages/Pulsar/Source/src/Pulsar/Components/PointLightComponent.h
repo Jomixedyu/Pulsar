@@ -20,7 +20,7 @@ namespace pulsar
         void SetRadius(float value);
     protected:
         SPtr<rendering::RenderProxy> CreateRenderProxy() override;
-        void SyncRenderProxy() override;
+        void ResolveRenderStateDirty() override;
 
         void OnDrawGizmo(GizmoPainter* painter, bool selected) override;
 

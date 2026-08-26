@@ -175,6 +175,8 @@ namespace pulsar
 
         UpdateRT();
         BeginRT();
+        m_renderDirtyRenderTarget = true;
+        MarkRenderStateDirty();
     }
 
 
@@ -244,6 +246,8 @@ namespace pulsar
     void CameraComponent::OnTransformChanged()
     {
         base::OnTransformChanged();
+        m_renderDirtyTransform = true;
+        MarkRenderStateDirty();
     }
 
     bool CameraComponent::ExtractViewData(SceneViewData& outData)

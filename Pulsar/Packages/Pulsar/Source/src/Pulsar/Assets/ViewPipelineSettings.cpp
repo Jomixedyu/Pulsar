@@ -1,15 +1,15 @@
-#include "ViewPipelineAsset.h"
+#include "ViewPipelineSettings.h"
 #include <CoreLib/Assembly.h>
 #include <CoreLib.Serialization/JsonSerializer.h>
 
 namespace pulsar
 {
-    ViewPipelineAsset::ViewPipelineAsset()
+    ViewPipelineSettings::ViewPipelineSettings()
     {
         init_sptr_member(m_features);
     }
 
-    void ViewPipelineAsset::Serialize(AssetSerializer* serializer)
+    void ViewPipelineSettings::Serialize(AssetSerializer* serializer)
     {
         base::Serialize(serializer);
 
@@ -51,7 +51,7 @@ namespace pulsar
         }
     }
 
-    void ViewPipelineAsset::OnCollectAssetDependencies(array_list<guid_t>& dependencies)
+    void ViewPipelineSettings::OnCollectAssetDependencies(array_list<guid_t>& dependencies)
     {
         for (const auto& feature : *m_features)
         {
@@ -60,17 +60,45 @@ namespace pulsar
         }
     }
 
-    void ViewPipelineAsset::BuildRenderData(ViewPipelineRenderData& outData) const
+    void ViewPipelineSettings::PostEditChange(FieldInfo* info)
     {
+        base::PostEditChange(info);
+        NotifyModified();
+    }
+
+    void ViewPipelineSettings::GetSubscribeObserverHandles(array_list<ObjectHandle>& out)
+    {
+        base::GetSubscribeObserverHandles(out);
+    }
+
+    void ViewPipelineSettings::OnNotifyObserver(ObjectHandle inDependency, DependencyObjectState msg)
+    {
+        base::OnNotifyObserver(inDependency, msg);
+        if (EnumHasFlag(msg, DependencyObjectState::Modified))
+            NotifyModified();
+    }
+
+    void ViewPipelineSettings::NotifyModified()
+    {
+        RebuildObserver();
+        RuntimeObjectManager::NotifyDependencySource(GetObjectHandle(), DependencyObjectState::Modified);
+    }
+
+    void ViewPipelineSettings::BuildRenderData(ViewPipelineRenderData& outData) const
+    {
+        outData.FeatureTypes.clear();
         outData.Features.clear();
         for (const auto& feature : *m_features)
         {
             if (!feature)
                 continue;
 
-            auto renderData = feature->BuildRenderData();
-            if (renderData)
-                outData.Features.push_back(std::move(renderData));
+            auto factory = feature->BuildRenderFeatureFactory();
+            if (factory)
+            {
+                outData.FeatureTypes.push_back(feature->GetType());
+                outData.Features.push_back(std::move(factory));
+            }
         }
     }
 }

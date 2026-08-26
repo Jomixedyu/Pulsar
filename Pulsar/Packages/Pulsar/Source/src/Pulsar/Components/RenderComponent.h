@@ -9,7 +9,7 @@ namespace pulsar
     //   BeginComponent  -> CreateRenderProxy + World::AddRenderProxy   (enqueue Add)
     //   EndComponent    -> World::RemoveRenderProxy                    (enqueue Remove)
     //   setter changes  -> MarkRenderStateDirty                        (register dirty)
-    //   end of Tick     -> SyncRenderProxy                             (snapshot + enqueue Update)
+    //   end of Tick     -> ResolveRenderStateDirty                    (snapshot + enqueue update)
     class RenderComponent : public Component
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::RenderComponent, Component);
@@ -19,9 +19,9 @@ namespace pulsar
         void BeginComponent() override;
         void EndComponent() override;
 
-        // Register this component into the world's end-of-frame proxy-update list.
-        // Setters that change render-relevant state call this; the actual snapshot/enqueue
-        // happens in World::SyncRenderProxies() via SyncRenderProxy().
+        // Register this component into the world's end-of-frame dirty render-state list.
+        // Setters that change render-relevant state call this; ResolveDirtyRenderStates()
+        // later calls ResolveRenderStateDirty() on the game thread.
         void MarkRenderStateDirty();
 
     protected:
@@ -31,7 +31,7 @@ namespace pulsar
 
         // Snapshot render-relevant data and enqueue the write to the render thread.
         // Called during the extraction phase (end of World::Tick) for dirty components.
-        virtual void SyncRenderProxy() {}
+        virtual void ResolveRenderStateDirty() {}
 
         SPtr<rendering::RenderProxy> m_proxy;
         bool m_renderStateDirty = false;

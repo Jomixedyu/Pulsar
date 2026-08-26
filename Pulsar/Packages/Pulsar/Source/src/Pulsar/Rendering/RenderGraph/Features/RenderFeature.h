@@ -5,10 +5,10 @@ namespace pulsar
     class RenderGraph;
     class RenderFrameData;
 
-    class RenderFeatureProxy
+    class RenderFeature
     {
     public:
-        virtual ~RenderFeatureProxy() = default;
+        virtual ~RenderFeature() = default;
 
         virtual void OnCreateResource() {}
         virtual void OnDestroyResource() {}

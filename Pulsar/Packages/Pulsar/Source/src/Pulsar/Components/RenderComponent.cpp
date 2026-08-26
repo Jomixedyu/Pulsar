@@ -13,12 +13,7 @@ namespace pulsar
 
     void RenderComponent::EndComponent()
     {
-        if (m_renderStateDirty)
-        {
-            if (auto* world = GetWorld())
-                world->UnmarkProxyDirty(this);
-            m_renderStateDirty = false;
-        }
+        m_renderStateDirty = false;
         if (auto* world = GetWorld())
             world->UnregisterProxy(this);
         base::EndComponent();
@@ -30,6 +25,6 @@ namespace pulsar
             return;
         m_renderStateDirty = true;
         if (auto* world = GetWorld())
-            world->MarkProxyDirty(this);
+            world->MarkRenderStateDirty(this);
     }
 }

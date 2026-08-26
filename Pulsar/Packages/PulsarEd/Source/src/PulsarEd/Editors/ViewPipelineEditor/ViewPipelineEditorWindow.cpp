@@ -8,6 +8,12 @@
 
 namespace pulsared
 {
+    static void MarkPipelineModified(const RCPtr<ViewPipelineSettings>& pipeline)
+    {
+        AssetDatabase::MarkDirty(pipeline);
+        pipeline->NotifyModified();
+    }
+
     void ViewPipelineEditorWindow::OnOpen()
     {
         base::OnOpen();
@@ -19,14 +25,14 @@ namespace pulsared
     {
         base::OnDrawAssetEditor(dt);
 
-        auto pipeline = cast<ViewPipelineAsset>(m_assetObject);
+        auto pipeline = cast<ViewPipelineSettings>(m_assetObject);
         if (!pipeline)
             return;
 
         DrawFeatureList(pipeline);
     }
 
-    void ViewPipelineEditorWindow::DrawFeatureList(const RCPtr<ViewPipelineAsset>& pipeline)
+    void ViewPipelineEditorWindow::DrawFeatureList(const RCPtr<ViewPipelineSettings>& pipeline)
     {
         auto& features = *pipeline->GetFeatures();
 
@@ -62,7 +68,7 @@ namespace pulsared
                 if (auto feature = sptr_cast<RenderFeatureSettings>(object))
                 {
                     features.push_back(feature);
-                    AssetDatabase::MarkDirty(pipeline);
+                    MarkPipelineModified(pipeline);
                 }
             }
             catch (const std::exception&)
@@ -82,7 +88,7 @@ namespace pulsared
             if (ImGui::SmallButton(ICON_FK_TRASH))
             {
                 features.erase(features.begin() + index);
-                AssetDatabase::MarkDirty(pipeline);
+                MarkPipelineModified(pipeline);
                 if (opened)
                     ImGui::TreePop();
                 ImGui::PopID();
@@ -94,20 +100,20 @@ namespace pulsared
             if (ImGui::SmallButton(ICON_FK_ARROW_UP) && index > 0)
             {
                 std::swap(features[index], features[index - 1]);
-                AssetDatabase::MarkDirty(pipeline);
+                MarkPipelineModified(pipeline);
             }
 
             ImGui::SameLine();
             if (ImGui::SmallButton(ICON_FK_ARROW_DOWN) && index + 1 < static_cast<int>(features.size()))
             {
                 std::swap(features[index], features[index + 1]);
-                AssetDatabase::MarkDirty(pipeline);
+                MarkPipelineModified(pipeline);
             }
 
             if (opened)
             {
                 if (feature && PImGui::ObjectFieldProperties(feature->GetType(), feature->GetType(), feature.get(), feature.get()))
-                    AssetDatabase::MarkDirty(pipeline);
+                    MarkPipelineModified(pipeline);
                 ImGui::TreePop();
             }
 

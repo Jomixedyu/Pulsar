@@ -41,7 +41,12 @@ namespace pulsar
         Ray ScreenPointToRay(Vector2f mousePosition) const;
 
         bool IsGizmoPassEnabled() const { return m_gizmoPassEnabled; }
-        void SetGizmoPassEnabled(bool value) { m_gizmoPassEnabled = value; }
+        void SetGizmoPassEnabled(bool value)
+        {
+            m_gizmoPassEnabled = value;
+            m_renderDirtyCamera = true;
+            MarkRenderStateDirty();
+        }
 
         bool ExtractViewData(SceneViewData& outData) override;
 

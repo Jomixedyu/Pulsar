@@ -1,13 +1,7 @@
 #pragma once
 #include <Pulsar/Rendering/RenderGraph/RenderPipeline.h>
 #include <Pulsar/Rendering/RenderGraph/Pipelines/ViewPipelineRenderData.h>
-#include <Pulsar/Rendering/RenderGraph/Features/RenderFeatureProxy.h>
-#include <Pulsar/Rendering/RenderGraph/Modules/OpaqueRenderModule.h>
-#include <Pulsar/Rendering/RenderGraph/Modules/TranslucencyRenderModule.h>
-#include <Pulsar/Rendering/RenderGraph/Modules/OutlineRenderModule.h>
-#include <Pulsar/Rendering/RenderGraph/Modules/BloomRenderModule.h>
-#include <Pulsar/Rendering/RenderGraph/Modules/RenderModule.h>
-#include <Pulsar/Rendering/RenderGraph/Modules/GizmoOverlayRenderModule.h>
+#include <Pulsar/Rendering/RenderGraph/Features/RenderFeature.h>
 #include <Pulsar/Rendering/PerPassData.h>
 #include <memory>
 #include <vector>
@@ -25,14 +19,12 @@ namespace pulsar
         void OnRecord(RenderGraph& graph, RenderFrameData& frameData) override;
 
     private:
-        void RebuildFeatureProxies(const ViewPipelineRenderData& data);
+        bool HasSameFeatures(const ViewPipelineRenderData& data) const;
+    private:
+        void RebuildFeatures(const ViewPipelineRenderData& data);
         void RecordFeatures(RenderGraph& graph, RenderFrameData& frameData);
 
-        OpaqueRenderModule m_opaqueModule;
-        OutlineRenderModule m_outlineModule;
-        TranslucencyRenderModule m_translucencyModule;
-        std::vector<std::unique_ptr<RenderModule>> m_postProcessRenderModules;
-        GizmoOverlayRenderModule m_gizmoOverlayModule;
-        std::vector<std::unique_ptr<RenderFeatureProxy>> m_featureProxies;
+        std::vector<std::unique_ptr<RenderFeature>> m_features;
+        std::vector<Type*> m_featureTypes;
     };
 }

@@ -53,7 +53,7 @@ namespace pulsar
         RenderTargetSnapshot RenderTarget;
 
         // Post-process settings blended for this view's camera position, snapshotted on
-        // the game thread (SyncRenderProxy) so the render thread never touches the live
+        // the game thread (ResolveRenderStateDirty) so the render thread never touches the live
         // PostProcessSubsystem / volume components.
         VolumeStack PostProcessStack;
 
