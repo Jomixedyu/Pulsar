@@ -3,7 +3,13 @@
 #include "Pulsar/AssetManager.h"
 #include "Pulsar/Assets/Material.h"
 #include "Pulsar/Assets/Shader.h"
+#include "Pulsar/Assets/DisplayEncodingSettings.h"
+#include "Pulsar/Assets/NodeCollection.h"
+#include "Pulsar/Assets/VolumeProfile.h"
 #include "Pulsar/Components/CameraComponent.h"
+#include "Pulsar/Components/VolumeComponent.h"
+#include "Pulsar/Node.h"
+#include "Pulsar/Rendering/RenderGraph/Features/DisplayEncodingRenderFeature.h"
 
 #include <PulsarEd/Menus/Menu.h>
 #include <PulsarEd/Menus/MenuEntry.h>
@@ -48,10 +54,18 @@ namespace pulsared
 
         if (auto* world = m_viewportFrame.GetWorld())
         {
+            auto volumeNode = world->GetResidentScene()->NewNode("Display Encoding Volume");
+            auto volumeComponent = volumeNode->AddComponent<VolumeComponent>();
+            volumeComponent->SetIsGlobal(true);
+            auto profile = NewAssetObject<VolumeProfile>();
+            profile->GetEffects()->push_back(mksptr(new DisplayEncodingSettings()));
+            volumeComponent->SetProfile(profile);
+
             m_previewPipeline = NewAssetObject<ViewPipelineSettings>();
             auto feature = mksptr(new FullScreenRenderFeatureSettings());
             feature->m_material = m_previewMaterial;
             m_previewPipeline->GetFeatures()->push_back(feature);
+            m_previewPipeline->GetFeatures()->push_back(mksptr(new DisplayEncodingRenderFeatureSettings()));
             world->GetCurrentCamera()->SetViewPipelineSettings(m_previewPipeline);
         }
     }
