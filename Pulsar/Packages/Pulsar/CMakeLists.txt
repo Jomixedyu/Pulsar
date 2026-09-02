@@ -13,8 +13,7 @@ set(PUBLIC_MODULE
         angelscript
 )
 set(PRIVATE_MODULE
-        DirectXTex
-        astc
+        TexCompress
         box2d
         SDL2lib
         Jolt
@@ -27,7 +26,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 endif ()
 
 if (WIN32)
-    add_compile_definitions(WIN32)
+  add_compile_definitions(WIN32)
 endif ()
 
 file(GLOB_RECURSE Pulsar_SRC "Source/src/*.h" "Source/src/*.hpp" "Source/src/*.cpp" "Source/src/*.natvis")
