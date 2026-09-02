@@ -26,7 +26,7 @@ namespace pulsar
         void SetPriority(int value) { m_priority = value; }
 
         const RCPtr<VolumeProfile>& GetProfile() const { return m_profile; }
-        void SetProfile(const RCPtr<VolumeProfile>& profile) { m_profile = profile; }
+        void SetProfile(const RCPtr<VolumeProfile>& profile);
 
         // Returns the effective box extent from the attached Node's Transform scale.
         // If the Node has no Transform, returns Vector3f::one().
@@ -37,6 +37,10 @@ namespace pulsar
         float ComputeBlendWeight(const Vector3f& worldPos) const;
 
         void GetDependenciesAsset(array_list<guid_t>& deps) const override;
+        void PostEditChange(FieldInfo* info) override;
+        void GetSubscribeObserverHandles(array_list<ObjectHandle>& out) override;
+        void OnNotifyObserver(ObjectHandle inDependency, DependencyObjectState msg) override;
+        void OnTransformChanged() override;
 
         void OnDrawGizmo(GizmoPainter* painter, bool selected) override;
 

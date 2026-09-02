@@ -143,6 +143,8 @@ namespace pulsar
 
         UpdateRT();
         BeginRT();
+        m_renderDirtyRenderTarget = true;
+        MarkRenderStateDirty();
 
     }
 

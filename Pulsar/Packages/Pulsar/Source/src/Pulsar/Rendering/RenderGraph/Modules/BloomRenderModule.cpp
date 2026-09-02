@@ -1,5 +1,4 @@
 #include "BloomRenderModule.h"
-#include <Pulsar/Assets/BloomSettings.h>
 #include <Pulsar/Rendering/SceneView.h>
 #include <Pulsar/Assets/RenderTexture.h>
 #include <Pulsar/Assets/Material.h>
@@ -21,7 +20,17 @@ namespace pulsar
         if (!postProcess || !capture || !capture->view)
             return;
 
-        ReadSettings(capture->view->PostProcessStack);
+        auto* snapshot = capture->view->PostProcessStack.GetComponent<BloomRenderSnapshot>();
+        if (snapshot)
+        {
+            m_bloomEnabled = snapshot->Enabled;
+            m_bloomThreshold = snapshot->Threshold;
+            m_bloomIntensity = snapshot->Intensity;
+        }
+        else
+        {
+            m_bloomEnabled = false;
+        }
         if (!IsEnabled())
             return;
 
@@ -30,14 +39,9 @@ namespace pulsar
         postProcess->PushColor(result);
     }
 
-    BloomRenderModule::BloomRenderModule()
+    BloomRenderModule::BloomRenderModule(const std::shared_ptr<MaterialProxy>& proxy)
+        : m_proxy(proxy)
     {
-        auto shader = AssetManager::Get()->LoadAsset<Shader>("Pulsar/Shaders/NapBloom");
-        if (!shader)
-            return;
-
-        m_material = Material::StaticCreate(shader);
-        m_material->CreateGPUResource();
     }
 
     BloomRenderModule::~BloomRenderModule() = default;
@@ -120,39 +124,9 @@ namespace pulsar
         m_combineLayout.reset();
     }
 
-    void BloomRenderModule::EnsureMaterial()
-    {
-        if (m_material)
-            return;
-
-        auto shader = AssetManager::Get()->LoadAsset<Shader>("Pulsar/Shaders/NapBloom");
-        if (!shader)
-            return;
-
-        m_material = Material::StaticCreate(shader);
-        m_material->CreateGPUResource();
-    }
-
     bool BloomRenderModule::IsEnabled() const
     {
-        return m_material != nullptr && m_bloomEnabled;
-    }
-
-    void BloomRenderModule::ReadSettings(const VolumeStack& stack)
-    {
-        auto* settings = stack.GetComponent<BloomSettings>();
-        if (settings)
-        {
-            m_bloomEnabled   = settings->m_enabled;
-            m_bloomThreshold = settings->m_threshold;
-            m_bloomIntensity = settings->m_intensity;
-        }
-        else
-        {
-            m_bloomEnabled   = true;
-            m_bloomThreshold = 0.44922f;
-            m_bloomIntensity = 1.0f;
-        }
+        return m_proxy != nullptr && m_bloomEnabled;
     }
 
     void BloomRenderModule::WriteBloomParams(uint32_t idx, const Vector2f& texelSize, const Vector2f& direction, int32_t sampleMode, float threshold)
@@ -219,11 +193,6 @@ namespace pulsar
         if (!capture.view)
             return input;
 
-        EnsureMaterial();
-        if (!m_material)
-            return input;
-        m_material->SubmitParameters();
-        m_proxy = m_material->GetRenderProxy();
         if (!m_proxy)
             return input;
 

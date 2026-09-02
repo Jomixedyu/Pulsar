@@ -24,6 +24,48 @@ namespace pulsar
         }
     }
 
+    void VolumeComponent::PostEditChange(FieldInfo* info)
+    {
+        base::PostEditChange(info);
+        RebuildObserver();
+
+        if (auto* world = GetWorld())
+        {
+            if (auto* ppSub = world->GetSubsystem<PostProcessSubsystem>())
+                ppSub->NotifyVolumeSettingsChanged();
+        }
+    }
+
+    void VolumeComponent::GetSubscribeObserverHandles(array_list<ObjectHandle>& out)
+    {
+        base::GetSubscribeObserverHandles(out);
+        if (m_profile)
+            out.push_back(m_profile.GetHandle());
+    }
+
+    void VolumeComponent::OnNotifyObserver(ObjectHandle inDependency, DependencyObjectState msg)
+    {
+        base::OnNotifyObserver(inDependency, msg);
+        if (EnumHasFlag(msg, DependencyObjectState::Modified))
+        {
+            if (auto* world = GetWorld())
+            {
+                if (auto* ppSub = world->GetSubsystem<PostProcessSubsystem>())
+                    ppSub->NotifyVolumeSettingsChanged();
+            }
+        }
+    }
+
+    void VolumeComponent::OnTransformChanged()
+    {
+        base::OnTransformChanged();
+        if (auto* world = GetWorld())
+        {
+            if (auto* ppSub = world->GetSubsystem<PostProcessSubsystem>())
+                ppSub->NotifyVolumeSettingsChanged();
+        }
+    }
+
     void VolumeComponent::OnDrawGizmo(GizmoPainter* painter, bool selected)
     {
         static auto boxArray = SimplePrimitiveUtils::CreateBox<Vector3f>();
@@ -58,6 +100,8 @@ namespace pulsar
     void VolumeComponent::BeginComponent()
     {
         base::BeginComponent();
+        RebuildObserver();
+
         if (auto* world = GetWorld())
         {
             if (auto* ppSub = world->GetSubsystem<PostProcessSubsystem>())
@@ -73,6 +117,21 @@ namespace pulsar
                 ppSub->UnregisterVolume(this);
         }
         base::EndComponent();
+    }
+
+    void VolumeComponent::SetProfile(const RCPtr<VolumeProfile>& profile)
+    {
+        if (m_profile == profile)
+            return;
+
+        m_profile = profile;
+        RebuildObserver();
+
+        if (auto* world = GetWorld())
+        {
+            if (auto* ppSub = world->GetSubsystem<PostProcessSubsystem>())
+                ppSub->NotifyVolumeSettingsChanged();
+        }
     }
 
     Vector3f VolumeComponent::GetEffectiveExtent() const

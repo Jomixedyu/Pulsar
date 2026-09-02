@@ -11,6 +11,9 @@ CORELIB_DECL_BOXING(pulsar::LUTColorSpace, pulsar::BoxingLUTColorSpace);
 
 namespace pulsar
 {
+    class ColorGradingSettings;
+    class ColorGradingRenderSnapshot;
+
     class ColorGradingSettings : public VolumeSettings
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::ColorGradingSettings, VolumeSettings);
@@ -33,11 +36,25 @@ namespace pulsar
         bool IsEnabled() const override { return m_enabled; }
         void Blend(float weight, VolumeSettings* accumulator) override;
         void CollectAssetDependencies(array_list<guid_t>& deps) override;
+        SPtr<VolumeRenderSnapshot> BuildRenderSnapshot() const override;
 
     private:
         float m_blendWeight       = 0.0f; // transient
         float m_intensitySum      = 0.0f; // transient
         float m_dominantLUTWeight = 0.0f; // transient
+    };
+
+    class ColorGradingRenderSnapshot final : public VolumeRenderSnapshot
+    {
+    public:
+        using SettingsType = ColorGradingSettings;
+        bool Enabled = false;
+        float Intensity = 1.0f;
+        int LutSize = 16;
+        LUTColorSpace ColorSpace = LUTColorSpace::Linear;
+        gfx::TextureHandle LutTexture;
+
+        Type* GetSettingsType() const override { return cltypeof<ColorGradingSettings>(); }
     };
 
 } // namespace pulsar

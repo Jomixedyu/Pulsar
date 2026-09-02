@@ -154,6 +154,7 @@ namespace pulsar
         base::OnTransformChanged();
         UpdateCBuffer();
         m_renderDirtyTransform = true;
+        m_renderDirtyPostProcess = true;
         MarkRenderStateDirty();
     }
 

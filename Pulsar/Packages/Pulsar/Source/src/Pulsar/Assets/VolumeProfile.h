@@ -3,7 +3,6 @@
 #include "Pulsar/Assets/VolumeSettings.h"
 #include "Pulsar/Assets/TonemappingSettings.h"
 #include "Pulsar/Assets/DisplayEncodingSettings.h"
-#include "Pulsar/Assets/PostProcessMaterialSettings.h"
 
 namespace pulsar
 {
@@ -15,8 +14,12 @@ namespace pulsar
     public:
         VolumeProfile();
 
-        void Serialize(AssetSerializer* s) override;
-        void OnCollectAssetDependencies(array_list<guid_t>& deps) override;
+    void Serialize(AssetSerializer* s) override;
+    void OnCollectAssetDependencies(array_list<guid_t>& deps) override;
+    void PostEditChange(FieldInfo* info) override;
+    void GetSubscribeObserverHandles(array_list<ObjectHandle>& out) override;
+    void OnNotifyObserver(ObjectHandle inDependency, DependencyObjectState msg) override;
+    void NotifyModified();
 
         const List_sp<SPtr<VolumeSettings>>& GetEffects() const { return m_effects; }
         List_sp<SPtr<VolumeSettings>>& GetEffects() { return m_effects; }

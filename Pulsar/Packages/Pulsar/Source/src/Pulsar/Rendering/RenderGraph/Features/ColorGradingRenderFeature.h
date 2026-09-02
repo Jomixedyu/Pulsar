@@ -3,9 +3,9 @@
 
 namespace pulsar
 {
-    class PostProcessRenderFeatureSettings : public RenderFeatureSettings
+    class ColorGradingRenderFeatureSettings : public RenderFeatureSettings
     {
-        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::PostProcessRenderFeatureSettings, RenderFeatureSettings);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::ColorGradingRenderFeatureSettings, RenderFeatureSettings);
     public:
         RenderFeatureFactory BuildRenderFeatureFactory() const override;
     };

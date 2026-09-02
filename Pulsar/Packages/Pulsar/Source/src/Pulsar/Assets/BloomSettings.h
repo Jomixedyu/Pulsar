@@ -3,6 +3,9 @@
 
 namespace pulsar
 {
+    class BloomSettings;
+    class BloomRenderSnapshot;
+
     class BloomSettings : public VolumeSettings
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::BloomSettings, VolumeSettings);
@@ -18,8 +21,20 @@ namespace pulsar
 
         bool IsEnabled() const override { return m_enabled; }
         void Blend(float weight, VolumeSettings* accumulator) override;
+        SPtr<VolumeRenderSnapshot> BuildRenderSnapshot() const override;
 
     private:
         float m_blendWeight = 0.0f;
+    };
+
+    class BloomRenderSnapshot final : public VolumeRenderSnapshot
+    {
+    public:
+        using SettingsType = BloomSettings;
+        bool Enabled = false;
+        float Threshold = 0.44922f;
+        float Intensity = 1.0f;
+
+        Type* GetSettingsType() const override { return cltypeof<BloomSettings>(); }
     };
 }

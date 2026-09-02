@@ -6,7 +6,7 @@
 
 namespace pulsar
 {
-    // Holds blended VolumeSettings components, keyed by their runtime Type.
+    // Holds blended render-thread snapshots, keyed by their source settings type.
     // Similar to URP's VolumeStack, each post-process render feature reads its own settings
     // directly from the stack via GetComponent<T>().
     class VolumeStack
@@ -15,10 +15,10 @@ namespace pulsar
         template<typename T>
         T* GetComponent() const
         {
-            return dynamic_cast<T*>(GetComponent(cltypeof<T>()));
+            return dynamic_cast<T*>(GetComponent(cltypeof<typename T::SettingsType>()));
         }
 
-        VolumeSettings* GetComponent(Type* type) const
+        VolumeRenderSnapshot* GetComponent(Type* type) const
         {
             auto it = m_components.find(type);
             return it != m_components.end() ? it->second.get() : nullptr;
@@ -26,13 +26,14 @@ namespace pulsar
 
         bool HasAnyComponent() const { return !m_components.empty(); }
 
-        void AddComponent(Type* type, SPtr<VolumeSettings> component)
+        void AddComponent(SPtr<VolumeRenderSnapshot> component)
         {
-            m_components[type] = component;
+            if (component)
+                m_components[component->GetSettingsType()] = component;
         }
 
     private:
-        std::unordered_map<Type*, SPtr<VolumeSettings>> m_components;
+        std::unordered_map<Type*, SPtr<VolumeRenderSnapshot>> m_components;
     };
 
 } // namespace pulsar

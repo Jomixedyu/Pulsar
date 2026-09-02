@@ -63,9 +63,6 @@ namespace pulsar
 
     void ViewPipeline::ApplyRenderData(const ViewPipelineRenderData& data)
     {
-        if (HasSameFeatures(data))
-            return;
-
         RebuildFeatures(data);
     }
 

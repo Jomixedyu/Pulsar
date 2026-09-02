@@ -10,7 +10,16 @@
             "$type": "pulsar::TranslucencyRenderFeatureSettings,pulsar"
         },
         {
-            "$type": "pulsar::PostProcessRenderFeatureSettings,pulsar"
+            "$type": "pulsar::TonemapRenderFeatureSettings,pulsar"
+        },
+        {
+            "$type": "pulsar::BloomRenderFeatureSettings,pulsar"
+        },
+        {
+            "$type": "pulsar::ColorGradingRenderFeatureSettings,pulsar"
+        },
+        {
+            "$type": "pulsar::DisplayEncodingRenderFeatureSettings,pulsar"
         },
         {
             "$type": "pulsar::GizmoOverlayRenderFeatureSettings,pulsar"

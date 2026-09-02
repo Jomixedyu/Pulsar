@@ -70,4 +70,28 @@ namespace pulsar
         }
     }
 
+    void VolumeProfile::PostEditChange(FieldInfo* info)
+    {
+        base::PostEditChange(info);
+        NotifyModified();
+    }
+
+    void VolumeProfile::GetSubscribeObserverHandles(array_list<ObjectHandle>& out)
+    {
+        base::GetSubscribeObserverHandles(out);
+    }
+
+    void VolumeProfile::OnNotifyObserver(ObjectHandle inDependency, DependencyObjectState msg)
+    {
+        base::OnNotifyObserver(inDependency, msg);
+        if (EnumHasFlag(msg, DependencyObjectState::Modified))
+            NotifyModified();
+    }
+
+    void VolumeProfile::NotifyModified()
+    {
+        RebuildObserver();
+        RuntimeObjectManager::NotifyDependencySource(GetObjectHandle(), DependencyObjectState::Modified);
+    }
+
 } // namespace pulsar

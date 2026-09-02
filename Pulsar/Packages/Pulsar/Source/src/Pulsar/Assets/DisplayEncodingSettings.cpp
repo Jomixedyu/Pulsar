@@ -10,4 +10,11 @@ namespace pulsar
 
         acc->m_enabled = true;
     }
+
+    SPtr<VolumeRenderSnapshot> DisplayEncodingSettings::BuildRenderSnapshot() const
+    {
+        auto snapshot = mksptr(new DisplayEncodingRenderSnapshot());
+        snapshot->Enabled = m_enabled;
+        return snapshot;
+    }
 }

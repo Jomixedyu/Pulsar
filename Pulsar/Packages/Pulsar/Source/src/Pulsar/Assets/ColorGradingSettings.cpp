@@ -31,4 +31,20 @@ namespace pulsar
                 deps.push_back(guid);
         }
     }
+
+    SPtr<VolumeRenderSnapshot> ColorGradingSettings::BuildRenderSnapshot() const
+    {
+        auto snapshot = mksptr(new ColorGradingRenderSnapshot());
+        snapshot->Enabled = m_enabled;
+        snapshot->Intensity = m_intensity;
+        snapshot->LutSize = m_lutSize;
+        snapshot->ColorSpace = m_colorSpace;
+        if (m_lutTexture)
+        {
+            if (!m_lutTexture->IsCreatedGPUResource())
+                m_lutTexture->CreateGPUResource();
+            snapshot->LutTexture = m_lutTexture->GetTextureHandle();
+        }
+        return snapshot;
+    }
 }

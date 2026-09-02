@@ -15,4 +15,12 @@ namespace pulsar
             acc->m_blendWeight = weight;
         }
     }
+
+    SPtr<VolumeRenderSnapshot> TonemappingSettings::BuildRenderSnapshot() const
+    {
+        auto snapshot = mksptr(new TonemappingRenderSnapshot());
+        snapshot->Enabled = m_enabled;
+        snapshot->Mode = m_mode;
+        return snapshot;
+    }
 }

@@ -1,6 +1,5 @@
 #pragma once
 #include <Pulsar/EngineMath.h>
-#include <Pulsar/Assets/Material.h>
 #include <Pulsar/Subsystems/VolumeStack.h>
 #include "RenderProxy.h"
 #include "PerPassData.h"
@@ -57,9 +56,6 @@ namespace pulsar
         // PostProcessSubsystem / volume components.
         VolumeStack PostProcessStack;
 
-        // Custom post-process materials collected for this view, snapshotted on the game
-        // thread for the same reason.
-        array_list<RCPtr<Material>> PostProcessMaterials;
     };
 
     // Render-thread-owned per-view proxy (capture proxy). Owns the view pipeline

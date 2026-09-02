@@ -27,10 +27,31 @@ namespace pulsar
     {
     }
 
+    void SceneCaptureComponent::SetViewPipelineSettings(const RCPtr<ViewPipelineSettings>& value)
+    {
+        if (m_viewPipelineSettings == value)
+            return;
+
+        m_viewPipelineSettings = value;
+        RebuildObserver();
+        m_renderDirtyRenderFeature = true;
+        MarkRenderStateDirty();
+    }
+
+    void SceneCaptureComponent::MarkPostProcessDirty()
+    {
+        if (m_renderDirtyPostProcess)
+            return;
+
+        m_renderDirtyPostProcess = true;
+        MarkRenderStateDirty();
+    }
+
     SPtr<rendering::RenderProxy> SceneCaptureComponent::CreateRenderProxy()
     {
+        BuildViewPipelineRenderData(m_viewPipelineSettings, m_sceneViewData.ViewPipeline);
+
         auto view = mksptr(new SceneView());
-        BuildViewPipelineRenderData(m_viewPipelineSettings, view->Data.ViewPipeline);
         m_sceneView = view;
         return view;
     }
@@ -44,7 +65,7 @@ namespace pulsar
         if (!needsViewData && !m_renderDirtyRenderFeature && !m_renderDirtyPostProcess)
             return;
 
-        SceneViewData data = m_sceneView->Data;
+        SceneViewData data = m_sceneViewData;
         if (needsViewData)
         {
             if (!ExtractViewData(data))
@@ -59,7 +80,6 @@ namespace pulsar
             if (auto* ppSub = GetWorld()->GetSubsystem<PostProcessSubsystem>())
             {
                 data.PostProcessStack = ppSub->QuerySettings(data.CameraPosition);
-                data.PostProcessMaterials = ppSub->QueryPostProcessMaterials(data.CameraPosition);
             }
         }
 
@@ -69,12 +89,19 @@ namespace pulsar
         m_renderDirtyRenderFeature = false;
         m_renderDirtyPostProcess = false;
 
+        m_sceneViewData = data;
         GetWorld()->UpdateSceneView(m_sceneView, std::move(data));
     }
 
     void SceneCaptureComponent::BeginComponent()
     {
         base::BeginComponent();
+
+        // RegisterProxy() enqueues the proxy add first; this initial update is queued
+        // after it so the render thread never observes a default-constructed view.
+        if (m_sceneView)
+            GetWorld()->UpdateSceneView(m_sceneView, m_sceneViewData);
+
         RebuildObserver();
         GetWorld()->GetCaptureManager().Add(this);
         // Push an initial snapshot to the freshly-created view proxy.

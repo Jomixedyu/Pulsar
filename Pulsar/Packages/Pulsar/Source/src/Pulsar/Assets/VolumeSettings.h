@@ -5,6 +5,13 @@
 
 namespace pulsar
 {
+    class VolumeRenderSnapshot
+    {
+    public:
+        virtual ~VolumeRenderSnapshot() = default;
+        virtual Type* GetSettingsType() const = 0;
+    };
+
     class VolumeSettings : public Object
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::VolumeSettings, Object);
@@ -22,6 +29,9 @@ namespace pulsar
 
         // Collect asset GUIDs referenced by this settings object.
         virtual void CollectAssetDependencies(array_list<guid_t>& deps) {}
+
+        // Build a render-thread-safe snapshot. This must be called on the game thread.
+        virtual SPtr<VolumeRenderSnapshot> BuildRenderSnapshot() const = 0;
     };
 
     CORELIB_DEF_ENUM(AssemblyObject_pulsar, pulsar, TonemappingMode, None, ACES, Reinhard, GT);

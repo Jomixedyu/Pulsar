@@ -2,12 +2,12 @@
 #include <Pulsar/IconsForkAwesome.h>
 #include "Pulsar/Assets/RenderTexture.h"
 #include "Pulsar/Assets/ViewPipelineSettings.h"
+#include <Pulsar/Rendering/SceneView.h>
 #include "RenderComponent.h"
 #include <memory>
 
 namespace pulsar
 {
-    struct SceneViewData;
     class SceneView;
 
     CORELIB_DEF_ENUM(AssemblyObject_pulsar, pulsar,
@@ -63,6 +63,8 @@ namespace pulsar
         CORELIB_CLASS_ATTR(new AbstractComponentAttribute, new ComponentIconAttribute(ICON_FK_TELEVISION));
     public:
         SceneCaptureComponent();
+        void SetViewPipelineSettings(const RCPtr<ViewPipelineSettings>& value);
+        void MarkPostProcessDirty();
         void BeginComponent() override;
         void EndComponent() override;
         void PostEditChange(FieldInfo* info) override;
@@ -87,6 +89,7 @@ namespace pulsar
         // shared ref like mesh renderers' m_renderObject; the render scene owns the
         // canonical instance. Used to address this view's snapshot in UpdateSceneView.
         SPtr<SceneView> m_sceneView;
+        SceneViewData m_sceneViewData;
 
         bool m_renderDirtyTransform = true;
         bool m_renderDirtyCamera = true;

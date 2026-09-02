@@ -1,8 +1,8 @@
 #pragma once
 #include "RenderModule.h"
 #include "../Pipelines/SceneCaptureFrameData.h"
-#include <Pulsar/Assets/Material.h>
-#include <Pulsar/Subsystems/VolumeStack.h>
+#include <Pulsar/Assets/BloomSettings.h>
+#include <Pulsar/Rendering/MaterialProxy.h>
 #include <gfx/GFXDescriptorSet.h>
 #include <gfx/GFXBuffer.h>
 #include <gfx/GFXHandle.h>
@@ -12,7 +12,7 @@ namespace pulsar
     class BloomRenderModule : public RenderModule
     {
     public:
-        BloomRenderModule();
+        explicit BloomRenderModule(const std::shared_ptr<MaterialProxy>& proxy);
         ~BloomRenderModule() override;
 
         void Initialize() override;
@@ -20,7 +20,6 @@ namespace pulsar
         void OnRecord(RenderGraph& graph, RenderFrameData& frameData) override;
 
     private:
-        void ReadSettings(const VolumeStack& stack);
         bool IsEnabled() const;
 
         RGTextureHandle RecordBloomPasses(RenderGraph& graph,
@@ -28,7 +27,6 @@ namespace pulsar
                                           RGTextureHandle output,
                                           const SceneCaptureFrameData& capture);
 
-        void EnsureMaterial();
         void SetupBloomSet(gfx::GFXDescriptorSet* set, gfx::GFXTexture2DView* srcView);
         void SetupCombineSet(gfx::GFXDescriptorSet* set,
                              gfx::GFXTexture2DView* srcView,
@@ -50,7 +48,6 @@ namespace pulsar
             int32_t  _Padding2;
         };
 
-        RCPtr<Material> m_material;
         std::shared_ptr<MaterialProxy> m_proxy;
 
         bool  m_bloomEnabled = true;
