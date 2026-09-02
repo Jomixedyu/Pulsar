@@ -46,7 +46,7 @@ set(AllModule ${PUBLIC_MODULE})
 list(APPEND AllModule ${PRIVATE_MODULE})
 
 foreach (module ${AllModule})
-    add_subdirectory("Source/third/${module}")
+    add_subdirectory("Source/modules/${module}")
 endforeach ()
 
 foreach (module ${PUBLIC_MODULE})

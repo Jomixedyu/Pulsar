@@ -2,7 +2,7 @@ import zipfile
 import os
 
 files = [
-    "Packages/PulsarEd/Source/third/fbxsdk/lib.zip"
+    "Packages/PulsarEd/Source/modules/fbxsdk/lib.zip"
 ]
 
 
