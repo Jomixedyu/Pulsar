@@ -75,7 +75,7 @@ namespace pulsar
         }
 
         array_list<rendering::MeshBatch> GetMeshBatches() override { return m_batches; }
-        std::string GetInterface() const override { return "RENDERER_SKINNEDMESH"; }
+        std::string GetVariantFeature() const override { return "RENDERER_SKINNEDMESH"; }
     };
 
     void SkinnedMeshRenderObject::OnCreateResource()
@@ -157,7 +157,7 @@ namespace pulsar
 
             batch.Material = mat->GetRenderProxy();
 
-            batch.Interface           = GetInterface();
+            batch.VariantFeature      = GetVariantFeature();
             batch.RenderObjectIndex   = m_renderObjectIndex;
             batch.ExtraDescriptorSet  = m_descriptorSet;
             batch.DescriptorSetLayout = m_descriptorSetLayout;

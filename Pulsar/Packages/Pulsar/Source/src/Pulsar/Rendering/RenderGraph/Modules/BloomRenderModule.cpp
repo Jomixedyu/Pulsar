@@ -258,13 +258,13 @@ namespace pulsar
                 .Prepare([this, shaderPassName](RGPassContext&)
                 {
                     if (m_proxy)
-                        m_proxy->ResolveRenderVariant(shaderPassName, "RENDERER_IMAGEPROCESS");
+                        m_proxy->ResolveRenderVariant(shaderPassName);
                 })
                 .Execute([this, hSrc, hDst, shaderPassName, texelSize, direction, sampleMode, bloomSet, bufIdx, passName]
                          (RGPassContext& passCtx, gfx::GFXCommandBuffer& cmdBuffer)
                 {
                     if (!m_proxy) return;
-                    auto resolved = m_proxy->ResolveRenderVariant(shaderPassName, "RENDERER_IMAGEPROCESS");
+                    auto resolved = m_proxy->ResolveRenderVariant(shaderPassName);
                     if (!resolved) return;
                     auto program = resolved.m_program;
                     if (program->GetGpuPrograms().empty()) return;
@@ -378,13 +378,13 @@ namespace pulsar
             .Prepare([this](RGPassContext&)
             {
                 if (m_proxy)
-                    m_proxy->ResolveRenderVariant("BloomCombine", "RENDERER_IMAGEPROCESS");
+                    m_proxy->ResolveRenderVariant("BloomCombine");
             })
             .Execute([this, input, hBloom0V, hBloom1V, hBloom2V, hBloom3V, output]
                      (RGPassContext& passCtx, gfx::GFXCommandBuffer& cmdBuffer)
             {
                 if (!m_proxy) return;
-                auto resolved = m_proxy->ResolveRenderVariant("BloomCombine", "RENDERER_IMAGEPROCESS");
+                auto resolved = m_proxy->ResolveRenderVariant("BloomCombine");
                 if (!resolved) return;
                 auto program = resolved.m_program;
                 if (program->GetGpuPrograms().empty()) return;

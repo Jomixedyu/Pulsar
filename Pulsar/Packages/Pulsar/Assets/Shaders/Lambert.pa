@@ -1,9 +1,5 @@
 {
     "$schema": "SbfSchema.json",
-    "Interfaces": [
-        "RENDERER_STATICMESH",
-        "RENDERER_SKINNEDMESH"
-    ],
     "Passes": [
         {
             "Name": "Forward",
@@ -12,6 +8,7 @@
                 "Fragment": "PSMain"
             },
             "Features": [
+                "RENDERER_SKINNEDMESH",
                 "FEATURE_ALPHATEST"
             ],
             "GraphicsPipeline": {

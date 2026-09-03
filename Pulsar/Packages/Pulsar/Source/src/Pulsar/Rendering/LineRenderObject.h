@@ -37,7 +37,6 @@ namespace pulsar
 
         void OnChangedTransform() override;
         array_list<rendering::MeshBatch> GetMeshBatches() override;
-        std::string GetInterface() const override { return "RENDERER_STATICMESH"; }
     };
 
 }

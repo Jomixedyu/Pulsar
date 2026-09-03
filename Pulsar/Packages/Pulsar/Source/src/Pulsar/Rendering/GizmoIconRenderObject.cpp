@@ -28,7 +28,6 @@ namespace pulsar
             return;
 
         rendering::MeshBatch batch{};
-        batch.Interface = "RENDERER_STATICMESH";
         batch.DescriptorSetLayout = m_descriptorSetLayout;
         batch.RenderObjectIndex = m_renderObjectIndex;
         batch.ExtraDescriptorSet = m_dummyExtraSet;

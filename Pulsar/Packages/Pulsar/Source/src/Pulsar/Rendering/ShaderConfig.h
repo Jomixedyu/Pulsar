@@ -157,7 +157,6 @@ namespace pulsar
         {
             init_sptr_member(PreDefines);
             init_sptr_member(Tags);
-            init_sptr_member(Interfaces);
             init_sptr_member(Passes);
             init_sptr_member(Properties);
         }
@@ -167,9 +166,6 @@ namespace pulsar
         
         CORELIB_REFL_DECL_FIELD(Tags);
         List_sp<string> Tags;
-        
-        CORELIB_REFL_DECL_FIELD(Interfaces);
-        List_sp<string> Interfaces;
         
         CORELIB_REFL_DECL_FIELD(Passes);
         List_sp<SPtr<ShaderConfigPass>> Passes;

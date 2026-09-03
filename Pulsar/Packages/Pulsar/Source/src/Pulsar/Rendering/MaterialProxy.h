@@ -17,18 +17,18 @@
 
 namespace pulsar
 {
-    // Per-variant binding key: pass name + renderer interface variant (not just the pass —
+    // Per-variant binding key: pass name + renderer feature variant (not just the pass —
     // it identifies a concrete compiled variant of this material's shader).
     struct VariantKey
     {
         std::string m_passName;
-        std::string m_interface;
+        std::string m_variantFeature;
 
         bool operator==(const VariantKey& other) const = default;
         bool operator<(const VariantKey& other) const
         {
             if (m_passName != other.m_passName) return m_passName < other.m_passName;
-            return m_interface < other.m_interface;
+            return m_variantFeature < other.m_variantFeature;
         }
     };
 
@@ -51,7 +51,7 @@ namespace pulsar
 
     // Render-thread-owned mirror of a single Material's render state (1:1 with Material).
     //
-    // Holds every per-(pass, interface) variant (its set0 descriptor set + layout) plus a SINGLE
+    // Holds every per-(pass, renderer feature) variant (its set0 descriptor set + layout) plus a SINGLE
     // PerMaterial constant buffer shared across every pass/variant of this material, plus a
     // snapshot of the parameters / shader config fed by the game thread through the render queue.
     //
@@ -77,14 +77,14 @@ namespace pulsar
 
         // ===== Render thread: consume API (called by render passes) =====
 
-        // Called once per frame before drawing with this (pass, interface).
+        // Called once per frame before drawing with this (pass, renderer feature).
         // Ensures the ShaderInstance exists, detects async compilation completing / hot-reload,
         // lazily builds the shared PerMaterial cbuffer, and acquires (from the global content
         // cache) the set0 descriptor set for this variant's set0 layout.
         // Returns { program, set0 set, set0 layout } ready to bind, or a default-constructed
         // (empty) ResolvedVariant if the shader for this binding is not yet ready (still
         // compiling / errored / empty). Test readiness via the ResolvedVariant bool conversion.
-        ResolvedVariant ResolveRenderVariant(const std::string& passName, const std::string& interface_);
+        ResolvedVariant ResolveRenderVariant(const std::string& passName, const std::string& variantFeature = {});
 
         ShaderPassRenderQueueType GetQueue() const { return m_queue; }
 
@@ -116,9 +116,9 @@ namespace pulsar
             SPtr<ObjectPropertyOverride> gpOverrideFields);
 
     private:
-        // Looks up or creates the ShaderInstance for (pass, interface). Returns null if there is
+        // Looks up or creates the ShaderInstance for (pass, renderer feature). Returns null if there is
         // no shader config to compile against.
-        std::shared_ptr<ShaderInstance> GetOrCreateInstance(const std::string& passName, const std::string& interface_);
+    std::shared_ptr<ShaderInstance> GetOrCreateInstance(const std::string& passName, const std::string& variantFeature);
         // Ensures the single shared PerMaterial cbuffer exists (sized from the material cbuffer
         // binding in the given set0 layout). No-op if already built.
         void EnsurePerMaterialCBuffer(const ShaderLayout& layout);
@@ -138,7 +138,7 @@ namespace pulsar
         SPtr<ObjectPropertyOverride>       m_graphicsPipelineOverrideFields;
 
         // Render-thread-owned state.
-        // Per-(pass, interface) shader instances — pure shader, no GPU resources.
+        // Per-(pass, renderer feature) shader instances — pure shader, no GPU resources.
         std::map<VariantKey, std::shared_ptr<ShaderInstance>> m_variants;
 
         // Single PerMaterial constant buffer shared across every variant of this material. set0

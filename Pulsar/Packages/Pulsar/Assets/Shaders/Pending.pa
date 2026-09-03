@@ -1,18 +1,15 @@
 {
     "$schema": "SbfSchema.json",
-    "Interfaces": [
-        "RENDERER_STATICMESH",
-        "RENDERER_SKINNEDMESH",
-        "RENDERER_INSTANCING",
-        "RENDERER_IMAGEPROCESS"
-    ],
     "Passes": [
         {
             "Name": "Forward",
             "Entry": {
                 "Vertex": "VSMain",
                 "Fragment": "PSMain"
-            }
+            },
+            "Features": [
+                "RENDERER_SKINNEDMESH"
+            ]
         },
         {
             "Name": "PostProcess",

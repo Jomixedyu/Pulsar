@@ -135,12 +135,6 @@ namespace pulsared
             defines.push_back(passDefine);
         }
 
-        // Interface 宏: 原值直接作为宏名
-        if (!task.m_variantKey.m_interface.empty())
-        {
-            defines.push_back(task.m_variantKey.m_interface);
-        }
-
         // Features 宏: 每个字符串直接作为宏
         for (const auto& feature : task.m_variantKey.m_features)
         {
@@ -345,8 +339,6 @@ namespace pulsared
                 std::string name = hlslAssetPath;
                 if (!task.m_variantKey.m_passName.empty())
                     name += " [" + task.m_variantKey.m_passName;
-                if (!task.m_variantKey.m_interface.empty())
-                    name += "|" + task.m_variantKey.m_interface;
                 if (!task.m_variantKey.m_passName.empty())
                     name += "]";
                 program->m_shaderName = std::move(name);

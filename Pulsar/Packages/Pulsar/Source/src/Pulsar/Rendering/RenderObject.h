@@ -33,7 +33,7 @@ namespace pulsar::rendering
         gfx::GFXDescriptorSetLayout_sp DescriptorSetLayout;
         gfx::GFXDescriptorSet_sp ExtraDescriptorSet; // set2 (dummy or skinning)
         std::shared_ptr<MaterialProxy> Material; // render-thread material mirror (resolved on game thread)
-        std::string Interface; // Renderer interface name (e.g. "RENDERER_STATICMESH")
+        std::string VariantFeature; // Renderer-requested shader feature (e.g. "RENDERER_SKINNEDMESH")
 
         gfx::GFXGraphicsPipelineState State{};
         bool IsUsedIndices{};
@@ -93,7 +93,7 @@ namespace pulsar::rendering
         void OnDestroyResource() override {}
 
         virtual array_list<MeshBatch> GetMeshBatches() = 0;
-        virtual std::string GetInterface() const { return {}; }
+        virtual std::string GetVariantFeature() const { return {}; }
         virtual bool IsActive() const { return m_active; };
 
         bool IsDeterminantNegative() const { return m_isLocalToWorldDeterminantNegative; }

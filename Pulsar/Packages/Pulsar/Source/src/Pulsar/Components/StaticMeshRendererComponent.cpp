@@ -53,10 +53,6 @@ namespace pulsar
             return m_batches;
         }
 
-        std::string GetInterface() const override
-        {
-            return "RENDERER_STATICMESH";
-        }
     };
 
     void StaticMeshRenderObject::SubmitChange()
@@ -100,7 +96,6 @@ namespace pulsar
 
             batch.Material = mat->GetRenderProxy();
 
-            batch.Interface = GetInterface();
             batch.RenderObjectIndex = m_renderObjectIndex;
             batch.ExtraDescriptorSet = m_dummyExtraSet;
             if (m_dummyExtraSet)

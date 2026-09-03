@@ -67,7 +67,7 @@ namespace pulsar
                         if (!batch.Material)
                             continue;
 
-                        auto resolved = batch.Material->ResolveRenderVariant("Forward", batch.Interface);
+                        auto resolved = batch.Material->ResolveRenderVariant("Forward", batch.VariantFeature);
 
                         auto queue = batch.Material->GetQueue();
                         PreparedBatch pb{ std::move(batch) };

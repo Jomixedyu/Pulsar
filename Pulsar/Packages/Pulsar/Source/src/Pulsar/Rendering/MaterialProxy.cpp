@@ -11,6 +11,7 @@
 #include <gfx/GFXResourceManager.h>
 
 #include <cassert>
+#include <algorithm>
 #include <utility>
 
 namespace pulsar
@@ -39,9 +40,9 @@ namespace pulsar
 
     ResolvedVariant MaterialProxy::ResolveRenderVariant(
         const std::string& passName,
-        const std::string& interface_)
+        const std::string& variantFeature)
     {
-        auto instance = GetOrCreateInstance(passName, interface_);
+        auto instance = GetOrCreateInstance(passName, variantFeature);
         if (!instance)
             return {};
 
@@ -130,9 +131,9 @@ namespace pulsar
 
     std::shared_ptr<ShaderInstance> MaterialProxy::GetOrCreateInstance(
         const std::string& passName,
-        const std::string& interface_)
+        const std::string& variantFeature)
     {
-        VariantKey key{passName, interface_};
+        VariantKey key{passName, variantFeature};
         auto it = m_variants.find(key);
         if (it != m_variants.end())
             return it->second;
@@ -143,11 +144,11 @@ namespace pulsar
         ShaderVariantKey variantKey;
         variantKey.m_shaderGuid = m_shaderGuid;
         variantKey.m_passName = passName;
-        variantKey.m_interface = interface_;
-        variantKey.m_features = m_activeFeatures;
 
         ShaderCompileTask task;
         task.m_variantKey = variantKey;
+
+        const ShaderConfigPass* selectedPass = nullptr;
 
         // Entry point: look it up from the shader config's passes.
         if (m_shaderConfig->Passes)
@@ -157,6 +158,7 @@ namespace pulsar
             {
                 if (pass->Name == passName && pass->Entry)
                 {
+                    selectedPass = pass.get();
                     task.m_entries.m_vertex = pass->Entry->Vertex;
                     task.m_entries.m_fragment = pass->Entry->Fragment;
                     task.m_entries.m_tessControl = pass->Entry->TessControl;
@@ -172,6 +174,7 @@ namespace pulsar
                 {
                     if (pass->Entry)
                     {
+                        selectedPass = pass.get();
                         task.m_entries.m_vertex = pass->Entry->Vertex;
                         task.m_entries.m_fragment = pass->Entry->Fragment;
                         task.m_entries.m_tessControl = pass->Entry->TessControl;
@@ -183,6 +186,17 @@ namespace pulsar
             }
         }
 
+        variantKey.m_features = m_activeFeatures;
+        if (!variantFeature.empty())
+        {
+            if (std::find(
+                    variantKey.m_features.begin(),
+                    variantKey.m_features.end(),
+                    variantFeature) == variantKey.m_features.end())
+            {
+                variantKey.m_features.push_back(variantFeature);
+            }
+        }
         auto instance = ShaderInstanceCache::Instance().GetOrCreate(variantKey, task);
         m_variants.emplace(key, instance);
 

@@ -107,7 +107,6 @@ namespace pulsar
 
         m_batchs.resize(1);
         rendering::MeshBatch& batch = m_batchs[0];
-        batch.Interface = GetInterface();
         batch.DescriptorSetLayout = m_meshDescriptorSetLayout;
         batch.RenderObjectIndex = m_renderObjectIndex;
         batch.ExtraDescriptorSet = m_dummyExtraSet;

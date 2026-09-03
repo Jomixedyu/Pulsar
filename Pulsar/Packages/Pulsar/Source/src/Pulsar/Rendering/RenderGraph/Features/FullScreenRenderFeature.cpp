@@ -28,7 +28,6 @@ namespace pulsar
                 .Destination = postProcess->AcquireTarget(),
                 .Material = m_material,
                 .ShaderPass = "PostProcess",
-                .Interface = "RENDERER_IMAGEPROCESS",
                 .SourceBindingName = "PP_InColor",
                 .CameraBuffer = gpu ? gpu->CameraBuffer : nullptr,
                 .WorldBuffer = gpu ? gpu->WorldBuffer : nullptr,

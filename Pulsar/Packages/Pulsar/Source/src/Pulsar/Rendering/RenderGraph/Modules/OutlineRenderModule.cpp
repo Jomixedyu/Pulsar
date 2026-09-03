@@ -71,7 +71,7 @@ namespace pulsar
                         batch.Depth = depth;
                         ResolvedVariant resolved;
                         if (batch.Material)
-                            resolved = batch.Material->ResolveRenderVariant("VertexOutline", batch.Interface);
+                            resolved = batch.Material->ResolveRenderVariant("VertexOutline", batch.VariantFeature);
 
                         if (!resolved)
                             continue;

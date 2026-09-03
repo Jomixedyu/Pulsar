@@ -18,13 +18,13 @@ namespace pulsar
         graph.AddPass(desc.Name)
             .Read(desc.Source)
             .Write(desc.Destination, desc.Attachment)
-            .Prepare([material = desc.Material, shaderPass = desc.ShaderPass, interfaceName = desc.Interface](RGPassContext&)
+            .Prepare([material = desc.Material, shaderPass = desc.ShaderPass](RGPassContext&)
             {
-                material->ResolveRenderVariant(shaderPass, interfaceName);
+                material->ResolveRenderVariant(shaderPass);
             })
             .Execute([desc = std::move(desc)](RGPassContext& passCtx, gfx::GFXCommandBuffer& cmdBuffer)
             {
-                auto resolved = desc.Material->ResolveRenderVariant(desc.ShaderPass, desc.Interface);
+                auto resolved = desc.Material->ResolveRenderVariant(desc.ShaderPass);
                 if (!resolved)
                     return;
 

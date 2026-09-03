@@ -98,7 +98,6 @@ namespace pulsar
             m_pPerRenderObjectDataManager->SetData(slot, data);
 
             rendering::MeshBatch batch{};
-            batch.Interface = "RENDERER_STATICMESH";
             batch.DescriptorSetLayout = m_descriptorSetLayout;
             batch.RenderObjectIndex = slot;
             batch.ExtraDescriptorSet = m_dummyExtraSet;

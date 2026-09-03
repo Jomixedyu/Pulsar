@@ -55,7 +55,9 @@ namespace pulsar
         task.m_variantKey = requestedKey;
         task.m_variantKey.m_shaderGuid = shader->GetAssetGuid();
 
-        // Resolve entry names from ShaderConfig by passName, fallback to first pass
+        // Resolve entry names from ShaderConfig by passName. Builtin shaders do not guess a
+        // fallback pass: unsupported custom passes stay empty and are skipped until the real
+        // shader finishes compilation.
         auto config = shader->GetConfig();
         if (config && config->Passes)
         {
@@ -64,20 +66,6 @@ namespace pulsar
                 // 先精确匹配 passName
                 for (const auto& pass : *config->Passes)
                     if (pass && pass->Entry && pass->Name == passName)
-                        return pass->Entry;
-                // interface-aware fallback: builtin shaders (Pending/Error) only declare
-                // "Forward" (mesh entries: VSMain/PSMain) and "PostProcess" (blit entries:
-                // BlitVSMain/BlitPSMain). The entry points live behind RENDERER_* #if guards,
-                // so the fallback pass MUST match the requested interface — otherwise the
-                // chosen entry won't exist under the active define and compilation fails.
-                const std::string fallbackName =
-                    (requestedKey.m_interface == "RENDERER_IMAGEPROCESS") ? "PostProcess" : "Forward";
-                for (const auto& pass : *config->Passes)
-                    if (pass && pass->Entry && pass->Name == fallbackName)
-                        return pass->Entry;
-                // last resort: 第一个有 Entry 的 pass
-                for (const auto& pass : *config->Passes)
-                    if (pass && pass->Entry)
                         return pass->Entry;
                 return nullptr;
             };
@@ -99,8 +87,9 @@ namespace pulsar
         std::unordered_map<std::string, std::shared_ptr<ShaderProgramResource>>& cache,
         const ShaderVariantKey& requestedKey)
     {
-        // cache key: interface only (features ignored for builtins)
-        const std::string& cacheKey = requestedKey.m_interface;
+        std::string cacheKey = requestedKey.m_passName;
+        for (const auto& feature : requestedKey.m_features)
+            cacheKey += "|" + feature;
 
         auto it = cache.find(cacheKey);
         if (it != cache.end())
@@ -109,6 +98,13 @@ namespace pulsar
         auto task = MakeBuiltinVariantTask(shader, requestedKey);
         auto* svc = ShaderCompileServiceLocator::Get();
         std::shared_ptr<ShaderProgramResource> program;
+        if (task.m_entries.m_vertex.empty() && task.m_entries.m_fragment.empty())
+        {
+            program = std::make_shared<ShaderProgramResource>();
+            cache[cacheKey] = program;
+            return program;
+        }
+
         if (svc)
         {
             auto result = svc->CompileSync(task);
@@ -135,9 +131,9 @@ namespace pulsar
             return it->second;
         }
 
-        // Compile builtin programs for this specific interface+features variant
-        auto pendingProgram = EnsureBuiltinProgram_Locked(m_pendingShader, m_pendingByInterface, key);
-        auto errorProgram   = EnsureBuiltinProgram_Locked(m_errorShader,   m_errorByInterface,   key);
+        // Compile builtin programs for this specific pass+features variant
+        auto pendingProgram = EnsureBuiltinProgram_Locked(m_pendingShader, m_pendingByVariant, key);
+        auto errorProgram   = EnsureBuiltinProgram_Locked(m_errorShader,   m_errorByVariant,   key);
 
         auto instance = std::make_shared<ShaderInstance>(pendingProgram);
         m_cache[key] = instance;
@@ -199,8 +195,8 @@ namespace pulsar
         std::lock_guard lock(m_mutex);
         m_cache.clear();
         m_canonicalPerMaterial.clear();
-        m_pendingByInterface.clear();
-        m_errorByInterface.clear();
+        m_pendingByVariant.clear();
+        m_errorByVariant.clear();
     }
 
     void ShaderInstanceCache::InvalidateShader(const guid_t& shaderGuid)

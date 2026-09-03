@@ -1,8 +1,5 @@
 {
     "$schema": "SbfSchema.json",
-    "Interfaces": [
-        "RENDERER_IMAGEPROCESS"
-    ],
     "Passes": [
         {
             "Name": "PostProcess",

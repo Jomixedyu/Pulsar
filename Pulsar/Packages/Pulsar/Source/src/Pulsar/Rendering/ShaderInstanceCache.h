@@ -34,7 +34,7 @@ namespace pulsar
     private:
         ShaderInstanceCache() = default;
 
-        // Build a compile task for a builtin shader, resolving entry names from ShaderConfig by passName+interface
+        // Build a compile task for a builtin shader, resolving entry names from ShaderConfig by passName+features
         ShaderCompileTask MakeBuiltinVariantTask(
             const RCPtr<Shader>& shader,
             const ShaderVariantKey& requestedKey) const;
@@ -63,8 +63,8 @@ namespace pulsar
         RCPtr<Shader> m_pendingShader;
         RCPtr<Shader> m_errorShader;
 
-        // Pending/Error programs cached per interface (renderer variant) only — features are irrelevant for builtins
-        std::unordered_map<std::string, std::shared_ptr<ShaderProgramResource>> m_pendingByInterface;
-        std::unordered_map<std::string, std::shared_ptr<ShaderProgramResource>> m_errorByInterface;
+        // Pending/Error programs cached per pass and renderer feature
+        std::unordered_map<std::string, std::shared_ptr<ShaderProgramResource>> m_pendingByVariant;
+        std::unordered_map<std::string, std::shared_ptr<ShaderProgramResource>> m_errorByVariant;
     };
 }

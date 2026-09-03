@@ -17,7 +17,6 @@ namespace pulsar
             RGTextureHandle Destination;
             std::shared_ptr<MaterialProxy> Material;
             std::string ShaderPass = "Blit";
-            std::string Interface = "RENDERER_IMAGEPROCESS";
             std::string SourceBindingName = "_MainTex";
             gfx::GFXBuffer* CameraBuffer = nullptr;
             gfx::GFXBuffer* WorldBuffer = nullptr;

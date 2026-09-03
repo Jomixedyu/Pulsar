@@ -61,7 +61,7 @@ namespace pulsar
                             continue;
 
                         batch.Depth = depth;
-                        auto resolved = batch.Material->ResolveRenderVariant("Forward", batch.Interface);
+                        auto resolved = batch.Material->ResolveRenderVariant("Forward", batch.VariantFeature);
 
                         PreparedBatch pb{ std::move(batch) };
                         if (resolved)
