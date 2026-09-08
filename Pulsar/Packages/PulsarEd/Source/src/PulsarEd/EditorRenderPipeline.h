@@ -32,8 +32,8 @@ namespace pulsared
             {
                 for (auto cam : world->GetCameraManager().GetCameras())
                 {
-                    auto rt = cam->GetRenderTexture()->GetGfxRenderTarget0();
-                    cmd.CmdImageTransitionBarrier(rt.get(), gfx::GFXResourceLayout::ShaderReadOnly);
+                    auto colorTextureView = cam->GetRenderTexture()->GetGfxColorTextureView();
+                    cmd.CmdImageTransitionBarrier(colorTextureView.get(), gfx::GFXResourceLayout::ShaderReadOnly);
                 }
             }
 

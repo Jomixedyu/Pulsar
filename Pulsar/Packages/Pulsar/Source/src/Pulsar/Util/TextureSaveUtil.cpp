@@ -125,14 +125,14 @@ namespace pulsar
         const int32_t width = renderTexture->GetWidth();
         const int32_t height = renderTexture->GetHeight();
 
-        auto renderTargets = renderTexture->GetRenderTargets();
-        if (renderTargets.empty())
+        auto colorTextureView = renderTexture->GetGfxColorTextureView();
+        if (!colorTextureView)
         {
             Logger::Log("TextureSaveUtil::SaveRenderTextureToPng: no render targets", LogLevel::Error);
             return false;
         }
 
-        auto gfxTex = renderTargets[0];
+        auto gfxTex = colorTextureView->GetTexture();
         if (!gfxTex)
         {
             Logger::Log("TextureSaveUtil::SaveRenderTextureToPng: GFX texture is null", LogLevel::Error);
@@ -140,7 +140,7 @@ namespace pulsar
         }
 
         int32_t outW, outH;
-        auto rgbaData = ReadbackGFXTexture(gfxTex.get(), &outW, &outH);
+        auto rgbaData = ReadbackGFXTexture(gfxTex, &outW, &outH);
 
         if (rgbaData.empty())
         {

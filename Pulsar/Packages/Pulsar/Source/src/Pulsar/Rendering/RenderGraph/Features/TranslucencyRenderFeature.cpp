@@ -35,8 +35,8 @@ namespace pulsar
                     auto* srcRT = passCtx.Get(hSceneColor);
                     auto* dstRT = passCtx.Get(hOpaqueColor);
                     if (!srcRT || !dstRT) return;
-                    auto srcView = srcRT->GetRenderTarget0();
-                    auto dstView = dstRT->GetRenderTarget0();
+                    auto srcView = srcRT->GetColorTextureView();
+                    auto dstView = dstRT->GetColorTextureView();
                     if (!srcView || !dstView) return;
                     cmdBuffer.CmdBlit(srcView.get(), dstView.get());
                 });

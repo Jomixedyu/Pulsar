@@ -278,7 +278,7 @@ namespace pulsar
                     gfx::GFXTexture2DView* srcView = nullptr;
                     if (srcRT)
                     {
-                        auto view = srcRT->GetRenderTarget0();
+                        auto view = srcRT->GetColorTextureView();
                         if (view) srcView = view.get();
                     }
 
@@ -399,7 +399,7 @@ namespace pulsar
                     const auto* rt = passCtx.Get(h);
                     if (rt)
                     {
-                        auto view = rt->GetRenderTarget0();
+                        auto view = rt->GetColorTextureView();
                         if (view) return view.get();
                     }
                     return nullptr;

@@ -1,7 +1,11 @@
 #pragma once
 #include "CurveLinearColor.h"
 #include "Texture2DBase.h"
-#include <gfx/GFXHandle.h>
+
+namespace pulsar::rendering
+{
+    class TextureProxy;
+}
 
 namespace pulsar
 {
@@ -39,7 +43,7 @@ namespace pulsar
         bool m_isCreatedGpuResource = false;
         array_list<Color4b> m_bitmap;
 
-        gfx::TextureHandle m_texHandle{};
+        std::shared_ptr<rendering::TextureProxy> m_proxy;
 
     };
 }

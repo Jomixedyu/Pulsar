@@ -135,7 +135,7 @@ namespace pulsar
         rt->SetIndexName(index_string{rtname});
         rt->m_width = width;
         rt->m_height = height;
-        rt->m_colorFormats->push_back(RenderTextureColorFormat::RGBA8_UNorm);
+        rt->m_colorFormat = RenderTextureColorFormat::RGBA8_UNorm;
         rt->m_depthFormat = RenderTextureDepthFormat::D32_SFloat_S8_UInt;
         rt->CreateGPUResource();
         m_renderTarget = rt;

@@ -3,6 +3,7 @@
 #include <Pulsar/Assets/Texture2D.h>
 #include <Pulsar/Util/TextureCompressionUtil.h>
 #include <Pulsar/Rendering/RenderThread.h>
+#include <Pulsar/Rendering/TextureProxy.h>
 #include <gfx/GFXImage.h>
 #include <gfx/GFXResourceManager.h>
 
@@ -145,22 +146,15 @@ namespace pulsar
         // 句柄分配线程安全，主线程立即拿到句柄；纹理创建与数据上传投递到渲染线程异步执行。
         // CreateGPUResource 只在游戏线程调用（由 Material::BuildRenderData 等驱动），
         // 投递创建保证渲染线程消费快照前资源已就绪。
-        auto* resMgr = Application::GetGfxApp()->GetResourceManager();
         auto* renderThread = Application::GetRenderThread();
-        m_texHandle = resMgr->AllocHandle<gfx::TextureHandle>();
+        m_proxy = std::make_shared<rendering::TextureProxy>(
+            m_textureSize.x, m_textureSize.y, targetGfxFormat, samplerConfig, std::move(data));
 
+        auto proxy = m_proxy;
         renderThread->EnqueueUpdate_AnyThread(
-            [h = m_texHandle, w = m_textureSize.x, ht = m_textureSize.y,
-             fmt = targetGfxFormat, samplerConfig, data = std::move(data)](gfx::GFXResourceManager* mgr)
+            [proxy = std::move(proxy)](gfx::GFXResourceManager*) mutable
             {
-                gfx::GFXTextureCreateDesc desc{};
-                desc.ImageData  = data.data();
-                desc.DataLength = data.size();
-                desc.Width      = w;
-                desc.Height     = ht;
-                desc.Format     = fmt;
-                desc.SamplerCfg = samplerConfig;
-                mgr->CreateTexture2D(h, desc);
+                proxy->OnCreateResource();
             });
 
         return true;
@@ -168,7 +162,7 @@ namespace pulsar
 
     gfx::TextureHandle Texture2D::GetTextureHandle() const
     {
-        return m_texHandle;
+        return m_proxy ? m_proxy->GetTextureHandle() : gfx::TextureHandle{};
     }
 
     void Texture2D::DestroyGPUResource()
@@ -179,13 +173,14 @@ namespace pulsar
         }
         m_isCreatedGPUResource = false;
 
-        auto* renderThread = Application::GetRenderThread();
-        renderThread->EnqueueUpdate_AnyThread(
-            [h = m_texHandle](gfx::GFXResourceManager* mgr)
-            {
-                mgr->Destroy(h);
-            });
-        m_texHandle = gfx::TextureHandle{};
+        if (auto proxy = std::move(m_proxy))
+        {
+            Application::GetRenderThread()->EnqueueDestroy_AnyThread(
+                [proxy = std::move(proxy)](gfx::GFXResourceManager*) mutable
+                {
+                    proxy->OnDestroyResource();
+                });
+        }
     }
 
     bool Texture2D::IsCreatedGPUResource() const

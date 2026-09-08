@@ -2,7 +2,7 @@
 
 #include "Application.h"
 #include <Pulsar/Rendering/RenderThread.h>
-#include <gfx/GFXResourceManager.h>
+#include <Pulsar/Rendering/TextureProxy.h>
 
 namespace pulsar
 {
@@ -12,6 +12,7 @@ namespace pulsar
     {
         init_sptr_member(m_colorCurveAssets);
     }
+
     void CurveLinearColorAtlas::Serialize(AssetSerializer* s)
     {
         base::Serialize(s);
@@ -57,61 +58,57 @@ namespace pulsar
         for (int row = 0; row < curveCount; ++row)
         {
             auto curveAsset = m_colorCurveAssets->at(row).GetPtr();
+            if (!curveAsset)
+                continue;
 
-            if (curveAsset)
+            for (int column = 0; column < m_width; ++column)
             {
-                for (int column = 0; column < m_width; ++column)
-                {
-                    auto index = m_width * row + column;
-
-                    auto t = (float)column / (float)m_width;
-                    auto color = curveAsset->SampleColor(t);
-
-                    m_bitmap[index] = Color4b(uint8_t(color.r*255), uint8_t(color.g*255), uint8_t(color.b*255), uint8_t(color.a*255));
-                }
+                auto index = m_width * row + column;
+                auto t = (float)column / (float)m_width;
+                auto color = curveAsset->SampleColor(t);
+                m_bitmap[index] = Color4b(uint8_t(color.r * 255), uint8_t(color.g * 255), uint8_t(color.b * 255), uint8_t(color.a * 255));
             }
         }
 
-        // fill texture
         if (m_isCreatedGpuResource)
         {
+            auto* renderThread = Application::GetRenderThread();
+
+            if (auto oldProxy = std::move(m_proxy))
+            {
+                renderThread->EnqueueDestroy_AnyThread(
+                    [oldProxy = std::move(oldProxy)](gfx::GFXResourceManager*) mutable
+                    {
+                        oldProxy->OnDestroyResource();
+                    });
+            }
+
+            array_list<Color4b> bitmapCopy = m_bitmap;
+            std::vector<uint8_t> data(
+                reinterpret_cast<const uint8_t*>(bitmapCopy.data()),
+                reinterpret_cast<const uint8_t*>(bitmapCopy.data() + bitmapCopy.size()));
+
             SamplerConfig cfg;
             cfg.Filter = GetSamplerFilter();
             cfg.AddressMode = GetSamplerAddressMode();
 
-            auto* resMgr = Application::GetGfxApp()->GetResourceManager();
-            auto* renderThread = Application::GetRenderThread();
+            m_proxy = std::make_shared<rendering::TextureProxy>(
+                m_width, m_height, gfx::GFXTextureFormat::R8G8B8A8_UNorm, cfg, std::move(data));
 
-            // 重新生成：先投递销毁旧句柄，再分配新句柄并投递创建。
-            // Generate 只在游戏线程调用，投递保证渲染线程消费快照前资源已就绪。
-            if (m_texHandle.IsValid())
-            {
-                renderThread->EnqueueUpdate_AnyThread(
-                    [h = m_texHandle](gfx::GFXResourceManager* mgr) { mgr->Destroy(h); });
-            }
-
-            array_list<Color4b> bitmapCopy = m_bitmap;
-            m_texHandle = resMgr->AllocHandle<gfx::TextureHandle>();
-
+            auto proxy = m_proxy;
             renderThread->EnqueueUpdate_AnyThread(
-                [h = m_texHandle, w = m_width, ht = m_height, cfg, bitmap = std::move(bitmapCopy)](gfx::GFXResourceManager* mgr)
+                [proxy = std::move(proxy)](gfx::GFXResourceManager*) mutable
                 {
-                    gfx::GFXTextureCreateDesc desc{};
-                    desc.ImageData  = reinterpret_cast<const uint8_t*>(bitmap.data());
-                    desc.DataLength = bitmap.size() * sizeof(Color4b);
-                    desc.Width      = w;
-                    desc.Height     = ht;
-                    desc.Format     = gfx::GFXTextureFormat::R8G8B8A8_UNorm;
-                    desc.SamplerCfg = cfg;
-                    mgr->CreateTexture2D(h, desc);
+                    proxy->OnCreateResource();
                 });
         }
+
         RuntimeObjectManager::NotifyDependencySource(GetObjectHandle(), DependencyObjectState::Modified);
     }
 
     gfx::TextureHandle CurveLinearColorAtlas::GetTextureHandle() const
     {
-        return m_texHandle;
+        return m_proxy ? m_proxy->GetTextureHandle() : gfx::TextureHandle{};
     }
 
     bool CurveLinearColorAtlas::CreateGPUResource()
@@ -120,41 +117,47 @@ namespace pulsar
         {
             return true;
         }
+
         m_isCreatedGpuResource = true;
         Generate();
-
         return true;
     }
+
     void CurveLinearColorAtlas::DestroyGPUResource()
     {
         if (!m_isCreatedGpuResource)
         {
             return;
         }
-        if (m_texHandle.IsValid())
+
+        if (auto proxy = std::move(m_proxy))
         {
-            auto* renderThread = Application::GetRenderThread();
-            renderThread->EnqueueUpdate_AnyThread(
-                [h = m_texHandle](gfx::GFXResourceManager* mgr) { mgr->Destroy(h); });
-            m_texHandle = gfx::TextureHandle{};
+            Application::GetRenderThread()->EnqueueDestroy_AnyThread(
+                [proxy = std::move(proxy)](gfx::GFXResourceManager*) mutable
+                {
+                    proxy->OnDestroyResource();
+                });
         }
+
         m_isCreatedGpuResource = false;
     }
+
     int32_t CurveLinearColorAtlas::GetWidth() const
     {
         return m_width;
     }
+
     int32_t CurveLinearColorAtlas::GetHeight() const
     {
         return m_height;
     }
+
     void CurveLinearColorAtlas::PostEditChange(FieldInfo* info)
     {
         base::PostEditChange(info);
         if (info->GetName() == NAMEOF(m_colorCurveAssets))
         {
             RebuildObserver();
-            // Generate();
         }
         Generate();
     }
@@ -166,7 +169,6 @@ namespace pulsar
         {
             Generate();
         }
-
     }
 
     void CurveLinearColorAtlas::GetSubscribeObserverHandles(array_list<ObjectHandle>& out)
@@ -177,6 +179,7 @@ namespace pulsar
             out.push_back(curve.GetHandle());
         }
     }
+
     void CurveLinearColorAtlas::OnCollectAssetDependencies(array_list<guid_t>& deps)
     {
         base::OnCollectAssetDependencies(deps);
@@ -188,4 +191,5 @@ namespace pulsar
             }
         }
     }
+
 } // namespace pulsar

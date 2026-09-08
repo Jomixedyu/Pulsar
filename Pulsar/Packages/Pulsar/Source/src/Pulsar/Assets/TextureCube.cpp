@@ -2,7 +2,7 @@
 
 #include "Application.h"
 #include <Pulsar/Rendering/RenderThread.h>
-#include <gfx/GFXResourceManager.h>
+#include <Pulsar/Rendering/TextureProxy.h>
 
 #include <ranges>
 
@@ -69,14 +69,19 @@ namespace pulsar
             return true;
         }
 
-        auto* resMgr = Application::GetGfxApp()->GetResourceManager();
         auto* renderThread = Application::GetRenderThread();
 
-        m_cubeHandle = resMgr->AllocHandle<gfx::TextureHandle>();
+        gfx::GFXSamplerConfig sampler{};
+        sampler.Filter = GetSamplerFilter();
+        sampler.AddressMode = GetSamplerAddressMode();
+
+        m_proxy = std::make_shared<rendering::TextureProxy>(m_width, sampler);
+
+        auto proxy = m_proxy;
         renderThread->EnqueueUpdate_AnyThread(
-            [h = m_cubeHandle, size = m_width](gfx::GFXResourceManager* mgr)
+            [proxy = std::move(proxy)](gfx::GFXResourceManager*) mutable
             {
-                mgr->CreateTextureCube(h, size);
+                proxy->OnCreateResource();
             });
 
         m_isCreatedGPUResource = true;
@@ -89,13 +94,19 @@ namespace pulsar
         {
             return;
         }
-        if (m_cubeHandle.IsValid())
+        if (auto proxy = std::move(m_proxy))
         {
-            auto* renderThread = Application::GetRenderThread();
-            renderThread->EnqueueUpdate_AnyThread(
-                [h = m_cubeHandle](gfx::GFXResourceManager* mgr) { mgr->Destroy(h); });
-            m_cubeHandle = gfx::TextureHandle{};
+            Application::GetRenderThread()->EnqueueDestroy_AnyThread(
+                [proxy = std::move(proxy)](gfx::GFXResourceManager*) mutable
+                {
+                    proxy->OnDestroyResource();
+                });
         }
         m_isCreatedGPUResource = false;
+    }
+
+    gfx::TextureHandle TextureCube::GetTextureHandle() const
+    {
+        return m_proxy ? m_proxy->GetTextureHandle() : gfx::TextureHandle{};
     }
 } // namespace pulsar

@@ -7,6 +7,11 @@
 #include <gfx/GFXTexture.h>
 #include <gfx/GFXHandle.h>
 
+namespace pulsar::rendering
+{
+    class RenderTextureProxy;
+}
+
 namespace pulsar
 {
     class Application;
@@ -46,17 +51,17 @@ namespace pulsar
         void EnableRenderTarget();
         void DisableRenderTarget();
 
-        std::shared_ptr<gfx::GFXTexture2DView> GetGfxRenderTarget0() const;
+        std::shared_ptr<gfx::GFXTexture2DView> GetGfxColorTextureView() const;
         std::shared_ptr<gfx::GFXFrameBufferObject> GetGfxFrameBufferObject() const;
-        array_list<gfx::GFXTexture_sp> GetRenderTargets() const;
+        array_list<gfx::GFXTexture_sp> GetFramebufferAttachments() const;
+
+        const std::shared_ptr<rendering::RenderTextureProxy>& GetRenderProxy() const { return m_proxy; }
 
     protected:
         void RebuildGPUResources();
 
-        array_list<gfx::TextureHandle> m_renderTargetHandles;
-        gfx::FrameBufferObjectHandle m_framebufferHandle{};
-
         bool m_createdGPUResource = false;
+        std::shared_ptr<rendering::RenderTextureProxy> m_proxy;
 
     public:
         CORELIB_REFL_DECL_FIELD(m_width, new RangePropertyAttribute(1, 8192))
@@ -68,8 +73,8 @@ namespace pulsar
         CORELIB_REFL_DECL_FIELD(m_sampleCount)
         uint32_t m_sampleCount = 1;
 
-        CORELIB_REFL_DECL_FIELD(m_colorFormats)
-        List_sp<RenderTextureColorFormat> m_colorFormats;
+        CORELIB_REFL_DECL_FIELD(m_colorFormat)
+        RenderTextureColorFormat m_colorFormat = RenderTextureColorFormat::RGBA8_UNorm;
 
         CORELIB_REFL_DECL_FIELD(m_depthFormat)
         RenderTextureDepthFormat m_depthFormat = RenderTextureDepthFormat::D32_SFloat;

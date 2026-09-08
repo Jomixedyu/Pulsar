@@ -24,7 +24,7 @@ namespace pulsar
         gfx::GFXFrameBufferObject_sp            Framebuffer;
 
         bool IsValid() const { return Framebuffer != nullptr; }
-        gfx::GFXTexture2DView_sp GetRenderTarget0() const
+        gfx::GFXTexture2DView_sp GetColorTextureView() const
         {
             if (Attachments.empty()) return nullptr;
             return Attachments[0]->Get2DView(0);

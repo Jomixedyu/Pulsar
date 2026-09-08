@@ -1,6 +1,10 @@
 #pragma once
 #include "Texture.h"
-#include <gfx/GFXHandle.h>
+
+namespace pulsar::rendering
+{
+    class TextureProxy;
+}
 
 
 namespace pulsar
@@ -13,11 +17,12 @@ namespace pulsar
         bool CreateGPUResource() override;
         void DestroyGPUResource() override;
         bool IsCreatedGPUResource() const override { return m_isCreatedGPUResource; }
+        gfx::TextureHandle GetTextureHandle() const override;
 
     public:
         array_list<uint8_t> m_originData;
 
-        gfx::TextureHandle m_cubeHandle{};
+        std::shared_ptr<rendering::TextureProxy> m_proxy;
 
         bool m_isCreatedGPUResource{};
 

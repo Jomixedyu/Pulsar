@@ -64,7 +64,7 @@ namespace pulsar
         array_list<gfx::GFXTexture_sp> attachments;
         gfx::GFXFrameBufferObject_sp fbo;
 
-        gfx::GFXTexture2DView_sp GetRenderTarget0() const
+        gfx::GFXTexture2DView_sp GetColorTextureView() const
         {
             if (attachments.empty()) return nullptr;
             return attachments[0]->Get2DView(0);
@@ -75,7 +75,7 @@ namespace pulsar
             return fbo;
         }
 
-        gfx::GFXTexture_sp GetTexture0() const
+        gfx::GFXTexture_sp GetColorTexture() const
         {
             if (attachments.empty()) return nullptr;
             return attachments[0];

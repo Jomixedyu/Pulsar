@@ -1,6 +1,10 @@
 #pragma once
 #include "Texture.h"
-#include <gfx/GFXHandle.h>
+
+namespace pulsar::rendering
+{
+    class TextureProxy;
+}
 
 namespace pulsar
 {
@@ -15,6 +19,7 @@ namespace pulsar
         bool IsCreatedGPUResource() const override;
         int32_t GetWidth() const override;
         int32_t GetHeight() const override;
+        gfx::TextureHandle GetTextureHandle() const override;
 
         void PostEditChange(FieldInfo* info) override;
 
@@ -25,7 +30,7 @@ namespace pulsar
         CORELIB_REFL_DECL_FIELD(m_width);
         int32_t m_width;
 
-        gfx::TextureHandle m_textureHandle{};
+        std::shared_ptr<rendering::TextureProxy> m_proxy;
         bool m_isCreated = false;
     };
 } // namespace pulsar

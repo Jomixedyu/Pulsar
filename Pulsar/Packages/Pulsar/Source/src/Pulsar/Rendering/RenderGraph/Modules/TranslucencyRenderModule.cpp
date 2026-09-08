@@ -110,7 +110,7 @@ namespace pulsar
             reg.Set("RenderObjectBuffer", scene->GetPerRenderObjectData().GetBuffer());
             if (auto* colorRT = ctx.Get(m_hOpaqueColor))
             {
-                if (auto colorView = colorRT->GetRenderTarget0())
+                if (auto colorView = colorRT->GetColorTextureView())
                     reg.Set("PP_InColor", colorView.get());
             }
 

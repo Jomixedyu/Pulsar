@@ -6,6 +6,11 @@
 #include <gfx/GFXTexture.h>
 #include <gfx/GFXHandle.h>
 
+namespace pulsar::rendering
+{
+    class TextureProxy;
+}
+
 
 
 
@@ -74,10 +79,10 @@ namespace pulsar
         bool m_enableReadWrite{};
         gfx::GFXTextureFormat m_format{};
 
-        gfx::TextureHandle m_texHandle{};
         bool m_init = false;
 
         bool m_isCreatedGPUResource = false;
+        std::shared_ptr<rendering::TextureProxy> m_proxy;
 
         CORELIB_REFL_DECL_FIELD(m_compressionFormat);
         TextureCompressionFormat m_compressionFormat{};

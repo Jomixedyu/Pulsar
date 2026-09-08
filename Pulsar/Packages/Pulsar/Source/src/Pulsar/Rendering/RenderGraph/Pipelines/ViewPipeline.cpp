@@ -139,7 +139,7 @@ namespace pulsar
                 msDesc.TargetInfos.push_back({ rt->GetTargetType(), rt->GetFormat(), msaaSamples, isTransient });
             }
             hSceneColor = graph.CreateTransient("MSSceneColor", msDesc);
-            resolveTargetView = camRenderTexture.GetRenderTarget0().get();
+            resolveTargetView = camRenderTexture.GetColorTextureView().get();
         }
 
         frameData.Set(SceneCaptureGpuFrameData{
@@ -170,7 +170,7 @@ namespace pulsar
 
         if (postProcess.ActiveColor != postProcess.FinalTarget)
         {
-            gfx::GFXTexture2DView_sp fallbackView = camRenderTexture.GetRenderTarget0();
+            gfx::GFXTexture2DView_sp fallbackView = camRenderTexture.GetColorTextureView();
             graph.AddPass("PostProcess_CopyToFinal")
                 .Read(postProcess.ActiveColor)
                 .Write(postProcess.FinalTarget)
@@ -182,7 +182,7 @@ namespace pulsar
                     gfx::GFXTexture2DView* finalView = nullptr;
                     if (finalRT)
                     {
-                        finalView = finalRT->GetRenderTarget0().get();
+                        finalView = finalRT->GetColorTextureView().get();
                     }
                     else if (fallbackView)
                     {
@@ -190,7 +190,7 @@ namespace pulsar
                     }
                     if (!srcRT || !finalView) return;
 
-                    auto srcView = srcRT->GetRenderTarget0();
+                    auto srcView = srcRT->GetColorTextureView();
                     if (!srcView) return;
 
                     cmdBuffer.CmdBlit(srcView.get(), finalView);

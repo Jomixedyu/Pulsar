@@ -175,7 +175,7 @@ namespace pulsar
         outData.GizmoPassEnabled = false;
         outData.RenderTarget.Width       = m_renderTarget->GetWidth();
         outData.RenderTarget.Height      = m_renderTarget->GetHeight();
-        outData.RenderTarget.Attachments = m_renderTarget->GetRenderTargets();
+        outData.RenderTarget.Attachments = m_renderTarget->GetFramebufferAttachments();
         outData.RenderTarget.Framebuffer = m_renderTarget->GetGfxFrameBufferObject();
         return true;
     }
@@ -193,8 +193,8 @@ namespace pulsar
         {
             return;
         }
-        auto rt0 = m_renderTarget->GetGfxRenderTarget0();
-        auto& color = rt0->GetTexture()->TargetClearColor;
+        auto colorTextureView = m_renderTarget->GetGfxColorTextureView();
+        auto& color = colorTextureView->GetTexture()->TargetClearColor;
 
         color[0] = m_backgroundColor.r;
         color[1] = m_backgroundColor.g;
