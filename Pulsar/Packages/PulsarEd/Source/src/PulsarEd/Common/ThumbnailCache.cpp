@@ -13,6 +13,7 @@
 #include <CoreLib/File.h>
 #include <CoreLib/Guid.h>
 #include <filesystem>
+#include <gfx/GFXResourceRegistry.h>
 
 namespace pulsared
 {
@@ -21,7 +22,7 @@ namespace pulsared
     {
         gfx::GFXDescriptorLayoutDesc info{
             gfx::GFXDescriptorLayoutDesc(gfx::GFXDescriptorType::Texture2D, gfx::GFXGpuProgramStageFlags::Fragment, 0)};
-        m_descriptorLayout = m_app->GetOrCreateDescriptorSetLayout(&info, 1);
+        m_descriptorLayout = m_app->GetResourceRegistry()->GetOrCreateDescriptorSetLayout(&info, 1);
     }
 
     ThumbnailCache::~ThumbnailCache() = default;
@@ -164,7 +165,7 @@ namespace pulsared
         config.Filter = gfx::GFXSamplerFilter::Linear;
         config.AddressMode = gfx::GFXSamplerAddressMode::ClampToEdge;
 
-        auto tex2d = m_app->CreateTexture2DFromMemory(
+        auto tex2d = m_app->GetResourceRegistry()->CreateTexture2DFromMemory(
             thumbRGBA.data(), thumbW * thumbH * 4,
             thumbW, thumbH,
             gfx::GFXTextureFormat::R8G8B8A8_UNorm,
@@ -228,7 +229,7 @@ namespace pulsared
                         config.Filter = gfx::GFXSamplerFilter::Linear;
                         config.AddressMode = gfx::GFXSamplerAddressMode::ClampToEdge;
 
-                        auto tex2d = m_app->CreateTexture2DFromMemory(
+                        auto tex2d = m_app->GetResourceRegistry()->CreateTexture2DFromMemory(
                             reinterpret_cast<const uint8_t*>(bytes.data() + 8), expectedPixelSize,
                             width, height,
                             gfx::GFXTextureFormat::R8G8B8A8_UNorm,
@@ -267,7 +268,7 @@ namespace pulsared
                     config.Filter = gfx::GFXSamplerFilter::Linear;
                     config.AddressMode = gfx::GFXSamplerAddressMode::ClampToEdge;
 
-                    auto tex2d = m_app->CreateTexture2DFromMemory(
+                    auto tex2d = m_app->GetResourceRegistry()->CreateTexture2DFromMemory(
                         rgba.data(), width * height * 4,
                         width, height,
                         gfx::GFXTextureFormat::R8G8B8A8_UNorm,

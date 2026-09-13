@@ -107,7 +107,7 @@ namespace pulsar
             reg.Set("CameraBuffer", viewProxy ? viewProxy->GetCameraBuffer() : nullptr);
             reg.Set("WorldBuffer", scene->GetWorldBuffer());
             reg.Set("LightBuffer", scene->GetLightsBuffer());
-            reg.Set("RenderObjectBuffer", scene->GetPerRenderObjectData().GetBuffer());
+            reg.Set("RenderObjectBuffer", scene->GetPerRenderObjectData().GetBufferRaw());
             if (auto* colorRT = ctx.Get(m_hOpaqueColor))
             {
                 if (auto colorView = colorRT->GetColorTextureView())

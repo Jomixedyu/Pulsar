@@ -5,23 +5,21 @@
 
 namespace gfx
 {
-	class GFXVulkanApplication;
+    class GFXVulkanApplication;
+    class GFXResourceRegistry;
 
 	class GFXVulkanFrameBufferObject : public GFXFrameBufferObject
 	{
 		using base = GFXFrameBufferObject;
 	public:
-		/**
-		* render target view
-		*/
-		GFXVulkanFrameBufferObject(GFXVulkanApplication* app,
-			const std::vector<GFXTexture2DView_sp>& renderTargets);
+		GFXVulkanFrameBufferObject(GFXResourceRegistry* registry,
+			const std::vector<GFXTexture2DViewPtr>& renderTargets);
 
 		GFXVulkanFrameBufferObject(const GFXVulkanFrameBufferObject&) = delete;
 
 		virtual ~GFXVulkanFrameBufferObject() override;
 	public:
-		virtual const array_list<GFXTexture2DView_sp>& GetRenderTargets() const override { return m_renderTargets; }
+		virtual const array_list<GFXTexture2DViewPtr>& GetRenderTargets() const override { return m_renderTargets; }
 
 		VkExtent2D GetVkExtent() const { return { (uint32_t)m_width, (uint32_t)m_height }; }
 
@@ -32,9 +30,7 @@ namespace gfx
 	protected:
 		GFXRenderTargetDesc m_renderTargetDesc;
 
-		std::vector<GFXTexture2DView_sp> m_renderTargets;
-
-		GFXVulkanApplication* m_app;
+		std::vector<GFXTexture2DViewPtr> m_renderTargets;
 
 		int32_t m_width;
 		int32_t m_height;

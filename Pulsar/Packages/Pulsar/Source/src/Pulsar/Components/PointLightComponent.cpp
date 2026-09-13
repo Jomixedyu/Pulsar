@@ -40,7 +40,7 @@ namespace pulsar
             return;
         LightShaderParameter param = m_runtimeLightData;
         Application::GetRenderThread()->EnqueueUpdate_AnyThread(
-            [proxy, param](gfx::GFXResourceManager*) mutable
+            [proxy, param](gfx::GFXResourceRegistry*)
             {
                 proxy->Param = param;
             });

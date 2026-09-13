@@ -6,12 +6,13 @@
 namespace gfx
 {
     class GFXVulkanApplication;
+    class GFXResourceRegistry;
 
     class GFXVulkanSampler : public GFXSampler
     {
         using base = GFXSampler;
     public:
-        GFXVulkanSampler(GFXVulkanApplication* app, const GFXSamplerConfig& config);
+        GFXVulkanSampler(GFXResourceRegistry* registry = nullptr, const GFXSamplerConfig& config = {});
         ~GFXVulkanSampler() override;
 
         GFXVulkanSampler(const GFXVulkanSampler&) = delete;
@@ -19,7 +20,7 @@ namespace gfx
         VkSampler GetVkSampler() const { return m_sampler; }
 
     private:
-        GFXVulkanApplication* m_app;
+        GFXVulkanApplication* GetApplication() const;
         VkSampler m_sampler{};
     };
 }

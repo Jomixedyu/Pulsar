@@ -1,4 +1,4 @@
-﻿#include "Assets/StaticMesh.h"
+#include "Assets/StaticMesh.h"
 
 #include "Application.h"
 #include "AssetSerializerUtil.h"
@@ -7,7 +7,7 @@
 #include <Pulsar/Assets/Shader.h>
 #include <Pulsar/Assets/Texture2D.h>
 #include <Pulsar/Rendering/RenderThread.h>
-#include <gfx/GFXResourceManager.h>
+#include <gfx/GFXResourceRegistry.h>
 
 namespace pulsar
 {
@@ -63,7 +63,6 @@ namespace pulsar
 
         // 句柄分配是线程安全的，主线程立即拿到句柄供后续渲染引用；
         // 实际的 Buffer 创建与数据上传投递到渲染线程的更新队列异步执行。
-        auto* resMgr = Application::GetGfxApp()->GetResourceManager();
         auto* renderThread = Application::GetRenderThread();
         for (auto& section : m_sections)
         {
@@ -78,14 +77,13 @@ namespace pulsar
                 vertexDesc.BufferSize  = vertSize;
                 vertexDesc.ElementSize = sizeof(StaticMeshVertex);
 
-                auto vertBuffer = resMgr->AllocHandle<gfx::BufferHandle>();
+                auto vertBuffer = Application::GetGfxApp()->GetResourceRegistry()->CreateBuffer(vertexDesc);
                 m_vertexBuffers.push_back(vertBuffer);
 
                 renderThread->EnqueueUpdate_AnyThread(
-                    [vertBuffer, vertexDesc, verts = std::move(interleavedVerts), vertSize](gfx::GFXResourceManager* mgr)
+                    [vertBuffer, verts = std::move(interleavedVerts)](gfx::GFXResourceRegistry*)
                     {
-                        mgr->CreateBuffer(vertBuffer, vertexDesc);
-                        mgr->UploadBuffer(vertBuffer, verts.data(), vertSize);
+                        vertBuffer->Update(verts.data());
                     });
             }
 
@@ -99,14 +97,13 @@ namespace pulsar
                 const size_t indicesSize = section.GetIndicesAllocSize();
                 array_list<MeshIndicesType> indices = section.Indices;
 
-                auto indicesBuffer = resMgr->AllocHandle<gfx::BufferHandle>();
+                auto indicesBuffer = Application::GetGfxApp()->GetResourceRegistry()->CreateBuffer(indicesDesc);
                 m_indicesBuffers.push_back(indicesBuffer);
 
                 renderThread->EnqueueUpdate_AnyThread(
-                    [indicesBuffer, indicesDesc, indices = std::move(indices), indicesSize](gfx::GFXResourceManager* mgr)
+                    [indicesBuffer, indices = std::move(indices)](gfx::GFXResourceRegistry*)
                     {
-                        mgr->CreateBuffer(indicesBuffer, indicesDesc);
-                        mgr->UploadBuffer(indicesBuffer, indices.data(), indicesSize);
+                        indicesBuffer->Update(indices.data());
                     });
             }
         }
@@ -121,12 +118,8 @@ namespace pulsar
         // 销毁同样投递到渲染线程，确保在 GPU 不再使用这些资源时再释放 slot。
         auto* renderThread = Application::GetRenderThread();
         renderThread->EnqueueUpdate_AnyThread(
-            [vbs = std::move(m_vertexBuffers), ibs = std::move(m_indicesBuffers)](gfx::GFXResourceManager* mgr)
+            [vbs = std::move(m_vertexBuffers), ibs = std::move(m_indicesBuffers)](gfx::GFXResourceRegistry*)
             {
-                for (auto& h : vbs)
-                    mgr->Destroy(h);
-                for (auto& h : ibs)
-                    mgr->Destroy(h);
             });
         m_vertexBuffers.clear();
         m_indicesBuffers.clear();
@@ -137,6 +130,12 @@ namespace pulsar
     }
 
     StaticMesh::~StaticMesh() = default;
+
+    void StaticMesh::OnDestroy()
+    {
+        base::OnDestroy();
+        DestroyGPUResource();
+    }
 
     gfx::GFXVertexLayoutDescription StaticMesh::StaticGetVertexLayout()
     {

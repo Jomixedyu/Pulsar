@@ -19,14 +19,14 @@ namespace gfx
         virtual int32_t GetDepth() const { return 1; }
         virtual class GFXTexture* GetTexture() const = 0;
     };
-    GFX_DECL_SPTR(GFXTextureView);
+    GFX_DECL_PTR(GFXTextureView);
 
     class GFXTexture2DView : public GFXTextureView
     {
     public:
         virtual uint32_t GetBaseArrayIndex() const { return 0; }
     };
-    GFX_DECL_SPTR(GFXTexture2DView);
+    GFX_DECL_PTR(GFXTexture2DView);
 
     class GFXTextureCubeView : public GFXTextureView
     {
@@ -34,6 +34,6 @@ namespace gfx
 
         virtual uint32_t GetArrayCount() const { return 1; }
     };
-    GFX_DECL_SPTR(GFXTextureCubeView);
+    GFX_DECL_PTR(GFXTextureCubeView);
 
 }

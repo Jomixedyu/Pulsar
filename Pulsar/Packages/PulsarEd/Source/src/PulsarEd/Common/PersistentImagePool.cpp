@@ -1,6 +1,7 @@
 #include "Common/PersistentImagePool.h"
 
 #include "gfx/GFXImage.h"
+#include <gfx/GFXResourceRegistry.h>
 
 namespace pulsared
 {
@@ -12,7 +13,7 @@ namespace pulsared
         int32_t width, height, channel;
         auto iconData = gfx::LoadImageFromMemory(iconBuf, length, &width, &height, &channel, 4);
 
-        auto tex2d = m_app->CreateTexture2DFromMemory(iconData.data(), iconData.size(), width, height, gfx::GFXTextureFormat::R8G8B8A8_UNorm, config);
+        auto tex2d = m_app->GetResourceRegistry()->CreateTexture2DFromMemory(iconData.data(), iconData.size(), width, height, gfx::GFXTextureFormat::R8G8B8A8_UNorm, config);
         m_textures.emplace(id, tex2d);
     }
 
@@ -56,7 +57,7 @@ namespace pulsared
     {
         gfx::GFXDescriptorLayoutDesc info{
             gfx::GFXDescriptorLayoutDesc(gfx::GFXDescriptorType::Texture2D, gfx::GFXGpuProgramStageFlags::Fragment, 0)};
-        m_descriptorLayout = m_app->GetOrCreateDescriptorSetLayout(&info, 1);
+        m_descriptorLayout = m_app->GetResourceRegistry()->GetOrCreateDescriptorSetLayout(&info, 1);
     }
 
     PersistentImagePool::~PersistentImagePool()

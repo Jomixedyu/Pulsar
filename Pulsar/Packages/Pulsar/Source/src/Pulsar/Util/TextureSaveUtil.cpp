@@ -7,7 +7,6 @@
 #include <Pulsar/Logger.h>
 #include <gfx/GFXImage.h>
 #include <gfx/GFXTexture.h>
-#include <gfx/GFXResourceManager.h>
 #include <CoreLib/File.h>
 
 #include <chrono>
@@ -76,26 +75,24 @@ namespace pulsar
 
         std::vector<uint8_t> rgbaData;
 
-        auto* resMgr = Application::GetGfxApp()->GetResourceManager();
-
         if (texture->GetCompressedFormat() == TextureCompressionFormat::HDR_Compressed)
         {
-            auto* gfxTex = resMgr->GetTexture(texture->GetTextureHandle());
+            auto gfxTex = texture->GetGfxTexture();
             if (!gfxTex)
             {
                 Logger::Log("TextureSaveUtil::SaveTexture2DToPng: HDR texture GPU resource not available", LogLevel::Error);
                 return false;
             }
             int32_t outW, outH;
-            rgbaData = ReadbackGFXTexture(gfxTex, &outW, &outH);
+            rgbaData = ReadbackGFXTexture(gfxTex.get(), &outW, &outH);
         }
         else
         {
-            auto* gfxTex = resMgr->GetTexture(texture->GetTextureHandle());
+            auto gfxTex = texture->GetGfxTexture();
             if (gfxTex)
             {
                 int32_t outW, outH;
-                rgbaData = ReadbackGFXTexture(gfxTex, &outW, &outH);
+                rgbaData = ReadbackGFXTexture(gfxTex.get(), &outW, &outH);
             }
         }
 

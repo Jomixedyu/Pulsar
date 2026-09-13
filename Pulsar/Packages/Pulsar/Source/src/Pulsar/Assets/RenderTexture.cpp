@@ -1,6 +1,5 @@
 #include "Assets/RenderTexture.h"
 #include <Pulsar/Application.h>
-#include <gfx/GFXResourceManager.h>
 #include <Pulsar/Rendering/RenderThread.h>
 #include <Pulsar/Rendering/RenderTextureProxy.h>
 #include <optional>
@@ -77,9 +76,9 @@ namespace pulsar
         }
     }
 
-    gfx::TextureHandle RenderTexture::GetTextureHandle() const
+    gfx::GFXTexturePtr RenderTexture::GetGfxTexture() const
     {
-        return m_proxy ? m_proxy->GetTextureHandle() : gfx::TextureHandle{};
+        return m_proxy ? m_proxy->GetColorTexture() : nullptr;
     }
 
     std::shared_ptr<gfx::GFXTexture2DView> RenderTexture::GetGfxColorTextureView() const
@@ -92,9 +91,9 @@ namespace pulsar
         return m_proxy ? m_proxy->GetFrameBufferObject() : nullptr;
     }
 
-    array_list<gfx::GFXTexture_sp> RenderTexture::GetFramebufferAttachments() const
+    array_list<gfx::GFXTexturePtr> RenderTexture::GetFramebufferAttachments() const
     {
-        return m_proxy ? m_proxy->GetFramebufferAttachments() : array_list<gfx::GFXTexture_sp>{};
+        return m_proxy ? m_proxy->GetFramebufferAttachments() : array_list<gfx::GFXTexturePtr>{};
     }
 
     void RenderTexture::Serialize(AssetSerializer* s)
@@ -169,7 +168,7 @@ namespace pulsar
 
         auto proxy = m_proxy;
         Application::GetRenderThread()->EnqueueUpdate_AnyThread(
-            [proxy = std::move(proxy)](gfx::GFXResourceManager*) mutable
+            [proxy = std::move(proxy)](gfx::GFXResourceRegistry*)
             {
                 proxy->OnCreateResource();
             });
@@ -191,7 +190,7 @@ namespace pulsar
             return;
 
         Application::GetRenderThread()->EnqueueDestroy_AnyThread(
-            [proxy = std::move(proxy)](gfx::GFXResourceManager*) mutable
+            [proxy = std::move(proxy)](gfx::GFXResourceRegistry*)
             {
                 proxy->OnDestroyResource();
             });

@@ -402,7 +402,7 @@ namespace gfx
     }
     void GFXVulkanCommandBuffer::CmdClearColor(GFXTexture* rt)
     {
-        auto color = rt->TargetClearColor;
+        const auto& color = rt->GetTargetClearColor();
         CmdClearColor(rt, color[0], color[1], color[2], color[3]);
     }
 

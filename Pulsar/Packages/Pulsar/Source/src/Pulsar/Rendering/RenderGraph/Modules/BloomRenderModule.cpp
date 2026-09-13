@@ -7,7 +7,7 @@
 #include <Pulsar/Application.h>
 #include <gfx/GFXCommandBuffer.h>
 #include <gfx/GFXApplication.h>
-#include <gfx/GFXResourceManager.h>
+#include <gfx/GFXResourceRegistry.h>
 #include <gfx/GFXGraphicsPipelineManager.h>
 #include <gfx/TextureClasses.h>
 
@@ -56,7 +56,7 @@ namespace pulsar
                 {gfx::GFXDescriptorType::CombinedImageSampler, gfx::GFXGpuProgramStageFlags::Fragment, 3, 1},
                 {gfx::GFXDescriptorType::ConstantBuffer,       gfx::GFXGpuProgramStageFlags::Fragment, 8, 1},
             };
-            m_bloomLayout = gfxApp->GetOrCreateDescriptorSetLayout(descs.data(), static_cast<uint32_t>(descs.size()));
+            m_bloomLayout = gfxApp->GetResourceRegistry()->GetOrCreateDescriptorSetLayout(descs.data(), static_cast<uint32_t>(descs.size()));
             for (int i = 0; i < 16; ++i)
             {
                 auto set = m_bloomLayout->AllocateSet();
@@ -74,7 +74,7 @@ namespace pulsar
                 {gfx::GFXDescriptorType::CombinedImageSampler, gfx::GFXGpuProgramStageFlags::Fragment, 7, 1},
                 {gfx::GFXDescriptorType::ConstantBuffer,       gfx::GFXGpuProgramStageFlags::Fragment, 8, 1},
             };
-            m_combineLayout = gfxApp->GetOrCreateDescriptorSetLayout(descs.data(), static_cast<uint32_t>(descs.size()));
+            m_combineLayout = gfxApp->GetResourceRegistry()->GetOrCreateDescriptorSetLayout(descs.data(), static_cast<uint32_t>(descs.size()));
             m_combineSet = m_combineLayout->AllocateSet();
         }
 
@@ -85,11 +85,9 @@ namespace pulsar
         desc.Usage = gfx::GFXBufferUsage::ConstantBuffer;
         desc.StorageType = gfx::GFXBufferMemoryPosition::VisibleOnDevice;
         desc.BufferSize = sizeof(BloomParams);
-        auto* resMgr = Application::GetGfxApp()->GetResourceManager();
         for (uint32_t i = 0; i < PassCount; ++i)
         {
-            m_bloomParamBuffers[i] = resMgr->AllocHandle<gfx::BufferHandle>();
-            resMgr->CreateBuffer(m_bloomParamBuffers[i], desc);
+            m_bloomParamBuffers[i] = gfxApp->GetResourceRegistry()->CreateBuffer(desc);
         }
 
         // Bind each buffer to its corresponding set
@@ -98,24 +96,23 @@ namespace pulsar
             if (i < (int)m_bloomParamBuffers.size() && m_bloomSets[i])
             {
                 auto* d = m_bloomSets[i]->AddDescriptor("BloomParams", 8);
-                auto* buffer = resMgr->GetBuffer(m_bloomParamBuffers[i]);
+                auto* buffer = m_bloomParamBuffers[i].get();
                 if (d && buffer) d->SetConstantBuffer(buffer);
             }
         }
         if (m_combineSet && m_bloomParamBuffers.size() > 12)
         {
             auto* d = m_combineSet->AddDescriptor("BloomParams", 8);
-            auto* buffer = resMgr->GetBuffer(m_bloomParamBuffers[12]);
+            auto* buffer = m_bloomParamBuffers[12].get();
             if (d && buffer) d->SetConstantBuffer(buffer);
         }
     }
 
     void BloomRenderModule::Destroy()
     {
-        auto* resMgr = Application::GetGfxApp()->GetResourceManager();
         for (auto& h : m_bloomParamBuffers)
         {
-            if (h.IsValid()) resMgr->Destroy(h);
+            h.reset();
         }
         m_bloomParamBuffers.clear();
         m_bloomSets.clear();
@@ -131,10 +128,10 @@ namespace pulsar
 
     void BloomRenderModule::WriteBloomParams(uint32_t idx, const Vector2f& texelSize, const Vector2f& direction, int32_t sampleMode, float threshold)
     {
-        if (idx >= m_bloomParamBuffers.size() || !m_bloomParamBuffers[idx].IsValid())
+        if (idx >= m_bloomParamBuffers.size() || !m_bloomParamBuffers[idx])
             return;
 
-        auto* buffer = Application::GetGfxApp()->GetResourceManager()->GetBuffer(m_bloomParamBuffers[idx]);
+        auto* buffer = m_bloomParamBuffers[idx].get();
         if (!buffer) return;
 
         BloomParams params{};
@@ -289,7 +286,7 @@ namespace pulsar
                     auto* gfxApp = cmdBuffer.GetApplication();
                     auto* pipelineMgr = gfxApp->GetGraphicsPipelineManager();
 
-                    array_list<gfx::GFXDescriptorSetLayout_sp> descLayouts;
+                    array_list<gfx::GFXDescriptorSetLayoutPtr> descLayouts;
                     descLayouts.push_back(resolved.m_set0Layout);
                     descLayouts.push_back(m_bloomLayout);
 
@@ -413,7 +410,7 @@ namespace pulsar
 
                 auto* gfxApp = cmdBuffer.GetApplication();
                 auto* pipelineMgr = gfxApp->GetGraphicsPipelineManager();
-                array_list<gfx::GFXDescriptorSetLayout_sp> descLayouts;
+                array_list<gfx::GFXDescriptorSetLayoutPtr> descLayouts;
                 descLayouts.push_back(resolved.m_set0Layout);
                 descLayouts.push_back(m_combineLayout);
 

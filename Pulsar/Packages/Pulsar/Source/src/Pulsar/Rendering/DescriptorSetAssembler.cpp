@@ -5,6 +5,7 @@
 #include <gfx/GFXDescriptorSet.h>
 #include <gfx/GFXBuffer.h>
 #include <gfx/GFXTextureView.h>
+#include <gfx/GFXResourceRegistry.h>
 
 namespace pulsar::DescriptorSetAssembler
 {
@@ -48,7 +49,7 @@ namespace pulsar::DescriptorSetAssembler
         set->Submit();
     }
 
-    gfx::GFXDescriptorSetLayout_sp BuildLayout(const ShaderPropertySetLayout* setLayout)
+    gfx::GFXDescriptorSetLayoutPtr BuildLayout(const ShaderPropertySetLayout* setLayout)
     {
         std::vector<gfx::GFXDescriptorLayoutDesc> descs;
         if (setLayout)
@@ -64,6 +65,6 @@ namespace pulsar::DescriptorSetAssembler
                 descs.push_back(desc);
             }
         }
-        return Application::GetGfxApp()->GetOrCreateDescriptorSetLayout(descs.data(), static_cast<uint32_t>(descs.size()));
+        return Application::GetGfxApp()->GetResourceRegistry()->GetOrCreateDescriptorSetLayout(descs.data(), static_cast<uint32_t>(descs.size()));
     }
 }

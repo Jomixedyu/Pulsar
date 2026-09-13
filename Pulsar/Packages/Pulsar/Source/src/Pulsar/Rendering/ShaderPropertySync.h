@@ -30,7 +30,7 @@ namespace pulsar
         // 【渲染线程】按 set0 反射把共享 cbuffer + 已解析纹理 view 填入 registry（缺失项留空，由
         // assembler 回落到内建兜底）。返回持有纹理 view 强引用的容器，须存活到 registry 使用完毕
         // （registry 内存裸指针）。供 DescriptorSetCache 先据此算 key 再装配。
-        static std::vector<gfx::GFXTexture2DView_sp> BuildSet0Registry(
+        static std::vector<gfx::GFXTexture2DViewPtr> BuildSet0Registry(
             const ShaderPropertyRenderData& data,
             const ShaderPropertySetLayout& set0,
             gfx::GFXBuffer* cbuffer,

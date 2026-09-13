@@ -28,9 +28,9 @@ namespace pulsared
         static std::vector<uint8_t> ResizeImageRGBA(const uint8_t* src, int srcW, int srcH, int dstW, int dstH);
 
         gfx::GFXApplication* m_app;
-        gfx::GFXDescriptorSetLayout_sp m_descriptorLayout;
-        std::unordered_map<jxcorlib::guid_t, gfx::GFXDescriptorSet_sp> m_descSets;
-        std::unordered_map<jxcorlib::guid_t, gfx::GFXTexture_sp> m_textures;
+        gfx::GFXDescriptorSetLayoutPtr m_descriptorLayout;
+        std::unordered_map<jxcorlib::guid_t, gfx::GFXDescriptorSetPtr> m_descSets;
+        std::unordered_map<jxcorlib::guid_t, gfx::GFXTexturePtr> m_textures;
         std::unordered_set<jxcorlib::guid_t> m_failedGuids;
     };
 } // namespace pulsared

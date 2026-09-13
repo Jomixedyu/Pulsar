@@ -6,7 +6,7 @@
 #include <Pulsar/Logger.h>
 #include <Pulsar/Rendering/ShaderConfig.h>
 #include <gfx/GFXBuffer.h>
-#include <gfx/GFXResourceManager.h>
+#include <gfx/GFXResourceRegistry.h>
 
 namespace pulsar
 {
@@ -24,10 +24,10 @@ namespace pulsar
         array_list<int32_t>           m_priorities;
 
         // set2 binding1: SkinnedRenderObjectData (BoneMatrices)
-        gfx::BufferHandle             m_skinningBuffer;
+        gfx::GFXBufferPtr             m_skinningBuffer;
 
-        gfx::GFXDescriptorSet_sp      m_descriptorSet;
-        gfx::GFXDescriptorSetLayout_sp m_descriptorSetLayout;
+        gfx::GFXDescriptorSetPtr      m_descriptorSet;
+        gfx::GFXDescriptorSetLayoutPtr m_descriptorSetLayout;
 
         SkinnedMeshRenderObject* SetSkinnedMesh(RCPtr<SkinnedMesh> mesh)
         {
@@ -44,15 +44,14 @@ namespace pulsar
         // Animator 调用：将骨骼矩阵写入 GPU UBO
         void UploadBoneMatrices(const array_list<Matrix4f>& boneMatrices)
         {
-            if (!m_skinningBuffer.IsValid()) return;
+            if (!m_skinningBuffer) return;
 
             SkinnedRenderObjectData data{};
             const size_t count = std::min(boneMatrices.size(), (size_t)SKINNEDMESH_MAX_BONES);
             for (size_t i = 0; i < count; ++i)
                 data.BoneMatrices[i] = boneMatrices[i];
 
-            auto* resMgr = Application::GetGfxApp()->GetResourceManager();
-            resMgr->UploadBuffer(m_skinningBuffer, &data, sizeof(data));
+            m_skinningBuffer->Update(&data);
         }
 
         void SubmitChange();
@@ -61,11 +60,7 @@ namespace pulsar
         {
             m_descriptorSet.reset();
             m_descriptorSetLayout.reset();
-            if (m_skinningBuffer.IsValid())
-            {
-                Application::GetGfxApp()->GetResourceManager()->Destroy(m_skinningBuffer);
-                m_skinningBuffer = gfx::BufferHandle{};
-            }
+            m_skinningBuffer.reset();
         }
 
         void OnChangedTransform() override
@@ -86,7 +81,7 @@ namespace pulsar
             gfx::GFXDescriptorLayoutDesc binding{
                 gfx::GFXDescriptorType::ConstantBuffer, gfx::GFXGpuProgramStageFlags::VertexFragment,
                 kRenderingDescriptorBinding_SkinningData, kRenderingDescriptorSpace_PerRenderObject};
-            m_descriptorSetLayout = Application::GetGfxApp()->GetOrCreateDescriptorSetLayout(&binding, 1);
+            m_descriptorSetLayout = Application::GetGfxApp()->GetResourceRegistry()->GetOrCreateDescriptorSetLayout(&binding, 1);
             SkinnedMeshDescriptorSetLayout = m_descriptorSetLayout;
         }
         else
@@ -101,19 +96,17 @@ namespace pulsar
             desc.StorageType = gfx::GFXBufferMemoryPosition::VisibleOnDevice;
             desc.BufferSize  = sizeof(SkinnedRenderObjectData);
             desc.ElementSize = sizeof(SkinnedRenderObjectData);
-            auto* resMgr = Application::GetGfxApp()->GetResourceManager();
-            m_skinningBuffer = resMgr->AllocHandle<gfx::BufferHandle>();
-            resMgr->CreateBuffer(m_skinningBuffer, desc);
+            m_skinningBuffer = Application::GetGfxApp()->GetResourceRegistry()->CreateBuffer(desc);
 
             // 默认骨骼矩阵全部为单位矩阵（静止姿势）
             SkinnedRenderObjectData defaultData{};
             for (auto& mat : defaultData.BoneMatrices)
                 mat = Matrix4f(1);
-            resMgr->UploadBuffer(m_skinningBuffer, &defaultData, sizeof(defaultData));
+            m_skinningBuffer->Update(&defaultData);
         }
 
         m_descriptorSet = m_descriptorSetLayout->AllocateSet();
-        if (auto* buffer = Application::GetGfxApp()->GetResourceManager()->GetBuffer(m_skinningBuffer))
+        if (auto* buffer = m_skinningBuffer.get())
         {
             m_descriptorSet->AddDescriptor("SkinningData", kRenderingDescriptorBinding_SkinningData)
                            ->SetConstantBuffer(buffer);

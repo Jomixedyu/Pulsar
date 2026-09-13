@@ -1,5 +1,6 @@
 #include <cassert>
 #include <gfx-vk/GFXVulkanApplication.h>
+#include <gfx-vk/GFXVulkanResourceRegistry.h>
 #include <gfx-vk/GFXVulkanBuffer.h>
 #include <gfx-vk/GFXVulkanDescriptorSet.h>
 #include <gfx-vk/GFXVulkanSampler.h>
@@ -48,11 +49,12 @@ namespace gfx
     }
 
     GFXVulkanDescriptorSetLayout::GFXVulkanDescriptorSetLayout(
-        GFXVulkanApplication* app,
+        GFXResourceRegistry* registry,
         const GFXDescriptorLayoutDesc* layouts,
         size_t layoutCount)
-        : m_app(app)
+        : GFXDescriptorSetLayout(registry)
     {
+        auto* app = GetApplication();
         array_list<VkDescriptorSetLayoutBinding> bindings;
         for (size_t i = 0; i < layoutCount; ++i)
         {
@@ -84,19 +86,31 @@ namespace gfx
         }
     }
 
+    GFXVulkanApplication* GFXVulkanDescriptorSetLayout::GetApplication() const
+    {
+        auto* registry = static_cast<GFXVulkanResourceRegistry*>(GetResourceRegistry());
+        return registry ? registry->GetVulkanApplication() : nullptr;
+    }
+
     GFXVulkanDescriptorSetLayout::~GFXVulkanDescriptorSetLayout()
     {
         // Destroying the pools implicitly frees every set ever allocated from them,
         // so recycled handles in m_freeSets need no individual vkFreeDescriptorSets.
         for (auto pool : m_pools)
         {
-            vkDestroyDescriptorPool(m_app->GetVkDevice(), pool, nullptr);
+            if (auto* app = GetApplication())
+            {
+                vkDestroyDescriptorPool(app->GetVkDevice(), pool, nullptr);
+            }
         }
         m_pools.clear();
 
         if (m_descriptorSetLayout != VK_NULL_HANDLE)
         {
-            vkDestroyDescriptorSetLayout(m_app->GetVkDevice(), m_descriptorSetLayout, nullptr);
+            if (auto* app = GetApplication())
+            {
+                vkDestroyDescriptorSetLayout(app->GetVkDevice(), m_descriptorSetLayout, nullptr);
+            }
         }
     }
 
@@ -124,7 +138,9 @@ namespace gfx
         // No FREE_DESCRIPTOR_SET_BIT: sets are recycled via m_freeSets, never freed one-by-one.
 
         VkDescriptorPool pool = VK_NULL_HANDLE;
-        if (vkCreateDescriptorPool(m_app->GetVkDevice(), &poolInfo, nullptr, &pool) != VK_SUCCESS)
+        auto* app = GetApplication();
+        assert(app);
+        if (vkCreateDescriptorPool(app->GetVkDevice(), &poolInfo, nullptr, &pool) != VK_SUCCESS)
         {
             throw std::runtime_error("failed to create descriptor pool!");
         }
@@ -155,7 +171,9 @@ namespace gfx
         allocInfo.pSetLayouts = &m_descriptorSetLayout;
 
         VkDescriptorSet set = VK_NULL_HANDLE;
-        const auto result = vkAllocateDescriptorSets(m_app->GetVkDevice(), &allocInfo, &set);
+        auto* app = GetApplication();
+        assert(app);
+        const auto result = vkAllocateDescriptorSets(app->GetVkDevice(), &allocInfo, &set);
         assert(result == VK_SUCCESS);
         --m_currentPoolRemaining;
         return set;
@@ -241,7 +259,7 @@ namespace gfx
         // cache keyed on the texture's sampler config.
         auto app = m_descriptorSet->GetApplication();
         const auto& samplerCfg = vkView->GetVkTexture()->GetSamplerConfig();
-        auto vkSampler = static_cast<GFXVulkanSampler*>(app->GetBuiltinResources().GetSampler(samplerCfg));
+        auto vkSampler = static_cast<GFXVulkanSampler*>(app->GetResourceRegistry()->GetBuiltinResources().GetSampler(samplerCfg));
         VkSampler sampler = vkSampler->GetVkSampler();
 
         ImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -287,7 +305,7 @@ namespace gfx
     }
 
 
-    GFXVulkanDescriptorSet::GFXVulkanDescriptorSet(const GFXDescriptorSetLayout_sp& layout, VkDescriptorSet handle)
+    GFXVulkanDescriptorSet::GFXVulkanDescriptorSet(const GFXDescriptorSetLayoutPtr& layout, VkDescriptorSet handle)
         : m_descriptorSet(handle)
     {
         // The VkDescriptorSet is already allocated by the owning layout's pool chain.
@@ -373,7 +391,7 @@ namespace gfx
     {
         return m_setlayout ? m_setlayout->GetApplication() : nullptr;
     }
-    GFXDescriptorSetLayout_sp GFXVulkanDescriptorSet::GetDescriptorSetLayout() const
+    GFXDescriptorSetLayoutPtr GFXVulkanDescriptorSet::GetDescriptorSetLayout() const
     {
         return m_setlayout;
     }

@@ -37,6 +37,6 @@ namespace gfx
         GFXVulkanTexture* m_tex;
         uint32_t m_arrayIndex;
     };
-    GFX_DECL_SPTR(GFXVulkanTexture2DView);
+    GFX_DECL_PTR(GFXVulkanTexture2DView);
 
 }

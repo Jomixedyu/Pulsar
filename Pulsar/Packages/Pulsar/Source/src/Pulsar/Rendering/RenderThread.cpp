@@ -2,7 +2,7 @@
 #include <Pulsar/Logger.h>
 #include <Pulsar/Application.h>
 #include <Pulsar/Rendering/DescriptorSetCache.h>
-#include <gfx/GFXResourceManager.h>
+#include <gfx/GFXResourceRegistry.h>
 #include <gfx/GFXApplication.h>
 
 namespace pulsar
@@ -96,11 +96,11 @@ namespace pulsar
             localUpdates.swap(m_resourceUpdates);
         }
 
-        auto* resMgr = Application::GetGfxApp()->GetResourceManager();
+        auto* registry = Application::GetGfxApp()->GetResourceRegistry();
         for (auto& update : localUpdates)
         {
             if (update)
-                update(resMgr);
+                update(registry);
         }
     }
 
@@ -112,11 +112,11 @@ namespace pulsar
             localDestroys.swap(m_destroys);
         }
 
-        auto* resMgr = Application::GetGfxApp()->GetResourceManager();
+        auto* registry = Application::GetGfxApp()->GetResourceRegistry();
         for (auto& destroy : localDestroys)
         {
             if (destroy)
-                destroy(resMgr);
+                destroy(registry);
         }
     }
 

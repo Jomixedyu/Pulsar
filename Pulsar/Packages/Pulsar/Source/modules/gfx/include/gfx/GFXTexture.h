@@ -7,6 +7,8 @@
 
 namespace gfx
 {
+    class GFXResourceRegistry;
+
     struct GFXSamplerConfig
     {
         GFXSamplerFilter Filter = GFXSamplerFilter::Linear;
@@ -45,10 +47,6 @@ namespace gfx
     public:
         ~GFXTexture() override = default;
         GFXResourceType GetResourceType() const override { return GFXResourceType::Texture; }
-        GFXTexture(int32_t width, int32_t height, int32_t depth, GFXSamplerConfig cfg)
-            : m_width(width), m_height(height), m_depth(depth), m_samplerConfig(cfg)
-        {
-        }
     public:
         virtual int32_t GetWidth() const { return m_width; }
         virtual int32_t GetHeight() const { return m_height; }
@@ -58,18 +56,26 @@ namespace gfx
         virtual const type_info& GetClassId() const = 0;
         virtual GFXTextureTargetType GetTargetType() const = 0;
         virtual GFXTextureFormat GetFormat() const = 0;
-        virtual GFXTexture2DView_sp Get2DView(size_t index = 0) = 0;
+        virtual GFXTexture2DViewPtr Get2DView(size_t index = 0) = 0;
         virtual uint32_t GetSampleCount() const { return 1; }
         virtual const GFXSamplerConfig& GetSamplerConfig() const { return m_samplerConfig; }
+        std::array<float, 4>& GetTargetClearColor() { return m_targetClearColor; }
+        const std::array<float, 4>& GetTargetClearColor() const { return m_targetClearColor; }
+        void SetTargetClearColor(const std::array<float, 4>& color) { m_targetClearColor = color; }
 
-    public:
-        std::array<float, 4> TargetClearColor;
     protected:
+        GFXTexture(GFXResourceRegistry* registry,
+                   int32_t width, int32_t height, int32_t depth, GFXSamplerConfig cfg)
+            : GFXResource(registry), m_width(width), m_height(height), m_depth(depth), m_samplerConfig(cfg)
+        {
+        }
+
         GFXSamplerConfig m_samplerConfig{};
         int32_t m_width, m_height, m_depth;
         size_t m_mipLevels{1};
         size_t m_arrayLayers{1};
+        std::array<float, 4> m_targetClearColor{};
     };
-    GFX_DECL_SPTR(GFXTexture);
+    GFX_DECL_PTR(GFXTexture);
 
 } // namespace gfx

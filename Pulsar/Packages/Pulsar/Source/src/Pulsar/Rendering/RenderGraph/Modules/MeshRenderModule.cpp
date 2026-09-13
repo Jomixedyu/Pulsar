@@ -65,9 +65,7 @@ namespace pulsar
             psoParams.DepthWriteEnable = false;
         }
 
-        auto* resMgr = Application::GetGfxApp()->GetResourceManager();
-
-        array_list<gfx::GFXDescriptorSetLayout_sp> descLayouts;
+        array_list<gfx::GFXDescriptorSetLayoutPtr> descLayouts;
         descLayouts.push_back(pb.set0Layout);
         descLayouts.push_back(perPassSet->GetDescriptorSetLayout());
         descLayouts.push_back(pb.batch.DescriptorSetLayout);
@@ -93,14 +91,14 @@ namespace pulsar
             descSets.push_back(pb.batch.ExtraDescriptorSet.get());
             cmdBuffer.CmdBindDescriptorSets(descSets, gfxPipeline.get(), &dynOffsets);
 
-            auto* vertBuffer = resMgr->GetBuffer(element.Vertex);
+            auto* vertBuffer = element.Vertex.get();
             if (!vertBuffer)
                 continue;
 
             cmdBuffer.CmdBindVertexBuffers({vertBuffer});
             if (pb.batch.IsUsedIndices)
             {
-                auto* indicesBuffer = resMgr->GetBuffer(element.Indices);
+                auto* indicesBuffer = element.Indices.get();
                 if (indicesBuffer)
                 {
                     cmdBuffer.CmdBindIndexBuffer(indicesBuffer);

@@ -1,6 +1,7 @@
 #include "TransientRTPool.h"
 #include <Pulsar/Application.h>
 #include <Pulsar/Logger.h>
+#include <gfx/GFXResourceRegistry.h>
 
 namespace pulsar
 {
@@ -65,7 +66,7 @@ namespace pulsar
         for (auto& info : desc.TargetInfos)
         {
             sampleCount = info.SampleCount;
-            auto tex = gfx->CreateRenderTarget(
+            auto tex = gfx->GetResourceRegistry()->CreateRenderTarget(
                 desc.Width, desc.Height,
                 info.TargetType,
                 info.Format,
@@ -77,10 +78,10 @@ namespace pulsar
 
         if (!pt->attachments.empty())
         {
-            array_list<gfx::GFXTexture2DView_sp> views;
+            array_list<gfx::GFXTexture2DViewPtr> views;
             for (auto& att : pt->attachments)
                 views.push_back(att->Get2DView(0));
-            pt->fbo = gfx->CreateFrameBufferObject(views);
+            pt->fbo = gfx->GetResourceRegistry()->CreateFrameBufferObject(views);
         }
 
         return pt;

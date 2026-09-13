@@ -2,7 +2,6 @@
 
 #include <Pulsar/Rendering/RenderProxy.h>
 
-#include <gfx/GFXHandle.h>
 #include <gfx/GFXTexture.h>
 
 #include <vector>
@@ -23,7 +22,7 @@ namespace pulsar::rendering
         void OnDestroyResource() override;
 
         bool IsCreated() const { return m_created; }
-        gfx::TextureHandle GetTextureHandle() const { return m_handle; }
+        gfx::GFXTexturePtr GetTexture() const { return m_texture; }
 
     private:
         void CreateResource();
@@ -36,7 +35,7 @@ namespace pulsar::rendering
         gfx::GFXSamplerConfig m_sampler{};
         std::vector<uint8_t> m_data;
 
-        gfx::TextureHandle m_handle{};
+        gfx::GFXTexturePtr m_texture;
         bool m_created = false;
     };
 }

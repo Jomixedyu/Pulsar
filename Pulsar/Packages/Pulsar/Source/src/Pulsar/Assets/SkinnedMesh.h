@@ -2,7 +2,7 @@
 
 #include "StaticMesh.h"
 #include "Skeleton.h"
-#include <gfx/GFXHandle.h>
+#include <gfx/GFXBuffer.h>
 #include <Pulsar/Rendering/PrimitiveStruct.h>
 
 namespace pulsar
@@ -40,6 +40,7 @@ namespace pulsar
         constexpr static int32_t SerializeVersion = 2; // v2: 独立 Skeleton 引用
         SkinnedMesh() = default;
         ~SkinnedMesh() override;
+        void OnDestroy() override;
     public:
         static gfx::GFXVertexLayoutDescription StaticGetVertexLayout();
 
@@ -66,8 +67,8 @@ namespace pulsar
         const array_list<string>&            GetMaterialNames()     const { return m_materialNames; }
         size_t                               GetMaterialCount()     const { return m_materialNames.size(); }
 
-        const array_list<gfx::BufferHandle>& GetGPUResourceVertexBuffers()  const { return m_vertexBuffers; }
-        const array_list<gfx::BufferHandle>& GetGPUResourceIndicesBuffers() const { return m_indicesBuffers; }
+        const array_list<gfx::GFXBufferPtr>& GetGPUResourceVertexBuffers()  const { return m_vertexBuffers; }
+        const array_list<gfx::GFXBufferPtr>& GetGPUResourceIndicesBuffers() const { return m_indicesBuffers; }
 
     protected:
         void OnCollectAssetDependencies(array_list<jxcorlib::guid_t>& deps) override;
@@ -79,8 +80,8 @@ namespace pulsar
 
     protected: // runtime data
         bool m_isCreatedResource = false;
-        array_list<gfx::BufferHandle> m_vertexBuffers;
-        array_list<gfx::BufferHandle> m_indicesBuffers;
+        array_list<gfx::GFXBufferPtr> m_vertexBuffers;
+        array_list<gfx::GFXBufferPtr> m_indicesBuffers;
     };
     DECL_PTR(SkinnedMesh);
 

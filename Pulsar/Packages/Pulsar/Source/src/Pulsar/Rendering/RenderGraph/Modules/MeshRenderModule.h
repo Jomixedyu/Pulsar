@@ -19,7 +19,7 @@ namespace pulsar
         // The PerMaterial (set0) descriptor set + layout resolved from the global content cache
         // (via MaterialProxy::ResolveRenderVariant). Bound as set 0 for the draw.
         gfx::GFXDescriptorSet*         set0 = nullptr;
-        gfx::GFXDescriptorSetLayout_sp set0Layout;
+        gfx::GFXDescriptorSetLayoutPtr set0Layout;
     };
 
     class MeshRenderModule : public RenderModule

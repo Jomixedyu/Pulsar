@@ -52,7 +52,7 @@ namespace pulsar
         // bind (its lifetime is managed by the cache — do not store it past the current frame;
         // re-Get() each frame instead).
         gfx::GFXDescriptorSet* Get(
-            const gfx::GFXDescriptorSetLayout_sp& layout,
+            const gfx::GFXDescriptorSetLayoutPtr& layout,
             const ShaderPropertySetLayout* reflection,
             const RenderResourceRegistry& reg);
 
@@ -61,13 +61,13 @@ namespace pulsar
 
         // Drop every cached set/layout ref. Must run while the GFX device is still alive and the
         // GPU is idle (engine shutdown, after the render thread has drained) so the held
-        // GFXDescriptorSet_sp destructors release Vulkan objects before vkDestroyDevice.
+        // GFXDescriptorSetPtr destructors release Vulkan objects before vkDestroyDevice.
         void Clear();
 
     private:
         struct Entry
         {
-            gfx::GFXDescriptorSet_sp m_set;
+            gfx::GFXDescriptorSetPtr m_set;
             uint64_t                 m_lastUsedFrame = 0;
         };
 

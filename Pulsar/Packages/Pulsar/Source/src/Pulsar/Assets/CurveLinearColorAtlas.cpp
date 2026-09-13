@@ -77,7 +77,7 @@ namespace pulsar
             if (auto oldProxy = std::move(m_proxy))
             {
                 renderThread->EnqueueDestroy_AnyThread(
-                    [oldProxy = std::move(oldProxy)](gfx::GFXResourceManager*) mutable
+                    [oldProxy = std::move(oldProxy)](gfx::GFXResourceRegistry*)
                     {
                         oldProxy->OnDestroyResource();
                     });
@@ -97,7 +97,7 @@ namespace pulsar
 
             auto proxy = m_proxy;
             renderThread->EnqueueUpdate_AnyThread(
-                [proxy = std::move(proxy)](gfx::GFXResourceManager*) mutable
+                [proxy = std::move(proxy)](gfx::GFXResourceRegistry*)
                 {
                     proxy->OnCreateResource();
                 });
@@ -106,9 +106,9 @@ namespace pulsar
         RuntimeObjectManager::NotifyDependencySource(GetObjectHandle(), DependencyObjectState::Modified);
     }
 
-    gfx::TextureHandle CurveLinearColorAtlas::GetTextureHandle() const
+    gfx::GFXTexturePtr CurveLinearColorAtlas::GetGfxTexture() const
     {
-        return m_proxy ? m_proxy->GetTextureHandle() : gfx::TextureHandle{};
+        return m_proxy ? m_proxy->GetTexture() : nullptr;
     }
 
     bool CurveLinearColorAtlas::CreateGPUResource()
@@ -133,7 +133,7 @@ namespace pulsar
         if (auto proxy = std::move(m_proxy))
         {
             Application::GetRenderThread()->EnqueueDestroy_AnyThread(
-                [proxy = std::move(proxy)](gfx::GFXResourceManager*) mutable
+                [proxy = std::move(proxy)](gfx::GFXResourceRegistry*)
                 {
                     proxy->OnDestroyResource();
                 });

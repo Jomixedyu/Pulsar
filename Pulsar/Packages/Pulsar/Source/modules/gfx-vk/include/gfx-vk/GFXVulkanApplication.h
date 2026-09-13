@@ -14,6 +14,7 @@
 
 #include "GFXVulkanCommandBuffer.h"
 #include "GFXVulkanSwapchain.h"
+#include "GFXVulkanResourceRegistry.h"
 #include "gfx/GFXTextureView.h"
 #include <chrono>
 
@@ -44,39 +45,13 @@ namespace gfx
         virtual const char* GetApiLevelName() const override { return "Vulkan 1.3"; }
 
         void TickRender(float deltaTime);
-        virtual GFXBuffer_sp CreateBuffer(const GFXBufferDesc& desc) override;
-        virtual GFXCommandBuffer_sp CreateCommandBuffer() override;
-        virtual GFXGpuProgram_sp CreateGpuProgram(GFXGpuProgramStageFlags stage, const uint8_t* code, size_t length) override;
+        virtual GFXCommandBufferPtr CreateCommandBuffer() override;
 
 
         virtual GFXGraphicsPipelineManager* GetGraphicsPipelineManager() const override
         {
             return m_graphicsPipelineManager;
         }
-
-        virtual GFXTexture_sp CreateTexture2DFromMemory(
-            const uint8_t* imageData, size_t length,
-            int width, int height,
-            GFXTextureFormat format,
-            const GFXSamplerConfig& samplerConfig
-            ) override;
-
-
-        virtual GFXFrameBufferObject_sp CreateFrameBufferObject(
-            const array_list<GFXTexture2DView_sp>& renderTargets) override;
-
-        virtual GFXTexture_sp CreateTextureCube(int32_t size) override;
-
-        virtual GFXSampler_sp CreateSampler(const GFXSamplerConfig& config) override;
-
-        virtual GFXTexture_sp CreateRenderTarget(
-            int32_t width, int32_t height, GFXTextureTargetType type,
-            GFXTextureFormat format, const GFXSamplerConfig& samplerCfg,
-            uint32_t sampleCount = 1, bool isTransientAttachment = false) override;
-
-        virtual GFXDescriptorSetLayout_sp GetOrCreateDescriptorSetLayout(
-            const GFXDescriptorLayoutDesc* layouts,
-            size_t layoutCount) override;
 
         virtual array_list<GFXTextureFormat> GetSupportedDepthFormats() override;
 
@@ -166,9 +141,6 @@ namespace gfx
 
         std::vector<GFXTextureFormat> m_depthFormatCache;
 
-        // Content-addressed descriptor set layout cache: identical binding content -> one shared object.
-        std::unordered_map<std::string, GFXDescriptorSetLayout_sp> m_layoutCache;
-        std::mutex m_layoutCacheMutex;
     };
 
 

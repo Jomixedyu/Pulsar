@@ -15,9 +15,9 @@ namespace gfx
     public:
         GFXVulkanGraphicsPipeline(
             GFXVulkanApplication* app,
-            const array_list<GFXGpuProgram_sp>& gpuPrograms,
+            const array_list<GFXGpuProgramPtr>& gpuPrograms,
             GFXGraphicsPipelineStateParams stateParams,
-            const array_list<GFXDescriptorSetLayout_sp>& descriptorSetLayouts,
+            const array_list<GFXDescriptorSetLayoutPtr>& descriptorSetLayouts,
             const GFXRenderTargetDesc& renderTargetDesc,
             const GFXGraphicsPipelineState& gpInfo);
 
@@ -26,7 +26,6 @@ namespace gfx
     public:
         const VkPipelineLayout& GetVkPipelineLayout() const { return m_pipelineLayout; }
         const VkPipeline& GetVkPipeline() const { return m_pipeline; }
-        GFXVulkanApplication* GetApplication() const { return m_app; }
     protected:
 
         VkPipelineLayout m_pipelineLayout = VK_NULL_HANDLE;

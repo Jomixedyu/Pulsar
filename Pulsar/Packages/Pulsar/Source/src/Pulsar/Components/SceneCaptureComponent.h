@@ -53,7 +53,7 @@ namespace pulsar
 
     struct RenderCapturePassInfo
     {
-        gfx::GFXFrameBufferObject_sp FrameBuffer;
+        gfx::GFXFrameBufferObjectPtr FrameBuffer;
 
     };
 

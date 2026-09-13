@@ -1,6 +1,7 @@
 #pragma once
 #include "VolumeSettings.h"
 #include <Pulsar/Assets/Texture2D.h>
+#include <gfx/GFXTexture.h>
 
 namespace pulsar
 {
@@ -52,7 +53,7 @@ namespace pulsar
         float Intensity = 1.0f;
         int LutSize = 16;
         LUTColorSpace ColorSpace = LUTColorSpace::Linear;
-        gfx::TextureHandle LutTexture;
+        std::shared_ptr<rendering::TextureProxy> LutTexture;
 
         Type* GetSettingsType() const override { return cltypeof<ColorGradingSettings>(); }
     };

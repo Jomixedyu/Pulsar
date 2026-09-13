@@ -5,10 +5,16 @@
 #include "EngineMath.h"
 #include <Pulsar/AssetObject.h>
 #include <Pulsar/Rendering/RenderThread.h>
-#include <gfx/GFXResourceManager.h>
+#include <gfx/GFXResourceRegistry.h>
 
 namespace pulsar
 {
+    void SkinnedMesh::OnDestroy()
+    {
+        base::OnDestroy();
+        DestroyGPUResource();
+    }
+
     // -----------------------------------------------------------------------
     // SkinnedMeshSection::BuildInterleavedVertices
     // -----------------------------------------------------------------------
@@ -117,7 +123,6 @@ namespace pulsar
         m_isCreatedResource = true;
 
         // 句柄分配线程安全，主线程立即拿到句柄；Buffer 创建与上传投递到渲染线程异步执行。
-        auto* resMgr = Application::GetGfxApp()->GetResourceManager();
         auto* renderThread = Application::GetRenderThread();
         for (auto& section : m_sections)
         {
@@ -131,14 +136,13 @@ namespace pulsar
                 vDesc.BufferSize  = vertSize;
                 vDesc.ElementSize = sizeof(SkinnedMeshVertex);
 
-                auto vb = resMgr->AllocHandle<gfx::BufferHandle>();
+                auto vb = Application::GetGfxApp()->GetResourceRegistry()->CreateBuffer(vDesc);
                 m_vertexBuffers.push_back(vb);
 
                 renderThread->EnqueueUpdate_AnyThread(
-                    [vb, vDesc, verts = std::move(verts), vertSize](gfx::GFXResourceManager* mgr)
+                    [vb, verts = std::move(verts)](gfx::GFXResourceRegistry*)
                     {
-                        mgr->CreateBuffer(vb, vDesc);
-                        mgr->UploadBuffer(vb, verts.data(), vertSize);
+                        vb->Update(verts.data());
                     });
             }
 
@@ -152,14 +156,13 @@ namespace pulsar
                 const size_t indicesSize = section.GetIndicesAllocSize();
                 array_list<MeshIndicesType> indices = section.Indices;
 
-                auto ib = resMgr->AllocHandle<gfx::BufferHandle>();
+                auto ib = Application::GetGfxApp()->GetResourceRegistry()->CreateBuffer(iDesc);
                 m_indicesBuffers.push_back(ib);
 
                 renderThread->EnqueueUpdate_AnyThread(
-                    [ib, iDesc, indices = std::move(indices), indicesSize](gfx::GFXResourceManager* mgr)
+                    [ib, indices = std::move(indices)](gfx::GFXResourceRegistry*)
                     {
-                        mgr->CreateBuffer(ib, iDesc);
-                        mgr->UploadBuffer(ib, indices.data(), indicesSize);
+                        ib->Update(indices.data());
                     });
             }
         }
@@ -173,12 +176,8 @@ namespace pulsar
 
         auto* renderThread = Application::GetRenderThread();
         renderThread->EnqueueUpdate_AnyThread(
-            [vbs = std::move(m_vertexBuffers), ibs = std::move(m_indicesBuffers)](gfx::GFXResourceManager* mgr)
+            [vbs = std::move(m_vertexBuffers), ibs = std::move(m_indicesBuffers)](gfx::GFXResourceRegistry*)
             {
-                for (auto& h : vbs)
-                    mgr->Destroy(h);
-                for (auto& h : ibs)
-                    mgr->Destroy(h);
             });
         m_vertexBuffers.clear();
         m_indicesBuffers.clear();

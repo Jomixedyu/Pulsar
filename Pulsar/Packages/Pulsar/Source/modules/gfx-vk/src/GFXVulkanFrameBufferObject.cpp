@@ -1,15 +1,14 @@
 #include "GFXVulkanFrameBufferObject.h"
 #include "GFXVulkanApplication.h"
+#include "GFXVulkanResourceRegistry.h"
 #include <cassert>
 
 namespace gfx
 {
-    static int32_t idNext = 0;
-
     GFXVulkanFrameBufferObject::GFXVulkanFrameBufferObject(
-        GFXVulkanApplication* app,
-        const std::vector<GFXTexture2DView_sp>& renderTargets)
-        : m_app(app), m_renderTargets(renderTargets)
+        GFXResourceRegistry* registry,
+        const std::vector<GFXTexture2DViewPtr>& renderTargets)
+        : GFXFrameBufferObject(registry), m_renderTargets(renderTargets)
     {
         assert(renderTargets.size() != 0);
 
@@ -17,7 +16,7 @@ namespace gfx
         m_width = first->GetWidth();
         m_height = first->GetHeight();
 
-        m_id = ++idNext;
+        m_id = GetResourceId();
 
         // Deduce GFXRenderTargetDesc from render targets
         for (auto& rt : m_renderTargets)

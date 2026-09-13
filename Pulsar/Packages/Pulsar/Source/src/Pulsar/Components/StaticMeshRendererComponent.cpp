@@ -19,7 +19,7 @@ namespace pulsar
         array_list<RCPtr<Material>> m_materials;
         array_list<int32_t> m_priorities;
 
-        gfx::GFXDescriptorSet_sp m_dummyExtraSet;
+        gfx::GFXDescriptorSetPtr m_dummyExtraSet;
 
         StaticMeshRenderObject() = default;
         StaticMeshRenderObject* SetStaticMesh(RCPtr<StaticMesh> mesh)
@@ -470,7 +470,7 @@ namespace pulsar
 
         auto ro = m_renderObject;
         Application::GetRenderThread()->EnqueueUpdate_AnyThread(
-            [ro, localToWorld, bounds, mesh = std::move(mesh), materials = std::move(materials), priorities = std::move(priorities)](gfx::GFXResourceManager*) mutable
+            [ro, localToWorld, bounds, mesh = std::move(mesh), materials = std::move(materials), priorities = std::move(priorities)](gfx::GFXResourceRegistry*) mutable
             {
                 ro->SetTransform(localToWorld);
                 ro->SetBounds(bounds);

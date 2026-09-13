@@ -7,6 +7,7 @@
 namespace gfx
 {
     class GFXVulkanApplication;
+    class GFXResourceRegistry;
 
     struct GFXVulkanTextureProxyCreateInfo
     {
@@ -19,6 +20,7 @@ namespace gfx
         VkImageView view;
         VkImageLayout finalTargetLayout;
         GFXTextureDataType dataType;
+        bool IsManaged = false;
     };
 
 
@@ -34,16 +36,17 @@ namespace gfx
         virtual ~GFXVulkanTexture() override;
 
         //create by pic data
-        GFXVulkanTexture(GFXVulkanApplication* app, const GFXTextureCreateDesc& info);
+        GFXVulkanTexture(GFXResourceRegistry* registry = nullptr, const GFXTextureCreateDesc& info = {});
 
         //view
-        GFXVulkanTexture(GFXVulkanApplication* app, const GFXVulkanTextureProxyCreateInfo& info);
+        GFXVulkanTexture(GFXResourceRegistry* registry, const GFXVulkanTextureProxyCreateInfo& info);
+
 
         GFXVulkanTexture(const GFXVulkanTexture&) = delete;
     public:
 
         void UpdateTextureResource(const GFXTextureUpdateDesc& desc);
-        GFXTexture2DView_sp Get2DView(size_t index) override;
+        GFXTexture2DViewPtr Get2DView(size_t index) override;
 
         VkImage GetVkImage() const { return m_textureImage; }
         VkImageView GetVkImageView() const { return m_textureImageView; }
@@ -60,8 +63,6 @@ namespace gfx
         uint32_t GetSampleCount() const override { return static_cast<uint32_t>(m_samples); }
 
     protected:
-        GFXVulkanApplication* m_app;
-
         VkImage m_textureImage{};
         VkImageLayout m_imageLayout;
         VkImageLayout m_targetFinalLayout;
@@ -74,11 +75,14 @@ namespace gfx
         GFXTextureTargetType m_targetType;
         VkSampleCountFlagBits m_samples = VK_SAMPLE_COUNT_1_BIT;
 
-        std::map<size_t, GFXTexture2DView_sp> m_2dviews;
+        std::map<size_t, GFXTexture2DViewPtr> m_2dviews;
 
         bool m_isView = false;
         bool m_isManaged = false;
         bool m_inited = false;
+
+    private:
+        GFXVulkanApplication* GetApplication() const;
     };
 
 

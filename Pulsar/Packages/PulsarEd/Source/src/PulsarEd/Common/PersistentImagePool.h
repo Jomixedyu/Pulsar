@@ -16,9 +16,9 @@ namespace pulsared
         ~PersistentImagePool();
 
     private:
-        std::unordered_map<index_string, gfx::GFXDescriptorSet_sp> m_cacheDescSets;
-        std::unordered_map<index_string, gfx::GFXTexture_sp> m_textures;
-        gfx::GFXDescriptorSetLayout_sp m_descriptorLayout;
+        std::unordered_map<index_string, gfx::GFXDescriptorSetPtr> m_cacheDescSets;
+        std::unordered_map<index_string, gfx::GFXTexturePtr> m_textures;
+        gfx::GFXDescriptorSetLayoutPtr m_descriptorLayout;
         gfx::GFXApplication* m_app;
     };
 }

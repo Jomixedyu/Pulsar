@@ -63,7 +63,8 @@ namespace pulsar
 
     void ViewPipeline::ApplyRenderData(const ViewPipelineRenderData& data)
     {
-        RebuildFeatures(data);
+        if (!HasSameFeatures(data))
+            RebuildFeatures(data);
     }
 
     bool ViewPipeline::HasSameFeatures(const ViewPipelineRenderData& data) const
@@ -146,7 +147,7 @@ namespace pulsar
             capture->viewProxy ? capture->viewProxy->GetCameraBuffer() : nullptr,
             scene->GetWorldBuffer(),
             scene->GetLightsBuffer(),
-            scene->GetPerRenderObjectData().GetBuffer(),
+            scene->GetPerRenderObjectData().GetBufferRaw(),
         });
         frameData.Set(SceneRenderTargetFrameData{ hSceneColor });
         frameData.Set(SceneResolveTargetFrameData{ resolveTargetView });
@@ -170,7 +171,7 @@ namespace pulsar
 
         if (postProcess.ActiveColor != postProcess.FinalTarget)
         {
-            gfx::GFXTexture2DView_sp fallbackView = camRenderTexture.GetColorTextureView();
+            gfx::GFXTexture2DViewPtr fallbackView = camRenderTexture.GetColorTextureView();
             graph.AddPass("PostProcess_CopyToFinal")
                 .Read(postProcess.ActiveColor)
                 .Write(postProcess.FinalTarget)

@@ -55,7 +55,7 @@ namespace gfx
         virtual GFXApplication* GetApplication() const = 0;
 
     };
-    GFX_DECL_SPTR(GFXCommandBuffer);
+    GFX_DECL_PTR(GFXCommandBuffer);
 
     struct GFXDebugEventScoped
     {

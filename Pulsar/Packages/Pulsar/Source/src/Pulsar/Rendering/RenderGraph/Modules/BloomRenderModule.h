@@ -5,7 +5,6 @@
 #include <Pulsar/Rendering/MaterialProxy.h>
 #include <gfx/GFXDescriptorSet.h>
 #include <gfx/GFXBuffer.h>
-#include <gfx/GFXHandle.h>
 
 namespace pulsar
 {
@@ -54,12 +53,12 @@ namespace pulsar
         float m_bloomThreshold = 0.44922f;
         float m_bloomIntensity = 1.0f;
 
-        gfx::GFXDescriptorSetLayout_sp m_bloomLayout;
-        array_list<gfx::GFXDescriptorSet_sp> m_bloomSets;
+        gfx::GFXDescriptorSetLayoutPtr m_bloomLayout;
+        array_list<gfx::GFXDescriptorSetPtr> m_bloomSets;
 
-        gfx::GFXDescriptorSetLayout_sp m_combineLayout;
-        gfx::GFXDescriptorSet_sp       m_combineSet;
+        gfx::GFXDescriptorSetLayoutPtr m_combineLayout;
+        gfx::GFXDescriptorSetPtr       m_combineSet;
 
-        array_list<gfx::BufferHandle> m_bloomParamBuffers;
+        array_list<gfx::GFXBufferPtr> m_bloomParamBuffers;
     };
 }

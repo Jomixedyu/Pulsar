@@ -1,5 +1,6 @@
 #include <gfx-vk/GFXVulkanGpuProgram.h>
 #include <gfx-vk/GFXVulkanApplication.h>
+#include <gfx-vk/GFXVulkanResourceRegistry.h>
 #include <stdexcept>
 
 namespace gfx
@@ -21,14 +22,27 @@ namespace gfx
     }
 
     GFXVulkanGpuProgram::GFXVulkanGpuProgram(
-        GFXVulkanApplication* app, GFXGpuProgramStageFlags stage, const uint8_t* codes, size_t len)
-        : m_app(app), m_stage(stage)
+        GFXResourceRegistry* registry, GFXGpuProgramStageFlags stage, const uint8_t* codes, size_t len)
+        : GFXGpuProgram(registry), m_stage(stage)
     {
-        m_shader = _CreateShaderModule(m_app, codes, len);
+        m_shader = _CreateShaderModule(GetApplication(), codes, len);
+    }
+
+    GFXVulkanApplication* GFXVulkanGpuProgram::GetApplication() const
+    {
+        auto* registry = static_cast<GFXVulkanResourceRegistry*>(GetResourceRegistry());
+        return registry ? registry->GetVulkanApplication() : nullptr;
     }
     GFXVulkanGpuProgram::~GFXVulkanGpuProgram()
     {
-        vkDestroyShaderModule(m_app->GetVkDevice(), m_shader, nullptr);
+        if (m_shader != VK_NULL_HANDLE)
+        {
+            if (auto* app = GetApplication())
+            {
+                vkDestroyShaderModule(app->GetVkDevice(), m_shader, nullptr);
+            }
+            m_shader = VK_NULL_HANDLE;
+        }
     }
     VkShaderStageFlagBits GFXVulkanGpuProgram::GetVkStage() const
     {

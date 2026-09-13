@@ -5,19 +5,18 @@
 namespace gfx
 {
     class GFXVulkanApplication;
+    class GFXResourceRegistry;
 
     class GFXVulkanBuffer : public GFXBuffer
     {
         using base = GFXBuffer;
     public:
-        GFXVulkanBuffer(GFXVulkanApplication* app, const GFXBufferDesc& desc);
+        GFXVulkanBuffer(GFXResourceRegistry* registry = nullptr, const GFXBufferDesc& desc = {});
         virtual ~GFXVulkanBuffer() override;
     public:
         virtual void Update(const void* data) override;
-        virtual void Release() override;
         const VkBuffer& GetVkBuffer() const { return m_vkBuffer; }
         VkBufferUsageFlags GetVkUsage() const;
-        GFXVulkanApplication* GetApplication() const { return m_app; }
     public:
         /* GFXBuffer */
         virtual bool IsValid() const override;
@@ -26,8 +25,10 @@ namespace gfx
 
     protected:
         bool m_hasData = true;
+
+    private:
+        GFXVulkanApplication* GetApplication() const;
         VkBuffer m_vkBuffer{};
         VkDeviceMemory m_vkBufferMemory{};
-        GFXVulkanApplication* m_app = nullptr;
     };
 }

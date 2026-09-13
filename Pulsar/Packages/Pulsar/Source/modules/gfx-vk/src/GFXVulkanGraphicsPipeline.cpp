@@ -79,9 +79,9 @@ namespace gfx
 
     GFXVulkanGraphicsPipeline::GFXVulkanGraphicsPipeline(
         GFXVulkanApplication* app,
-        const array_list<GFXGpuProgram_sp>& gpuPrograms,
+        const array_list<GFXGpuProgramPtr>& gpuPrograms,
         GFXGraphicsPipelineStateParams stateParams,
-        const array_list<GFXDescriptorSetLayout_sp>& descriptorSetLayouts,
+        const array_list<GFXDescriptorSetLayoutPtr>& descriptorSetLayouts,
         const GFXRenderTargetDesc& renderTargetDesc,
         const GFXGraphicsPipelineState& gpInfo)
         : m_app(app)

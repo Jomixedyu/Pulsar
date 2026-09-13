@@ -1,7 +1,6 @@
 #pragma once
 
 #include <gfx/GFXDescriptorSet.h>
-#include <gfx/GFXHandle.h>
 #include <Pulsar/Rendering/ShaderPropertySheet.h>
 #include <Pulsar/Rendering/ShaderPropertyRenderData.h>
 #include <Pulsar/Rendering/ShaderInstance.h>
@@ -29,6 +28,7 @@ namespace pulsar
 
     public:
         Material();
+        void OnDestroy() override;
 
         static RCPtr<Material> StaticCreate(const RCPtr<Shader>& shader, string_view name = {});
 

@@ -11,6 +11,7 @@
 #include "GFXVulkanGraphicsPipeline.h"
 #include "GFXVulkanGraphicsPipelineManager.h"
 #include "GFXVulkanRenderer.h"
+#include "GFXVulkanResourceRegistry.h"
 #include "GFXVulkanSampler.h"
 #include "GFXVulkanSwapchain.h"
 #include "GFXVulkanTexture.h"
@@ -409,7 +410,12 @@ namespace gfx
         this->InitPickPhysicalDevice();
         this->InitLogicalDevice();
 
+        // The command pool must exist before the registry initializes: its
+        // builtin resources record and submit GPU upload commands through it.
         m_cmdPool = new GFXVulkanCommandBufferPool(this);
+
+        m_resourceRegistry = new GFXVulkanResourceRegistry(this);
+        m_resourceRegistry->Initialize();
 
         m_uploadQueue = new GFXVulkanBufferUploadQueue(this);
 
@@ -418,16 +424,17 @@ namespace gfx
         m_renderer = new GFXVulkanRenderer(this);
 
         m_graphicsPipelineManager = new GFXVulkanGraphicsPipelineManager(this);
-
-        m_resourceManager = std::make_unique<GFXResourceManager>(this);
-
-        m_builtinResources.Initialize(this);
     }
 
     void GFXVulkanApplication::TickRender(float deltaTime)
     {
         if (m_renderer->Render(deltaTime))
+        {
+            if (m_resourceRegistry)
+                m_resourceRegistry->Tick(m_framecount);
+
             ++m_framecount;
+        }
     }
 
     void GFXVulkanApplication::WaitDeviceIdle()
@@ -447,23 +454,21 @@ namespace gfx
         // Ensure all GPU work is finished before releasing resources
         vkDeviceWaitIdle(m_device);
 
-        // Release builtin fallback resources while the device is still alive
-        m_builtinResources.Terminate();
-
-        // Release handle-managed resources before destroying the device
-        m_resourceManager.reset();
-
-        // Release cached descriptor set layouts (own their pools) before destroying the device
-        {
-            std::lock_guard<std::mutex> lock(m_layoutCacheMutex);
-            m_layoutCache.clear();
-        }
-
         delete m_renderer;
         delete m_viewport;
         delete m_graphicsPipelineManager;
         delete m_uploadQueue;
         delete m_cmdPool;
+
+        // Terminate the registry after the components released their resources:
+        // builtin resources are released and all deferred destroys flushed while
+        // the device is still alive.
+        if (m_resourceRegistry)
+        {
+            m_resourceRegistry->Terminate();
+            delete m_resourceRegistry;
+            m_resourceRegistry = nullptr;
+        }
 
         vkDestroyDevice(m_device, nullptr);
 
@@ -488,120 +493,11 @@ namespace gfx
         m_window = nullptr;
     }
 
-    GFXBuffer_sp GFXVulkanApplication::CreateBuffer(const GFXBufferDesc& desc)
-    {
-        return gfxmksptr(new GFXVulkanBuffer(this, desc));
-    }
-    GFXCommandBuffer_sp gfx::GFXVulkanApplication::CreateCommandBuffer()
+    GFXCommandBufferPtr gfx::GFXVulkanApplication::CreateCommandBuffer()
     {
         return gfxmksptr(new GFXVulkanCommandBuffer(this));
     }
-    std::shared_ptr<GFXTexture> gfx::GFXVulkanApplication::CreateTexture2DFromMemory(
-        const uint8_t* imageData, size_t length, int width, int height, GFXTextureFormat format, const GFXSamplerConfig& samplerConfig)
-    {
-        GFXTextureCreateDesc info{};
-        info.ImageData = imageData;
-        info.DataLength = length;
-        info.Width = width;
-        info.Height = height;
-        info.Depth = 1;
-        info.Format = format;
-        info.SamplerCfg = samplerConfig;
-        info.DataType = GFXTextureDataType::Texture2D;
-
-        return gfxmksptr(new GFXVulkanTexture(this, info));
-    }
-
-    std::shared_ptr<GFXFrameBufferObject> GFXVulkanApplication::CreateFrameBufferObject(
-        const std::vector<GFXTexture2DView_sp>& renderTargets)
-    {
-        auto buf = new GFXVulkanFrameBufferObject(this, renderTargets);
-        return gfxmksptr(buf);
-    }
-
-    GFXGpuProgram_sp GFXVulkanApplication::CreateGpuProgram(GFXGpuProgramStageFlags stage, const uint8_t* code, size_t length)
-    {
-        return gfxmksptr(new GFXVulkanGpuProgram(this, stage, code, length));
-    }
-
-
-    GFXTexture_sp GFXVulkanApplication::CreateTextureCube(int32_t size)
-    {
-        GFXTextureCreateDesc info{};
-        info.Width = size;
-        info.Height = size;
-        info.Depth = 1;
-        info.ArrayLayers = 6;
-        info.Format = GFXTextureFormat::R16G16B16A16_SFloat;
-        info.TargetType = GFXTextureTargetType::ColorTarget;
-        info.DataType = GFXTextureDataType::TextureCube;
-        return gfxmksptr(new GFXVulkanTexture(this, info));
-    }
-
-    GFXSampler_sp GFXVulkanApplication::CreateSampler(const GFXSamplerConfig& config)
-    {
-        return gfxmksptr(new GFXVulkanSampler(this, config));
-    }
-
-    GFXTexture_sp GFXVulkanApplication::CreateRenderTarget(
-        int32_t width, int32_t height, GFXTextureTargetType type, GFXTextureFormat format, const GFXSamplerConfig& samplerCfg,
-        uint32_t sampleCount, bool isTransientAttachment)
-    {
-        GFXTextureCreateDesc info{};
-        info.Width = width;
-        info.Height = height;
-        info.Depth = 1;
-        info.Format = format;
-        info.TargetType = type;
-        info.DataType = GFXTextureDataType::Texture2D;
-        info.SampleCount = sampleCount;
-        info.IsTransientAttachment = isTransientAttachment;
-        info.SamplerCfg = samplerCfg;
-
-        auto rt = new GFXVulkanTexture(this, info);
-        return gfxmksptr(rt);
-    }
-
-    GFXDescriptorSetLayout_sp GFXVulkanApplication::GetOrCreateDescriptorSetLayout(
-        const GFXDescriptorLayoutDesc* layouts,
-        size_t layoutCount)
-    {
-        // Build a content key from the bindings, sorted by binding point so that
-        // array ordering does not produce distinct keys for the same Vulkan layout.
-        std::vector<const GFXDescriptorLayoutDesc*> sorted;
-        sorted.reserve(layoutCount);
         
-        
-        
-        
-        
-        
-        
-        
-        for (size_t i = 0; i < layoutCount; ++i)
-            sorted.push_back(&layouts[i]);
-        std::sort(sorted.begin(), sorted.end(),
-            [](const GFXDescriptorLayoutDesc* a, const GFXDescriptorLayoutDesc* b)
-            { return a->BindingPoint < b->BindingPoint; });
-
-        std::string key;
-        char buf[64];
-        for (const GFXDescriptorLayoutDesc* d : sorted)
-        {
-            snprintf(buf, sizeof(buf), "%u:%d:%u;", d->BindingPoint, (int)d->Type, (uint32_t)d->Stage);
-            key += buf;
-        }
-
-        std::lock_guard<std::mutex> lock(m_layoutCacheMutex);
-        auto it = m_layoutCache.find(key);
-        if (it != m_layoutCache.end())
-            return it->second;
-
-        auto layout = gfxmksptr(new GFXVulkanDescriptorSetLayout(this, layouts, layoutCount));
-        m_layoutCache.emplace(std::move(key), layout);
-        return layout;
-    }
-
     array_list<GFXTextureFormat> GFXVulkanApplication::GetSupportedDepthFormats()
     {
         if (m_depthFormatCache.empty())

@@ -4,6 +4,8 @@
 
 namespace gfx
 {
+    class GFXResourceRegistry;
+
 
     enum class GFXGpuProgramStageFlags : uint32_t
     {
@@ -36,7 +38,6 @@ namespace gfx
     class GFXGpuProgram : public GFXResource
     {
     public:
-        GFXGpuProgram() {}
         GFXGpuProgram(const GFXGpuProgram&) = delete;
         ~GFXGpuProgram() override {}
         GFXResourceType GetResourceType() const override { return GFXResourceType::GpuProgram; }
@@ -46,8 +47,11 @@ namespace gfx
         void SetEntryName(const std::string& name) { m_entryName = name; }
 
     protected:
+        explicit GFXGpuProgram(GFXResourceRegistry* registry = nullptr)
+            : GFXResource(registry) {}
+
         std::string m_entryName = "main";
     };
-    GFX_DECL_SPTR(GFXGpuProgram);
+    GFX_DECL_PTR(GFXGpuProgram);
 
 }

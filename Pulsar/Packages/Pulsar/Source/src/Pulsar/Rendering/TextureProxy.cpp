@@ -1,7 +1,7 @@
 #include <Pulsar/Rendering/TextureProxy.h>
 
 #include <Pulsar/Application.h>
-#include <gfx/GFXResourceManager.h>
+#include <gfx/GFXResourceRegistry.h>
 
 namespace pulsar::rendering
 {
@@ -16,8 +16,6 @@ namespace pulsar::rendering
         , m_sampler(sampler)
         , m_data(std::move(data))
     {
-        if (auto gfxApp = Application::GetGfxApp())
-            m_handle = gfxApp->GetResourceManager()->AllocHandle<gfx::TextureHandle>();
     }
 
     TextureProxy::TextureProxy(int32_t size, const gfx::GFXSamplerConfig& sampler)
@@ -26,8 +24,6 @@ namespace pulsar::rendering
         , m_dataType(gfx::GFXTextureDataType::TextureCube)
         , m_sampler(sampler)
     {
-        if (auto gfxApp = Application::GetGfxApp())
-            m_handle = gfxApp->GetResourceManager()->AllocHandle<gfx::TextureHandle>();
     }
 
     void TextureProxy::OnCreateResource()
@@ -35,26 +31,14 @@ namespace pulsar::rendering
         if (m_created)
             return;
 
-        CreateResource();
-    }
-
-    void TextureProxy::OnDestroyResource()
-    {
-        DestroyResource();
-    }
-
-    void TextureProxy::CreateResource()
-    {
-        if (m_created || !m_handle.IsValid())
-            return;
-
         auto gfxApp = Application::GetGfxApp();
-        if (!gfxApp)
+        auto* registry = gfxApp ? gfxApp->GetResourceRegistry() : nullptr;
+        if (!registry)
             return;
 
         if (m_dataType == gfx::GFXTextureDataType::TextureCube)
         {
-            gfxApp->GetResourceManager()->CreateTextureCube(m_handle, m_width);
+            m_texture = registry->CreateTextureCube(m_width);
         }
         else
         {
@@ -63,24 +47,22 @@ namespace pulsar::rendering
             desc.DataLength = m_data.size();
             desc.Width = m_width;
             desc.Height = m_height;
+            desc.DataType = m_dataType;
             desc.Format = m_format;
             desc.SamplerCfg = m_sampler;
 
-            gfxApp->GetResourceManager()->CreateTexture2D(m_handle, desc);
+            m_texture = registry->CreateTexture2D(desc);
         }
 
         m_created = true;
     }
 
-    void TextureProxy::DestroyResource()
+    void TextureProxy::OnDestroyResource()
     {
-        if (!m_created || !m_handle.IsValid())
+        if (!m_created)
             return;
 
-        if (auto gfxApp = Application::GetGfxApp())
-            gfxApp->GetResourceManager()->Destroy(m_handle);
-
-        m_handle = {};
+        m_texture.reset();
         m_created = false;
     }
 }

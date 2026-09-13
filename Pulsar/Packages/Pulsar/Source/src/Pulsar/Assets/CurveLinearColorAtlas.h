@@ -22,7 +22,8 @@ namespace pulsar
         bool IsCreatedGPUResource() const override { return m_isCreatedGpuResource; }
         int32_t GetWidth() const override;
         int32_t GetHeight() const override;
-        gfx::TextureHandle GetTextureHandle() const override;
+        gfx::GFXTexturePtr GetGfxTexture() const override;
+        std::shared_ptr<rendering::TextureProxy> GetTextureProxy() const override { return m_proxy; }
 
         void PostEditChange(FieldInfo* info) override;
         void OnNotifyObserver(ObjectHandle inDependency, DependencyObjectState msg) override;

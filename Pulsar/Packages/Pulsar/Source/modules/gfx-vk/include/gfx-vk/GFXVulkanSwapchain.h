@@ -35,7 +35,6 @@ namespace gfx
         VkImageView GetVkSwapChainImageView() const { return m_swapChainImageViews[m_imageIndex]; }
         VkExtent2D GetVkSwapChainExtent() const { return m_swapChainExtent; }
         VkFormat GetVkSwapChainImageFormat() const { return m_swapChainImageFormat; }
-        GFXVulkanApplication* GetApplication() const { return m_app; }
         GFXVulkanQueue* GetQueue() const;
         VkResult AcquireNextImage(uint32_t* outIndex);
     public:

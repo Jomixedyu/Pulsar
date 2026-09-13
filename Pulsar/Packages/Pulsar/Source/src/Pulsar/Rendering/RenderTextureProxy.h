@@ -4,8 +4,9 @@
 #include <Pulsar/Assets/RenderTextureFormats.h>
 
 #include <gfx/GFXFrameBufferObject.h>
-#include <gfx/GFXHandle.h>
 #include <gfx/GFXTexture.h>
+
+#include <memory>
 
 #include <vector>
 
@@ -23,13 +24,13 @@ namespace pulsar::rendering
 
         bool IsCreated() const { return m_created; }
 
-        gfx::TextureHandle GetTextureHandle() const;
-        gfx::TextureHandle GetDepthTextureHandle() const;
+        gfx::GFXTexturePtr GetColorTexture() const { return m_colorTexture; }
+        gfx::GFXTexturePtr GetDepthTexture() const { return m_depthTexture; }
 
-        gfx::GFXTexture2DView_sp GetColorTextureView() const;
-        gfx::GFXTexture2DView_sp GetDepthRenderTarget() const;
-        gfx::GFXFrameBufferObject_sp GetFrameBufferObject() const;
-        array_list<gfx::GFXTexture_sp> GetFramebufferAttachments() const;
+        gfx::GFXTexture2DViewPtr GetColorTextureView() const;
+        gfx::GFXTexture2DViewPtr GetDepthRenderTarget() const;
+        gfx::GFXFrameBufferObjectPtr GetFrameBufferObject() const;
+        array_list<gfx::GFXTexturePtr> GetFramebufferAttachments() const;
 
     private:
         void CreateResources();
@@ -41,10 +42,9 @@ namespace pulsar::rendering
         RenderTextureColorFormat m_colorFormat = RenderTextureColorFormat::RGBA8_UNorm;
         RenderTextureDepthFormat m_depthFormat = RenderTextureDepthFormat::None;
 
-        gfx::TextureHandle m_colorHandle{};
-        gfx::TextureHandle m_depthHandle{};
-        gfx::FrameBufferObjectHandle m_framebufferHandle{};
-        gfx::GFXFrameBufferObject_sp m_framebuffer;
+        gfx::GFXTexturePtr m_colorTexture;
+        gfx::GFXTexturePtr m_depthTexture;
+        gfx::GFXFrameBufferObjectPtr m_framebuffer;
         bool m_created = false;
     };
 }

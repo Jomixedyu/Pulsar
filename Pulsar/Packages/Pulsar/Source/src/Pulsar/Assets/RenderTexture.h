@@ -5,7 +5,6 @@
 #include <Pulsar/IGPUResource.h>
 #include <gfx/GFXFrameBufferObject.h>
 #include <gfx/GFXTexture.h>
-#include <gfx/GFXHandle.h>
 
 namespace pulsar::rendering
 {
@@ -32,7 +31,7 @@ namespace pulsar
         // Texture
         int32_t GetWidth() const override { return m_width; }
         int32_t GetHeight() const override { return m_height; }
-        gfx::TextureHandle GetTextureHandle() const override;
+        gfx::GFXTexturePtr GetGfxTexture() const override;
 
         void PostEditChange(FieldInfo* info) override;
 
@@ -53,7 +52,7 @@ namespace pulsar
 
         std::shared_ptr<gfx::GFXTexture2DView> GetGfxColorTextureView() const;
         std::shared_ptr<gfx::GFXFrameBufferObject> GetGfxFrameBufferObject() const;
-        array_list<gfx::GFXTexture_sp> GetFramebufferAttachments() const;
+        array_list<gfx::GFXTexturePtr> GetFramebufferAttachments() const;
 
         const std::shared_ptr<rendering::RenderTextureProxy>& GetRenderProxy() const { return m_proxy; }
 

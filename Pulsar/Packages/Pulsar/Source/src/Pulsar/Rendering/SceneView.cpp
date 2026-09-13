@@ -2,6 +2,7 @@
 #include "Rendering/RenderGraph/Pipelines/ViewPipeline.h"
 
 #include <Pulsar/Application.h>
+#include <gfx/GFXResourceRegistry.h>
 
 namespace pulsar
 {
@@ -28,7 +29,7 @@ namespace pulsar
             desc.Usage = gfx::GFXBufferUsage::ConstantBuffer;
             desc.StorageType = gfx::GFXBufferMemoryPosition::VisibleOnDevice;
             desc.BufferSize = sizeof(PerPassCameraData);
-            m_cameraBuffer = Application::GetGfxApp()->CreateBuffer(desc);
+            m_cameraBuffer = Application::GetGfxApp()->GetResourceRegistry()->CreateBuffer(desc);
         }
         if (m_cameraBuffer)
             m_cameraBuffer->Update(&data);

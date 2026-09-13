@@ -43,7 +43,7 @@ namespace pulsar
         {
             if (!m_lutTexture->IsCreatedGPUResource())
                 m_lutTexture->CreateGPUResource();
-            snapshot->LutTexture = m_lutTexture->GetTextureHandle();
+            snapshot->LutTexture = m_lutTexture->GetTextureProxy();
         }
         return snapshot;
     }

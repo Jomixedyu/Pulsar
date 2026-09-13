@@ -80,8 +80,8 @@ namespace pulsar
         // Pre-resolved external GPU resources (game thread fills this; no AssetObject).
         int32_t                        externalWidth  = 0;
         int32_t                        externalHeight = 0;
-        array_list<gfx::GFXTexture_sp> externalAttachments;
-        gfx::GFXFrameBufferObject_sp   externalFramebuffer;
+        array_list<gfx::GFXTexturePtr> externalAttachments;
+        gfx::GFXFrameBufferObjectPtr   externalFramebuffer;
     };
 
     class RGPassBuilder
@@ -136,8 +136,8 @@ namespace pulsar
         RGTextureHandle CreateTransient(const std::string& name, const RGTextureDesc& desc);
         RGTextureHandle ImportTexture(const std::string& name,
                                       int32_t width, int32_t height,
-                                      const array_list<gfx::GFXTexture_sp>& attachments,
-                                      const gfx::GFXFrameBufferObject_sp& fbo);
+                                      const array_list<gfx::GFXTexturePtr>& attachments,
+                                      const gfx::GFXFrameBufferObjectPtr& fbo);
         RGPassBuilder AddPass(const std::string& name);
         bool Compile();
         void Execute(gfx::GFXCommandBuffer& cmd);

@@ -5,6 +5,7 @@
 #include <Pulsar/Node.h>
 #include "EditorWorld.h"
 #include <ImGuiExt.h>
+#include <gfx/GFXResourceRegistry.h>
 
 namespace pulsared
 {
@@ -107,7 +108,7 @@ namespace pulsared
 
     void ViewportFrame::Initialize()
     {
-        m_descriptorLayout = Application::GetGfxApp()->GetOrCreateDescriptorSetLayout({gfx::GFXDescriptorLayoutDesc(
+        m_descriptorLayout = Application::GetGfxApp()->GetResourceRegistry()->GetOrCreateDescriptorSetLayout({gfx::GFXDescriptorLayoutDesc(
             gfx::GFXDescriptorType::Texture2D,
             gfx::GFXGpuProgramStageFlags::Fragment,
             0)});

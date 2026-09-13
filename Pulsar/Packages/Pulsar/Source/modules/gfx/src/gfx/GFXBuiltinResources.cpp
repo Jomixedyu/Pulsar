@@ -1,14 +1,14 @@
 #include "gfx/GFXBuiltinResources.h"
-#include "gfx/GFXApplication.h"
 
 #include <vector>
 #include <cstdint>
+#include <gfx/GFXResourceRegistry.h>
 
 namespace gfx
 {
-    void GFXBuiltinResources::Initialize(GFXApplication* app)
+    void GFXBuiltinResources::Initialize(GFXResourceRegistry* registry)
     {
-        m_app = app;
+        m_registry = registry;
 
         // Shared zero buffer: device-local, usable as both UBO and SSBO, zero-filled once.
         GFXBufferDesc bufferDesc{};
@@ -16,7 +16,7 @@ namespace gfx
         bufferDesc.StorageType = GFXBufferMemoryPosition::DeviceLocal;
         bufferDesc.BufferSize = ZeroBufferSize;
         bufferDesc.ElementSize = 1;
-        m_zeroBuffer = app->CreateBuffer(bufferDesc);
+        m_zeroBuffer = registry->CreateBuffer(bufferDesc);
 
         std::vector<uint8_t> zeros(ZeroBufferSize, 0);
         m_zeroBuffer->Update(zeros.data());
@@ -30,7 +30,7 @@ namespace gfx
         sampler.Filter = GFXSamplerFilter::Linear;
         sampler.AddressMode = GFXSamplerAddressMode::Repeat;
 
-        m_black2D = app->CreateTexture2DFromMemory(
+        m_black2D = registry->CreateTexture2DFromMemory(
             black, sizeof(black), 2, 2, GFXTextureFormat::R8G8B8A8_UNorm, sampler);
         m_black2DView = m_black2D->Get2DView(0);
 
@@ -48,7 +48,7 @@ namespace gfx
             }
         }
 
-        auto sampler = m_app->CreateSampler(config);
+        auto sampler = m_registry->CreateSampler(config);
         auto* raw = sampler.get();
         m_samplers.emplace_back(config, std::move(sampler));
         return raw;
@@ -61,6 +61,6 @@ namespace gfx
         m_black2DView.reset();
         m_black2D.reset();
         m_zeroBuffer.reset();
-        m_app = nullptr;
+        m_registry = nullptr;
     }
 }

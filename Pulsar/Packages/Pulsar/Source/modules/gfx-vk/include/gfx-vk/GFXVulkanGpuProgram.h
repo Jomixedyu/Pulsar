@@ -9,13 +9,14 @@
 namespace gfx
 {
     class GFXVulkanApplication;
+    class GFXResourceRegistry;
 
     class GFXVulkanGpuProgram : public GFXGpuProgram
     {
         using base = GFXGpuProgram;
     public:
 
-        GFXVulkanGpuProgram(GFXVulkanApplication* app, GFXGpuProgramStageFlags stage, const uint8_t* codes, size_t len);
+        GFXVulkanGpuProgram(GFXResourceRegistry* registry = nullptr, GFXGpuProgramStageFlags stage = {}, const uint8_t* codes = nullptr, size_t len = 0);
         GFXVulkanGpuProgram(const GFXVulkanGpuProgram&) = delete;
         GFXVulkanGpuProgram(GFXVulkanGpuProgram&&) = delete;
         virtual ~GFXVulkanGpuProgram() override;
@@ -29,7 +30,9 @@ namespace gfx
     protected:
         GFXGpuProgramStageFlags m_stage;
         VkShaderModule m_shader;
-        GFXVulkanApplication* m_app;
+
+    private:
+        GFXVulkanApplication* GetApplication() const;
     };
-    GFX_DECL_SPTR(GFXVulkanGpuProgram);
+    GFX_DECL_PTR(GFXVulkanGpuProgram);
 }

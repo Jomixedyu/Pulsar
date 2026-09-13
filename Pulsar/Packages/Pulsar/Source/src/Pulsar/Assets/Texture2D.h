@@ -4,7 +4,6 @@
 #include <Pulsar/IGPUResource.h>
 #include <Pulsar/AssetObject.h>
 #include <gfx/GFXTexture.h>
-#include <gfx/GFXHandle.h>
 
 namespace pulsar::rendering
 {
@@ -55,7 +54,8 @@ namespace pulsar
         void DestroyGPUResource() override;
         bool IsCreatedGPUResource() const override;
 
-        gfx::TextureHandle GetTextureHandle() const override;
+        gfx::GFXTexturePtr GetGfxTexture() const override;
+        std::shared_ptr<rendering::TextureProxy> GetTextureProxy() const override { return m_proxy; }
 
     public:
         bool IsSRGB() const;

@@ -7,7 +7,6 @@
 #include <Pulsar/EngineMath.h>
 #include <gfx/GFXApplication.h>
 #include <gfx/GFXBuffer.h>
-#include <gfx/GFXHandle.h>
 
 namespace pulsar
 {
@@ -19,8 +18,8 @@ namespace pulsar::rendering
 
     struct MeshBatchElement
     {
-        gfx::BufferHandle Vertex;
-        gfx::BufferHandle Indices;
+        gfx::GFXBufferPtr Vertex;
+        gfx::GFXBufferPtr Indices;
         // Explicit draw count. 0 = fall back to the buffer's element count. Set this when the
         // backing buffer may be larger than the live data (e.g. a reused, non-shrinking buffer)
         // so the draw doesn't emit stale trailing vertices/indices.
@@ -30,8 +29,8 @@ namespace pulsar::rendering
     struct MeshBatch
     {
         array_list<MeshBatchElement> Elements;
-        gfx::GFXDescriptorSetLayout_sp DescriptorSetLayout;
-        gfx::GFXDescriptorSet_sp ExtraDescriptorSet; // set2 (dummy or skinning)
+        gfx::GFXDescriptorSetLayoutPtr DescriptorSetLayout;
+        gfx::GFXDescriptorSetPtr ExtraDescriptorSet; // set2 (dummy or skinning)
         std::shared_ptr<MaterialProxy> Material; // render-thread material mirror (resolved on game thread)
         std::string VariantFeature; // Renderer-requested shader feature (e.g. "RENDERER_SKINNEDMESH")
 

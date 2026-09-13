@@ -11,7 +11,6 @@
 #include <Pulsar/Rendering/ShaderInstanceCache.h>
 #include <Pulsar/Rendering/ShaderPropertySync.h>
 #include <Pulsar/Rendering/RenderThread.h>
-#include <gfx/GFXResourceManager.h>
 #include <mutex>
 #include <utility>
 
@@ -22,6 +21,12 @@ namespace pulsar
     {
         init_sptr_member(m_graphicsPipelineOverride);
         init_sptr_member(m_graphicsPipelineOverrideFields);
+    }
+
+    void Material::OnDestroy()
+    {
+        base::OnDestroy();
+        DestroyGPUResource();
     }
 
     RCPtr<Material> Material::StaticCreate(const RCPtr<Shader>& shader, string_view name)
@@ -71,7 +76,7 @@ namespace pulsar
             if (auto* rt = Application::GetRenderThread())
             {
                 rt->EnqueueDestroy_AnyThread(
-                    [proxy = std::move(m_renderProxy)](gfx::GFXResourceManager*) mutable { proxy.reset(); });
+                    [proxy = std::move(m_renderProxy)](gfx::GFXResourceRegistry*) mutable { proxy.reset(); });
             }
             m_renderProxy.reset();
         }
@@ -399,7 +404,7 @@ namespace pulsar
             [proxy = m_renderProxy, config = std::move(config), guid,
              features = m_activeFeatures, queue = m_queue,
              gpOverride = m_graphicsPipelineOverride, gpFields = m_graphicsPipelineOverrideFields]
-            (gfx::GFXResourceManager*) mutable
+            (gfx::GFXResourceRegistry*) mutable
             {
                 proxy->UpdateShader(std::move(config), guid, std::move(features), queue,
                                        std::move(gpOverride), std::move(gpFields));
@@ -417,7 +422,7 @@ namespace pulsar
         rt->EnqueueUpdate_AnyThread(
             [proxy = m_renderProxy, queue = m_queue,
              gpOverride = m_graphicsPipelineOverride, gpFields = m_graphicsPipelineOverrideFields]
-            (gfx::GFXResourceManager*) mutable
+            (gfx::GFXResourceRegistry*) mutable
             {
                 proxy->UpdateStateSnapshot(queue, std::move(gpOverride), std::move(gpFields));
             });
@@ -432,7 +437,7 @@ namespace pulsar
             return;
 
         rt->EnqueueUpdate_AnyThread(
-            [proxy = m_renderProxy, renderData = m_renderData](gfx::GFXResourceManager*) mutable
+            [proxy = m_renderProxy, renderData = m_renderData](gfx::GFXResourceRegistry*) mutable
             {
                 proxy->ApplyRenderData(std::move(renderData));
             });

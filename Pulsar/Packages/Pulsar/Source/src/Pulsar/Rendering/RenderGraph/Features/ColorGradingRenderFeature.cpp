@@ -28,7 +28,7 @@ namespace pulsar
                 return;
 
             auto* snapshot = capture->view->PostProcessStack.GetComponent<ColorGradingRenderSnapshot>();
-            if (!snapshot || !snapshot->Enabled || !snapshot->LutTexture.IsValid())
+            if (!snapshot || !snapshot->Enabled || !snapshot->LutTexture)
                 return;
 
             ShaderPropertyRenderData parameters;

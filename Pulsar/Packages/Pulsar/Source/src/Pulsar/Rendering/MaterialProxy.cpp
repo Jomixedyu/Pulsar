@@ -8,18 +8,18 @@
 #include <Pulsar/Rendering/DescriptorSetCache.h>
 #include <Pulsar/Rendering/DescriptorSetAssembler.h>
 #include <Pulsar/Rendering/RenderResourceRegistry.h>
-#include <gfx/GFXResourceManager.h>
 
 #include <cassert>
 #include <algorithm>
 #include <utility>
+#include <gfx/GFXResourceRegistry.h>
 
 namespace pulsar
 {
     namespace
     {
         // Reflected set0 → the (globally de-duplicated) descriptor set layout for it.
-        gfx::GFXDescriptorSetLayout_sp BuildSet0Layout(const ShaderLayout& layout)
+        gfx::GFXDescriptorSetLayoutPtr BuildSet0Layout(const ShaderLayout& layout)
         {
             return DescriptorSetAssembler::BuildLayout(layout.FindSet(0));
         }
@@ -81,7 +81,7 @@ namespace pulsar
 
         const ShaderPropertySetLayout* set0 = program->m_layout.FindSet(0);
         RenderResourceRegistry reg;
-        std::vector<gfx::GFXTexture2DView_sp> keepAlive;
+        std::vector<gfx::GFXTexture2DViewPtr> keepAlive;
         if (set0)
         {
             keepAlive = ShaderPropertySync::BuildSet0Registry(
@@ -217,7 +217,7 @@ namespace pulsar
         bufferDesc.Usage = gfx::GFXBufferUsage::ConstantBuffer;
         bufferDesc.StorageType = gfx::GFXBufferMemoryPosition::DeviceLocal;
         bufferDesc.BufferSize = matCbuffer->m_size;
-        m_perMaterialCBuffer = Application::GetGfxApp()->CreateBuffer(bufferDesc);
+        m_perMaterialCBuffer = Application::GetGfxApp()->GetResourceRegistry()->CreateBuffer(bufferDesc);
         m_cbufferDirty = true; // seed with the current snapshot on the next resolve
     }
 

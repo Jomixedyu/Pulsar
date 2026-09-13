@@ -4,6 +4,7 @@
 #include "Application.h"
 
 #include <gfx/GFXApplication.h>
+#include <gfx/GFXResourceRegistry.h>
 
 namespace pulsar
 {
@@ -13,7 +14,7 @@ namespace pulsar
             return r;
 
         // Tier 3: engine-wide gfx builtin fallback, keyed by binding type / dimension.
-        auto& builtin = Application::GetGfxApp()->GetBuiltinResources();
+        auto& builtin = Application::GetGfxApp()->GetResourceRegistry()->GetBuiltinResources();
 
         if (binding.IsBuffer())
             return builtin.GetZeroBuffer();

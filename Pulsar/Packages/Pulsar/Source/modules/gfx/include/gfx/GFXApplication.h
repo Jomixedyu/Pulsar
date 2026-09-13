@@ -14,16 +14,14 @@
 #include "GFXSwapchain.h"
 #include "GFXTextureView.h"
 #include "GFXVertexLayoutDescription.h"
-#include "GFXGlobalShaderManager.h"
 #include "GFXSurface.h"
-#include "GFXResourceManager.h"
 #include "GFXSampler.h"
-#include "GFXBuiltinResources.h"
 #include <functional>
 #include <memory>
 
 namespace gfx
 {
+    class GFXResourceRegistry;
 
     class GFXApplication
     {
@@ -37,7 +35,6 @@ namespace gfx
         }
         virtual void Terminate()
         {
-            m_shaderManager.Clear();
         }
 
         // Block until the GPU has finished all submitted work.
@@ -63,37 +60,9 @@ namespace gfx
 
         virtual GFXRenderer* GetRenderer() = 0;
 
-        virtual GFXBuffer_sp CreateBuffer(const GFXBufferDesc& desc) = 0;
-        virtual GFXCommandBuffer_sp CreateCommandBuffer() = 0;
-        virtual GFXGpuProgram_sp CreateGpuProgram(GFXGpuProgramStageFlags stage, const uint8_t* code, size_t length) = 0;
-
-        virtual GFXDescriptorSetLayout_sp GetOrCreateDescriptorSetLayout(
-            const GFXDescriptorLayoutDesc* layouts,
-            size_t layoutCount) = 0;
-        virtual GFXDescriptorSetLayout_sp GetOrCreateDescriptorSetLayout(
-            std::initializer_list<GFXDescriptorLayoutDesc> layouts);
+        virtual GFXCommandBufferPtr CreateCommandBuffer() = 0;
 
         virtual GFXGraphicsPipelineManager* GetGraphicsPipelineManager() const = 0;
-
-
-        virtual GFXTexture_sp CreateTexture2DFromMemory(
-            const uint8_t* imageData, size_t length,
-            int width, int height,
-            GFXTextureFormat format,
-            const GFXSamplerConfig& samplerConfig
-            ) = 0;
-
-        virtual GFXTexture_sp CreateTextureCube(int32_t size) = 0;
-
-        virtual GFXSampler_sp CreateSampler(const GFXSamplerConfig& config) = 0;
-
-        virtual GFXTexture_sp CreateRenderTarget(
-            int32_t width, int32_t height, GFXTextureTargetType type,
-            GFXTextureFormat format, const GFXSamplerConfig& samplerCfg,
-            uint32_t sampleCount = 1, bool isTransientAttachment = false) = 0;
-
-        virtual GFXFrameBufferObject_sp CreateFrameBufferObject(
-            const array_list<GFXTexture2DView_sp>& renderTargets) = 0;
 
         virtual array_list<GFXTextureFormat> GetSupportedDepthFormats() = 0;
 
@@ -104,20 +73,14 @@ namespace gfx
 
         virtual GFXSwapchain* GetViewport() = 0;
 
-        GFXResourceManager* GetResourceManager() const { return m_resourceManager.get(); }
-
-        GFXBuiltinResources& GetBuiltinResources() { return m_builtinResources; }
-
-        GFXGlobalShaderManager& GetGlobalShaderManager() { return m_shaderManager; }
+        GFXResourceRegistry* GetResourceRegistry() const { return m_resourceRegistry; }
 
     protected:
         GFXApplication() = default;
 
     protected:
         GFXGlobalConfig m_config{};
-        GFXGlobalShaderManager m_shaderManager;
-        std::unique_ptr<GFXResourceManager> m_resourceManager;
-        GFXBuiltinResources m_builtinResources;
+        GFXResourceRegistry* m_resourceRegistry = nullptr;
     };
 
 } // namespace gfx

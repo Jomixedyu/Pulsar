@@ -5,7 +5,6 @@
 #include <Pulsar/Rendering/RenderThread.h>
 #include <Pulsar/Rendering/TextureProxy.h>
 #include <gfx/GFXImage.h>
-#include <gfx/GFXResourceManager.h>
 
 namespace pulsar
 {
@@ -152,7 +151,7 @@ namespace pulsar
 
         auto proxy = m_proxy;
         renderThread->EnqueueUpdate_AnyThread(
-            [proxy = std::move(proxy)](gfx::GFXResourceManager*) mutable
+            [proxy = std::move(proxy)](gfx::GFXResourceRegistry*)
             {
                 proxy->OnCreateResource();
             });
@@ -160,9 +159,9 @@ namespace pulsar
         return true;
     }
 
-    gfx::TextureHandle Texture2D::GetTextureHandle() const
+    gfx::GFXTexturePtr Texture2D::GetGfxTexture() const
     {
-        return m_proxy ? m_proxy->GetTextureHandle() : gfx::TextureHandle{};
+        return m_proxy ? m_proxy->GetTexture() : nullptr;
     }
 
     void Texture2D::DestroyGPUResource()
@@ -176,7 +175,7 @@ namespace pulsar
         if (auto proxy = std::move(m_proxy))
         {
             Application::GetRenderThread()->EnqueueDestroy_AnyThread(
-                [proxy = std::move(proxy)](gfx::GFXResourceManager*) mutable
+                [proxy = std::move(proxy)](gfx::GFXResourceRegistry*)
                 {
                     proxy->OnDestroyResource();
                 });

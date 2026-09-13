@@ -2,6 +2,7 @@
 #include "Assets/Texture2D.h"
 #include "Rendering/DescriptorSetAssembler.h"
 #include "Rendering/RenderResourceRegistry.h"
+#include "Rendering/TextureProxy.h"
 
 #include "Application.h"
 #include "AppInstance.h"
@@ -10,7 +11,6 @@
 #include <Pulsar/Rendering/RenderThread.h>
 
 #include <gfx/GFXTexture.h>
-#include <gfx/GFXResourceManager.h>
 
 #include <cassert>
 #include <cstring>
@@ -38,7 +38,7 @@ namespace pulsar
                 RCPtr<Texture> tex = prop.AsTexture2D();
                 if (tex && !tex->IsCreatedGPUResource())
                     tex->CreateGPUResource();
-                data.Textures.emplace(name, tex ? tex->GetTextureHandle() : gfx::TextureHandle{});
+                data.Textures.emplace(name, tex ? tex->GetTextureProxy() : nullptr);
                 break;
             }
             default:
@@ -81,7 +81,7 @@ namespace pulsar
         Application::GetGfxApp()->RequestBufferUpload(cbuffer, buffer.data(), matCbuffer->m_size);
     }
 
-    std::vector<gfx::GFXTexture2DView_sp> ShaderPropertySync::BuildSet0Registry(
+    std::vector<gfx::GFXTexture2DViewPtr> ShaderPropertySync::BuildSet0Registry(
         const ShaderPropertyRenderData& data,
         const ShaderPropertySetLayout& set0,
         gfx::GFXBuffer* cbuffer,
@@ -89,14 +89,13 @@ namespace pulsar
     {
         assert(Application::GetRenderThread()->IsRenderThread() && "BuildSet0Registry must run on the render thread");
 
-        std::vector<gfx::GFXTexture2DView_sp> keepAlive;
+        std::vector<gfx::GFXTexture2DViewPtr> keepAlive;
 
         // set0 的材质 cbuffer binding（名为 PerMaterial）：绑定材质共享的那一份 cbuffer
         const DescriptorBinding* matCbuffer = set0.FindBinding(kPerMaterialCBufferName);
         if (cbuffer && matCbuffer)
             reg.Set(matCbuffer->m_name, cbuffer);
 
-        auto* resMgr = Application::GetGfxApp()->GetResourceManager();
         for (const auto& b : set0.m_bindings)
         {
             if (b.IsBuffer())
@@ -104,10 +103,13 @@ namespace pulsar
 
             // 缺失的纹理项：不写入 registry，交给 assembler 回落到 gfx 内建兜底
             auto it = data.Textures.find(b.m_name);
-            if (it == data.Textures.end() || !it->second.IsValid())
+            if (it == data.Textures.end() || !it->second)
                 continue;
 
-            if (auto* gfxTex = resMgr->GetTexture(it->second))
+            // Resolve through the proxy every frame: the GPU texture is created
+            // lazily on the render thread, so a missing texture self-heals via the
+            // content-addressed descriptor set cache once it becomes ready.
+            if (auto gfxTex = it->second->GetTexture())
             {
                 if (auto view = gfxTex->Get2DView(0))
                 {

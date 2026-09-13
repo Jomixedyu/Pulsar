@@ -3,7 +3,7 @@
 
 #include <Pulsar/Application.h>
 #include <Pulsar/Rendering/RenderThread.h>
-#include <gfx/GFXResourceManager.h>
+#include <gfx/GFXResourceRegistry.h>
 
 namespace pulsar
 {
@@ -150,10 +150,10 @@ namespace pulsar
         desc.StorageType = gfx::GFXBufferMemoryPosition::VisibleOnDevice;
 
         desc.BufferSize = sizeof(PerPassWorldData);
-        m_worldBuffer = gfxApp->CreateBuffer(desc);
+        m_worldBuffer = gfxApp->GetResourceRegistry()->CreateBuffer(desc);
 
         desc.BufferSize = sizeof(PerPassLightsBufferData);
-        m_lightsBuffer = gfxApp->CreateBuffer(desc);
+        m_lightsBuffer = gfxApp->GetResourceRegistry()->CreateBuffer(desc);
     }
 
     void RenderScene::UploadWorld(const PerPassWorldData& data)

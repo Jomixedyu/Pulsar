@@ -1,12 +1,14 @@
 #pragma once
 #include <Pulsar/Rendering/ShaderPropertyValue.h>
-#include <gfx/GFXHandle.h>
+#include <gfx/GFXTexture.h>
 
 #include <map>
+#include <memory>
 #include <string>
 
 namespace pulsar
 {
+    namespace rendering { class TextureProxy; }
     // 渲染线程专用的着色器参数快照。
     //
     // ShaderPropertySheet 持有 RCPtr<Texture> 等游戏线程拥有的资产引用，渲染线程
@@ -22,6 +24,8 @@ namespace pulsar
         // 仅纯值（Int/Float/Float4），不含任何 RCPtr
         std::map<std::string, ShaderPropertyValue> Constants;
         // 已解析的纹理 GPU 句柄（值类型，跨线程安全）
-        std::map<std::string, gfx::TextureHandle> Textures;
+        // Texture proxies; the GPU texture is created lazily on the render
+        // thread, so consumers resolve GetTexture() at use time (null until ready).
+        std::map<std::string, std::shared_ptr<rendering::TextureProxy>> Textures;
     };
 }

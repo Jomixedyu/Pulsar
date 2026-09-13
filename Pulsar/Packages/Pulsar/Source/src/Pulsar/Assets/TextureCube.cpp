@@ -79,7 +79,7 @@ namespace pulsar
 
         auto proxy = m_proxy;
         renderThread->EnqueueUpdate_AnyThread(
-            [proxy = std::move(proxy)](gfx::GFXResourceManager*) mutable
+            [proxy = std::move(proxy)](gfx::GFXResourceRegistry*)
             {
                 proxy->OnCreateResource();
             });
@@ -97,7 +97,7 @@ namespace pulsar
         if (auto proxy = std::move(m_proxy))
         {
             Application::GetRenderThread()->EnqueueDestroy_AnyThread(
-                [proxy = std::move(proxy)](gfx::GFXResourceManager*) mutable
+                [proxy = std::move(proxy)](gfx::GFXResourceRegistry*)
                 {
                     proxy->OnDestroyResource();
                 });
@@ -105,8 +105,8 @@ namespace pulsar
         m_isCreatedGPUResource = false;
     }
 
-    gfx::TextureHandle TextureCube::GetTextureHandle() const
+    gfx::GFXTexturePtr TextureCube::GetGfxTexture() const
     {
-        return m_proxy ? m_proxy->GetTextureHandle() : gfx::TextureHandle{};
+        return m_proxy ? m_proxy->GetTexture() : nullptr;
     }
 } // namespace pulsar

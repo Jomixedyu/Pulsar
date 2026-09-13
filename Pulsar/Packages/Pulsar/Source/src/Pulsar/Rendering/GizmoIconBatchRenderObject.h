@@ -29,8 +29,8 @@ namespace pulsar
         array_list<IconItem> m_items;
         bool m_dirty = true;
 
-        gfx::GFXDescriptorSetLayout_sp m_descriptorSetLayout;
-        gfx::GFXDescriptorSet_sp m_dummyExtraSet;
+        gfx::GFXDescriptorSetLayoutPtr m_descriptorSetLayout;
+        gfx::GFXDescriptorSetPtr m_dummyExtraSet;
 
         array_list<uint32_t> m_itemSlots;
         array_list<rendering::MeshBatch> m_batches;

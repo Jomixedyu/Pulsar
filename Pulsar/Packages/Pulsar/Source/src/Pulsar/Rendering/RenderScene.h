@@ -56,7 +56,7 @@ namespace pulsar
         PerRenderObjectDataManager m_perObjectData;
         float m_totalTime = 0.f;
         float m_deltaTime = 0.f;
-        gfx::GFXBuffer_sp m_worldBuffer;
-        gfx::GFXBuffer_sp m_lightsBuffer;
+        gfx::GFXBufferPtr m_worldBuffer;
+        gfx::GFXBufferPtr m_lightsBuffer;
     };
 }

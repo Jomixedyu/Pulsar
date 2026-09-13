@@ -74,7 +74,7 @@ namespace pulsar
         Color4f  color = m_lightColor;
         float    intensity = m_intensity;
         Application::GetRenderThread()->EnqueueUpdate_AnyThread(
-            [proxy, vector, color, intensity](gfx::GFXResourceManager*) mutable
+            [proxy, vector, color, intensity](gfx::GFXResourceRegistry*)
             {
                 proxy->Vector = vector;
                 proxy->Color = color;

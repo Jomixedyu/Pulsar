@@ -19,7 +19,7 @@ namespace pulsar
         bool IsCreatedGPUResource() const override;
         int32_t GetWidth() const override;
         int32_t GetHeight() const override;
-        gfx::TextureHandle GetTextureHandle() const override;
+        gfx::GFXTexturePtr GetGfxTexture() const override;
 
         void PostEditChange(FieldInfo* info) override;
 

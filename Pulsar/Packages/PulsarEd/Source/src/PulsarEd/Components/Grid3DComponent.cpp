@@ -9,7 +9,6 @@
 #include "Pulsar/Rendering/RenderThread.h"
 #include "PulsarEd/Editors/CommonPanel/SceneWindow.h"
 #include "PulsarEd/Windows/EditorWindowManager.h"
-#include <gfx/GFXResourceManager.h>
 
 namespace pulsared
 {
@@ -100,7 +99,7 @@ namespace pulsared
         Matrix4f localToWorld = GetNode()->GetTransform()->GetLocalToWorldMatrix();
         auto ro = m_renderObject;
         Application::GetRenderThread()->EnqueueUpdate_AnyThread(
-            [ro, localToWorld](gfx::GFXResourceManager*) mutable
+            [ro, localToWorld](gfx::GFXResourceRegistry*)
             {
                 ro->SetTransform(localToWorld);
             });

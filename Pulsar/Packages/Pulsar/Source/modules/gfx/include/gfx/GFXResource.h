@@ -1,6 +1,15 @@
 #pragma once
 #include "GFXResourceType.h"
 #include "GFXInclude.h"
+#include <atomic>
+#if !defined(NDEBUG)
+#include <string>
+#endif
+
+namespace gfx
+{
+    class GFXResourceRegistry;
+}
 
 namespace gfx
 {
@@ -10,15 +19,35 @@ namespace gfx
     {
     public:
         virtual ~GFXResource() = default;
+        GFXResource(const GFXResource&) = delete;
+        GFXResource& operator=(const GFXResource&) = delete;
         virtual GFXResourceType GetResourceType() const = 0;
 
-        // Internal resource ID assigned by the resource manager.
-        uint32_t GetResourceId() const { return m_resourceId; }
-        void SetResourceId(uint32_t id) { m_resourceId = id; }
+        using ResourceId = uint64_t;
+        static constexpr ResourceId InvalidResourceId = 0;
+
+        // Process-unique id generated once when the resource object is constructed.
+        ResourceId GetResourceId() const { return m_resourceId; }
+
+        GFXResourceRegistry* GetResourceRegistry() const { return m_registry; }
+
+#if !defined(NDEBUG)
+        // Debug-only creation site info (a few stack frames as text),
+        // captured by the resource registry at creation time.
+        const std::string& GetCreationDebugInfo() const { return m_creationDebugInfo; }
+        void SetCreationDebugInfo(std::string info) { m_creationDebugInfo = std::move(info); }
+#endif
+
+    protected:
+        explicit GFXResource(GFXResourceRegistry* registry = nullptr);
 
     private:
-        uint32_t m_resourceId = UINT32_MAX;
+        ResourceId m_resourceId = InvalidResourceId;
+        GFXResourceRegistry* m_registry = nullptr;
+#if !defined(NDEBUG)
+        std::string m_creationDebugInfo;
+#endif
     };
-    GFX_DECL_SPTR(GFXResource);
+    GFX_DECL_PTR(GFXResource);
 
 } // namespace gfx

@@ -17,7 +17,7 @@ namespace pulsar
         bool CreateGPUResource() override;
         void DestroyGPUResource() override;
         bool IsCreatedGPUResource() const override { return m_isCreatedGPUResource; }
-        gfx::TextureHandle GetTextureHandle() const override;
+        gfx::GFXTexturePtr GetGfxTexture() const override;
 
     public:
         array_list<uint8_t> m_originData;

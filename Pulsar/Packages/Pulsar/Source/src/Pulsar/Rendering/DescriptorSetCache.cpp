@@ -13,7 +13,7 @@ namespace pulsar
     }
 
     gfx::GFXDescriptorSet* DescriptorSetCache::Get(
-        const gfx::GFXDescriptorSetLayout_sp& layout,
+        const gfx::GFXDescriptorSetLayoutPtr& layout,
         const ShaderPropertySetLayout* reflection,
         const RenderResourceRegistry& reg)
     {

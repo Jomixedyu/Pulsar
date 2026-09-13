@@ -5,7 +5,7 @@
 #include "AssetManager.h"
 #include "Assets/StaticMesh.h"
 #include "Rendering/SceneView.h"
-#include <gfx/GFXResourceManager.h>
+#include <gfx/GFXResourceRegistry.h>
 
 namespace pulsar
 {
@@ -37,7 +37,7 @@ namespace pulsar
                 gfx::GFXGpuProgramStageFlags::VertexFragment,
                 0,
                 kRenderingDescriptorSpace_Camera};
-            m_camDescriptorLayout = Application::GetGfxApp()->GetOrCreateDescriptorSetLayout(&info, 1);
+            m_camDescriptorLayout = Application::GetGfxApp()->GetResourceRegistry()->GetOrCreateDescriptorSetLayout(&info, 1);
             _CameraDescriptorLayout = m_camDescriptorLayout;
         }
         else
@@ -51,11 +51,9 @@ namespace pulsar
         perCameraBufferDesc.BufferSize  = sizeof(PerCaptureShaderParameter);
         perCameraBufferDesc.ElementSize = sizeof(PerCaptureShaderParameter);
 
-        auto* resMgr = Application::GetGfxApp()->GetResourceManager();
-        m_cameraDataBuffer = resMgr->AllocHandle<gfx::BufferHandle>();
-        resMgr->CreateBuffer(m_cameraDataBuffer, perCameraBufferDesc);
+        m_cameraDataBuffer = Application::GetGfxApp()->GetResourceRegistry()->CreateBuffer(perCameraBufferDesc);
         m_cameraDescriptorSet = m_camDescriptorLayout->AllocateSet();
-        if (auto* buffer = resMgr->GetBuffer(m_cameraDataBuffer))
+        if (auto* buffer = m_cameraDataBuffer.get())
         {
             m_cameraDescriptorSet->AddDescriptor("Target", 0)->SetConstantBuffer(buffer);
         }
@@ -63,10 +61,9 @@ namespace pulsar
     }
     void SceneCapture2DComponent::EndComponent()
     {
-        if (m_cameraDataBuffer.IsValid())
+        if (m_cameraDataBuffer)
         {
-            Application::GetGfxApp()->GetResourceManager()->Destroy(m_cameraDataBuffer);
-            m_cameraDataBuffer = gfx::BufferHandle{};
+            m_cameraDataBuffer.reset();
         }
         SceneCaptureComponent::EndComponent();
     }
@@ -158,6 +155,25 @@ namespace pulsar
         MarkRenderStateDirty();
     }
 
+    void SceneCapture2DComponent::PostEditChange(FieldInfo* info)
+    {
+        base::PostEditChange(info);
+
+        // Inspector edits write the reflected fields directly and bypass the
+        // setters, so the render-state flags have to be raised here.
+        const auto& name = info->GetName();
+        if (name == NAMEOF(m_fov) || name == NAMEOF(m_near) || name == NAMEOF(m_far) ||
+            name == NAMEOF(m_projectionMode) || name == NAMEOF(m_orthoSize))
+        {
+            m_renderDirtyCamera = true;
+        }
+        else if (name == NAMEOF(m_msaaSamples))
+        {
+            m_renderDirtyRenderTarget = true;
+        }
+        MarkRenderStateDirty();
+    }
+
     bool SceneCapture2DComponent::ExtractViewData(SceneViewData& outData)
     {
         if (!m_renderTarget)
@@ -194,12 +210,10 @@ namespace pulsar
             return;
         }
         auto colorTextureView = m_renderTarget->GetGfxColorTextureView();
-        auto& color = colorTextureView->GetTexture()->TargetClearColor;
-
-        color[0] = m_backgroundColor.r;
-        color[1] = m_backgroundColor.g;
-        color[2] = m_backgroundColor.b;
-        color[3] = m_backgroundColor.a;
+        colorTextureView->GetTexture()->SetTargetClearColor({
+            m_backgroundColor.r, m_backgroundColor.g,
+            m_backgroundColor.b, m_backgroundColor.a
+        });
     }
 
     void SceneCapture2DComponent::UpdateCBuffer()
@@ -221,7 +235,7 @@ namespace pulsar
         target.CamNear = m_near;
         target.CamFar = m_far;
         target.Resolution = m_renderTarget->GetSize2df();
-        if (auto* buffer = Application::GetGfxApp()->GetResourceManager()->GetBuffer(m_cameraDataBuffer))
+        if (auto* buffer = m_cameraDataBuffer.get())
         {
             buffer->Update(&target);
         }

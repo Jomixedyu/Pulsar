@@ -1,7 +1,6 @@
 #pragma once
 
 #include <gfx/GFXDescriptorSet.h>
-#include <gfx/GFXHandle.h>
 #include <Pulsar/Rendering/ShaderInstance.h>
 #include <Pulsar/Rendering/ShaderPropertyLayout.h>
 #include <Pulsar/Rendering/ShaderPropertyRenderData.h>
@@ -41,7 +40,7 @@ namespace pulsar
     {
         std::shared_ptr<ShaderProgramResource> m_program;
         gfx::GFXDescriptorSet*                 m_set0 = nullptr;
-        gfx::GFXDescriptorSetLayout_sp         m_set0Layout;
+        gfx::GFXDescriptorSetLayoutPtr         m_set0Layout;
 
         // True only when the program is ready to draw (has compiled GPU stages). A program is
         // always present (Pending/Error builtin fallback), but an empty-stage program must not
@@ -144,7 +143,7 @@ namespace pulsar
         // Single PerMaterial constant buffer shared across every variant of this material. set0
         // descriptor sets themselves live in the global DescriptorSetCache (content-addressed);
         // the proxy holds no set/handle and re-resolves each frame.
-        gfx::GFXBuffer_sp m_perMaterialCBuffer;
+        gfx::GFXBufferPtr m_perMaterialCBuffer;
         bool              m_cbufferDirty = false; // parameter snapshot changed, re-upload next resolve
 
         mutable std::map<std::string, SPtr<ShaderConfigGraphicsPipeline>> m_cachedEffectiveGraphicsPipeline;

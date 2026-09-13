@@ -14,6 +14,7 @@
 #include <sstream>
 #include <iomanip>
 #include <unordered_set>
+#include <gfx/GFXResourceRegistry.h>
 
 namespace pulsared
 {
@@ -395,7 +396,7 @@ namespace pulsared
                 auto& spirv = passResult.vsSpirv;
                 WriteToDiskCache(cacheHash, "vs", spirv);
 
-                auto gpuProgram = gfxApp->CreateGpuProgram(
+                auto gpuProgram = gfxApp->GetResourceRegistry()->CreateGpuProgram(
                     gfx::GFXGpuProgramStageFlags::Vertex,
                     reinterpret_cast<const uint8_t*>(spirv.data()), spirv.size());
                 gpuProgram->SetEntryName(task.m_entries.m_vertex);
@@ -412,7 +413,7 @@ namespace pulsared
                 auto& spirv = passResult.psSpirv;
                 WriteToDiskCache(cacheHash, "ps", spirv);
 
-                auto gpuProgram = gfxApp->CreateGpuProgram(
+                auto gpuProgram = gfxApp->GetResourceRegistry()->CreateGpuProgram(
                     gfx::GFXGpuProgramStageFlags::Fragment,
                     reinterpret_cast<const uint8_t*>(spirv.data()), spirv.size());
                 gpuProgram->SetEntryName(task.m_entries.m_fragment);

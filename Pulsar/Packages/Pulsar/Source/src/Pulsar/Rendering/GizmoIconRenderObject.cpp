@@ -3,6 +3,7 @@
 #include "Application.h"
 #include "Assets/StaticMesh.h"
 #include <gfx/GFXApplication.h>
+#include <gfx/GFXResourceRegistry.h>
 
 namespace pulsar
 {
@@ -42,9 +43,9 @@ namespace pulsar
         {
             auto& element = batch.Elements.emplace_back();
             element.Vertex = vertBuffers[0];
-            element.Indices = indicesBuffers.empty() ? gfx::BufferHandle{} : indicesBuffers[0];
+            element.Indices = indicesBuffers.empty() ? nullptr : indicesBuffers[0];
             // PerRenderObject data is in global dynamic UBO
-            batch.IsUsedIndices = element.Indices.IsValid();
+            batch.IsUsedIndices = element.Indices != nullptr;
         }
 
         m_batches.push_back(std::move(batch));
@@ -58,7 +59,7 @@ namespace pulsar
         if (s_sharedLayout.expired())
         {
             gfx::GFXDescriptorLayoutDesc info{};
-            m_descriptorSetLayout = Application::GetGfxApp()->GetOrCreateDescriptorSetLayout(&info, 0);
+            m_descriptorSetLayout = Application::GetGfxApp()->GetResourceRegistry()->GetOrCreateDescriptorSetLayout(&info, 0);
             s_sharedLayout = m_descriptorSetLayout;
         }
         else

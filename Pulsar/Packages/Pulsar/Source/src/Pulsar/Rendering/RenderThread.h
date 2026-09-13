@@ -9,7 +9,7 @@
 #include <cassert>
 #include <memory>
 
-namespace gfx { class GFXResourceManager; }
+namespace gfx { class GFXResourceRegistry; }
 
 namespace pulsar
 {
@@ -53,9 +53,9 @@ namespace pulsar
         // ========== 资源更新队列（_AnyThread）==========
         /**
          * @brief 资源更新操作的回调签名。
-         * 主线程构造 lambda 并按值捕获所需数据，渲染线程执行时传入 GFXResourceManager。
+         * 主线程构造 lambda 并按值捕获所需数据，渲染线程执行时传入 GFXResourceRegistry。
          */
-        using ResourceUpdateFn = std::move_only_function<void(gfx::GFXResourceManager*)>;
+        using ResourceUpdateFn = std::move_only_function<void(gfx::GFXResourceRegistry*)>;
 
         /**
          * @brief 提交一个资源更新操作到渲染线程的更新队列。

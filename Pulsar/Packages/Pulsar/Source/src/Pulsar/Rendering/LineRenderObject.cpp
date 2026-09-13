@@ -3,7 +3,7 @@
 #include "Assets/StaticMesh.h"
 
 #include <Pulsar/Rendering/LineRenderObject.h>
-#include <gfx/GFXResourceManager.h>
+#include <gfx/GFXResourceRegistry.h>
 
 namespace pulsar
 {
@@ -39,21 +39,18 @@ namespace pulsar
     }
     void LineRenderObject::Fill()
     {
-        auto* resMgr  = Application::GetGfxApp()->GetResourceManager();
-
-        if (m_vertBuffer.IsValid())
+        if (m_vertBuffer)
         {
-            auto* buffer = resMgr->GetBuffer(m_vertBuffer);
+            auto* buffer = m_vertBuffer.get();
             // Only grow: the buffer is reused across frames and the actual draw count comes
             // from the batch's DrawCount, so a larger-than-needed buffer is harmless.
             if (buffer && sizeof(StaticMeshVertex) * m_verties.size() > buffer->GetSize())
             {
-                resMgr->Destroy(m_vertBuffer);
-                m_vertBuffer = gfx::BufferHandle{};
+                m_vertBuffer.reset();
             }
         }
 
-        if (!m_vertBuffer.IsValid() && !m_verties.empty())
+        if (!m_vertBuffer && !m_verties.empty())
         {
             gfx::GFXBufferDesc desc{};
             desc.Usage        = gfx::GFXBufferUsage::Vertex;
@@ -64,13 +61,12 @@ namespace pulsar
             desc.BufferSize   = m_verties.size() * sizeof(StaticMeshVertex);
             desc.ElementSize  = sizeof(StaticMeshVertex);
 
-            m_vertBuffer = resMgr->AllocHandle<gfx::BufferHandle>();
-            resMgr->CreateBuffer(m_vertBuffer, desc);
+            m_vertBuffer = Application::GetGfxApp()->GetResourceRegistry()->CreateBuffer(desc);
         }
 
-        if (m_vertBuffer.IsValid() && !m_verties.empty())
+        if (m_vertBuffer && !m_verties.empty())
         {
-            resMgr->UploadBuffer(m_vertBuffer, m_verties.data(), m_verties.size() * sizeof(StaticMeshVertex));
+            m_vertBuffer->Update(m_verties.data());
         }
     }
 
@@ -83,7 +79,7 @@ namespace pulsar
         if (s_dummyLayout.expired())
         {
             gfx::GFXDescriptorLayoutDesc info{};
-            m_meshDescriptorSetLayout = Application::GetGfxApp()->GetOrCreateDescriptorSetLayout(&info, 0);
+            m_meshDescriptorSetLayout = Application::GetGfxApp()->GetResourceRegistry()->GetOrCreateDescriptorSetLayout(&info, 0);
             s_dummyLayout = m_meshDescriptorSetLayout;
         }
         else
@@ -91,7 +87,7 @@ namespace pulsar
             m_meshDescriptorSetLayout = s_dummyLayout.lock();
         }
 
-        if (!m_vertBuffer.IsValid() && !m_verties.empty())
+        if (!m_vertBuffer && !m_verties.empty())
         {
             gfx::GFXBufferDesc vertexBufferDesc{};
             vertexBufferDesc.Usage       = gfx::GFXBufferUsage::Vertex;
@@ -99,10 +95,8 @@ namespace pulsar
             vertexBufferDesc.BufferSize  = m_verties.size() * sizeof(StaticMeshVertex);
             vertexBufferDesc.ElementSize = sizeof(StaticMeshVertex);
 
-            auto* resMgr = Application::GetGfxApp()->GetResourceManager();
-            m_vertBuffer = resMgr->AllocHandle<gfx::BufferHandle>();
-            resMgr->CreateBuffer(m_vertBuffer, vertexBufferDesc);
-            resMgr->UploadBuffer(m_vertBuffer, m_verties.data(), m_verties.size() * sizeof(StaticMeshVertex));
+            m_vertBuffer = Application::GetGfxApp()->GetResourceRegistry()->CreateBuffer(vertexBufferDesc);
+            m_vertBuffer->Update(m_verties.data());
         }
 
         m_batchs.resize(1);
@@ -126,11 +120,9 @@ namespace pulsar
     void LineRenderObject::OnDestroyResource()
     {
         base::OnDestroyResource();
-        if (m_vertBuffer.IsValid())
+        if (m_vertBuffer)
         {
-            auto* resMgr = Application::GetGfxApp()->GetResourceManager();
-            resMgr->Destroy(m_vertBuffer);
-            m_vertBuffer = gfx::BufferHandle{};
+            m_vertBuffer.reset();
         }
     }
 

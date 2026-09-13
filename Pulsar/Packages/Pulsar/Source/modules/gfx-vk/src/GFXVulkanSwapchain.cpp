@@ -226,7 +226,7 @@ namespace gfx
             info.Depth = 1;
             info.DataType = GFXTextureDataType::Texture2D;
 
-            auto depthRtPtr = new GFXVulkanTexture(m_app, info);
+            auto depthRtPtr = new GFXVulkanTexture(m_app->GetResourceRegistry(), info);
 
             m_depthRenderTarget = std::unique_ptr<GFXVulkanTexture>(depthRtPtr);
         }
@@ -267,8 +267,9 @@ namespace gfx
             info.usage = GFXTextureTargetType::ColorTarget;
             info.finalTargetLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
             info.dataType = GFXTextureDataType::Texture2D;
+            info.IsManaged = false;
 
-            auto texRt = new GFXVulkanTexture(m_app, info);
+            auto texRt = new GFXVulkanTexture(m_app->GetResourceRegistry(), info);
 
             m_swapRenderTarget.push_back(std::unique_ptr<GFXVulkanTexture>(texRt));
 
@@ -280,7 +281,7 @@ namespace gfx
                 m_swapRenderTarget[i]->Get2DView(0),
             };
 
-            auto fbo = new GFXVulkanFrameBufferObject(m_app, rtViews);
+            auto fbo = new GFXVulkanFrameBufferObject(m_app->GetResourceRegistry(), rtViews);
             m_framebuffer.push_back(std::unique_ptr<GFXVulkanFrameBufferObject>{fbo});
         }
     }

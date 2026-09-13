@@ -7,6 +7,7 @@
 #include <gfx-vk/BufferHelper.h>
 #include <gfx-vk/GFXVulkanCommandBuffer.h>
 #include <gfx-vk/GFXVulkanTexture.h>
+#include <gfx-vk/GFXVulkanResourceRegistry.h>
 #include <gfx/GFXImage.h>
 #include <stdexcept>
 
@@ -17,12 +18,21 @@ namespace gfx
     {
         if (m_inited)
         {
-            if (!m_isView)
+            assert(!m_isView || !m_isManaged);
+            if (!m_isView && m_isManaged)
             {
-                vkDestroyImage(m_app->GetVkDevice(), m_textureImage, nullptr);
-                vkFreeMemory(m_app->GetVkDevice(), m_textureImageMemory, nullptr);
-                vkDestroyImageView(m_app->GetVkDevice(), m_textureImageView, nullptr);
+                if (auto* app = GetApplication())
+                {
+                    vkDestroyImage(app->GetVkDevice(), m_textureImage, nullptr);
+                    vkFreeMemory(app->GetVkDevice(), m_textureImageMemory, nullptr);
+                    if (m_textureImageView != VK_NULL_HANDLE)
+                    {
+                        vkDestroyImageView(app->GetVkDevice(), m_textureImageView, nullptr);
+                        m_textureImageView = VK_NULL_HANDLE;
+                    }
+                }
             }
+            m_inited = false;
         }
     }
 
@@ -49,9 +59,11 @@ namespace gfx
         return {};
     }
 
-    GFXVulkanTexture::GFXVulkanTexture(GFXVulkanApplication* app, const GFXTextureCreateDesc& info)
-        : base(info.Width, info.Height, info.Depth, info.SamplerCfg), m_isView(false), m_app(app)
+    GFXVulkanTexture::GFXVulkanTexture(GFXResourceRegistry* registry, const GFXTextureCreateDesc& info)
+        : GFXTexture(registry, info.Width, info.Height, info.Depth, info.SamplerCfg),
+          m_isView(false), m_isManaged(true)
     {
+        auto* app = GetApplication();
         m_dataType = info.DataType;
         m_imageFormat = BufferHelper::GetVkFormat(info.Format);
         m_targetType = info.TargetType;
@@ -110,11 +122,18 @@ namespace gfx
         m_inited = true;
     }
 
+    GFXVulkanApplication* GFXVulkanTexture::GetApplication() const
+    {
+        auto* registry = static_cast<GFXVulkanResourceRegistry*>(GetResourceRegistry());
+        return registry ? registry->GetVulkanApplication() : nullptr;
+    }
+
     GFXVulkanTexture::GFXVulkanTexture(
-        GFXVulkanApplication* app, const GFXVulkanTextureProxyCreateInfo& info)
-        : base(info.width, info.height, 1, {}),
-          m_app(app), m_textureImage(info.image), m_textureImageMemory(VK_NULL_HANDLE), m_imageFormat(info.format),
-          m_imageLayout(info.layout), m_targetType(info.usage), m_isView(true), m_targetFinalLayout(info.finalTargetLayout),
+        GFXResourceRegistry* registry, const GFXVulkanTextureProxyCreateInfo& info)
+        : base(registry, info.width, info.height, 1, {}),
+          m_textureImage(info.image), m_textureImageMemory(VK_NULL_HANDLE), m_imageFormat(info.format),
+          m_imageLayout(info.layout), m_targetType(info.usage), m_isView(true),
+          m_isManaged(info.IsManaged), m_targetFinalLayout(info.finalTargetLayout),
           m_dataType(info.dataType)
     {
         m_usageFlags = ImageHelper::GetImageUsageFlags(m_targetType);
@@ -128,7 +147,7 @@ namespace gfx
     {
 
     }
-    GFXTexture2DView_sp GFXVulkanTexture::Get2DView(size_t index)
+    GFXTexture2DViewPtr GFXVulkanTexture::Get2DView(size_t index)
     {
         assert(m_dataType != GFXTextureDataType::None);
         if (m_2dviews.contains(index))

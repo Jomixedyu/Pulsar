@@ -3,7 +3,6 @@
 #include "SceneCaptureComponent.h"
 #include <CoreLib/Attribute.h>
 #include <Pulsar/Assets/Texture2D.h>
-#include <gfx/GFXHandle.h>
 
 namespace pulsar
 {
@@ -50,6 +49,8 @@ namespace pulsar
 
         void OnTransformChanged() override;
 
+        void PostEditChange(FieldInfo* info) override;
+
         bool ExtractViewData(SceneViewData& outData) override;
 
 
@@ -58,9 +59,9 @@ namespace pulsar
         void UpdateCBuffer();
 
     protected:
-        gfx::GFXDescriptorSetLayout_sp m_camDescriptorLayout;
-        gfx::GFXDescriptorSet_sp m_cameraDescriptorSet;
-        gfx::BufferHandle m_cameraDataBuffer;
+        gfx::GFXDescriptorSetLayoutPtr m_camDescriptorLayout;
+        gfx::GFXDescriptorSetPtr m_cameraDescriptorSet;
+        gfx::GFXBufferPtr m_cameraDataBuffer;
 
         CORELIB_REFL_DECL_FIELD(m_fov);
         float m_fov{};

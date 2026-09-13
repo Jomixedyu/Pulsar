@@ -4,7 +4,6 @@
 #include <Pulsar/IGPUResource.h>
 #include <Pulsar/AssetObject.h>
 #include <Pulsar/Assets/Material.h>
-#include <gfx/GFXHandle.h>
 #include "Pulsar/Rendering/PrimitiveStruct.h"
 
 namespace pulsar
@@ -46,6 +45,7 @@ namespace pulsar
         constexpr static int32_t SerializeVersion = 2;
         StaticMesh() = default;
         ~StaticMesh() override;
+        void OnDestroy() override;
     public:
         static gfx::GFXVertexLayoutDescription StaticGetVertexLayout();
 
@@ -71,15 +71,15 @@ namespace pulsar
         bool CreateGPUResource() override;
         void DestroyGPUResource() override;
         bool IsCreatedGPUResource() const override;
-        const array_list<gfx::BufferHandle>& GetGPUResourceVertexBuffers() const { return m_vertexBuffers; }
-        const array_list<gfx::BufferHandle>& GetGPUResourceIndicesBuffers() const { return m_indicesBuffers; }
+        const array_list<gfx::GFXBufferPtr>& GetGPUResourceVertexBuffers() const { return m_vertexBuffers; }
+        const array_list<gfx::GFXBufferPtr>& GetGPUResourceIndicesBuffers() const { return m_indicesBuffers; }
     protected: // serialization data
         array_list<StaticMeshSection> m_sections;
         array_list<string> m_materialNames;
     protected: // runtime data
         bool m_isCreatedResource = false;
-        array_list<gfx::BufferHandle> m_vertexBuffers;
-        array_list<gfx::BufferHandle> m_indicesBuffers;
+        array_list<gfx::GFXBufferPtr> m_vertexBuffers;
+        array_list<gfx::GFXBufferPtr> m_indicesBuffers;
 
         BoxSphereBounds3f m_bounds{};
     };

@@ -32,8 +32,8 @@ namespace pulsar
 
     RGTextureHandle RenderGraph::ImportTexture(const std::string& name,
                                                int32_t width, int32_t height,
-                                               const array_list<gfx::GFXTexture_sp>& attachments,
-                                               const gfx::GFXFrameBufferObject_sp& fbo)
+                                               const array_list<gfx::GFXTexturePtr>& attachments,
+                                               const gfx::GFXFrameBufferObjectPtr& fbo)
     {
         RGTextureHandle h{ NextHandleId() };
         RGResourceDesc res;

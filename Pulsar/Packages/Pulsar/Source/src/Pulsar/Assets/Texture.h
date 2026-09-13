@@ -2,7 +2,6 @@
 #include <Pulsar/IGPUResource.h>
 #include <Pulsar/AssetObject.h>
 #include <gfx/GFXTexture.h>
-#include <gfx/GFXHandle.h>
 
 namespace pulsar
 {
@@ -36,6 +35,7 @@ CORELIB_DECL_BOXING(pulsar::SamplerAddressMode, pulsar::BoxingSamplerAddressMode
 
 namespace pulsar
 {
+    namespace rendering { class TextureProxy; }
 
     class Texture : public AssetObject, public IGPUResource
     {
@@ -48,7 +48,10 @@ namespace pulsar
         virtual int32_t GetHeight() const = 0;
         virtual Vector2i GetSize2di() const { return { this->GetWidth(), this->GetHeight() }; }
         virtual Vector2f GetSize2df() const { return Vector2f((float)this->GetWidth(), (float)this->GetHeight()); }
-        virtual gfx::TextureHandle GetTextureHandle() const { return {}; }
+        virtual gfx::GFXTexturePtr GetGfxTexture() const { return nullptr; }
+        // The render-thread proxy backing this texture; the GPU texture is created
+        // asynchronously on the render thread, so resolve through the proxy.
+        virtual std::shared_ptr<rendering::TextureProxy> GetTextureProxy() const { return nullptr; }
         virtual TextureCompressionFormat GetCompressedFormat() const { return TextureCompressionFormat::BitmapRGBA8; }
         virtual size_t GetOriginCompressedBinarySize() const { return 0; }
         virtual size_t GetRawBinarySize() const { return 0; }

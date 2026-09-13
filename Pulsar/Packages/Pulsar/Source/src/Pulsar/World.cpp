@@ -273,7 +273,7 @@ namespace pulsar
         if (!m_renderScene || !ro)
             return;
         Application::GetRenderThread()->EnqueueUpdate_AnyThread(
-            [scene = m_renderScene.get(), p = ro](gfx::GFXResourceManager*) mutable
+            [scene = m_renderScene.get(), p = ro](gfx::GFXResourceRegistry*)
             {
                 scene->AddProxy(std::move(p));
             });
@@ -283,7 +283,7 @@ namespace pulsar
         if (!m_renderScene || !ro)
             return;
         Application::GetRenderThread()->EnqueueUpdate_AnyThread(
-            [scene = m_renderScene.get(), p = ro](gfx::GFXResourceManager*) mutable
+            [scene = m_renderScene.get(), p = ro](gfx::GFXResourceRegistry*)
             {
                 scene->RemoveProxy(p);
             });
@@ -299,7 +299,7 @@ namespace pulsar
             return;
 
         Application::GetRenderThread()->EnqueueUpdate_AnyThread(
-            [scene = m_renderScene.get(), p = std::move(proxy)](gfx::GFXResourceManager*) mutable
+            [scene = m_renderScene.get(), p = std::move(proxy)](gfx::GFXResourceRegistry*)
             {
                 scene->AddProxy(std::move(p));
             });
@@ -314,7 +314,7 @@ namespace pulsar
             return;
 
         Application::GetRenderThread()->EnqueueUpdate_AnyThread(
-            [scene = m_renderScene.get(), p = std::move(proxy)](gfx::GFXResourceManager*) mutable
+            [scene = m_renderScene.get(), p = std::move(proxy)](gfx::GFXResourceRegistry*)
             {
                 scene->RemoveProxy(p);
             });
@@ -326,7 +326,7 @@ namespace pulsar
         // Submission API: game thread only. The view proxy is kept alive by the
         // render scene; the captured SPtr keeps it alive until the update runs.
         Application::GetRenderThread()->EnqueueUpdate_AnyThread(
-            [view, data = std::move(data)](gfx::GFXResourceManager*) mutable
+            [view, data = std::move(data)](gfx::GFXResourceRegistry*) mutable
             {
                 view->SetData(std::move(data));
             });
@@ -340,7 +340,7 @@ namespace pulsar
         // Headless worlds do not create RenderScene and return above.
         // Use the destroy queue so the scene is destroyed after previously queued proxy updates.
         Application::GetRenderThread()->EnqueueDestroy_AnyThread(
-            [scene = std::move(m_renderScene)](gfx::GFXResourceManager*) mutable
+            [scene = std::move(m_renderScene)](gfx::GFXResourceRegistry*)
             {
                 scene->Destroy();
             });
@@ -361,7 +361,7 @@ namespace pulsar
         if (m_renderScene)
         {
             Application::GetRenderThread()->EnqueueUpdate_AnyThread(
-                [scene = m_renderScene.get(), totalTime = m_totalTime, deltaTime = m_ticker.deltatime](gfx::GFXResourceManager*) mutable
+                [scene = m_renderScene.get(), totalTime = m_totalTime, deltaTime = m_ticker.deltatime](gfx::GFXResourceRegistry*)
                 {
                     scene->SetTime(totalTime, deltaTime);
                 });

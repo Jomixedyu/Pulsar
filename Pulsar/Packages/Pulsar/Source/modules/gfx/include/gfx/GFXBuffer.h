@@ -3,6 +3,11 @@
 
 namespace gfx
 {
+    class GFXResourceRegistry;
+}
+
+namespace gfx
+{
     enum class GFXBufferUsage : uint32_t
     {
         None = 0,
@@ -30,8 +35,6 @@ namespace gfx
     class GFXBuffer : public GFXResource
     {
     public:
-        explicit GFXBuffer(const GFXBufferDesc& desc)
-            : m_desc(desc) {}
         GFXBuffer(const GFXBuffer&) = delete;
         GFXBuffer(GFXBuffer&&) = delete;
         ~GFXBuffer() override = default;
@@ -40,7 +43,6 @@ namespace gfx
         // Uploads data into the buffer. Host-visible memory is mapped and copied directly;
         // device-local memory is uploaded through a transient staging buffer.
         virtual void Update(const void* data) = 0;
-        virtual void Release() = 0;
     public:
         virtual size_t GetSize() const = 0;
         virtual bool IsValid() const = 0;
@@ -49,8 +51,12 @@ namespace gfx
         const GFXBufferDesc& GetDesc() const { return m_desc; }
         // True when the buffer memory is device-local (not host-visible).
         bool IsDeviceLocal() const { return m_desc.StorageType == GFXBufferMemoryPosition::DeviceLocal; }
+
     protected:
+        explicit GFXBuffer(GFXResourceRegistry* registry, const GFXBufferDesc& desc)
+            : GFXResource(registry), m_desc(desc) {}
+
         GFXBufferDesc m_desc;
     };
-    GFX_DECL_SPTR(GFXBuffer);
+    GFX_DECL_PTR(GFXBuffer);
 }

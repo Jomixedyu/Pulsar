@@ -9,10 +9,10 @@
 
 namespace gfx
 {
-    class GFXApplication;
+    class GFXResourceRegistry;
 
     // Engine-wide, long-lived fallback GPU resources bound when a reflected
-    // descriptor has no matching resource. Owned by GFXApplication; created
+    // descriptor has no matching resource. Owned by GFXResourceRegistry; created
     // once the device is ready and released before the device is destroyed.
     class GFXBuiltinResources
     {
@@ -21,7 +21,7 @@ namespace gfx
         // uniform block; larger reflected UBO sizes assert at the binding site.
         static constexpr size_t ZeroBufferSize = 64 * 1024;
 
-        void Initialize(GFXApplication* app);
+        void Initialize(GFXResourceRegistry* registry);
         void Terminate();
 
         // Shared read-only zero-filled buffer. Bound as a UBO (range = reflected
@@ -41,12 +41,12 @@ namespace gfx
         GFXSampler* GetDefaultSampler() const { return m_defaultSampler; }
 
     private:
-        GFXApplication* m_app = nullptr;
-        GFXBuffer_sp m_zeroBuffer;
-        GFXTexture_sp m_black2D;
-        GFXTexture2DView_sp m_black2DView;
+        GFXResourceRegistry* m_registry = nullptr;
+        GFXBufferPtr m_zeroBuffer;
+        GFXTexturePtr m_black2D;
+        GFXTexture2DViewPtr m_black2DView;
 
-        std::vector<std::pair<GFXSamplerConfig, GFXSampler_sp>> m_samplers;
+        std::vector<std::pair<GFXSamplerConfig, GFXSamplerPtr>> m_samplers;
         GFXSampler* m_defaultSampler = nullptr;
     };
 }

@@ -61,21 +61,21 @@ namespace pulsar
     {
         int32_t width = 0;
         int32_t height = 0;
-        array_list<gfx::GFXTexture_sp> attachments;
-        gfx::GFXFrameBufferObject_sp fbo;
+        array_list<gfx::GFXTexturePtr> attachments;
+        gfx::GFXFrameBufferObjectPtr fbo;
 
-        gfx::GFXTexture2DView_sp GetColorTextureView() const
+        gfx::GFXTexture2DViewPtr GetColorTextureView() const
         {
             if (attachments.empty()) return nullptr;
             return attachments[0]->Get2DView(0);
         }
 
-        gfx::GFXFrameBufferObject_sp GetFrameBufferObject() const
+        gfx::GFXFrameBufferObjectPtr GetFrameBufferObject() const
         {
             return fbo;
         }
 
-        gfx::GFXTexture_sp GetColorTexture() const
+        gfx::GFXTexturePtr GetColorTexture() const
         {
             if (attachments.empty()) return nullptr;
             return attachments[0];

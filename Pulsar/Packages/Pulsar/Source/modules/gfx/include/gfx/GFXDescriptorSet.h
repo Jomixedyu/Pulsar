@@ -42,7 +42,8 @@ namespace gfx
     class GFXDescriptorSetLayout : public GFXResource, public std::enable_shared_from_this<GFXDescriptorSetLayout>
     {
     protected:
-        GFXDescriptorSetLayout()
+        GFXDescriptorSetLayout(GFXResourceRegistry* registry)
+            : GFXResource(registry)
         {
         }
         ~GFXDescriptorSetLayout() override {}
@@ -51,7 +52,7 @@ namespace gfx
         // Allocate a descriptor set from this layout's own, exactly-sized pool chain.
         virtual std::shared_ptr<GFXDescriptorSet> AllocateSet() = 0;
     };
-    GFX_DECL_SPTR(GFXDescriptorSetLayout);
+    GFX_DECL_PTR(GFXDescriptorSetLayout);
 
     class GFXDescriptor
     {
@@ -69,7 +70,7 @@ namespace gfx
         bool IsDirty = false;
         std::string name;
     };
-    GFX_DECL_SPTR(GFXDescriptor);
+    GFX_DECL_PTR(GFXDescriptor);
 
     class GFXDescriptorSet
     {
@@ -84,8 +85,8 @@ namespace gfx
         virtual GFXDescriptor* FindByBinding(uint32_t bindingPoint) = 0;
         virtual void Submit() = 0;
         virtual intptr_t GetId() = 0;
-        virtual GFXDescriptorSetLayout_sp GetDescriptorSetLayout() const = 0;
+        virtual GFXDescriptorSetLayoutPtr GetDescriptorSetLayout() const = 0;
     };
-    GFX_DECL_SPTR(GFXDescriptorSet);
+    GFX_DECL_PTR(GFXDescriptorSet);
 
 }

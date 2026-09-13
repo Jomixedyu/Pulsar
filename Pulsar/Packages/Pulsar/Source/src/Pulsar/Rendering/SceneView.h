@@ -20,11 +20,11 @@ namespace pulsar
     {
         int32_t Width = 0;
         int32_t Height = 0;
-        array_list<gfx::GFXTexture_sp>          Attachments;
-        gfx::GFXFrameBufferObject_sp            Framebuffer;
+        array_list<gfx::GFXTexturePtr>          Attachments;
+        gfx::GFXFrameBufferObjectPtr            Framebuffer;
 
         bool IsValid() const { return Framebuffer != nullptr; }
-        gfx::GFXTexture2DView_sp GetColorTextureView() const
+        gfx::GFXTexture2DViewPtr GetColorTextureView() const
         {
             if (Attachments.empty()) return nullptr;
             return Attachments[0]->Get2DView(0);
@@ -85,6 +85,6 @@ namespace pulsar
         std::unique_ptr<ViewPipeline>                Pipeline;
 
     private:
-        gfx::GFXBuffer_sp m_cameraBuffer;
+        gfx::GFXBufferPtr m_cameraBuffer;
     };
 }

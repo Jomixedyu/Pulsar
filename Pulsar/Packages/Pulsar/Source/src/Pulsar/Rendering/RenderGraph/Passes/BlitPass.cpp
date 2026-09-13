@@ -61,7 +61,7 @@ namespace pulsar
                 auto* gfxApp = cmdBuffer.GetApplication();
                 auto* pipelineMgr = gfxApp->GetGraphicsPipelineManager();
 
-                array_list<gfx::GFXDescriptorSetLayout_sp> descLayouts;
+                array_list<gfx::GFXDescriptorSetLayoutPtr> descLayouts;
                 descLayouts.push_back(resolved.m_set0Layout);
                 descLayouts.push_back(set1Layout);
 

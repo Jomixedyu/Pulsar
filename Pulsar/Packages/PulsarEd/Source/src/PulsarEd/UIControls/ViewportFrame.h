@@ -34,8 +34,8 @@ namespace pulsared
         bool m_isPreviewCam = true;
         bool m_enableEdToolTick = true;
         Vector2f m_viewportSize{};
-        gfx::GFXDescriptorSetLayout_sp m_descriptorLayout;
-        gfx::GFXDescriptorSet_sp m_descriptorSet;
+        gfx::GFXDescriptorSetLayoutPtr m_descriptorLayout;
+        gfx::GFXDescriptorSetPtr m_descriptorSet;
 
         float m_lastViewportX = 0.0f;
         float m_lastViewportY = 0.0f;

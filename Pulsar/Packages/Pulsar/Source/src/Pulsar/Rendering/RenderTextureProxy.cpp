@@ -2,7 +2,7 @@
 
 #include <Pulsar/Assets/RenderTexture.h>
 #include <Pulsar/Application.h>
-#include <gfx/GFXResourceManager.h>
+#include <gfx/GFXResourceRegistry.h>
 
 namespace pulsar::rendering
 {
@@ -22,21 +22,11 @@ namespace pulsar::rendering
         if (m_created)
             return;
 
-        CreateResources();
-    }
-
-    void RenderTextureProxy::OnDestroyResource()
-    {
-        DestroyResources();
-    }
-
-    void RenderTextureProxy::CreateResources()
-    {
         auto gfxApp = Application::GetGfxApp();
-        if (!gfxApp)
+        auto* registry = gfxApp ? gfxApp->GetResourceRegistry() : nullptr;
+        if (!registry)
             return;
 
-        auto* resMgr = gfxApp->GetResourceManager();
         gfx::GFXSamplerConfig samplerCfg{};
         samplerCfg.Filter = gfx::GFXSamplerFilter::Linear;
         samplerCfg.AddressMode = gfx::GFXSamplerAddressMode::ClampToEdge;
@@ -51,8 +41,9 @@ namespace pulsar::rendering
             desc.SampleCount = m_sampleCount;
             desc.IsTransientAttachment = false;
 
-            m_colorHandle = resMgr->AllocHandle<gfx::TextureHandle>();
-            resMgr->CreateRenderTarget(m_colorHandle, desc);
+            m_colorTexture = registry->CreateRenderTarget(
+                m_width, m_height, gfx::GFXTextureTargetType::ColorTarget,
+                desc.Format, samplerCfg, m_sampleCount, false);
         }
 
         if (m_depthFormat != RenderTextureDepthFormat::None)
@@ -70,106 +61,64 @@ namespace pulsar::rendering
             desc.SampleCount = m_sampleCount;
             desc.IsTransientAttachment = false;
 
-            m_depthHandle = resMgr->AllocHandle<gfx::TextureHandle>();
-            resMgr->CreateRenderTarget(m_depthHandle, desc);
+            m_depthTexture = registry->CreateRenderTarget(
+                m_width, m_height, desc.TargetType,
+                desc.Format, samplerCfg, m_sampleCount, false);
         }
 
-        std::vector<gfx::GFXTexture2DView_sp> views;
-        views.reserve(m_depthHandle.IsValid() ? 2 : 1);
+        std::vector<gfx::GFXTexture2DViewPtr> views;
+        views.reserve(m_depthTexture ? 2 : 1);
 
-        if (auto color = resMgr->GetTextureShared(m_colorHandle))
-            views.push_back(color->Get2DView(0));
+        if (m_colorTexture)
+            views.push_back(m_colorTexture->Get2DView(0));
 
-        if (auto depth = resMgr->GetTextureShared(m_depthHandle))
-            views.push_back(depth->Get2DView(0));
+        if (m_depthTexture)
+            views.push_back(m_depthTexture->Get2DView(0));
 
-        m_framebufferHandle = resMgr->AllocHandle<gfx::FrameBufferObjectHandle>();
-        resMgr->CreateFrameBufferObject(m_framebufferHandle, views);
-        m_framebuffer = resMgr->GetFrameBufferObjectShared(m_framebufferHandle);
+        m_framebuffer = registry->CreateFrameBufferObject(views);
         m_created = true;
     }
 
-    void RenderTextureProxy::DestroyResources()
+    void RenderTextureProxy::OnDestroyResource()
     {
         if (!m_created)
             return;
 
-        if (auto gfxApp = Application::GetGfxApp())
+        if (m_framebuffer)
         {
-            auto* resMgr = gfxApp->GetResourceManager();
-            if (m_framebufferHandle.IsValid())
-                resMgr->Destroy(m_framebufferHandle);
-
-            if (m_depthHandle.IsValid())
-                resMgr->Destroy(m_depthHandle);
-
-            if (m_colorHandle.IsValid())
-                resMgr->Destroy(m_colorHandle);
+            m_framebuffer.reset();
         }
 
-        m_framebufferHandle = {};
-        m_framebuffer.reset();
-        m_depthHandle = {};
-        m_colorHandle = {};
+        m_depthTexture.reset();
+        m_colorTexture.reset();
         m_created = false;
     }
 
-    gfx::TextureHandle RenderTextureProxy::GetTextureHandle() const
+    gfx::GFXTexture2DViewPtr RenderTextureProxy::GetColorTextureView() const
     {
-        return m_colorHandle;
+        return m_colorTexture ? m_colorTexture->Get2DView(0) : nullptr;
     }
 
-    gfx::TextureHandle RenderTextureProxy::GetDepthTextureHandle() const
+    gfx::GFXTexture2DViewPtr RenderTextureProxy::GetDepthRenderTarget() const
     {
-        return m_depthHandle;
+        return m_depthTexture ? m_depthTexture->Get2DView(0) : nullptr;
     }
 
-    gfx::GFXTexture2DView_sp RenderTextureProxy::GetColorTextureView() const
-    {
-        if (!m_colorHandle.IsValid())
-            return nullptr;
-
-        auto gfxApp = Application::GetGfxApp();
-        if (!gfxApp)
-            return nullptr;
-
-        auto texture = gfxApp->GetResourceManager()->GetTextureShared(m_colorHandle);
-        return texture ? texture->Get2DView(0) : nullptr;
-    }
-
-    gfx::GFXTexture2DView_sp RenderTextureProxy::GetDepthRenderTarget() const
-    {
-        if (!m_depthHandle.IsValid())
-            return nullptr;
-
-        auto gfxApp = Application::GetGfxApp();
-        if (!gfxApp)
-            return nullptr;
-
-        auto texture = gfxApp->GetResourceManager()->GetTextureShared(m_depthHandle);
-        return texture ? texture->Get2DView(0) : nullptr;
-    }
-
-    gfx::GFXFrameBufferObject_sp RenderTextureProxy::GetFrameBufferObject() const
+    gfx::GFXFrameBufferObjectPtr RenderTextureProxy::GetFrameBufferObject() const
     {
         return m_framebuffer;
     }
 
-    array_list<gfx::GFXTexture_sp> RenderTextureProxy::GetFramebufferAttachments() const
+    array_list<gfx::GFXTexturePtr> RenderTextureProxy::GetFramebufferAttachments() const
     {
-        array_list<gfx::GFXTexture_sp> result;
-        auto gfxApp = Application::GetGfxApp();
-        if (!gfxApp)
-            return result;
+        array_list<gfx::GFXTexturePtr> result;
+        result.reserve(m_depthTexture ? 2 : 1);
 
-        auto* resMgr = gfxApp->GetResourceManager();
-        result.reserve(m_depthHandle.IsValid() ? 2 : 1);
+        if (m_colorTexture)
+            result.push_back(m_colorTexture);
 
-        if (auto color = resMgr->GetTextureShared(m_colorHandle))
-            result.push_back(color);
-
-        if (auto depth = resMgr->GetTextureShared(m_depthHandle))
-            result.push_back(depth);
+        if (m_depthTexture)
+            result.push_back(m_depthTexture);
 
         return result;
     }

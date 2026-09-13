@@ -1,7 +1,7 @@
 #pragma once
 #include "RenderObject.h"
 #include "PrimitiveStruct.h"
-#include <gfx/GFXHandle.h>
+#include <gfx/GFXBuffer.h>
 
 namespace pulsar
 {
@@ -12,9 +12,9 @@ namespace pulsar
     private:
         array_list<StaticMeshVertex> m_verties;
 
-        gfx::BufferHandle m_vertBuffer;
-        gfx::GFXDescriptorSet_sp m_dummyExtraSet;
-        gfx::GFXDescriptorSetLayout_sp m_meshDescriptorSetLayout;
+        gfx::GFXBufferPtr m_vertBuffer;
+        gfx::GFXDescriptorSetPtr m_dummyExtraSet;
+        gfx::GFXDescriptorSetLayoutPtr m_meshDescriptorSetLayout;
 
         array_list<rendering::MeshBatch> m_batchs;
         RCPtr<Material> m_material;
