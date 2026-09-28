@@ -52,3 +52,16 @@ half3 RimLight2(half NoL, half NoV, half NoLOffset = 0,
 
     return frontPart + backPart;
 }
+
+float SweepShineWS(float3 localPos, float3 direction,
+                 float time, float period, float speed,
+                 float width, float softness)
+{
+    float3 dir = normalize(direction);
+    float axis = dot(localPos, dir);
+
+    float band = frac((axis - time * speed) / period);
+    float d = min(band, 1.0 - band) * period;
+
+    return 1.0 - smoothstep(width, width + softness, d);
+}
