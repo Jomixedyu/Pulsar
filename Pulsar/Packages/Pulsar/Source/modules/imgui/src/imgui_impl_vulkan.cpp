@@ -3,6 +3,7 @@
 
 // Implemented features:
 //  [!] Renderer: User texture binding. Use a VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE 'VkDescriptorSet' as texture identifier. Call ImGui_ImplVulkan_AddTexture() to register one. Read the FAQ about ImTextureID/ImTextureRef + https://github.com/ocornut/imgui/pull/914 for discussions.
+//              Alternatively, set ImGui_ImplVulkan_InitInfo::UsePushDescriptor (requires VK_KHR_push_descriptor) to use a raw 'VkImageView' as texture identifier, bound via vkCmdPushDescriptorSetKHR() with no per-texture descriptor set.
 //  [X] Renderer: Large meshes support (64k+ vertices) even with 16-bit indices (ImGuiBackendFlags_RendererHasVtxOffset).
 //  [X] Renderer: Texture updates support for dynamic font atlas (ImGuiBackendFlags_RendererHasTextures).
 //  [X] Renderer: Expose selected render state for draw callbacks to use. Access in '(ImGui_ImplXXXX_RenderState*)GetPlatformIO().Renderer_RenderState'.
@@ -28,6 +29,7 @@
 
 // CHANGELOG
 // (minor and older changes stripped away, please see git history for details)
+//  2026-XX-XX: Vulkan: added optional ImGui_ImplVulkan_InitInfo::UsePushDescriptor mode (requires VK_KHR_push_descriptor device extension): ImTextureID is a raw VkImageView bound via vkCmdPushDescriptorSetKHR(), removing the need for per-texture descriptor sets.
 //  2026-XX-XX: Platform: Added support for multiple windows via the ImGuiPlatformIO interface.
 //  2026-04-23: Added support for standard draw callbacks (in platform_io): DrawCallback_ResetRenderState, DrawCallback_SetSamplerLinear, DrawCallback_SetSamplerNearest. (#9378)
 //  2026-04-22: *BREAKING CHANGE* redesigned to use separate ImageView + Sampler instead of Combined Image Sampler. This change allows us to facilitate changing samplers, in line with other backends.
@@ -250,6 +252,7 @@ IMGUI_VULKAN_FUNC_MAP(IMGUI_VULKAN_FUNC_DEF)
 static PFN_vkCmdBeginRenderingKHR   ImGuiImplVulkanFuncs_vkCmdBeginRenderingKHR;
 static PFN_vkCmdEndRenderingKHR     ImGuiImplVulkanFuncs_vkCmdEndRenderingKHR;
 #endif
+static PFN_vkCmdPushDescriptorSetKHR ImGuiImplVulkanFuncs_vkCmdPushDescriptorSetKHR;
 
 // Reusable buffers used for rendering 1 current in-flight frame, for ImGui_ImplVulkan_RenderDrawData()
 // [Please zero-clear before use!]
@@ -659,7 +662,7 @@ void ImGui_ImplVulkan_RenderDrawData(ImDrawData* draw_data, VkCommandBuffer comm
 
     // Render command lists
     // (Because we merged all buffers into a single one, we maintain our own offset into them)
-    VkDescriptorSet last_image_view = VK_NULL_HANDLE;
+    ImTextureID last_texture_id = ImTextureID_Invalid;
     int global_vtx_offset = 0;
     int global_idx_offset = 0;
     for (const ImDrawList* draw_list : draw_data->CmdLists)
@@ -673,7 +676,7 @@ void ImGui_ImplVulkan_RenderDrawData(ImDrawData* draw_data, VkCommandBuffer comm
                 if (pcmd->UserCallback == ImGui_ImplVulkan_DrawCallback_ResetRenderState)
                 {
                     ImGui_ImplVulkan_SetupRenderState(draw_data, pipeline, command_buffer, rb, fb_width, fb_height);
-                    last_image_view = VK_NULL_HANDLE;
+                    last_texture_id = ImTextureID_Invalid;
                 }
                 else
                     pcmd->UserCallback(draw_list, pcmd);
@@ -700,11 +703,31 @@ void ImGui_ImplVulkan_RenderDrawData(ImDrawData* draw_data, VkCommandBuffer comm
                 scissor.extent.height = (uint32_t)(clip_max.y - clip_min.y);
                 vkCmdSetScissor(command_buffer, 0, 1, &scissor);
 
-                // Bind DescriptorSets for image view (font or user texture) and samplers
-                VkDescriptorSet image_view = (VkDescriptorSet)pcmd->GetTexID();
-                if (image_view != last_image_view)
-                    vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, bd->PipelineLayout, 0, 1, &image_view, 0, nullptr);
-                last_image_view = image_view;
+                // Bind texture (font or user texture); samplers are bound separately at set 1
+                ImTextureID tex_id = pcmd->GetTexID();
+                if (tex_id != last_texture_id)
+                {
+                    if (v->UsePushDescriptor)
+                    {
+                        // Push descriptor path: TexID is a raw VkImageView
+                        VkDescriptorImageInfo desc_image = {};
+                        desc_image.imageView = (VkImageView)tex_id;
+                        desc_image.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                        VkWriteDescriptorSet write_desc = {};
+                        write_desc.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                        write_desc.dstBinding = 0;
+                        write_desc.descriptorCount = 1;
+                        write_desc.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+                        write_desc.pImageInfo = &desc_image;
+                        ImGuiImplVulkanFuncs_vkCmdPushDescriptorSetKHR(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, bd->PipelineLayout, 0, 1, &write_desc);
+                    }
+                    else
+                    {
+                        VkDescriptorSet image_view = (VkDescriptorSet)tex_id;
+                        vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, bd->PipelineLayout, 0, 1, &image_view, 0, nullptr);
+                    }
+                }
+                last_texture_id = tex_id;
 
                 // Draw
                 vkCmdDrawIndexed(command_buffer, pcmd->ElemCount, 1, pcmd->IdxOffset + global_idx_offset, pcmd->VtxOffset + global_vtx_offset, 0);
@@ -730,10 +753,17 @@ static void ImGui_ImplVulkan_DestroyTexture(ImTextureData* tex)
 {
     if (ImGui_ImplVulkan_Texture* backend_tex = (ImGui_ImplVulkan_Texture*)tex->BackendUserData)
     {
-        IM_ASSERT(backend_tex->DescriptorSet == (VkDescriptorSet)tex->TexID);
         ImGui_ImplVulkan_Data* bd = ImGui_ImplVulkan_GetBackendData();
         ImGui_ImplVulkan_InitInfo* v = &bd->VulkanInitInfo;
-        ImGui_ImplVulkan_RemoveTexture(backend_tex->DescriptorSet);
+        if (v->UsePushDescriptor)
+        {
+            IM_ASSERT((VkImageView)tex->TexID == backend_tex->ImageView);
+        }
+        else
+        {
+            IM_ASSERT(backend_tex->DescriptorSet == (VkDescriptorSet)tex->TexID);
+            ImGui_ImplVulkan_RemoveTexture(backend_tex->DescriptorSet);
+        }
         vkDestroyImageView(v->Device, backend_tex->ImageView, v->Allocator);
         vkDestroyImage(v->Device, backend_tex->Image, v->Allocator);
         vkFreeMemory(v->Device, backend_tex->Memory, v->Allocator);
@@ -806,11 +836,17 @@ void ImGui_ImplVulkan_UpdateTexture(ImTextureData* tex)
             check_vk_result(err);
         }
 
-        // Create the Descriptor Set
-        backend_tex->DescriptorSet = ImGui_ImplVulkan_AddTexture(backend_tex->ImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-        // Store identifiers
-        tex->SetTexID((ImTextureID)backend_tex->DescriptorSet);
+        if (v->UsePushDescriptor)
+        {
+            // Push descriptor path: no descriptor set, TexID is the raw VkImageView
+            tex->SetTexID((ImTextureID)backend_tex->ImageView);
+        }
+        else
+        {
+            // Create the Descriptor Set
+            backend_tex->DescriptorSet = ImGui_ImplVulkan_AddTexture(backend_tex->ImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            tex->SetTexID((ImTextureID)backend_tex->DescriptorSet);
+        }
         tex->BackendUserData = backend_tex;
     }
 
@@ -1102,7 +1138,7 @@ static VkPipeline ImGui_ImplVulkan_CreatePipeline(VkDevice device, const VkAlloc
     return pipeline;
 }
 
-static void ImGui_ImplVulkan_CreateDescriptorSetLayout(VkDescriptorSetLayout* p_layout, VkDescriptorType descriptor_type)
+static void ImGui_ImplVulkan_CreateDescriptorSetLayout(VkDescriptorSetLayout* p_layout, VkDescriptorType descriptor_type, bool push_descriptor = false)
 {
     ImGui_ImplVulkan_Data* bd = ImGui_ImplVulkan_GetBackendData();
     ImGui_ImplVulkan_InitInfo* v = &bd->VulkanInitInfo;
@@ -1113,6 +1149,8 @@ static void ImGui_ImplVulkan_CreateDescriptorSetLayout(VkDescriptorSetLayout* p_
     binding[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
     VkDescriptorSetLayoutCreateInfo info = {};
     info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    if (push_descriptor)
+        info.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR;
     info.bindingCount = 1;
     info.pBindings = binding;
     VkResult err = vkCreateDescriptorSetLayout(v->Device, &info, v->Allocator, p_layout);
@@ -1153,7 +1191,7 @@ bool ImGui_ImplVulkan_CreateDeviceObjects()
     VkResult err;
 
     if (!bd->DescriptorSetLayoutTexture)
-        ImGui_ImplVulkan_CreateDescriptorSetLayout(&bd->DescriptorSetLayoutTexture, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE);
+        ImGui_ImplVulkan_CreateDescriptorSetLayout(&bd->DescriptorSetLayoutTexture, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, v->UsePushDescriptor);
     if (!bd->DescriptorSetLayoutSampler)
         ImGui_ImplVulkan_CreateDescriptorSetLayout(&bd->DescriptorSetLayoutSampler, VK_DESCRIPTOR_TYPE_SAMPLER);
 
@@ -1323,6 +1361,15 @@ static void ImGui_ImplVulkan_LoadDynamicRenderingFunctions(uint32_t api_version,
 }
 #endif
 
+// Manually load (same pattern as dynamic rendering, see #8600):
+// try the core (non-KHR) name first (core in Vulkan 1.4), then the KHR extension name.
+static void ImGui_ImplVulkan_LoadPushDescriptorFunctions(PFN_vkVoidFunction(*loader_func)(const char* function_name, void* user_data), void* user_data)
+{
+    ImGuiImplVulkanFuncs_vkCmdPushDescriptorSetKHR = reinterpret_cast<PFN_vkCmdPushDescriptorSetKHR>(loader_func("vkCmdPushDescriptorSet", user_data));
+    if (ImGuiImplVulkanFuncs_vkCmdPushDescriptorSetKHR == nullptr)
+        ImGuiImplVulkanFuncs_vkCmdPushDescriptorSetKHR = reinterpret_cast<PFN_vkCmdPushDescriptorSetKHR>(loader_func("vkCmdPushDescriptorSetKHR", user_data));
+}
+
 // If unspecified by user, assume that ApiVersion == HeaderVersion
  // We don't care about other versions than 1.3 for our checks, so don't need to make this exhaustive (e.g. with all #ifdef VK_VERSION_1_X checks)
 static uint32_t ImGui_ImplVulkan_GetDefaultApiVersion()
@@ -1354,6 +1401,7 @@ bool    ImGui_ImplVulkan_LoadFunctions(uint32_t api_version, PFN_vkVoidFunction(
 #ifdef IMGUI_IMPL_VULKAN_HAS_DYNAMIC_RENDERING
     ImGui_ImplVulkan_LoadDynamicRenderingFunctions(api_version, loader_func, user_data);
 #endif
+    ImGui_ImplVulkan_LoadPushDescriptorFunctions(loader_func, user_data);
 #else
     IM_UNUSED(loader_func);
     IM_UNUSED(user_data);
@@ -1381,6 +1429,14 @@ bool    ImGui_ImplVulkan_Init(ImGui_ImplVulkan_InitInfo* info)
 #else
         IM_ASSERT(0 && "Can't use dynamic rendering when neither VK_VERSION_1_3 or VK_KHR_dynamic_rendering is defined.");
 #endif
+    }
+
+    if (info->UsePushDescriptor)
+    {
+#ifndef IMGUI_IMPL_VULKAN_USE_LOADER
+        ImGui_ImplVulkan_LoadPushDescriptorFunctions([](const char* function_name, void* user_data) { return vkGetDeviceProcAddr((VkDevice)user_data, function_name); }, (void*)info->Device);
+#endif
+        IM_ASSERT(ImGuiImplVulkanFuncs_vkCmdPushDescriptorSetKHR != nullptr && "VK_KHR_push_descriptor device extension is not enabled (core in Vulkan 1.4)");
     }
 
     ImGuiIO& io = ImGui::GetIO();
@@ -1487,6 +1543,7 @@ VkDescriptorSet ImGui_ImplVulkan_AddTexture(VkImageView image_view, VkImageLayou
 {
     ImGui_ImplVulkan_Data* bd = ImGui_ImplVulkan_GetBackendData();
     ImGui_ImplVulkan_InitInfo* v = &bd->VulkanInitInfo;
+    IM_ASSERT(!v->UsePushDescriptor && "UsePushDescriptor is enabled: use a raw VkImageView as ImTextureID instead of registering a descriptor set");
     VkDescriptorPool pool = bd->DescriptorPool ? bd->DescriptorPool : v->DescriptorPool;
 
     // Create Descriptor Set:

@@ -134,6 +134,13 @@ struct ImGui_ImplVulkan_InitInfo
     // Need to explicitly enable VK_KHR_dynamic_rendering extension to use this, even for Vulkan 1.3 + setup PipelineInfoMain.PipelineRenderingCreateInfo and PipelineInfoViewports.PipelineRenderingCreateInfo.
     bool                            UseDynamicRendering;
 
+    // (Optional) Push Descriptors
+    // Need to explicitly enable the VK_KHR_push_descriptor device extension (core in Vulkan 1.4).
+    // When enabled, ImTextureID is a raw VkImageView instead of a VkDescriptorSet: textures are bound with
+    // vkCmdPushDescriptorSetKHR() and no per-texture descriptor set is allocated.
+    // ImGui_ImplVulkan_AddTexture()/ImGui_ImplVulkan_RemoveTexture() must not be used in this mode.
+    bool                            UsePushDescriptor;
+
     // (Optional) Allocation, Debugging
     const VkAllocationCallbacks*    Allocator;
     void                            (*CheckVkResultFn)(VkResult err);

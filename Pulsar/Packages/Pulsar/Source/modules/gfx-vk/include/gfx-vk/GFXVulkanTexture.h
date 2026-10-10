@@ -50,6 +50,7 @@ namespace gfx
 
         VkImage GetVkImage() const { return m_textureImage; }
         VkImageView GetVkImageView() const { return m_textureImageView; }
+        uint64_t GetNativeViewHandle() const override { return (uint64_t)m_textureImageView; }
         VkFormat GetVkImageFormat() const { return m_imageFormat; }
         VkImageLayout GetVkImageLayout() const { return m_imageLayout; }
         VkImageLayout GetVkTargetFinalLayout() const { return m_targetFinalLayout; }

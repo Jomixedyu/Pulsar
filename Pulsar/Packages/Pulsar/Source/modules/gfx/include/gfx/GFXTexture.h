@@ -59,6 +59,12 @@ namespace gfx
         virtual GFXTexture2DViewPtr Get2DView(size_t index = 0) = 0;
         virtual uint32_t GetSampleCount() const { return 1; }
         virtual const GFXSamplerConfig& GetSamplerConfig() const { return m_samplerConfig; }
+
+        // Opaque backend-specific bindable view handle (vulkan: the VkImageView;
+        // dx12 would be a SRV descriptor handle). Usable e.g. as imgui's ImTextureID
+        // with the push-descriptor backend path. 0 when the backend has no such handle.
+        virtual uint64_t GetNativeViewHandle() const { return 0; }
+
         std::array<float, 4>& GetTargetClearColor() { return m_targetClearColor; }
         const std::array<float, 4>& GetTargetClearColor() const { return m_targetClearColor; }
         void SetTargetClearColor(const std::array<float, 4>& color) { m_targetClearColor = color; }
