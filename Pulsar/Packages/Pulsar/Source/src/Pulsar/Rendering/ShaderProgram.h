@@ -40,25 +40,42 @@ namespace pulsar
         }
     };
 
-    class ShaderProgramResource
+    // One compiled shader stage. The code blob is opaque to the engine: it is
+    // whatever the compile service produced for the active backend (e.g.
+    // SPIR-V for Vulkan) and only the backend interprets it.
+    struct ShaderStageData
+    {
+        gfx::GFXGpuProgramStageFlags m_stage;
+        std::string m_entryName;
+        std::vector<uint8_t> m_code;
+    };
+
+    class ShaderProgram
     {
     public:
-        ShaderProgramResource() = default;
-        ~ShaderProgramResource() = default;
+        ShaderProgram() = default;
+        ~ShaderProgram() = default;
+        ShaderProgram(std::string shaderName,
+                      ShaderLayout layout,
+                      std::vector<gfx::GFXGpuProgramPtr> gpuPrograms)
+            : m_shaderName(std::move(shaderName))
+            , m_layout(std::move(layout))
+            , m_gpuPrograms(std::move(gpuPrograms))
+        {
+        }
 
         const ShaderVariantKey& GetKey() const { return m_key; }
         const std::string& GetShaderName() const { return m_shaderName; }
         const ShaderLayout& GetLayout() const { return m_layout; }
 
         const std::vector<gfx::GFXGpuProgramPtr>& GetGpuPrograms() const { return m_gpuPrograms; }
-        const gfx::GFXDescriptorSetLayoutPtr& GetDescriptorSetLayout() const { return m_descriptorSetLayout; }
 
     public:
         ShaderVariantKey m_key;
         std::string m_shaderName;   // human-readable name for debugging (e.g. "Pulsar/Shaders/PreviewImage.hlsl [PostProcess]")
         ShaderLayout m_layout;
 
+    private:
         std::vector<gfx::GFXGpuProgramPtr> m_gpuPrograms;
-        gfx::GFXDescriptorSetLayoutPtr m_descriptorSetLayout;
     };
 }

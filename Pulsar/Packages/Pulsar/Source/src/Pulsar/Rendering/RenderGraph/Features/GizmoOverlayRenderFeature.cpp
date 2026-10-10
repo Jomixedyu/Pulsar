@@ -1,7 +1,7 @@
 #include "GizmoOverlayRenderFeature.h"
 #include <Pulsar/Rendering/RenderGraph/Modules/GizmoOverlayRenderModule.h>
 #include <Pulsar/Rendering/RenderGraph/Pipelines/SceneCaptureFrameData.h>
-#include <Pulsar/Rendering/SceneView.h>
+#include <Pulsar/Rendering/SceneViewProxy.h>
 
 namespace pulsar
 {

@@ -1,5 +1,5 @@
 #include "BloomRenderModule.h"
-#include <Pulsar/Rendering/SceneView.h>
+#include <Pulsar/Rendering/SceneViewProxy.h>
 #include <Pulsar/Assets/RenderTexture.h>
 #include <Pulsar/Assets/Material.h>
 #include <Pulsar/Assets/Shader.h>
@@ -197,8 +197,8 @@ namespace pulsar
         if (!camRT.IsValid())
             return input;
 
-        uint32_t w = camRT.Width;
-        uint32_t h = camRT.Height;
+        uint32_t w = (uint32_t)camRT.GetWidth();
+        uint32_t h = (uint32_t)camRT.GetHeight();
         if (w == 0 || h == 0)
             return input;
 

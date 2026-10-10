@@ -3,7 +3,7 @@
 #include "ImageHelper.h"
 #include "GFXSurfaceSDL2.h"
 #include "GFXVulkanBuffer.h"
-#include "GFXVulkanBufferUploadQueue.h"
+#include "GFXVulkanTransferQueue.h"
 #include "GFXVulkanCommandBuffer.h"
 #include "GFXVulkanCommandBufferPool.h"
 #include "GFXVulkanDescriptorSet.h"
@@ -292,7 +292,6 @@ namespace gfx
         const std::vector<const char*> deviceExtensions = {
             VK_KHR_SWAPCHAIN_EXTENSION_NAME,
             VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME,
-
         };
 
         vk::QueueFamilyIndices indices = vk::PhysicalDeviceHelper::FindQueueFamilies(m_surface, m_physicalDevice);
@@ -415,10 +414,12 @@ namespace gfx
         // builtin resources record and submit GPU upload commands through it.
         m_cmdPool = new GFXVulkanCommandBufferPool(this);
 
+        // Buffer/texture data updates are staged into the upload queue; the
+        // registry's builtin resources already use it during Initialize().
+        m_uploadQueue = new GFXVulkanTransferQueue(this);
+
         m_resourceRegistry = new GFXVulkanResourceRegistry(this);
         m_resourceRegistry->Initialize();
-
-        m_uploadQueue = new GFXVulkanBufferUploadQueue(this);
 
         m_viewport = new GFXVulkanSwapchain(this, m_window);
 
@@ -445,7 +446,25 @@ namespace gfx
 
     void GFXVulkanApplication::RequestBufferUpload(GFXBuffer* dst, const void* data, size_t size, size_t dstOffset)
     {
-        m_uploadQueue->RequestUpload(static_cast<GFXVulkanBuffer*>(dst), data, size, dstOffset);
+        VkBuffer vkDst = static_cast<GFXVulkanBuffer*>(dst)->GetVkBuffer();
+        m_uploadQueue->PushTransfer(data, size,
+            [vkDst, dstOffset, size](VkCommandBuffer cmd, VkBuffer src, VkDeviceSize srcOffset)
+            {
+                VkBufferCopy region{};
+                region.srcOffset = srcOffset;
+                region.dstOffset = dstOffset;
+                region.size = size;
+                vkCmdCopyBuffer(cmd, src, vkDst, 1, &region);
+            });
+    }
+
+    void GFXVulkanApplication::RequestTextureUpload(GFXVulkanTexture* dst, const void* data, size_t size)
+    {
+        m_uploadQueue->PushTransfer(data, size,
+            [dst](VkCommandBuffer cmd, VkBuffer src, VkDeviceSize srcOffset)
+            {
+                dst->RecordUpload(cmd, src, srcOffset);
+            });
     }
 
     void GFXVulkanApplication::Terminate()

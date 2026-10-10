@@ -62,7 +62,7 @@ namespace pulsar
         return vert;
     }
 
-    bool TextureCube::CreateGPUResource()
+    bool TextureCube::EnsureGPUResource()
     {
         if (m_isCreatedGPUResource)
         {
@@ -75,13 +75,14 @@ namespace pulsar
         sampler.Filter = GetSamplerFilter();
         sampler.AddressMode = GetSamplerAddressMode();
 
-        m_proxy = std::make_shared<rendering::TextureProxy>(m_width, sampler);
+        m_proxy = std::make_shared<rendering::TextureProxy>();
 
         auto proxy = m_proxy;
+        const int32_t size = m_width;
         renderThread->EnqueueUpdate_AnyThread(
-            [proxy = std::move(proxy)](gfx::GFXResourceRegistry*)
+            [proxy = std::move(proxy), size, sampler](gfx::GFXResourceRegistry*)
             {
-                proxy->OnCreateResource();
+                proxy->InitCube(size, sampler);
             });
 
         m_isCreatedGPUResource = true;
@@ -99,7 +100,7 @@ namespace pulsar
             Application::GetRenderThread()->EnqueueDestroy_AnyThread(
                 [proxy = std::move(proxy)](gfx::GFXResourceRegistry*)
                 {
-                    proxy->OnDestroyResource();
+                    proxy->Release();
                 });
         }
         m_isCreatedGPUResource = false;

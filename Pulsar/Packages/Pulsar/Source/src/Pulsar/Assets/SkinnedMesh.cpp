@@ -1,11 +1,12 @@
 #include "Assets/SkinnedMesh.h"
 
-#include "Application.h"
+#include <Pulsar/Rendering/MeshProxy.h>
+#include <Pulsar/Application.h>
+#include <Pulsar/Rendering/RenderThread.h>
+
 #include "AssetSerializerUtil.h"
 #include "EngineMath.h"
 #include <Pulsar/AssetObject.h>
-#include <Pulsar/Rendering/RenderThread.h>
-#include <gfx/GFXResourceRegistry.h>
 
 namespace pulsar
 {
@@ -117,55 +118,19 @@ namespace pulsar
     // -----------------------------------------------------------------------
     // GPU Resource
     // -----------------------------------------------------------------------
-    bool SkinnedMesh::CreateGPUResource()
+    bool SkinnedMesh::EnsureGPUResource()
     {
         if (m_isCreatedResource) return true;
         m_isCreatedResource = true;
 
-        // 句柄分配线程安全，主线程立即拿到句柄；Buffer 创建与上传投递到渲染线程异步执行。
-        auto* renderThread = Application::GetRenderThread();
-        for (auto& section : m_sections)
-        {
-            auto verts = section.BuildInterleavedVertices();
-            const size_t vertSize = verts.size() * sizeof(SkinnedMeshVertex);
-
+        m_proxy = std::make_shared<rendering::MeshProxy>();
+        auto proxy = m_proxy;
+        auto sections = rendering::BuildMeshProxySections<SkinnedMeshSection, SkinnedMeshVertex>(m_sections);
+        Application::GetRenderThread()->EnqueueUpdate_AnyThread(
+            [proxy = std::move(proxy), sections = std::move(sections)](gfx::GFXResourceRegistry*) mutable
             {
-                gfx::GFXBufferDesc vDesc{};
-                vDesc.Usage       = gfx::GFXBufferUsage::Vertex;
-                vDesc.StorageType = gfx::GFXBufferMemoryPosition::DeviceLocal;
-                vDesc.BufferSize  = vertSize;
-                vDesc.ElementSize = sizeof(SkinnedMeshVertex);
-
-                auto vb = Application::GetGfxApp()->GetResourceRegistry()->CreateBuffer(vDesc);
-                m_vertexBuffers.push_back(vb);
-
-                renderThread->EnqueueUpdate_AnyThread(
-                    [vb, verts = std::move(verts)](gfx::GFXResourceRegistry*)
-                    {
-                        vb->Update(verts.data());
-                    });
-            }
-
-            {
-                gfx::GFXBufferDesc iDesc{};
-                iDesc.Usage       = gfx::GFXBufferUsage::Indices;
-                iDesc.StorageType = gfx::GFXBufferMemoryPosition::DeviceLocal;
-                iDesc.BufferSize  = section.GetIndicesAllocSize();
-                iDesc.ElementSize = sizeof(MeshIndicesType);
-
-                const size_t indicesSize = section.GetIndicesAllocSize();
-                array_list<MeshIndicesType> indices = section.Indices;
-
-                auto ib = Application::GetGfxApp()->GetResourceRegistry()->CreateBuffer(iDesc);
-                m_indicesBuffers.push_back(ib);
-
-                renderThread->EnqueueUpdate_AnyThread(
-                    [ib, indices = std::move(indices)](gfx::GFXResourceRegistry*)
-                    {
-                        ib->Update(indices.data());
-                    });
-            }
-        }
+                proxy->Init(std::move(sections));
+            });
         return true;
     }
 
@@ -173,17 +138,15 @@ namespace pulsar
     {
         if (!m_isCreatedResource) return;
         m_isCreatedResource = false;
-
-        auto* renderThread = Application::GetRenderThread();
-        renderThread->EnqueueUpdate_AnyThread(
-            [vbs = std::move(m_vertexBuffers), ibs = std::move(m_indicesBuffers)](gfx::GFXResourceRegistry*)
-            {
-            });
-        m_vertexBuffers.clear();
-        m_indicesBuffers.clear();
-    }
-
-    bool SkinnedMesh::IsCreatedGPUResource() const { return m_isCreatedResource; }
+        if (auto proxy = std::move(m_proxy))
+        {
+            Application::GetRenderThread()->EnqueueDestroy_AnyThread(
+                [proxy = std::move(proxy)](gfx::GFXResourceRegistry*) mutable
+                {
+                    proxy->Release();
+                });
+        }
+    }    bool SkinnedMesh::IsCreatedGPUResource() const { return m_isCreatedResource; }
 
     // -----------------------------------------------------------------------
     // Serialize  （v2: SkeletonSerialize 以 GUID 引用方式存储）

@@ -1,5 +1,5 @@
 #pragma once
-#include <Pulsar/Rendering/ShaderProgramResource.h>
+#include <Pulsar/Rendering/ShaderProgram.h>
 
 #include <memory>
 #include <mutex>
@@ -14,16 +14,16 @@ namespace pulsar
         Error,
     };
 
-    class ShaderInstance
+    class ShaderProgramInstance
     {
     public:
-        explicit ShaderInstance(std::shared_ptr<ShaderProgramResource> fallback)
+        explicit ShaderProgramInstance(std::shared_ptr<ShaderProgram> fallback)
             : m_state(ShaderCompileState::Pending)
             , m_current(std::move(fallback))
         {
         }
 
-        ~ShaderInstance() = default;
+        ~ShaderProgramInstance() = default;
 
         ShaderCompileState GetState() const
         {
@@ -31,13 +31,13 @@ namespace pulsar
             return m_state;
         }
 
-        std::shared_ptr<ShaderProgramResource> GetCurrentProgram() const
+        std::shared_ptr<ShaderProgram> GetCurrentProgram() const
         {
             std::lock_guard lock(m_mutex);
             return m_current;
         }
 
-        void ReplaceProgram(std::shared_ptr<ShaderProgramResource> program, ShaderCompileState newState)
+        void ReplaceProgram(std::shared_ptr<ShaderProgram> program, ShaderCompileState newState)
         {
             std::lock_guard lock(m_mutex);
             m_current = std::move(program);
@@ -47,6 +47,6 @@ namespace pulsar
     private:
         mutable std::mutex m_mutex;
         ShaderCompileState m_state;
-        std::shared_ptr<ShaderProgramResource> m_current;
+        std::shared_ptr<ShaderProgram> m_current;
     };
 }

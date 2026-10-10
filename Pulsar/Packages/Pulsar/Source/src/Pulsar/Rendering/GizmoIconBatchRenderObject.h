@@ -1,31 +1,33 @@
 #pragma once
-#include "RenderObject.h"
-#include <Pulsar/Assets/Material.h>
-#include <Pulsar/Assets/StaticMesh.h>
+#include "RenderObjectProxy.h"
+
+#include <memory>
 
 namespace pulsar
 {
-    class GizmoIconBatchRenderObject : public rendering::RenderObject
+    namespace rendering { class MeshProxy; }
+    class MaterialProxy;
+    class GizmoIconBatchRenderObject : public rendering::RenderObjectProxy
     {
     public:
         struct IconItem
         {
             Matrix4f Transform;
-            RCPtr<Material> Material;
+            std::shared_ptr<MaterialProxy> MaterialProxy;
         };
 
-        void SetMesh(const RCPtr<StaticMesh>& mesh);
+        void SetMesh(const std::shared_ptr<rendering::MeshProxy>& mesh);
         void SetItems(const array_list<IconItem>& items);
 
-        void OnCreateResource() override;
-        void OnDestroyResource() override;
+        void OnEnterScene() override;
+        void OnLeaveScene() override;
         void OnChangedTransform() override {}
         array_list<rendering::MeshBatch> GetMeshBatches() override;
 
     private:
         void _Rebuild();
 
-        RCPtr<StaticMesh> m_mesh;
+        std::shared_ptr<rendering::MeshProxy> m_mesh;
         array_list<IconItem> m_items;
         bool m_dirty = true;
 

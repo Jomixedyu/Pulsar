@@ -72,17 +72,6 @@ namespace pulsar
 
         if (m_isCreatedGpuResource)
         {
-            auto* renderThread = Application::GetRenderThread();
-
-            if (auto oldProxy = std::move(m_proxy))
-            {
-                renderThread->EnqueueDestroy_AnyThread(
-                    [oldProxy = std::move(oldProxy)](gfx::GFXResourceRegistry*)
-                    {
-                        oldProxy->OnDestroyResource();
-                    });
-            }
-
             array_list<Color4b> bitmapCopy = m_bitmap;
             std::vector<uint8_t> data(
                 reinterpret_cast<const uint8_t*>(bitmapCopy.data()),
@@ -92,14 +81,16 @@ namespace pulsar
             cfg.Filter = GetSamplerFilter();
             cfg.AddressMode = GetSamplerAddressMode();
 
-            m_proxy = std::make_shared<rendering::TextureProxy>(
-                m_width, m_height, gfx::GFXTextureFormat::R8G8B8A8_UNorm, cfg, std::move(data));
+            // Init is re-init safe: rebuild reuses the same proxy object.
+            if (!m_proxy)
+                m_proxy = std::make_shared<rendering::TextureProxy>();
 
             auto proxy = m_proxy;
-            renderThread->EnqueueUpdate_AnyThread(
-                [proxy = std::move(proxy)](gfx::GFXResourceRegistry*)
+            const int32_t w = m_width, h = m_height;
+            Application::GetRenderThread()->EnqueueUpdate_AnyThread(
+                [proxy = std::move(proxy), w, h, cfg, data = std::move(data)](gfx::GFXResourceRegistry*) mutable
                 {
-                    proxy->OnCreateResource();
+                    proxy->Init(w, h, gfx::GFXTextureFormat::R8G8B8A8_UNorm, cfg, std::move(data));
                 });
         }
 
@@ -111,7 +102,7 @@ namespace pulsar
         return m_proxy ? m_proxy->GetTexture() : nullptr;
     }
 
-    bool CurveLinearColorAtlas::CreateGPUResource()
+    bool CurveLinearColorAtlas::EnsureGPUResource()
     {
         if (m_isCreatedGpuResource)
         {
@@ -135,7 +126,7 @@ namespace pulsar
             Application::GetRenderThread()->EnqueueDestroy_AnyThread(
                 [proxy = std::move(proxy)](gfx::GFXResourceRegistry*)
                 {
-                    proxy->OnDestroyResource();
+                    proxy->Release();
                 });
         }
 

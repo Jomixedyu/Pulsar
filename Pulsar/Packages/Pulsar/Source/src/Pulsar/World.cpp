@@ -12,7 +12,7 @@
 #include "Physics3D/PhysicsWorld3D.h"
 #include "Rendering/LightingData.h"
 #include "Rendering/RenderThread.h"
-#include "Rendering/SceneView.h"
+#include "Rendering/SceneViewProxy.h"
 #include "Subsystems/Subsystem.h"
 #include "Subsystems/WorldSubsystem.h"
 
@@ -268,7 +268,7 @@ namespace pulsar
     void World::OnUnloadingResidentScene(RCPtr<NodeCollection> scene)
     {
     }
-    void World::AddRenderObject(const rendering::RenderObject_sp& ro)
+    void World::AddRenderObject(const rendering::RenderObjectProxy_sp& ro)
     {
         if (!m_renderScene || !ro)
             return;
@@ -278,7 +278,7 @@ namespace pulsar
                 scene->AddProxy(std::move(p));
             });
     }
-    void World::RemoveRenderObject(const rendering::RenderObject_sp& ro)
+    void World::RemoveRenderObject(const rendering::RenderObjectProxy_sp& ro)
     {
         if (!m_renderScene || !ro)
             return;
@@ -293,7 +293,7 @@ namespace pulsar
         if (!m_renderScene || !comp)
             return;
         // Build the proxy from the component and store it back on the component.
-        auto proxy = comp->CreateRenderProxy();
+        auto proxy = comp->CreateSceneProxy();
         comp->m_proxy = proxy;
         if (!proxy)
             return;
@@ -319,7 +319,7 @@ namespace pulsar
                 scene->RemoveProxy(p);
             });
     }
-    void World::UpdateSceneView(const SPtr<SceneView>& view, SceneViewData data)
+    void World::UpdateSceneView(const SPtr<SceneViewProxy>& view, SceneViewData data)
     {
         if (!m_renderScene || !view)
             return;
@@ -388,6 +388,7 @@ namespace pulsar
         {
             m_renderScene = std::make_unique<RenderScene>();
         }
+        m_gizmosManager.Initialize();
         if (m_scenes.empty())
         {
             InitializeResidentScene();

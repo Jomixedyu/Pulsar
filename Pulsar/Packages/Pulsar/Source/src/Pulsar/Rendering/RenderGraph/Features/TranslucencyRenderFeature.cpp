@@ -2,7 +2,7 @@
 #include <Pulsar/Rendering/RenderGraph/Modules/TranslucencyRenderModule.h>
 #include <Pulsar/Rendering/RenderGraph/Pipelines/SceneCaptureFrameData.h>
 #include <Pulsar/Rendering/RenderGraph/RenderGraph.h>
-#include <Pulsar/Rendering/SceneView.h>
+#include <Pulsar/Rendering/SceneViewProxy.h>
 #include <gfx/TextureClasses.h>
 #include <gfx/GFXCommandBuffer.h>
 
@@ -21,8 +21,8 @@ namespace pulsar
                 return;
 
             RGTextureDesc opaqueColorDesc{};
-            opaqueColorDesc.Width = capture->view->RenderTarget.Width;
-            opaqueColorDesc.Height = capture->view->RenderTarget.Height;
+            opaqueColorDesc.Width = capture->view->RenderTarget.GetWidth();
+            opaqueColorDesc.Height = capture->view->RenderTarget.GetHeight();
             opaqueColorDesc.TargetInfos.push_back({ gfx::GFXTextureTargetType::ColorTarget, gfx::GFXTextureFormat::R16G16B16A16_SFloat });
             auto& opaqueColor = frameData.Set(SceneOpaqueColorFrameData{ graph.CreateTransient("OpaqueColorTexture", opaqueColorDesc) });
 

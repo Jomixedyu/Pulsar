@@ -2,13 +2,13 @@
 #include <Pulsar/IconsForkAwesome.h>
 #include "Pulsar/Assets/RenderTexture.h"
 #include "Pulsar/Assets/ViewPipelineSettings.h"
-#include <Pulsar/Rendering/SceneView.h>
+#include <Pulsar/Rendering/SceneViewProxy.h>
 #include "RenderComponent.h"
 #include <memory>
 
 namespace pulsar
 {
-    class SceneView;
+    class SceneViewProxy;
 
     CORELIB_DEF_ENUM(AssemblyObject_pulsar, pulsar,
         CaptureProjectionMode,
@@ -79,16 +79,16 @@ namespace pulsar
 
 
     protected:
-        // Unified proxy hooks: the proxy is a SceneView owned by the render thread.
-        SPtr<rendering::RenderProxy> CreateRenderProxy() override;
+        // Unified proxy hooks: the proxy is a SceneViewProxy owned by the render thread.
+        SPtr<rendering::SceneProxy> CreateSceneProxy() override;
         void ResolveRenderStateDirty() override;
         void GetSubscribeObserverHandles(array_list<ObjectHandle>& out) override;
         void OnNotifyObserver(ObjectHandle inDependency, DependencyObjectState msg) override;
 
-        // Cached typed view of m_proxy (the SceneView this component owns). Kept as a
+        // Cached typed view of m_proxy (the SceneViewProxy this component owns). Kept as a
         // shared ref like mesh renderers' m_renderObject; the render scene owns the
         // canonical instance. Used to address this view's snapshot in UpdateSceneView.
-        SPtr<SceneView> m_sceneView;
+        SPtr<SceneViewProxy> m_sceneView;
         SceneViewData m_sceneViewData;
 
         bool m_renderDirtyTransform = true;

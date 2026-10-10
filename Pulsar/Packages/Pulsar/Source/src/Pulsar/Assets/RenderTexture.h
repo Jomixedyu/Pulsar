@@ -44,7 +44,7 @@ namespace pulsar
         static std::optional<RenderTextureDepthFormat> FromGFXDepthFormat(gfx::GFXTextureFormat format);
 
         // IGPUResource
-        bool CreateGPUResource() override;
+        bool EnsureGPUResource() override;
         void DestroyGPUResource() override;
         bool IsCreatedGPUResource() const override;
         void EnableRenderTarget();
@@ -57,10 +57,11 @@ namespace pulsar
         const std::shared_ptr<rendering::RenderTextureProxy>& GetRenderProxy() const { return m_proxy; }
 
     protected:
-        void RebuildGPUResources();
-
         bool m_createdGPUResource = false;
         std::shared_ptr<rendering::RenderTextureProxy> m_proxy;
+
+        // Set by PostEditChange; EnsureGPUResource rebuilds the proxy when dirty.
+        bool m_gpuResourceDirty = false;
 
     public:
         CORELIB_REFL_DECL_FIELD(m_width, new RangePropertyAttribute(1, 8192))

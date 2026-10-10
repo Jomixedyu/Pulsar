@@ -1,6 +1,6 @@
 #include "GFXVulkanRenderer.h"
 #include "GFXVulkanApplication.h"
-#include "GFXVulkanBufferUploadQueue.h"
+#include "GFXVulkanTransferQueue.h"
 #include "GFXVulkanCommandBuffer.h"
 #include "GFXVulkanQueue.h"
 #include "GFXVulkanFrameBufferObject.h"
@@ -57,7 +57,7 @@ namespace gfx
         // resource-update drain and lazy variant creation inside OnRecord) into a command buffer
         // prepended to the front, so it executes (and its barrier makes the writes visible) before
         // the render command buffers that read the uploaded buffers.
-        if (auto* uploadQueue = m_app->GetBufferUploadQueue(); uploadQueue->HasPending())
+        if (auto* uploadQueue = m_app->GetTransferQueue(); uploadQueue->HasPending())
         {
             auto& transferCmd = renderContext.PrependCommandBuffer();
             transferCmd.Begin();

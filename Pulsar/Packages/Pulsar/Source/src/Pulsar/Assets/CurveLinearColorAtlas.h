@@ -17,7 +17,7 @@ namespace pulsar
         CurveLinearColorAtlas();
         void Serialize(AssetSerializer* s) override;
         void Generate();
-        bool CreateGPUResource() override;
+        bool EnsureGPUResource() override;
         void DestroyGPUResource() override;
         bool IsCreatedGPUResource() const override { return m_isCreatedGpuResource; }
         int32_t GetWidth() const override;

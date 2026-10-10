@@ -3,7 +3,7 @@
 #include "ViewPipeline.h"
 #include <Pulsar/Rendering/LightProxy.h>
 #include <Pulsar/Rendering/RenderScene.h>
-#include <Pulsar/Rendering/SceneView.h>
+#include <Pulsar/Rendering/SceneViewProxy.h>
 
 namespace pulsar
 {

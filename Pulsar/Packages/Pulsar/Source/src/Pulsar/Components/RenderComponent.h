@@ -1,13 +1,13 @@
 #pragma once
 #include "Component.h"
-#include <Pulsar/Rendering/RenderProxy.h>
+#include <Pulsar/Rendering/SceneProxy.h>
 
 namespace pulsar
 {
-    // Base class for all game-side components that own a render-thread RenderProxy
+    // Base class for all game-side components that own a render-thread SceneProxy
     // (mesh renderers, scene captures, lights). Unifies the proxy lifecycle:
-    //   BeginComponent  -> CreateRenderProxy + World::AddRenderProxy   (enqueue Add)
-    //   EndComponent    -> World::RemoveRenderProxy                    (enqueue Remove)
+    //   BeginComponent  -> CreateSceneProxy + World::AddSceneProxy   (enqueue Add)
+    //   EndComponent    -> World::RemoveSceneProxy                    (enqueue Remove)
     //   setter changes  -> MarkRenderStateDirty                        (register dirty)
     //   end of Tick     -> ResolveRenderStateDirty                    (snapshot + enqueue update)
     class RenderComponent : public Component
@@ -27,13 +27,13 @@ namespace pulsar
     protected:
         // Create the render-thread proxy mirror for this component. Called in
         // BeginComponent. Return nullptr to skip (no proxy registered this lifetime).
-        virtual SPtr<rendering::RenderProxy> CreateRenderProxy() = 0;
+        virtual SPtr<rendering::SceneProxy> CreateSceneProxy() = 0;
 
         // Snapshot render-relevant data and enqueue the write to the render thread.
         // Called during the extraction phase (end of World::Tick) for dirty components.
         virtual void ResolveRenderStateDirty() {}
 
-        SPtr<rendering::RenderProxy> m_proxy;
+        SPtr<rendering::SceneProxy> m_proxy;
         bool m_renderStateDirty = false;
     };
     DECL_PTR(RenderComponent);

@@ -5,8 +5,9 @@
 #include <Pulsar/Rendering/RenderGraph/Passes/BlitPass.h>
 #include <Pulsar/Rendering/RenderGraph/Pipelines/SceneCaptureFrameData.h>
 #include <Pulsar/Rendering/RenderGraph/RenderPipelineFrameData.h>
-#include <Pulsar/Rendering/SceneView.h>
+#include <Pulsar/Rendering/SceneViewProxy.h>
 #include <Pulsar/Rendering/MaterialProxy.h>
+#include <Pulsar/Rendering/ShaderProxy.h>
 #include <Pulsar/Rendering/ShaderPropertyValue.h>
 
 namespace pulsar
@@ -14,10 +15,10 @@ namespace pulsar
     class TonemapRenderFeature final : public RenderFeature
     {
     public:
-        explicit TonemapRenderFeature(const SPtr<ShaderConfig>& shaderConfig, guid_t shaderGuid)
+        explicit TonemapRenderFeature(const std::shared_ptr<ShaderProxy>& shaderProxy)
         {
             m_material = std::make_shared<MaterialProxy>();
-            m_material->UpdateShader(shaderConfig, shaderGuid, {}, ShaderPassRenderQueueType::Opaque, nullptr, nullptr);
+            m_material->UpdateShader(shaderProxy, {}, ShaderPassRenderQueueType::Opaque, nullptr, nullptr);
         }
 
         void OnRecord(RenderGraph& graph, RenderFrameData& frameData) override
@@ -58,11 +59,12 @@ namespace pulsar
     RenderFeatureFactory TonemapRenderFeatureSettings::BuildRenderFeatureFactory() const
     {
         auto shader = AssetManager::Get()->LoadAsset<Shader>("Pulsar/Shaders/Tonemap");
-        SPtr<ShaderConfig> shaderConfig = shader ? shader->GetConfig() : nullptr;
-        guid_t shaderGuid = shader ? shader->GetAssetGuid() : guid_t{};
-        return [shaderConfig, shaderGuid]() -> std::unique_ptr<RenderFeature>
+        if (shader)
+            shader->EnsureGPUResource();
+        auto shaderProxy = shader ? shader->GetRenderProxy() : nullptr;
+        return [shaderProxy]() -> std::unique_ptr<RenderFeature>
         {
-            return std::make_unique<TonemapRenderFeature>(shaderConfig, shaderGuid);
+            return std::make_unique<TonemapRenderFeature>(shaderProxy);
         };
     }
 }

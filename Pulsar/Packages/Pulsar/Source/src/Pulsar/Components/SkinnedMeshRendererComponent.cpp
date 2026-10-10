@@ -4,6 +4,9 @@
 #include "AssetManager.h"
 #include <Pulsar/Application.h>
 #include <Pulsar/Logger.h>
+#include <Pulsar/Rendering/MaterialProxy.h>
+#include <Pulsar/Rendering/MeshProxy.h>
+#include <Pulsar/Rendering/RenderThread.h>
 #include <Pulsar/Rendering/ShaderConfig.h>
 #include <gfx/GFXBuffer.h>
 #include <gfx/GFXResourceRegistry.h>
@@ -15,12 +18,35 @@ namespace pulsar
     // -----------------------------------------------------------------------
     static gfx::GFXDescriptorSetLayout_wp SkinnedMeshDescriptorSetLayout;
 
-    class SkinnedMeshRenderObject final : public rendering::RenderObject
+    namespace
+    {
+        // Game thread: resolve material assets to render proxies, falling back
+        // to the Error material for null / invalid entries.
+        array_list<std::shared_ptr<MaterialProxy>> ResolveMaterialProxies(const array_list<RCPtr<Material>>& materials)
+        {
+            array_list<std::shared_ptr<MaterialProxy>> result;
+            result.reserve(materials.size());
+            for (auto mat : materials)
+            {
+                if (!mat || !mat->GetShader() || !mat->EnsureGPUResource())
+                    mat = AssetManager::Get()->LoadAsset<Material>("Pulsar/Materials/Error");
+                if (!mat || !mat->GetShader() || !mat->EnsureGPUResource())
+                {
+                    result.push_back(nullptr); // no valid material even after fallback
+                    continue;
+                }
+                result.push_back(mat->GetRenderProxy());
+            }
+            return result;
+        }
+    }
+
+    class SkinnedMeshRenderObject final : public rendering::RenderObjectProxy
     {
     public:
         array_list<rendering::MeshBatch> m_batches;
-        RCPtr<SkinnedMesh>               m_skinnedMesh;
-        array_list<RCPtr<Material>>   m_materials;
+        std::shared_ptr<rendering::MeshProxy> m_meshProxy;
+        array_list<std::shared_ptr<MaterialProxy>> m_materialProxies;
         array_list<int32_t>           m_priorities;
 
         // set2 binding1: SkinnedRenderObjectData (BoneMatrices)
@@ -29,14 +55,14 @@ namespace pulsar
         gfx::GFXDescriptorSetPtr      m_descriptorSet;
         gfx::GFXDescriptorSetLayoutPtr m_descriptorSetLayout;
 
-        SkinnedMeshRenderObject* SetSkinnedMesh(RCPtr<SkinnedMesh> mesh)
+        SkinnedMeshRenderObject* SetMeshProxy(std::shared_ptr<rendering::MeshProxy> mesh)
         {
-            m_skinnedMesh = std::move(mesh);
+            m_meshProxy = std::move(mesh);
             return this;
         }
-        SkinnedMeshRenderObject* SetMaterials(const array_list<RCPtr<Material>>& mats, const array_list<int32_t>& priorities)
+        SkinnedMeshRenderObject* SetMaterialProxies(const array_list<std::shared_ptr<MaterialProxy>>& mats, const array_list<int32_t>& priorities)
         {
-            m_materials = mats;
+            m_materialProxies = mats;
             m_priorities = priorities;
             return this;
         }
@@ -55,8 +81,8 @@ namespace pulsar
         }
 
         void SubmitChange();
-        void OnCreateResource() override;
-        void OnDestroyResource() override
+        void OnEnterScene() override;
+        void OnLeaveScene() override
         {
             m_descriptorSet.reset();
             m_descriptorSetLayout.reset();
@@ -73,7 +99,7 @@ namespace pulsar
         std::string GetVariantFeature() const override { return "RENDERER_SKINNEDMESH"; }
     };
 
-    void SkinnedMeshRenderObject::OnCreateResource()
+    void SkinnedMeshRenderObject::OnEnterScene()
     {
         // set2 layout: binding1=SkinnedRenderObjectData
         if (SkinnedMeshDescriptorSetLayout.expired())
@@ -119,12 +145,15 @@ namespace pulsar
     void SkinnedMeshRenderObject::SubmitChange()
     {
         m_batches.clear();
-        if (!m_skinnedMesh) return;
+        if (!m_meshProxy) return;
 
-        for (int matIndex = 0; matIndex < (int)m_materials.size(); ++matIndex)
+        // This object only ever sees proxies; GPU resources were ensured by the
+        // component on the game thread.
+        const auto& vertBuffers = m_meshProxy->GetVertexBuffers();
+        const auto& indexBuffers = m_meshProxy->GetIndexBuffers();
+
+        for (int matIndex = 0; matIndex < (int)m_materialProxies.size(); ++matIndex)
         {
-            auto& slot = m_materials.at(matIndex);
-
             auto& batch = m_batches.emplace_back();
             batch.State.Topology  = gfx::GFXPrimitiveTopology::TriangleList;
             batch.State.VertexLayouts = {SkinnedMesh::StaticGetVertexLayout()};
@@ -133,39 +162,25 @@ namespace pulsar
             batch.Material        = nullptr;
             batch.Priority        = (matIndex < (int)m_priorities.size()) ? m_priorities.at(matIndex) : 0;
 
-            RCPtr<Material> mat = slot;
-            bool isInvalidMaterial = !mat
-                || !mat->GetShader()
-                || !mat->CreateGPUResource();
-            if (isInvalidMaterial)
+            auto& matProxy = m_materialProxies.at(matIndex);
+            if (!matProxy)
             {
-                mat = AssetManager::Get()->LoadAsset<Material>("Pulsar/Materials/Error");
-                if (mat) mat->CreateGPUResource();
-            }
-            if (!mat || !mat->GetShader())
-            {
+                // no valid material even after the component-side fallback
                 m_batches.pop_back();
                 continue;
             }
-
-            batch.Material = mat->GetRenderProxy();
+            batch.Material = matProxy;
 
             batch.VariantFeature      = GetVariantFeature();
             batch.RenderObjectIndex   = m_renderObjectIndex;
             batch.ExtraDescriptorSet  = m_descriptorSet;
             batch.DescriptorSetLayout = m_descriptorSetLayout;
 
-            if (!m_skinnedMesh->IsCreatedGPUResource())
-                m_skinnedMesh->CreateGPUResource();
-
-            auto vertBuffers    = m_skinnedMesh->GetGPUResourceVertexBuffers();
-            auto indicesBuffers = m_skinnedMesh->GetGPUResourceIndicesBuffers();
-
             if (matIndex < (int)vertBuffers.size())
             {
                 auto& element         = batch.Elements.emplace_back();
                 element.Vertex        = vertBuffers[matIndex];
-                element.Indices       = indicesBuffers[matIndex];
+                element.Indices       = indexBuffers[matIndex];
                 // PerRenderObject data is in global dynamic UBO
             }
         }
@@ -181,20 +196,16 @@ namespace pulsar
         init_sptr_member(m_priorities);
     }
 
-    SPtr<rendering::RenderProxy> SkinnedMeshRendererComponent::CreateRenderProxy()
+    SPtr<rendering::SceneProxy> SkinnedMeshRendererComponent::CreateSceneProxy()
     {
         auto ro = mksptr(new SkinnedMeshRenderObject());
         if (m_skinnedMesh)
         {
-            m_skinnedMesh->CreateGPUResource();
-            for (const auto& mat : *m_materials)
-            {
-                if (mat)
-                    mat->CreateGPUResource();
-            }
-            ro->SetSkinnedMesh(m_skinnedMesh)
-              ->SetMaterials(*m_materials, *m_priorities)
-              ->SubmitChange();
+            m_skinnedMesh->EnsureGPUResource();
+            ro->SetMeshProxy(m_skinnedMesh->GetMeshProxy())
+              ->SetMaterialProxies(ResolveMaterialProxies(*m_materials), *m_priorities);
+            // batches are built on the render thread (OnEnterScene -> SubmitChange),
+            // after the queued mesh-proxy Init has drained.
         }
         return ro;
     }
@@ -547,14 +558,37 @@ namespace pulsar
             OnMaterialChanged();
         }
         if (m_renderObject)
-            m_renderObject->SetSkinnedMesh(m_skinnedMesh)->SubmitChange();
+        {
+            std::shared_ptr<rendering::MeshProxy> meshProxy;
+            if (m_skinnedMesh)
+            {
+                m_skinnedMesh->EnsureGPUResource();
+                meshProxy = m_skinnedMesh->GetMeshProxy();
+            }
+            // FIFO: the mesh proxy Init queued by EnsureGPUResource runs first.
+            auto ro = m_renderObject;
+            Application::GetRenderThread()->EnqueueUpdate_AnyThread(
+                [ro, meshProxy = std::move(meshProxy)](gfx::GFXResourceRegistry*) mutable
+                {
+                    ro->SetMeshProxy(std::move(meshProxy))->SubmitChange();
+                });
+        }
         RebuildObserver();
     }
 
     void SkinnedMeshRendererComponent::OnMaterialChanged()
     {
         if (m_renderObject)
-            m_renderObject->SetMaterials(*m_materials, *m_priorities)->SubmitChange();
+        {
+            auto ro = m_renderObject;
+            auto materialProxies = ResolveMaterialProxies(*m_materials);
+            auto priorities = *m_priorities;
+            Application::GetRenderThread()->EnqueueUpdate_AnyThread(
+                [ro, materialProxies = std::move(materialProxies), priorities = std::move(priorities)](gfx::GFXResourceRegistry*) mutable
+                {
+                    ro->SetMaterialProxies(materialProxies, priorities)->SubmitChange();
+                });
+        }
         RebuildObserver();
     }
 

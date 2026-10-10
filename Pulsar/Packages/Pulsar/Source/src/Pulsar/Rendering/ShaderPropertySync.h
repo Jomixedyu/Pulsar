@@ -16,7 +16,7 @@ namespace pulsar
     {
     public:
         // 【游戏线程】将 Sheet 解析成渲染线程专用快照：纹理解析成 GPU 句柄
-        // （确保 CreateGPUResource 在游戏线程触发），常量拷贝成纯值。与 layout 无关。
+        // （确保 EnsureGPUResource 在游戏线程触发），常量拷贝成纯值。与 layout 无关。
         // 调用前请确保 sheet 已通过 ApplyShaderDefaults 填入默认值。
         static ShaderPropertyRenderData BuildRenderData(const ShaderPropertySheet& sheet);
 

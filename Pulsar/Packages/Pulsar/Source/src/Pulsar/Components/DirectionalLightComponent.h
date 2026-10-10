@@ -1,7 +1,7 @@
 #pragma once
 #include <Pulsar/IconsForkAwesome.h>
 #include "LightComponent.h"
-#include "Pulsar/Rendering/RenderObject.h"
+#include "Pulsar/Rendering/RenderObjectProxy.h"
 #include "Pulsar/Scene.h"
 
 namespace pulsar
@@ -16,7 +16,7 @@ namespace pulsar
 
 
     protected:
-        SPtr<rendering::RenderProxy> CreateRenderProxy() override;
+        SPtr<rendering::SceneProxy> CreateSceneProxy() override;
         void ResolveRenderStateDirty() override;
 
         void PostEditChange(FieldInfo* info) override;
@@ -25,7 +25,7 @@ namespace pulsar
         void OnLightColorChanged() override;
 
         void OnTransformChanged() override;
-        SPtr<rendering::RenderObject> m_gizmos;
+        SPtr<rendering::RenderObjectProxy> m_gizmos;
 
         Vector3f m_vector{};
     };

@@ -44,8 +44,7 @@ namespace pulsar
         if (!m_material)
             return {};
 
-        if (!m_material->IsCreatedGPUResource())
-            m_material->CreateGPUResource();
+        m_material->EnsureGPUResource();
 
         auto materialProxy = m_material->GetRenderProxy();
         if (!materialProxy)

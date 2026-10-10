@@ -2,6 +2,7 @@
 
 #include <gfx-vk/GFXVulkanBuffer.h>
 #include <gfx-vk/GFXVulkanApplication.h>
+#include <gfx-vk/GFXVulkanTransferQueue.h>
 #include <gfx-vk/GFXVulkanDescriptorSet.h>
 #include <gfx-vk/GFXVulkanFrameBufferObject.h>
 #include <gfx-vk/GFXVulkanGpuProgram.h>
@@ -22,25 +23,19 @@ namespace gfx
 
     GFXTexturePtr GFXVulkanResourceRegistry::CreateTexture2D(const GFXTextureCreateDesc& desc)
     {
-        return RegisterResource(new GFXVulkanTexture(this, desc));
-    }
-
-    GFXTexturePtr GFXVulkanResourceRegistry::CreateTexture2DFromMemory(
-        const uint8_t* imageData, size_t length,
-        int width, int height,
-        GFXTextureFormat format,
-        const GFXSamplerConfig& samplerConfig)
-    {
-        GFXTextureCreateDesc desc{};
-        desc.ImageData = imageData;
-        desc.DataLength = length;
-        desc.Width = width;
-        desc.Height = height;
-        desc.Depth = 1;
-        desc.Format = format;
-        desc.SamplerCfg = samplerConfig;
-        desc.DataType = GFXTextureDataType::Texture2D;
-        return CreateTexture2D(desc);
+        auto texture = RegisterResource(new GFXVulkanTexture(this, desc));
+        if (desc.TargetType != GFXTextureTargetType::None)
+        {
+            // Attachments start out in their final layout; queue ops go to the
+            // frame-head transfer flush, keeping creation queue-free.
+            auto* tex = static_cast<GFXVulkanTexture*>(texture.get());
+            m_app->GetTransferQueue()->PushRecord(
+                [tex](VkCommandBuffer cmd)
+                {
+                    tex->TransitionLayout(cmd, tex->GetVkTargetFinalLayout());
+                });
+        }
+        return texture;
     }
 
     GFXTexturePtr GFXVulkanResourceRegistry::CreateTextureCube(int32_t size)

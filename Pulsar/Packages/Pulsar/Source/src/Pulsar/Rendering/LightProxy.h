@@ -1,14 +1,14 @@
 #pragma once
 #include <Pulsar/EngineMath.h>
 #include "LightingData.h"
-#include "RenderProxy.h"
+#include "SceneProxy.h"
 
 namespace pulsar
 {
     // Render-thread mirror of a point/spot light. Holds a per-frame snapshot of the
     // game-side LightShaderParameter, written via the update queue on the game thread
     // and read on the render thread. One per PointLightComponent.
-    class PointLightProxy : public rendering::RenderProxy
+    class PointLightProxy : public rendering::SceneProxy
     {
     public:
         LightShaderParameter Param{};
@@ -16,7 +16,7 @@ namespace pulsar
 
     // Render-thread mirror of a directional light. The renderer picks the brightest
     // proxy among all registered directional lights. One per DirectionalLightComponent.
-    class DirectionalLightProxy : public rendering::RenderProxy
+    class DirectionalLightProxy : public rendering::SceneProxy
     {
     public:
         Vector3f Vector{};

@@ -333,8 +333,6 @@ namespace pulsared
 
             auto defines = BuildDefines(task);
 
-            auto program = std::make_shared<pulsar::ShaderProgramResource>();
-            program->m_key = task.m_variantKey;
             // 拼一个可读名字，方便断点调试时识别是哪个 shader variant
             {
                 std::string name = hlslAssetPath;
@@ -342,7 +340,7 @@ namespace pulsared
                     name += " [" + task.m_variantKey.m_passName;
                 if (!task.m_variantKey.m_passName.empty())
                     name += "]";
-                program->m_shaderName = std::move(name);
+                result.m_shaderName = std::move(name);
             }
 
             // 从 guid 解析 HLSL 物理路径
@@ -375,7 +373,8 @@ namespace pulsared
             // 计算缓存 hash（source + defines）
             auto cacheHash = ComputeCacheHash(hlslSource, defines);
 
-            auto gfxApp = pulsar::Application::GetGfxApp();
+            // GPU programs are not created on this worker thread; the SPIR-V is
+            // staged and materialized on the render thread (see GetGpuPrograms).
 
             // 使用 CompilePass 将 VS + PS 放入同一 TProgram 编译，
             // 通过 HlslBindingResolver 保证跨 stage binding 编号一致。
@@ -396,15 +395,15 @@ namespace pulsared
                 auto& spirv = passResult.vsSpirv;
                 WriteToDiskCache(cacheHash, "vs", spirv);
 
-                auto gpuProgram = gfxApp->GetResourceRegistry()->CreateGpuProgram(
-                    gfx::GFXGpuProgramStageFlags::Vertex,
-                    reinterpret_cast<const uint8_t*>(spirv.data()), spirv.size());
-                gpuProgram->SetEntryName(task.m_entries.m_vertex);
-                program->m_gpuPrograms.push_back(gpuProgram);
+                pulsar::ShaderStageData vsStage{};
+                vsStage.m_stage = gfx::GFXGpuProgramStageFlags::Vertex;
+                vsStage.m_entryName = task.m_entries.m_vertex;
+                vsStage.m_code.assign(spirv.begin(), spirv.end());
+                result.m_stages.push_back(std::move(vsStage));
 
                 // ReflectSpirvResources 只反射活跃变量，死绑定不会出现
                 auto reflected = psc::ReflectSpirvResources(spirv);
-                ExtractLayout(reflected, program->m_layout);
+                ExtractLayout(reflected, result.m_layout);
             }
 
             // PS SPIR-V — 创建 GpuProgram，并反射活跃资源合并入布局
@@ -413,19 +412,18 @@ namespace pulsared
                 auto& spirv = passResult.psSpirv;
                 WriteToDiskCache(cacheHash, "ps", spirv);
 
-                auto gpuProgram = gfxApp->GetResourceRegistry()->CreateGpuProgram(
-                    gfx::GFXGpuProgramStageFlags::Fragment,
-                    reinterpret_cast<const uint8_t*>(spirv.data()), spirv.size());
-                gpuProgram->SetEntryName(task.m_entries.m_fragment);
-                program->m_gpuPrograms.push_back(gpuProgram);
+                pulsar::ShaderStageData psStage{};
+                psStage.m_stage = gfx::GFXGpuProgramStageFlags::Fragment;
+                psStage.m_entryName = task.m_entries.m_fragment;
+                psStage.m_code.assign(spirv.begin(), spirv.end());
+                result.m_stages.push_back(std::move(psStage));
 
                 // ExtractLayout 内部有名字去重，VS+PS 共同活跃的资源只记录一次
                 auto reflected = psc::ReflectSpirvResources(spirv);
-                ExtractLayout(reflected, program->m_layout);
+                ExtractLayout(reflected, result.m_layout);
             }
 
             result.m_success = true;
-            result.m_program = program;
 
             pulsar::Logger::Log("Shader compiled successfully: " + hlslAssetPath);
         }

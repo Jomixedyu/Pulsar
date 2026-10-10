@@ -12,7 +12,7 @@
 #include "Shaders/ShaderHotReloadWatcher.h"
 #include "Utils/PrefabUtil.h"
 
-#include <Pulsar/Rendering/ShaderInstanceCache.h>
+#include <Pulsar/Rendering/ShaderProxy.h>
 #include <Pulsar/Rendering/DescriptorSetCache.h>
 #include <Pulsar/Rendering/RenderGraph/TransientRTPool.h>
 
@@ -46,6 +46,7 @@
 #include <PulsarEd/Windows/EditorWindowManager.h>
 #include <filesystem>
 #include <gfx/GFXRenderPipeline.h>
+#include <gfx/GFXImage.h>
 #include <random>
 #include <utility>
 
@@ -307,16 +308,35 @@ namespace pulsared
          return;
     }
 
-    static void _RegisterIcon(Type* type, string_view path)
+    // Icons are decoded once on the main thread and wrapped in a Texture2D
+    // asset; the pool owns its GPU lifecycle from there.
+    static pulsar::RCPtr<pulsar::Texture2D> _LoadIconTexture(string_view path)
     {
         auto icon = FileUtil::ReadAllBytes(AssetDatabase::PackagePathToPhysicsPath(path));
-        AssetDatabase::IconPool->Register(index_string(type->GetName()), icon.data(), icon.size());
+        if (icon.empty())
+            return {};
+
+        int32_t width = 0, height = 0, channel = 0;
+        auto rgba = gfx::LoadImageFromMemory(icon.data(), icon.size(), &width, &height, &channel, 4);
+        if (rgba.empty() || width <= 0 || height <= 0)
+            return {};
+
+        auto tex = pulsar::NewAssetObject<pulsar::Texture2D>();
+        tex->FromNativeData(rgba.data(), rgba.size(), false, width, height, 4);
+        tex->SetCompressedFormat(pulsar::TextureCompressionFormat::BitmapRGBA8);
+        return tex;
+    }
+
+    static void _RegisterIcon(Type* type, string_view path)
+    {
+        if (auto tex = _LoadIconTexture(path))
+            AssetDatabase::IconPool->Register(index_string(type->GetName()), tex);
     }
 
     static void _RegisterIcon(string_view name, string_view path)
     {
-        auto icon = FileUtil::ReadAllBytes(AssetDatabase::PackagePathToPhysicsPath(path));
-        AssetDatabase::IconPool->Register(index_string(name), icon.data(), icon.size());
+        if (auto tex = _LoadIconTexture(path))
+            AssetDatabase::IconPool->Register(index_string(name), tex);
     }
 
     static std::filesystem::path _SearchUpFolder(std::filesystem::path p)
@@ -391,11 +411,11 @@ namespace pulsared
                 return cast<pulsar::Shader>(AssetDatabase::LoadAssetAtPath(assetPath));
             };
 
-            pulsar::ShaderInstanceCache::Instance().Initialize(
+            pulsar::BuiltinShaderPrograms::Instance().Initialize_AnyThread(
                 LoadBuiltinShader("Pulsar/Shaders/Pending"),
                 LoadBuiltinShader("Pulsar/Shaders/Error"));
 
-            Logger::Log("ShaderInstanceCache initialized");
+            Logger::Log("BuiltinShaderPrograms initialized");
         }
 
 
@@ -470,7 +490,7 @@ namespace pulsared
         }
 
         // 先拆 World：移除所有 proxy / RenderScene，drain 渲染线程并等 GPU 空闲。
-        // 此时再无 renderobject 引用 ShaderInstance / 使用 TransientRT。
+        // 此时再无 renderobject 引用 ShaderProgramInstance / 使用 TransientRT。
         if (m_world)
         {
             m_world->OnWorldEnd();
@@ -481,7 +501,7 @@ namespace pulsared
         // World 拆完后清理：依赖顺序诚实。三者都需在 gfxApp->Terminate() 之前执行，
         // 否则 GpuProgram / descriptor set / RT 析构时 VkDevice 已无效。
         pulsar::DescriptorSetCache::Instance().Clear();
-        pulsar::ShaderInstanceCache::Instance().Clear();
+        pulsar::BuiltinShaderPrograms::Instance().Clear_AnyThread();
         pulsar::TransientRTPool::Shutdown();
 
         m_gui->Terminate();

@@ -1,8 +1,10 @@
 #include <PulsarEd/UIControls/ViewportFrame.h>
 
 #include "Pulsar/Components/CameraComponent.h"
+#include <Pulsar/Application.h>
 #include <Pulsar/ImGuiImpl.h>
 #include <Pulsar/Node.h>
+#include <Pulsar/Rendering/RenderThread.h>
 #include "EditorWorld.h"
 #include <ImGuiExt.h>
 #include <gfx/GFXResourceRegistry.h>
@@ -12,7 +14,7 @@ namespace pulsared
     ViewportFrame::~ViewportFrame() = default;
 
     // ret: viewport Size Changed
-    static bool PreviewFrame(World* world, bool isPreviewCam, Vector2f* viewportSize, gfx::GFXDescriptorSet* descriptorSet, bool forceResize = false)
+    static bool PreviewFrame(World* world, bool isPreviewCam, Vector2f* viewportSize, bool forceResize = false)
     {
         if (!world)
         {
@@ -58,20 +60,18 @@ namespace pulsared
             cam->ResizeManagedRenderTexture((int)viewportSize->x, (int)viewportSize->y);
         }
 
-        const auto descSet = descriptorSet;
+        auto rt = cam->GetRenderTexture();
+        uint64_t imgId = 0;
+        if (rt)
         {
-            auto desc = descSet->FindByBinding(0);
-            if (!desc)
-            {
-                desc = descSet->AddDescriptor("p", 0);
-            }
-            desc->SetTexture2D(cam->GetRenderTexture()->GetGfxColorTextureView()->GetTexture());
+            auto view = rt->GetGfxColorTextureView();
+            if (view && view->GetTexture())
+                imgId = view->GetTexture()->GetNativeViewHandle();
         }
+        if (!imgId)
+            return false;   // render texture not created on the render thread yet
 
-        descSet->Submit();
-
-        const auto imgId = descSet->GetId();
-        ImGui::Image((void*)imgId, ImVec2(contentSize.x, contentSize.y));
+        ImGui::Image((ImTextureID)imgId, ImVec2(contentSize.x, contentSize.y));
 
         return isResize;
     }
@@ -95,7 +95,7 @@ namespace pulsared
         m_lastViewportH = ImGui::GetContentRegionAvail().y;
         m_lastHasFocus = ImGui::IsWindowHovered() && ImGui::IsWindowFocused();
 
-        PreviewFrame(m_world, m_isPreviewCam, &m_viewportSize, m_descriptorSet.get(), m_newWorld);
+        PreviewFrame(m_world, m_isPreviewCam, &m_viewportSize, m_newWorld);
         m_newWorld = false;
         if (m_enableEdToolTick)
         {
@@ -108,17 +108,10 @@ namespace pulsared
 
     void ViewportFrame::Initialize()
     {
-        m_descriptorLayout = Application::GetGfxApp()->GetResourceRegistry()->GetOrCreateDescriptorSetLayout({gfx::GFXDescriptorLayoutDesc(
-            gfx::GFXDescriptorType::Texture2D,
-            gfx::GFXGpuProgramStageFlags::Fragment,
-            0)});
-        m_descriptorSet = m_descriptorLayout->AllocateSet();
     }
 
     void ViewportFrame::Terminate()
     {
-        m_descriptorSet.reset();
-        m_descriptorLayout.reset();
     }
 
 

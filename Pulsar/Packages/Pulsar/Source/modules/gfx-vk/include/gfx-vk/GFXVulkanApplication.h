@@ -20,6 +20,7 @@
 
 namespace gfx
 {
+    class GFXVulkanTexture;
 
     class GFXVulkanApplication : public GFXApplication
     {
@@ -39,7 +40,10 @@ namespace gfx
         virtual void Initialize() override;
         virtual void Terminate() override;
         virtual void WaitDeviceIdle() override;
-        virtual void RequestBufferUpload(GFXBuffer* dst, const void* data, size_t size, size_t dstOffset = 0) override;
+        // Batches a staging->device copy into the frame-head transfer flush.
+        // Used by backend resources (GFXVulkanBuffer::Update); not engine-facing.
+        void RequestBufferUpload(GFXBuffer* dst, const void* data, size_t size, size_t dstOffset = 0);
+        void RequestTextureUpload(GFXVulkanTexture* dst, const void* data, size_t size);
 
         virtual GFXApi GetApiType() const override { return GFXApi::Vulkan; }
         virtual const char* GetApiLevelName() const override { return "Vulkan 1.3"; }
@@ -85,7 +89,7 @@ namespace gfx
             return m_cmdPool;
         }
 
-        class GFXVulkanBufferUploadQueue* GetBufferUploadQueue() const
+        class GFXVulkanTransferQueue* GetTransferQueue() const
         {
             return m_uploadQueue;
         }
@@ -130,7 +134,7 @@ namespace gfx
 
         class GFXVulkanCommandBufferPool* m_cmdPool = nullptr;
 
-        class GFXVulkanBufferUploadQueue* m_uploadQueue = nullptr;
+        class GFXVulkanTransferQueue* m_uploadQueue = nullptr;
 
         GFXGraphicsPipelineManager* m_graphicsPipelineManager = nullptr;
 

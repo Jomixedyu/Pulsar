@@ -1,6 +1,6 @@
 #pragma once
 #include <Pulsar/Rendering/RenderGraph/RenderGraph.h>
-#include <Pulsar/Rendering/RenderObject.h>
+#include <Pulsar/Rendering/RenderObjectProxy.h>
 #include <gfx/GFXBuffer.h>
 #include <memory>
 
@@ -9,13 +9,13 @@ namespace gfx { class GFXTexture2DView; }
 namespace pulsar
 {
     class RenderScene;
-    class SceneView;
+    class SceneViewProxy;
     struct SceneViewData;
 
     struct SceneCaptureFrameData
     {
         const SceneViewData* view = nullptr;
-        SceneView* viewProxy = nullptr;
+        SceneViewProxy* viewProxy = nullptr;
         RenderScene* scene = nullptr;
         uint64_t frameIndex = 0;
     };
@@ -30,7 +30,7 @@ namespace pulsar
 
     struct SceneViewCullingFrameData
     {
-        std::shared_ptr<array_list<rendering::RenderObject_sp>> VisibleRenderers;
+        std::shared_ptr<array_list<rendering::RenderObjectProxy_sp>> VisibleRenderers;
     };
 
     struct SceneRenderTargetFrameData

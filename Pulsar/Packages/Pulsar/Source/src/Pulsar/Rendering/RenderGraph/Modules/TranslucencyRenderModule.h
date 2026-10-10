@@ -17,7 +17,7 @@ namespace pulsar
                                                RGTextureHandle input,
                                                RGTextureHandle output,
                                                const SceneCaptureFrameData& capture,
-                                               const std::shared_ptr<array_list<rendering::RenderObject_sp>>& visibleRenderers);
+                                               const std::shared_ptr<array_list<rendering::RenderObjectProxy_sp>>& visibleRenderers);
 
         RGTextureHandle m_hOpaqueColor;
         RGTextureHandle m_hOpaqueDepth;

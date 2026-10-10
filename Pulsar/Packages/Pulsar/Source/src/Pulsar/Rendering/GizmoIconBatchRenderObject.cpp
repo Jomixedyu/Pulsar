@@ -2,6 +2,8 @@
 
 #include "Application.h"
 #include "Assets/StaticMesh.h"
+#include <Pulsar/Rendering/MaterialProxy.h>
+#include <Pulsar/Rendering/MeshProxy.h>
 #include <gfx/GFXApplication.h>
 #include <gfx/GFXResourceRegistry.h>
 
@@ -9,7 +11,7 @@ namespace pulsar
 {
     static gfx::GFXDescriptorSetLayout_wp s_sharedLayout{};
 
-    void GizmoIconBatchRenderObject::SetMesh(const RCPtr<StaticMesh>& mesh)
+    void GizmoIconBatchRenderObject::SetMesh(const std::shared_ptr<rendering::MeshProxy>& mesh)
     {
         m_mesh = mesh;
         m_dirty = true;
@@ -21,7 +23,7 @@ namespace pulsar
         m_dirty = true;
     }
 
-    void GizmoIconBatchRenderObject::OnCreateResource()
+    void GizmoIconBatchRenderObject::OnEnterScene()
     {
         if (m_pPerRenderObjectDataManager)
             m_dummyExtraSet = m_pPerRenderObjectDataManager->GetDummyExtraSet();
@@ -39,7 +41,7 @@ namespace pulsar
         m_dirty = true;
     }
 
-    void GizmoIconBatchRenderObject::OnDestroyResource()
+    void GizmoIconBatchRenderObject::OnLeaveScene()
     {
         if (m_pPerRenderObjectDataManager)
         {
@@ -62,16 +64,12 @@ namespace pulsar
             return;
         }
 
-        if (!m_mesh->IsCreatedGPUResource())
-            m_mesh->CreateGPUResource();
-
-        auto vertBuffers = m_mesh->GetGPUResourceVertexBuffers();
-        auto indicesBuffers = m_mesh->GetGPUResourceIndicesBuffers();
+        // The mesh proxy is prepared by the owner (game thread); this object
+        // only ever reads it.
+        const auto& vertBuffers = m_mesh->GetVertexBuffers();
+        const auto& indicesBuffers = m_mesh->GetIndexBuffers();
         if (vertBuffers.empty())
-        {
-            m_dirty = false;
-            return;
-        }
+            return;   // mesh proxy not initialized yet; stay dirty and retry next frame
 
         if (!m_pPerRenderObjectDataManager)
         {
@@ -123,10 +121,7 @@ namespace pulsar
 
         for (size_t i = 0; i < m_batches.size() && i < m_items.size(); ++i)
         {
-            auto& mat = m_items[i].Material;
-            if (mat && !mat->IsCreatedGPUResource())
-                mat->CreateGPUResource();
-            m_batches[i].Material = mat ? mat->GetRenderProxy() : nullptr;
+            m_batches[i].Material = m_items[i].MaterialProxy;
         }
         return m_batches;
     }

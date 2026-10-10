@@ -1,6 +1,6 @@
 #include "ViewPipeline.h"
 #include "SceneCaptureFrameData.h"
-#include <Pulsar/Rendering/SceneView.h>
+#include <Pulsar/Rendering/SceneViewProxy.h>
 #include <Pulsar/Rendering/RenderScene.h>
 #include <Pulsar/Rendering/LightProxy.h>
 #include <gfx/TextureClasses.h>
@@ -9,7 +9,7 @@
 
 namespace pulsar
 {
-    static bool IsRendererVisible(const rendering::RenderObject& renderer, const SceneViewData& view)
+    static bool IsRendererVisible(const rendering::RenderObjectProxy& renderer, const SceneViewData& view)
     {
         if (!renderer.HasBounds())
             return true;
@@ -37,7 +37,7 @@ namespace pulsar
 
     static SceneViewCullingFrameData CullRenderers(const RenderScene& scene, const SceneViewData& view)
     {
-        auto renderers = std::make_shared<array_list<rendering::RenderObject_sp>>();
+        auto renderers = std::make_shared<array_list<rendering::RenderObjectProxy_sp>>();
         renderers->reserve(scene.GetRenderObjects().size());
         for (const auto& renderer : scene.GetRenderObjects())
         {
@@ -120,9 +120,16 @@ namespace pulsar
         if (!camRenderTexture.IsValid())
             return;
 
+        // Resolve the proxy's current GPU objects here (render thread): the proxy
+        // initializes/rebuilds asynchronously, so never cache these.
+        auto rtAttachments = camRenderTexture.Proxy->GetFramebufferAttachments();
+        auto rtFramebuffer = camRenderTexture.Proxy->GetFrameBufferObject();
+        const int32_t rtWidth = camRenderTexture.GetWidth();
+        const int32_t rtHeight = camRenderTexture.GetHeight();
+
         RGTextureHandle hFinal = graph.ImportTexture("FinalOutput",
-            camRenderTexture.Width, camRenderTexture.Height,
-            camRenderTexture.Attachments, camRenderTexture.Framebuffer);
+            rtWidth, rtHeight,
+            rtAttachments, rtFramebuffer);
 
         uint32_t msaaSamples = std::max(1u, view->MSAASamples);
 
@@ -131,10 +138,10 @@ namespace pulsar
         if (msaaSamples > 1)
         {
             RGTextureDesc msDesc{};
-            msDesc.Width = camRenderTexture.Width;
-            msDesc.Height = camRenderTexture.Height;
+            msDesc.Width = rtWidth;
+            msDesc.Height = rtHeight;
             msDesc.SampleCount = msaaSamples;
-            for (auto& rt : camRenderTexture.Attachments)
+            for (auto& rt : rtAttachments)
             {
                 bool isTransient = (rt->GetTargetType() == gfx::GFXTextureTargetType::ColorTarget);
                 msDesc.TargetInfos.push_back({ rt->GetTargetType(), rt->GetFormat(), msaaSamples, isTransient });
@@ -154,8 +161,8 @@ namespace pulsar
         frameData.Set(CullRenderers(*scene, *view));
 
         RGTextureDesc pingPongDesc{};
-        pingPongDesc.Width = camRenderTexture.Width;
-        pingPongDesc.Height = camRenderTexture.Height;
+        pingPongDesc.Width = rtWidth;
+        pingPongDesc.Height = rtHeight;
         pingPongDesc.TargetInfos.push_back({ gfx::GFXTextureTargetType::ColorTarget, gfx::GFXTextureFormat::R16G16B16A16_SFloat });
 
         auto hPostProcessA = graph.CreateTransient("PostProcessPingPongA", pingPongDesc);

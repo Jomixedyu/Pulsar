@@ -19,7 +19,7 @@ namespace pulsar
                                            RGTextureHandle input,
                                            RGTextureHandle output,
                                            const SceneCaptureFrameData& capture,
-                                           const std::shared_ptr<array_list<rendering::RenderObject_sp>>& visibleRenderers);
+                                           const std::shared_ptr<array_list<rendering::RenderObjectProxy_sp>>& visibleRenderers);
 
         gfx::GFXTexture2DView* m_resolveTargetView = nullptr;
     };

@@ -20,8 +20,6 @@ namespace gfx
 
     struct GFXTextureCreateDesc
     {
-        const uint8_t* ImageData{};
-        size_t DataLength{};
         int32_t Width{};
         int32_t Height{};
         int32_t Depth{1};
@@ -64,6 +62,10 @@ namespace gfx
         // dx12 would be a SRV descriptor handle). Usable e.g. as imgui's ImTextureID
         // with the push-descriptor backend path. 0 when the backend has no such handle.
         virtual uint64_t GetNativeViewHandle() const { return 0; }
+
+        // Upload initial/new content. Implementation is backend-specific
+        // (staged transfer, unified-memory write, ...); callers never see the queue.
+        virtual void UpdateTexture(const GFXTextureUpdateDesc& desc) = 0;
 
         std::array<float, 4>& GetTargetClearColor() { return m_targetClearColor; }
         const std::array<float, 4>& GetTargetClearColor() const { return m_targetClearColor; }

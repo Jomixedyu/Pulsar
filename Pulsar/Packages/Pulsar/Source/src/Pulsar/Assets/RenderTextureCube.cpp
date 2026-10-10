@@ -12,7 +12,7 @@ namespace pulsar
     {
     }
 
-    bool RenderTextureCube::CreateGPUResource()
+    bool RenderTextureCube::EnsureGPUResource()
     {
         if (m_isCreated)
         {
@@ -21,13 +21,14 @@ namespace pulsar
         auto* renderThread = Application::GetRenderThread();
 
         gfx::GFXSamplerConfig sampler{};
-        m_proxy = std::make_shared<rendering::TextureProxy>(m_width, sampler);
+        m_proxy = std::make_shared<rendering::TextureProxy>();
 
         auto proxy = m_proxy;
+        const int32_t size = m_width;
         renderThread->EnqueueUpdate_AnyThread(
-            [proxy = std::move(proxy)](gfx::GFXResourceRegistry*)
+            [proxy = std::move(proxy), size, sampler](gfx::GFXResourceRegistry*)
             {
-                proxy->OnCreateResource();
+                proxy->InitCube(size, sampler);
             });
 
         m_isCreated = true;
@@ -46,7 +47,7 @@ namespace pulsar
             Application::GetRenderThread()->EnqueueDestroy_AnyThread(
                 [proxy = std::move(proxy)](gfx::GFXResourceRegistry*)
                 {
-                    proxy->OnDestroyResource();
+                    proxy->Release();
                 });
         }
     }
@@ -80,6 +81,6 @@ namespace pulsar
     {
         m_width = width;
         DestroyGPUResource();
-        CreateGPUResource();
+        EnsureGPUResource();
     }
 } // namespace pulsar

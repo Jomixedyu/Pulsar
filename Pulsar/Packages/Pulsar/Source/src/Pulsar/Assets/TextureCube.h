@@ -14,7 +14,7 @@ namespace pulsar
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::TextureCube, Texture);
 
     public:
-        bool CreateGPUResource() override;
+        bool EnsureGPUResource() override;
         void DestroyGPUResource() override;
         bool IsCreatedGPUResource() const override { return m_isCreatedGPUResource; }
         gfx::GFXTexturePtr GetGfxTexture() const override;

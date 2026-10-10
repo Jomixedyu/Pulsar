@@ -6,21 +6,11 @@
 
 namespace pulsar::rendering
 {
-    RenderTextureProxy::RenderTextureProxy(int32_t width, int32_t height, uint32_t sampleCount,
-                                           RenderTextureColorFormat colorFormat,
-                                           RenderTextureDepthFormat depthFormat)
-        : m_width(width)
-        , m_height(height)
-        , m_sampleCount(sampleCount)
-        , m_colorFormat(colorFormat)
-        , m_depthFormat(depthFormat)
+    void RenderTextureProxy::Init(int32_t width, int32_t height, uint32_t sampleCount,
+                                  RenderTextureColorFormat colorFormat,
+                                  RenderTextureDepthFormat depthFormat)
     {
-    }
-
-    void RenderTextureProxy::OnCreateResource()
-    {
-        if (m_created)
-            return;
+        Release();
 
         auto gfxApp = Application::GetGfxApp();
         auto* registry = gfxApp ? gfxApp->GetResourceRegistry() : nullptr;
@@ -31,67 +21,41 @@ namespace pulsar::rendering
         samplerCfg.Filter = gfx::GFXSamplerFilter::Linear;
         samplerCfg.AddressMode = gfx::GFXSamplerAddressMode::ClampToEdge;
 
+        m_colorTexture = registry->CreateRenderTarget(
+            width, height, gfx::GFXTextureTargetType::ColorTarget,
+            RenderTexture::ToGFXFormat(colorFormat), samplerCfg, sampleCount, false);
+
+        if (depthFormat != RenderTextureDepthFormat::None)
         {
-            gfx::GFXTextureCreateDesc desc{};
-            desc.Width = m_width;
-            desc.Height = m_height;
-            desc.TargetType = gfx::GFXTextureTargetType::ColorTarget;
-            desc.Format = RenderTexture::ToGFXFormat(m_colorFormat);
-            desc.SamplerCfg = samplerCfg;
-            desc.SampleCount = m_sampleCount;
-            desc.IsTransientAttachment = false;
-
-            m_colorTexture = registry->CreateRenderTarget(
-                m_width, m_height, gfx::GFXTextureTargetType::ColorTarget,
-                desc.Format, samplerCfg, m_sampleCount, false);
-        }
-
-        if (m_depthFormat != RenderTextureDepthFormat::None)
-        {
-            bool isDepthStencil = (m_depthFormat == RenderTextureDepthFormat::D32_SFloat_S8_UInt ||
-                                   m_depthFormat == RenderTextureDepthFormat::D24_UNorm_S8_UInt);
-
-            gfx::GFXTextureCreateDesc desc{};
-            desc.Width = m_width;
-            desc.Height = m_height;
-            desc.TargetType = isDepthStencil ? gfx::GFXTextureTargetType::DepthStencilTarget
-                                             : gfx::GFXTextureTargetType::DepthTarget;
-            desc.Format = RenderTexture::ToGFXFormat(m_depthFormat);
-            desc.SamplerCfg = samplerCfg;
-            desc.SampleCount = m_sampleCount;
-            desc.IsTransientAttachment = false;
+            bool isDepthStencil = (depthFormat == RenderTextureDepthFormat::D32_SFloat_S8_UInt ||
+                                   depthFormat == RenderTextureDepthFormat::D24_UNorm_S8_UInt);
 
             m_depthTexture = registry->CreateRenderTarget(
-                m_width, m_height, desc.TargetType,
-                desc.Format, samplerCfg, m_sampleCount, false);
+                width, height,
+                isDepthStencil ? gfx::GFXTextureTargetType::DepthStencilTarget
+                               : gfx::GFXTextureTargetType::DepthTarget,
+                RenderTexture::ToGFXFormat(depthFormat), samplerCfg, sampleCount, false);
         }
 
         std::vector<gfx::GFXTexture2DViewPtr> views;
         views.reserve(m_depthTexture ? 2 : 1);
-
         if (m_colorTexture)
             views.push_back(m_colorTexture->Get2DView(0));
-
         if (m_depthTexture)
             views.push_back(m_depthTexture->Get2DView(0));
 
         m_framebuffer = registry->CreateFrameBufferObject(views);
-        m_created = true;
+        m_initialized = true;
     }
 
-    void RenderTextureProxy::OnDestroyResource()
+    void RenderTextureProxy::Release()
     {
-        if (!m_created)
-            return;
-
-        if (m_framebuffer)
-        {
-            m_framebuffer.reset();
-        }
-
+        // Member resets only; the registry defers the actual GPU destruction.
+        // Safe from any thread (also runs from the destructor).
+        m_framebuffer.reset();
         m_depthTexture.reset();
         m_colorTexture.reset();
-        m_created = false;
+        m_initialized = false;
     }
 
     gfx::GFXTexture2DViewPtr RenderTextureProxy::GetColorTextureView() const

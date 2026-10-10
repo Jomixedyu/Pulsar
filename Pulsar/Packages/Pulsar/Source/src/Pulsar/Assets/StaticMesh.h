@@ -9,6 +9,7 @@
 namespace pulsar
 {
     class Texture2D;
+    namespace rendering { class MeshProxy; }
 
     using MeshIndicesType = uint32_t;
 
@@ -68,18 +69,17 @@ namespace pulsar
 
         BoxSphereBounds3f GetBounds() const { return m_bounds; }
     public:
-        bool CreateGPUResource() override;
+        bool EnsureGPUResource() override;
         void DestroyGPUResource() override;
         bool IsCreatedGPUResource() const override;
-        const array_list<gfx::GFXBufferPtr>& GetGPUResourceVertexBuffers() const { return m_vertexBuffers; }
-        const array_list<gfx::GFXBufferPtr>& GetGPUResourceIndicesBuffers() const { return m_indicesBuffers; }
+        // Render-side buffers live behind the proxy; usable right after EnsureGPUResource().
+        std::shared_ptr<rendering::MeshProxy> GetMeshProxy() const { return m_proxy; }
     protected: // serialization data
         array_list<StaticMeshSection> m_sections;
         array_list<string> m_materialNames;
     protected: // runtime data
         bool m_isCreatedResource = false;
-        array_list<gfx::GFXBufferPtr> m_vertexBuffers;
-        array_list<gfx::GFXBufferPtr> m_indicesBuffers;
+        std::shared_ptr<rendering::MeshProxy> m_proxy;
 
         BoxSphereBounds3f m_bounds{};
     };

@@ -1,7 +1,6 @@
 #include "ShaderHotReloadWatcher.h"
 
 #include <PulsarEd/AssetDatabase.h>
-#include <Pulsar/Rendering/ShaderInstanceCache.h>
 #include <Pulsar/Assets/Shader.h>
 #include <Pulsar/AssetObject.h>
 #include <Pulsar/ObjectBase.h>
@@ -33,23 +32,6 @@ namespace pulsared
             m_elapsedSinceLastScan = 0.0f;
             ScanForChanges();
         }
-    }
-
-    static bool IsHlslFile(const std::filesystem::path& path)
-    {
-        auto filename = path.filename().string();
-        std::transform(filename.begin(), filename.end(), filename.begin(), ::tolower);
-        // Exclude .inc.hlsl include files — they are not standalone shader assets
-        if (filename.ends_with(".inc.hlsl"))
-            return false;
-        auto ext = path.extension().string();
-        std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-        return ext == ".hlsl";
-    }
-
-    static bool IsShaderSourceFile(const std::filesystem::path& path)
-    {
-        return IsHlslFile(path);
     }
 
     static bool IsPaFile(const std::filesystem::path& path)
@@ -91,6 +73,7 @@ namespace pulsared
 
         std::vector<fs::path> changedHlsl;
         std::vector<fs::path> changedPa;
+        bool includeChanged = false;
 
         for (const auto& package : AssetDatabase::GetPackageInfos())
         {
@@ -127,7 +110,9 @@ namespace pulsared
                         it->second = lastWrite;
                         auto filename = path.filename().string();
                         std::transform(filename.begin(), filename.end(), filename.begin(), ::tolower);
-                        if (filename.ends_with(".hlsl"))
+                        if (filename.ends_with(".inc.hlsl"))
+                            includeChanged = true;
+                        else if (filename.ends_with(".hlsl"))
                             changedHlsl.push_back(path);
                         else if (IsPaFile(path))
                             changedPa.push_back(path);
@@ -164,17 +149,22 @@ namespace pulsared
                 pulsar::Logger::Log("Failed to find .pmeta for shader: " + path.string(), pulsar::LogLevel::Warning);
             }
         }
+
+        // .inc.hlsl include files are shared; without dependency tracking, reload everything.
+        if (includeChanged)
+            ReloadAllShaders();
     }
 
     void ShaderHotReloadWatcher::ReloadShader(const jxcorlib::guid_t& guid)
     {
-        // 1. 从 ShaderInstanceCache 中清除该 shader 的所有 variant
-        pulsar::ShaderInstanceCache::Instance().InvalidateShader(guid);
-
         // 2. 通知所有引用该 shader 的 Material 清理 binding
         auto shader = pulsar::RuntimeAssetManager::GetLoadedAssetByGuid<pulsar::Shader>(guid);
         if (shader)
         {
+            // Source changed: drop variants so they recompile (config may be
+            // identical; a .pa reload marks the config dirty, pushed on next EnsureGPUResource).
+            shader->ReloadSceneProxy();
+
             pulsar::RuntimeObjectManager::NotifyDependencySource(
                 shader->GetObjectHandle(), pulsar::DependencyObjectState::Modified);
             pulsar::Logger::Log("Shader hot-reload triggered: " + shader->GetName());
@@ -183,8 +173,6 @@ namespace pulsared
 
     void ShaderHotReloadWatcher::ReloadAllShaders()
     {
-        pulsar::ShaderInstanceCache::Instance().Clear();
-
         // 通知所有已加载的 Shader 发送 Modified 消息，触发所有 Material 清理 binding
         pulsar::RuntimeObjectManager::ForEachObject([](const pulsar::RuntimeObjectInfo& info)
         {
@@ -192,6 +180,7 @@ namespace pulsared
                 return;
             if (auto shader = ptr_cast<pulsar::Shader>(info.Pointer))
             {
+                shader->ReloadSceneProxy();
                 pulsar::RuntimeObjectManager::NotifyDependencySource(
                     shader->GetObjectHandle(), pulsar::DependencyObjectState::Modified);
             }
@@ -233,6 +222,7 @@ namespace pulsared
 
             auto serializer = pulsar::AssetSerializer{objser, pbaPath, false, true};
             shader->Serialize(&serializer);
+            shader->EnsureGPUResource(); // re-sync the render proxy (created on demand if unused)
 
             pulsar::Logger::Log("Shader asset data reloaded: " + paPath.string());
         }

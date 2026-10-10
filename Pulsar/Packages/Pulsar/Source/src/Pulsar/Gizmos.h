@@ -3,7 +3,7 @@
 #include "ObjectBase.h"
 #include "Rendering/LineRenderObject.h"
 #include "Rendering/PrimitiveStruct.h"
-#include "Rendering/RenderObject.h"
+#include "Rendering/RenderObjectProxy.h"
 #include <Pulsar/Assets/Material.h>
 
 namespace pulsar
@@ -81,6 +81,10 @@ namespace pulsar
             std::erase(m_gizmoComponents, component);
         }
 
+
+        // Loads gizmo assets (plane mesh, billboard shader) and registers the
+        // icon batch render object. Called once from World::OnWorldBegin.
+        void Initialize();
 
         void Draw();
 

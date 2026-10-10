@@ -1,4 +1,4 @@
-#include "Rendering/SceneView.h"
+#include "Rendering/SceneViewProxy.h"
 #include "Rendering/RenderGraph/Pipelines/ViewPipeline.h"
 
 #include <Pulsar/Application.h>
@@ -6,22 +6,22 @@
 
 namespace pulsar
 {
-    SceneView::SceneView() = default;
-    SceneView::~SceneView() = default;
+    SceneViewProxy::SceneViewProxy() = default;
+    SceneViewProxy::~SceneViewProxy() = default;
 
-    void SceneView::OnCreateResource()
+    void SceneViewProxy::OnEnterScene()
     {
         Pipeline = std::make_unique<ViewPipeline>();
         Pipeline->OnCreateResource(Data.ViewPipeline);
     }
 
-    void SceneView::OnDestroyResource()
+    void SceneViewProxy::OnLeaveScene()
     {
         Pipeline.reset();
         m_cameraBuffer.reset();
     }
 
-    void SceneView::UploadCamera(const PerPassCameraData& data)
+    void SceneViewProxy::UploadCamera(const PerPassCameraData& data)
     {
         if (!m_cameraBuffer)
         {
@@ -35,12 +35,12 @@ namespace pulsar
             m_cameraBuffer->Update(&data);
     }
 
-    gfx::GFXBuffer* SceneView::GetCameraBuffer() const
+    gfx::GFXBuffer* SceneViewProxy::GetCameraBuffer() const
     {
         return m_cameraBuffer.get();
     }
 
-    void SceneView::SetData(SceneViewData data)
+    void SceneViewProxy::SetData(SceneViewData data)
     {
         Data = std::move(data);
         if (!Pipeline)

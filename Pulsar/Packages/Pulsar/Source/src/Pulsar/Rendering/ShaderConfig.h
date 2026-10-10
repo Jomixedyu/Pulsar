@@ -174,6 +174,11 @@ namespace pulsar
         List_sp<SPtr<ShaderConfigProperty>> Properties;
 
         SPtr<ShaderConfigPass> FindPass(const string& name) const;
+
+        // Deep copy (via reflection serialization). Use it whenever config data
+        // crosses to another thread/owner: ShaderConfig is mutable in the editor,
+        // so sharing the live SPtr would leak in-place edits across threads.
+        SPtr<ShaderConfig> Clone() const;
     };
     CORELIB_DECL_SHORTSPTR(ShaderConfig);
 

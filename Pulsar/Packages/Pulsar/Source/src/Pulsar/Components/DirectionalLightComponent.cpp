@@ -60,7 +60,7 @@ namespace pulsar
         m_gizmos.reset();
     }
 
-    SPtr<rendering::RenderProxy> DirectionalLightComponent::CreateRenderProxy()
+    SPtr<rendering::SceneProxy> DirectionalLightComponent::CreateSceneProxy()
     {
         return mksptr(new DirectionalLightProxy());
     }

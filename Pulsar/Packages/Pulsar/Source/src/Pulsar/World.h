@@ -3,7 +3,7 @@
 #include "CameraManager.h"
 #include "Components/Component.h"
 #include "ObjectBase.h"
-#include "Rendering/RenderObject.h"
+#include "Rendering/RenderObjectProxy.h"
 #include "Rendering/RenderScene.h"
 #include "Rendering/RenderGraph/Pipelines/ViewPipelineRenderData.h"
 #include "SceneCaptureManager.h"
@@ -106,18 +106,18 @@ namespace pulsar
 
         // Raw render objects without an owning RenderComponent (gizmos, editor grids,
         // light gizmos). Enqueued straight to the render thread.
-        void            AddRenderObject(const rendering::RenderObject_sp& ro);
-        void            RemoveRenderObject(const rendering::RenderObject_sp& ro);
+        void            AddRenderObject(const rendering::RenderObjectProxy_sp& ro);
+        void            RemoveRenderObject(const rendering::RenderObjectProxy_sp& ro);
 
-        // Component-owned proxies. RegisterProxy creates the RenderProxy from the
-        // component (RenderComponent::CreateRenderProxy), stores it on the component,
+        // Component-owned proxies. RegisterProxy creates the SceneProxy from the
+        // component (RenderComponent::CreateSceneProxy), stores it on the component,
         // and adds it to the render scene. UnregisterProxy removes + drops it.
         void            RegisterProxy(RenderComponent* comp);
         void            UnregisterProxy(RenderComponent* comp);
 
         // Per-view snapshot update. The caller passes the target view proxy directly
         // (the component caches it); the render thread writes Data with no lookup. Enqueued.
-        void            UpdateSceneView(const SPtr<SceneView>& view, SceneViewData data);
+        void            UpdateSceneView(const SPtr<SceneViewProxy>& view, SceneViewData data);
 
 
         // Per-frame dirty extraction. Components mark themselves dirty when render state

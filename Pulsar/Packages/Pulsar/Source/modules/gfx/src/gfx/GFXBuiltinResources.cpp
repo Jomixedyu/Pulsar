@@ -18,6 +18,7 @@ namespace gfx
         bufferDesc.ElementSize = 1;
         m_zeroBuffer = registry->CreateBuffer(bufferDesc);
 
+        // Device-local: the backend batches the zero fill into the frame-head flush.
         std::vector<uint8_t> zeros(ZeroBufferSize, 0);
         m_zeroBuffer->Update(zeros.data());
 
@@ -30,8 +31,15 @@ namespace gfx
         sampler.Filter = GFXSamplerFilter::Linear;
         sampler.AddressMode = GFXSamplerAddressMode::Repeat;
 
-        m_black2D = registry->CreateTexture2DFromMemory(
-            black, sizeof(black), 2, 2, GFXTextureFormat::R8G8B8A8_UNorm, sampler);
+        GFXTextureCreateDesc blackDesc{};
+        blackDesc.Width = 2;
+        blackDesc.Height = 2;
+        blackDesc.Depth = 1;
+        blackDesc.Format = GFXTextureFormat::R8G8B8A8_UNorm;
+        blackDesc.SamplerCfg = sampler;
+        blackDesc.DataType = GFXTextureDataType::Texture2D;
+        m_black2D = registry->CreateTexture2D(blackDesc);
+        m_black2D->UpdateTexture({ black, sizeof(black) });
         m_black2DView = m_black2D->Get2DView(0);
 
         // Default sampler used when a texture is sampled but no sampler reflected.

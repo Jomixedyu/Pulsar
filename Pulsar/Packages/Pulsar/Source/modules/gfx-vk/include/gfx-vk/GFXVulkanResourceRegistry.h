@@ -13,11 +13,6 @@ namespace gfx
 
         GFXBufferPtr CreateBuffer(const GFXBufferDesc& desc) override;
         GFXTexturePtr CreateTexture2D(const GFXTextureCreateDesc& desc) override;
-        GFXTexturePtr CreateTexture2DFromMemory(
-            const uint8_t* imageData, size_t length,
-            int width, int height,
-            GFXTextureFormat format,
-            const GFXSamplerConfig& samplerConfig) override;
         GFXTexturePtr CreateTextureCube(int32_t size) override;
         GFXTexturePtr CreateRenderTarget(
             int32_t width, int32_t height, GFXTextureTargetType type,

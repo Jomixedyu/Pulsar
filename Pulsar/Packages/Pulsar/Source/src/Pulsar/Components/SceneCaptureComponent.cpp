@@ -2,7 +2,7 @@
 #include "World.h"
 #include <Pulsar/AssetManager.h>
 #include <Pulsar/BuiltinAsset.h>
-#include <Pulsar/Rendering/SceneView.h>
+#include <Pulsar/Rendering/SceneViewProxy.h>
 #include <Pulsar/Subsystems/PostProcessSubsystem.h>
 
 
@@ -47,11 +47,11 @@ namespace pulsar
         MarkRenderStateDirty();
     }
 
-    SPtr<rendering::RenderProxy> SceneCaptureComponent::CreateRenderProxy()
+    SPtr<rendering::SceneProxy> SceneCaptureComponent::CreateSceneProxy()
     {
         BuildViewPipelineRenderData(m_viewPipelineSettings, m_sceneViewData.ViewPipeline);
 
-        auto view = mksptr(new SceneView());
+        auto view = mksptr(new SceneViewProxy());
         m_sceneView = view;
         return view;
     }

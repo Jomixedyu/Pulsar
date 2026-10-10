@@ -4,7 +4,7 @@
 #include "Logger.h"
 #include "Scene.h"
 #include "Assets/StaticMesh.h"
-#include "Rendering/SceneView.h"
+#include "Rendering/SceneViewProxy.h"
 #include <Pulsar/AppInstance.h>
 #include <Pulsar/Application.h>
 #include <Pulsar/Node.h>
@@ -137,7 +137,7 @@ namespace pulsar
         rt->m_height = height;
         rt->m_colorFormat = RenderTextureColorFormat::RGBA8_UNorm;
         rt->m_depthFormat = RenderTextureDepthFormat::D32_SFloat_S8_UInt;
-        rt->CreateGPUResource();
+        rt->EnsureGPUResource();
         m_renderTarget = rt;
 
 
@@ -209,10 +209,6 @@ namespace pulsar
     {
         if (m_isBegun && m_renderTarget)
         {
-            auto& refData = m_renderTarget->GetGfxFrameBufferObject()->RefData;
-            refData.clear();
-            refData.push_back(m_cameraDescriptorSet);
-
             UpdateCBuffer();
         }
     }
@@ -241,8 +237,6 @@ namespace pulsar
         {
             DestroyObject(m_renderTarget);
         }
-        m_camDescriptorLayout.reset();
-        m_cameraDescriptorSet.reset();
     }
 
     void CameraComponent::OnTransformChanged()

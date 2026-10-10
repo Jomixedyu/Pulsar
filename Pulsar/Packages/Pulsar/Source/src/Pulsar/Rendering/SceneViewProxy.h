@@ -1,8 +1,9 @@
 #pragma once
 #include <Pulsar/EngineMath.h>
 #include <Pulsar/Subsystems/VolumeStack.h>
-#include "RenderProxy.h"
+#include "SceneProxy.h"
 #include "PerPassData.h"
+#include "RenderTextureProxy.h"
 #include "RenderGraph/Pipelines/ViewPipelineRenderData.h"
 #include <gfx/GFXTexture.h>
 #include <gfx/GFXFrameBufferObject.h>
@@ -13,21 +14,19 @@ namespace pulsar
 {
     class ViewPipeline;
 
-    // GFX resource bundle for a view's render target, resolved on the game thread from
-    // the RenderTexture asset. Holds only gfx shared resources (no RCPtr / AssetObject),
-    // so it is safe for the render thread to read and to destruct across threads.
+    // A view's render target, referenced by proxy. GPU objects (textures/FBO) are
+    // resolved on the render thread per frame: the proxy initializes and rebuilds
+    // asynchronously, so caching its gfx objects here would go stale.
     struct RenderTargetSnapshot
     {
-        int32_t Width = 0;
-        int32_t Height = 0;
-        array_list<gfx::GFXTexturePtr>          Attachments;
-        gfx::GFXFrameBufferObjectPtr            Framebuffer;
+        std::shared_ptr<rendering::RenderTextureProxy> Proxy;
 
-        bool IsValid() const { return Framebuffer != nullptr; }
+        bool IsValid() const { return Proxy && Proxy->IsInitialized(); }
+        int32_t GetWidth() const { return Proxy ? Proxy->GetWidth() : 0; }
+        int32_t GetHeight() const { return Proxy ? Proxy->GetHeight() : 0; }
         gfx::GFXTexture2DViewPtr GetColorTextureView() const
         {
-            if (Attachments.empty()) return nullptr;
-            return Attachments[0]->Get2DView(0);
+            return Proxy ? Proxy->GetColorTextureView() : nullptr;
         }
     };
 
@@ -61,18 +60,18 @@ namespace pulsar
     // Render-thread-owned per-view proxy (capture proxy). Owns the view pipeline
     // (Pipeline) and the current-frame parameter snapshot (Data). One per game-side
     // SceneCaptureComponent.
-    class SceneView : public rendering::RenderProxy
+    class SceneViewProxy : public rendering::SceneProxy
     {
     public:
-        SceneView();
-        ~SceneView() override;
+        SceneViewProxy();
+        ~SceneViewProxy() override;
 
-        SceneView(const SceneView&) = delete;
-        SceneView& operator=(const SceneView&) = delete;
+        SceneViewProxy(const SceneViewProxy&) = delete;
+        SceneViewProxy& operator=(const SceneViewProxy&) = delete;
 
-        void OnCreateResource() override;
+        void OnEnterScene() override;
 
-        void OnDestroyResource() override;
+        void OnLeaveScene() override;
 
         // Per-view camera cbuffer (owned here). Lazily created on first upload
         // (render thread, GFX alive).

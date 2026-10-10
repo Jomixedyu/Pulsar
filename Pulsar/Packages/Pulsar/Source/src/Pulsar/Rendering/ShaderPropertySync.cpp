@@ -36,8 +36,8 @@ namespace pulsar
             case ShaderPropertyType::Texture2D:
             {
                 RCPtr<Texture> tex = prop.AsTexture2D();
-                if (tex && !tex->IsCreatedGPUResource())
-                    tex->CreateGPUResource();
+                if (tex)
+                    tex->EnsureGPUResource();
                 data.Textures.emplace(name, tex ? tex->GetTextureProxy() : nullptr);
                 break;
             }
@@ -78,7 +78,7 @@ namespace pulsar
                 WritePropertyToBuffer(buffer.data(), entry, it->second);
             // 没有值：保持 zero-initialized
         }
-        Application::GetGfxApp()->RequestBufferUpload(cbuffer, buffer.data(), matCbuffer->m_size);
+        cbuffer->Update(buffer.data());
     }
 
     std::vector<gfx::GFXTexture2DViewPtr> ShaderPropertySync::BuildSet0Registry(

@@ -35,6 +35,7 @@ namespace gfx
     GFXResourceRegistry::~GFXResourceRegistry()
     {
 #if !defined(NDEBUG)
+        std::unique_lock<std::mutex> dumpLock(m_resourcesMutex);
         if (!m_activeResources.empty())
         {
             std::map<std::string, size_t> counts;
@@ -63,6 +64,7 @@ namespace gfx
 
             std::cerr << message.str();
         }
+        dumpLock.unlock();
 #endif
         // The backend must Terminate() the registry before destruction: every
         // resource released and the deferred queue flushed while the device is
@@ -123,20 +125,20 @@ namespace gfx
         return layout;
     }
 
-    GFXResource* GFXResourceRegistry::FindResourceById(ResourceId id) const
-    {
-        auto it = m_activeResources.find(id);
-        return it == m_activeResources.end() ? nullptr : it->second;
-    }
-
     void GFXResourceRegistry::Tick(uint64_t currentTimeline)
     {
-        m_lastTickTimeline = currentTimeline;
-        auto end = m_deferredDestroys.upper_bound(currentTimeline);
-        for (auto it = m_deferredDestroys.begin(); it != end;)
+        std::vector<std::unique_ptr<GFXResource>> expired;
         {
-            it = m_deferredDestroys.erase(it);
+            std::lock_guard<std::mutex> lock(m_resourcesMutex);
+            m_lastTickTimeline = currentTimeline;
+            auto end = m_deferredDestroys.upper_bound(currentTimeline);
+            for (auto it = m_deferredDestroys.begin(); it != end;)
+            {
+                expired.push_back(std::move(it->second));
+                it = m_deferredDestroys.erase(it);
+            }
         }
+        // Resource destructors run here, outside the lock.
     }
 
     void GFXResourceRegistry::FlushDestroyed()
@@ -149,6 +151,7 @@ namespace gfx
         if (!resource)
             return;
 
+        std::lock_guard<std::mutex> lock(m_resourcesMutex);
         m_activeResources.erase(resource->GetResourceId());
         m_deferredDestroys.emplace(
             m_lastTickTimeline + 2,

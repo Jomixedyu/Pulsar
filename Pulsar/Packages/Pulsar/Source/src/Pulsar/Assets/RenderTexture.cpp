@@ -145,36 +145,37 @@ namespace pulsar
     void RenderTexture::PostEditChange(FieldInfo* info)
     {
         base::PostEditChange(info);
-        // Rebuild GPU resources when dimensions or attachments change
-        if (IsCreatedGPUResource())
-        {
-            DestroyGPUResource();
-            CreateGPUResource();
-        }
+        // Dimensions / formats / samples changed: rebuild on EnsureGPUResource.
+        m_gpuResourceDirty = true;
+        EnsureGPUResource();
     }
 
-    bool RenderTexture::CreateGPUResource()
+    bool RenderTexture::EnsureGPUResource()
     {
-        if (IsCreatedGPUResource())
+        if (m_createdGPUResource && !m_gpuResourceDirty)
             return true;
+        m_gpuResourceDirty = false;
 
         auto gfx = Application::GetGfxApp();
         if (!gfx)
             return false;
 
-        // Ensure at least one color format
-        m_proxy = std::make_shared<rendering::RenderTextureProxy>(
-            m_width, m_height, m_sampleCount, m_colorFormat, m_depthFormat);
+        // Init is re-init safe: a rebuild reuses the same proxy object, so
+        // render-side holders see the new targets automatically. No wait-idle:
+        // the targets become available at the next frame-head queue drain.
+        if (!m_proxy)
+            m_proxy = std::make_shared<rendering::RenderTextureProxy>();
 
         auto proxy = m_proxy;
+        const int32_t w = m_width, h = m_height;
+        const uint32_t samples = m_sampleCount;
+        const auto colorFormat = m_colorFormat;
+        const auto depthFormat = m_depthFormat;
         Application::GetRenderThread()->EnqueueUpdate_AnyThread(
-            [proxy = std::move(proxy)](gfx::GFXResourceRegistry*)
+            [proxy = std::move(proxy), w, h, samples, colorFormat, depthFormat](gfx::GFXResourceRegistry*) mutable
             {
-                proxy->OnCreateResource();
+                proxy->Init(w, h, samples, colorFormat, depthFormat);
             });
-
-        if (auto renderThread = Application::GetRenderThread(); renderThread && !renderThread->IsRenderThread())
-            renderThread->WaitForIdle_AnyThread();
 
         m_createdGPUResource = true;
         return true;
@@ -192,7 +193,7 @@ namespace pulsar
         Application::GetRenderThread()->EnqueueDestroy_AnyThread(
             [proxy = std::move(proxy)](gfx::GFXResourceRegistry*)
             {
-                proxy->OnDestroyResource();
+                proxy->Release();
             });
         m_createdGPUResource = false;
     }

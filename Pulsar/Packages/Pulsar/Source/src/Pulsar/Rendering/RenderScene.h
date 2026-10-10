@@ -1,10 +1,10 @@
 #pragma once
 #include "PerRenderObjectDataManager.h"
 #include "PerPassData.h"
-#include "RenderObject.h"
-#include "RenderProxy.h"
+#include "RenderObjectProxy.h"
+#include "SceneProxy.h"
 #include "LightProxy.h"
-#include "SceneView.h"
+#include "SceneViewProxy.h"
 #include <gfx/GFXBuffer.h>
 #include <memory>
 
@@ -21,12 +21,12 @@ namespace pulsar
         RenderScene(const RenderScene&) = delete;
         RenderScene& operator=(const RenderScene&) = delete;
 
-        void AddProxy(SPtr<rendering::RenderProxy> proxy);
-        void RemoveProxy(const SPtr<rendering::RenderProxy>& proxy);
+        void AddProxy(SPtr<rendering::SceneProxy> proxy);
+        void RemoveProxy(const SPtr<rendering::SceneProxy>& proxy);
         void Destroy();
 
-        const hash_set<rendering::RenderObject_sp>& GetRenderObjects() const { return m_renderObjects; }
-        const array_list<SPtr<SceneView>>& GetViews() const { return m_views; }
+        const hash_set<rendering::RenderObjectProxy_sp>& GetRenderObjects() const { return m_renderObjects; }
+        const array_list<SPtr<SceneViewProxy>>& GetViews() const { return m_views; }
         const array_list<SPtr<PointLightProxy>>& GetPointLights() const { return m_pointLights; }
         const array_list<SPtr<DirectionalLightProxy>>& GetDirectionalLights() const { return m_directionalLights; }
         PerRenderObjectDataManager& GetPerRenderObjectData() { return m_perObjectData; }
@@ -42,14 +42,14 @@ namespace pulsar
         gfx::GFXBuffer* GetLightsBuffer() const;
 
     private:
-        void AddRenderObject(const rendering::RenderObject_sp& ro);
-        void RemoveRenderObject(const rendering::RenderObject_sp& ro);
-        void AddView(const SPtr<SceneView>& view);
-        void RemoveView(const SPtr<SceneView>& view);
+        void AddRenderObject(const rendering::RenderObjectProxy_sp& ro);
+        void RemoveRenderObject(const rendering::RenderObjectProxy_sp& ro);
+        void AddView(const SPtr<SceneViewProxy>& view);
+        void RemoveView(const SPtr<SceneViewProxy>& view);
         void EnsureBuffers();
 
-        hash_set<rendering::RenderObject_sp> m_renderObjects;
-        array_list<SPtr<SceneView>> m_views;
+        hash_set<rendering::RenderObjectProxy_sp> m_renderObjects;
+        array_list<SPtr<SceneViewProxy>> m_views;
         array_list<SPtr<PointLightProxy>> m_pointLights;
         array_list<SPtr<DirectionalLightProxy>> m_directionalLights;
         std::unique_ptr<SceneRenderPipeline> m_renderPipeline;

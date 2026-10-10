@@ -3,7 +3,7 @@
 #include <gfx/GFXDescriptorSet.h>
 #include <Pulsar/Rendering/ShaderPropertySheet.h>
 #include <Pulsar/Rendering/ShaderPropertyRenderData.h>
-#include <Pulsar/Rendering/ShaderInstance.h>
+#include <Pulsar/Rendering/ShaderProgramInstance.h>
 #include <Pulsar/Rendering/MaterialProxy.h>
 #include <Pulsar/AssetObject.h>
 #include <Pulsar/Assets/Shader.h>
@@ -34,7 +34,7 @@ namespace pulsar
 
         virtual void Serialize(AssetSerializer* s) override;
     public:
-        virtual bool CreateGPUResource() override;
+        virtual bool EnsureGPUResource() override;
         virtual void DestroyGPUResource() override;
         virtual bool IsCreatedGPUResource() const override;
 
@@ -58,7 +58,7 @@ namespace pulsar
         // Call this after modifying material parameters (SetFloat / SetTexture / etc.).
         void SubmitParameters(bool force = false);
 
-        // Render-thread mirror of this material's render state (1:1). Created in CreateGPUResource.
+        // Render-thread mirror of this material's render state (1:1). Created in EnsureGPUResource.
         // Render-side code (mesh batches, post-process passes) references this proxy instead of
         // the Material so the render thread never holds an RCPtr<Material>.
         const std::shared_ptr<MaterialProxy>& GetRenderProxy() const { return m_renderProxy; }

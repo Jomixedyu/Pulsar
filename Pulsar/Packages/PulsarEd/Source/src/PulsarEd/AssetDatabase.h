@@ -1,7 +1,7 @@
 #pragma once
 #include "Assembly.h"
 #include "Common/FileTreeNode.hpp"
-#include "Common/PersistentImagePool.h"
+#include "Common/PersistentTexturePool.h"
 #include "Common/ThumbnailCache.h"
 #include "Workspace.h"
 #include <Pulsar/AssetObject.h>
@@ -133,7 +133,7 @@ namespace pulsared
         static inline Action<RCPtr<AssetObject>> OnCreatedAsset;
 
         static inline std::shared_ptr<AssetFileNode> FileTree;
-        static inline std::unique_ptr<PersistentImagePool> IconPool;
+        static inline std::unique_ptr<PersistentTexturePool> IconPool;
         static inline std::unique_ptr<pulsared::ThumbnailCache> ThumbnailCacheInst;
 
     protected:

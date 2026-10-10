@@ -13,7 +13,7 @@ namespace pulsar
     //
     // ShaderPropertySheet 持有 RCPtr<Texture> 等游戏线程拥有的资产引用，渲染线程
     // 不应触碰。游戏线程负责把 sheet 解析成此结构：纹理解析成 GPU 句柄
-    // （并确保 CreateGPUResource 在游戏线程触发），常量拷贝成纯值（按名字）。
+    // （并确保 EnsureGPUResource 在游戏线程触发），常量拷贝成纯值（按名字）。
     // 渲染线程消费此快照、按 layout 组装写入 GPU，不访问任何资产。
     //
     // 本结构与具体 layout 无关：常量与纹理都按属性名索引，渲染线程在 ApplyRenderData

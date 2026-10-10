@@ -1,28 +1,34 @@
 #pragma once
 
-#include <Pulsar/Rendering/RenderProxy.h>
 #include <Pulsar/Assets/RenderTextureFormats.h>
 
 #include <gfx/GFXFrameBufferObject.h>
 #include <gfx/GFXTexture.h>
 
 #include <memory>
-
 #include <vector>
 
 namespace pulsar::rendering
 {
-    class RenderTextureProxy final : public RenderProxy
+    // Render-side mirror of a RenderTexture asset's render targets.
+    // GPUResourceProxy convention: Init()/Release() run on the render thread
+    // (via the render queue). Init is re-init safe -- calling it again rebuilds
+    // the targets with new parameters.
+    class RenderTextureProxy final
     {
     public:
-        RenderTextureProxy(int32_t width, int32_t height, uint32_t sampleCount,
-                           RenderTextureColorFormat colorFormat,
-                           RenderTextureDepthFormat depthFormat);
+        RenderTextureProxy() = default;
+        ~RenderTextureProxy() { Release(); }
 
-        void OnCreateResource() override;
-        void OnDestroyResource() override;
+        void Init(int32_t width, int32_t height, uint32_t sampleCount,
+                  RenderTextureColorFormat colorFormat,
+                  RenderTextureDepthFormat depthFormat);
+        void Release();
 
-        bool IsCreated() const { return m_created; }
+        bool IsInitialized() const { return m_initialized; }
+
+        int32_t GetWidth() const { return m_colorTexture ? m_colorTexture->GetWidth() : 0; }
+        int32_t GetHeight() const { return m_colorTexture ? m_colorTexture->GetHeight() : 0; }
 
         gfx::GFXTexturePtr GetColorTexture() const { return m_colorTexture; }
         gfx::GFXTexturePtr GetDepthTexture() const { return m_depthTexture; }
@@ -33,18 +39,9 @@ namespace pulsar::rendering
         array_list<gfx::GFXTexturePtr> GetFramebufferAttachments() const;
 
     private:
-        void CreateResources();
-        void DestroyResources();
-
-        int32_t m_width = 1;
-        int32_t m_height = 1;
-        uint32_t m_sampleCount = 1;
-        RenderTextureColorFormat m_colorFormat = RenderTextureColorFormat::RGBA8_UNorm;
-        RenderTextureDepthFormat m_depthFormat = RenderTextureDepthFormat::None;
-
         gfx::GFXTexturePtr m_colorTexture;
         gfx::GFXTexturePtr m_depthTexture;
         gfx::GFXFrameBufferObjectPtr m_framebuffer;
-        bool m_created = false;
+        bool m_initialized = false;
     };
 }

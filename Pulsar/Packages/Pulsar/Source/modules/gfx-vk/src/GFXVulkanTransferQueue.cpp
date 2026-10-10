@@ -1,27 +1,26 @@
-#include "GFXVulkanBufferUploadQueue.h"
+#include "GFXVulkanTransferQueue.h"
 
 #include "GFXVulkanApplication.h"
-#include "GFXVulkanBuffer.h"
 #include <gfx-vk/BufferHelper.h>
 
 #include <cstring>
 
 namespace gfx
 {
-    GFXVulkanBufferUploadQueue::GFXVulkanBufferUploadQueue(GFXVulkanApplication* app)
+    GFXVulkanTransferQueue::GFXVulkanTransferQueue(GFXVulkanApplication* app)
         : m_app(app)
     {
         m_slots.resize(GFXVulkanApplication::MAX_FRAMES_IN_FLIGHT);
     }
 
-    GFXVulkanBufferUploadQueue::~GFXVulkanBufferUploadQueue()
+    GFXVulkanTransferQueue::~GFXVulkanTransferQueue()
     {
         for (auto& slot : m_slots)
             for (auto& chunk : slot.m_chunks)
                 DestroyChunk(chunk);
     }
 
-    GFXVulkanBufferUploadQueue::Chunk GFXVulkanBufferUploadQueue::CreateChunk(size_t capacity)
+    GFXVulkanTransferQueue::Chunk GFXVulkanTransferQueue::CreateChunk(size_t capacity)
     {
         Chunk chunk;
         chunk.m_capacity = capacity;
@@ -33,7 +32,7 @@ namespace gfx
         return chunk;
     }
 
-    void GFXVulkanBufferUploadQueue::DestroyChunk(Chunk& chunk)
+    void GFXVulkanTransferQueue::DestroyChunk(Chunk& chunk)
     {
         if (chunk.m_buffer == VK_NULL_HANDLE)
             return;
@@ -42,7 +41,7 @@ namespace gfx
         chunk = {};
     }
 
-    std::pair<GFXVulkanBufferUploadQueue::Chunk*, size_t> GFXVulkanBufferUploadQueue::Allocate(size_t size)
+    std::pair<GFXVulkanTransferQueue::Chunk*, size_t> GFXVulkanTransferQueue::Allocate(size_t size)
     {
         const uint64_t frame = m_app->GetFrameCount();
         const uint32_t slotIndex = m_app->GetFrameInFlightIndex();
@@ -83,32 +82,45 @@ namespace gfx
         return {&chunk, 0};
     }
 
-    void GFXVulkanBufferUploadQueue::RequestUpload(GFXVulkanBuffer* dst, const void* data, size_t size, size_t dstOffset)
+    void GFXVulkanTransferQueue::PushTransfer(const void* data, size_t size,
+        std::move_only_function<void(VkCommandBuffer, VkBuffer, VkDeviceSize)> record)
     {
-        if (!dst || !data || size == 0)
+        if (!data || size == 0)
             return;
 
+        std::lock_guard<std::mutex> lock(m_mutex);
         auto [chunk, off] = Allocate(size);
         std::memcpy(static_cast<uint8_t*>(chunk->m_mapped) + off, data, size);
 
-        m_pending.push_back(Pending{
-            chunk->m_buffer, static_cast<VkDeviceSize>(off),
-            dst->GetVkBuffer(), static_cast<VkDeviceSize>(dstOffset), static_cast<VkDeviceSize>(size)});
+        m_pending.push_back(Pending{chunk->m_buffer, static_cast<VkDeviceSize>(off), std::move(record)});
     }
 
-    void GFXVulkanBufferUploadQueue::FlushInto(VkCommandBuffer cmd)
+    void GFXVulkanTransferQueue::PushRecord(std::move_only_function<void(VkCommandBuffer)> record)
     {
-        if (m_pending.empty())
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_pending.push_back(Pending{VK_NULL_HANDLE, 0,
+            [r = std::move(record)](VkCommandBuffer cmd, VkBuffer, VkDeviceSize) mutable { r(cmd); }});
+    }
+
+    bool GFXVulkanTransferQueue::HasPending()
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        return !m_pending.empty();
+    }
+
+    void GFXVulkanTransferQueue::FlushInto(VkCommandBuffer cmd)
+    {
+        std::vector<Pending> pending;
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            pending.swap(m_pending);
+        }
+
+        if (pending.empty())
             return;
 
-        for (const auto& p : m_pending)
-        {
-            VkBufferCopy region{};
-            region.srcOffset = p.m_srcOffset;
-            region.dstOffset = p.m_dstOffset;
-            region.size = p.m_size;
-            vkCmdCopyBuffer(cmd, p.m_src, p.m_dst, 1, &region);
-        }
+        for (auto& p : pending)
+            p.m_record(cmd, p.m_src, p.m_srcOffset);
 
         VkMemoryBarrier2 barrier{};
         barrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2;
@@ -123,7 +135,5 @@ namespace gfx
         depInfo.pMemoryBarriers = &barrier;
 
         vkCmdPipelineBarrier2(cmd, &depInfo);
-
-        m_pending.clear();
     }
 }

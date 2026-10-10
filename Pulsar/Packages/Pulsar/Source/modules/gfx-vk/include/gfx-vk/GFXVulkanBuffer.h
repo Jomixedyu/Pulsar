@@ -21,6 +21,7 @@ namespace gfx
         /* GFXBuffer */
         virtual bool IsValid() const override;
         virtual size_t GetSize() const override { return this->m_desc.BufferSize; }
+
     public:
 
     protected:

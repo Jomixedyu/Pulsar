@@ -86,6 +86,21 @@ namespace pulsar
     {
     }
 
+    void GizmosManager::Initialize()
+    {
+        // Preload gizmo assets so Draw() never loads from disk mid-frame.
+        auto planeMesh = AssetManager::Get()->LoadAsset<StaticMesh>("Pulsar/Shapes/Plane");
+        m_billboardShader = AssetManager::Get()->LoadAsset<Shader>("Pulsar/Shaders/UnlitBillboard");
+
+        m_iconBatchRenderObject = mksptr(new GizmoIconBatchRenderObject);
+        if (planeMesh)
+        {
+            planeMesh->EnsureGPUResource();
+            m_iconBatchRenderObject->SetMesh(planeMesh->GetMeshProxy());
+        }
+        m_world->AddRenderObject(m_iconBatchRenderObject);
+    }
+
     void GizmosManager::Draw()
     {
         GizmoPainter gizmoPainter{};
@@ -145,27 +160,14 @@ namespace pulsar
             }
         }
 
-        // Icons
-        if (!m_iconBatchRenderObject)
-        {
-            m_iconBatchRenderObject = mksptr(new GizmoIconBatchRenderObject);
-            m_iconBatchRenderObject->SetMesh(AssetManager::Get()->LoadAsset<StaticMesh>("Pulsar/Shapes/Plane"));
-            m_world->AddRenderObject(m_iconBatchRenderObject);
-        }
-
+        // Icons (render object and assets are prepared in Initialize)
         if (!iconRequests.empty())
         {
-            // Ensure billboard shader ready
-            if (!m_billboardShader)
-            {
-                m_billboardShader = AssetManager::Get()->LoadAsset<Shader>("Pulsar/Shaders/UnlitBillboard");
-            }
-
             // Expand material pool if needed
             while (m_iconMaterialPool.size() < iconRequests.size())
             {
                 auto mat = Material::StaticCreate(m_billboardShader);
-                mat->CreateGPUResource();
+                mat->EnsureGPUResource();
                 m_iconMaterialPool.push_back(mat);
             }
 
@@ -191,7 +193,7 @@ namespace pulsar
                 matx[3][1] = req.WorldPos.y;
                 matx[3][2] = req.WorldPos.z;
                 matx[3][3] = 1.0f;
-                batchItems.push_back(GizmoIconBatchRenderObject::IconItem{matx, mat});
+                batchItems.push_back(GizmoIconBatchRenderObject::IconItem{matx, mat->GetRenderProxy()});
             }
 
             m_iconBatchRenderObject->SetItems(batchItems);

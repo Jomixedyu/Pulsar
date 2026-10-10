@@ -37,7 +37,7 @@ namespace pulsared
         base::OnOpen();
 
         RCPtr<Texture> tex = cast<Texture>(m_assetObject);
-        tex->CreateGPUResource();
+        tex->EnsureGPUResource();
 
         auto shader = AssetManager::Get()->LoadAsset<Shader>("Pulsar/Shaders/PreviewImage");
         m_previewMaterial = Material::StaticCreate(shader);
@@ -50,7 +50,7 @@ namespace pulsared
             flags |= FLAGS_NORMALMAP;
         }
         m_previewMaterial->SetIntScalar("_Flags", flags);
-        m_previewMaterial->CreateGPUResource();
+        m_previewMaterial->EnsureGPUResource();
 
         if (auto* world = m_viewportFrame.GetWorld())
         {

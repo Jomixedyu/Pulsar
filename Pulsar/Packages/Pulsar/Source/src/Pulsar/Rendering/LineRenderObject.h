@@ -1,13 +1,13 @@
 #pragma once
-#include "RenderObject.h"
+#include "RenderObjectProxy.h"
 #include "PrimitiveStruct.h"
 #include <gfx/GFXBuffer.h>
 
 namespace pulsar
 {
-    class LineRenderObject : public rendering::RenderObject
+    class LineRenderObject : public rendering::RenderObjectProxy
     {
-        using base = rendering::RenderObject;
+        using base = rendering::RenderObjectProxy;
 
     private:
         array_list<StaticMeshVertex> m_verties;
@@ -32,8 +32,8 @@ namespace pulsar
         void SetDepthTestEnabled(bool enabled) { m_depthTestEnabled = enabled; }
         void SetQueue(ShaderPassRenderQueueType queue) { m_renderQueue = queue; }
 
-        void OnCreateResource() override;
-        void OnDestroyResource() override;
+        void OnEnterScene() override;
+        void OnLeaveScene() override;
 
         void OnChangedTransform() override;
         array_list<rendering::MeshBatch> GetMeshBatches() override;

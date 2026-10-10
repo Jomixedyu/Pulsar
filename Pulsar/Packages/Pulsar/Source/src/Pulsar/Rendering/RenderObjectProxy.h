@@ -1,6 +1,6 @@
 #pragma once
 #include "PrimitiveStruct.h"
-#include "RenderProxy.h"
+#include "SceneProxy.h"
 #include "ShaderConfig.h"
 
 #include <Pulsar/Assets/Material.h>
@@ -75,12 +75,12 @@ namespace pulsar::rendering
     };
 
 
-    class RenderObject : public RenderProxy
+    class RenderObjectProxy : public SceneProxy
     {
     public:
         static constexpr uint32_t kInvalidSlot = UINT32_MAX;
 
-        virtual ~RenderObject() = default;
+        virtual ~RenderObjectProxy() = default;
         void SetTransform(const Matrix4f& localToWorld);
         virtual void OnChangedTransform() {}
         void UpdateConstantBuffer()
@@ -88,8 +88,8 @@ namespace pulsar::rendering
 
         }
 
-        void OnCreateResource() override {}
-        void OnDestroyResource() override {}
+        void OnEnterScene() override {}
+        void OnLeaveScene() override {}
 
         virtual array_list<MeshBatch> GetMeshBatches() = 0;
         virtual std::string GetVariantFeature() const { return {}; }
@@ -135,5 +135,5 @@ namespace pulsar::rendering
         uint32_t  m_renderObjectIndex = kInvalidSlot;
         PerRenderObjectDataManager* m_pPerRenderObjectDataManager = nullptr;
     };
-    CORELIB_DECL_SHORTSPTR(RenderObject);
+    CORELIB_DECL_SHORTSPTR(RenderObjectProxy);
 }

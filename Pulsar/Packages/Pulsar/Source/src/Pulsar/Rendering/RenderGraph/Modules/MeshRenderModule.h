@@ -1,6 +1,6 @@
 #pragma once
 #include "RenderModule.h"
-#include <Pulsar/Rendering/RenderObject.h>
+#include <Pulsar/Rendering/RenderObjectProxy.h>
 #include <Pulsar/Rendering/ShaderPass.h>
 #include <Pulsar/Rendering/RenderResourceRegistry.h>
 #include <Pulsar/Assets/Material.h>
@@ -15,7 +15,7 @@ namespace pulsar
     {
         rendering::MeshBatch batch;
         // Compiled program driving pipeline creation (null => shader not ready, skip).
-        std::shared_ptr<ShaderProgramResource> program;
+        std::shared_ptr<ShaderProgram> program;
         // The PerMaterial (set0) descriptor set + layout resolved from the global content cache
         // (via MaterialProxy::ResolveRenderVariant). Bound as set 0 for the draw.
         gfx::GFXDescriptorSet*         set0 = nullptr;

@@ -3,7 +3,7 @@
 #include "Application.h"
 #include "Logger.h"
 
-#include <Pulsar/Rendering/ShaderInstanceCache.h>
+#include <Pulsar/Rendering/ShaderProxy.h>
 #include <Pulsar/Rendering/ShaderPropertySync.h>
 #include <Pulsar/Rendering/DescriptorSetCache.h>
 #include <Pulsar/Rendering/DescriptorSetAssembler.h>
@@ -47,9 +47,9 @@ namespace pulsar
             return {};
 
         auto program = instance->GetCurrentProgram();
-        // A ShaderInstance always holds a program (Pending/Error builtin fallback at worst);
+        // A ShaderProgramInstance always holds a program (Pending/Error builtin fallback at worst);
         // it is never null. A null here means the instance invariant was violated.
-        assert(program && "ShaderInstance returned a null program");
+        assert(program && "ShaderProgramInstance returned a null program");
 
         // A program with no compiled stages (failed builtin/error fallback or empty pending)
         // must never reach pipeline creation — that yields a stageCount==0 VkPipeline.
@@ -100,15 +100,14 @@ namespace pulsar
     }
 
     void MaterialProxy::UpdateShader(
-        SPtr<ShaderConfig> config,
-        guid_t shaderGuid,
+        std::shared_ptr<ShaderProxy> shaderProxy,
         std::vector<std::string> features,
         ShaderPassRenderQueueType queue,
         SPtr<ShaderConfigGraphicsPipeline> gpOverride,
         SPtr<ObjectPropertyOverride> gpOverrideFields)
     {
-        m_shaderConfig = std::move(config);
-        m_shaderGuid = shaderGuid;
+        m_shaderProxy = std::move(shaderProxy);
+        m_shaderGuid = m_shaderProxy ? m_shaderProxy->GetGuid() : guid_t{};
         m_activeFeatures = std::move(features);
         m_queue = queue;
         m_graphicsPipelineOverride = std::move(gpOverride);
@@ -129,78 +128,21 @@ namespace pulsar
         m_cachedEffectiveGraphicsPipeline.clear();
     }
 
-    std::shared_ptr<ShaderInstance> MaterialProxy::GetOrCreateInstance(
+    std::shared_ptr<ShaderProgramInstance> MaterialProxy::GetOrCreateInstance(
         const std::string& passName,
         const std::string& variantFeature)
     {
-        VariantKey key{passName, variantFeature};
-        auto it = m_variants.find(key);
-        if (it != m_variants.end())
-            return it->second;
-
-        if (!m_shaderConfig)
+        if (!m_shaderProxy)
             return nullptr;
 
-        ShaderVariantKey variantKey;
-        variantKey.m_shaderGuid = m_shaderGuid;
-        variantKey.m_passName = passName;
-
-        ShaderCompileTask task;
-        task.m_variantKey = variantKey;
-
-        const ShaderConfigPass* selectedPass = nullptr;
-
-        // Entry point: look it up from the shader config's passes.
-        if (m_shaderConfig->Passes)
+        // Merge the renderer-feature variant into the material's active features.
+        std::vector<std::string> features = m_activeFeatures;
+        if (!variantFeature.empty()
+            && std::find(features.begin(), features.end(), variantFeature) == features.end())
         {
-            // Prefer the matching pass name
-            for (const auto& pass : *m_shaderConfig->Passes)
-            {
-                if (pass->Name == passName && pass->Entry)
-                {
-                    selectedPass = pass.get();
-                    task.m_entries.m_vertex = pass->Entry->Vertex;
-                    task.m_entries.m_fragment = pass->Entry->Fragment;
-                    task.m_entries.m_tessControl = pass->Entry->TessControl;
-                    task.m_entries.m_tessEval = pass->Entry->TessEval;
-                    break;
-                }
-            }
-
-            // fallback: if no matching pass was found, use the first pass entry
-            if (task.m_entries.m_vertex.empty() && task.m_entries.m_fragment.empty())
-            {
-                for (const auto& pass : *m_shaderConfig->Passes)
-                {
-                    if (pass->Entry)
-                    {
-                        selectedPass = pass.get();
-                        task.m_entries.m_vertex = pass->Entry->Vertex;
-                        task.m_entries.m_fragment = pass->Entry->Fragment;
-                        task.m_entries.m_tessControl = pass->Entry->TessControl;
-                        task.m_entries.m_tessEval = pass->Entry->TessEval;
-                        Logger::Log("Material pass '" + passName + "' not found, using first pass '" + pass->Name + "' entry as fallback", LogLevel::Warning);
-                        break;
-                    }
-                }
-            }
+            features.push_back(variantFeature);
         }
-
-        variantKey.m_features = m_activeFeatures;
-        if (!variantFeature.empty())
-        {
-            if (std::find(
-                    variantKey.m_features.begin(),
-                    variantKey.m_features.end(),
-                    variantFeature) == variantKey.m_features.end())
-            {
-                variantKey.m_features.push_back(variantFeature);
-            }
-        }
-        auto instance = ShaderInstanceCache::Instance().GetOrCreate(variantKey, task);
-        m_variants.emplace(key, instance);
-
-        return instance;
+        return m_shaderProxy->GetOrCreateVariant(passName, std::move(features));
     }
 
     void MaterialProxy::EnsurePerMaterialCBuffer(const ShaderLayout& layout)
@@ -232,14 +174,14 @@ namespace pulsar
     {
         m_perMaterialCBuffer.reset();
         m_cbufferDirty = false;
-        m_variants.clear();
     }
 
     bool MaterialProxy::HasPass(const std::string& passName) const
     {
-        if (!m_shaderConfig || !m_shaderConfig->Passes)
+        auto config = GetShaderConfig();
+        if (!config || !config->Passes)
             return false;
-        for (const auto& pass : *m_shaderConfig->Passes)
+        for (const auto& pass : *config->Passes)
         {
             if (pass && pass->Name == passName)
                 return true;
@@ -254,9 +196,10 @@ namespace pulsar
             return it->second;
 
         SPtr<ShaderConfigGraphicsPipeline> base;
-        if (m_shaderConfig && m_shaderConfig->Passes)
+        auto config = GetShaderConfig();
+        if (config && config->Passes)
         {
-            for (const auto& pass : *m_shaderConfig->Passes)
+            for (const auto& pass : *config->Passes)
             {
                 if (pass->Name == passName && pass->GraphicsPipeline)
                 {

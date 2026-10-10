@@ -196,6 +196,7 @@ namespace pulsar
             init_info.MinImageCount = 2;
             init_info.ImageCount = 2;
             init_info.DescriptorPoolSize = 256;
+            init_info.UsePushDescriptor = true;
             init_info.Allocator = VK_NULL_HANDLE;
             init_info.UseDynamicRendering = true;
             init_info.PipelineInfoMain.PipelineRenderingCreateInfo = renderingInfo;

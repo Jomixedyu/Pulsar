@@ -70,9 +70,9 @@ namespace pulsar
         }
     }
 
-    void LineRenderObject::OnCreateResource()
+    void LineRenderObject::OnEnterScene()
     {
-        base::OnCreateResource();
+        base::OnEnterScene();
         if (m_pPerRenderObjectDataManager)
             m_dummyExtraSet = m_pPerRenderObjectDataManager->GetDummyExtraSet();
 
@@ -117,9 +117,9 @@ namespace pulsar
             m_material->SetQueue(m_renderQueue);
     }
 
-    void LineRenderObject::OnDestroyResource()
+    void LineRenderObject::OnLeaveScene()
     {
-        base::OnDestroyResource();
+        base::OnLeaveScene();
         if (m_vertBuffer)
         {
             m_vertBuffer.reset();
@@ -132,8 +132,8 @@ namespace pulsar
 
     array_list<rendering::MeshBatch> LineRenderObject::GetMeshBatches()
     {
-        if (m_material && !m_material->IsCreatedGPUResource())
-            m_material->CreateGPUResource();
+        if (m_material)
+            m_material->EnsureGPUResource();
 
         for (auto& batch : m_batchs)
         {

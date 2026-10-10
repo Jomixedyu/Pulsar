@@ -16,9 +16,6 @@ namespace pulsar
 
         void OnDrawGizmo(GizmoPainter* painter, bool selected) override;
 
-        void BeginComponent() override;
-        void EndComponent() override;
-
         Matrix4f GetViewMat() const;
         Matrix4f GetProjectionMat() const;
         Matrix4f GetInvViewProjectionMat() const;
@@ -59,10 +56,6 @@ namespace pulsar
         void UpdateCBuffer();
 
     protected:
-        gfx::GFXDescriptorSetLayoutPtr m_camDescriptorLayout;
-        gfx::GFXDescriptorSetPtr m_cameraDescriptorSet;
-        gfx::GFXBufferPtr m_cameraDataBuffer;
-
         CORELIB_REFL_DECL_FIELD(m_fov);
         float m_fov{};
 
@@ -98,8 +91,5 @@ namespace pulsar
 
     protected:
         RCPtr<class Texture2D> m_gizmoTexture;
-
-        PerCaptureShaderParameter m_targetBuffer{};
-        // Task 7.5: m_sceneColor removed (was unused)
     };
 } // namespace pulsar

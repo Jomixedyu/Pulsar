@@ -25,43 +25,43 @@ namespace pulsar
             m_renderPipeline = std::make_unique<SceneRenderPipeline>();
         return *m_renderPipeline;
     }
-    void RenderScene::AddProxy(SPtr<rendering::RenderProxy> proxy)
+    void RenderScene::AddProxy(SPtr<rendering::SceneProxy> proxy)
     {
         AssertRenderThread();
         if (!proxy)
             return;
 
-        if (auto ro = std::dynamic_pointer_cast<rendering::RenderObject>(proxy))
+        if (auto ro = std::dynamic_pointer_cast<rendering::RenderObjectProxy>(proxy))
         {
             AddRenderObject(ro);
         }
-        else if (auto view = std::dynamic_pointer_cast<SceneView>(proxy))
+        else if (auto view = std::dynamic_pointer_cast<SceneViewProxy>(proxy))
         {
             AddView(view);
         }
         else if (auto point = std::dynamic_pointer_cast<PointLightProxy>(proxy))
         {
-            point->OnCreateResource();
+            point->OnEnterScene();
             m_pointLights.push_back(point);
         }
         else if (auto dir = std::dynamic_pointer_cast<DirectionalLightProxy>(proxy))
         {
-            dir->OnCreateResource();
+            dir->OnEnterScene();
             m_directionalLights.push_back(dir);
         }
     }
 
-    void RenderScene::RemoveProxy(const SPtr<rendering::RenderProxy>& proxy)
+    void RenderScene::RemoveProxy(const SPtr<rendering::SceneProxy>& proxy)
     {
         AssertRenderThread();
         if (!proxy)
             return;
 
-        if (auto ro = std::dynamic_pointer_cast<rendering::RenderObject>(proxy))
+        if (auto ro = std::dynamic_pointer_cast<rendering::RenderObjectProxy>(proxy))
         {
             RemoveRenderObject(ro);
         }
-        else if (auto view = std::dynamic_pointer_cast<SceneView>(proxy))
+        else if (auto view = std::dynamic_pointer_cast<SceneViewProxy>(proxy))
         {
             RemoveView(view);
         }
@@ -70,7 +70,7 @@ namespace pulsar
             const auto it = std::ranges::find(m_pointLights, point);
             if (it != m_pointLights.end())
             {
-                (*it)->OnDestroyResource();
+                (*it)->OnLeaveScene();
                 m_pointLights.erase(it);
             }
         }
@@ -79,49 +79,49 @@ namespace pulsar
             const auto it = std::ranges::find(m_directionalLights, dir);
             if (it != m_directionalLights.end())
             {
-                (*it)->OnDestroyResource();
+                (*it)->OnLeaveScene();
                 m_directionalLights.erase(it);
             }
         }
     }
 
-    void RenderScene::AddRenderObject(const rendering::RenderObject_sp& ro)
+    void RenderScene::AddRenderObject(const rendering::RenderObjectProxy_sp& ro)
     {
         auto slot = m_perObjectData.AllocSlot();
         ro->SetRenderObjectIndex(slot);
         ro->SetPerRenderObjectDataManager(&m_perObjectData);
         m_perObjectData.SetData(slot, ro->GetPerRenderObjectData());
-        ro->OnCreateResource();
+        ro->OnEnterScene();
         m_renderObjects.insert(ro);
     }
 
-    void RenderScene::RemoveRenderObject(const rendering::RenderObject_sp& ro)
+    void RenderScene::RemoveRenderObject(const rendering::RenderObjectProxy_sp& ro)
     {
         const auto it = m_renderObjects.find(ro);
         if (it == m_renderObjects.end())
             return;
 
-        (*it)->OnDestroyResource();
+        (*it)->OnLeaveScene();
         const auto slot = (*it)->GetRenderObjectIndex();
-        if (slot != rendering::RenderObject::kInvalidSlot)
+        if (slot != rendering::RenderObjectProxy::kInvalidSlot)
         {
             m_perObjectData.FreeSlot(slot);
         }
         m_renderObjects.erase(it);
     }
 
-    void RenderScene::AddView(const SPtr<SceneView>& view)
+    void RenderScene::AddView(const SPtr<SceneViewProxy>& view)
     {
-        view->OnCreateResource();
+        view->OnEnterScene();
         m_views.push_back(view);
     }
 
-    void RenderScene::RemoveView(const SPtr<SceneView>& view)
+    void RenderScene::RemoveView(const SPtr<SceneViewProxy>& view)
     {
         const auto it = std::ranges::find(m_views, view);
         if (it == m_views.end())
             return;
-        (*it)->OnDestroyResource();
+        (*it)->OnLeaveScene();
         m_views.erase(it);
     }
 

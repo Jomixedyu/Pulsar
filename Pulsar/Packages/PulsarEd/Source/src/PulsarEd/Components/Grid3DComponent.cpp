@@ -77,7 +77,7 @@ namespace pulsared
         m_colors.push_back(jmath::MakeColor4b(0.f, 1, 0, 1));
         m_colors.push_back(jmath::MakeColor4b(0.f, 1, 0, 1));
 
-        // Verts are ready: base::BeginComponent registers the proxy (CreateRenderProxy).
+        // Verts are ready: base::BeginComponent registers the proxy (CreateSceneProxy).
         base::BeginComponent();
         m_renderObject = sptr_static_cast<LineRenderObject>(m_proxy);
         OnTransformChanged();
@@ -105,7 +105,7 @@ namespace pulsared
             });
     }
 
-    SPtr<rendering::RenderProxy> Grid3DComponent::CreateRenderProxy()
+    SPtr<rendering::SceneProxy> Grid3DComponent::CreateSceneProxy()
     {
         auto ro = new LineRenderObject();
         ro->SetDepthTestEnabled(true);

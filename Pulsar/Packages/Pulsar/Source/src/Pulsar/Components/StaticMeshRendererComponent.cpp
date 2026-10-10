@@ -3,6 +3,8 @@
 #include "AssetManager.h"
 #include <Pulsar/Application.h>
 #include <Pulsar/Logger.h>
+#include <Pulsar/Rendering/MaterialProxy.h>
+#include <Pulsar/Rendering/MeshProxy.h>
 #include <Pulsar/Rendering/RenderThread.h>
 #include <gfx/GFXBuffer.h>
 
@@ -11,31 +13,54 @@
 
 namespace pulsar
 {
-    class StaticMeshRenderObject final : public rendering::RenderObject
+    namespace
+    {
+        // Game thread: resolve material assets to render proxies, falling back
+        // to the Error material for null / invalid entries.
+        array_list<std::shared_ptr<MaterialProxy>> ResolveMaterialProxies(const array_list<RCPtr<Material>>& materials)
+        {
+            array_list<std::shared_ptr<MaterialProxy>> result;
+            result.reserve(materials.size());
+            for (auto mat : materials)
+            {
+                if (!mat || !mat->GetShader() || !mat->EnsureGPUResource())
+                    mat = AssetManager::Get()->LoadAsset<Material>("Pulsar/Materials/Error");
+                if (!mat || !mat->GetShader() || !mat->EnsureGPUResource())
+                {
+                    result.push_back(nullptr); // no valid material even after fallback
+                    continue;
+                }
+                result.push_back(mat->GetRenderProxy());
+            }
+            return result;
+        }
+    }
+
+    class StaticMeshRenderObject final : public rendering::RenderObjectProxy
     {
     public:
         array_list<rendering::MeshBatch> m_batches;
-        RCPtr<StaticMesh> m_staticMesh;
-        array_list<RCPtr<Material>> m_materials;
+        std::shared_ptr<rendering::MeshProxy> m_meshProxy;
+        array_list<std::shared_ptr<MaterialProxy>> m_materialProxies;
         array_list<int32_t> m_priorities;
 
         gfx::GFXDescriptorSetPtr m_dummyExtraSet;
 
         StaticMeshRenderObject() = default;
-        StaticMeshRenderObject* SetStaticMesh(RCPtr<StaticMesh> mesh)
+        StaticMeshRenderObject* SetMeshProxy(std::shared_ptr<rendering::MeshProxy> mesh)
         {
-            m_staticMesh = std::move(mesh);
+            m_meshProxy = std::move(mesh);
             return this;
         }
-        StaticMeshRenderObject* SetMaterials(const array_list<RCPtr<Material>>& materials, const array_list<int32_t>& priorities)
+        StaticMeshRenderObject* SetMaterialProxies(const array_list<std::shared_ptr<MaterialProxy>>& materials, const array_list<int32_t>& priorities)
         {
-            m_materials = materials;
+            m_materialProxies = materials;
             m_priorities = priorities;
             return this;
         }
         void SubmitChange();
-        void OnCreateResource() override;
-        void OnDestroyResource() override
+        void OnEnterScene() override;
+        void OnLeaveScene() override
         {
             m_dummyExtraSet.reset();
         }
@@ -59,13 +84,16 @@ namespace pulsar
     {
         m_batches.clear();
 
-        if (!m_staticMesh)
+        if (!m_meshProxy)
             return;
 
-        for (int matIndex = 0; matIndex < m_materials.size(); ++matIndex)
-        {
-            auto& slot = m_materials.at(matIndex);
+        // This object only ever sees proxies; GPU resources were ensured by the
+        // component on the game thread.
+        const auto& vertBuffers = m_meshProxy->GetVertexBuffers();
+        const auto& indexBuffers = m_meshProxy->GetIndexBuffers();
 
+        for (int matIndex = 0; matIndex < m_materialProxies.size(); ++matIndex)
+        {
             auto& batch = m_batches.emplace_back();
             batch.State.Topology = gfx::GFXPrimitiveTopology::TriangleList;
             batch.State.VertexLayouts = {StaticMesh::StaticGetVertexLayout()};
@@ -75,58 +103,31 @@ namespace pulsar
             batch.Material  = nullptr;
             batch.Priority  = (matIndex < (int)m_priorities.size()) ? m_priorities.at(matIndex) : 0;
 
-            // null / invalid material fallback to Error material
-            RCPtr<Material> mat = slot;
-            bool isInvalidMaterial = !mat
-                || !mat->GetShader()
-                || !mat->CreateGPUResource();
-            if (isInvalidMaterial)
+            auto& matProxy = m_materialProxies.at(matIndex);
+            if (!matProxy)
             {
-                mat = AssetManager::Get()->LoadAsset<Material>("Pulsar/Materials/Error");
-                if (mat)
-                    mat->CreateGPUResource();
-            }
-
-            // still no valid material after fallback, skip
-            if (!mat || !mat->GetShader())
-            {
+                // no valid material even after the component-side fallback
                 m_batches.pop_back();
                 continue;
             }
-
-            batch.Material = mat->GetRenderProxy();
+            batch.Material = matProxy;
 
             batch.RenderObjectIndex = m_renderObjectIndex;
             batch.ExtraDescriptorSet = m_dummyExtraSet;
             if (m_dummyExtraSet)
                 batch.DescriptorSetLayout = m_dummyExtraSet->GetDescriptorSetLayout();
 
-            if (!m_staticMesh->IsCreatedGPUResource())
-            {
-                m_staticMesh->CreateGPUResource();
-            }
-
-            // collect elements
-            auto vertBuffers = m_staticMesh->GetGPUResourceVertexBuffers();
-            auto indicesBuffers = m_staticMesh->GetGPUResourceIndicesBuffers();
-
             if (matIndex < vertBuffers.size())
             {
                 auto& element = batch.Elements.emplace_back();
                 element.Vertex =  vertBuffers[matIndex];
-                element.Indices = indicesBuffers[matIndex];
+                element.Indices = indexBuffers[matIndex];
                 // PerRenderObject data is in global dynamic UBO, no per-element descriptor set needed
             }
-
-        }
-
-        if (m_batches.empty())
-        {
-            // empty
         }
     }
 
-    void StaticMeshRenderObject::OnCreateResource()
+    void StaticMeshRenderObject::OnEnterScene()
     {
         if (m_pPerRenderObjectDataManager)
             m_dummyExtraSet = m_pPerRenderObjectDataManager->GetDummyExtraSet();
@@ -136,21 +137,16 @@ namespace pulsar
 
 
 
-    SPtr<rendering::RenderProxy> StaticMeshRendererComponent::CreateRenderProxy()
+    SPtr<rendering::SceneProxy> StaticMeshRendererComponent::CreateSceneProxy()
     {
         auto ro = mksptr(new StaticMeshRenderObject());
-        // m_staticMesh->CreateGPUResource();
         if (m_staticMesh)
         {
-            m_staticMesh->CreateGPUResource();
-            for (const auto& mat : *m_materials)
-            {
-                if (mat)
-                    mat->CreateGPUResource();
-            }
-            ro->SetStaticMesh(m_staticMesh)
-                ->SetMaterials(*m_materials, *m_priorities)
-                ->SubmitChange();
+            m_staticMesh->EnsureGPUResource();
+            ro->SetMeshProxy(m_staticMesh->GetMeshProxy())
+                ->SetMaterialProxies(ResolveMaterialProxies(*m_materials), *m_priorities);
+            // batches are built on the render thread (OnEnterScene -> SubmitChange),
+            // after the queued mesh-proxy Init has drained.
         }
         return ro;
     }
@@ -248,7 +244,7 @@ namespace pulsar
     void StaticMeshRendererComponent::BeginComponent()
     {
         base::BeginComponent();
-        // base::BeginComponent created + registered m_proxy via CreateRenderProxy().
+        // base::BeginComponent created + registered m_proxy via CreateSceneProxy().
         m_renderObject = sptr_static_cast<StaticMeshRenderObject>(m_proxy);
         ResizeMaterials(m_materials->size());
 
@@ -454,27 +450,25 @@ namespace pulsar
 
         Matrix4f localToWorld = GetNode()->GetTransform()->GetLocalToWorldMatrix();
         BoxSphereBounds3f bounds = GetBoundsWS();
-        RCPtr<StaticMesh> mesh = m_staticMesh;
-        array_list<RCPtr<Material>> materials = *m_materials;
         array_list<int32_t> priorities = *m_priorities;
 
-        // GPU resources are still created on the game thread (matches current behavior);
-        // moving these into the resource queue is tracked separately.
-        if (mesh)
-            mesh->CreateGPUResource();
-        for (auto& mat : materials)
+        // Resolve assets to render proxies here on the game thread (ensures GPU
+        // resources, Error-material fallback); the render object never sees assets.
+        std::shared_ptr<rendering::MeshProxy> meshProxy;
+        if (m_staticMesh)
         {
-            if (mat)
-                mat->CreateGPUResource();
+            m_staticMesh->EnsureGPUResource();
+            meshProxy = m_staticMesh->GetMeshProxy();
         }
+        auto materialProxies = ResolveMaterialProxies(*m_materials);
 
         auto ro = m_renderObject;
         Application::GetRenderThread()->EnqueueUpdate_AnyThread(
-            [ro, localToWorld, bounds, mesh = std::move(mesh), materials = std::move(materials), priorities = std::move(priorities)](gfx::GFXResourceRegistry*) mutable
+            [ro, localToWorld, bounds, meshProxy = std::move(meshProxy), materialProxies = std::move(materialProxies), priorities = std::move(priorities)](gfx::GFXResourceRegistry*) mutable
             {
                 ro->SetTransform(localToWorld);
                 ro->SetBounds(bounds);
-                ro->SetStaticMesh(std::move(mesh))->SetMaterials(materials, priorities)->SubmitChange();
+                ro->SetMeshProxy(std::move(meshProxy))->SetMaterialProxies(materialProxies, priorities)->SubmitChange();
             });
     }
 

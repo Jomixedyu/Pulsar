@@ -7,13 +7,13 @@ namespace pulsar::rendering
     // on the game thread, ownership is transferred to the render thread via the command
     // queue, and all access after registration happens on the render thread.
     // Resource lifecycle hooks run on the render thread inside RenderScene.
-    class RenderProxy
+    class SceneProxy
     {
     public:
-        virtual ~RenderProxy() = default;
+        virtual ~SceneProxy() = default;
 
         // Called on the render thread when the proxy is added to / removed from the scene.
-        virtual void OnCreateResource() {}
-        virtual void OnDestroyResource() {}
+        virtual void OnEnterScene() {}
+        virtual void OnLeaveScene() {}
     };
 }

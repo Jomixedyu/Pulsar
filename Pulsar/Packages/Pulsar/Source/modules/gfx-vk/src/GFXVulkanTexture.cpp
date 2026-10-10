@@ -86,35 +86,11 @@ namespace gfx
         auto createInfo = ImageHelper::ImageCreateInfoTexture2D(m_width, m_height, m_imageFormat, m_usageFlags, m_samples);
         ImageHelper::CreateImage(app, &createInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_textureImage, m_textureImageMemory);
 
-        auto currentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        if (info.DataLength > 0)
-        {
-            BufferHelper::TransitionImageLayout(app, m_textureImage, m_imageFormat, m_aspectFlags, currentLayout, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-            currentLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-
-            VkBuffer stagingBuffer;
-            VkDeviceMemory stagingBufferMemory;
-            VkDeviceSize imageSize = info.DataLength;
-
-            auto stagingProperties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-
-            gfx::BufferHelper::CreateBuffer(app, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                                            stagingProperties, stagingBuffer, stagingBufferMemory);
-
-            void* data;
-            vkMapMemory(app->GetVkDevice(), stagingBufferMemory, 0, imageSize, 0, &data);
-            memcpy(data, info.ImageData, static_cast<size_t>(imageSize));
-            vkUnmapMemory(app->GetVkDevice(), stagingBufferMemory);
-            BufferHelper::CopyBufferToImage(app, stagingBuffer, m_textureImage, m_width, m_height);
-
-            vkDestroyBuffer(app->GetVkDevice(), stagingBuffer, nullptr);
-            vkFreeMemory(app->GetVkDevice(), stagingBufferMemory, nullptr);
-        }
-
+        // Construction never touches the queue: the initial layout transition
+        // (and any initial upload) is queued by the registry onto the frame-head
+        // transfer flush.
         m_targetFinalLayout = GetFinalImageLayout(m_targetType);
-
-        BufferHelper::TransitionImageLayout(app, m_textureImage, m_imageFormat, m_aspectFlags, currentLayout, m_targetFinalLayout);
-        m_imageLayout = m_targetFinalLayout;
+        m_imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
         auto viewInfo = ImageHelper::ImageViewCreateInfoTexture2D(m_textureImage, m_imageFormat, m_aspectFlags);
         m_textureImageView = ImageHelper::CreateImageView(app, &viewInfo);
@@ -143,9 +119,12 @@ namespace gfx
         m_inited = true;
     }
 
-    void GFXVulkanTexture::UpdateTextureResource(const GFXTextureUpdateDesc& desc)
+    void GFXVulkanTexture::UpdateTexture(const GFXTextureUpdateDesc& desc)
     {
-
+        if (!desc.ImageData || desc.DataLength == 0)
+            return;
+        // The app batches the copy into the frame-head transfer flush.
+        GetApplication()->RequestTextureUpload(this, desc.ImageData, desc.DataLength);
     }
     GFXTexture2DViewPtr GFXVulkanTexture::Get2DView(size_t index)
     {
@@ -179,6 +158,23 @@ namespace gfx
     {
         m_imageLayout = layout;
     }
+
+    void GFXVulkanTexture::RecordUpload(VkCommandBuffer cmd, VkBuffer stagingBuffer, VkDeviceSize srcOffset)
+    {
+        TransitionLayout(cmd, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+        VkBufferImageCopy region{};
+        region.bufferOffset = srcOffset;
+        region.imageSubresource.aspectMask = m_aspectFlags;
+        region.imageSubresource.mipLevel = 0;
+        region.imageSubresource.baseArrayLayer = 0;
+        region.imageSubresource.layerCount = 1;
+        region.imageExtent = VkExtent3D{ static_cast<uint32_t>(m_width), static_cast<uint32_t>(m_height), 1 };
+        vkCmdCopyBufferToImage(cmd, stagingBuffer, m_textureImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+
+        TransitionLayout(cmd, m_targetFinalLayout);
+    }
+
     void GFXVulkanTexture::TransitionLayout(VkCommandBuffer cmd, VkImageLayout layout)
     {
         if (m_imageLayout == layout)

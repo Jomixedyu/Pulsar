@@ -28,7 +28,7 @@ namespace pulsar
         base::EndComponent();
     }
 
-    SPtr<rendering::RenderProxy> PointLightComponent::CreateRenderProxy()
+    SPtr<rendering::SceneProxy> PointLightComponent::CreateSceneProxy()
     {
         return mksptr(new PointLightProxy());
     }

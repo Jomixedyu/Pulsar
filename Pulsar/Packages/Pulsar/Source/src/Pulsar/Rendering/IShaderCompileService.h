@@ -1,5 +1,5 @@
 #pragma once
-#include <Pulsar/Rendering/ShaderProgramResource.h>
+#include <Pulsar/Rendering/ShaderProgram.h>
 
 #include <functional>
 #include <string>
@@ -19,7 +19,9 @@ namespace pulsar
     {
         bool m_success{};
         std::string m_errorMessage;
-        std::shared_ptr<ShaderProgramResource> m_program;
+        std::string m_shaderName;                  // human-readable name for debugging
+        ShaderLayout m_layout;                     // reflected bindings (plain CPU data)
+        std::vector<ShaderStageData> m_stages;     // opaque backend code blobs
     };
 
     using ShaderCompileCallback = std::function<void(const ShaderCompileResult&)>;

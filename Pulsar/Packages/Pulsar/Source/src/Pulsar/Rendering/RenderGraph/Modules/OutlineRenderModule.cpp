@@ -1,8 +1,8 @@
 #include "OutlineRenderModule.h"
 #include <Pulsar/Scene.h>
-#include <Pulsar/Rendering/RenderObject.h>
+#include <Pulsar/Rendering/RenderObjectProxy.h>
 #include <Pulsar/Rendering/RenderScene.h>
-#include <Pulsar/Rendering/SceneView.h>
+#include <Pulsar/Rendering/SceneViewProxy.h>
 #include <Pulsar/Rendering/ShaderPass.h>
 #include <Pulsar/Rendering/ShaderConfig.h>
 #include <Pulsar/Assets/Material.h>
@@ -37,7 +37,7 @@ namespace pulsar
         auto* scene = capture->scene;
         const Vector3f camPos     = capture->view->CameraPosition;
         const Vector3f camForward = capture->view->CameraForward;
-        SceneView* viewProxy      = capture->viewProxy;
+        SceneViewProxy* viewProxy      = capture->viewProxy;
 
         auto preparedOutline = std::make_shared<array_list<PreparedBatch>>();
 
@@ -50,7 +50,7 @@ namespace pulsar
             })
             .Prepare([camPos, camForward, visibleRenderers = culling->VisibleRenderers, preparedOutline, this](RGPassContext&)
             {
-                for (const rendering::RenderObject_sp& ro : *visibleRenderers)
+                for (const rendering::RenderObjectProxy_sp& ro : *visibleRenderers)
                 {
                     const float depth = jmath::Dot(camForward, ro->GetWorldPosition() - camPos);
                     for (auto batch : ro->GetMeshBatches())

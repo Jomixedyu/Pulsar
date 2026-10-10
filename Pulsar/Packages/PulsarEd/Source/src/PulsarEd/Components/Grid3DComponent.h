@@ -14,7 +14,7 @@ namespace pulsared
         }
         virtual void BeginComponent() override;
 
-        virtual SPtr<rendering::RenderProxy> CreateRenderProxy() override;
+        virtual SPtr<rendering::SceneProxy> CreateSceneProxy() override;
         virtual void EndComponent() override;
 
         void OnTransformChanged() override;
@@ -23,7 +23,7 @@ namespace pulsared
         array_list<Vector3f> m_vert;
         array_list<Color4b> m_colors;
 
-        SPtr<rendering::RenderObject> m_renderObject;
+        SPtr<rendering::RenderObjectProxy> m_renderObject;
     };
     DECL_PTR(Grid3DComponent);
 }

@@ -7,9 +7,9 @@
 #include "Node.h"
 #include "Rendering/LightingData.h"
 #include "Rendering/PerPassData.h"
-#include "Rendering/RenderObject.h"
+#include "Rendering/RenderObjectProxy.h"
 #include "Rendering/RenderScene.h"
-#include "Rendering/SceneView.h"
+#include "Rendering/SceneViewProxy.h"
 #include "Rendering/RenderGraph/TransientRTPool.h"
 #include "Rendering/RenderGraph/RenderGraph.h"
 #include "Rendering/RenderGraph/RenderPipeline.h"
@@ -23,7 +23,7 @@
 #include <Pulsar/Input.h>
 #include <Pulsar/Logger.h>
 #include <Pulsar/World.h>
-#include <Pulsar/Rendering/ShaderInstanceCache.h>
+#include <Pulsar/Rendering/ShaderProxy.h>
 #include <Pulsar/Rendering/DescriptorSetCache.h>
 #include <filesystem>
 
@@ -122,7 +122,7 @@ namespace pulsar
         uinput::InputManager::GetInstance()->Terminate();
 
         // Tear down World first: remove all proxies / RenderScene, drain render thread and wait for GPU idle.
-        // At this point no render object references ShaderInstance or uses TransientRT.
+        // At this point no render object references ShaderProgramInstance or uses TransientRT.
         if (m_world)
         {
             m_world->OnWorldEnd();
@@ -132,7 +132,7 @@ namespace pulsar
 
         // Cleanup after World teardown. These must run before gfxApp->Terminate() while the device is alive.
         DescriptorSetCache::Instance().Clear();
-        ShaderInstanceCache::Instance().Clear();
+        BuiltinShaderPrograms::Instance().Clear_AnyThread();
         TransientRTPool::Shutdown();
     }
 

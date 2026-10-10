@@ -55,7 +55,7 @@ namespace pulsar
         // IGPUResource
         size_t GetVertexCount() override { return 0; }
         bool   IsCreatedGPUResource() const override;
-        bool   CreateGPUResource() override;
+        bool   EnsureGPUResource() override;
         void   DestroyGPUResource() override;
 
         // Skeleton 访问（通过 Skeleton 资产获取骨骼层级）
@@ -67,8 +67,8 @@ namespace pulsar
         const array_list<string>&            GetMaterialNames()     const { return m_materialNames; }
         size_t                               GetMaterialCount()     const { return m_materialNames.size(); }
 
-        const array_list<gfx::GFXBufferPtr>& GetGPUResourceVertexBuffers()  const { return m_vertexBuffers; }
-        const array_list<gfx::GFXBufferPtr>& GetGPUResourceIndicesBuffers() const { return m_indicesBuffers; }
+        // Render-side buffers live behind the proxy; usable right after EnsureGPUResource().
+        std::shared_ptr<rendering::MeshProxy> GetMeshProxy() const { return m_proxy; }
 
     protected:
         void OnCollectAssetDependencies(array_list<jxcorlib::guid_t>& deps) override;
@@ -80,8 +80,7 @@ namespace pulsar
 
     protected: // runtime data
         bool m_isCreatedResource = false;
-        array_list<gfx::GFXBufferPtr> m_vertexBuffers;
-        array_list<gfx::GFXBufferPtr> m_indicesBuffers;
+        std::shared_ptr<rendering::MeshProxy> m_proxy;
     };
     DECL_PTR(SkinnedMesh);
 

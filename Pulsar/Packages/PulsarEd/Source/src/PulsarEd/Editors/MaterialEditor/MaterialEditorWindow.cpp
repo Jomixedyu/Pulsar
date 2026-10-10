@@ -144,7 +144,7 @@ namespace pulsared
     {
         base::OnOpen();
         RCPtr<Material> material = cast<Material>(m_assetObject);
-        material->CreateGPUResource();
+        material->EnsureGPUResource();
         m_shader = material->GetShader();
 
         auto previewMesh =m_world->GetResidentScene()->NewNode("PreviewMesh");

@@ -4,7 +4,9 @@
 #include "Node.h"
 #include "AssetManager.h"
 #include "Assets/StaticMesh.h"
-#include "Rendering/SceneView.h"
+#include "Rendering/SceneViewProxy.h"
+#include <Pulsar/Rendering/RenderThread.h>
+#include <Pulsar/Rendering/RenderTextureProxy.h>
 #include <gfx/GFXResourceRegistry.h>
 
 namespace pulsar
@@ -22,51 +24,6 @@ namespace pulsar
         m_gizmoTexture = AssetManager::Get()->LoadAsset<Texture2D>("PulsarEd/Gizmos/cinema");
     }
 
-    static gfx::GFXDescriptorSetLayout_wp _CameraDescriptorLayout;
-
-    constexpr uint32_t kRenderingDescriptorSpace_Camera = 0;
-
-    void SceneCapture2DComponent::BeginComponent()
-    {
-        base::BeginComponent();
-
-        if (_CameraDescriptorLayout.expired())
-        {
-            gfx::GFXDescriptorLayoutDesc info{
-                gfx::GFXDescriptorType::ConstantBuffer,
-                gfx::GFXGpuProgramStageFlags::VertexFragment,
-                0,
-                kRenderingDescriptorSpace_Camera};
-            m_camDescriptorLayout = Application::GetGfxApp()->GetResourceRegistry()->GetOrCreateDescriptorSetLayout(&info, 1);
-            _CameraDescriptorLayout = m_camDescriptorLayout;
-        }
-        else
-        {
-            m_camDescriptorLayout = _CameraDescriptorLayout.lock();
-        }
-
-        gfx::GFXBufferDesc perCameraBufferDesc{};
-        perCameraBufferDesc.Usage       = gfx::GFXBufferUsage::ConstantBuffer;
-        perCameraBufferDesc.StorageType = gfx::GFXBufferMemoryPosition::VisibleOnDevice;
-        perCameraBufferDesc.BufferSize  = sizeof(PerCaptureShaderParameter);
-        perCameraBufferDesc.ElementSize = sizeof(PerCaptureShaderParameter);
-
-        m_cameraDataBuffer = Application::GetGfxApp()->GetResourceRegistry()->CreateBuffer(perCameraBufferDesc);
-        m_cameraDescriptorSet = m_camDescriptorLayout->AllocateSet();
-        if (auto* buffer = m_cameraDataBuffer.get())
-        {
-            m_cameraDescriptorSet->AddDescriptor("Target", 0)->SetConstantBuffer(buffer);
-        }
-        m_cameraDescriptorSet->Submit();
-    }
-    void SceneCapture2DComponent::EndComponent()
-    {
-        if (m_cameraDataBuffer)
-        {
-            m_cameraDataBuffer.reset();
-        }
-        SceneCaptureComponent::EndComponent();
-    }
     Matrix4f SceneCapture2DComponent::GetViewMat() const
     {
         return GetNode()->GetTransform()->GetWorldToLocalMatrix();
@@ -189,10 +146,7 @@ namespace pulsar
         outData.BackgroundColor  = m_backgroundColor;
         outData.MSAASamples      = std::max(1, m_msaaSamples);
         outData.GizmoPassEnabled = false;
-        outData.RenderTarget.Width       = m_renderTarget->GetWidth();
-        outData.RenderTarget.Height      = m_renderTarget->GetHeight();
-        outData.RenderTarget.Attachments = m_renderTarget->GetFramebufferAttachments();
-        outData.RenderTarget.Framebuffer = m_renderTarget->GetGfxFrameBufferObject();
+        outData.RenderTarget.Proxy       = m_renderTarget->GetRenderProxy();
         return true;
     }
 
@@ -209,11 +163,19 @@ namespace pulsar
         {
             return;
         }
-        auto colorTextureView = m_renderTarget->GetGfxColorTextureView();
-        colorTextureView->GetTexture()->SetTargetClearColor({
-            m_backgroundColor.r, m_backgroundColor.g,
-            m_backgroundColor.b, m_backgroundColor.a
-        });
+        // The RT proxy initializes asynchronously on the render thread; route the
+        // clear-color write through the same queue so it lands after Init (FIFO).
+        auto proxy = m_renderTarget->GetRenderProxy();
+        const auto color = m_backgroundColor;
+        Application::GetRenderThread()->EnqueueUpdate_AnyThread(
+            [proxy, color](gfx::GFXResourceRegistry*)
+            {
+                auto view = proxy ? proxy->GetColorTextureView() : nullptr;
+                if (auto* tex = view ? view->GetTexture() : nullptr)
+                {
+                    tex->SetTargetClearColor({ color.r, color.g, color.b, color.a });
+                }
+            });
     }
 
     void SceneCapture2DComponent::UpdateCBuffer()
@@ -222,22 +184,5 @@ namespace pulsar
         MarkRenderStateDirty();
 
         m_debugViewMat = GetViewMat();
-
-        PerCaptureShaderParameter target{};
-        target.MatrixV = GetViewMat();
-        target.MatrixP = GetProjectionMat();
-        target.MatrixVP = target.MatrixP * target.MatrixV;
-
-        target.InvMatrixV = jmath::Inverse(target.MatrixV);
-        target.InvMatrixP = jmath::Inverse(target.MatrixP);
-        target.InvMatrixVP = jmath::Inverse(target.MatrixVP);
-        target.CamPosition = GetNode()->GetTransform()->GetWorldPosition();
-        target.CamNear = m_near;
-        target.CamFar = m_far;
-        target.Resolution = m_renderTarget->GetSize2df();
-        if (auto* buffer = m_cameraDataBuffer.get())
-        {
-            buffer->Update(&target);
-        }
     }
 } // namespace pulsar

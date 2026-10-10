@@ -1,13 +1,14 @@
 #include "Assets/StaticMesh.h"
 
-#include "Application.h"
+#include <Pulsar/Rendering/MeshProxy.h>
+#include <Pulsar/Application.h>
+#include <Pulsar/Rendering/RenderThread.h>
+
 #include "AssetSerializerUtil.h"
 
 #include "EngineMath.h"
 #include <Pulsar/Assets/Shader.h>
 #include <Pulsar/Assets/Texture2D.h>
-#include <Pulsar/Rendering/RenderThread.h>
-#include <gfx/GFXResourceRegistry.h>
 
 namespace pulsar
 {
@@ -53,7 +54,7 @@ namespace pulsar
         return result;
     }
 
-    bool StaticMesh::CreateGPUResource()
+    bool StaticMesh::EnsureGPUResource()
     {
         if (m_isCreatedResource)
         {
@@ -61,70 +62,31 @@ namespace pulsar
         }
         m_isCreatedResource = true;
 
-        // 句柄分配是线程安全的，主线程立即拿到句柄供后续渲染引用；
-        // 实际的 Buffer 创建与数据上传投递到渲染线程的更新队列异步执行。
-        auto* renderThread = Application::GetRenderThread();
-        for (auto& section : m_sections)
-        {
-            // 从分离属性数据合并为交错格式再上传（GPU 侧暂时保持单 Buffer）
-            auto interleavedVerts = section.BuildInterleavedVertices();
-            const size_t vertSize = interleavedVerts.size() * sizeof(StaticMeshVertex);
-
+        m_proxy = std::make_shared<rendering::MeshProxy>();
+        auto proxy = m_proxy;
+        auto sections = rendering::BuildMeshProxySections<StaticMeshSection, StaticMeshVertex>(m_sections);
+        Application::GetRenderThread()->EnqueueUpdate_AnyThread(
+            [proxy = std::move(proxy), sections = std::move(sections)](gfx::GFXResourceRegistry*) mutable
             {
-                gfx::GFXBufferDesc vertexDesc{};
-                vertexDesc.Usage       = gfx::GFXBufferUsage::Vertex;
-                vertexDesc.StorageType = gfx::GFXBufferMemoryPosition::DeviceLocal;
-                vertexDesc.BufferSize  = vertSize;
-                vertexDesc.ElementSize = sizeof(StaticMeshVertex);
-
-                auto vertBuffer = Application::GetGfxApp()->GetResourceRegistry()->CreateBuffer(vertexDesc);
-                m_vertexBuffers.push_back(vertBuffer);
-
-                renderThread->EnqueueUpdate_AnyThread(
-                    [vertBuffer, verts = std::move(interleavedVerts)](gfx::GFXResourceRegistry*)
-                    {
-                        vertBuffer->Update(verts.data());
-                    });
-            }
-
-            {
-                gfx::GFXBufferDesc indicesDesc{};
-                indicesDesc.Usage       = gfx::GFXBufferUsage::Indices;
-                indicesDesc.StorageType = gfx::GFXBufferMemoryPosition::DeviceLocal;
-                indicesDesc.BufferSize  = section.GetIndicesAllocSize();
-                indicesDesc.ElementSize = sizeof(MeshIndicesType);
-
-                const size_t indicesSize = section.GetIndicesAllocSize();
-                array_list<MeshIndicesType> indices = section.Indices;
-
-                auto indicesBuffer = Application::GetGfxApp()->GetResourceRegistry()->CreateBuffer(indicesDesc);
-                m_indicesBuffers.push_back(indicesBuffer);
-
-                renderThread->EnqueueUpdate_AnyThread(
-                    [indicesBuffer, indices = std::move(indices)](gfx::GFXResourceRegistry*)
-                    {
-                        indicesBuffer->Update(indices.data());
-                    });
-            }
-        }
+                proxy->Init(std::move(sections));
+            });
         return true;
     }
+
     void StaticMesh::DestroyGPUResource()
     {
         if (!m_isCreatedResource)
             return;
         m_isCreatedResource = false;
-
-        // 销毁同样投递到渲染线程，确保在 GPU 不再使用这些资源时再释放 slot。
-        auto* renderThread = Application::GetRenderThread();
-        renderThread->EnqueueUpdate_AnyThread(
-            [vbs = std::move(m_vertexBuffers), ibs = std::move(m_indicesBuffers)](gfx::GFXResourceRegistry*)
-            {
-            });
-        m_vertexBuffers.clear();
-        m_indicesBuffers.clear();
-    }
-    bool StaticMesh::IsCreatedGPUResource() const
+        if (auto proxy = std::move(m_proxy))
+        {
+            Application::GetRenderThread()->EnqueueDestroy_AnyThread(
+                [proxy = std::move(proxy)](gfx::GFXResourceRegistry*) mutable
+                {
+                    proxy->Release();
+                });
+        }
+    }    bool StaticMesh::IsCreatedGPUResource() const
     {
         return m_isCreatedResource;
     }

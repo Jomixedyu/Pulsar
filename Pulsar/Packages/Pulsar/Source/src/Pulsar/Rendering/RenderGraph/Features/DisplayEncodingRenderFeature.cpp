@@ -5,18 +5,19 @@
 #include <Pulsar/Rendering/RenderGraph/Passes/BlitPass.h>
 #include <Pulsar/Rendering/RenderGraph/Pipelines/SceneCaptureFrameData.h>
 #include <Pulsar/Rendering/RenderGraph/RenderPipelineFrameData.h>
-#include <Pulsar/Rendering/SceneView.h>
+#include <Pulsar/Rendering/SceneViewProxy.h>
 #include <Pulsar/Rendering/MaterialProxy.h>
+#include <Pulsar/Rendering/ShaderProxy.h>
 
 namespace pulsar
 {
     class DisplayEncodingRenderFeature final : public RenderFeature
     {
     public:
-        explicit DisplayEncodingRenderFeature(const SPtr<ShaderConfig>& shaderConfig, guid_t shaderGuid)
+        explicit DisplayEncodingRenderFeature(const std::shared_ptr<ShaderProxy>& shaderProxy)
         {
             m_material = std::make_shared<MaterialProxy>();
-            m_material->UpdateShader(shaderConfig, shaderGuid, {}, ShaderPassRenderQueueType::Opaque, nullptr, nullptr);
+            m_material->UpdateShader(shaderProxy, {}, ShaderPassRenderQueueType::Opaque, nullptr, nullptr);
         }
 
         void OnRecord(RenderGraph& graph, RenderFrameData& frameData) override
@@ -51,11 +52,12 @@ namespace pulsar
     RenderFeatureFactory DisplayEncodingRenderFeatureSettings::BuildRenderFeatureFactory() const
     {
         auto shader = AssetManager::Get()->LoadAsset<Shader>("Pulsar/Shaders/DisplayEncoding");
-        SPtr<ShaderConfig> shaderConfig = shader ? shader->GetConfig() : nullptr;
-        guid_t shaderGuid = shader ? shader->GetAssetGuid() : guid_t{};
-        return [shaderConfig, shaderGuid]() -> std::unique_ptr<RenderFeature>
+        if (shader)
+            shader->EnsureGPUResource();
+        auto shaderProxy = shader ? shader->GetRenderProxy() : nullptr;
+        return [shaderProxy]() -> std::unique_ptr<RenderFeature>
         {
-            return std::make_unique<DisplayEncodingRenderFeature>(shaderConfig, shaderGuid);
+            return std::make_unique<DisplayEncodingRenderFeature>(shaderProxy);
         };
     }
 }

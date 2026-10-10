@@ -627,8 +627,8 @@ namespace pulsared
     }
     void AssetDatabase::Initialize()
     {
-        IconPool = std::make_unique<PersistentImagePool>(Application::GetGfxApp());
-        ThumbnailCacheInst = std::make_unique<ThumbnailCache>(Application::GetGfxApp());
+        IconPool = std::make_unique<PersistentTexturePool>();
+        ThumbnailCacheInst = std::make_unique<ThumbnailCache>();
 
         FileTree = mksptr(new AssetFileNode);
         FileTree->IsFolder = true;

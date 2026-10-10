@@ -73,6 +73,7 @@ namespace pulsar
         m_textureSize.y = height;
         m_channelCount = channel;
         m_loadedOriginMemory = true;
+        m_gpuResourceDirty = true;
     }
     void Texture2D::PostEditChange(FieldInfo* info)
     {
@@ -82,11 +83,8 @@ namespace pulsar
             name == NAMEOF(m_samplerFilter) ||
             name == NAMEOF(m_samplerAddressMode))
         {
-            if (IsCreatedGPUResource())
-            {
-                DestroyGPUResource();
-                CreateGPUResource();
-            }
+            m_gpuResourceDirty = true;
+            EnsureGPUResource();
             SendOuterDependencyMsg(DependencyObjectState::Modified);
         }
 
@@ -97,12 +95,14 @@ namespace pulsar
         return Texture2D::StaticGetFormatMapping(OSPlatform::Windows64)->at(format);
     }
 
-    bool Texture2D::CreateGPUResource()
+    bool Texture2D::EnsureGPUResource()
     {
-        if (IsCreatedGPUResource())
+        if (IsCreatedGPUResource() && !m_gpuResourceDirty)
         {
             return true;
         }
+
+        m_gpuResourceDirty = false;
 
         auto targetGfxFormat = _GetTextureFormat(m_compressionFormat);
 
@@ -143,17 +143,20 @@ namespace pulsar
         samplerConfig.AddressMode = GetSamplerAddressMode();
 
         // 句柄分配线程安全，主线程立即拿到句柄；纹理创建与数据上传投递到渲染线程异步执行。
-        // CreateGPUResource 只在游戏线程调用（由 Material::BuildRenderData 等驱动），
+        // EnsureGPUResource 只在游戏线程调用（由 Material::BuildRenderData 等驱动），
         // 投递创建保证渲染线程消费快照前资源已就绪。
-        auto* renderThread = Application::GetRenderThread();
-        m_proxy = std::make_shared<rendering::TextureProxy>(
-            m_textureSize.x, m_textureSize.y, targetGfxFormat, samplerConfig, std::move(data));
+        // Init is re-init safe: a dirty rebuild reuses the same proxy object, so
+        // render-side holders (materials) see the new texture automatically.
+        if (!m_proxy)
+            m_proxy = std::make_shared<rendering::TextureProxy>();
 
         auto proxy = m_proxy;
-        renderThread->EnqueueUpdate_AnyThread(
-            [proxy = std::move(proxy)](gfx::GFXResourceRegistry*)
+        const int32_t w = m_textureSize.x;
+        const int32_t h = m_textureSize.y;
+        Application::GetRenderThread()->EnqueueUpdate_AnyThread(
+            [proxy = std::move(proxy), w, h, targetGfxFormat, samplerConfig, data = std::move(data)](gfx::GFXResourceRegistry*) mutable
             {
-                proxy->OnCreateResource();
+                proxy->Init(w, h, targetGfxFormat, samplerConfig, std::move(data));
             });
 
         return true;
@@ -177,7 +180,7 @@ namespace pulsar
             Application::GetRenderThread()->EnqueueDestroy_AnyThread(
                 [proxy = std::move(proxy)](gfx::GFXResourceRegistry*)
                 {
-                    proxy->OnDestroyResource();
+                    proxy->Release();
                 });
         }
     }

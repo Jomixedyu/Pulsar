@@ -13,34 +13,23 @@
 #include <CoreLib/File.h>
 #include <CoreLib/Guid.h>
 #include <filesystem>
-#include <gfx/GFXResourceRegistry.h>
 
 namespace pulsared
 {
-    ThumbnailCache::ThumbnailCache(gfx::GFXApplication* app)
-        : m_app(app)
-    {
-        gfx::GFXDescriptorLayoutDesc info{
-            gfx::GFXDescriptorLayoutDesc(gfx::GFXDescriptorType::Texture2D, gfx::GFXGpuProgramStageFlags::Fragment, 0)};
-        m_descriptorLayout = m_app->GetResourceRegistry()->GetOrCreateDescriptorSetLayout(&info, 1);
-    }
 
-    ThumbnailCache::~ThumbnailCache() = default;
-
-    gfx::GFXDescriptorSet_wp ThumbnailCache::GetThumbnail(const jxcorlib::guid_t& assetGuid)
+    uint64_t ThumbnailCache::GetThumbnail(const jxcorlib::guid_t& assetGuid)
     {
         if (!assetGuid)
-            return {};
+            return 0;
 
-        auto it = m_descSets.find(assetGuid);
-        if (it != m_descSets.end())
-            return it->second;
+        const index_string key = index_string(assetGuid.to_string());
+        if (uint64_t id = m_pool.GetTextureId(key))
+            return id;
+        if (m_pool.Contains(key))
+            return 0; // registered; the image handle is being published from the render thread
 
-        auto diskResult = LoadFromDisk(assetGuid);
-        if (!diskResult.expired())
-            return diskResult;
-
-        return {};
+        LoadFromDisk(assetGuid);
+        return 0;
     }
 
     void ThumbnailCache::GenerateThumbnail(const jxcorlib::guid_t& assetGuid, pulsar::AssetObject* asset)
@@ -51,7 +40,7 @@ namespace pulsared
         if (m_failedGuids.count(assetGuid))
             return;
 
-        if (m_descSets.count(assetGuid))
+        if (m_pool.Contains(index_string(assetGuid.to_string())))
             return;
 
         auto* texture2d = dynamic_cast<pulsar::Texture2D*>(asset);
@@ -160,32 +149,7 @@ namespace pulsared
         }
 
         SaveToDisk(assetGuid, thumbRGBA.data(), thumbW, thumbH);
-
-        gfx::GFXSamplerConfig config{};
-        config.Filter = gfx::GFXSamplerFilter::Linear;
-        config.AddressMode = gfx::GFXSamplerAddressMode::ClampToEdge;
-
-        auto tex2d = m_app->GetResourceRegistry()->CreateTexture2DFromMemory(
-            thumbRGBA.data(), thumbW * thumbH * 4,
-            thumbW, thumbH,
-            gfx::GFXTextureFormat::R8G8B8A8_UNorm,
-            config);
-
-        if (!tex2d)
-        {
-            m_failedGuids.insert(assetGuid);
-            return;
-        }
-
-        auto descSet = m_descriptorLayout->AllocateSet();
-        auto desc = descSet->FindByBinding(0);
-        if (!desc)
-            desc = descSet->AddDescriptor("p", 0);
-        desc->SetTexture2D(tex2d.get());
-        descSet->Submit();
-
-        m_textures.emplace(assetGuid, tex2d);
-        m_descSets.emplace(assetGuid, descSet);
+        RegisterThumbnail(assetGuid, thumbRGBA.data(), thumbW, thumbH);
     }
 
     bool ThumbnailCache::IsFailed(const jxcorlib::guid_t& assetGuid) const
@@ -195,17 +159,26 @@ namespace pulsared
 
     void ThumbnailCache::ClearCache()
     {
-        m_descSets.clear();
-        m_textures.clear();
+        m_pool.ClearCache();
         m_failedGuids.clear();
+    }
+
+    void ThumbnailCache::RegisterThumbnail(const jxcorlib::guid_t& assetGuid, const uint8_t* rgba, int width, int height)
+    {
+        // Wrap the pixels in a Texture2D asset; the pool owns its GPU
+        // lifecycle and publishes the imgui image handle from the render thread.
+        auto tex = pulsar::NewAssetObject<pulsar::Texture2D>();
+        tex->FromNativeData(rgba, static_cast<size_t>(width) * height * 4, false, width, height, 4);
+        tex->SetCompressedFormat(pulsar::TextureCompressionFormat::BitmapRGBA8);
+        m_pool.Register(index_string(assetGuid.to_string()), tex);
     }
 
     static constexpr const char* ThumbnailExt = ".thumb";
 
-    gfx::GFXDescriptorSet_wp ThumbnailCache::LoadFromDisk(const jxcorlib::guid_t& assetGuid)
+    void ThumbnailCache::LoadFromDisk(const jxcorlib::guid_t& assetGuid)
     {
         if (!Workspace::IsOpened())
-            return {};
+            return;
 
         std::filesystem::path thumbDir = pulsar::Application::inst()->GetTempDirectory() / "Thumbnails";
 
@@ -225,29 +198,9 @@ namespace pulsared
                     size_t expectedPixelSize = static_cast<size_t>(width) * height * 4;
                     if (bytes.size() == 8 + expectedPixelSize)
                     {
-                        gfx::GFXSamplerConfig config{};
-                        config.Filter = gfx::GFXSamplerFilter::Linear;
-                        config.AddressMode = gfx::GFXSamplerAddressMode::ClampToEdge;
-
-                        auto tex2d = m_app->GetResourceRegistry()->CreateTexture2DFromMemory(
-                            reinterpret_cast<const uint8_t*>(bytes.data() + 8), expectedPixelSize,
-                            width, height,
-                            gfx::GFXTextureFormat::R8G8B8A8_UNorm,
-                            config);
-
-                        if (tex2d)
-                        {
-                            auto descSet = m_descriptorLayout->AllocateSet();
-                            auto desc = descSet->FindByBinding(0);
-                            if (!desc)
-                                desc = descSet->AddDescriptor("p", 0);
-                            desc->SetTexture2D(tex2d.get());
-                            descSet->Submit();
-
-                            m_textures.emplace(assetGuid, tex2d);
-                            m_descSets.emplace(assetGuid, descSet);
-                            return descSet;
-                        }
+                        RegisterThumbnail(assetGuid,
+                            reinterpret_cast<const uint8_t*>(bytes.data() + 8), width, height);
+                        return;
                     }
                 }
             }
@@ -264,34 +217,12 @@ namespace pulsared
                 auto rgba = gfx::LoadImageFromMemory(bytes.data(), bytes.size(), &width, &height, &channel, 4);
                 if (!rgba.empty() && width > 0 && height > 0)
                 {
-                    gfx::GFXSamplerConfig config{};
-                    config.Filter = gfx::GFXSamplerFilter::Linear;
-                    config.AddressMode = gfx::GFXSamplerAddressMode::ClampToEdge;
-
-                    auto tex2d = m_app->GetResourceRegistry()->CreateTexture2DFromMemory(
-                        rgba.data(), width * height * 4,
-                        width, height,
-                        gfx::GFXTextureFormat::R8G8B8A8_UNorm,
-                        config);
-
-                    if (tex2d)
-                    {
-                        auto descSet = m_descriptorLayout->AllocateSet();
-                        auto desc = descSet->FindByBinding(0);
-                        if (!desc)
-                            desc = descSet->AddDescriptor("p", 0);
-                        desc->SetTexture2D(tex2d.get());
-                        descSet->Submit();
-
-                        m_textures.emplace(assetGuid, tex2d);
-                        m_descSets.emplace(assetGuid, descSet);
-                        return descSet;
-                    }
+                    RegisterThumbnail(assetGuid, rgba.data(), width, height);
+                    return;
                 }
             }
         }
 
-        return {};
     }
 
     void ThumbnailCache::SaveToDisk(const jxcorlib::guid_t& assetGuid, const uint8_t* rgba, int width, int height)

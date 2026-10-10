@@ -1,7 +1,8 @@
 #pragma once
 
 #include <gfx/GFXDescriptorSet.h>
-#include <Pulsar/Rendering/ShaderInstance.h>
+#include <Pulsar/Rendering/ShaderProgramInstance.h>
+#include <Pulsar/Rendering/ShaderProxy.h>
 #include <Pulsar/Rendering/ShaderPropertyLayout.h>
 #include <Pulsar/Rendering/ShaderPropertyRenderData.h>
 #include <Pulsar/Rendering/ShaderConfig.h>
@@ -18,27 +19,14 @@ namespace pulsar
 {
     // Per-variant binding key: pass name + renderer feature variant (not just the pass —
     // it identifies a concrete compiled variant of this material's shader).
-    struct VariantKey
-    {
-        std::string m_passName;
-        std::string m_variantFeature;
-
-        bool operator==(const VariantKey& other) const = default;
-        bool operator<(const VariantKey& other) const
-        {
-            if (m_passName != other.m_passName) return m_passName < other.m_passName;
-            return m_variantFeature < other.m_variantFeature;
-        }
-    };
-
     // What a render pass needs to bind set0 for a draw: the ready shader program plus the
     // set0 descriptor set + its layout (from the global content cache). Returned by
     // MaterialProxy::ResolveRenderVariant. All pointers are owned elsewhere (program by the
-    // ShaderInstance, set/layout by the global DescriptorSetCache). A default-constructed
+    // ShaderProgramInstance, set/layout by the global DescriptorSetCache). A default-constructed
     // (empty program) value means "not ready this frame" — test it with the bool conversion.
     struct ResolvedVariant
     {
-        std::shared_ptr<ShaderProgramResource> m_program;
+        std::shared_ptr<ShaderProgram> m_program;
         gfx::GFXDescriptorSet*                 m_set0 = nullptr;
         gfx::GFXDescriptorSetLayoutPtr         m_set0Layout;
 
@@ -56,7 +44,7 @@ namespace pulsar
     //
     // The PerMaterial cbuffer layout is forced identical across all passes/variants of one
     // material: the first successfully compiled variant establishes the canonical set0 layout
-    // (registered per shader guid in ShaderInstanceCache); any later variant whose set0 layout
+    // (registered per shader guid in the shader's ShaderProxy); any later variant whose set0 layout
     // diverges fails compilation. Because the material cbuffer is guaranteed identical, one buffer
     // serves the whole material — parameter changes pack + upload it ONCE, then each variant's
     // descriptor set references it (textures stay per-variant).
@@ -77,7 +65,7 @@ namespace pulsar
         // ===== Render thread: consume API (called by render passes) =====
 
         // Called once per frame before drawing with this (pass, renderer feature).
-        // Ensures the ShaderInstance exists, detects async compilation completing / hot-reload,
+        // Ensures the ShaderProgramInstance exists, detects async compilation completing / hot-reload,
         // lazily builds the shared PerMaterial cbuffer, and acquires (from the global content
         // cache) the set0 descriptor set for this variant's set0 layout.
         // Returns { program, set0 set, set0 layout } ready to bind, or a default-constructed
@@ -89,7 +77,9 @@ namespace pulsar
 
         SPtr<ShaderConfigGraphicsPipeline> GetEffectiveGraphicsPipeline(const std::string& passName) const;
 
-        const SPtr<ShaderConfig>& GetShaderConfig() const { return m_shaderConfig; }
+        // The shader config snapshot owned by the shader's ShaderProxy; null while
+        // the proxy has not been upserted yet.
+        SPtr<ShaderConfig> GetShaderConfig() const { return m_shaderProxy ? m_shaderProxy->GetConfig() : nullptr; }
 
         bool HasPass(const std::string& passName) const;
 
@@ -98,11 +88,11 @@ namespace pulsar
         // Replace the parameter snapshot and re-apply it to every ready binding.
         void ApplyRenderData(ShaderPropertyRenderData renderData);
 
-        // Replace the shader-related snapshot (config / guid / features / queue / GP override)
-        // and clear all bindings so they get rebuilt against the new shader on next prepare.
+        // Replace the shader (its render-thread proxy, shipped from the game
+        // thread) plus features / queue / GP override, and clear all bindings so
+        // they get rebuilt on next prepare.
         void UpdateShader(
-            SPtr<ShaderConfig> config,
-            guid_t shaderGuid,
+            std::shared_ptr<ShaderProxy> shaderProxy,
             std::vector<std::string> features,
             ShaderPassRenderQueueType queue,
             SPtr<ShaderConfigGraphicsPipeline> gpOverride,
@@ -115,9 +105,9 @@ namespace pulsar
             SPtr<ObjectPropertyOverride> gpOverrideFields);
 
     private:
-        // Looks up or creates the ShaderInstance for (pass, renderer feature). Returns null if there is
+        // Looks up or creates the ShaderProgramInstance for (pass, renderer feature). Returns null if there is
         // no shader config to compile against.
-    std::shared_ptr<ShaderInstance> GetOrCreateInstance(const std::string& passName, const std::string& variantFeature);
+    std::shared_ptr<ShaderProgramInstance> GetOrCreateInstance(const std::string& passName, const std::string& variantFeature);
         // Ensures the single shared PerMaterial cbuffer exists (sized from the material cbuffer
         // binding in the given set0 layout). No-op if already built.
         void EnsurePerMaterialCBuffer(const ShaderLayout& layout);
@@ -127,9 +117,10 @@ namespace pulsar
         void ClearVariants();
 
     private:
-        // Snapshot fed by the game thread (immutable plain data / SPtr to non-ObjectBase data; no RCPtr).
-        SPtr<ShaderConfig>                 m_shaderConfig;
+        // Snapshot fed by the game thread (immutable plain data; no RCPtr).
+        // The shader config is NOT stored here; it comes from the shader's ShaderProxy.
         guid_t                             m_shaderGuid;
+        std::shared_ptr<ShaderProxy>       m_shaderProxy;
         std::vector<std::string>           m_activeFeatures;
         ShaderPassRenderQueueType          m_queue = ShaderPassRenderQueueType::Opaque;
         ShaderPropertyRenderData           m_renderData;
@@ -138,7 +129,9 @@ namespace pulsar
 
         // Render-thread-owned state.
         // Per-(pass, renderer feature) shader instances — pure shader, no GPU resources.
-        std::map<VariantKey, std::shared_ptr<ShaderInstance>> m_variants;
+        // Variants live in the shader's ShaderProxy; the proxy re-resolves them
+        // every frame, so shader edits and hot reloads heal without any explicit
+        // invalidation here.
 
         // Single PerMaterial constant buffer shared across every variant of this material. set0
         // descriptor sets themselves live in the global DescriptorSetCache (content-addressed);

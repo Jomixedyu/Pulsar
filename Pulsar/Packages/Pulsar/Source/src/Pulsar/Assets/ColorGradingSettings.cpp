@@ -41,8 +41,7 @@ namespace pulsar
         snapshot->ColorSpace = m_colorSpace;
         if (m_lutTexture)
         {
-            if (!m_lutTexture->IsCreatedGPUResource())
-                m_lutTexture->CreateGPUResource();
+            m_lutTexture->EnsureGPUResource();
             snapshot->LutTexture = m_lutTexture->GetTextureProxy();
         }
         return snapshot;

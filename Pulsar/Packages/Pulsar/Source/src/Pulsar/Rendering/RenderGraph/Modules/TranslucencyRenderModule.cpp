@@ -1,8 +1,8 @@
 #include "TranslucencyRenderModule.h"
 #include <Pulsar/Scene.h>
-#include <Pulsar/Rendering/RenderObject.h>
+#include <Pulsar/Rendering/RenderObjectProxy.h>
 #include <Pulsar/Rendering/RenderScene.h>
-#include <Pulsar/Rendering/SceneView.h>
+#include <Pulsar/Rendering/SceneViewProxy.h>
 #include <Pulsar/Rendering/ShaderPass.h>
 #include <Pulsar/Assets/Material.h>
 #include <gfx/GFXCommandBuffer.h>
@@ -36,7 +36,7 @@ namespace pulsar
                                                  RGTextureHandle input,
                                                  RGTextureHandle output,
                                                  const SceneCaptureFrameData& capture,
-                                                 const std::shared_ptr<array_list<rendering::RenderObject_sp>>& visibleRenderers)
+                                                 const std::shared_ptr<array_list<rendering::RenderObjectProxy_sp>>& visibleRenderers)
     {
         auto* scene = capture.scene;
         if (!scene || !capture.view)
@@ -44,7 +44,7 @@ namespace pulsar
 
         const Vector3f camPos     = capture.view->CameraPosition;
         const Vector3f camForward = capture.view->CameraForward;
-        SceneView* viewProxy      = capture.viewProxy;
+        SceneViewProxy* viewProxy      = capture.viewProxy;
 
         auto preparedTransparent = std::make_shared<array_list<PreparedBatch>>();
 
@@ -64,7 +64,7 @@ namespace pulsar
 
         passBuilder.Prepare([camPos, camForward, visibleRenderers, preparedTransparent, this](RGPassContext& ctx)
         {
-            for (const rendering::RenderObject_sp& ro : *visibleRenderers)
+            for (const rendering::RenderObjectProxy_sp& ro : *visibleRenderers)
             {
                 const float depth = jmath::Dot(camForward, ro->GetWorldPosition() - camPos);
                 for (auto batch : ro->GetMeshBatches())

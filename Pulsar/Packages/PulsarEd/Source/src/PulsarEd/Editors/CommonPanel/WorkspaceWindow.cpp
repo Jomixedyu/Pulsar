@@ -698,22 +698,22 @@ namespace pulsared
             const bool isFolder = child->IsFolder;
 
             // Try content thumbnail first
-            gfx::GFXDescriptorSet_wp descSet;
+            uint64_t iconTexId = 0;
             if (!isFolder && child->AssetMeta && child->AssetMeta->Guid)
             {
-                descSet = AssetDatabase::ThumbnailCacheInst->GetThumbnail(child->AssetMeta->Guid);
+                iconTexId = AssetDatabase::ThumbnailCacheInst->GetThumbnail(child->AssetMeta->Guid);
             }
 
             // Fallback to type icon
-            if (descSet.expired())
+            if (!iconTexId)
             {
                 if (assetType)
                 {
-                    descSet = AssetDatabase::IconPool->GetDescriptorSet({assetType->GetName()});
+                    iconTexId = AssetDatabase::IconPool->GetTextureId({assetType->GetName()});
                 }
-                if (descSet.expired())
+                if (!iconTexId)
                 {
-                    descSet = AssetDatabase::IconPool->GetDescriptorSet(cltypeof<ObjectBase>()->GetName());
+                    iconTexId = AssetDatabase::IconPool->GetTextureId(cltypeof<ObjectBase>()->GetName());
                 }
 
                 // Queue thumbnail generation for supported types
@@ -734,14 +734,23 @@ namespace pulsared
                 }
             }
 
-            gfx::GFXDescriptorSet_wp dirtySet = AssetDatabase::IconPool->GetDescriptorSet("WorkspaceWindow.Dirty");
+            const uint64_t dirtyTexId = AssetDatabase::IconPool->GetTextureId("WorkspaceWindow.Dirty");
 
             const auto isSelected = weaks_find(m_selectedFiles.begin(), m_selectedFiles.end(), std::weak_ptr{child}) != m_selectedFiles.end();
             const bool isDirty = isFolder ? false : AssetDatabase::IsDirtyHandle(child->AssetMeta->Guid);
 
             const auto iconSize = ImVec2(m_iconSize, m_iconSize);
-            ImTextureID iconDesc = static_cast<ImTextureID>(descSet.lock()->GetId());
-            ImTextureID dirtyDesc = static_cast<ImTextureID>(dirtySet.lock()->GetId());
+            if (!iconTexId || !dirtyTexId)
+            {
+                // Icon/thumbnail image handles are published from the render
+                // thread; draw a placeholder cell until they are ready.
+                ImGui::Dummy(ImVec2(iconSize.x, iconSize.y + 30));
+                ImGui::PopStyleColor();
+                ImGui::NextColumn();
+                continue;
+            }
+            ImTextureID iconDesc = static_cast<ImTextureID>(iconTexId);
+            ImTextureID dirtyDesc = static_cast<ImTextureID>(dirtyTexId);
 
             // const string dragData = StringUtil::Concat(
             //     child->GetAssetType()->GetName(),
@@ -852,7 +861,7 @@ namespace pulsared
             m_pendingThumbnailRequests.erase(m_pendingThumbnailRequests.begin());
 
             // Skip if already cached
-            if (!AssetDatabase::ThumbnailCacheInst->GetThumbnail(guid).expired())
+            if (AssetDatabase::ThumbnailCacheInst->GetThumbnail(guid) != 0)
                 continue;
 
             // Skip if already failed (don't waste time on LoadAssetById)

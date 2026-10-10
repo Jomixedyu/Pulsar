@@ -14,7 +14,7 @@ namespace pulsar
         CORELIB_CLASS_ATTR(new CreateAssetAttribute);
     public:
         RenderTextureCube();
-        bool CreateGPUResource() override;
+        bool EnsureGPUResource() override;
         void DestroyGPUResource() override;
         bool IsCreatedGPUResource() const override;
         int32_t GetWidth() const override;

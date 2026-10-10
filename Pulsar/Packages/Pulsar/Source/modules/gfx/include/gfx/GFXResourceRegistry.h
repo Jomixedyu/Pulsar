@@ -41,11 +41,6 @@ namespace gfx
 
         virtual GFXBufferPtr CreateBuffer(const GFXBufferDesc& desc) = 0;
         virtual GFXTexturePtr CreateTexture2D(const GFXTextureCreateDesc& desc) = 0;
-        virtual GFXTexturePtr CreateTexture2DFromMemory(
-            const uint8_t* imageData, size_t length,
-            int width, int height,
-            GFXTextureFormat format,
-            const GFXSamplerConfig& samplerConfig) = 0;
         virtual GFXTexturePtr CreateTextureCube(int32_t size) = 0;
         virtual GFXTexturePtr CreateRenderTarget(
             int32_t width, int32_t height, GFXTextureTargetType type,
@@ -67,8 +62,6 @@ namespace gfx
             return GetOrCreateDescriptorSetLayout(layouts.begin(), layouts.size());
         }
 
-        GFXResource* FindResourceById(ResourceId id) const;
-
         virtual GFXApplication* GetApplication() const = 0;
 
         // Called by GFXApplication with the backend-owned timeline.
@@ -88,7 +81,10 @@ namespace gfx
             // to tell where the resource was created.
             resource->SetCreationDebugInfo(std::to_string(std::stacktrace::current(2, 6)));
 #endif
-            m_activeResources.emplace(resource->GetResourceId(), resource);
+            {
+                std::lock_guard<std::mutex> lock(m_resourcesMutex);
+                m_activeResources.emplace(resource->GetResourceId(), resource);
+            }
 
             return std::shared_ptr<T>(resource, &GFXResourceRegistry::DestroyResource);
         }
@@ -99,6 +95,7 @@ namespace gfx
     private:
         uint64_t m_lastTickTimeline = 0;
         GFXBuiltinResources m_builtinResources;
+        mutable std::mutex m_resourcesMutex;
         std::unordered_map<ResourceId, GFXResource*> m_activeResources;
         std::multimap<uint64_t, std::unique_ptr<GFXResource>> m_deferredDestroys;
         std::unordered_map<std::string, GFXDescriptorSetLayoutPtr> m_layoutCache;

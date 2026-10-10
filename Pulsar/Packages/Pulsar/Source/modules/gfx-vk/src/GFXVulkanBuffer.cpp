@@ -58,31 +58,15 @@ namespace gfx
         auto* app = GetApplication();
         if (IsDeviceLocal())
         {
-            // Device-local memory can't be mapped; upload through a transient staging buffer.
-            VkBuffer stagingBuffer;
-            VkDeviceMemory stagingBufferMemory;
-            BufferHelper::CreateBuffer(app, m_desc.BufferSize,
-                VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                stagingBuffer, stagingBufferMemory
-            );
-
-            void* memData;
-            vkMapMemory(app->GetVkDevice(), stagingBufferMemory, 0, m_desc.BufferSize, 0, &memData);
-            memcpy(memData, data, m_desc.BufferSize);
-            vkUnmapMemory(app->GetVkDevice(), stagingBufferMemory);
-
-            BufferHelper::TransferBuffer(app, stagingBuffer, m_vkBuffer, m_desc.BufferSize);
-            BufferHelper::DestroyBuffer(app, stagingBuffer, stagingBufferMemory);
+            // Device-local memory can't be mapped; the app batches the copy into
+            // the frame-head transfer flush (no per-update submit/wait).
+            app->RequestBufferUpload(this, data, m_desc.BufferSize);
+            return;
         }
-        else
-        {
-            void* gpuData;
-            vkMapMemory(app->GetVkDevice(), m_vkBufferMemory, 0, m_desc.BufferSize, 0, &gpuData);
-            memcpy(gpuData, data, m_desc.BufferSize);
-            vkUnmapMemory(app->GetVkDevice(), m_vkBufferMemory);
-        }
+        void* gpuData;
+        vkMapMemory(app->GetVkDevice(), m_vkBufferMemory, 0, m_desc.BufferSize, 0, &gpuData);
+        memcpy(gpuData, data, m_desc.BufferSize);
+        vkUnmapMemory(app->GetVkDevice(), m_vkBufferMemory);
     }
 
     VkBufferUsageFlags GFXVulkanBuffer::GetVkUsage() const

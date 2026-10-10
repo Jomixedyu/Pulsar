@@ -45,7 +45,7 @@ namespace gfx
         GFXVulkanTexture(const GFXVulkanTexture&) = delete;
     public:
 
-        void UpdateTextureResource(const GFXTextureUpdateDesc& desc);
+        void UpdateTexture(const GFXTextureUpdateDesc& desc) override;
         GFXTexture2DViewPtr Get2DView(size_t index) override;
 
         VkImage GetVkImage() const { return m_textureImage; }
@@ -57,6 +57,10 @@ namespace gfx
         GFXTextureFormat GetFormat() const override;
         VkImageAspectFlags GetVkAspectFlags() const { return m_aspectFlags; }
         void SetImageLayout(VkImageLayout layout);
+
+        // Records the initial upload (transition + staging copy + final transition)
+        // into a transfer command buffer.
+        void RecordUpload(VkCommandBuffer cmd, VkBuffer staging, VkDeviceSize srcOffset);
 
         bool IsTarget() const { return m_targetType != GFXTextureTargetType::None; }
         GFXTextureTargetType GetTargetType() const override { return m_targetType; }

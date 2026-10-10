@@ -50,7 +50,7 @@ namespace pulsar
         void PostEditChange(FieldInfo* info) override;
     public:
         //IGPUResource
-        bool CreateGPUResource() override;
+        bool EnsureGPUResource() override;
         void DestroyGPUResource() override;
         bool IsCreatedGPUResource() const override;
 
@@ -83,6 +83,10 @@ namespace pulsar
 
         bool m_isCreatedGPUResource = false;
         std::shared_ptr<rendering::TextureProxy> m_proxy;
+
+        // Set by PostEditChange/FromNativeData; EnsureGPUResource rebuilds the
+        // proxy when dirty.
+        bool m_gpuResourceDirty = false;
 
         CORELIB_REFL_DECL_FIELD(m_compressionFormat);
         TextureCompressionFormat m_compressionFormat{};

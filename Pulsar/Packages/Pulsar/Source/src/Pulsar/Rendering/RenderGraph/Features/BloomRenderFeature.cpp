@@ -2,6 +2,7 @@
 #include <Pulsar/AssetManager.h>
 #include <Pulsar/Assets/Shader.h>
 #include <Pulsar/Rendering/MaterialProxy.h>
+#include <Pulsar/Rendering/ShaderProxy.h>
 #include <Pulsar/Rendering/RenderGraph/Modules/BloomRenderModule.h>
 
 namespace pulsar
@@ -9,10 +10,10 @@ namespace pulsar
     class BloomRenderFeature final : public RenderFeature
     {
     public:
-        explicit BloomRenderFeature(const SPtr<ShaderConfig>& shaderConfig, guid_t shaderGuid)
+        explicit BloomRenderFeature(const std::shared_ptr<ShaderProxy>& shaderProxy)
         {
             m_material = std::make_shared<MaterialProxy>();
-            m_material->UpdateShader(shaderConfig, shaderGuid, {}, ShaderPassRenderQueueType::Opaque, nullptr, nullptr);
+            m_material->UpdateShader(shaderProxy, {}, ShaderPassRenderQueueType::Opaque, nullptr, nullptr);
             m_module = std::make_unique<BloomRenderModule>(m_material);
         }
 
@@ -31,11 +32,12 @@ namespace pulsar
     RenderFeatureFactory BloomRenderFeatureSettings::BuildRenderFeatureFactory() const
     {
         auto shader = AssetManager::Get()->LoadAsset<Shader>("Pulsar/Shaders/NapBloom");
-        SPtr<ShaderConfig> shaderConfig = shader ? shader->GetConfig() : nullptr;
-        guid_t shaderGuid = shader ? shader->GetAssetGuid() : guid_t{};
-        return [shaderConfig, shaderGuid]() -> std::unique_ptr<RenderFeature>
+        if (shader)
+            shader->EnsureGPUResource();
+        auto shaderProxy = shader ? shader->GetRenderProxy() : nullptr;
+        return [shaderProxy]() -> std::unique_ptr<RenderFeature>
         {
-            return std::make_unique<BloomRenderFeature>(shaderConfig, shaderGuid);
+            return std::make_unique<BloomRenderFeature>(shaderProxy);
         };
     }
 }

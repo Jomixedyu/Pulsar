@@ -8,7 +8,6 @@
 #include <CoreLib.Serialization/JsonSerializer.h>
 #include <Pulsar/AssetManager.h>
 #include <Pulsar/Assets/Material.h>
-#include <Pulsar/Rendering/ShaderInstanceCache.h>
 #include <Pulsar/Rendering/ShaderPropertySync.h>
 #include <Pulsar/Rendering/RenderThread.h>
 #include <mutex>
@@ -42,13 +41,17 @@ namespace pulsar
         return material;
     }
 
-    bool Material::CreateGPUResource()
+    bool Material::EnsureGPUResource()
     {
         if (m_createdGpuResource)
         {
             return true;
         }
         m_createdGpuResource = true;
+
+        // The shader's render-thread proxy is created lazily by its first user.
+        if (m_shader)
+            m_shader->EnsureGPUResource();
         // 轻量初始化: GPU 资源将在 proxy 的 ResolveRenderVariant（渲染线程）于 shader Ready 后懒创建。
         // 游戏线程：从当前 sheet 解析渲染线程专用快照。
         ApplyShaderDefaults();
@@ -380,7 +383,7 @@ namespace pulsar
         ApplyShaderDefaults();
 
         // 游戏线程：把 sheet 解析成渲染线程专用快照（纹理->句柄、常量纯值）。
-        // 纹理的 CreateGPUResource 在此（游戏线程）触发，渲染线程不再触碰资产。
+        // 纹理的 EnsureGPUResource 在此（游戏线程）触发，渲染线程不再触碰资产。
         RebuildRenderData();
 
         // 把新参数快照喂给渲染线程的 proxy；proxy 会更新自身快照并刷新所有就绪 binding。
@@ -397,16 +400,14 @@ namespace pulsar
         if (!rt)
             return;
 
-        SPtr<ShaderConfig> config = m_shader ? m_shader->GetConfig() : nullptr;
-        guid_t guid = m_shader ? m_shader->GetAssetGuid() : guid_t{};
-
         rt->EnqueueUpdate_AnyThread(
-            [proxy = m_renderProxy, config = std::move(config), guid,
+            [proxy = m_renderProxy,
+             shaderProxy = m_shader ? m_shader->GetRenderProxy() : nullptr,
              features = m_activeFeatures, queue = m_queue,
              gpOverride = m_graphicsPipelineOverride, gpFields = m_graphicsPipelineOverrideFields]
             (gfx::GFXResourceRegistry*) mutable
             {
-                proxy->UpdateShader(std::move(config), guid, std::move(features), queue,
+                proxy->UpdateShader(std::move(shaderProxy), std::move(features), queue,
                                        std::move(gpOverride), std::move(gpFields));
             });
     }

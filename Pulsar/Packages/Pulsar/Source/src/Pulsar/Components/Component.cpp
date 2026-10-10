@@ -5,7 +5,7 @@
 #include <Pulsar/AssetObject.h>
 #include <Pulsar/Components/Component.h>
 #include <Pulsar/Node.h>
-#include <Pulsar/Rendering/RenderObject.h>
+#include <Pulsar/Rendering/RenderObjectProxy.h>
 #include <Pulsar/World.h>
 #include "Pulsar/Scene.h"
 
