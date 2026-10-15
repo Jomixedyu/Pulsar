@@ -2,6 +2,7 @@
 #include <Pulsar/Logger.h>
 #include <Pulsar/Application.h>
 #include <Pulsar/Rendering/DescriptorSetCache.h>
+#include <Pulsar/Profiler.h>
 #include <gfx/GFXResourceRegistry.h>
 #include <gfx/GFXApplication.h>
 
@@ -122,6 +123,7 @@ namespace pulsar
     void RenderThread::RenderLoop()
     {
         m_renderThreadId = std::this_thread::get_id();
+        Profiler::Get().BindTrack(Profiler::Get().GetTrackIndex("Render"));
         Logger::Log("Render thread started");
 
         while (m_running)
@@ -137,20 +139,28 @@ namespace pulsar
                 m_frameRequested = false;
             }
 
+            if (frame)
+                Profiler::Get().BeginFrame();
+
             // 1. 先抽干资源更新队列（创建/上传），形成帧屏障：
             //    保证本帧渲染用到的资源已就绪。
-            ProcessResourceUpdates();
+            {
+                PROFILE_SCOPE("DrainQueues");
+                ProcessResourceUpdates();
 
-            // 1.1 回收最后引用提交已在 GPU 时间轴完成的 descriptor set 缓存项。
-            DescriptorSetCache::Instance().Tick();
+                // 回收最后引用提交已在 GPU 时间轴完成的 descriptor set 缓存项。
+                DescriptorSetCache::Instance().Tick();
 
-
-            // 1.6 处理独立销毁队列（晚于本帧所有 add/update）。
-            ProcessDestroys();
+                // 处理独立销毁队列（晚于本帧所有 add/update）。
+                ProcessDestroys();
+            }
 
             // 2. 执行本帧渲染（acquire / RenderGraph / present）。
             if (frame)
                 frame();
+
+            if (frame)
+                Profiler::Get().EndFrame();
 
             // 3. 通知主线程本帧完成。
             {

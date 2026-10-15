@@ -58,6 +58,13 @@ namespace gfx
 
         GFXResourceRegistry* GetResourceRegistry() const { return m_resourceRegistry; }
 
+        // Frame-phase hook for profiling: invoked as (name, begin/end) around each
+        // phase of the backend frame (acquire, record, wait, submit, present). The
+        // backend knows nothing about the profiler; the engine bridges it. Set once at
+        // startup; invoked on the render thread.
+        using GFXFramePhaseFn = std::function<void(std::string_view name, bool begin)>;
+        void SetFramePhaseCallback(GFXFramePhaseFn fn) { m_framePhaseFn = std::move(fn); }
+
         // Number of per-frame resource slots (one frame recording + one executing on
         // the GPU). Not the GPU in-flight depth: that is 1 (a frame is submitted only
         // after the previous one completed).
@@ -80,6 +87,7 @@ namespace gfx
     protected:
         GFXGlobalConfig m_config{};
         GFXResourceRegistry* m_resourceRegistry = nullptr;
+        GFXFramePhaseFn m_framePhaseFn;
     };
 
 } // namespace gfx

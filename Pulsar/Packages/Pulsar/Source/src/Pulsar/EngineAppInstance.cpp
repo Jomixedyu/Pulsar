@@ -1,5 +1,6 @@
 #include "EngineAppInstance.h"
 #include "Assets/StaticMesh.h"
+#include "Profiler.h"
 #include <algorithm>
 #include "Components/CameraComponent.h"
 #include "Components/StaticMeshRendererComponent.h"
@@ -48,6 +49,8 @@ namespace pulsar
         if (TransientRTPool::Get())
             TransientRTPool::Get()->TickGC(s_frameIndex);
 
+        PROFILE_SCOPE("RecordScene");
+
         for (auto* world : m_worlds)
         {
             // NOTE: the render thread never reads live World state; the debug name is a
@@ -60,9 +63,20 @@ namespace pulsar
             if (auto* scene = world->GetRenderScene())
             {
                 RenderGraph graph;
-                scene->GetRenderPipeline().OnRecord(graph, *scene, s_frameIndex);
-                if (graph.Compile())
+                {
+                    PROFILE_SCOPE("BuildGraph");
+                    scene->GetRenderPipeline().OnRecord(graph, *scene, s_frameIndex);
+                }
+                bool compiled;
+                {
+                    PROFILE_SCOPE("CompileGraph");
+                    compiled = graph.Compile();
+                }
+                if (compiled)
+                {
+                    PROFILE_SCOPE("ExecuteGraph");
                     graph.Execute(cmdBuffer);
+                }
             }
 
             cmdBuffer.CmdPopDebugInfo();

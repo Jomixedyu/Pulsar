@@ -31,6 +31,24 @@
 
 namespace gfx
 {
+    namespace
+    {
+        struct FramePhaseScope
+        {
+            const GFXApplication::GFXFramePhaseFn& fn;
+            std::string_view name;
+            FramePhaseScope(const GFXApplication::GFXFramePhaseFn& fn, std::string_view name) : fn(fn), name(name)
+            {
+                if (fn) fn(name, true);
+            }
+            ~FramePhaseScope()
+            {
+                if (fn) fn(name, false);
+            }
+            FramePhaseScope(const FramePhaseScope&) = delete;
+            FramePhaseScope& operator=(const FramePhaseScope&) = delete;
+        };
+    }
     GFXExtensions GFXVulkanApplication::GetExtensionNames()
     {
         if (m_extensions.empty())
@@ -464,7 +482,11 @@ namespace gfx
         // (two frames ago) completed before the previous frame was submitted.
 
         uint32_t imageIndex;
-        auto result = viewport->AcquireNextImage(&imageIndex);
+        VkResult result;
+        {
+            FramePhaseScope phase(m_framePhaseFn, "Acquire");
+            result = viewport->AcquireNextImage(&imageIndex);
+        }
         if (result == VK_ERROR_OUT_OF_DATE_KHR)
         {
             viewport->ReInitSwapChain();
@@ -483,19 +505,25 @@ namespace gfx
 
         auto& cmds = m_frameCmds[m_framecount % kFrameSlotCount];
 
-        cmds.render->Begin();
-        GetRenderPipeline()->OnRecord(*cmds.render, renderTargets);
-        cmds.render->End();
+        {
+            FramePhaseScope phase(m_framePhaseFn, "Record");
+            cmds.render->Begin();
+            GetRenderPipeline()->OnRecord(*cmds.render, renderTargets);
+            cmds.render->End();
+        }
 
         // Frame-head transfer: flush all staging->device copies queued during this frame (both the
         // resource-update drain and lazy variant creation inside OnRecord). Submitted before the
         // main command buffer so its barriers make the writes visible to the passes that read them.
         const bool hasUploads = m_uploadQueue->HasPending();
-        if (hasUploads)
         {
-            cmds.transfer->Begin();
-            m_uploadQueue->FlushInto(cmds.transfer->GetVkCommandBuffer());
-            cmds.transfer->End();
+            FramePhaseScope phase(m_framePhaseFn, "Transfer");
+            if (hasUploads)
+            {
+                cmds.transfer->Begin();
+                m_uploadQueue->FlushInto(cmds.transfer->GetVkCommandBuffer());
+                cmds.transfer->End();
+            }
         }
 
         VkCommandBuffer vkCmds[2];
@@ -535,14 +563,20 @@ namespace gfx
         // depth is 1. Recording of this frame overlapped that execution. (First frame
         // waits value 0, which the timeline starts at.)
         const uint64_t throttleValue = m_framecount;
-        VkSemaphoreWaitInfo waitInfo{};
-        waitInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO;
-        waitInfo.semaphoreCount = 1;
-        waitInfo.pSemaphores = &m_timelineSemaphore;
-        waitInfo.pValues = &throttleValue;
-        vkWaitSemaphores(m_device, &waitInfo, UINT64_MAX);
+        {
+            FramePhaseScope phase(m_framePhaseFn, "WaitPrevious");
+            VkSemaphoreWaitInfo waitInfo{};
+            waitInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO;
+            waitInfo.semaphoreCount = 1;
+            waitInfo.pSemaphores = &m_timelineSemaphore;
+            waitInfo.pValues = &throttleValue;
+            vkWaitSemaphores(m_device, &waitInfo, UINT64_MAX);
+        }
 
-        vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+        {
+            FramePhaseScope phase(m_framePhaseFn, "Submit");
+            vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+        }
 
         VkPresentInfoKHR presentInfo{};
         presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -554,7 +588,10 @@ namespace gfx
         presentInfo.waitSemaphoreCount = 1;
         presentInfo.pImageIndices = &imageIndex;
 
-        result = vkQueuePresentKHR(m_presentQueue, &presentInfo);
+        {
+            FramePhaseScope phase(m_framePhaseFn, "Present");
+            result = vkQueuePresentKHR(m_presentQueue, &presentInfo);
+        }
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
         {

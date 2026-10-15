@@ -5,16 +5,10 @@
 
 #include <chrono>
 #include <cstdint>
-#include <memory>
 
 namespace pulsar
 {
     struct ProfileFrame;
-}
-
-namespace ImGuiUtils
-{
-    class ProfilerGraph;
 }
 
 namespace pulsared
@@ -25,27 +19,22 @@ namespace pulsared
 
     public:
         ProfilerTool();
-        ~ProfilerTool() override;
+        ~ProfilerTool() override = default;
         string_view GetWindowDisplayName() const override { return ICON_FK_BAR_CHART " Profiler"; }
         void OnDrawImGui(float dt) override;
 
     private:
-        void SyncLegitGraph();
-        void UpdateAverageStats(const pulsar::ProfileFrame& frame);
-        void DrawLegitGraph(const pulsar::ProfileFrame& frame);
-        void DrawFlameChart(const pulsar::ProfileFrame& frame);
+        const pulsar::ProfileFrame* GetSelectedFrame();
+        void DrawFrameStrip();
+        void DrawTimeline(const pulsar::ProfileFrame& frame);
         void DrawEntryTable(const pulsar::ProfileFrame& frame);
+        void UpdateAverageStats(const pulsar::ProfileFrame& frame);
 
-        std::unique_ptr<ImGuiUtils::ProfilerGraph> m_cpuGraph;
-        uint64_t m_lastLoadedFrameIndex = UINT64_MAX;
-        int m_frameOffset = 0;
-        int m_frameWidth = 3;
-        int m_frameSpacing = 1;
-        float m_maxFrameTimeMs = 33.333f;
-        float m_flameZoom = 1.0f;
-        bool m_useColoredLegendText = true;
-        bool m_showFlameChart = true;
+        uint64_t m_selectedFrame = UINT64_MAX;  // by frame index, stable across ring shifts
+        bool m_followLatest = true;
         bool m_showTable = true;
+        float m_zoom = 1.0f;
+
         uint64_t m_lastStatsFrameIndex = UINT64_MAX;
         uint32_t m_statsFrameCount = 0;
         float m_statsFrameTimeSumMs = 0.0f;

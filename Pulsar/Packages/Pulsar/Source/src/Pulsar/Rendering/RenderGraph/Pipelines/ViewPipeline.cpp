@@ -1,5 +1,6 @@
 #include "ViewPipeline.h"
 #include "SceneCaptureFrameData.h"
+#include <Pulsar/Profiler.h>
 #include <Pulsar/Rendering/SceneViewProxy.h>
 #include <Pulsar/Rendering/RenderScene.h>
 #include <Pulsar/Rendering/LightProxy.h>
@@ -90,7 +91,6 @@ namespace pulsar
 
             feature->OnCreateResource();
             m_features.push_back(std::move(feature));
-
         }
 
         m_featureTypes = data.FeatureTypes;

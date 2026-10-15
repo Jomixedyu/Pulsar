@@ -110,7 +110,20 @@ namespace pulsar
         g_gfxApp = new gfx::GFXVulkanApplication(gfxConfig);
         g_gfxApp->Initialize();
 
+        // Bridge the gfx frame phases into the profiler (render thread invokes them
+        // inside the render track's frame, nesting under RenderFrame).
+        g_gfxApp->SetFramePhaseCallback([](std::string_view name, bool begin)
+        {
+            if (begin)
+                Profiler::Get().PushScope(name, 0);
+            else
+                Profiler::Get().PopScope();
+        });
+
         Watch.Record("gfx initialize");
+
+        Profiler::Get().RegisterTrack("Main");
+        Profiler::Get().RegisterTrack("Render");
 
         g_renderThread = new RenderThread();
         g_renderThread->Start_AnyThread();
@@ -179,10 +192,14 @@ namespace pulsar
             // inputs and dispatch this frame without blocking: the next loop
             // iteration's game tick overlaps with the render thread's recording.
             {
-                PROFILE_SCOPE("RenderWait");
+                PROFILE_SCOPE("WaitRenderThread");
                 g_renderThread->WaitFrame_AnyThread();
             }
-            g_renderThread->Dispatch_AnyThread([dt] { g_gfxApp->TickRender(dt); });
+            g_renderThread->Dispatch_AnyThread([dt]
+            {
+                PROFILE_SCOPE("RenderFrame");
+                g_gfxApp->TickRender(dt);
+            });
 
             Profiler::Get().EndFrame();
         }

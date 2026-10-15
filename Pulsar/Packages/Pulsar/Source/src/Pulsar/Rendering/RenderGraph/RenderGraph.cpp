@@ -1,5 +1,6 @@
 #include "RenderGraph.h"
 #include <Pulsar/Logger.h>
+#include <Pulsar/Profiler.h>
 #include <gfx/GFXCommandBuffer.h>
 #include <gfx/GFXTexture.h>
 #include <algorithm>
@@ -217,6 +218,7 @@ namespace pulsar
             const bool beginPass = fbo && fboAttach && !pass.noRenderPass;
 
             cmd.CmdPushDebugInfo(pass.name);
+            PROFILE_SCOPE(pass.name);
             if (beginPass)
             {
                 cmd.SetFrameBuffer(fbo);
