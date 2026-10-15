@@ -17,13 +17,7 @@ namespace gfx
             VkBuffer& buffer,
             VkDeviceMemory& bufferMemory);
 
-        static void TransferBuffer(GFXVulkanApplication* app, VkBuffer src, VkBuffer dest, VkDeviceSize size);
-
         static void DestroyBuffer(GFXVulkanApplication* app, VkBuffer buffer, VkDeviceMemory mem);
-
-        static void TransitionImageLayout(
-            GFXVulkanApplication* app,
-            VkImage image, VkFormat format, VkImageAspectFlags aspect, VkImageLayout oldLayout, VkImageLayout newLayout);
 
         static void TransitionImageLayout(
             VkCommandBuffer cmd, GFXVulkanTexture* tex, VkImageLayout newLayout);
@@ -31,9 +25,6 @@ namespace gfx
         static VkPipelineStageFlags GetStageFlagsForLayout(VkImageLayout layout);
 
         static VkAccessFlags GetAccessMaskForLayout(VkImageLayout layout);
-
-        static void CopyBufferToImage(GFXVulkanApplication* app, VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
-
 
         static VkSampler CreateTextureSampler(
             GFXVulkanApplication* app, 

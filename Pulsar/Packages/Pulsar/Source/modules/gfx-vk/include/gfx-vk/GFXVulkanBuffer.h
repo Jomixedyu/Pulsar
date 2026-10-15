@@ -15,6 +15,7 @@ namespace gfx
         virtual ~GFXVulkanBuffer() override;
     public:
         virtual void Update(const void* data) override;
+        virtual void Update(const void* data, size_t size) override;
         const VkBuffer& GetVkBuffer() const { return m_vkBuffer; }
         VkBufferUsageFlags GetVkUsage() const;
     public:

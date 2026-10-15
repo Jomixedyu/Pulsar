@@ -5,7 +5,6 @@
 #include "GFXVulkanCommandBuffer.h"
 
 #include "GFXVulkanFrameBufferObject.h"
-#include "GFXVulkanQueue.h"
 #include "GFXVulkanTexture.h"
 #include <gfx/GFXSurface.h>
 #include <gfx/GFXSwapchain.h>
@@ -35,14 +34,17 @@ namespace gfx
         VkImageView GetVkSwapChainImageView() const { return m_swapChainImageViews[m_imageIndex]; }
         VkExtent2D GetVkSwapChainExtent() const { return m_swapChainExtent; }
         VkFormat GetVkSwapChainImageFormat() const { return m_swapChainImageFormat; }
-        GFXVulkanQueue* GetQueue() const;
+        // Sync primitives for the current frame slot (indexed by frame-in-flight).
+        VkSemaphore GetImageAvailableSemaphore() const;
         VkResult AcquireNextImage(uint32_t* outIndex);
+        VkSemaphore GetRenderFinishedSemaphore(uint32_t imageIndex) const { return m_renderFinishedSemaphores[imageIndex]; }
     public:
         virtual GFXFrameBufferObject* GetFrameBufferObject() override;
     protected:
         std::vector<VkSemaphore> m_imageAvailableSemaphores;
+        // Indexed by swapchain image (present completion is tied to the image,
+        // not the frame slot).
         std::vector<VkSemaphore> m_renderFinishedSemaphores;
-        std::vector<VkFence> m_inFlightFences;
         bool m_framebufferResized = false;
 
         VkSwapchainKHR m_swapChain = VK_NULL_HANDLE;
@@ -50,8 +52,6 @@ namespace gfx
         std::vector<VkImageView> m_swapChainImageViews;
 
         std::vector<std::unique_ptr<GFXVulkanFrameBufferObject>> m_framebuffer;
-
-        std::vector< std::unique_ptr<GFXVulkanQueue> > m_queues;
 
         std::vector<std::unique_ptr<GFXVulkanTexture>> m_swapRenderTarget;
 

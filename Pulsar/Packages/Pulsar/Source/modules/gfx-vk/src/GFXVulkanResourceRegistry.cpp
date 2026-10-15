@@ -84,9 +84,9 @@ namespace gfx
     }
 
     GFXDescriptorSetLayoutPtr GFXVulkanResourceRegistry::CreateDescriptorSetLayout(
-        const GFXDescriptorLayoutDesc* layouts, size_t layoutCount)
+        std::span<const GFXDescriptorLayoutDesc> layouts)
     {
-        return RegisterResource(new GFXVulkanDescriptorSetLayout(this, layouts, layoutCount));
+        return RegisterResource(new GFXVulkanDescriptorSetLayout(this, layouts));
     }
 
     GFXSamplerPtr GFXVulkanResourceRegistry::CreateSampler(const GFXSamplerConfig& config)

@@ -55,17 +55,23 @@ namespace gfx
 
     void GFXVulkanBuffer::Update(const void* data)
     {
+        Update(data, m_desc.BufferSize);
+    }
+
+    void GFXVulkanBuffer::Update(const void* data, size_t size)
+    {
+        assert(size <= m_desc.BufferSize);
         auto* app = GetApplication();
         if (IsDeviceLocal())
         {
             // Device-local memory can't be mapped; the app batches the copy into
             // the frame-head transfer flush (no per-update submit/wait).
-            app->RequestBufferUpload(this, data, m_desc.BufferSize);
+            app->RequestBufferUpload(this, data, size);
             return;
         }
         void* gpuData;
-        vkMapMemory(app->GetVkDevice(), m_vkBufferMemory, 0, m_desc.BufferSize, 0, &gpuData);
-        memcpy(gpuData, data, m_desc.BufferSize);
+        vkMapMemory(app->GetVkDevice(), m_vkBufferMemory, 0, size, 0, &gpuData);
+        memcpy(gpuData, data, size);
         vkUnmapMemory(app->GetVkDevice(), m_vkBufferMemory);
     }
 

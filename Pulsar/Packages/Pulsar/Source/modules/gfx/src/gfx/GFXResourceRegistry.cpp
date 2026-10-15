@@ -1,4 +1,5 @@
 #include <gfx/GFXResourceRegistry.h>
+#include <gfx/GFXApplication.h>
 
 #include <algorithm>
 #include <cassert>
@@ -96,11 +97,11 @@ namespace gfx
     }
 
     GFXDescriptorSetLayoutPtr GFXResourceRegistry::GetOrCreateDescriptorSetLayout(
-        const GFXDescriptorLayoutDesc* layouts, size_t layoutCount)
+        std::span<const GFXDescriptorLayoutDesc> layouts)
     {
         std::vector<const GFXDescriptorLayoutDesc*> sorted;
-        sorted.reserve(layoutCount);
-        for (size_t i = 0; i < layoutCount; ++i)
+        sorted.reserve(layouts.size());
+        for (size_t i = 0; i < layouts.size(); ++i)
             sorted.push_back(&layouts[i]);
         std::sort(sorted.begin(), sorted.end(),
             [](const GFXDescriptorLayoutDesc* a, const GFXDescriptorLayoutDesc* b)
@@ -120,7 +121,7 @@ namespace gfx
         if (it != m_layoutCache.end())
             return it->second;
 
-        auto layout = CreateDescriptorSetLayout(layouts, layoutCount);
+        auto layout = CreateDescriptorSetLayout(layouts);
         m_layoutCache.emplace(std::move(key), layout);
         return layout;
     }
@@ -130,7 +131,6 @@ namespace gfx
         std::vector<std::unique_ptr<GFXResource>> expired;
         {
             std::lock_guard<std::mutex> lock(m_resourcesMutex);
-            m_lastTickTimeline = currentTimeline;
             auto end = m_deferredDestroys.upper_bound(currentTimeline);
             for (auto it = m_deferredDestroys.begin(); it != end;)
             {
@@ -153,8 +153,12 @@ namespace gfx
 
         std::lock_guard<std::mutex> lock(m_resourcesMutex);
         m_activeResources.erase(resource->GetResourceId());
+
+        // Tag with the submission currently being recorded (framecount+1): the resource
+        // may still be referenced by it. Tick() receives the completed timeline and
+        // destroys everything whose tag has been passed by the GPU.
         m_deferredDestroys.emplace(
-            m_lastTickTimeline + 2,
+            GetApplication()->GetFrameCount() + 1,
             std::unique_ptr<GFXResource>(resource));
     }
 

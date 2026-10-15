@@ -37,12 +37,6 @@ namespace gfx
         m_initial.pop();
         return buf;
     }
-    void GFXVulkanCommandBufferPool::ReleaseCommandBuffer(VkCommandBuffer buffer)
-    {
-        vkResetCommandBuffer(buffer, 0);
-        m_initial.push(buffer);
-    }
-
     void GFXVulkanCommandBufferPool::AllocCommandBuffer()
     {
         const int allocSize = 3;

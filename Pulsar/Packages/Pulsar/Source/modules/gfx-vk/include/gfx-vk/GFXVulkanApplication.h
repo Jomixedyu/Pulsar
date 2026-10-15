@@ -35,8 +35,6 @@ namespace gfx
 
     public:
 
-        virtual GFXRenderer* GetRenderer() override;
-
         virtual void Initialize() override;
         virtual void Terminate() override;
         virtual void WaitDeviceIdle() override;
@@ -49,8 +47,6 @@ namespace gfx
         virtual const char* GetApiLevelName() const override { return "Vulkan 1.3"; }
 
         void TickRender(float deltaTime);
-        virtual GFXCommandBufferPtr CreateCommandBuffer() override;
-
 
         virtual GFXGraphicsPipelineManager* GetGraphicsPipelineManager() const override
         {
@@ -70,6 +66,10 @@ namespace gfx
         const VkInstance& GetVkInstance() const { return m_instance; }
         const VkSurfaceKHR& GetVkSurface() const { return m_surface; }
         const VkQueue& GetVkGraphicsQueue() const { return m_graphicsQueue; }
+        // Timeline semaphore signaled by every frame submission on the graphics queue.
+        const VkSemaphore& GetTimelineSemaphore() const { return m_timelineSemaphore; }
+        uint64_t GetFrameCount() const override { return m_framecount; }
+        uint64_t GetCompletedTimeline() const override;
         const VkQueue& GetVkPresentQueue() const { return m_presentQueue; }
         //const VkCommandPool& GetVkCommandPool() const { return m_commandPool; }
 
@@ -84,23 +84,28 @@ namespace gfx
         {
             return m_renderPipeline;
         }
-        class GFXVulkanCommandBufferPool* GetCommandBufferPool() const
-        {
-            return m_cmdPool;
-        }
-
         class GFXVulkanTransferQueue* GetTransferQueue() const
         {
             return m_uploadQueue;
         }
 
+        // Device-level command buffer allocator for the graphics queue family.
+        // Frame recording goes through the renderer; one-off sync paths (readback)
+        // may allocate from it directly.
+        class GFXVulkanCommandBufferPool* GetCommandBufferPool() const
+        {
+            return m_cmdPool;
+        }
+
         // Single monotonic frame counter owned by the gfx layer. Incremented once per successful
         // frame (skipped/early-out frames do not advance it). All in-flight indices are derived
-        // from this via (GetFrameCount() % MAX_FRAMES_IN_FLIGHT).
-        uint64_t GetFrameCount() const { return m_framecount; }
-        uint32_t GetFrameInFlightIndex() const { return static_cast<uint32_t>(m_framecount % MAX_FRAMES_IN_FLIGHT); }
+        // from this via (GetFrameCount() % kFrameSlotCount).
+        uint32_t GetFrameInFlightIndex() const override { return static_cast<uint32_t>(m_framecount % kFrameSlotCount); }
 
-        static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
+        // GPU in-flight depth is 1 (frame N is submitted only after N-1 completed), but
+        // two slots are needed because recording frame N overlaps execution of frame N-1.
+        static constexpr int kFrameSlotCount = 2;
+        uint32_t GetFrameSlotCount() const override { return kFrameSlotCount; }
 
     private:
         void InitVkInstance();
@@ -128,13 +133,23 @@ namespace gfx
         GFXRenderPipeline* m_renderPipeline = nullptr;
 
         VkQueue m_graphicsQueue = VK_NULL_HANDLE;
+        VkSemaphore m_timelineSemaphore = VK_NULL_HANDLE;
         VkQueue m_presentQueue = VK_NULL_HANDLE;
 
-        class GFXVulkanRenderer* m_renderer = nullptr;
 
-        class GFXVulkanCommandBufferPool* m_cmdPool = nullptr;
 
         class GFXVulkanTransferQueue* m_uploadQueue = nullptr;
+        class GFXVulkanCommandBufferPool* m_cmdPool = nullptr;
+
+        // Per-slot command buffers, allocated once at init and reused in rotation
+        // (reset happens in Begin(); the slot's previous submission completed two
+        // frames ago, covered by the submit-time timeline wait).
+        struct FrameCommandBuffers
+        {
+            std::unique_ptr<GFXVulkanCommandBuffer> render;
+            std::unique_ptr<GFXVulkanCommandBuffer> transfer;
+        };
+        FrameCommandBuffers m_frameCmds[kFrameSlotCount];
 
         GFXGraphicsPipelineManager* m_graphicsPipelineManager = nullptr;
 

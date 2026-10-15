@@ -58,36 +58,6 @@ namespace gfx
         vkBindBufferMemory(app->GetVkDevice(), buffer, bufferMemory, 0);
     }
 
-    void BufferHelper::TransferBuffer(GFXVulkanApplication* app, VkBuffer src, VkBuffer dest, VkDeviceSize size)
-    {
-        GFXVulkanCommandBuffer buffer(app);
-
-        VkCommandBufferBeginInfo beginInfo{};
-        {
-            beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-            beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-        }
-        buffer.Begin();
-        {
-            VkBufferCopy copyRegion{};
-            copyRegion.srcOffset = 0;
-            copyRegion.dstOffset = 0;
-            copyRegion.size = size;
-            vkCmdCopyBuffer(buffer.GetVkCommandBuffer(), src, dest, 1, &copyRegion);
-        }
-        buffer.End();
-
-        VkSubmitInfo submitInfo{};
-        {
-            submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-            submitInfo.commandBufferCount = 1;
-            submitInfo.pCommandBuffers = &buffer.GetVkCommandBuffer();
-        }
-
-        vkQueueSubmit(app->GetVkGraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE);
-        vkQueueWaitIdle(app->GetVkGraphicsQueue());
-    }
-
     void BufferHelper::DestroyBuffer(GFXVulkanApplication* app, VkBuffer buffer, VkDeviceMemory mem)
     {
         vkDestroyBuffer(app->GetVkDevice(), buffer, nullptr);
@@ -95,52 +65,10 @@ namespace gfx
     }
 
 
-    static VkCommandBuffer _GetVkCommandBuffer(const gfx::GFXVulkanCommandBufferScope& scope)
-    {
-        return static_cast<gfx::GFXVulkanCommandBuffer*>(scope.operator->())->GetVkCommandBuffer();
-    }
     static bool _HasStencilComponent(VkFormat format)
     {
         return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
     }
-
-    void BufferHelper::TransitionImageLayout(GFXVulkanApplication* app,
-        VkImage image, VkFormat format, VkImageAspectFlags aspect
-        , VkImageLayout oldLayout, VkImageLayout newLayout)
-    {
-        GFXVulkanCommandBufferScope commandBuffer(app);
-
-        VkImageMemoryBarrier barrier{};
-        barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-        barrier.oldLayout = oldLayout;
-        barrier.newLayout = newLayout;
-
-        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        barrier.image = image;
-
-        barrier.subresourceRange.aspectMask = aspect;
-        barrier.subresourceRange.baseMipLevel = 0;
-        barrier.subresourceRange.levelCount = 1;
-        barrier.subresourceRange.baseArrayLayer = 0;
-        barrier.subresourceRange.layerCount = 1;
-
-        VkPipelineStageFlags sourceStage = GetStageFlagsForLayout(oldLayout);
-        VkPipelineStageFlags destinationStage = GetStageFlagsForLayout(newLayout);
-        barrier.srcAccessMask = GetAccessMaskForLayout(oldLayout);
-        barrier.dstAccessMask = GetAccessMaskForLayout(newLayout);
-
-        vkCmdPipelineBarrier(
-            _GetVkCommandBuffer(commandBuffer),
-            sourceStage, destinationStage,
-            0,
-            0, nullptr,
-            0, nullptr,
-            1, &barrier);
-
-    }
-
-
 
     void BufferHelper::TransitionImageLayout(
         VkCommandBuffer cmd, GFXVulkanTexture* tex, VkImageLayout newLayout)
@@ -278,35 +206,6 @@ namespace gfx
             assert(false);
         }
         return {};
-    }
-
-    void BufferHelper::CopyBufferToImage(GFXVulkanApplication* app, VkBuffer buffer, VkImage image, uint32_t width, uint32_t height)
-    {
-        gfx::GFXVulkanCommandBufferScope commandBuffer(app);
-
-        VkBufferImageCopy region{};
-        region.bufferOffset = 0;
-        region.bufferRowLength = 0;
-        region.bufferImageHeight = 0;
-
-        region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        region.imageSubresource.mipLevel = 0;
-        region.imageSubresource.baseArrayLayer = 0;
-        region.imageSubresource.layerCount = 1;
-
-        region.imageOffset = {0, 0, 0};
-        region.imageExtent = {
-            width,
-            height,
-            1};
-
-        vkCmdCopyBufferToImage(
-            _GetVkCommandBuffer(commandBuffer),
-            buffer,
-            image,
-            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-            1,
-            &region);
     }
 
     VkSampler BufferHelper::CreateTextureSampler(

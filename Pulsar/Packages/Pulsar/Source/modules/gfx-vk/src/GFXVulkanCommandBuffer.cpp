@@ -7,18 +7,15 @@
 
 namespace gfx
 {
-    GFXVulkanCommandBuffer::GFXVulkanCommandBuffer(GFXVulkanApplication* app)
-        : m_app(app)
+    // Wraps a fixed per-slot VkCommandBuffer allocated once at init. The wrapper never
+    // returns it anywhere; reset happens in Begin() (the slot's previous use completed
+    // long ago -- guaranteed by the submit-time timeline wait).
+    GFXVulkanCommandBuffer::GFXVulkanCommandBuffer(GFXVulkanApplication* app, VkCommandBuffer cmdBuffer)
+        : m_app(app), m_cmdBuffer(cmdBuffer)
     {
-        m_cmdBuffer = app->GetCommandBufferPool()->GetVkCommandBuffer();
     }
     GFXVulkanCommandBuffer::~GFXVulkanCommandBuffer()
     {
-        if (m_cmdBuffer != VK_NULL_HANDLE)
-        {
-            m_app->GetCommandBufferPool()->ReleaseCommandBuffer(m_cmdBuffer);
-            m_cmdBuffer = VK_NULL_HANDLE;
-        }
     }
     GFXVulkanCommandBuffer::GFXVulkanCommandBuffer(GFXVulkanCommandBuffer&& r) noexcept
     {
@@ -533,29 +530,6 @@ namespace gfx
                 vkrt->GetVkTexture()->TransitionLayout(m_cmdBuffer, finalLayout);
             }
         }
-    }
-
-    GFXVulkanCommandBufferScope::GFXVulkanCommandBufferScope(GFXVulkanApplication* app)
-        : m_app(app)
-    {
-        m_cmdbuffer = std::static_pointer_cast<GFXVulkanCommandBuffer>(app->CreateCommandBuffer());
-
-        m_cmdbuffer->Begin();
-    }
-
-    GFXVulkanCommandBufferScope::~GFXVulkanCommandBufferScope()
-    {
-        m_cmdbuffer->End();
-
-        VkSubmitInfo submitInfo{};
-        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &m_cmdbuffer->GetVkCommandBuffer();
-
-        vkQueueSubmit(m_app->GetVkGraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE);
-        vkQueueWaitIdle(m_app->GetVkGraphicsQueue());
-
-        m_cmdbuffer.reset();
     }
 
 }

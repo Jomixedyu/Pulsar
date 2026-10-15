@@ -1,23 +1,15 @@
 #pragma once
 #include "GFXApi.h"
-#include "GFXBuffer.h"
-#include "GFXCommandBuffer.h"
-#include "GFXDescriptorSet.h"
 #include "GFXExtensions.h"
 #include "GFXGlobalConfig.h"
-#include "GFXGpuProgram.h"
 #include "GFXGraphicsPipelineManager.h"
-#include "GFXInclude.h"
-#include "GFXRenderPass.h"
 #include "GFXRenderPipeline.h"
-#include "GFXRenderer.h"
 #include "GFXSwapchain.h"
 #include "GFXTextureView.h"
 #include "GFXVertexLayoutDescription.h"
 #include "GFXSurface.h"
 #include "GFXSampler.h"
 #include <functional>
-#include <memory>
 
 namespace gfx
 {
@@ -53,10 +45,6 @@ namespace gfx
 
     public:
 
-        virtual GFXRenderer* GetRenderer() = 0;
-
-        virtual GFXCommandBufferPtr CreateCommandBuffer() = 0;
-
         virtual GFXGraphicsPipelineManager* GetGraphicsPipelineManager() const = 0;
 
         virtual array_list<GFXTextureFormat> GetSupportedDepthFormats() = 0;
@@ -69,6 +57,22 @@ namespace gfx
         virtual GFXSwapchain* GetViewport() = 0;
 
         GFXResourceRegistry* GetResourceRegistry() const { return m_resourceRegistry; }
+
+        // Number of per-frame resource slots (one frame recording + one executing on
+        // the GPU). Not the GPU in-flight depth: that is 1 (a frame is submitted only
+        // after the previous one completed).
+        virtual uint32_t GetFrameSlotCount() const { return 2; }
+
+        // The unified GPU timeline: every frame's submission is one node, identified by
+        // its 1-based index. GetFrameCount() = nodes submitted so far;
+        // GetCompletedTimeline() = nodes provably finished on the GPU. A resource
+        // referenced by node N may be destroyed/reused once GetCompletedTimeline() >= N.
+        virtual uint64_t GetFrameCount() const { return 0; }
+        virtual uint64_t GetCompletedTimeline() const { return GetFrameCount(); }
+
+        // Current frame slot (frame count % GetFrameSlotCount()). Use it to
+        // index per-slot copies of anything rewritten during recording.
+        virtual uint32_t GetFrameInFlightIndex() const { return 0; }
 
     protected:
         GFXApplication() = default;

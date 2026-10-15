@@ -23,7 +23,7 @@ namespace gfx
         GFXGpuProgramPtr CreateGpuProgram(
             GFXGpuProgramStageFlags stage, const void* code, size_t length) override;
         GFXDescriptorSetLayoutPtr CreateDescriptorSetLayout(
-            const GFXDescriptorLayoutDesc* layouts, size_t layoutCount) override;
+            std::span<const GFXDescriptorLayoutDesc> layouts) override;
         GFXSamplerPtr CreateSampler(const GFXSamplerConfig& config) override;
 
         GFXApplication* GetApplication() const override;

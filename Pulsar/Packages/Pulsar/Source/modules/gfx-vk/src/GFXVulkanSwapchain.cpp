@@ -65,12 +65,14 @@ namespace gfx
         }
         static VkPresentModeKHR _ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes)
         {
-            for (const auto& availablePresentMode : availablePresentModes)
+            // Uncapped: present as soon as rendering finishes (tearing is accepted for now).
+            if (std::ranges::find(availablePresentModes, VK_PRESENT_MODE_IMMEDIATE_KHR) != availablePresentModes.end())
             {
-                if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)
-                {
-                    return availablePresentMode;
-                }
+                return VK_PRESENT_MODE_IMMEDIATE_KHR;
+            }
+            if (std::ranges::find(availablePresentModes, VK_PRESENT_MODE_MAILBOX_KHR) != availablePresentModes.end())
+            {
+                return VK_PRESENT_MODE_MAILBOX_KHR;
             }
 
             return VK_PRESENT_MODE_FIFO_KHR;
@@ -104,47 +106,41 @@ namespace gfx
         this->InitSwapChain();
         //this->InitDepthTestBuffer();
 
-        m_imageAvailableSemaphores.resize(GFXVulkanApplication::MAX_FRAMES_IN_FLIGHT);
-        m_renderFinishedSemaphores.resize(GFXVulkanApplication::MAX_FRAMES_IN_FLIGHT);
-        m_inFlightFences.resize(GFXVulkanApplication::MAX_FRAMES_IN_FLIGHT);
+        m_imageAvailableSemaphores.resize(GFXVulkanApplication::kFrameSlotCount);
+        m_renderFinishedSemaphores.resize(m_swapChainImages.size());
 
         VkSemaphoreCreateInfo semaphoreInfo{};
         semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-        VkFenceCreateInfo fenceInfo{};
-        fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-        fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
-        for (size_t i = 0; i < GFXVulkanApplication::MAX_FRAMES_IN_FLIGHT; i++)
+        for (size_t i = 0; i < GFXVulkanApplication::kFrameSlotCount; i++)
         {
-            if (vkCreateSemaphore(app->GetVkDevice(), &semaphoreInfo, nullptr, &m_imageAvailableSemaphores[i]) != VK_SUCCESS ||
-                vkCreateSemaphore(app->GetVkDevice(), &semaphoreInfo, nullptr, &m_renderFinishedSemaphores[i]) != VK_SUCCESS ||
-                vkCreateFence(app->GetVkDevice(), &fenceInfo, nullptr, &m_inFlightFences[i]) != VK_SUCCESS)
+            if (vkCreateSemaphore(app->GetVkDevice(), &semaphoreInfo, nullptr, &m_imageAvailableSemaphores[i]) != VK_SUCCESS)
             {
                 throw std::runtime_error("failed to create synchronization objects for a frame!");
             }
         }
-
-        for (size_t i = 0; i < GFXVulkanApplication::MAX_FRAMES_IN_FLIGHT; i++)
+        for (size_t i = 0; i < m_swapChainImages.size(); i++)
         {
-            m_queues.push_back(std::unique_ptr<GFXVulkanQueue>{new GFXVulkanQueue(m_app, m_imageAvailableSemaphores[i], m_renderFinishedSemaphores[i], m_inFlightFences[i])});
+            if (vkCreateSemaphore(app->GetVkDevice(), &semaphoreInfo, nullptr, &m_renderFinishedSemaphores[i]) != VK_SUCCESS)
+            {
+                throw std::runtime_error("failed to create synchronization objects for a frame!");
+            }
         }
     }
     GFXVulkanSwapchain::~GFXVulkanSwapchain()
     {
         TermSwapChain();
 
-        m_queues.clear();
-
-        for (size_t i = 0; i < GFXVulkanApplication::MAX_FRAMES_IN_FLIGHT; i++)
+        for (size_t i = 0; i < GFXVulkanApplication::kFrameSlotCount; i++)
         {
             vkDestroySemaphore(m_app->GetVkDevice(), m_imageAvailableSemaphores[i], nullptr);
+        }
+        for (size_t i = 0; i < m_renderFinishedSemaphores.size(); i++)
+        {
             vkDestroySemaphore(m_app->GetVkDevice(), m_renderFinishedSemaphores[i], nullptr);
-            vkDestroyFence(m_app->GetVkDevice(), m_inFlightFences[i], nullptr);
         }
         m_imageAvailableSemaphores.clear();
         m_renderFinishedSemaphores.clear();
-        m_inFlightFences.clear();
     }
 
 
@@ -334,9 +330,9 @@ namespace gfx
         *width = m_swapChainExtent.width;
         *height = m_swapChainExtent.height;
     }
-    GFXVulkanQueue* GFXVulkanSwapchain::GetQueue() const
+    VkSemaphore GFXVulkanSwapchain::GetImageAvailableSemaphore() const
     {
-        return m_queues[m_app->GetFrameInFlightIndex()].get();
+        return m_imageAvailableSemaphores[m_app->GetFrameInFlightIndex()];
     }
 
     VkResult GFXVulkanSwapchain::AcquireNextImage(uint32_t* outIndex)

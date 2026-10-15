@@ -10,7 +10,6 @@
 #include "GFXVulkanGpuProgram.h"
 #include "GFXVulkanGraphicsPipeline.h"
 #include "GFXVulkanGraphicsPipelineManager.h"
-#include "GFXVulkanRenderer.h"
 #include "GFXVulkanResourceRegistry.h"
 #include "GFXVulkanSampler.h"
 #include "GFXVulkanSwapchain.h"
@@ -183,6 +182,7 @@ namespace gfx
 
         std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
 
+
         return VK_FALSE;
     }
     static void _PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
@@ -318,10 +318,15 @@ namespace gfx
         features13.dynamicRendering = VK_TRUE;
         features13.synchronization2 = VK_TRUE;
 
+        VkPhysicalDeviceVulkan12Features features12{};
+        features12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+        features12.timelineSemaphore = VK_TRUE;
+        features12.pNext = &features13;
+
         VkPhysicalDeviceFeatures2 features2{};
         features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
         features2.features = deviceFeatures;
-        features2.pNext = &features13;
+        features2.pNext = &features12;
 
         VkDeviceCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -361,10 +366,6 @@ namespace gfx
         return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
     }
 
-    GFXRenderer* GFXVulkanApplication::GetRenderer()
-    {
-        return m_renderer;
-    }
     void GFXVulkanApplication::Initialize()
     {
         // glfwInit();
@@ -410,9 +411,31 @@ namespace gfx
         this->InitPickPhysicalDevice();
         this->InitLogicalDevice();
 
-        // The command pool must exist before the registry initializes: its
-        // builtin resources record and submit GPU upload commands through it.
+        {
+            // Tracks graphics-queue submissions with monotonically increasing frame values;
+            // replaces per-slot fences for host-side frame throttling.
+            VkSemaphoreTypeCreateInfo typeInfo{};
+            typeInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;
+            typeInfo.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE;
+            typeInfo.initialValue = 0;
+
+            VkSemaphoreCreateInfo semInfo{};
+            semInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+            semInfo.pNext = &typeInfo;
+
+            if (vkCreateSemaphore(m_device, &semInfo, nullptr, &m_timelineSemaphore) != VK_SUCCESS)
+            {
+                throw std::runtime_error("failed to create timeline semaphore!");
+            }
+        }
+
         m_cmdPool = new GFXVulkanCommandBufferPool(this);
+
+        for (auto& slot : m_frameCmds)
+        {
+            slot.render = std::make_unique<GFXVulkanCommandBuffer>(this, m_cmdPool->GetVkCommandBuffer());
+            slot.transfer = std::make_unique<GFXVulkanCommandBuffer>(this, m_cmdPool->GetVkCommandBuffer());
+        }
 
         // Buffer/texture data updates are staged into the upload queue; the
         // registry's builtin resources already use it during Initialize().
@@ -423,20 +446,138 @@ namespace gfx
 
         m_viewport = new GFXVulkanSwapchain(this, m_window);
 
-        m_renderer = new GFXVulkanRenderer(this);
-
         m_graphicsPipelineManager = new GFXVulkanGraphicsPipelineManager(this);
     }
 
     void GFXVulkanApplication::TickRender(float deltaTime)
     {
-        if (m_renderer->Render(deltaTime))
-        {
-            if (m_resourceRegistry)
-                m_resourceRegistry->Tick(m_framecount);
+        const auto viewport = GetVulkanViewport();
 
-            ++m_framecount;
+        if (SDL_GetWindowFlags((SDL_Window*)GetWindow()->GetUserPoint()) & SDL_WINDOW_MINIMIZED)
+        {
+            return;
         }
+
+        const uint64_t submissionValue = m_framecount + 1;
+
+        // Per-slot command buffers are reset in Begin(); their previous submission
+        // (two frames ago) completed before the previous frame was submitted.
+
+        uint32_t imageIndex;
+        auto result = viewport->AcquireNextImage(&imageIndex);
+        if (result == VK_ERROR_OUT_OF_DATE_KHR)
+        {
+            viewport->ReInitSwapChain();
+            return;
+        }
+        else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+        {
+            throw std::runtime_error("failed to acquire swap chain image!");
+        }
+
+        const auto renderTargets = viewport->GetFrameBufferObject();
+        if (!renderTargets)
+        {
+            return;
+        }
+
+        auto& cmds = m_frameCmds[m_framecount % kFrameSlotCount];
+
+        cmds.render->Begin();
+        GetRenderPipeline()->OnRecord(*cmds.render, renderTargets);
+        cmds.render->End();
+
+        // Frame-head transfer: flush all staging->device copies queued during this frame (both the
+        // resource-update drain and lazy variant creation inside OnRecord). Submitted before the
+        // main command buffer so its barriers make the writes visible to the passes that read them.
+        const bool hasUploads = m_uploadQueue->HasPending();
+        if (hasUploads)
+        {
+            cmds.transfer->Begin();
+            m_uploadQueue->FlushInto(cmds.transfer->GetVkCommandBuffer());
+            cmds.transfer->End();
+        }
+
+        VkCommandBuffer vkCmds[2];
+        uint32_t vkCmdCount = 0;
+        if (hasUploads)
+            vkCmds[vkCmdCount++] = cmds.transfer->GetVkCommandBuffer();
+        vkCmds[vkCmdCount++] = cmds.render->GetVkCommandBuffer();
+
+        const VkSemaphore waitSemaphore = viewport->GetImageAvailableSemaphore();
+        const VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+        // Signal both the per-image render-finished binary semaphore (for present) and
+        // the queue timeline (for host-side throttling / resource recycling).
+        const VkSemaphore signalSemaphores[] = { viewport->GetRenderFinishedSemaphore(imageIndex), m_timelineSemaphore };
+        const uint64_t waitValues[] = { 0 };  // ignored: the wait semaphore is binary
+        const uint64_t signalValues[] = { 0, submissionValue };
+
+        VkTimelineSemaphoreSubmitInfo timelineInfo{};
+        timelineInfo.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
+        timelineInfo.waitSemaphoreValueCount = 1;
+        timelineInfo.pWaitSemaphoreValues = waitValues;
+        timelineInfo.signalSemaphoreValueCount = 2;
+        timelineInfo.pSignalSemaphoreValues = signalValues;
+
+        VkSubmitInfo submitInfo{};
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submitInfo.pNext = &timelineInfo;
+        submitInfo.commandBufferCount = vkCmdCount;
+        submitInfo.pCommandBuffers = vkCmds;
+        submitInfo.waitSemaphoreCount = 1;
+        submitInfo.pWaitSemaphores = &waitSemaphore;
+        submitInfo.pWaitDstStageMask = &waitStage;
+        submitInfo.signalSemaphoreCount = 2;
+        submitInfo.pSignalSemaphores = signalSemaphores;
+
+        // Submit only after the previous submission has completed on the GPU: in-flight
+        // depth is 1. Recording of this frame overlapped that execution. (First frame
+        // waits value 0, which the timeline starts at.)
+        const uint64_t throttleValue = m_framecount;
+        VkSemaphoreWaitInfo waitInfo{};
+        waitInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO;
+        waitInfo.semaphoreCount = 1;
+        waitInfo.pSemaphores = &m_timelineSemaphore;
+        waitInfo.pValues = &throttleValue;
+        vkWaitSemaphores(m_device, &waitInfo, UINT64_MAX);
+
+        vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+
+        VkPresentInfoKHR presentInfo{};
+        presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+
+        VkSwapchainKHR swapChains[] = {viewport->GetVkSwapChain()};
+        presentInfo.swapchainCount = 1;
+        presentInfo.pSwapchains = swapChains;
+        presentInfo.pWaitSemaphores = &signalSemaphores[0];
+        presentInfo.waitSemaphoreCount = 1;
+        presentInfo.pImageIndices = &imageIndex;
+
+        result = vkQueuePresentKHR(m_presentQueue, &presentInfo);
+
+        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
+        {
+            viewport->ReInitSwapChain();
+        }
+        else if (result != VK_SUCCESS)
+        {
+            throw std::runtime_error("failed to present swap chain image!");
+        }
+
+        // The frame was submitted: tick the registry with the completed timeline and
+        // advance the frame counter (the staging ring keys its slots on it).
+        if (m_resourceRegistry)
+            m_resourceRegistry->Tick(GetCompletedTimeline());
+
+        ++m_framecount;
+    }
+
+    uint64_t GFXVulkanApplication::GetCompletedTimeline() const
+    {
+        uint64_t value = 0;
+        vkGetSemaphoreCounterValue(m_device, m_timelineSemaphore, &value);
+        return value;
     }
 
     void GFXVulkanApplication::WaitDeviceIdle()
@@ -474,9 +615,13 @@ namespace gfx
         // Ensure all GPU work is finished before releasing resources
         vkDeviceWaitIdle(m_device);
 
-        delete m_renderer;
         delete m_viewport;
         delete m_graphicsPipelineManager;
+        for (auto& slot : m_frameCmds)
+        {
+            slot.render.reset();
+            slot.transfer.reset();
+        }
         delete m_uploadQueue;
         delete m_cmdPool;
 
@@ -490,6 +635,7 @@ namespace gfx
             m_resourceRegistry = nullptr;
         }
 
+        vkDestroySemaphore(m_device, m_timelineSemaphore, nullptr);
         vkDestroyDevice(m_device, nullptr);
 
         vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
@@ -513,11 +659,6 @@ namespace gfx
         m_window = nullptr;
     }
 
-    GFXCommandBufferPtr gfx::GFXVulkanApplication::CreateCommandBuffer()
-    {
-        return gfxmksptr(new GFXVulkanCommandBuffer(this));
-    }
-        
     array_list<GFXTextureFormat> GFXVulkanApplication::GetSupportedDepthFormats()
     {
         if (m_depthFormatCache.empty())

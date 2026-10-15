@@ -2,7 +2,9 @@
 #include <gfx/GFXDescriptorSet.h>
 #include "VulkanInclude.h"
 
+#include <deque>
 #include <memory>
+#include <span>
 #include <mutex>
 #include <unordered_map>
 #include <vector>
@@ -20,8 +22,7 @@ namespace gfx
     public:
         GFXVulkanDescriptorSetLayout(
             GFXResourceRegistry* registry,
-            const GFXDescriptorLayoutDesc* layouts,
-            size_t layoutCount = 1);
+            std::span<const GFXDescriptorLayoutDesc> layouts);
 
         virtual ~GFXVulkanDescriptorSetLayout() override;
 
@@ -34,9 +35,26 @@ namespace gfx
         std::shared_ptr<GFXDescriptorSet> AllocateSet() override;
 
     private:
-        VkDescriptorSet AcquireVkSet();          // reuse from free list, else alloc from current/new pool
-        void RecycleVkSet(VkDescriptorSet set);  // return to free list (never individually vkFree'd)
-        VkDescriptorPool CreatePool();
+        struct Pool
+        {
+            VkDescriptorPool Handle = VK_NULL_HANDLE;
+            uint32_t MaxSets = 0;
+            // Free sets, oldest first. Tag = the graphics-queue timeline value that must
+            // complete before reuse; freshly allocated sets are tagged 0 (never
+            // referenced, always safe).
+            std::deque<std::pair<VkDescriptorSet, uint64_t>> FreeSets;
+        };
+
+        VkDescriptorSet AcquireVkSet();          // unused set first, then an aged recycled set, else a new pool
+        void RecycleVkSet(VkDescriptorSet set);  // return to the owning pool's free list (frame-tagged)
+        // Creates a pool and allocates every set upfront into the unused list (no driver
+        // allocation calls later on the recording path).
+        std::unique_ptr<Pool> CreatePool(uint32_t setCount);
+        // Destroys pools whose sets are all free and past the in-flight window.
+        // Called from AcquireVkSet (render thread, under m_poolMutex).
+        void GCIdlePools(uint64_t completedTimeline);
+        // Graphics-queue timeline: completed submission count.
+        uint64_t GetCompletedTimeline() const;
         GFXVulkanApplication* GetApplication() const;
 
     protected:
@@ -45,9 +63,13 @@ namespace gfx
         // Per-layout descriptor pool: poolSize is computed exactly from this layout's bindings
         // (no global type-ratio guessing), grows by appending pools, recycles freed sets.
         std::unordered_map<VkDescriptorType, uint32_t> m_typeCounts; // descriptors per set, per type
-        std::vector<VkDescriptorPool> m_pools;
-        std::vector<VkDescriptorSet>  m_freeSets;
-        uint32_t m_currentPoolRemaining = 0;
+        std::vector<std::unique_ptr<Pool>> m_pools;
+        std::unordered_map<VkDescriptorSet, Pool*> m_setOwner;
+        // Pools grow geometrically (4, 8, 16, ...) so small layouts do not pay for
+        // a 128-set pool; GCIdlePools returns fully-idle pools to the driver.
+        static constexpr uint32_t kFirstPoolSets = 4;
+        static constexpr uint32_t kMaxPoolSets = 128;
+        uint32_t m_nextPoolSets = kFirstPoolSets;
         std::mutex m_poolMutex;
     };
     GFX_DECL_PTR(GFXVulkanDescriptorSetLayout);

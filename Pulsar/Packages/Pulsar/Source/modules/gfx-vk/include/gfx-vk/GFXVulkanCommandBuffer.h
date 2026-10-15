@@ -14,7 +14,7 @@ namespace gfx
     {
 
     public:
-        explicit GFXVulkanCommandBuffer(GFXVulkanApplication* app);
+        GFXVulkanCommandBuffer(GFXVulkanApplication* app, VkCommandBuffer cmdBuffer);
         GFXVulkanCommandBuffer(GFXVulkanCommandBuffer&& r) noexcept;
 
         virtual ~GFXVulkanCommandBuffer() override;
@@ -54,25 +54,5 @@ namespace gfx
         GFXVulkanFrameBufferObject* m_fbo = nullptr;
     public:
 
-    };
-
-
-    struct GFXVulkanCommandBufferScope
-    {
-    private:
-        GFXVulkanApplication* m_app;
-        std::shared_ptr<GFXVulkanCommandBuffer> m_cmdbuffer;
-
-    public:
-        GFXVulkanCommandBufferScope(GFXVulkanApplication* app);
-
-        GFXCommandBuffer* operator->() const
-        {
-            return m_cmdbuffer.get();
-        }
-        ~GFXVulkanCommandBufferScope();
-
-        GFXVulkanCommandBufferScope(const GFXVulkanCommandBufferScope&) = delete;
-        GFXVulkanCommandBufferScope(GFXVulkanCommandBufferScope&&) = delete;
     };
 }

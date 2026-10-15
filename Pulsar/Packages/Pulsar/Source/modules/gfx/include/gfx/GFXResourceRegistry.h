@@ -14,6 +14,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <span>
 #include <string>
 #include <unordered_map>
 #if !defined(NDEBUG)
@@ -51,15 +52,15 @@ namespace gfx
         virtual GFXGpuProgramPtr CreateGpuProgram(
             GFXGpuProgramStageFlags stage, const void* code, size_t length) = 0;
         virtual GFXDescriptorSetLayoutPtr CreateDescriptorSetLayout(
-            const GFXDescriptorLayoutDesc* layouts, size_t layoutCount) = 0;
+            std::span<const GFXDescriptorLayoutDesc> layouts) = 0;
         virtual GFXSamplerPtr CreateSampler(const GFXSamplerConfig& config) = 0;
 
         GFXDescriptorSetLayoutPtr GetOrCreateDescriptorSetLayout(
-            const GFXDescriptorLayoutDesc* layouts, size_t layoutCount);
+            std::span<const GFXDescriptorLayoutDesc> layouts);
         GFXDescriptorSetLayoutPtr GetOrCreateDescriptorSetLayout(
             std::initializer_list<GFXDescriptorLayoutDesc> layouts)
         {
-            return GetOrCreateDescriptorSetLayout(layouts.begin(), layouts.size());
+            return GetOrCreateDescriptorSetLayout(std::span(layouts.begin(), layouts.size()));
         }
 
         virtual GFXApplication* GetApplication() const = 0;
@@ -93,7 +94,6 @@ namespace gfx
         static void DestroyResource(GFXResource* resource);
 
     private:
-        uint64_t m_lastTickTimeline = 0;
         GFXBuiltinResources m_builtinResources;
         mutable std::mutex m_resourcesMutex;
         std::unordered_map<ResourceId, GFXResource*> m_activeResources;

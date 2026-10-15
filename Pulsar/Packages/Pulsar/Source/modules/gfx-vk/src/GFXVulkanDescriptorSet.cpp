@@ -50,13 +50,12 @@ namespace gfx
 
     GFXVulkanDescriptorSetLayout::GFXVulkanDescriptorSetLayout(
         GFXResourceRegistry* registry,
-        const GFXDescriptorLayoutDesc* layouts,
-        size_t layoutCount)
+        std::span<const GFXDescriptorLayoutDesc> layouts)
         : GFXDescriptorSetLayout(registry)
     {
         auto* app = GetApplication();
         array_list<VkDescriptorSetLayoutBinding> bindings;
-        for (size_t i = 0; i < layoutCount; ++i)
+        for (size_t i = 0; i < layouts.size(); ++i)
         {
             const auto layoutInfo = layouts[i];
             m_debugInfo.push_back(layoutInfo);
@@ -95,15 +94,16 @@ namespace gfx
     GFXVulkanDescriptorSetLayout::~GFXVulkanDescriptorSetLayout()
     {
         // Destroying the pools implicitly frees every set ever allocated from them,
-        // so recycled handles in m_freeSets need no individual vkFreeDescriptorSets.
-        for (auto pool : m_pools)
+        // so recycled handles in the free lists need no individual vkFreeDescriptorSets.
+        for (auto& pool : m_pools)
         {
             if (auto* app = GetApplication())
             {
-                vkDestroyDescriptorPool(app->GetVkDevice(), pool, nullptr);
+                vkDestroyDescriptorPool(app->GetVkDevice(), pool->Handle, nullptr);
             }
         }
         m_pools.clear();
+        m_setOwner.clear();
 
         if (m_descriptorSetLayout != VK_NULL_HANDLE)
         {
@@ -114,68 +114,101 @@ namespace gfx
         }
     }
 
-    static constexpr uint32_t kSetsPerPool = 128;
-
-    VkDescriptorPool GFXVulkanDescriptorSetLayout::CreatePool()
+    std::unique_ptr<GFXVulkanDescriptorSetLayout::Pool> GFXVulkanDescriptorSetLayout::CreatePool(uint32_t setCount)
     {
         std::vector<VkDescriptorPoolSize> sizes;
         for (const auto& [type, count] : m_typeCounts)
         {
-            sizes.push_back(VkDescriptorPoolSize{type, count * kSetsPerPool});
+            sizes.push_back(VkDescriptorPoolSize{type, count * setCount});
         }
         // An empty layout (zero bindings, used to keep set numbering aligned) still needs a
         // valid pool to allocate empty sets from; a token size keeps vkCreateDescriptorPool legal.
         if (sizes.empty())
         {
-            sizes.push_back(VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, kSetsPerPool});
+            sizes.push_back(VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, setCount});
         }
 
         VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         poolInfo.poolSizeCount = static_cast<uint32_t>(sizes.size());
         poolInfo.pPoolSizes = sizes.data();
-        poolInfo.maxSets = kSetsPerPool;
-        // No FREE_DESCRIPTOR_SET_BIT: sets are recycled via m_freeSets, never freed one-by-one.
+        poolInfo.maxSets = setCount;
+        // No FREE_DESCRIPTOR_SET_BIT: sets are recycled via per-pool free lists,
+        // never freed one-by-one.
 
-        VkDescriptorPool pool = VK_NULL_HANDLE;
         auto* app = GetApplication();
         assert(app);
-        if (vkCreateDescriptorPool(app->GetVkDevice(), &poolInfo, nullptr, &pool) != VK_SUCCESS)
+
+        auto pool = std::make_unique<Pool>();
+        pool->MaxSets = setCount;
+        if (vkCreateDescriptorPool(app->GetVkDevice(), &poolInfo, nullptr, &pool->Handle) != VK_SUCCESS)
         {
             throw std::runtime_error("failed to create descriptor pool!");
         }
+
+        // Allocate every set upfront into the free list (tag 0: never referenced, always
+        // reusable): the recording path then never calls into the driver for allocation.
+        std::vector<VkDescriptorSetLayout> layouts(setCount, m_descriptorSetLayout);
+        std::vector<VkDescriptorSet> sets(setCount, VK_NULL_HANDLE);
+
+        VkDescriptorSetAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        allocInfo.descriptorPool = pool->Handle;
+        allocInfo.descriptorSetCount = setCount;
+        allocInfo.pSetLayouts = layouts.data();
+
+        if (vkAllocateDescriptorSets(app->GetVkDevice(), &allocInfo, sets.data()) != VK_SUCCESS)
+        {
+            throw std::runtime_error("failed to allocate descriptor sets!");
+        }
+        // Fresh sets live in the free list only; m_setOwner tracks sets currently
+        // handed out (acquired), which is what RecycleVkSet needs to route them home.
+        for (VkDescriptorSet set : sets)
+        {
+            pool->FreeSets.emplace_back(set, 0);
+        }
         return pool;
+    }
+
+    uint64_t GFXVulkanDescriptorSetLayout::GetCompletedTimeline() const
+    {
+        auto* app = GetApplication();
+        uint64_t value = 0;
+        vkGetSemaphoreCounterValue(app->GetVkDevice(), app->GetTimelineSemaphore(), &value);
+        return value;
     }
 
     VkDescriptorSet GFXVulkanDescriptorSetLayout::AcquireVkSet()
     {
         std::lock_guard<std::mutex> lock(m_poolMutex);
+        const uint64_t completed = GetCompletedTimeline();
 
-        if (!m_freeSets.empty())
+        GCIdlePools(completed);
+
+        // Reuse the oldest free set whose referencing submissions have completed
+        // (tag 0 = freshly allocated, always passes).
+        for (auto& pool : m_pools)
         {
-            VkDescriptorSet recycled = m_freeSets.back();
-            m_freeSets.pop_back();
-            return recycled;
+            if (pool->FreeSets.empty())
+                continue;
+            auto& [set, waitValue] = pool->FreeSets.front();
+            if (completed >= waitValue)
+            {
+                VkDescriptorSet recycled = set;
+                pool->FreeSets.pop_front();
+                m_setOwner.emplace(recycled, pool.get());
+                return recycled;
+            }
         }
 
-        if (m_pools.empty() || m_currentPoolRemaining == 0)
-        {
-            m_pools.push_back(CreatePool());
-            m_currentPoolRemaining = kSetsPerPool;
-        }
+        // Everything is live: grow a new pool (4, 8, 16, ... sets).
+        m_pools.push_back(CreatePool(m_nextPoolSets));
+        m_nextPoolSets = std::min(m_nextPoolSets * 2, kMaxPoolSets);
 
-        VkDescriptorSetAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        allocInfo.descriptorPool = m_pools.back();
-        allocInfo.descriptorSetCount = 1;
-        allocInfo.pSetLayouts = &m_descriptorSetLayout;
-
-        VkDescriptorSet set = VK_NULL_HANDLE;
-        auto* app = GetApplication();
-        assert(app);
-        const auto result = vkAllocateDescriptorSets(app->GetVkDevice(), &allocInfo, &set);
-        assert(result == VK_SUCCESS);
-        --m_currentPoolRemaining;
+        auto& pool = m_pools.back();
+        VkDescriptorSet set = pool->FreeSets.front().first;
+        pool->FreeSets.pop_front();
+        m_setOwner.emplace(set, pool.get());
         return set;
     }
 
@@ -183,8 +216,39 @@ namespace gfx
     {
         if (set == VK_NULL_HANDLE)
             return;
+        // Tag with the current frame and return to the owning pool; reuse is gated on
+        // the in-flight window in AcquireVkSet.
         std::lock_guard<std::mutex> lock(m_poolMutex);
-        m_freeSets.push_back(set);
+        auto it = m_setOwner.find(set);
+        assert(it != m_setOwner.end());
+        if (it == m_setOwner.end())
+            return;
+        Pool* pool = it->second;
+        m_setOwner.erase(it);
+        // Tag with the last submitted frame: the set is reusable once the timeline
+        // reaches it (that submission's completion covers every possible reference).
+        pool->FreeSets.emplace_back(set, GetApplication()->GetFrameCount());
+    }
+
+    void GFXVulkanDescriptorSetLayout::GCIdlePools(uint64_t completedTimeline)
+    {
+        auto* app = GetApplication();
+        for (auto it = m_pools.begin(); it != m_pools.end();)
+        {
+            Pool& pool = **it;
+            // Fully free and the newest retirement has completed on the GPU timeline:
+            // no pending command can reference any set of this pool anymore.
+            if (pool.MaxSets > 0 && pool.FreeSets.size() == pool.MaxSets &&
+                completedTimeline >= pool.FreeSets.back().second)
+            {
+                for (const auto& [set, _] : pool.FreeSets)
+                    m_setOwner.erase(set);
+                vkDestroyDescriptorPool(app->GetVkDevice(), pool.Handle, nullptr);
+                it = m_pools.erase(it);
+                continue;
+            }
+            ++it;
+        }
     }
 
     std::shared_ptr<GFXDescriptorSet> GFXVulkanDescriptorSetLayout::AllocateSet()

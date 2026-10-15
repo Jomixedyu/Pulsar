@@ -43,6 +43,9 @@ namespace gfx
         // Uploads data into the buffer. Host-visible memory is mapped and copied directly;
         // device-local memory is uploaded through a transient staging buffer.
         virtual void Update(const void* data) = 0;
+        // Upload only the first `size` bytes (size <= GetSize()). Use this when the buffer
+        // is intentionally larger than the payload (e.g. grow-only reuse).
+        virtual void Update(const void* data, size_t size) = 0;
     public:
         virtual size_t GetSize() const = 0;
         virtual bool IsValid() const = 0;

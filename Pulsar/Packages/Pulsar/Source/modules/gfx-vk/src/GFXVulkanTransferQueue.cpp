@@ -10,7 +10,7 @@ namespace gfx
     GFXVulkanTransferQueue::GFXVulkanTransferQueue(GFXVulkanApplication* app)
         : m_app(app)
     {
-        m_slots.resize(GFXVulkanApplication::MAX_FRAMES_IN_FLIGHT);
+        m_slots.resize(GFXVulkanApplication::kFrameSlotCount);
     }
 
     GFXVulkanTransferQueue::~GFXVulkanTransferQueue()
@@ -47,7 +47,7 @@ namespace gfx
         const uint32_t slotIndex = m_app->GetFrameInFlightIndex();
 
         // First allocation of a new frame: recycle this slot. The gfx frame counter only advances
-        // on successful frames, so the previous occupant of this slot (frame - MAX_FRAMES_IN_FLIGHT)
+        // on successful frames, so the previous occupant of this slot (frame - kFrameSlotCount)
         // is already done, while a skipped frame keeps the same slot and just keeps accumulating.
         if (frame != m_lastFrame)
         {

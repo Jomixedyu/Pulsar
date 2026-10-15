@@ -18,7 +18,6 @@ namespace gfx
     public:
         const VkCommandPool& GetVkCommandPool() const { return m_pool; }
 
-        void ReleaseCommandBuffer(VkCommandBuffer buffer);
     private:
         void AllocCommandBuffer();
     protected:
