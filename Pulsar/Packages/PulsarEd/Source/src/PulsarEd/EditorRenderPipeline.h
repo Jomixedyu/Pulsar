@@ -5,6 +5,8 @@
 #include <Pulsar/AppInstance.h>
 #include <Pulsar/EngineAppInstance.h>
 #include <Pulsar/ImGuiImpl.h>
+#include <Pulsar/Rendering/RenderScene.h>
+#include <Pulsar/Rendering/SceneViewProxy.h>
 
 namespace pulsared
 {
@@ -20,20 +22,25 @@ namespace pulsared
         // here on the render thread, so the next NewFrame can overwrite the context.
         ImGuiDrawDataSnapshot ImGuiDrawSnapshot;
 
-        void OnRecord(gfx::GFXRenderContext* context, gfx::GFXFrameBufferObject* backbuffer) override
+        void OnRecord(gfx::GFXCommandBuffer& cmd, gfx::GFXFrameBufferObject* backbuffer) override
         {
-            auto& cmd = context->AddCommandBuffer();
-            cmd.Begin();
-            base::OnRecord(context, backbuffer);
+            base::OnRecord(cmd, backbuffer);
 
             // render editor ui
 
+            // Transition every view's render target to shader-read for the UI pass.
+            // Views are render-thread proxies (unlike the game-side camera manager).
             for (auto world : m_worlds)
             {
-                for (auto cam : world->GetCameraManager().GetCameras())
+                if (auto* scene = world->GetRenderScene())
                 {
-                    auto colorTextureView = cam->GetRenderTexture()->GetGfxColorTextureView();
-                    cmd.CmdImageTransitionBarrier(colorTextureView.get(), gfx::GFXResourceLayout::ShaderReadOnly);
+                    for (auto& view : scene->GetViews())
+                    {
+                        if (!view || !view->Data.RenderTarget.IsValid())
+                            continue;
+                        if (auto colorView = view->Data.RenderTarget.GetColorTextureView())
+                            cmd.CmdImageTransitionBarrier(colorView.get(), gfx::GFXResourceLayout::ShaderReadOnly);
+                    }
                 }
             }
 
@@ -48,8 +55,6 @@ namespace pulsared
             ImGuiObject->Render(&cmd, ImGuiDrawSnapshot);
             cmd.CmdEndRenderPass();
             cmd.SetFrameBuffer(nullptr);
-
-            cmd.End();
         }
     };
 }

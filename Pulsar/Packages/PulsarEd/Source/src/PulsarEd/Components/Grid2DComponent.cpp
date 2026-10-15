@@ -107,12 +107,12 @@ namespace pulsared
 
     SPtr<rendering::SceneProxy> Grid2DComponent::CreateSceneProxy()
     {
-        auto ro = new LineRenderObject();
+        auto ro = mksptr(new LineRenderObject());
         ro->SetDepthTestEnabled(true);
         ro->SetQueue(ShaderPassRenderQueueType::Opaque);
         ro->SetPoints(m_vert, m_colors);
 
-        return mksptr(ro);
+        return ro;
     }
 
 } // namespace pulsared

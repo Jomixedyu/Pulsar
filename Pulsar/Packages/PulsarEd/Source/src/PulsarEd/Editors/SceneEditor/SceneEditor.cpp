@@ -324,7 +324,7 @@ namespace pulsared
         if (!PreviewWorldStackEmpty())
             return;
 
-        auto pieWorld = std::make_unique<EditorWorld>("PIE");
+        auto pieWorld = std::make_unique<EditorWorld>();
         PushPreviewWorld(std::move(pieWorld));
 
         auto* editorWorld = GetEdApp()->GetEditorWorld();

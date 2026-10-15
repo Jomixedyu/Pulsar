@@ -13,6 +13,7 @@
 #include "Utils/PrefabUtil.h"
 
 #include <Pulsar/Rendering/ShaderProxy.h>
+#include <Pulsar/Rendering/RenderThread.h>
 #include <Pulsar/Rendering/DescriptorSetCache.h>
 #include <Pulsar/Rendering/RenderGraph/TransientRTPool.h>
 
@@ -421,7 +422,7 @@ namespace pulsared
 
         // world
         Logger::Log("initialize world");
-        auto edWorld = new EditorWorld("MainWorld");
+        auto edWorld = new EditorWorld();
         edWorld->OnWorldBegin();
         edWorld->GetCurrentCamera()->GetTransform()->GetParent()->SetEuler({45.f,-45,0});
 
@@ -609,11 +610,20 @@ namespace pulsared
                 m_gui->EndFrame();
             }
 
-            if (auto* pipeline = static_cast<EditorRenderPipeline*>(Application::GetGfxApp()->GetRenderPipeline()))
             {
                 PROFILE_SCOPE("PrepareDrawData");
-                m_gui->PrepareDrawData(pipeline->ImGuiDrawSnapshot);
+                ImGuiDrawDataSnapshot snapshot;
+                m_gui->PrepareDrawData(snapshot);
+                // Hand the snapshot over through the update queue: the lambda owns the
+                // payload, so no snapshot state is shared across threads at any point.
+                pulsar::Application::GetRenderThread()->EnqueueUpdate_AnyThread(
+                    [snapshot = std::move(snapshot)](gfx::GFXResourceRegistry*) mutable
+                    {
+                        if (auto* pipeline = static_cast<EditorRenderPipeline*>(pulsar::Application::GetGfxApp()->GetRenderPipeline()))
+                            pipeline->ImGuiDrawSnapshot = std::move(snapshot);
+                    });
             }
+
         }
         else
         {

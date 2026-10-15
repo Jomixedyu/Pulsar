@@ -61,8 +61,7 @@ namespace pulsared
     {
         base::OnOpen();
 
-        auto worldName = StringUtil::Concat(GetWindowDisplayName(), " - ", std::to_string(GetWindowId()));
-        m_world = new EditorWorld(worldName);
+        m_world = new EditorWorld();
         m_world->OnWorldBegin();
 
         m_world->GetResidentScene()
