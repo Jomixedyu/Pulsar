@@ -19,6 +19,25 @@ namespace pulsar
 
         ImGuiDrawDataSnapshot(const ImGuiDrawDataSnapshot&) = delete;
         ImGuiDrawDataSnapshot& operator=(const ImGuiDrawDataSnapshot&) = delete;
+        ImGuiDrawDataSnapshot(ImGuiDrawDataSnapshot&& o) noexcept
+            : m_drawData(o.m_drawData), m_clonedLists(std::move(o.m_clonedLists)), m_valid(o.m_valid)
+        {
+            o.m_valid = false;
+            o.m_drawData.CmdLists.clear();
+        }
+        ImGuiDrawDataSnapshot& operator=(ImGuiDrawDataSnapshot&& o) noexcept
+        {
+            if (this != &o)
+            {
+                Clear();
+                m_drawData = o.m_drawData;
+                m_clonedLists = std::move(o.m_clonedLists);
+                m_valid = o.m_valid;
+                o.m_valid = false;
+                o.m_drawData.CmdLists.clear();
+            }
+            return *this;
+        }
 
         // Deep-clone src into this snapshot (replaces previous content).
         void CopyFrom(ImDrawData* src);
@@ -50,7 +69,7 @@ namespace pulsar
         virtual bool IsMinimized() const { return false; }
         virtual ~ImGuiObject() = default;
     };
-    extern void ImGui_Style_Initialize();
-    extern std::shared_ptr<ImGuiObject> CreateImGui(gfx::GFXApplication* app);
+    void ImGui_Style_Initialize();
+    std::shared_ptr<ImGuiObject> CreateImGui(gfx::GFXApplication* app);
 
 }

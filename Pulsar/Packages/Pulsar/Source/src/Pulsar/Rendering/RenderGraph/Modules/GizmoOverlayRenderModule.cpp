@@ -57,7 +57,7 @@ namespace pulsar
                     const float depth = jmath::Dot(camForward, ro->GetWorldPosition() - camPos);
                     for (auto batch : ro->GetMeshBatches())
                     {
-                        if (!batch.Material || batch.Material->GetQueue() != ShaderPassRenderQueueType::Overlay)
+                        if (!batch.Material || batch.GetQueue() != ShaderPassRenderQueueType::Overlay)
                             continue;
 
                         batch.Depth = depth;

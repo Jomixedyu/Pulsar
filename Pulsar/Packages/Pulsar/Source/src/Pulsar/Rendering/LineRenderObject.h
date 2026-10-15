@@ -17,12 +17,13 @@ namespace pulsar
         gfx::GFXDescriptorSetLayoutPtr m_meshDescriptorSetLayout;
 
         array_list<rendering::MeshBatch> m_batchs;
-        RCPtr<Material> m_material;
+        std::shared_ptr<class MaterialProxy> m_materialProxy;
         bool m_depthTestEnabled = false;
         ShaderPassRenderQueueType m_renderQueue = ShaderPassRenderQueueType::Overlay;
 
     public:
-        LineRenderObject() = default;
+        // Loads the shared builtin line material on the game thread.
+        LineRenderObject();
 
         void SetPoints(const array_list<Vector3f>& pointPairs, const array_list<Color4b>& pointColors);
         void SetVerties(const array_list<StaticMeshVertex>& verties);
@@ -31,6 +32,11 @@ namespace pulsar
 
         void SetDepthTestEnabled(bool enabled) { m_depthTestEnabled = enabled; }
         void SetQueue(ShaderPassRenderQueueType queue) { m_renderQueue = queue; }
+
+    private:
+        // Render-thread apply of SetVerties (invoked from the update queue).
+        void ApplyVerties(array_list<StaticMeshVertex> verties);
+    public:
 
         void OnEnterScene() override;
         void OnLeaveScene() override;

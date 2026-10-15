@@ -56,11 +56,13 @@ namespace pulsar
                 {gfx::GFXDescriptorType::CombinedImageSampler, gfx::GFXGpuProgramStageFlags::Fragment, 3, 1},
                 {gfx::GFXDescriptorType::ConstantBuffer,       gfx::GFXGpuProgramStageFlags::Fragment, 8, 1},
             };
-            m_bloomLayout = gfxApp->GetResourceRegistry()->GetOrCreateDescriptorSetLayout(descs.data(), static_cast<uint32_t>(descs.size()));
+            m_bloomLayout = gfxApp->GetResourceRegistry()->GetOrCreateDescriptorSetLayout(descs);
+            const uint32_t slotCount = gfxApp->GetFrameSlotCount();
             for (int i = 0; i < 16; ++i)
             {
-                auto set = m_bloomLayout->AllocateSet();
-                m_bloomSets.push_back(set);
+                auto& perSlot = m_bloomSets.emplace_back();
+                for (uint32_t s = 0; s < slotCount; ++s)
+                    perSlot.push_back(m_bloomLayout->AllocateSet());
             }
         }
 
@@ -74,8 +76,9 @@ namespace pulsar
                 {gfx::GFXDescriptorType::CombinedImageSampler, gfx::GFXGpuProgramStageFlags::Fragment, 7, 1},
                 {gfx::GFXDescriptorType::ConstantBuffer,       gfx::GFXGpuProgramStageFlags::Fragment, 8, 1},
             };
-            m_combineLayout = gfxApp->GetResourceRegistry()->GetOrCreateDescriptorSetLayout(descs.data(), static_cast<uint32_t>(descs.size()));
-            m_combineSet = m_combineLayout->AllocateSet();
+            m_combineLayout = gfxApp->GetResourceRegistry()->GetOrCreateDescriptorSetLayout(descs);
+            for (uint32_t s = 0; s < gfxApp->GetFrameSlotCount(); ++s)
+                m_combineSets.push_back(m_combineLayout->AllocateSet());
         }
 
         // Create 13 independent param buffers (one per pass)
@@ -83,7 +86,7 @@ namespace pulsar
         m_bloomParamBuffers.resize(PassCount);
         gfx::GFXBufferDesc desc{};
         desc.Usage = gfx::GFXBufferUsage::ConstantBuffer;
-        desc.StorageType = gfx::GFXBufferMemoryPosition::VisibleOnDevice;
+        desc.StorageType = gfx::GFXBufferMemoryPosition::DeviceLocal;
         desc.BufferSize = sizeof(BloomParams);
         for (uint32_t i = 0; i < PassCount; ++i)
         {
@@ -93,18 +96,24 @@ namespace pulsar
         // Bind each buffer to its corresponding set
         for (int i = 0; i < 16; ++i)
         {
-            if (i < (int)m_bloomParamBuffers.size() && m_bloomSets[i])
+            if (i < (int)m_bloomParamBuffers.size() && i < (int)m_bloomSets.size())
             {
-                auto* d = m_bloomSets[i]->AddDescriptor("BloomParams", 8);
                 auto* buffer = m_bloomParamBuffers[i].get();
-                if (d && buffer) d->SetConstantBuffer(buffer);
+                for (auto& set : m_bloomSets[i])
+                {
+                    auto* d = set->AddDescriptor("BloomParams", 8);
+                    if (d && buffer) d->SetConstantBuffer(buffer);
+                }
             }
         }
-        if (m_combineSet && m_bloomParamBuffers.size() > 12)
+        if (m_bloomParamBuffers.size() > 12)
         {
-            auto* d = m_combineSet->AddDescriptor("BloomParams", 8);
             auto* buffer = m_bloomParamBuffers[12].get();
-            if (d && buffer) d->SetConstantBuffer(buffer);
+            for (auto& set : m_combineSets)
+            {
+                auto* d = set->AddDescriptor("BloomParams", 8);
+                if (d && buffer) d->SetConstantBuffer(buffer);
+            }
         }
     }
 
@@ -117,7 +126,7 @@ namespace pulsar
         m_bloomParamBuffers.clear();
         m_bloomSets.clear();
         m_bloomLayout.reset();
-        m_combineSet.reset();
+        m_combineSets.clear();
         m_combineLayout.reset();
     }
 
@@ -244,7 +253,7 @@ namespace pulsar
                            const std::string& shaderPassName, Vector2f texelSize,
                            Vector2f direction, int32_t sampleMode)
         {
-            auto* bloomSet = m_bloomSets[bloomSetIdx++].get();
+            const size_t bloomSetIndex = bloomSetIdx++;
             size_t bufIdx = bufferIdx++;
             graph.AddPass(passName)
                 .Read(hSrc)
@@ -257,7 +266,7 @@ namespace pulsar
                     if (m_proxy)
                         m_proxy->ResolveRenderVariant(shaderPassName);
                 })
-                .Execute([this, hSrc, hDst, shaderPassName, texelSize, direction, sampleMode, bloomSet, bufIdx, passName]
+                .Execute([this, hSrc, hDst, shaderPassName, texelSize, direction, sampleMode, bloomSetIndex, bufIdx, passName]
                          (RGPassContext& passCtx, gfx::GFXCommandBuffer& cmdBuffer)
                 {
                     if (!m_proxy) return;
@@ -280,6 +289,7 @@ namespace pulsar
                     }
 
                     float threshold = (passName == "Bloom_Downsample0") ? m_bloomThreshold : 0.0f;
+                    auto* bloomSet = m_bloomSets[bloomSetIndex][cmdBuffer.GetApplication()->GetFrameInFlightIndex()].get();
                     WriteBloomParams((uint32_t)bufIdx, texelSize, direction, sampleMode, threshold);
                     SetupBloomSet(bloomSet, srcView);
 
@@ -403,7 +413,8 @@ namespace pulsar
                 };
 
                 WriteBloomParams(12, Vector2f(0, 0), Vector2f(0, 0), 0, 0.0f);
-                SetupCombineSet(m_combineSet.get(),
+                auto* combineSet = m_combineSets[cmdBuffer.GetApplication()->GetFrameInFlightIndex()].get();
+                SetupCombineSet(combineSet,
                                 GetView(input), GetView(hBloom0V),
                                 GetView(hBloom1V), GetView(hBloom2V),
                                 GetView(hBloom3V));
@@ -430,7 +441,7 @@ namespace pulsar
 
                 array_list<gfx::GFXDescriptorSet*> descSets;
                 descSets.push_back(resolved.m_set0);
-                descSets.push_back(m_combineSet.get());
+                descSets.push_back(combineSet);
                 cmdBuffer.CmdBindDescriptorSets(descSets, gfxPipeline.get());
 
                 cmdBuffer.CmdDraw(3);

@@ -147,7 +147,7 @@ namespace pulsar
         auto* gfxApp = Application::GetGfxApp();
         gfx::GFXBufferDesc desc{};
         desc.Usage = gfx::GFXBufferUsage::ConstantBuffer;
-        desc.StorageType = gfx::GFXBufferMemoryPosition::VisibleOnDevice;
+        desc.StorageType = gfx::GFXBufferMemoryPosition::DeviceLocal;
 
         desc.BufferSize = sizeof(PerPassWorldData);
         m_worldBuffer = gfxApp->GetResourceRegistry()->CreateBuffer(desc);

@@ -58,7 +58,7 @@ namespace pulsar
                         if (!batch.Material)
                             continue;
 
-                        auto queue = batch.Material->GetQueue();
+                        auto queue = batch.GetQueue();
                         if (queue != ShaderPassRenderQueueType::Opaque
                             && queue != ShaderPassRenderQueueType::AlphaTest)
                         {

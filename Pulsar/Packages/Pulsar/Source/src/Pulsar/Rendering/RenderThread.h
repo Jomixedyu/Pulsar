@@ -40,15 +40,13 @@ namespace pulsar
         bool IsRenderThread() const;
 
         /**
-         * @brief 主线程等待渲染线程完成当前所有工作并等 GPU 空闲（用于退出 / 卸载 World / Resize）。
+         * @brief 主线程等待渲染线程排空所有队列（用于退出 / 卸载 World / Resize）。
          *
-         * 派发一个不绘制的帧，渲染线程会：
-         *   1. drain update 队列；
-         *   2. vkDeviceWaitIdle —— 等 GPU 把已提交命令全部执行完；
-         *   3. drain destroy 队列 —— 此时无 in-flight 命令引用待销毁资源，安全释放。
-         * 调用返回后，所有已入队的销毁均已在 GPU 完成后执行完毕。
+         * 派发一个不绘制的帧，渲染线程会依次 drain update 队列、destroy 队列；
+         * 返回时所有入队操作均已执行完毕。GPU 资源的实际销毁由各自的时间轴门控
+         * 负责（registry 延迟销毁 / 池回收），这里不需要等待 GPU 空闲。
          */
-        void WaitForIdle_AnyThread();
+        void DrainQueue_AnyThread();
 
         // ========== 资源更新队列（_AnyThread）==========
         /**
@@ -118,8 +116,6 @@ namespace pulsar
         bool m_frameDone = false;
         bool m_frameInFlight = false;  // Dispatch 后置位，WaitFrame 清除
 
-        // WaitForIdle 请求：渲染线程在 ProcessDestroys 前执行 vkDeviceWaitIdle。
-        std::atomic<bool> m_waitDeviceIdle{false};
 
 
     };

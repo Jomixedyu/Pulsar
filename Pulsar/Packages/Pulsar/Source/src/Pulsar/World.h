@@ -30,7 +30,7 @@ namespace pulsar
         static const hash_set<World*>& GetAllWorlds();
 
     public:
-        explicit World(string_view name);
+        World();
         virtual ~World();
     public:
 
@@ -53,7 +53,8 @@ namespace pulsar
         virtual const char* GetWorldTypeName() const { return StaticWorldTypeName(); }
         static const char* StaticWorldTypeName() { return "World"; }
 
-        const string& GetWorldName() const { return m_name; }
+        // The world takes its name from the focused (active) scene; empty when none is loaded.
+        string GetWorldName() const;
 
         bool IsSelectedNode(const ObjectPtr<Node>& node) const;
         SelectionSet<Node>& GetSelection() { return m_selection; }
@@ -76,6 +77,8 @@ namespace pulsar
         const RCPtr<NodeCollection>& GetScene(int index) const { return m_scenes[index]; }
         RCPtr<NodeCollection>        GetFocusScene() const { return m_focusScene; }
         void                         SetFocusScene(RCPtr<NodeCollection> scene);
+        // Pushes the current world display name (focused scene name) to the render scene.
+        void                         SyncRenderDebugName();
         size_t                       GetSceneCount() const { return m_scenes.size(); }
         RCPtr<NodeCollection>        GetResidentScene() const { return m_scenes[0]; }
 
@@ -139,7 +142,9 @@ namespace pulsar
         PhysicsWorld2D* m_physicsWorld2D = nullptr;
         PhysicsWorld3D* m_physicsWorld3D = nullptr;
         RCPtr<Material>                       m_defaultMaterial;
-        std::unique_ptr<RenderScene>          m_renderScene = std::make_unique<RenderScene>();
+        // Shared so that update/destroy queue lambdas keep the scene alive until they run;
+        // queue-ordering mistakes then degrade to no-ops instead of use-after-free.
+        std::shared_ptr<RenderScene>          m_renderScene = std::make_shared<RenderScene>();
         array_list<ObjectPtr<RenderComponent>> m_dirtyRenderComponents;
         array_list<RCPtr<NodeCollection>>     m_scenes;
         RCPtr<NodeCollection>                 m_focusScene;
@@ -149,12 +154,13 @@ namespace pulsar
         SimulateManager                       m_simulateManager;
 
         GizmosManager m_gizmosManager;
+        bool        m_worldBegun = false;
+        bool        m_worldEnded = false;
         array_list<SPtr<class WorldSubsystem>> m_subsystems;
 
 
         Ticker   m_ticker{};
         float    m_totalTime = 0;
-        string   m_name;
         bool     m_isPlaying{};
         bool     m_isSimulating = false;
         bool     m_isPaused = false;

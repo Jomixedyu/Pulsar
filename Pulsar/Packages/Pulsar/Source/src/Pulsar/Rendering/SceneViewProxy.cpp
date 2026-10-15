@@ -27,7 +27,7 @@ namespace pulsar
         {
             gfx::GFXBufferDesc desc{};
             desc.Usage = gfx::GFXBufferUsage::ConstantBuffer;
-            desc.StorageType = gfx::GFXBufferMemoryPosition::VisibleOnDevice;
+            desc.StorageType = gfx::GFXBufferMemoryPosition::DeviceLocal;
             desc.BufferSize = sizeof(PerPassCameraData);
             m_cameraBuffer = Application::GetGfxApp()->GetResourceRegistry()->CreateBuffer(desc);
         }

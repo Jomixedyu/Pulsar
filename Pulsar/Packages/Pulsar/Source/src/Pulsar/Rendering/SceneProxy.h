@@ -1,4 +1,5 @@
 #pragma once
+#include <memory>
 
 namespace pulsar::rendering
 {
@@ -7,7 +8,7 @@ namespace pulsar::rendering
     // on the game thread, ownership is transferred to the render thread via the command
     // queue, and all access after registration happens on the render thread.
     // Resource lifecycle hooks run on the render thread inside RenderScene.
-    class SceneProxy
+    class SceneProxy : public std::enable_shared_from_this<SceneProxy>
     {
     public:
         virtual ~SceneProxy() = default;

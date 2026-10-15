@@ -18,7 +18,7 @@ namespace pulsar
     {
         const ShaderPropertySetLayout* set1 = pb.program->m_layout.FindSet(1);
         auto layout = DescriptorSetAssembler::BuildLayout(set1);
-        return DescriptorSetCache::Instance().Get(layout, set1, reg);
+        return DescriptorSetCache::Instance().Resolve(layout, set1, reg);
     }
 
     void MeshRenderModule::DrawPreparedBatch(

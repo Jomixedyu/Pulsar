@@ -31,7 +31,7 @@ namespace pulsar
         if (s_sharedLayout.expired())
         {
             gfx::GFXDescriptorLayoutDesc info{};
-            m_descriptorSetLayout = Application::GetGfxApp()->GetResourceRegistry()->GetOrCreateDescriptorSetLayout(&info, 0);
+            m_descriptorSetLayout = Application::GetGfxApp()->GetResourceRegistry()->GetOrCreateDescriptorSetLayout({});
             s_sharedLayout = m_descriptorSetLayout;
         }
         else

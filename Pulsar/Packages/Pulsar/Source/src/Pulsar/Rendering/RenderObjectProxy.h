@@ -41,6 +41,10 @@ namespace pulsar::rendering
         bool IsDepthTestDisabled{false};  // Gizmo 等需要始终可见的线条
         bool IsReverseCulling{false};
 
+        // Optional per-batch render queue override (e.g. gizmo lines share the builtin
+        // VertexColor material but render in a different queue). Unset = material queue.
+        std::optional<ShaderPassRenderQueueType> QueueOverride;
+
         int32_t Priority = 0;   // per-renderer render priority
         float   Depth    = 0.f; // signed camera-space depth, filled by pipeline
         uint32_t RenderObjectIndex = 0; // dynamic offset index for set1 binding3
@@ -63,6 +67,13 @@ namespace pulsar::rendering
                     return gfx::GFXCullMode::Front;
             }
             return baseCullMode;
+        }
+
+        ShaderPassRenderQueueType GetQueue() const
+        {
+            if (QueueOverride)
+                return *QueueOverride;
+            return Material ? Material->GetQueue() : ShaderPassRenderQueueType::Opaque;
         }
 
         void Append(const MeshBatch& batch)

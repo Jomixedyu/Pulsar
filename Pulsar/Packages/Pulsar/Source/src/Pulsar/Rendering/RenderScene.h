@@ -33,6 +33,11 @@ namespace pulsar
         SceneRenderPipeline& GetRenderPipeline();
 
         void SetTime(float totalTime, float deltaTime) { m_totalTime = totalTime; m_deltaTime = deltaTime; }
+
+        // Debug display name (focused scene name), fed from the game thread through the
+        // update queue. Read on the render thread only.
+        void SetDebugName(std::string name) { m_debugName = std::move(name); }
+        const std::string& GetDebugName() const { return m_debugName; }
         float GetTotalTime() const { return m_totalTime; }
         float GetDeltaTime() const { return m_deltaTime; }
 
@@ -56,6 +61,7 @@ namespace pulsar
         PerRenderObjectDataManager m_perObjectData;
         float m_totalTime = 0.f;
         float m_deltaTime = 0.f;
+        std::string m_debugName;
         gfx::GFXBufferPtr m_worldBuffer;
         gfx::GFXBufferPtr m_lightsBuffer;
     };

@@ -1,6 +1,7 @@
 #include "Application.h"
 #include "AssetManager.h"
 #include "Assets/StaticMesh.h"
+#include "Rendering/RenderThread.h"
 
 #include <Pulsar/Rendering/LineRenderObject.h>
 #include <gfx/GFXResourceRegistry.h>
@@ -10,23 +11,47 @@ namespace pulsar
     // Layout for set2 (dummy, kept for pipeline compatibility)
     static inline gfx::GFXDescriptorSetLayout_wp s_dummyLayout{};
 
+    LineRenderObject::LineRenderObject()
+    {
+        // Runs on the game thread (creation site), so the asset system is safe here.
+        // EnsureGPUResource creates and feeds the render proxy; GetRenderProxy alone
+        // returns null if nobody ensured it.
+        if (auto mat = AssetManager::Get()->LoadAsset<Material>("Pulsar/Materials/VertexColor"))
+        {
+            mat->EnsureGPUResource();
+            m_materialProxy = mat->GetRenderProxy();
+        }
+    }
+
     void LineRenderObject::SetPoints(const array_list<Vector3f>& pointPairs, const array_list<Color4b>& pointColors)
     {
-        m_verties.clear();
+        array_list<StaticMeshVertex> verties;
+        verties.reserve(pointPairs.size());
         for (size_t i = 0; i < pointPairs.size(); i++)
         {
             StaticMeshVertex vert{};
             vert.Color = pointColors[i];
             vert.Position = pointPairs[i];
 
-            m_verties.push_back(vert);
+            verties.push_back(vert);
         }
-        Fill();
+        SetVerties(verties);
     }
 
     void LineRenderObject::SetVerties(const array_list<StaticMeshVertex>& verties)
     {
-        m_verties = verties;
+        // Game-thread entry: defer the mutation to the render thread so it never races
+        // with recording. The SPtr capture keeps the proxy alive until it runs.
+        Application::GetRenderThread()->EnqueueUpdate_AnyThread(
+            [self = std::static_pointer_cast<LineRenderObject>(shared_from_this()), verties](gfx::GFXResourceRegistry*) mutable
+            {
+                self->ApplyVerties(std::move(verties));
+            });
+    }
+
+    void LineRenderObject::ApplyVerties(array_list<StaticMeshVertex> verties)
+    {
+        m_verties = std::move(verties);
         Fill();
         // Buffer may have grown inside Fill(); keep the cached batch in sync. The buffer is
         // never shrunk, so DrawCount pins the draw to the live vertex count and prevents
@@ -54,10 +79,9 @@ namespace pulsar
         {
             gfx::GFXBufferDesc desc{};
             desc.Usage        = gfx::GFXBufferUsage::Vertex;
-            // Gizmo lines are rebuilt every frame from the CPU. Host-visible memory maps and
-            // copies directly; device-local would round-trip through a staging buffer that ends
-            // in vkQueueWaitIdle (a full GPU sync point) on every update.
-            desc.StorageType  = gfx::GFXBufferMemoryPosition::VisibleOnHost;
+            // Gizmo lines are rebuilt every frame from the CPU; device-local storage routes
+            // through the batched frame-head transfer queue (no sync points).
+            desc.StorageType  = gfx::GFXBufferMemoryPosition::DeviceLocal;
             desc.BufferSize   = m_verties.size() * sizeof(StaticMeshVertex);
             desc.ElementSize  = sizeof(StaticMeshVertex);
 
@@ -66,7 +90,9 @@ namespace pulsar
 
         if (m_vertBuffer && !m_verties.empty())
         {
-            m_vertBuffer->Update(m_verties.data());
+            // The buffer is grow-only and may be larger than the vertex array: upload
+            // only the live range, not the buffer capacity.
+            m_vertBuffer->Update(m_verties.data(), m_verties.size() * sizeof(StaticMeshVertex));
         }
     }
 
@@ -79,7 +105,7 @@ namespace pulsar
         if (s_dummyLayout.expired())
         {
             gfx::GFXDescriptorLayoutDesc info{};
-            m_meshDescriptorSetLayout = Application::GetGfxApp()->GetResourceRegistry()->GetOrCreateDescriptorSetLayout(&info, 0);
+            m_meshDescriptorSetLayout = Application::GetGfxApp()->GetResourceRegistry()->GetOrCreateDescriptorSetLayout({});
             s_dummyLayout = m_meshDescriptorSetLayout;
         }
         else
@@ -91,7 +117,7 @@ namespace pulsar
         {
             gfx::GFXBufferDesc vertexBufferDesc{};
             vertexBufferDesc.Usage       = gfx::GFXBufferUsage::Vertex;
-            vertexBufferDesc.StorageType = gfx::GFXBufferMemoryPosition::VisibleOnHost;
+            vertexBufferDesc.StorageType = gfx::GFXBufferMemoryPosition::DeviceLocal;
             vertexBufferDesc.BufferSize  = m_verties.size() * sizeof(StaticMeshVertex);
             vertexBufferDesc.ElementSize = sizeof(StaticMeshVertex);
 
@@ -112,9 +138,8 @@ namespace pulsar
         batch.State.VertexLayouts = {StaticMesh::StaticGetVertexLayout()};
         batch.IsUsedIndices = false;
         batch.IsDepthTestDisabled = !m_depthTestEnabled;
-        m_material = AssetManager::Get()->LoadAsset<Material>("Pulsar/Materials/VertexColor");
-        if (m_material)
-            m_material->SetQueue(m_renderQueue);
+        batch.Material = m_materialProxy;
+        batch.QueueOverride = m_renderQueue;
     }
 
     void LineRenderObject::OnLeaveScene()
@@ -132,13 +157,6 @@ namespace pulsar
 
     array_list<rendering::MeshBatch> LineRenderObject::GetMeshBatches()
     {
-        if (m_material)
-            m_material->EnsureGPUResource();
-
-        for (auto& batch : m_batchs)
-        {
-            batch.Material = m_material ? m_material->GetRenderProxy() : nullptr;
-        }
         return m_batchs;
     }
 } // namespace pulsar

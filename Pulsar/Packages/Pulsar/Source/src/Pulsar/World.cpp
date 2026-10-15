@@ -23,14 +23,24 @@ namespace pulsar
     {
         return gWorlds;
     }
-    World::World(string_view name)
-        : m_name(name), m_gizmosManager(this), m_inputContext(new InputContext())
+    World::World()
+        : m_gizmosManager(this), m_inputContext(new InputContext())
     {
         gWorlds.insert(this);
     }
 
+    string World::GetWorldName() const
+    {
+        if (auto scene = GetFocusScene())
+            return scene->GetName();
+        return {};
+    }
+
     World::~World()
     {
+        // Lifecycle is explicit: a begun world must be ended via OnWorldEnd before
+        // destruction (teardown can throw / dispatch, neither is safe in a dtor).
+        assert((!m_worldBegun || m_worldEnded) && "World destroyed without OnWorldEnd");
         delete m_inputContext;
         gWorlds.erase(this);
         TeardownRenderScene();
@@ -38,7 +48,6 @@ namespace pulsar
 
     void World::OnDuplicated(World* target)
     {
-        target->m_name = m_name + "_copy";
         for (size_t i = 1; i < m_scenes.size(); ++i)
         {
             target->LoadScene(InstantiateAsset(m_scenes[i]));
@@ -197,6 +206,20 @@ namespace pulsar
     void World::SetFocusScene(RCPtr<NodeCollection> scene)
     {
         m_focusScene = scene;
+        SyncRenderDebugName();
+    }
+
+    void World::SyncRenderDebugName()
+    {
+        // The render thread must never read m_focusScene directly (game-thread state),
+        // so the display name is pushed to the render scene through the update queue.
+        if (!m_renderScene)
+            return;
+        Application::GetRenderThread()->EnqueueUpdate_AnyThread(
+            [scene = m_renderScene, name = GetWorldName()](gfx::GFXResourceRegistry*)
+            {
+                scene->SetDebugName(name);
+            });
     }
 
     void World::ChangeScene(RCPtr<NodeCollection> scene, bool clearResidentScene)
@@ -215,9 +238,11 @@ namespace pulsar
 
     void World::LoadScene(RCPtr<NodeCollection> scene)
     {
+        assert(scene && "LoadScene with an empty scene handle");
         m_scenes.push_back(scene);
         this->OnSceneLoading(scene);
         scene->BeginScene(this);
+        SyncRenderDebugName();
     }
 
     void World::UnloadScene(RCPtr<NodeCollection> scene)
@@ -241,6 +266,7 @@ namespace pulsar
         OnSceneUnloading(scene);
         scene->EndScene();
         m_scenes.erase(it);
+        SyncRenderDebugName();
     }
 
     void World::InitializeResidentScene()
@@ -273,7 +299,7 @@ namespace pulsar
         if (!m_renderScene || !ro)
             return;
         Application::GetRenderThread()->EnqueueUpdate_AnyThread(
-            [scene = m_renderScene.get(), p = ro](gfx::GFXResourceRegistry*)
+            [scene = m_renderScene, p = ro](gfx::GFXResourceRegistry*)
             {
                 scene->AddProxy(std::move(p));
             });
@@ -283,7 +309,7 @@ namespace pulsar
         if (!m_renderScene || !ro)
             return;
         Application::GetRenderThread()->EnqueueUpdate_AnyThread(
-            [scene = m_renderScene.get(), p = ro](gfx::GFXResourceRegistry*)
+            [scene = m_renderScene, p = ro](gfx::GFXResourceRegistry*)
             {
                 scene->RemoveProxy(p);
             });
@@ -299,7 +325,7 @@ namespace pulsar
             return;
 
         Application::GetRenderThread()->EnqueueUpdate_AnyThread(
-            [scene = m_renderScene.get(), p = std::move(proxy)](gfx::GFXResourceRegistry*)
+            [scene = m_renderScene, p = std::move(proxy)](gfx::GFXResourceRegistry*)
             {
                 scene->AddProxy(std::move(p));
             });
@@ -314,7 +340,7 @@ namespace pulsar
             return;
 
         Application::GetRenderThread()->EnqueueUpdate_AnyThread(
-            [scene = m_renderScene.get(), p = std::move(proxy)](gfx::GFXResourceRegistry*)
+            [scene = m_renderScene, p = std::move(proxy)](gfx::GFXResourceRegistry*)
             {
                 scene->RemoveProxy(p);
             });
@@ -335,6 +361,11 @@ namespace pulsar
     {
         if (!m_renderScene)
             return;
+
+        // A frame may still be in flight reading this world's render scene; drain the
+        // render thread before transferring ownership to the destroy queue.
+        if (auto* rt = Application::GetRenderThread())
+            rt->DrainQueue_AnyThread();
 
         // Having m_renderScene means the World is running with a render thread.
         // Headless worlds do not create RenderScene and return above.
@@ -361,7 +392,7 @@ namespace pulsar
         if (m_renderScene)
         {
             Application::GetRenderThread()->EnqueueUpdate_AnyThread(
-                [scene = m_renderScene.get(), totalTime = m_totalTime, deltaTime = m_ticker.deltatime](gfx::GFXResourceRegistry*)
+                [scene = m_renderScene, totalTime = m_totalTime, deltaTime = m_ticker.deltatime](gfx::GFXResourceRegistry*)
                 {
                     scene->SetTime(totalTime, deltaTime);
                 });
@@ -384,6 +415,7 @@ namespace pulsar
 
     void World::OnWorldBegin()
     {
+        m_worldBegun = true;
         if (!m_renderScene)
         {
             m_renderScene = std::make_unique<RenderScene>();
@@ -441,7 +473,9 @@ namespace pulsar
 
         // Synchronous unload: drain proxy removals / RenderScene destroy, then wait for GPU idle.
         if (auto* rt = Application::GetRenderThread())
-            rt->WaitForIdle_AnyThread();
+            rt->DrainQueue_AnyThread();
+
+        m_worldEnded = true;
     }
 
     void World::OnSceneLoading(RCPtr<NodeCollection> scene)

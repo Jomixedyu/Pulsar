@@ -16,15 +16,15 @@ namespace pulsar
     // set1 perPass / set2 perDraw). A descriptor set is fully described by its content:
     //   { layout (globally de-duplicated), the ordered list of bound resource identities
     //     (GFXBuffer* / GFXTexture2DView* per reflected binding) }.
-    // Two Get() calls with identical content resolve to the SAME set. Only *bindings* participate
+    // Two Resolve() calls with identical content resolve to the SAME set. Only *bindings* participate
     // in the key — cbuffer bytes and dynamic offsets do NOT (descriptors store the buffer handle,
     // not its bytes; dynamic offsets are supplied at bind time).
     //
     // Owners are stateless: they do not store the set or any handle. Each draw recomputes the key
-    // and calls Get(); a hit returns the existing set and stamps it with the current frame. A set
-    // that has not been used for GRACE frames is guaranteed no longer referenced by the GPU
-    // (one full frame of grace under the current per-frame vkQueueWaitIdle) and is reclaimed.
-    // §6 in-flight swaps the frame counter for a real timeline value; the interface is unchanged.
+    // and calls Resolve(); a hit returns the existing set and stamps it with the current frame. A set
+    // Entries not reused for a couple of frames are reclaimed; the GPU-safety part of the
+    // Reclaim is driven by the unified GPU timeline: an entry is dropped once the
+    // submission that last referenced it has provably completed.
     //
     // This unifies "is the shader builtin / compiling / compiled?" away: the key is derived from
     // whatever program/resources are current, so content changes automatically pick a different
@@ -50,13 +50,13 @@ namespace pulsar
         // resolved resources. The key is extracted from reg by resolving each reflected binding.
         // A null reflection means an empty set (layout with no bindings). Returns a set ready to
         // bind (its lifetime is managed by the cache — do not store it past the current frame;
-        // re-Get() each frame instead).
-        gfx::GFXDescriptorSet* Get(
+        // re-Resolve() each frame instead).
+        gfx::GFXDescriptorSet* Resolve(
             const gfx::GFXDescriptorSetLayoutPtr& layout,
             const ShaderPropertySetLayout* reflection,
             const RenderResourceRegistry& reg);
 
-        // Advance the frame and reclaim sets untouched for GRACE frames.
+        // Reclaim sets whose last referencing submission has completed on the timeline.
         void Tick();
 
         // Drop every cached set/layout ref. Must run while the GFX device is still alive and the
@@ -71,9 +71,6 @@ namespace pulsar
             uint64_t                 m_lastUsedFrame = 0;
         };
 
-        static constexpr uint64_t kGraceFrames = 2;
-
         std::map<Key, Entry> m_entries;
-        uint64_t             m_frame = 0;
     };
 }

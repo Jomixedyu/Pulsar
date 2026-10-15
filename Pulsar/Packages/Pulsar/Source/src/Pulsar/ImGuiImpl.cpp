@@ -194,7 +194,13 @@ namespace pulsar
             init_info.Queue = m_app->GetVkGraphicsQueue();
             init_info.PipelineCache = VK_NULL_HANDLE;
             init_info.MinImageCount = 2;
-            init_info.ImageCount = 2;
+            // frame slot count + 1, not 2: the backend defers texture destruction by
+            // UnusedFrames (counted on the game thread in ImGui::NewFrame) but destroys on
+            // the render thread. The game thread runs 1 frame ahead and the last reference
+            // may sit in the frame recording concurrently with the marking tick, so the
+            // deferral needs one frame of slack beyond the in-flight count for the
+            // frame-head timeline wait to provably cover the last referencing frame.
+            init_info.ImageCount = 3;
             init_info.DescriptorPoolSize = 256;
             init_info.UsePushDescriptor = true;
             init_info.Allocator = VK_NULL_HANDLE;
@@ -223,6 +229,10 @@ namespace pulsar
         }
         virtual void Terminate() override
         {
+            // The backend owns raw Vulkan objects (font texture/view, sampler, pipeline,
+            // vertex buffers) outside the registry's deferred destruction: the last
+            // frame may still reference them, so the device must be idle first.
+            m_app->WaitDeviceIdle();
             ImGui_ImplVulkan_Shutdown();
             ImGui_ImplSDL2_Shutdown();
             ImGui::DestroyContext();

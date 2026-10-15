@@ -35,13 +35,11 @@ namespace pulsar
             m_thread.join();
     }
 
-    void RenderThread::WaitForIdle_AnyThread()
+    void RenderThread::DrainQueue_AnyThread()
     {
         if (!m_running) return;
-        // 派发一个不绘制的帧：渲染线程会先 drain update/command 队列，
-        // 然后 vkDeviceWaitIdle 等 GPU 执行完已提交命令，最后 drain destroy 队列。
-        // 用于退出 / 卸载 World：返回后所有入队销毁均已在 GPU 完成后执行完毕。
-        m_waitDeviceIdle.store(true, std::memory_order_relaxed);
+        // 派发一个不绘制的帧：渲染线程依次 drain update 队列、destroy 队列；
+        // 返回时所有入队操作均已执行完毕。GPU 资源销毁由时间轴门控负责，无需等 GPU 空闲。
         RunFrame_AnyThread(nullptr);
     }
 
@@ -143,13 +141,9 @@ namespace pulsar
             //    保证本帧渲染用到的资源已就绪。
             ProcessResourceUpdates();
 
-            // 1.1 回收长时间未用的 descriptor set 缓存项（上帧 present 后已 vkQueueWaitIdle，GPU 不再引用）。
+            // 1.1 回收最后引用提交已在 GPU 时间轴完成的 descriptor set 缓存项。
             DescriptorSetCache::Instance().Tick();
 
-            // 1.5 若收到 WaitForIdle 请求，先等 GPU 把已提交命令全部执行完，
-            //     再处理销毁队列，避免释放仍被 in-flight 命令引用的资源。
-            if (m_waitDeviceIdle.exchange(false, std::memory_order_relaxed))
-                Application::GetGfxApp()->WaitDeviceIdle();
 
             // 1.6 处理独立销毁队列（晚于本帧所有 add/update）。
             ProcessDestroys();
@@ -166,7 +160,7 @@ namespace pulsar
             m_frameCv.notify_all();
         }
 
-        // 退出前，调用方（World::OnWorldEnd / Application）已先调用 WaitForIdle_AnyThread
+        // 退出前，调用方（World::OnWorldEnd / Application）已先调用 DrainQueue_AnyThread
         // 派发空帧，把入队的 proxy 移除 / RenderScene 销毁全部执行完（GFX device 仍存活）。
         // 因此停止时队列通常已空；万一仍有残留命令，随 ~RenderThread 一起析构
         // （捕获的对象在此销毁，GPU 资源由 gfxApp->Terminate 兜底回收）。

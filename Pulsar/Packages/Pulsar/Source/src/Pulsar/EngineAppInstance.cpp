@@ -9,6 +9,7 @@
 #include "Rendering/PerPassData.h"
 #include "Rendering/RenderObjectProxy.h"
 #include "Rendering/RenderScene.h"
+#include "Rendering/RenderThread.h"
 #include "Rendering/SceneViewProxy.h"
 #include "Rendering/RenderGraph/TransientRTPool.h"
 #include "Rendering/RenderGraph/RenderGraph.h"
@@ -40,17 +41,21 @@ namespace pulsar
 
 
     void EngineRenderPipeline::OnRecord(
-        gfx::GFXRenderContext* context, gfx::GFXFrameBufferObject* backbuffer)
+        gfx::GFXCommandBuffer& cmdBuffer, gfx::GFXFrameBufferObject* backbuffer)
     {
         static uint64_t s_frameIndex = 0;
         ++s_frameIndex;
         if (TransientRTPool::Get())
             TransientRTPool::Get()->TickGC(s_frameIndex);
 
-        auto& cmdBuffer = context->GetCommandBuffer(0);
         for (auto* world : m_worlds)
         {
-            cmdBuffer.CmdPushDebugInfo("SceneRenderer");
+            // NOTE: the render thread never reads live World state; the debug name is a
+            // render-thread copy fed through the update queue (World::SyncRenderDebugName).
+            string worldName;
+            if (auto* rs = world->GetRenderScene())
+                worldName = rs->GetDebugName();
+            cmdBuffer.CmdPushDebugInfo(StringUtil::Concat("SceneRenderer - ", worldName.empty() ? "EMPTY" : worldName));
 
             if (auto* scene = world->GetRenderScene())
             {
@@ -65,15 +70,25 @@ namespace pulsar
     }
     void EngineRenderPipeline::AddWorld(World* world)
     {
-        m_worlds.push_back(world);
+        // Called on the game thread; the render thread iterates m_worlds while
+        // recording, so the mutation is deferred through the update queue.
+        Application::GetRenderThread()->EnqueueUpdate_AnyThread(
+            [this, world](gfx::GFXResourceRegistry*)
+            {
+                m_worlds.push_back(world);
+            });
     }
     void EngineRenderPipeline::RemoveWorld(World* world)
     {
-        auto it = std::ranges::find(m_worlds, world);
-        if (it != m_worlds.end())
-        {
-            m_worlds.erase(it);
-        }
+        Application::GetRenderThread()->EnqueueUpdate_AnyThread(
+            [this, world](gfx::GFXResourceRegistry*)
+            {
+                auto it = std::ranges::find(m_worlds, world);
+                if (it != m_worlds.end())
+                {
+                    m_worlds.erase(it);
+                }
+            });
     }
 
     const char* EngineAppInstance::AppType()
@@ -110,7 +125,7 @@ namespace pulsar
 
         TransientRTPool::Initialize();
 
-        m_world = new World("MainWorld");
+        m_world = new World();
         m_world->OnWorldBegin();
         Application::GetGfxApp()->SetRenderPipeline(new EngineRenderPipeline{m_world});
 

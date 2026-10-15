@@ -107,7 +107,7 @@ namespace pulsar
             gfx::GFXDescriptorLayoutDesc binding{
                 gfx::GFXDescriptorType::ConstantBuffer, gfx::GFXGpuProgramStageFlags::VertexFragment,
                 kRenderingDescriptorBinding_SkinningData, kRenderingDescriptorSpace_PerRenderObject};
-            m_descriptorSetLayout = Application::GetGfxApp()->GetResourceRegistry()->GetOrCreateDescriptorSetLayout(&binding, 1);
+            m_descriptorSetLayout = Application::GetGfxApp()->GetResourceRegistry()->GetOrCreateDescriptorSetLayout({ binding });
             SkinnedMeshDescriptorSetLayout = m_descriptorSetLayout;
         }
         else
@@ -119,7 +119,7 @@ namespace pulsar
         {
             gfx::GFXBufferDesc desc{};
             desc.Usage       = gfx::GFXBufferUsage::ConstantBuffer;
-            desc.StorageType = gfx::GFXBufferMemoryPosition::VisibleOnDevice;
+            desc.StorageType = gfx::GFXBufferMemoryPosition::DeviceLocal;
             desc.BufferSize  = sizeof(SkinnedRenderObjectData);
             desc.ElementSize = sizeof(SkinnedRenderObjectData);
             m_skinningBuffer = Application::GetGfxApp()->GetResourceRegistry()->CreateBuffer(desc);

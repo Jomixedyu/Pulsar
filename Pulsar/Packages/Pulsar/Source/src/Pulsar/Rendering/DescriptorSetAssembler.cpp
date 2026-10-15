@@ -65,6 +65,6 @@ namespace pulsar::DescriptorSetAssembler
                 descs.push_back(desc);
             }
         }
-        return Application::GetGfxApp()->GetResourceRegistry()->GetOrCreateDescriptorSetLayout(descs.data(), static_cast<uint32_t>(descs.size()));
+        return Application::GetGfxApp()->GetResourceRegistry()->GetOrCreateDescriptorSetLayout(descs);
     }
 }

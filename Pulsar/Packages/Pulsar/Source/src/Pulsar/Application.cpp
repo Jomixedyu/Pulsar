@@ -175,22 +175,25 @@ namespace pulsar
                 break;
             }
 
-            // render on the render thread, block until done
+            // Wait for the previous dispatched render frame, then snapshot render
+            // inputs and dispatch this frame without blocking: the next loop
+            // iteration's game tick overlaps with the render thread's recording.
             {
-                PROFILE_SCOPE("RenderDispatch");
-                g_renderThread->RunFrame_AnyThread([dt] { g_gfxApp->TickRender(dt); });
+                PROFILE_SCOPE("RenderWait");
+                g_renderThread->WaitFrame_AnyThread();
             }
+            g_renderThread->Dispatch_AnyThread([dt] { g_gfxApp->TickRender(dt); });
 
             Profiler::Get().EndFrame();
         }
 
         instance->OnTerminate();
 
-        // World::OnWorldEnd already drained its own teardown synchronously. This is a
-        // backstop: any destroys enqueued by the rest of OnTerminate (e.g. shader cache
-        // clear / transient RT pool shutdown) run here, after vkDeviceWaitIdle, while the
-        // GFX device + resource manager are still alive, before we stop the thread.
-        g_renderThread->WaitForIdle_AnyThread();
+        // OnTerminate tears down worlds first, and World::OnWorldEnd drains the render
+        // queue (completing any in-flight frame) before touching render state. This
+        // backstop drains anything the rest of OnTerminate enqueued (shader cache clear,
+        // transient RT pool shutdown, ...) before the thread stops.
+        g_renderThread->DrainQueue_AnyThread();
 
         g_renderThread->Stop_AnyThread();
         delete g_renderThread;

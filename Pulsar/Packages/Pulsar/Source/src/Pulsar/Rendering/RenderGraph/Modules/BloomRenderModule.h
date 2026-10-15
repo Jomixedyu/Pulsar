@@ -54,10 +54,13 @@ namespace pulsar
         float m_bloomIntensity = 1.0f;
 
         gfx::GFXDescriptorSetLayoutPtr m_bloomLayout;
-        array_list<gfx::GFXDescriptorSetPtr> m_bloomSets;
+        // Per-pass sets duplicated per frame-in-flight slot ([pass][slot]): a slot's set
+        // is rewritten only a full frame-slot cycle after its last use, once the
+        // frame-start timeline wait has proven the GPU is done with it.
+        array_list<array_list<gfx::GFXDescriptorSetPtr>> m_bloomSets;
 
         gfx::GFXDescriptorSetLayoutPtr m_combineLayout;
-        gfx::GFXDescriptorSetPtr       m_combineSet;
+        array_list<gfx::GFXDescriptorSetPtr>           m_combineSets;
 
         array_list<gfx::GFXBufferPtr> m_bloomParamBuffers;
     };

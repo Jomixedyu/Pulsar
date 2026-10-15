@@ -12,7 +12,7 @@ namespace pulsar
 
         // Create dummy extra set (set2 for renderers without extra data)
         gfx::GFXDescriptorLayoutDesc dummyDesc{};
-        m_dummyExtraLayout = Application::GetGfxApp()->GetResourceRegistry()->GetOrCreateDescriptorSetLayout(&dummyDesc, 0);
+        m_dummyExtraLayout = Application::GetGfxApp()->GetResourceRegistry()->GetOrCreateDescriptorSetLayout({});
         m_dummyExtraSet = m_dummyExtraLayout->AllocateSet();
         m_dummyExtraSet->Submit();
     }
@@ -35,7 +35,7 @@ namespace pulsar
 
         gfx::GFXBufferDesc desc{};
         desc.Usage = gfx::GFXBufferUsage::ConstantBuffer;
-        desc.StorageType = gfx::GFXBufferMemoryPosition::VisibleOnHost;
+        desc.StorageType = gfx::GFXBufferMemoryPosition::DeviceLocal;
         desc.BufferSize = newCapacity * sizeof(PerRenderObjectData);
         desc.ElementSize = sizeof(PerRenderObjectData);
         auto newBuffer = Application::GetGfxApp()->GetResourceRegistry()->CreateBuffer(desc);

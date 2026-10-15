@@ -54,7 +54,7 @@ namespace pulsar
 
                 const ShaderPropertySetLayout* set1 = program->m_layout.FindSet(1);
                 auto set1Layout = DescriptorSetAssembler::BuildLayout(set1);
-                gfx::GFXDescriptorSet* perPassSet = DescriptorSetCache::Instance().Get(set1Layout, set1, reg);
+                gfx::GFXDescriptorSet* perPassSet = DescriptorSetCache::Instance().Resolve(set1Layout, set1, reg);
                 if (!perPassSet)
                     return;
 
@@ -83,6 +83,9 @@ namespace pulsar
                 descSets.push_back(resolved.m_set0);
                 descSets.push_back(perPassSet);
                 cmdBuffer.CmdBindDescriptorSets(descSets, gfxPipeline.get());
+                // Cull mode is a dynamic state of every pipeline: set it explicitly per
+                // pass instead of relying on whatever an earlier pass happened to leave.
+                cmdBuffer.CmdSetCullMode(gfx::GFXCullMode::None);
                 cmdBuffer.CmdDraw(3);
             });
 

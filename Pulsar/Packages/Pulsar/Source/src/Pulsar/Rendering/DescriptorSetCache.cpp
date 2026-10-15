@@ -1,6 +1,7 @@
 #include "Rendering/DescriptorSetCache.h"
 
 #include "Rendering/DescriptorSetAssembler.h"
+#include <Pulsar/Application.h>
 
 #include <utility>
 
@@ -12,7 +13,7 @@ namespace pulsar
         return s_instance;
     }
 
-    gfx::GFXDescriptorSet* DescriptorSetCache::Get(
+    gfx::GFXDescriptorSet* DescriptorSetCache::Resolve(
         const gfx::GFXDescriptorSetLayoutPtr& layout,
         const ShaderPropertySetLayout* reflection,
         const RenderResourceRegistry& reg)
@@ -41,19 +42,21 @@ namespace pulsar
                 DescriptorSetAssembler::Write(entry.m_set.get(), *reflection, reg);
         }
 
-        entry.m_lastUsedFrame = m_frame;
+        // Stamp with the submission being recorded this frame; the entry is reclaimable
+        // once the completed timeline has passed it.
+        entry.m_lastUsedFrame = Application::GetGfxApp()->GetFrameCount();
         return entry.m_set.get();
     }
 
     void DescriptorSetCache::Tick()
     {
-        ++m_frame;
-
-        // Reclaim sets untouched for at least kGraceFrames (the GPU no longer references them under
-        // the current per-frame vkQueueWaitIdle).
+        // Reclaim sets whose last referencing submission has completed on the GPU
+        // timeline (strictly greater: the stamp is the frame being recorded, whose
+        // submission is stamp+1).
+        const uint64_t completed = Application::GetGfxApp()->GetCompletedTimeline();
         for (auto it = m_entries.begin(); it != m_entries.end();)
         {
-            if (m_frame - it->second.m_lastUsedFrame > kGraceFrames)
+            if (completed > it->second.m_lastUsedFrame)
                 it = m_entries.erase(it);
             else
                 ++it;

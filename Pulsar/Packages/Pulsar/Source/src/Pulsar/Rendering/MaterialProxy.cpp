@@ -87,7 +87,7 @@ namespace pulsar
             keepAlive = ShaderPropertySync::BuildSet0Registry(
                 m_renderData, *set0, m_perMaterialCBuffer.get(), reg);
         }
-        resolved.m_set0 = DescriptorSetCache::Instance().Get(resolved.m_set0Layout, set0, reg);
+        resolved.m_set0 = DescriptorSetCache::Instance().Resolve(resolved.m_set0Layout, set0, reg);
         return resolved;
     }
 
