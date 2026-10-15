@@ -3,10 +3,13 @@
 #include "Pulsar/BuiltinAsset.h"
 
 #include <Pulsar/AssetObject.h>
+#include <Pulsar/IGPUResource.h>
 #include <Pulsar/Rendering/ShaderConfig.h>
 
 namespace pulsar
 {
+    class ShaderProxy;
+
     enum class EngineInputSemantic : int
     {
         POSITION     = 0,
@@ -23,7 +26,7 @@ namespace pulsar
         BLENDWEIGHT  = 14, // 骨骼权重 (float4)
     };
 
-    class Shader final : public AssetObject
+    class Shader final : public AssetObject, public IGPUResource
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::Shader, AssetObject);
         CORELIB_CLASS_ATTR(
@@ -32,6 +35,7 @@ namespace pulsar
             );
     public:
         virtual void Serialize(AssetSerializer* s) override;
+        void PostEditChange(FieldInfo* info) override;
 
         static RCPtr<Shader> StaticCreate(string_view name);
 
@@ -42,9 +46,27 @@ namespace pulsar
 
         virtual void OnDestroy() override;
 
+        // The shader's render-thread proxy: created lazily by its first user
+        // (material / render feature), removed when the asset is destroyed.
+        bool EnsureGPUResource() override;
+        void DestroyGPUResource() override;
+        bool IsCreatedGPUResource() const override { return m_isCreatedGPUResource; }
+
+        const std::shared_ptr<ShaderProxy>& GetRenderProxy() const { return m_renderProxy; }
+        // Hot-reload (.hlsl): drop all variants so they recompile.
+        void ReloadSceneProxy();
+
     protected:
         CORELIB_REFL_DECL_FIELD(m_config)
-        SPtr<ShaderConfig> m_config; //read only
+        // NOTE: mutable in the editor (reflected, edited in place by the property
+        // panel). Consumers that cross threads must hold a Clone(), not this SPtr.
+        SPtr<ShaderConfig> m_config;
+
+        std::shared_ptr<ShaderProxy> m_renderProxy;
+        bool m_isCreatedGPUResource = false;
+        // Set by Serialize/PostEditChange; consumed by EnsureGPUResource to push
+        // a fresh config snapshot exactly once per change.
+        bool m_configDirty = false;
     };
     DECL_PTR(Shader);
 

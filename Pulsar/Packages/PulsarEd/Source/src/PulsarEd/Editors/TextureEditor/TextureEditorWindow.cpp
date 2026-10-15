@@ -3,12 +3,13 @@
 #include "Pulsar/AssetManager.h"
 #include "Pulsar/Assets/Material.h"
 #include "Pulsar/Assets/Shader.h"
-#include "Pulsar/Components/CameraComponent.h"
-#include "Pulsar/Components/StaticMeshRendererComponent.h"
-#include "Pulsar/Components/VolumeComponent.h"
+#include "Pulsar/Assets/DisplayEncodingSettings.h"
+#include "Pulsar/Assets/NodeCollection.h"
 #include "Pulsar/Assets/VolumeProfile.h"
+#include "Pulsar/Components/CameraComponent.h"
+#include "Pulsar/Components/VolumeComponent.h"
 #include "Pulsar/Node.h"
-#include "Pulsar/Scene.h"
+#include "Pulsar/Rendering/RenderGraph/Features/DisplayEncodingRenderFeature.h"
 
 #include <PulsarEd/Menus/Menu.h>
 #include <PulsarEd/Menus/MenuEntry.h>
@@ -18,7 +19,6 @@
 
 namespace pulsared
 {
-    #define FLAGS_GAMMA 0x01
     #define FLAGS_EnableCheckerBackground 0x02
     #define FLAGS_CHANNEL_R 0x04
     #define FLAGS_CHANNEL_G 0x08
@@ -37,12 +37,11 @@ namespace pulsared
         base::OnOpen();
 
         RCPtr<Texture> tex = cast<Texture>(m_assetObject);
-        tex->CreateGPUResource();
+        tex->EnsureGPUResource();
 
         auto shader = AssetManager::Get()->LoadAsset<Shader>("Pulsar/Shaders/PreviewImage");
-        m_ppMat = Material::StaticCreate(shader);
-
-        m_ppMat->SetTexture("_Image", tex);
+        m_previewMaterial = Material::StaticCreate(shader);
+        m_previewMaterial->SetTexture("_Image", tex);
 
         int32_t flags{};
         flags |= FLAGS_CHANNEL_R | FLAGS_CHANNEL_G | FLAGS_CHANNEL_B | FLAGS_CHANNEL_A;
@@ -50,33 +49,33 @@ namespace pulsared
         {
             flags |= FLAGS_NORMALMAP;
         }
-        m_ppMat->SetIntScalar("_Flags", flags);
-        m_ppMat->CreateGPUResource();
+        m_previewMaterial->SetIntScalar("_Flags", flags);
+        m_previewMaterial->EnsureGPUResource();
 
         if (auto* world = m_viewportFrame.GetWorld())
         {
-            m_previewVolumeNode = world->GetResidentScene()->NewNode("TexturePreviewPP");
-            auto volComp = m_previewVolumeNode->AddComponent<VolumeComponent>();
-            volComp->SetIsGlobal(true);
-            m_previewProfile = NewAssetObject<VolumeProfile>();
-            auto ppMatSettings = mksptr(new PostProcessMaterialSettings());
-            ppMatSettings->m_materials->push_back(m_ppMat);
-            m_previewProfile->GetEffects()->push_back(ppMatSettings);
-            m_displayEncodingSettings = mksptr(new DisplayEncodingSettings());
-            m_displayEncodingSettings->m_enabled = true;
-            m_previewProfile->GetEffects()->push_back(m_displayEncodingSettings);
-            volComp->SetProfile(m_previewProfile);
+            auto volumeNode = world->GetResidentScene()->NewNode("Display Encoding Volume");
+            auto volumeComponent = volumeNode->AddComponent<VolumeComponent>();
+            volumeComponent->SetIsGlobal(true);
+            auto profile = NewAssetObject<VolumeProfile>();
+            profile->GetEffects()->push_back(mksptr(new DisplayEncodingSettings()));
+            volumeComponent->SetProfile(profile);
+
+            m_previewPipeline = NewAssetObject<ViewPipelineSettings>();
+            auto feature = mksptr(new FullScreenRenderFeatureSettings());
+            feature->m_material = m_previewMaterial;
+            m_previewPipeline->GetFeatures()->push_back(feature);
+            m_previewPipeline->GetFeatures()->push_back(mksptr(new DisplayEncodingRenderFeatureSettings()));
+            world->GetCurrentCamera()->SetViewPipelineSettings(m_previewPipeline);
         }
     }
 
     void TextureEditorWindow::OnClose()
     {
-        if (m_previewVolumeNode && m_world)
-        {
-            m_world->GetResidentScene()->RemoveNode(m_previewVolumeNode);
-            m_previewVolumeNode.Reset();
-        }
-        m_ppMat.Reset();
+        if (m_world)
+            m_world->GetCurrentCamera()->SetViewPipelineSettings(nullptr);
+        m_previewMaterial.Reset();
+        m_previewPipeline.Reset();
         base::OnClose();
     }
 
@@ -206,7 +205,7 @@ namespace pulsared
         ImGui::SameLine();
         if(auto result = RGBAButtons(&m_enableChannelR, &m_enableChannelG, &m_enableChannelB, &m_enableChannelA))
         {
-            int flag = m_ppMat->GetIntScalar("_Flags");
+            int flag = m_previewMaterial->GetIntScalar("_Flags");
             if (result & RGBAButtonBits_R)
             {
                 if (m_enableChannelR)
@@ -235,18 +234,18 @@ namespace pulsared
                 else
                     flag &= ~FLAGS_CHANNEL_A;
             }
-            m_ppMat->SetIntScalar("_Flags", flag);
+            m_previewMaterial->SetIntScalar("_Flags", flag);
         }
 
         ImGui::SameLine();
         if (ImGui::Checkbox("bg", &m_enableTransparency))
         {
-            int flag = m_ppMat->GetIntScalar("_Flags");
+            int flag = m_previewMaterial->GetIntScalar("_Flags");
             if (m_enableTransparency)
                 flag |= FLAGS_EnableCheckerBackground;
             else
                 flag &= ~FLAGS_EnableCheckerBackground;
-            m_ppMat->SetIntScalar("_Flags", flag);
+            m_previewMaterial->SetIntScalar("_Flags", flag);
         }
 
 
@@ -260,10 +259,10 @@ namespace pulsared
             m_imageScale = std::min(rateX, rateY);
         }
 
-        if (m_ppMat)
+        if (m_previewMaterial)
         {
-            m_ppMat->SetFloat("_Zoom", m_imageScale);
-            m_ppMat->SetVector4("_TexSize", Vector4f(width, height, size.x, size.y));
+            m_previewMaterial->SetFloat("_Zoom", m_imageScale);
+            m_previewMaterial->SetVector4("_TexSize", Vector4f(width, height, size.x, size.y));
         }
 
         ImGui::BeginChild("picframe", size);
@@ -291,9 +290,9 @@ namespace pulsared
 
         ImGui::EndChild();
 
-        if (m_ppMat)
+        if (m_previewMaterial)
         {
-            m_ppMat->SubmitParameters();
+            m_previewMaterial->SubmitParameters();
         }
     }
 

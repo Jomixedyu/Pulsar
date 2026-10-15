@@ -1,6 +1,8 @@
 #include "Assets/TextureCube.h"
 
 #include "Application.h"
+#include <Pulsar/Rendering/RenderThread.h>
+#include <Pulsar/Rendering/TextureProxy.h>
 
 #include <ranges>
 
@@ -60,72 +62,28 @@ namespace pulsar
         return vert;
     }
 
-    bool TextureCube::CreateGPUResource()
+    bool TextureCube::EnsureGPUResource()
     {
         if (m_isCreatedGPUResource)
         {
             return true;
         }
 
-        auto gfxapp = Application::GetGfxApp();
+        auto* renderThread = Application::GetRenderThread();
 
-        m_cube = gfxapp->CreateTextureCube(m_width);
+        gfx::GFXSamplerConfig sampler{};
+        sampler.Filter = GetSamplerFilter();
+        sampler.AddressMode = GetSamplerAddressMode();
 
-        auto texCube = m_cube;
+        m_proxy = std::make_shared<rendering::TextureProxy>();
 
-        auto renderFunction = [texCube](gfx::GFXCommandBuffer* cmd) {
-            // load material
-            RCPtr<Material> mat;
-            auto gfxapp = cmd->GetApplication();
-
-            array_list<gfx::GFXTexture2DView_sp> faceRts;
-            faceRts.resize(6);
-            for (int i = 0; i < 6; ++i)
+        auto proxy = m_proxy;
+        const int32_t size = m_width;
+        renderThread->EnqueueUpdate_AnyThread(
+            [proxy = std::move(proxy), size, sampler](gfx::GFXResourceRegistry*)
             {
-                faceRts[i] = texCube->Get2DView(i);
-            }
-            auto facePointers = faceRts
-                | std::views::transform([](gfx::GFXTexture2DView_sp& x){ return x.get(); })
-                | std::ranges::to<array_list<gfx::GFXTexture2DView*>>();
-
-            gfx::GFXFrameBufferObject_sp frameBuffers[6]{};
-            for (auto& fbo : frameBuffers)
-            {
-                fbo = gfxapp->CreateFrameBufferObject(faceRts);
-            }
-
-            // render
-            for (int i = 0; i < 6; ++i)
-            {
-                auto& fbo = frameBuffers[i];
-                cmd->SetFrameBuffer(fbo.get());
-                cmd->CmdBeginRenderPass();
-
-
-
-                cmd->CmdEndRenderPass();
-                cmd->SetFrameBuffer(nullptr);
-            }
-
-            for (auto& fbo : frameBuffers)
-            {
-                cmd->SetFrameBuffer(fbo.get());
-                cmd->CmdBeginRenderPass();
-
-
-
-
-
-                cmd->CmdEndRenderPass();
-                cmd->SetFrameBuffer(nullptr);
-            }
-
-
-        };
-        // gfxapp->GetRenderer()->WaitExecuteRender(renderFunction);
-
-
-        // wait render hdr to cube
+                proxy->InitCube(size, sampler);
+            });
 
         m_isCreatedGPUResource = true;
 
@@ -137,6 +95,19 @@ namespace pulsar
         {
             return;
         }
-        m_cube.reset();
+        if (auto proxy = std::move(m_proxy))
+        {
+            Application::GetRenderThread()->EnqueueDestroy_AnyThread(
+                [proxy = std::move(proxy)](gfx::GFXResourceRegistry*)
+                {
+                    proxy->Release();
+                });
+        }
+        m_isCreatedGPUResource = false;
+    }
+
+    gfx::GFXTexturePtr TextureCube::GetGfxTexture() const
+    {
+        return m_proxy ? m_proxy->GetTexture() : nullptr;
     }
 } // namespace pulsar

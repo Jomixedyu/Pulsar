@@ -1,27 +1,29 @@
 #pragma once
-#include "RenderObject.h"
+#include "RenderObjectProxy.h"
 #include "PrimitiveStruct.h"
-#include <gfx/GFXHandle.h>
+#include <gfx/GFXBuffer.h>
 
 namespace pulsar
 {
-    class LineRenderObject : public rendering::RenderObject
+    class LineRenderObject : public rendering::RenderObjectProxy
     {
-        using base = rendering::RenderObject;
+        using base = rendering::RenderObjectProxy;
 
     private:
         array_list<StaticMeshVertex> m_verties;
 
-        gfx::BufferHandle m_vertBuffer;
-        gfx::GFXDescriptorSet_sp m_dummyExtraSet;
-        gfx::GFXDescriptorSetLayout_sp m_meshDescriptorSetLayout;
+        gfx::GFXBufferPtr m_vertBuffer;
+        gfx::GFXDescriptorSetPtr m_dummyExtraSet;
+        gfx::GFXDescriptorSetLayoutPtr m_meshDescriptorSetLayout;
 
         array_list<rendering::MeshBatch> m_batchs;
+        std::shared_ptr<class MaterialProxy> m_materialProxy;
         bool m_depthTestEnabled = false;
         ShaderPassRenderQueueType m_renderQueue = ShaderPassRenderQueueType::Overlay;
 
     public:
-        LineRenderObject() = default;
+        // Loads the shared builtin line material on the game thread.
+        LineRenderObject();
 
         void SetPoints(const array_list<Vector3f>& pointPairs, const array_list<Color4b>& pointColors);
         void SetVerties(const array_list<StaticMeshVertex>& verties);
@@ -31,12 +33,16 @@ namespace pulsar
         void SetDepthTestEnabled(bool enabled) { m_depthTestEnabled = enabled; }
         void SetQueue(ShaderPassRenderQueueType queue) { m_renderQueue = queue; }
 
-        void OnCreateResource() override;
-        void OnDestroyResource() override;
+    private:
+        // Render-thread apply of SetVerties (invoked from the update queue).
+        void ApplyVerties(array_list<StaticMeshVertex> verties);
+    public:
+
+        void OnEnterScene() override;
+        void OnLeaveScene() override;
 
         void OnChangedTransform() override;
         array_list<rendering::MeshBatch> GetMeshBatches() override;
-        std::string GetInterface() const override { return "RENDERER_STATICMESH"; }
     };
 
 }

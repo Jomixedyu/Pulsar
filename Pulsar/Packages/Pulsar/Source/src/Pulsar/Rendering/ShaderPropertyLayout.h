@@ -1,14 +1,23 @@
 #pragma once
 #include <Pulsar/Rendering/Types.h>
 #include <gfx/GFXGpuProgram.h>
+#include <gfx/GFXDescriptorSet.h>
+#include <gfx/TextureClasses.h>
 
 #include <string>
+#include <string_view>
 #include <vector>
 #include <cstdint>
 
 namespace pulsar
 {
-    struct CBufferEntry
+    // Reflected name of the set0 material constant buffer. Shaders declare their material
+    // parameters in `cbuffer PerMaterial { ... }`; the C++ side binds by this name (a shader
+    // without such a cbuffer simply has no PerMaterial binding and is unaffected).
+    inline constexpr const char* kPerMaterialCBufferName = "PerMaterial";
+
+    // A single member inside a buffer block (offset/size/type for CPU-side packing).
+    struct BufferMember
     {
         std::string m_name;
         uint32_t m_offset{};
@@ -16,20 +25,64 @@ namespace pulsar
         ShaderPropertyType m_type{};
     };
 
-    struct TextureEntry
+    // A single reflected descriptor binding within a set. Covers every descriptor
+    // kind (constant buffer / structured buffer / texture / sampler ...); m_type
+    // discriminates. m_size / m_members are only meaningful for buffer kinds.
+    struct DescriptorBinding
     {
         std::string m_name;
         uint32_t m_bindingPoint{};
-        bool m_isCombinedImageSampler = true;
-        gfx::GFXGpuProgramStageFlags m_stageFlags = gfx::GFXGpuProgramStageFlags::VertexFragment;
+        gfx::GFXDescriptorType m_type{};
+        gfx::GFXGpuProgramStageFlags m_stageFlags = gfx::GFXGpuProgramStageFlags::None;
+        uint32_t m_size{};                    // buffer byte size; 0 for textures/samplers
+        std::vector<BufferMember> m_members;  // buffer members; empty for textures/samplers
+
+        // Image view dimensionality for texture bindings; used to pick the matching
+        // fallback view when a texture is missing. None for buffers/samplers.
+        gfx::GFXTextureDataType m_viewDimension = gfx::GFXTextureDataType::None;
+
+        bool IsBuffer() const
+        {
+            return m_type == gfx::GFXDescriptorType::ConstantBuffer
+                || m_type == gfx::GFXDescriptorType::ConstantBufferDynamic
+                || m_type == gfx::GFXDescriptorType::StructuredBuffer;
+        }
     };
 
-    struct ShaderPropertyLayout
+    // Reflected layout of a single descriptor set
+    // (set0 perMaterial / set1 perPass / set2 perDraw).
+    struct ShaderPropertySetLayout
     {
-        std::vector<CBufferEntry> m_constantEntries;
-        std::vector<TextureEntry> m_textureEntries;
-        uint32_t m_totalCBufferSize{};
-        uint32_t m_cbufferBindingPoint{0};
-        gfx::GFXGpuProgramStageFlags m_cbufferStageFlags = gfx::GFXGpuProgramStageFlags::None;
+        std::vector<DescriptorBinding> m_bindings;
+
+        const DescriptorBinding* FindBinding(std::string_view name) const
+        {
+            for (const auto& b : m_bindings)
+            {
+                if (b.m_name == name)
+                    return &b;
+            }
+            return nullptr;
+        }
+    };
+
+    // Full reflected layout across every descriptor set, indexed by set number.
+    // Sets are contiguous; a set with no bindings is an empty bucket.
+    struct ShaderLayout
+    {
+        std::vector<ShaderPropertySetLayout> m_sets;
+
+        const ShaderPropertySetLayout* FindSet(uint32_t set) const
+        {
+            return set < m_sets.size() ? &m_sets[set] : nullptr;
+        }
+
+        ShaderPropertySetLayout& FindOrAddSet(uint32_t set)
+        {
+            if (set >= m_sets.size())
+                m_sets.resize(set + 1);
+            return m_sets[set];
+        }
     };
 }
+

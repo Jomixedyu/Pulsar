@@ -12,4 +12,13 @@ namespace pulsar
         acc->m_threshold = m_threshold * weight + acc->m_threshold * (1.0f - weight);
         acc->m_intensity = m_intensity * weight + acc->m_intensity * (1.0f - weight);
     }
+
+    SPtr<VolumeRenderSnapshot> BloomSettings::BuildRenderSnapshot() const
+    {
+        auto snapshot = mksptr(new BloomRenderSnapshot());
+        snapshot->Enabled = m_enabled;
+        snapshot->Threshold = m_threshold;
+        snapshot->Intensity = m_intensity;
+        return snapshot;
+    }
 }

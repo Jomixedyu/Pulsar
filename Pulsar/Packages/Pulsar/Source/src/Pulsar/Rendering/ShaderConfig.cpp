@@ -4,6 +4,7 @@
 
 #include <CoreLib/Attribute.h>
 #include <CoreLib/Assembly.h>
+#include <CoreLib.Serialization/JsonSerializer.h>
 
 namespace pulsar
 {
@@ -37,5 +38,11 @@ namespace pulsar
                 return pass;
         }
         return nullptr;
+    }
+
+    SPtr<ShaderConfig> ShaderConfig::Clone() const
+    {
+        auto json = ser::JsonSerializer::Serialize(const_cast<ShaderConfig*>(this), {});
+        return ser::JsonSerializer::Deserialize<ShaderConfig>(json);
     }
 }

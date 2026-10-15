@@ -3,7 +3,7 @@
 #include "ObjectBase.h"
 #include "Rendering/LineRenderObject.h"
 #include "Rendering/PrimitiveStruct.h"
-#include "Rendering/RenderObject.h"
+#include "Rendering/RenderObjectProxy.h"
 #include <Pulsar/Assets/Material.h>
 
 namespace pulsar
@@ -46,6 +46,14 @@ namespace pulsar
 
         void DrawTexture(const Vector3f& worldPos, float size, const RCPtr<class Texture2D>& texture, const Color4f& tint = Color4f{1, 1, 1, 1});
 
+        // Preset wireframe shapes. Caller supplies a localToWorld matrix (scale bakes in
+        // radius / half-size); the unit geometry is transformed internally.
+        // NOTE: implementation currently expands to line points on the CPU. The public API
+        // is stable so a future GPU-instanced backend can replace the body without touching
+        // any component gizmo code.
+        void DrawWireSphere(const Matrix4f& localToWorld, const Color4b& color);
+        void DrawWireCube(const Matrix4f& localToWorld, const Color4b& color);
+
         GizmoContext Context;
 
         inline static constexpr Color4b DefaultSelectedLineColor {uint8_t(255 * 0.3f), uint8_t(255 * 1.f), uint8_t(255 * 0.3f) } ;
@@ -73,6 +81,10 @@ namespace pulsar
             std::erase(m_gizmoComponents, component);
         }
 
+
+        // Loads gizmo assets (plane mesh, billboard shader) and registers the
+        // icon batch render object. Called once from World::OnWorldBegin.
+        void Initialize();
 
         void Draw();
 

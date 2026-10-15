@@ -3,8 +3,9 @@
 #include "CameraManager.h"
 #include "Components/Component.h"
 #include "ObjectBase.h"
-#include "Rendering/RenderObject.h"
-#include "Rendering/PerRenderObjectDataManager.h"
+#include "Rendering/RenderObjectProxy.h"
+#include "Rendering/RenderScene.h"
+#include "Rendering/RenderGraph/Pipelines/ViewPipelineRenderData.h"
 #include "SceneCaptureManager.h"
 #include "SelectionSet.h"
 #include "Simulate.h"
@@ -15,11 +16,12 @@ namespace pulsar
 {
     class NodeCollection;
     class Material;
+    class RenderComponent;
+    class SceneCaptureComponent;
 
     class PhysicsWorld2D;
     class PhysicsWorld3D;
     class WorldSubsystem;
-    class LightManager;
     struct InputContext;
 
     class World
@@ -28,7 +30,7 @@ namespace pulsar
         static const hash_set<World*>& GetAllWorlds();
 
     public:
-        explicit World(string_view name);
+        World();
         virtual ~World();
     public:
 
@@ -51,7 +53,8 @@ namespace pulsar
         virtual const char* GetWorldTypeName() const { return StaticWorldTypeName(); }
         static const char* StaticWorldTypeName() { return "World"; }
 
-        const string& GetWorldName() const { return m_name; }
+        // The world takes its name from the focused (active) scene; empty when none is loaded.
+        string GetWorldName() const;
 
         bool IsSelectedNode(const ObjectPtr<Node>& node) const;
         SelectionSet<Node>& GetSelection() { return m_selection; }
@@ -74,6 +77,8 @@ namespace pulsar
         const RCPtr<NodeCollection>& GetScene(int index) const { return m_scenes[index]; }
         RCPtr<NodeCollection>        GetFocusScene() const { return m_focusScene; }
         void                         SetFocusScene(RCPtr<NodeCollection> scene);
+        // Pushes the current world display name (focused scene name) to the render scene.
+        void                         SyncRenderDebugName();
         size_t                       GetSceneCount() const { return m_scenes.size(); }
         RCPtr<NodeCollection>        GetResidentScene() const { return m_scenes[0]; }
 
@@ -100,26 +105,47 @@ namespace pulsar
 
     public: //rendering
         array_list<ObjectPtrBase>&      GetDeferredDestroyedQueue() { return m_deferredDestroyedQueue; }
-        const hash_set<rendering::RenderObject_sp>& GetRenderObjects() const { return m_renderObjects; }
-        void            AddRenderObject(const rendering::RenderObject_sp& renderObject);
-        void            RemoveRenderObject(rendering::RenderObject_rsp renderObject);
+        RenderScene*    GetRenderScene() const { return m_renderScene.get(); }
+
+        // Raw render objects without an owning RenderComponent (gizmos, editor grids,
+        // light gizmos). Enqueued straight to the render thread.
+        void            AddRenderObject(const rendering::RenderObjectProxy_sp& ro);
+        void            RemoveRenderObject(const rendering::RenderObjectProxy_sp& ro);
+
+        // Component-owned proxies. RegisterProxy creates the SceneProxy from the
+        // component (RenderComponent::CreateSceneProxy), stores it on the component,
+        // and adds it to the render scene. UnregisterProxy removes + drops it.
+        void            RegisterProxy(RenderComponent* comp);
+        void            UnregisterProxy(RenderComponent* comp);
+
+        // Per-view snapshot update. The caller passes the target view proxy directly
+        // (the component caches it); the render thread writes Data with no lookup. Enqueued.
+        void            UpdateSceneView(const SPtr<SceneViewProxy>& view, SceneViewData data);
+
+
+        // Per-frame dirty extraction. Components mark themselves dirty when render state
+        // changes; ResolveDirtyRenderStates() drains the pending list once per frame.
+        void            MarkRenderStateDirty(RenderComponent* comp);
+        void            ResolveDirtyRenderStates();
+
         CameraManager&        GetCameraManager() { return m_cameraManager; }
         SceneCaptureManager&  GetCaptureManager() { return m_captureManager; }
         GizmosManager&        GetGizmosManager() { return m_gizmosManager; }
-        PerRenderObjectDataManager& GetPerRenderObjectDataManager() { return m_perRenderObjectDataManager; }
         SimulateManager&      GetSimulateManager() { return m_simulateManager; }
         PhysicsWorld2D*       GetPhysicsWorld2D() const { return m_physicsWorld2D; }
         PhysicsWorld3D*       GetPhysicsWorld3D() const { return m_physicsWorld3D; }
-        LightManager*         GetLightManager() const { return m_lightManager; }
     protected:
+        void TeardownRenderScene();
+
         SelectionSet<Node> m_selection;
     protected:
         PhysicsWorld2D* m_physicsWorld2D = nullptr;
         PhysicsWorld3D* m_physicsWorld3D = nullptr;
-        LightManager*   m_lightManager = nullptr;
-
         RCPtr<Material>                       m_defaultMaterial;
-        hash_set<rendering::RenderObject_sp>  m_renderObjects;
+        // Shared so that update/destroy queue lambdas keep the scene alive until they run;
+        // queue-ordering mistakes then degrade to no-ops instead of use-after-free.
+        std::shared_ptr<RenderScene>          m_renderScene = std::make_shared<RenderScene>();
+        array_list<ObjectPtr<RenderComponent>> m_dirtyRenderComponents;
         array_list<RCPtr<NodeCollection>>     m_scenes;
         RCPtr<NodeCollection>                 m_focusScene;
         CameraManager                         m_cameraManager;
@@ -128,13 +154,13 @@ namespace pulsar
         SimulateManager                       m_simulateManager;
 
         GizmosManager m_gizmosManager;
-        PerRenderObjectDataManager            m_perRenderObjectDataManager;
+        bool        m_worldBegun = false;
+        bool        m_worldEnded = false;
         array_list<SPtr<class WorldSubsystem>> m_subsystems;
 
 
         Ticker   m_ticker{};
         float    m_totalTime = 0;
-        string   m_name;
         bool     m_isPlaying{};
         bool     m_isSimulating = false;
         bool     m_isPaused = false;

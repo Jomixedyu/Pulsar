@@ -4,6 +4,7 @@
 #include "Logger.h"
 #include "Scene.h"
 #include "Assets/StaticMesh.h"
+#include "Rendering/SceneViewProxy.h"
 #include <Pulsar/AppInstance.h>
 #include <Pulsar/Application.h>
 #include <Pulsar/Node.h>
@@ -134,14 +135,16 @@ namespace pulsar
         rt->SetIndexName(index_string{rtname});
         rt->m_width = width;
         rt->m_height = height;
-        rt->m_colorFormats->push_back(RenderTextureColorFormat::RGBA8_UNorm);
+        rt->m_colorFormat = RenderTextureColorFormat::RGBA8_UNorm;
         rt->m_depthFormat = RenderTextureDepthFormat::D32_SFloat_S8_UInt;
-        rt->CreateGPUResource();
+        rt->EnsureGPUResource();
         m_renderTarget = rt;
 
 
         UpdateRT();
         BeginRT();
+        m_renderDirtyRenderTarget = true;
+        MarkRenderStateDirty();
 
     }
 
@@ -174,6 +177,8 @@ namespace pulsar
 
         UpdateRT();
         BeginRT();
+        m_renderDirtyRenderTarget = true;
+        MarkRenderStateDirty();
     }
 
 
@@ -204,10 +209,6 @@ namespace pulsar
     {
         if (m_isBegun && m_renderTarget)
         {
-            auto& refData = m_renderTarget->GetGfxFrameBufferObject()->RefData;
-            refData.clear();
-            refData.push_back(m_cameraDescriptorSet);
-
             UpdateCBuffer();
         }
     }
@@ -236,13 +237,21 @@ namespace pulsar
         {
             DestroyObject(m_renderTarget);
         }
-        m_camDescriptorLayout.reset();
-        m_cameraDescriptorSet.reset();
     }
 
     void CameraComponent::OnTransformChanged()
     {
         base::OnTransformChanged();
+        m_renderDirtyTransform = true;
+        MarkRenderStateDirty();
+    }
+
+    bool CameraComponent::ExtractViewData(SceneViewData& outData)
+    {
+        if (!base::ExtractViewData(outData))
+            return false;
+        outData.GizmoPassEnabled = m_gizmoPassEnabled;
+        return true;
     }
 
     void CameraComponent::ResetToDefault()

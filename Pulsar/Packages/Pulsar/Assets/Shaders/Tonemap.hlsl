@@ -2,7 +2,10 @@
 #include "Tonemapping.inc.hlsl"
 #include "PostProcessing.inc.hlsl"
 
-int _TonemappingMode;
+cbuffer PerMaterial
+{
+    int _TonemappingMode;
+}
 
 float4 PSMain(float4 position : SV_Position, float2 texcoord) : SV_Target
 {

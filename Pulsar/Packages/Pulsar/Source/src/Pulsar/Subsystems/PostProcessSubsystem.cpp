@@ -1,8 +1,9 @@
 #include "Subsystems/PostProcessSubsystem.h"
 #include "Pulsar/Components/VolumeComponent.h"
+#include "Pulsar/Components/SceneCaptureComponent.h"
 #include "Pulsar/Assets/VolumeProfile.h"
 #include "Pulsar/Assets/ColorGradingSettings.h"
-#include "Pulsar/Assets/PostProcessMaterialSettings.h"
+#include "Pulsar/World.h"
 #include <unordered_map>
 #include <algorithm>
 
@@ -81,7 +82,7 @@ namespace pulsar
         for (auto& pair : accumulators)
         {
             if (pair.second)
-                stack.AddComponent(pair.first, pair.second);
+                stack.AddComponent(pair.second->BuildRenderSnapshot());
         }
         return stack;
     }
@@ -99,43 +100,16 @@ namespace pulsar
         return result;
     }
 
-    array_list<RCPtr<Material>> PostProcessSubsystem::QueryPostProcessMaterials(const Vector3f& worldPos) const
+    void PostProcessSubsystem::NotifyVolumeSettingsChanged()
     {
-        array_list<RCPtr<Material>> result;
+        if (!m_world)
+            return;
 
-        array_list<VolumeComponent*> sortedVolumes;
-        for (auto* vol : m_volumes)
+        for (auto* capture : m_world->GetCaptureManager().GetCaptures())
         {
-            if (!vol) continue;
-            if (vol->ComputeBlendWeight(worldPos) > 0.0f)
-                sortedVolumes.push_back(vol);
+            if (capture)
+                capture->MarkPostProcessDirty();
         }
-
-        std::sort(sortedVolumes.begin(), sortedVolumes.end(),
-            [](VolumeComponent* a, VolumeComponent* b)
-            {
-                return a->GetPriority() < b->GetPriority();
-            });
-
-        for (auto* vol : sortedVolumes)
-        {
-            auto* profile = vol->GetProfile().GetPtr();
-            if (!profile)
-                continue;
-            for (auto& effect : *profile->GetEffects())
-            {
-                if (auto* ppMat = dynamic_cast<PostProcessMaterialSettings*>(effect.get()))
-                {
-                    for (auto& mat : *ppMat->m_materials)
-                    {
-                        if (mat)
-                            result.push_back(mat);
-                    }
-                }
-            }
-        }
-
-        return result;
     }
 
 } // namespace pulsar

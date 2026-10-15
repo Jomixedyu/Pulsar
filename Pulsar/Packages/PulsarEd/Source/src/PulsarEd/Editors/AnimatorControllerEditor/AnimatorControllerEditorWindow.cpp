@@ -57,19 +57,19 @@ namespace pulsared
         const float totalW = ImGui::GetContentRegionAvail().x;
         const float totalH = ImGui::GetContentRegionAvail().y;
 
-        ImGui::BeginChild("##params", { totalW * 0.26f, totalH }, ImGuiChildFlags_Border);
+        ImGui::BeginChild("##params", { totalW * 0.26f, totalH }, ImGuiChildFlags_Borders);
         DrawParamsPanel();
         ImGui::EndChild();
 
         ImGui::SameLine();
 
-        ImGui::BeginChild("##states", { totalW * 0.35f, totalH }, ImGuiChildFlags_Border);
+        ImGui::BeginChild("##states", { totalW * 0.35f, totalH }, ImGuiChildFlags_Borders);
         DrawStatesPanel();
         ImGui::EndChild();
 
         ImGui::SameLine();
 
-        ImGui::BeginChild("##trans", { 0, totalH }, ImGuiChildFlags_Border);
+        ImGui::BeginChild("##trans", { 0, totalH }, ImGuiChildFlags_Borders);
         DrawTransitionsPanel();
         ImGui::EndChild();
     }

@@ -1,27 +1,149 @@
 #include "Components/SceneCaptureComponent.h"
-#include "Pulsar/Rendering/RenderGraph/DefaultSceneCaptureRenderer.h"
 #include "World.h"
+#include <Pulsar/AssetManager.h>
+#include <Pulsar/BuiltinAsset.h>
+#include <Pulsar/Rendering/SceneViewProxy.h>
+#include <Pulsar/Subsystems/PostProcessSubsystem.h>
+
 
 namespace pulsar
 {
 
+    static void BuildViewPipelineRenderData(const RCPtr<ViewPipelineSettings>& viewPipeline, ViewPipelineRenderData& outData)
+    {
+        if (viewPipeline)
+        {
+            viewPipeline->BuildRenderData(outData);
+            return;
+        }
+
+        if (auto defaultPipeline = AssetManager::Get()->LoadAsset<ViewPipelineSettings>(BuiltinAsset::ViewPipeline_DefaultScene))
+        {
+            defaultPipeline->BuildRenderData(outData);
+        }
+    }
+
     SceneCaptureComponent::SceneCaptureComponent()
     {
-        m_captureRenderer = std::make_unique<DefaultSceneCaptureRenderer>();
+    }
+
+    void SceneCaptureComponent::SetViewPipelineSettings(const RCPtr<ViewPipelineSettings>& value)
+    {
+        if (m_viewPipelineSettings == value)
+            return;
+
+        m_viewPipelineSettings = value;
+        RebuildObserver();
+        m_renderDirtyRenderFeature = true;
+        MarkRenderStateDirty();
+    }
+
+    void SceneCaptureComponent::MarkPostProcessDirty()
+    {
+        if (m_renderDirtyPostProcess)
+            return;
+
+        m_renderDirtyPostProcess = true;
+        MarkRenderStateDirty();
+    }
+
+    SPtr<rendering::SceneProxy> SceneCaptureComponent::CreateSceneProxy()
+    {
+        BuildViewPipelineRenderData(m_viewPipelineSettings, m_sceneViewData.ViewPipeline);
+
+        auto view = mksptr(new SceneViewProxy());
+        m_sceneView = view;
+        return view;
+    }
+
+    void SceneCaptureComponent::ResolveRenderStateDirty()
+    {
+        if (!m_sceneView)
+            return;
+
+        const bool needsViewData = m_renderDirtyTransform || m_renderDirtyCamera || m_renderDirtyRenderTarget;
+        if (!needsViewData && !m_renderDirtyRenderFeature && !m_renderDirtyPostProcess)
+            return;
+
+        SceneViewData data = m_sceneViewData;
+        if (needsViewData)
+        {
+            if (!ExtractViewData(data))
+                return;
+        }
+
+        if (m_renderDirtyRenderFeature)
+            BuildViewPipelineRenderData(m_viewPipelineSettings, data.ViewPipeline);
+
+        if (m_renderDirtyPostProcess)
+        {
+            if (auto* ppSub = GetWorld()->GetSubsystem<PostProcessSubsystem>())
+            {
+                data.PostProcessStack = ppSub->QuerySettings(data.CameraPosition);
+            }
+        }
+
+        m_renderDirtyTransform = false;
+        m_renderDirtyCamera = false;
+        m_renderDirtyRenderTarget = false;
+        m_renderDirtyRenderFeature = false;
+        m_renderDirtyPostProcess = false;
+
+        m_sceneViewData = data;
+        GetWorld()->UpdateSceneView(m_sceneView, std::move(data));
     }
 
     void SceneCaptureComponent::BeginComponent()
     {
         base::BeginComponent();
+
+        // RegisterProxy() enqueues the proxy add first; this initial update is queued
+        // after it so the render thread never observes a default-constructed view.
+        if (m_sceneView)
+            GetWorld()->UpdateSceneView(m_sceneView, m_sceneViewData);
+
+        RebuildObserver();
         GetWorld()->GetCaptureManager().Add(this);
+        // Push an initial snapshot to the freshly-created view proxy.
+        MarkRenderStateDirty();
     }
     void SceneCaptureComponent::EndComponent()
     {
-        m_captureRenderer.reset();
+        m_sceneView.reset();
         base::EndComponent();
         GetWorld()->GetCaptureManager().Remove(this);
     }
 
 
+
+    void SceneCaptureComponent::PostEditChange(FieldInfo* info)
+    {
+        base::PostEditChange(info);
+        if (info->GetName() == NAMEOF(m_viewPipelineSettings))
+        {
+            RebuildObserver();
+            m_renderDirtyRenderFeature = true;
+            MarkRenderStateDirty();
+        }
+    }
+
+    void SceneCaptureComponent::GetSubscribeObserverHandles(array_list<ObjectHandle>& out)
+    {
+        base::GetSubscribeObserverHandles(out);
+        if (m_viewPipelineSettings)
+            out.push_back(m_viewPipelineSettings.GetHandle());
+        else if (auto defaultPipeline = AssetManager::Get()->LoadAsset<ViewPipelineSettings>(BuiltinAsset::ViewPipeline_DefaultScene))
+            out.push_back(defaultPipeline.GetHandle());
+    }
+
+    void SceneCaptureComponent::OnNotifyObserver(ObjectHandle inDependency, DependencyObjectState msg)
+    {
+        base::OnNotifyObserver(inDependency, msg);
+        if (EnumHasFlag(msg, DependencyObjectState::Modified))
+        {
+            m_renderDirtyRenderFeature = true;
+            MarkRenderStateDirty();
+        }
+    }
 
 }

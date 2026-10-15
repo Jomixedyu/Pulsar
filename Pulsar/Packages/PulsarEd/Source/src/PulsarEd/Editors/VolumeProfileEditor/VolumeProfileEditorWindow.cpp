@@ -60,6 +60,7 @@ namespace pulsared
                     {
                         effects.push_back(settings);
                         AssetDatabase::MarkDirty(profile);
+                        profile->NotifyModified();
                     }
                 }
             }
@@ -83,6 +84,7 @@ namespace pulsared
             {
                 effects.erase(effects.begin() + i);
                 AssetDatabase::MarkDirty(profile);
+                profile->NotifyModified();
                 ImGui::PopID();
                 if (opened)
                     ImGui::TreePop();
@@ -98,7 +100,10 @@ namespace pulsared
                     effect.get(),
                     effect.get());
                 if (changed)
+                {
                     AssetDatabase::MarkDirty(profile);
+                    profile->NotifyModified();
+                }
                 ImGui::TreePop();
             }
 

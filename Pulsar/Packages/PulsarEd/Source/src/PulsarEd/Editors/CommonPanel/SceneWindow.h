@@ -45,7 +45,7 @@ namespace pulsared
         //ObjectPtr<Node> m_camCtrlNode;
         //Vector2i m_viewportSize;
 
-        //gfx::GFXDescriptorSetLayout_sp m_descriptorLayout;
-        //gfx::GFXDescriptorSet_sp m_descriptorSet;
+        //gfx::GFXDescriptorSetLayoutPtr m_descriptorLayout;
+        //gfx::GFXDescriptorSetPtr m_descriptorSet;
     };
 }

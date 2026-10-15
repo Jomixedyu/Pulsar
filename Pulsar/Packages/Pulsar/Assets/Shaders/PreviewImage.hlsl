@@ -2,13 +2,16 @@
 #include "PostProcessing.inc.hlsl"
 
 
-float4 _CheckerColorA;
-float4 _CheckerColorB;
-float  _GridSize;
+cbuffer PerMaterial
+{
+    float4 _CheckerColorA;
+    float4 _CheckerColorB;
+    float  _GridSize;
 
-float4 _TexSize;
-float _Zoom;
-int    _Flags;
+    float4 _TexSize;
+    float _Zoom;
+    int    _Flags;
+}
 
 
 Texture2D    _Image        ;

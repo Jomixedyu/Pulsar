@@ -6,6 +6,11 @@
 #include <gfx/GFXFrameBufferObject.h>
 #include <gfx/GFXTexture.h>
 
+namespace pulsar::rendering
+{
+    class RenderTextureProxy;
+}
+
 namespace pulsar
 {
     class Application;
@@ -26,7 +31,7 @@ namespace pulsar
         // Texture
         int32_t GetWidth() const override { return m_width; }
         int32_t GetHeight() const override { return m_height; }
-        std::shared_ptr<gfx::GFXTexture> GetGFXTexture() const override;
+        gfx::GFXTexturePtr GetGfxTexture() const override;
 
         void PostEditChange(FieldInfo* info) override;
 
@@ -39,23 +44,24 @@ namespace pulsar
         static std::optional<RenderTextureDepthFormat> FromGFXDepthFormat(gfx::GFXTextureFormat format);
 
         // IGPUResource
-        bool CreateGPUResource() override;
+        bool EnsureGPUResource() override;
         void DestroyGPUResource() override;
         bool IsCreatedGPUResource() const override;
         void EnableRenderTarget();
         void DisableRenderTarget();
 
-        std::shared_ptr<gfx::GFXTexture2DView> GetGfxRenderTarget0() const { return m_renderTargets[0]->Get2DView(0); }
-        const std::shared_ptr<gfx::GFXFrameBufferObject>& GetGfxFrameBufferObject() const { return m_framebuffer; }
-        const array_list<gfx::GFXTexture_sp>& GetRenderTargets() const { return m_renderTargets; }
+        std::shared_ptr<gfx::GFXTexture2DView> GetGfxColorTextureView() const;
+        std::shared_ptr<gfx::GFXFrameBufferObject> GetGfxFrameBufferObject() const;
+        array_list<gfx::GFXTexturePtr> GetFramebufferAttachments() const;
+
+        const std::shared_ptr<rendering::RenderTextureProxy>& GetRenderProxy() const { return m_proxy; }
 
     protected:
-        void RebuildGPUResources();
-
-        array_list<gfx::GFXTexture_sp> m_renderTargets;
-        std::shared_ptr<gfx::GFXFrameBufferObject> m_framebuffer;
-
         bool m_createdGPUResource = false;
+        std::shared_ptr<rendering::RenderTextureProxy> m_proxy;
+
+        // Set by PostEditChange; EnsureGPUResource rebuilds the proxy when dirty.
+        bool m_gpuResourceDirty = false;
 
     public:
         CORELIB_REFL_DECL_FIELD(m_width, new RangePropertyAttribute(1, 8192))
@@ -67,8 +73,8 @@ namespace pulsar
         CORELIB_REFL_DECL_FIELD(m_sampleCount)
         uint32_t m_sampleCount = 1;
 
-        CORELIB_REFL_DECL_FIELD(m_colorFormats)
-        List_sp<RenderTextureColorFormat> m_colorFormats;
+        CORELIB_REFL_DECL_FIELD(m_colorFormat)
+        RenderTextureColorFormat m_colorFormat = RenderTextureColorFormat::RGBA8_UNorm;
 
         CORELIB_REFL_DECL_FIELD(m_depthFormat)
         RenderTextureDepthFormat m_depthFormat = RenderTextureDepthFormat::D32_SFloat;

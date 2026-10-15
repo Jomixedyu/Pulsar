@@ -1,0 +1,92 @@
+#pragma once
+#include "GFXBuffer.h"
+#include "GFXTexture.h"
+#include "GFXResource.h"
+#include "GFXGpuProgram.h"
+#include <string_view>
+#include <memory>
+
+namespace gfx
+{
+    class GFXDescriptorSet;
+    enum class GFXDescriptorType
+    {
+        ConstantBuffer,
+        ConstantBufferDynamic,
+        StructuredBuffer,
+        CombinedImageSampler,
+        Texture2D
+    };
+
+
+    struct GFXDescriptorLayoutDesc final
+    {
+    public:
+        uint32_t BindingPoint;
+        GFXDescriptorType Type;
+        GFXGpuProgramStageFlags Stage;
+        GFXDescriptorLayoutDesc()
+            : BindingPoint(0), Type(), Stage()
+        {
+        }
+        GFXDescriptorLayoutDesc(
+            GFXDescriptorType type,
+            GFXGpuProgramStageFlags stage,
+            uint32_t bindingPoint = 0,
+            uint32_t spacePoint = 0)
+            : BindingPoint(bindingPoint), Type(type), Stage(stage)   // fix: match field declaration order
+        {
+        }
+    };
+
+    class GFXDescriptorSetLayout : public GFXResource, public std::enable_shared_from_this<GFXDescriptorSetLayout>
+    {
+    protected:
+        GFXDescriptorSetLayout(GFXResourceRegistry* registry)
+            : GFXResource(registry)
+        {
+        }
+        ~GFXDescriptorSetLayout() override {}
+        GFXResourceType GetResourceType() const override { return GFXResourceType::DescriptorSetLayout; }
+    public:
+        // Allocate a descriptor set from this layout's own, exactly-sized pool chain.
+        virtual std::shared_ptr<GFXDescriptorSet> AllocateSet() = 0;
+    };
+    GFX_DECL_PTR(GFXDescriptorSetLayout);
+
+    class GFXDescriptor
+    {
+    public:
+        GFXDescriptor() {}
+        virtual ~GFXDescriptor() {}
+        GFXDescriptor(const GFXDescriptor&) = delete;
+
+        virtual void SetConstantBuffer(GFXBuffer* buffer) = 0;
+        virtual void SetConstantBufferDynamic(GFXBuffer* buffer) = 0;
+        virtual void SetStructuredBuffer(GFXBuffer* buffer) = 0;
+        virtual void SetTextureSampler2D(GFXTexture2DView* texture) = 0;
+        virtual void SetTexture2D(GFXTexture* texture) = 0;
+
+        bool IsDirty = false;
+        std::string name;
+    };
+    GFX_DECL_PTR(GFXDescriptor);
+
+    class GFXDescriptorSet
+    {
+    protected:
+        GFXDescriptorSet() {}
+        virtual ~GFXDescriptorSet() {}
+    public:
+        virtual GFXDescriptor* AddDescriptor(std::string_view name, uint32_t bindingPoint) = 0;
+        virtual GFXDescriptor* GetDescriptorAt(int index) = 0;
+        virtual int32_t GetDescriptorCount() const = 0;
+        virtual GFXDescriptor* Find(std::string_view name) = 0;
+        virtual GFXDescriptor* FindByBinding(uint32_t bindingPoint) = 0;
+        virtual void Submit() = 0;
+        virtual intptr_t GetId() = 0;
+        virtual GFXDescriptorSetLayoutPtr GetDescriptorSetLayout() const = 0;
+    };
+    GFX_DECL_PTR(GFXDescriptorSet);
+
+}

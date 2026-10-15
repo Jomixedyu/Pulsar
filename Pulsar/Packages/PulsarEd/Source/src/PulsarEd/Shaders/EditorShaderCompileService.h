@@ -36,7 +36,7 @@ namespace pulsared
         std::vector<std::string> BuildDefines(const pulsar::ShaderCompileTask& task) const;
 
         // 反射 → Layout
-        static void ExtractLayout(const psc::ReflectedShaderResources& reflected, pulsar::ShaderPropertyLayout& layout);
+        static void ExtractLayout(const psc::ReflectedShaderResources& reflected, pulsar::ShaderLayout& layout);
 
         // 磁盘缓存
         size_t ComputeCacheHash(const std::string& hlslSource, const std::vector<std::string>& defines) const;

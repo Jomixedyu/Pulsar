@@ -1,4 +1,4 @@
-﻿#include "EngineAppInstance.h"
+#include "EngineAppInstance.h"
 #include "Assets/StaticMesh.h"
 #include <algorithm>
 #include "Components/CameraComponent.h"
@@ -6,11 +6,16 @@
 #include "Components/AnimatorComponent.h"
 #include "Node.h"
 #include "Rendering/LightingData.h"
-#include "Rendering/PerPassResources.h"
-#include "Rendering/RenderObject.h"
+#include "Rendering/PerPassData.h"
+#include "Rendering/RenderObjectProxy.h"
+#include "Rendering/RenderScene.h"
+#include "Rendering/RenderThread.h"
+#include "Rendering/SceneViewProxy.h"
 #include "Rendering/RenderGraph/TransientRTPool.h"
 #include "Rendering/RenderGraph/RenderGraph.h"
-#include "Rendering/RenderGraph/ScriptableCaptureRenderer.h"
+#include "Rendering/RenderGraph/RenderPipeline.h"
+#include "Rendering/RenderGraph/Pipelines/SceneCaptureFrameData.h"
+#include "Rendering/RenderGraph/Pipelines/SceneRenderPipeline.h"
 #include "Scene.h"
 
 #include <Pulsar/Application.h>
@@ -19,7 +24,8 @@
 #include <Pulsar/Input.h>
 #include <Pulsar/Logger.h>
 #include <Pulsar/World.h>
-#include <Pulsar/Rendering/ShaderInstanceCache.h>
+#include <Pulsar/Rendering/ShaderProxy.h>
+#include <Pulsar/Rendering/DescriptorSetCache.h>
 #include <filesystem>
 
 namespace pulsar
@@ -34,51 +40,55 @@ namespace pulsar
     }
 
 
-    void EngineRenderPipeline::OnRender(
-        gfx::GFXRenderContext* context, gfx::GFXFrameBufferObject* backbuffer)
+    void EngineRenderPipeline::OnRecord(
+        gfx::GFXCommandBuffer& cmdBuffer, gfx::GFXFrameBufferObject* backbuffer)
     {
         static uint64_t s_frameIndex = 0;
         ++s_frameIndex;
         if (TransientRTPool::Get())
             TransientRTPool::Get()->TickGC(s_frameIndex);
 
-        auto& cmdBuffer = context->GetCommandBuffer(0);
-
-        for (auto world : m_worlds)
+        for (auto* world : m_worlds)
         {
-            cmdBuffer.CmdPushDebugInfo("SceneRenderer");
+            // NOTE: the render thread never reads live World state; the debug name is a
+            // render-thread copy fed through the update queue (World::SyncRenderDebugName).
+            string worldName;
+            if (auto* rs = world->GetRenderScene())
+                worldName = rs->GetDebugName();
+            cmdBuffer.CmdPushDebugInfo(StringUtil::Concat("SceneRenderer - ", worldName.empty() ? "EMPTY" : worldName));
 
-            for (const auto& cam : world->GetCameraManager().GetCameras())
+            if (auto* scene = world->GetRenderScene())
             {
                 RenderGraph graph;
-
-                RenderCaptureContext captureCtx;
-                captureCtx.capture    = cam.GetPtr();
-                captureCtx.world      = world;
-                captureCtx.frameIndex = s_frameIndex;
-
-                if (cam->m_captureRenderer)
-                    cam->m_captureRenderer->Render(graph, captureCtx);
-
+                scene->GetRenderPipeline().OnRecord(graph, *scene, s_frameIndex);
                 if (graph.Compile())
                     graph.Execute(cmdBuffer);
             }
 
             cmdBuffer.CmdPopDebugInfo();
         }
-
     }
     void EngineRenderPipeline::AddWorld(World* world)
     {
-        m_worlds.push_back(world);
+        // Called on the game thread; the render thread iterates m_worlds while
+        // recording, so the mutation is deferred through the update queue.
+        Application::GetRenderThread()->EnqueueUpdate_AnyThread(
+            [this, world](gfx::GFXResourceRegistry*)
+            {
+                m_worlds.push_back(world);
+            });
     }
     void EngineRenderPipeline::RemoveWorld(World* world)
     {
-        auto it = std::ranges::find(m_worlds, world);
-        if (it != m_worlds.end())
-        {
-            m_worlds.erase(it);
-        }
+        Application::GetRenderThread()->EnqueueUpdate_AnyThread(
+            [this, world](gfx::GFXResourceRegistry*)
+            {
+                auto it = std::ranges::find(m_worlds, world);
+                if (it != m_worlds.end())
+                {
+                    m_worlds.erase(it);
+                }
+            });
     }
 
     const char* EngineAppInstance::AppType()
@@ -115,7 +125,7 @@ namespace pulsar
 
         TransientRTPool::Initialize();
 
-        m_world = new World("MainWorld");
+        m_world = new World();
         m_world->OnWorldBegin();
         Application::GetGfxApp()->SetRenderPipeline(new EngineRenderPipeline{m_world});
 
@@ -126,17 +136,22 @@ namespace pulsar
     {
         uinput::InputManager::GetInstance()->Terminate();
 
-        ShaderInstanceCache::Instance().Clear();
+        // Tear down World first: remove all proxies / RenderScene, drain render thread and wait for GPU idle.
+        // At this point no render object references ShaderProgramInstance or uses TransientRT.
         if (m_world)
         {
             m_world->OnWorldEnd();
             delete m_world;
             m_world = nullptr;
         }
+
+        // Cleanup after World teardown. These must run before gfxApp->Terminate() while the device is alive.
+        DescriptorSetCache::Instance().Clear();
+        BuiltinShaderPrograms::Instance().Clear_AnyThread();
         TransientRTPool::Shutdown();
     }
 
-    void EngineAppInstance::OnBeginRender(float dt)
+    void EngineAppInstance::OnAppLoop(float dt)
     {
         auto bgc = Color4f{0.2f, 0.2f, 0.2f, 0.2};
         // RenderInterface::Clear(bgc.r, bgc.g, bgc.b, bgc.a);
@@ -152,9 +167,6 @@ namespace pulsar
 
         // RenderInterface::Render();
         // SystemInterface::PollEvents();
-    }
-    void EngineAppInstance::OnEndRender(float d4)
-    {
     }
 
     bool EngineAppInstance::IsQuit()

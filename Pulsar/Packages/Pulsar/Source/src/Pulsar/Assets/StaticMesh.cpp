@@ -1,6 +1,9 @@
-﻿#include "Assets/StaticMesh.h"
+#include "Assets/StaticMesh.h"
 
-#include "Application.h"
+#include <Pulsar/Rendering/MeshProxy.h>
+#include <Pulsar/Application.h>
+#include <Pulsar/Rendering/RenderThread.h>
+
 #include "AssetSerializerUtil.h"
 
 #include "EngineMath.h"
@@ -9,20 +12,20 @@
 
 namespace pulsar
 {
-    static auto _GetVertexLayout()
+    static gfx::GFXVertexLayoutDescription _GetVertexLayout()
     {
-        auto vertDescLayout = Application::GetGfxApp()->CreateVertexLayoutDescription();
-        vertDescLayout->BindingPoint = 0;
-        vertDescLayout->Stride = sizeof(StaticMeshVertex);
+        gfx::GFXVertexLayoutDescription vertDescLayout;
+        vertDescLayout.BindingPoint = 0;
+        vertDescLayout.Stride = sizeof(StaticMeshVertex);
 
-        vertDescLayout->Attributes.push_back({(int)EngineInputSemantic::POSITION,  gfx::GFXVertexInputDataFormat::R32G32B32_SFloat, offsetof(StaticMeshVertex, Position)});
-        vertDescLayout->Attributes.push_back({(int)EngineInputSemantic::NORMAL,    gfx::GFXVertexInputDataFormat::R32G32B32_SFloat, offsetof(StaticMeshVertex, Normal)});
-        vertDescLayout->Attributes.push_back({(int)EngineInputSemantic::TANGENT,   gfx::GFXVertexInputDataFormat::R32G32B32A32_SFloat, offsetof(StaticMeshVertex, Tangent)});
-        vertDescLayout->Attributes.push_back({(int)EngineInputSemantic::COLOR,     gfx::GFXVertexInputDataFormat::R8G8B8A8_UNorm,   offsetof(StaticMeshVertex, Color)});
+        vertDescLayout.Attributes.push_back({(int)EngineInputSemantic::POSITION,  offsetof(StaticMeshVertex, Position), gfx::GFXVertexInputDataFormat::R32G32B32_SFloat});
+        vertDescLayout.Attributes.push_back({(int)EngineInputSemantic::NORMAL,    offsetof(StaticMeshVertex, Normal), gfx::GFXVertexInputDataFormat::R32G32B32_SFloat});
+        vertDescLayout.Attributes.push_back({(int)EngineInputSemantic::TANGENT,   offsetof(StaticMeshVertex, Tangent), gfx::GFXVertexInputDataFormat::R32G32B32A32_SFloat});
+        vertDescLayout.Attributes.push_back({(int)EngineInputSemantic::COLOR,     offsetof(StaticMeshVertex, Color), gfx::GFXVertexInputDataFormat::R8G8B8A8_UNorm});
 
         for (size_t i = 0; i < STATICMESH_MAX_TEXTURE_COORDS; i++)
         {
-            vertDescLayout->Attributes.push_back({(int)EngineInputSemantic::TEXCOORD0 + i, gfx::GFXVertexInputDataFormat::R32G32_SFloat, offsetof(StaticMeshVertex, TexCoords[i])});
+            vertDescLayout.Attributes.push_back({(uint32_t)((int)EngineInputSemantic::TEXCOORD0 + i), (uint32_t)offsetof(StaticMeshVertex, TexCoords[i]), gfx::GFXVertexInputDataFormat::R32G32_SFloat});
         }
 
         return vertDescLayout;
@@ -51,7 +54,7 @@ namespace pulsar
         return result;
     }
 
-    bool StaticMesh::CreateGPUResource()
+    bool StaticMesh::EnsureGPUResource()
     {
         if (m_isCreatedResource)
         {
@@ -59,70 +62,47 @@ namespace pulsar
         }
         m_isCreatedResource = true;
 
-        auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
-        for (auto& section : m_sections)
-        {
-            // 从分离属性数据合并为交错格式再上传（GPU 侧暂时保持单 Buffer）
-            auto interleavedVerts = section.BuildInterleavedVertices();
-            const size_t vertSize = interleavedVerts.size() * sizeof(StaticMeshVertex);
-
+        m_proxy = std::make_shared<rendering::MeshProxy>();
+        auto proxy = m_proxy;
+        auto sections = rendering::BuildMeshProxySections<StaticMeshSection, StaticMeshVertex>(m_sections);
+        Application::GetRenderThread()->EnqueueUpdate_AnyThread(
+            [proxy = std::move(proxy), sections = std::move(sections)](gfx::GFXResourceRegistry*) mutable
             {
-                gfx::GFXBufferDesc vertexDesc{};
-                vertexDesc.Usage       = gfx::GFXBufferUsage::Vertex;
-                vertexDesc.StorageType = gfx::GFXBufferMemoryPosition::DeviceLocal;
-                vertexDesc.BufferSize  = vertSize;
-                vertexDesc.ElementSize = sizeof(StaticMeshVertex);
-
-                auto vertBuffer = cmdList.CreateBuffer(vertexDesc);
-                cmdList.UploadBuffer(vertBuffer, interleavedVerts.data(), vertSize);
-                m_vertexBuffers.push_back(vertBuffer);
-            }
-
-            {
-                gfx::GFXBufferDesc indicesDesc{};
-                indicesDesc.Usage       = gfx::GFXBufferUsage::Indices;
-                indicesDesc.StorageType = gfx::GFXBufferMemoryPosition::DeviceLocal;
-                indicesDesc.BufferSize  = section.GetIndicesAllocSize();
-                indicesDesc.ElementSize = sizeof(MeshIndicesType);
-
-                auto indicesBuffer = cmdList.CreateBuffer(indicesDesc);
-                cmdList.UploadBuffer(indicesBuffer, section.Indices.data(), section.GetIndicesAllocSize());
-                m_indicesBuffers.push_back(indicesBuffer);
-            }
-        }
+                proxy->Init(std::move(sections));
+            });
         return true;
     }
+
     void StaticMesh::DestroyGPUResource()
     {
         if (!m_isCreatedResource)
             return;
         m_isCreatedResource = false;
-
-        auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
-        for (auto& h : m_vertexBuffers)
-            cmdList.Destroy(h);
-        for (auto& h : m_indicesBuffers)
-            cmdList.Destroy(h);
-        m_vertexBuffers.clear();
-        m_indicesBuffers.clear();
-    }
-    bool StaticMesh::IsCreatedGPUResource() const
+        if (auto proxy = std::move(m_proxy))
+        {
+            Application::GetRenderThread()->EnqueueDestroy_AnyThread(
+                [proxy = std::move(proxy)](gfx::GFXResourceRegistry*) mutable
+                {
+                    proxy->Release();
+                });
+        }
+    }    bool StaticMesh::IsCreatedGPUResource() const
     {
         return m_isCreatedResource;
     }
 
     StaticMesh::~StaticMesh() = default;
 
-    gfx::GFXVertexLayoutDescription_sp StaticMesh::StaticGetVertexLayout()
+    void StaticMesh::OnDestroy()
     {
-        static gfx::GFXVertexLayoutDescription_wp layout;
-        if (layout.expired())
-        {
-            auto newLayout = _GetVertexLayout();
-            layout = newLayout;
-            return newLayout;
-        }
-        return layout.lock();
+        base::OnDestroy();
+        DestroyGPUResource();
+    }
+
+    gfx::GFXVertexLayoutDescription StaticMesh::StaticGetVertexLayout()
+    {
+        static gfx::GFXVertexLayoutDescription layout = _GetVertexLayout();
+        return layout;
     }
 
     void StaticMesh::Serialize(AssetSerializer* s)
@@ -211,5 +191,6 @@ namespace pulsar
         sser::ReadWriteStream(stream, isWrite, data.MaterialIndex);
         return stream;
     }
+
 
 } // namespace pulsar

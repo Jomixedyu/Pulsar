@@ -157,7 +157,6 @@ namespace pulsar
         {
             init_sptr_member(PreDefines);
             init_sptr_member(Tags);
-            init_sptr_member(Interfaces);
             init_sptr_member(Passes);
             init_sptr_member(Properties);
         }
@@ -168,9 +167,6 @@ namespace pulsar
         CORELIB_REFL_DECL_FIELD(Tags);
         List_sp<string> Tags;
         
-        CORELIB_REFL_DECL_FIELD(Interfaces);
-        List_sp<string> Interfaces;
-        
         CORELIB_REFL_DECL_FIELD(Passes);
         List_sp<SPtr<ShaderConfigPass>> Passes;
         
@@ -178,6 +174,11 @@ namespace pulsar
         List_sp<SPtr<ShaderConfigProperty>> Properties;
 
         SPtr<ShaderConfigPass> FindPass(const string& name) const;
+
+        // Deep copy (via reflection serialization). Use it whenever config data
+        // crosses to another thread/owner: ShaderConfig is mutable in the editor,
+        // so sharing the live SPtr would leak in-place edits across threads.
+        SPtr<ShaderConfig> Clone() const;
     };
     CORELIB_DECL_SHORTSPTR(ShaderConfig);
 

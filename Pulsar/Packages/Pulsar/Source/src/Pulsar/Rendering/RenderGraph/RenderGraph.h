@@ -1,7 +1,8 @@
 #pragma once
 #include "TransientRTPool.h"
-#include <Pulsar/Assets/RenderTexture.h>
 #include <gfx/GFXRenderPass.h>
+#include <gfx/GFXTexture.h>
+#include <gfx/GFXFrameBufferObject.h>
 #include <functional>
 #include <string>
 #include <vector>
@@ -11,8 +12,6 @@ namespace gfx { class GFXCommandBuffer; }
 
 namespace pulsar
 {
-    class PerPassResources;
-
     struct RGTextureHandle
     {
         static constexpr uint32_t Invalid = UINT32_MAX;
@@ -28,11 +27,9 @@ namespace pulsar
     {
     public:
         RGPassContext(const std::vector<std::shared_ptr<RGPhysicalTexture>>& physicalRTs,
-                      const std::unordered_map<uint32_t, size_t>& handleToIndex,
-                      PerPassResources* perPassResources)
+                      const std::unordered_map<uint32_t, size_t>& handleToIndex)
             : m_physicalRTs(physicalRTs)
-            , m_handleToIndex(handleToIndex)
-            , perPassResources(perPassResources) {}
+            , m_handleToIndex(handleToIndex) {}
 
         const RGPhysicalTexture* Get(RGTextureHandle h) const
         {
@@ -40,8 +37,6 @@ namespace pulsar
             if (it == m_handleToIndex.end()) return nullptr;
             return m_physicalRTs[it->second].get();
         }
-
-        PerPassResources* perPassResources = nullptr;
 
     private:
         const std::vector<std::shared_ptr<RGPhysicalTexture>>& m_physicalRTs;
@@ -72,7 +67,6 @@ namespace pulsar
         std::vector<RGResourceBinding>  resources;
         RGPassPrepareFunc               prepareFunc;      // called after Compile, before BeginRenderPass
         RGPassExecuteFunc               executeFunc;      // called inside BeginRenderPass (or outside if noRenderPass)
-        PerPassResources*               perPassResources = nullptr;
         bool                            noRenderPass     = false; // skip BeginRenderPass/EndRenderPass (e.g. transfer-only passes)
     };
 
@@ -83,7 +77,11 @@ namespace pulsar
         std::string     name;
         RGResourceKind  kind     = RGResourceKind::Transient;
         RGTextureDesc   texDesc;
-        RenderTexture*  external = nullptr;
+        // Pre-resolved external GPU resources (game thread fills this; no AssetObject).
+        int32_t                        externalWidth  = 0;
+        int32_t                        externalHeight = 0;
+        array_list<gfx::GFXTexturePtr> externalAttachments;
+        gfx::GFXFrameBufferObjectPtr   externalFramebuffer;
     };
 
     class RGPassBuilder
@@ -100,12 +98,6 @@ namespace pulsar
         RGPassBuilder& Write(RGTextureHandle h, RGAttachmentDesc desc = {})
         {
             m_pass.resources.push_back({h, RGResourceUsage::Write, desc});
-            return *this;
-        }
-
-        RGPassBuilder& WithPerPass(PerPassResources* perPass)
-        {
-            m_pass.perPassResources = perPass;
             return *this;
         }
 
@@ -142,7 +134,10 @@ namespace pulsar
 
         void BeginFrame();
         RGTextureHandle CreateTransient(const std::string& name, const RGTextureDesc& desc);
-        RGTextureHandle ImportTexture(const std::string& name, RenderTexture* external);
+        RGTextureHandle ImportTexture(const std::string& name,
+                                      int32_t width, int32_t height,
+                                      const array_list<gfx::GFXTexturePtr>& attachments,
+                                      const gfx::GFXFrameBufferObjectPtr& fbo);
         RGPassBuilder AddPass(const std::string& name);
         bool Compile();
         void Execute(gfx::GFXCommandBuffer& cmd);

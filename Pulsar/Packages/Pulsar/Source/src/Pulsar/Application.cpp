@@ -1,7 +1,9 @@
-﻿#include <Pulsar/Application.h>
+#include <Pulsar/Application.h>
 #include <Pulsar/Logger.h>
 #include <gfx-vk/GFXVulkanApplication.h>
 #include "AppInstance.h"
+#include "Profiler.h"
+#include "Rendering/RenderThread.h"
 #include <chrono>
 #include <cstdlib>
 
@@ -31,6 +33,12 @@ namespace pulsar
     gfx::GFXApplication* Application::GetGfxApp()
     {
         return g_gfxApp;
+    }
+
+    static RenderThread* g_renderThread = nullptr;
+    RenderThread* Application::GetRenderThread()
+    {
+        return g_renderThread;
     }
 
     int Application::argc()
@@ -104,6 +112,9 @@ namespace pulsar
 
         Watch.Record("gfx initialize");
 
+        g_renderThread = new RenderThread();
+        g_renderThread->Start_AnyThread();
+
         instance->OnInitialized();
 
         Watch.Record("user initialize");
@@ -122,34 +133,72 @@ namespace pulsar
             }
         }
 
-        g_gfxApp->OnPreRender = [autoQuit](float dt) mutable
+        // ========== Engine-owned frame loop (lockstep) ==========
+        // Main thread: poll window/input -> tick game -> dispatch render to the
+        // render thread and block until it has drained pending resource updates
+        // and drawn the frame. Rendering never overlaps the game tick.
+        gfx::GFXSurface* window = g_gfxApp->GetWindow();
+        auto lastTime = std::chrono::steady_clock::now();
+        while (true)
         {
-            const auto elapsedMs = std::chrono::duration_cast<std::chrono::milliseconds>(
-                std::chrono::steady_clock::now() - autoQuit.StartTime).count();
-            if (autoQuit.Enabled && !autoQuit.Triggered && elapsedMs >= autoQuit.DelayMs)
+            auto currentTime = std::chrono::steady_clock::now();
+            float dt = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - lastTime).count();
+            lastTime = currentTime;
+
+            Profiler::Get().BeginFrame();
+
+            if (window->WantToClose())
             {
-                autoQuit.Triggered = true;
-                Logger::Log("Application auto quit triggered", LogLevel::Warning);
                 g_currentInst->RequestQuit();
-                g_gfxApp->RequestStop();
-                return;
             }
-            g_currentInst->OnBeginRender(dt);
+            window->PollEvent();
+
+            if (autoQuit.Enabled && !autoQuit.Triggered)
+            {
+                const auto elapsedMs = std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::steady_clock::now() - autoQuit.StartTime).count();
+                if (elapsedMs >= autoQuit.DelayMs)
+                {
+                    autoQuit.Triggered = true;
+                    Logger::Log("Application auto quit triggered", LogLevel::Warning);
+                    g_currentInst->RequestQuit();
+                }
+            }
+
+            // game tick
+            {
+                PROFILE_SCOPE("AppLoop");
+                g_currentInst->OnAppLoop(dt);
+            }
             if (g_currentInst->IsQuit())
             {
-                g_gfxApp->RequestStop();
+                break;
             }
-        };
-        g_gfxApp->OnPostRender = [](float dt)
-        {
-            g_currentInst->OnEndRender(dt);
-            if (g_currentInst->IsQuit())
+
+            // Wait for the previous dispatched render frame, then snapshot render
+            // inputs and dispatch this frame without blocking: the next loop
+            // iteration's game tick overlaps with the render thread's recording.
             {
-                g_gfxApp->RequestStop();
+                PROFILE_SCOPE("RenderWait");
+                g_renderThread->WaitFrame_AnyThread();
             }
-        };
-        g_gfxApp->ExecLoop();
+            g_renderThread->Dispatch_AnyThread([dt] { g_gfxApp->TickRender(dt); });
+
+            Profiler::Get().EndFrame();
+        }
+
         instance->OnTerminate();
+
+        // OnTerminate tears down worlds first, and World::OnWorldEnd drains the render
+        // queue (completing any in-flight frame) before touching render state. This
+        // backstop drains anything the rest of OnTerminate enqueued (shader cache clear,
+        // transient RT pool shutdown, ...) before the thread stops.
+        g_renderThread->DrainQueue_AnyThread();
+
+        g_renderThread->Stop_AnyThread();
+        delete g_renderThread;
+        g_renderThread = nullptr;
+
         g_gfxApp->Terminate();
         delete g_gfxApp;
         g_gfxApp = nullptr;

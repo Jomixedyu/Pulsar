@@ -4,6 +4,10 @@
 #include "Node.h"
 #include "AssetManager.h"
 #include "Assets/StaticMesh.h"
+#include "Rendering/SceneViewProxy.h"
+#include <Pulsar/Rendering/RenderThread.h>
+#include <Pulsar/Rendering/RenderTextureProxy.h>
+#include <gfx/GFXResourceRegistry.h>
 
 namespace pulsar
 {
@@ -20,54 +24,6 @@ namespace pulsar
         m_gizmoTexture = AssetManager::Get()->LoadAsset<Texture2D>("PulsarEd/Gizmos/cinema");
     }
 
-    static gfx::GFXDescriptorSetLayout_wp _CameraDescriptorLayout;
-
-    constexpr uint32_t kRenderingDescriptorSpace_Camera = 0;
-
-    void SceneCapture2DComponent::BeginComponent()
-    {
-        base::BeginComponent();
-
-        if (_CameraDescriptorLayout.expired())
-        {
-            gfx::GFXDescriptorSetLayoutDesc info{
-                gfx::GFXDescriptorType::ConstantBuffer,
-                gfx::GFXGpuProgramStageFlags::VertexFragment,
-                0,
-                kRenderingDescriptorSpace_Camera};
-            m_camDescriptorLayout = Application::GetGfxApp()->CreateDescriptorSetLayout(&info, 1);
-            _CameraDescriptorLayout = m_camDescriptorLayout;
-        }
-        else
-        {
-            m_camDescriptorLayout = _CameraDescriptorLayout.lock();
-        }
-
-        gfx::GFXBufferDesc perCameraBufferDesc{};
-        perCameraBufferDesc.Usage       = gfx::GFXBufferUsage::ConstantBuffer;
-        perCameraBufferDesc.StorageType = gfx::GFXBufferMemoryPosition::VisibleOnDevice;
-        perCameraBufferDesc.BufferSize  = sizeof(PerCaptureShaderParameter);
-        perCameraBufferDesc.ElementSize = sizeof(PerCaptureShaderParameter);
-
-        auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
-        m_cameraDataBuffer = cmdList.CreateBuffer(perCameraBufferDesc);
-        m_cameraDescriptorSet = Application::GetGfxApp()->GetDescriptorManager()->GetDescriptorSet(m_camDescriptorLayout);
-        if (auto* buffer = Application::GetGfxApp()->GetResourceManager()->GetBuffer(m_cameraDataBuffer))
-        {
-            m_cameraDescriptorSet->AddDescriptor("Target", 0)->SetConstantBuffer(buffer);
-        }
-        m_cameraDescriptorSet->Submit();
-    }
-    void SceneCapture2DComponent::EndComponent()
-    {
-        if (m_cameraDataBuffer.IsValid())
-        {
-            auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
-            cmdList.Destroy(m_cameraDataBuffer);
-            m_cameraDataBuffer = gfx::BufferHandle{};
-        }
-        SceneCaptureComponent::EndComponent();
-    }
     Matrix4f SceneCapture2DComponent::GetViewMat() const
     {
         return GetNode()->GetTransform()->GetWorldToLocalMatrix();
@@ -107,38 +63,91 @@ namespace pulsar
     {
         m_fov = value;
         UpdateCBuffer();
+        m_renderDirtyCamera = true;
+        MarkRenderStateDirty();
     }
     void SceneCapture2DComponent::SetNear(float value)
     {
         m_near = value;
         UpdateCBuffer();
+        m_renderDirtyCamera = true;
+        MarkRenderStateDirty();
     }
     void SceneCapture2DComponent::SetFar(float value)
     {
         m_far = value;
         UpdateCBuffer();
+        m_renderDirtyCamera = true;
+        MarkRenderStateDirty();
     }
     void SceneCapture2DComponent::SetBackgroundColor(const Color4f& value)
     {
         m_backgroundColor = value;
         UpdateRTBackgroundColor();
         UpdateCBuffer();
+        m_renderDirtyCamera = true;
+        MarkRenderStateDirty();
     }
     void SceneCapture2DComponent::SetProjectionMode(CaptureProjectionMode mode)
     {
         m_projectionMode = mode;
         UpdateCBuffer();
+        m_renderDirtyCamera = true;
+        MarkRenderStateDirty();
     }
     void SceneCapture2DComponent::SetOrthoSize(float value)
     {
         m_orthoSize = value;
         UpdateCBuffer();
+        m_renderDirtyCamera = true;
+        MarkRenderStateDirty();
     }
 
     void SceneCapture2DComponent::OnTransformChanged()
     {
         base::OnTransformChanged();
         UpdateCBuffer();
+        m_renderDirtyTransform = true;
+        m_renderDirtyPostProcess = true;
+        MarkRenderStateDirty();
+    }
+
+    void SceneCapture2DComponent::PostEditChange(FieldInfo* info)
+    {
+        base::PostEditChange(info);
+
+        // Inspector edits write the reflected fields directly and bypass the
+        // setters, so the render-state flags have to be raised here.
+        const auto& name = info->GetName();
+        if (name == NAMEOF(m_fov) || name == NAMEOF(m_near) || name == NAMEOF(m_far) ||
+            name == NAMEOF(m_projectionMode) || name == NAMEOF(m_orthoSize))
+        {
+            m_renderDirtyCamera = true;
+        }
+        else if (name == NAMEOF(m_msaaSamples))
+        {
+            m_renderDirtyRenderTarget = true;
+        }
+        MarkRenderStateDirty();
+    }
+
+    bool SceneCapture2DComponent::ExtractViewData(SceneViewData& outData)
+    {
+        if (!m_renderTarget)
+            return false;
+
+        outData.ViewMatrix       = GetViewMat();
+        outData.ProjectionMatrix = GetProjectionMat();
+        outData.CameraPosition   = GetNode()->GetTransform()->GetWorldPosition();
+        outData.CameraForward    = GetNode()->GetTransform()->GetForward();
+        outData.Near             = m_near;
+        outData.Far              = m_far;
+        outData.Resolution       = m_renderTarget->GetSize2df();
+        outData.BackgroundColor  = m_backgroundColor;
+        outData.MSAASamples      = std::max(1, m_msaaSamples);
+        outData.GizmoPassEnabled = false;
+        outData.RenderTarget.Proxy       = m_renderTarget->GetRenderProxy();
+        return true;
     }
 
     void SceneCapture2DComponent::OnDrawGizmo(GizmoPainter* painter, bool selected)
@@ -154,34 +163,26 @@ namespace pulsar
         {
             return;
         }
-        auto rt0 = m_renderTarget->GetGfxRenderTarget0();
-        auto& color = rt0->GetTexture()->TargetClearColor;
-
-        color[0] = m_backgroundColor.r;
-        color[1] = m_backgroundColor.g;
-        color[2] = m_backgroundColor.b;
-        color[3] = m_backgroundColor.a;
+        // The RT proxy initializes asynchronously on the render thread; route the
+        // clear-color write through the same queue so it lands after Init (FIFO).
+        auto proxy = m_renderTarget->GetRenderProxy();
+        const auto color = m_backgroundColor;
+        Application::GetRenderThread()->EnqueueUpdate_AnyThread(
+            [proxy, color](gfx::GFXResourceRegistry*)
+            {
+                auto view = proxy ? proxy->GetColorTextureView() : nullptr;
+                if (auto* tex = view ? view->GetTexture() : nullptr)
+                {
+                    tex->SetTargetClearColor({ color.r, color.g, color.b, color.a });
+                }
+            });
     }
 
     void SceneCapture2DComponent::UpdateCBuffer()
     {
+        // Any param/transform change re-snapshots the view proxy next frame.
+        MarkRenderStateDirty();
+
         m_debugViewMat = GetViewMat();
-
-        PerCaptureShaderParameter target{};
-        target.MatrixV = GetViewMat();
-        target.MatrixP = GetProjectionMat();
-        target.MatrixVP = target.MatrixP * target.MatrixV;
-
-        target.InvMatrixV = jmath::Inverse(target.MatrixV);
-        target.InvMatrixP = jmath::Inverse(target.MatrixP);
-        target.InvMatrixVP = jmath::Inverse(target.MatrixVP);
-        target.CamPosition = GetNode()->GetTransform()->GetWorldPosition();
-        target.CamNear = m_near;
-        target.CamFar = m_far;
-        target.Resolution = m_renderTarget->GetSize2df();
-        if (auto* buffer = Application::GetGfxApp()->GetResourceManager()->GetBuffer(m_cameraDataBuffer))
-        {
-            buffer->Fill(&target);
-        }
     }
 } // namespace pulsar

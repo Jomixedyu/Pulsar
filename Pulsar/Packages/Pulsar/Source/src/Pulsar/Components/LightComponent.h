@@ -1,13 +1,13 @@
 #pragma once
 #include <Pulsar/IconsForkAwesome.h>
-#include "Component.h"
+#include "RenderComponent.h"
 #include "Pulsar/Rendering/LightingData.h"
 
 namespace pulsar
 {
-    class LightComponent : public Component
+    class LightComponent : public RenderComponent
     {
-        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::LightComponent, Component);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::LightComponent, RenderComponent);
         CORELIB_CLASS_ATTR(new AbstractComponentAttribute, new ComponentIconAttribute(ICON_FK_LIGHTBULB_O));
     public:
         void SetIntensity(float value);
@@ -17,8 +17,6 @@ namespace pulsar
         Color4f GetColor() const { return m_lightColor; }
 
     protected:
-
-        void MarkRenderingDirty();
 
         void PostEditChange(FieldInfo* info) override;
         virtual void OnIntensityChanged() {};

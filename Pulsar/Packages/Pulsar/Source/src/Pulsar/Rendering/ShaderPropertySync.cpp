@@ -1,101 +1,128 @@
 #include "ShaderPropertySync.h"
-#include "BuiltinAsset.h"
 #include "Assets/Texture2D.h"
+#include "Rendering/DescriptorSetAssembler.h"
+#include "Rendering/RenderResourceRegistry.h"
+#include "Rendering/TextureProxy.h"
 
 #include "Application.h"
 #include "AppInstance.h"
 #include "AssetManager.h"
 #include <Pulsar/Logger.h>
+#include <Pulsar/Rendering/RenderThread.h>
 
 #include <gfx/GFXTexture.h>
 
+#include <cassert>
 #include <cstring>
 
 namespace pulsar
 {
-    void ShaderPropertySync::SyncSheetToGpu(
-        const ShaderPropertySheet& sheet,
-        const ShaderPropertyLayout& layout,
-        gfx::GFXBuffer* cbuffer,
-        gfx::GFXDescriptorSet* descriptorSet)
+    ShaderPropertyRenderData ShaderPropertySync::BuildRenderData(const ShaderPropertySheet& sheet)
     {
-        SyncConstants(sheet, layout, cbuffer);
-        SyncTextures(sheet, layout, descriptorSet);
+        // 在 sheet 拥有者线程调用：解析纹理资产为 GPU 句柄、拷贝常量纯值。
+        // 场景 material 由游戏线程驱动；post-process material 由渲染线程在构建
+        // RenderGraph 时驱动。lockstep 下两线程互不重叠，均可安全访问资产。
+        ShaderPropertyRenderData data;
+
+        for (const auto& [name, prop] : sheet.GetAllProperties())
+        {
+            switch (prop.Type)
+            {
+            case ShaderPropertyType::Int:
+            case ShaderPropertyType::Float:
+            case ShaderPropertyType::Float4:
+                data.Constants.emplace(name, prop);
+                break;
+            case ShaderPropertyType::Texture2D:
+            {
+                RCPtr<Texture> tex = prop.AsTexture2D();
+                if (tex)
+                    tex->EnsureGPUResource();
+                data.Textures.emplace(name, tex ? tex->GetTextureProxy() : nullptr);
+                break;
+            }
+            default:
+                break;
+            }
+        }
+
+        return data;
     }
 
-    void ShaderPropertySync::SyncConstants(
-        const ShaderPropertySheet& sheet,
-        const ShaderPropertyLayout& layout,
+    void ShaderPropertySync::UploadPerMaterialCBuffer(
+        const ShaderPropertyRenderData& data,
+        const ShaderLayout& layout,
         gfx::GFXBuffer* cbuffer)
     {
-        if (!cbuffer || layout.m_totalCBufferSize == 0)
+        assert(Application::GetRenderThread()->IsRenderThread() && "UploadPerMaterialCBuffer must run on the render thread");
+
+        if (!cbuffer)
             return;
 
-        std::vector<uint8_t> buffer(layout.m_totalCBufferSize, 0);
+        const ShaderPropertySetLayout* set0 = layout.FindSet(0);
+        if (!set0)
+            return;
 
-        for (const auto& entry : layout.m_constantEntries)
+        // 找到 set0 的材质 cbuffer（名为 PerMaterial 的 binding）
+        const DescriptorBinding* matCbuffer = set0->FindBinding(kPerMaterialCBufferName);
+        if (!matCbuffer)
+            return;
+
+        // 常量：按成员 offset 打包成字节缓冲，经 ring staging 队列上传到 device-local cbuffer
+        // （帧头批量 transfer，无 per-update submit/wait）。
+        std::vector<uint8_t> buffer(matCbuffer->m_size, 0);
+        for (const auto& entry : matCbuffer->m_members)
         {
-            const ShaderPropertyValue* prop = sheet.FindProperty(entry.m_name);
-
-            auto isCompatible = [](ShaderPropertyType a, ShaderPropertyType b) {
-                return a == b;
-            };
-
-            if (prop && isCompatible(entry.m_type, prop->Type))
-            {
-                WritePropertyToBuffer(buffer.data(), entry, *prop);
-            }
-            // 没有值：保持 zero-initialized（DefaultValue 应已由 ApplyShaderDefaults 写入 sheet）
+            auto it = data.Constants.find(entry.m_name);
+            if (it != data.Constants.end() && it->second.Type == entry.m_type)
+                WritePropertyToBuffer(buffer.data(), entry, it->second);
+            // 没有值：保持 zero-initialized
         }
-
-        cbuffer->Fill(buffer.data());
+        cbuffer->Update(buffer.data());
     }
 
-    void ShaderPropertySync::SyncTextures(
-        const ShaderPropertySheet& sheet,
-        const ShaderPropertyLayout& layout,
-        gfx::GFXDescriptorSet* descriptorSet)
+    std::vector<gfx::GFXTexture2DViewPtr> ShaderPropertySync::BuildSet0Registry(
+        const ShaderPropertyRenderData& data,
+        const ShaderPropertySetLayout& set0,
+        gfx::GFXBuffer* cbuffer,
+        RenderResourceRegistry& reg)
     {
-        if (!descriptorSet)
-            return;
+        assert(Application::GetRenderThread()->IsRenderThread() && "BuildSet0Registry must run on the render thread");
 
-        auto assetMgr = AssetManager::Get();
+        std::vector<gfx::GFXTexture2DViewPtr> keepAlive;
 
-        for (const auto& entry : layout.m_textureEntries)
+        // set0 的材质 cbuffer binding（名为 PerMaterial）：绑定材质共享的那一份 cbuffer
+        const DescriptorBinding* matCbuffer = set0.FindBinding(kPerMaterialCBufferName);
+        if (cbuffer && matCbuffer)
+            reg.Set(matCbuffer->m_name, cbuffer);
+
+        for (const auto& b : set0.m_bindings)
         {
-            RCPtr<Texture> tex;
-            sheet.GetTexture(entry.m_name, tex);
+            if (b.IsBuffer())
+                continue;
 
-            // 没找到时 fallback 白色纹理，保证 descriptor 永远被 update
-            if (!tex)
+            // 缺失的纹理项：不写入 registry，交给 assembler 回落到 gfx 内建兜底
+            auto it = data.Textures.find(b.m_name);
+            if (it == data.Textures.end() || !it->second)
+                continue;
+
+            // Resolve through the proxy every frame: the GPU texture is created
+            // lazily on the render thread, so a missing texture self-heals via the
+            // content-addressed descriptor set cache once it becomes ready.
+            if (auto gfxTex = it->second->GetTexture())
             {
-                RCPtr<Texture2D> defaultTex = BuiltinAsset::GetTextureBlack();
-                if (defaultTex) tex = defaultTex;
-            }
-
-            if (tex && !tex->IsCreatedGPUResource())
-                tex->CreateGPUResource();
-
-            if (tex && tex->GetGFXTexture())
-            {
-                auto* descriptor = descriptorSet->FindByBinding(entry.m_bindingPoint);
-                if (descriptor)
+                if (auto view = gfxTex->Get2DView(0))
                 {
-                    auto view = tex->GetGFXTexture()->Get2DView(0);
-                    if (view)
-                        descriptor->SetTextureSampler2D(view.get());
-                    else
-                        Logger::Log("SyncTextures: view is null, binding=" + std::to_string(entry.m_bindingPoint), LogLevel::Warning);
+                    reg.Set(b.m_name, view.get());
+                    keepAlive.push_back(std::move(view)); // registry 存裸指针，须保活到使用完毕
                 }
-                else
-                    Logger::Log("SyncTextures: FindByBinding(" + std::to_string(entry.m_bindingPoint) + ") returned null", LogLevel::Warning);
             }
-            else
-                Logger::Log("SyncTextures: no valid texture for entry=" + entry.m_name, LogLevel::Warning);
         }
+
+        return keepAlive;
     }
 
-    void ShaderPropertySync::WritePropertyToBuffer(uint8_t* buffer, const CBufferEntry& entry, const ShaderPropertyValue& prop)
+    void ShaderPropertySync::WritePropertyToBuffer(uint8_t* buffer, const BufferMember& entry, const ShaderPropertyValue& prop)
     {
         switch (entry.m_type)
         {

@@ -1,7 +1,7 @@
 #pragma once
 #include <Pulsar/IconsForkAwesome.h>
 #include "LightComponent.h"
-#include "Pulsar/Rendering/RenderObject.h"
+#include "Pulsar/Rendering/RenderObjectProxy.h"
 
 namespace pulsar
 {
@@ -19,6 +19,9 @@ namespace pulsar
         float GetRadius() const { return m_radius; }
         void SetRadius(float value);
     protected:
+        SPtr<rendering::SceneProxy> CreateSceneProxy() override;
+        void ResolveRenderStateDirty() override;
+
         void OnDrawGizmo(GizmoPainter* painter, bool selected) override;
 
         void OnTransformChanged() override;

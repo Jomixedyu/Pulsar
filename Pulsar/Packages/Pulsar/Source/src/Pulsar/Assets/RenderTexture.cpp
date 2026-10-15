@@ -1,12 +1,13 @@
 #include "Assets/RenderTexture.h"
 #include <Pulsar/Application.h>
+#include <Pulsar/Rendering/RenderThread.h>
+#include <Pulsar/Rendering/RenderTextureProxy.h>
 #include <optional>
 
 namespace pulsar
 {
     RenderTexture::RenderTexture()
     {
-        init_sptr_member(m_colorFormats);
     }
 
     RenderTexture::~RenderTexture() = default;
@@ -75,12 +76,24 @@ namespace pulsar
         }
     }
 
-    std::shared_ptr<gfx::GFXTexture> RenderTexture::GetGFXTexture() const
+    gfx::GFXTexturePtr RenderTexture::GetGfxTexture() const
     {
-        if (m_renderTargets.empty())
-            return nullptr;
-        // Return first color attachment for preview/sampling
-        return m_renderTargets[0];
+        return m_proxy ? m_proxy->GetColorTexture() : nullptr;
+    }
+
+    std::shared_ptr<gfx::GFXTexture2DView> RenderTexture::GetGfxColorTextureView() const
+    {
+        return m_proxy ? m_proxy->GetColorTextureView() : nullptr;
+    }
+
+    std::shared_ptr<gfx::GFXFrameBufferObject> RenderTexture::GetGfxFrameBufferObject() const
+    {
+        return m_proxy ? m_proxy->GetFrameBufferObject() : nullptr;
+    }
+
+    array_list<gfx::GFXTexturePtr> RenderTexture::GetFramebufferAttachments() const
+    {
+        return m_proxy ? m_proxy->GetFramebufferAttachments() : array_list<gfx::GFXTexturePtr>{};
     }
 
     void RenderTexture::Serialize(AssetSerializer* s)
@@ -92,12 +105,7 @@ namespace pulsar
             s->Object->Add("Height", m_height);
             s->Object->Add("SampleCount", (int)m_sampleCount);
 
-            auto colorList = s->Object->New(ser::VarientType::Array);
-            for (auto& fmt : *m_colorFormats)
-            {
-                colorList->Push(mkbox(fmt)->GetName());
-            }
-            s->Object->Add("ColorFormats", colorList);
+            s->Object->Add("ColorFormat", mkbox(m_colorFormat)->GetName());
 
             s->Object->Add("DepthFormat", mkbox(m_depthFormat)->GetName());
         }
@@ -107,15 +115,21 @@ namespace pulsar
             m_height = s->Object->At("Height")->AsInt();
             m_sampleCount = (uint32_t)s->Object->At("SampleCount")->AsInt();
 
-            m_colorFormats->clear();
-            auto colorList = s->Object->At("ColorFormats");
-            for (int i = 0; i < colorList->GetCount(); ++i)
+            if (auto colorFormat = s->Object->At("ColorFormat"))
             {
                 uint32_t value{};
-                auto name = colorList->At(i)->AsString();
-                if (Enum::StaticTryParse(cltypeof<BoxingRenderTextureColorFormat>(), name, &value))
+                if (Enum::StaticTryParse(cltypeof<BoxingRenderTextureColorFormat>(), colorFormat->AsString(), &value))
                 {
-                    m_colorFormats->push_back((RenderTextureColorFormat)value);
+                    m_colorFormat = (RenderTextureColorFormat)value;
+                }
+            }
+            else if (auto colorList = s->Object->At("ColorFormats"))
+            {
+                if (colorList->GetCount() > 0)
+                {
+                    uint32_t value{};
+                    if (Enum::StaticTryParse(cltypeof<BoxingRenderTextureColorFormat>(), colorList->At(0)->AsString(), &value))
+                        m_colorFormat = (RenderTextureColorFormat)value;
                 }
             }
 
@@ -131,57 +145,37 @@ namespace pulsar
     void RenderTexture::PostEditChange(FieldInfo* info)
     {
         base::PostEditChange(info);
-        // Rebuild GPU resources when dimensions or attachments change
-        if (IsCreatedGPUResource())
-        {
-            DestroyGPUResource();
-            CreateGPUResource();
-        }
+        // Dimensions / formats / samples changed: rebuild on EnsureGPUResource.
+        m_gpuResourceDirty = true;
+        EnsureGPUResource();
     }
 
-    bool RenderTexture::CreateGPUResource()
+    bool RenderTexture::EnsureGPUResource()
     {
-        if (IsCreatedGPUResource())
+        if (m_createdGPUResource && !m_gpuResourceDirty)
             return true;
+        m_gpuResourceDirty = false;
 
         auto gfx = Application::GetGfxApp();
         if (!gfx)
             return false;
 
-        // Ensure at least one color format
-        if (m_colorFormats->empty())
-        {
-            m_colorFormats->push_back(RenderTextureColorFormat::RGBA8_UNorm);
-        }
+        // Init is re-init safe: a rebuild reuses the same proxy object, so
+        // render-side holders see the new targets automatically. No wait-idle:
+        // the targets become available at the next frame-head queue drain.
+        if (!m_proxy)
+            m_proxy = std::make_shared<rendering::RenderTextureProxy>();
 
-        gfx::GFXSamplerConfig samplerCfg{};
-        samplerCfg.Filter = gfx::GFXSamplerFilter::Linear;
-        samplerCfg.AddressMode = gfx::GFXSamplerAddressMode::ClampToEdge;
-
-        // Create color attachments (MRT)
-        for (auto& fmt : *m_colorFormats)
-        {
-            auto rt = gfx->CreateRenderTarget(m_width, m_height, gfx::GFXTextureTargetType::ColorTarget, ToGFXFormat(fmt), samplerCfg, m_sampleCount, false);
-            m_renderTargets.push_back(rt);
-        }
-
-        // Create depth attachment if specified
-        if (m_depthFormat != RenderTextureDepthFormat::None)
-        {
-            auto depthFmt = ToGFXFormat(m_depthFormat);
-            bool isDepthStencil = (m_depthFormat == RenderTextureDepthFormat::D32_SFloat_S8_UInt || m_depthFormat == RenderTextureDepthFormat::D24_UNorm_S8_UInt);
-            auto targetType = isDepthStencil ? gfx::GFXTextureTargetType::DepthStencilTarget : gfx::GFXTextureTargetType::DepthTarget;
-            auto rt = gfx->CreateRenderTarget(m_width, m_height, targetType, depthFmt, samplerCfg, m_sampleCount, false);
-            m_renderTargets.push_back(rt);
-        }
-
-        // Build FBO
-        std::vector<gfx::GFXTexture2DView_sp> views;
-        for (auto& rt : m_renderTargets)
-        {
-            views.push_back(rt->Get2DView(0));
-        }
-        m_framebuffer = gfx->CreateFrameBufferObject(views);
+        auto proxy = m_proxy;
+        const int32_t w = m_width, h = m_height;
+        const uint32_t samples = m_sampleCount;
+        const auto colorFormat = m_colorFormat;
+        const auto depthFormat = m_depthFormat;
+        Application::GetRenderThread()->EnqueueUpdate_AnyThread(
+            [proxy = std::move(proxy), w, h, samples, colorFormat, depthFormat](gfx::GFXResourceRegistry*) mutable
+            {
+                proxy->Init(w, h, samples, colorFormat, depthFormat);
+            });
 
         m_createdGPUResource = true;
         return true;
@@ -192,8 +186,15 @@ namespace pulsar
         if (!IsCreatedGPUResource())
             return;
 
-        m_framebuffer.reset();
-        m_renderTargets.clear();
+        auto proxy = std::move(m_proxy);
+        if (!proxy)
+            return;
+
+        Application::GetRenderThread()->EnqueueDestroy_AnyThread(
+            [proxy = std::move(proxy)](gfx::GFXResourceRegistry*)
+            {
+                proxy->Release();
+            });
         m_createdGPUResource = false;
     }
 

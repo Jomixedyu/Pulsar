@@ -1,6 +1,11 @@
 @echo off
 setlocal
 
+rem Force UTF-8 console code page: cl prints /showIncludes output as UTF-8,
+rem and CMake ENCODING AUTO misdecodes it under GBK, mangling the detected
+rem msvc_deps_prefix (can crash generation).
+chcp 65001 >nul
+
 set "SCRIPT_DIR=%~dp0"
 for %%I in ("%SCRIPT_DIR%.") do set "ROOT_DIR=%%~fI"
 set "BUILD_DIR=%ROOT_DIR%\BuildNinjaRelease"

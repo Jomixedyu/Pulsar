@@ -16,7 +16,7 @@ namespace pulsar
     // -----------------------------------------------------------------------
     enum class AnimationTrackType
     {
-        Bone,
+        Transform,
         Property,
     };
 
@@ -24,21 +24,21 @@ namespace pulsar
     {
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::AnimationTrack, Object);
     public:
-        AnimationTrackType TrackType = AnimationTrackType::Bone;
+        AnimationTrackType TrackType = AnimationTrackType::Transform;
         string Name;
     };
     CORELIB_DECL_SHORTSPTR(AnimationTrack);
 
-    class BoneAnimationTrack : public AnimationTrack
+    class TransformAnimationTrack : public AnimationTrack
     {
-        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::BoneAnimationTrack, AnimationTrack);
+        CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::TransformAnimationTrack, AnimationTrack);
     public:
-        string BoneName;
+        string TargetName;
         array_list<AnimVector3Key> PositionKeys;
         array_list<AnimQuatKey>    RotationKeys;
         array_list<AnimVector3Key> ScaleKeys;
     };
-    CORELIB_DECL_SHORTSPTR(BoneAnimationTrack);
+    CORELIB_DECL_SHORTSPTR(TransformAnimationTrack);
 
     class PropertyAnimationTrack : public AnimationTrack
     {
@@ -73,7 +73,7 @@ namespace pulsar
         float GetFPS()      const { return m_fps; }
         const array_list<SPtr<AnimationTrack>>& GetTracks() const { return m_tracks; }
 
-        SPtr<BoneAnimationTrack> FindBoneTrack(const string& boneName) const;
+        SPtr<TransformAnimationTrack> FindTransformTrack(const string& targetName) const;
 
         void Serialize(AssetSerializer* s) override;
 

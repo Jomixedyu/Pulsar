@@ -1,6 +1,8 @@
 #include "Pulsar/Assets/RenderTextureCube.h"
 
 #include "Application.h"
+#include <Pulsar/Rendering/RenderThread.h>
+#include <Pulsar/Rendering/TextureProxy.h>
 
 namespace pulsar
 {
@@ -10,15 +12,27 @@ namespace pulsar
     {
     }
 
-    bool RenderTextureCube::CreateGPUResource()
+    bool RenderTextureCube::EnsureGPUResource()
     {
         if (m_isCreated)
         {
             return true;
         }
-        m_texture = Application::GetGfxApp()->CreateTextureCube(m_width);
+        auto* renderThread = Application::GetRenderThread();
+
+        gfx::GFXSamplerConfig sampler{};
+        m_proxy = std::make_shared<rendering::TextureProxy>();
+
+        auto proxy = m_proxy;
+        const int32_t size = m_width;
+        renderThread->EnqueueUpdate_AnyThread(
+            [proxy = std::move(proxy), size, sampler](gfx::GFXResourceRegistry*)
+            {
+                proxy->InitCube(size, sampler);
+            });
 
         m_isCreated = true;
+        return true;
     }
 
     void RenderTextureCube::DestroyGPUResource()
@@ -28,7 +42,14 @@ namespace pulsar
             return;
         }
         m_isCreated = false;
-        m_texture.reset();
+        if (auto proxy = std::move(m_proxy))
+        {
+            Application::GetRenderThread()->EnqueueDestroy_AnyThread(
+                [proxy = std::move(proxy)](gfx::GFXResourceRegistry*)
+                {
+                    proxy->Release();
+                });
+        }
     }
 
     bool RenderTextureCube::IsCreatedGPUResource() const
@@ -43,6 +64,11 @@ namespace pulsar
     {
         return m_width;
     }
+
+    gfx::GFXTexturePtr RenderTextureCube::GetGfxTexture() const
+    {
+        return m_proxy ? m_proxy->GetTexture() : nullptr;
+    }
     void RenderTextureCube::PostEditChange(FieldInfo* info)
     {
         base::PostEditChange(info);
@@ -55,6 +81,6 @@ namespace pulsar
     {
         m_width = width;
         DestroyGPUResource();
-        CreateGPUResource();
+        EnsureGPUResource();
     }
 } // namespace pulsar

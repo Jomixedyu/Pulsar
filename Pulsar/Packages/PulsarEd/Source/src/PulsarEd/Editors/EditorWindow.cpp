@@ -8,6 +8,7 @@
 #include "Menus/MenuRenderer.h"
 #include "Windows/EditorWindowManager.h"
 #include "Windows/PanelWindow.h"
+#include <Pulsar/Profiler.h>
 
 namespace pulsared
 {
@@ -112,7 +113,7 @@ namespace pulsared
 
             ImGuiWindowClass dockspaceClass{};
             dockspaceClass.ClassId = m_dockspaceClassId;
-            dockspaceClass.DockingAllowUnclassed = false;
+            dockspaceClass.DockingAllowUnclassed = true;  // 允许 panel（无 ClassId）dock 进来
 
             ImGui::DockSpace(dockId, {}, {}, &dockspaceClass);
         }
@@ -136,6 +137,7 @@ namespace pulsared
 
             bool isOpened = true;
             const auto winName = StringUtil::Concat(panel->GetWindowDisplayName(), "###", panel->GetWindowName());
+            PROFILE_SCOPE(winName);
             auto winClass = panel->GetGuiWindowClass();
             ImGui::SetNextWindowClass(&winClass);
             auto winSize = panel->GetWinSize();

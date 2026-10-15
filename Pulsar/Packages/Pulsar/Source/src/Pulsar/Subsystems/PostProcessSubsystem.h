@@ -24,9 +24,7 @@ namespace pulsar
         // Query all active volumes affecting the given world position.
         array_list<class VolumeComponent*> QueryVolumes(const Vector3f& worldPos) const;
 
-        // Query all post-process materials from active volumes at the given world position.
-        // Materials are collected in volume priority order.
-        array_list<RCPtr<Material>> QueryPostProcessMaterials(const Vector3f& worldPos) const;
+        void NotifyVolumeSettingsChanged();
 
     protected:
         array_list<class VolumeComponent*> m_volumes;

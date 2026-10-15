@@ -1,12 +1,21 @@
 #include "Assets/SkinnedMesh.h"
 
-#include "Application.h"
+#include <Pulsar/Rendering/MeshProxy.h>
+#include <Pulsar/Application.h>
+#include <Pulsar/Rendering/RenderThread.h>
+
 #include "AssetSerializerUtil.h"
 #include "EngineMath.h"
 #include <Pulsar/AssetObject.h>
 
 namespace pulsar
 {
+    void SkinnedMesh::OnDestroy()
+    {
+        base::OnDestroy();
+        DestroyGPUResource();
+    }
+
     // -----------------------------------------------------------------------
     // SkinnedMeshSection::BuildInterleavedVertices
     // -----------------------------------------------------------------------
@@ -74,75 +83,54 @@ namespace pulsar
     // -----------------------------------------------------------------------
     // Vertex layout
     // -----------------------------------------------------------------------
-    static auto _GetSkinnedVertexLayout()
+    static gfx::GFXVertexLayoutDescription _GetSkinnedVertexLayout()
     {
-        auto layout = Application::GetGfxApp()->CreateVertexLayoutDescription();
-        layout->BindingPoint = 0;
-        layout->Stride = sizeof(SkinnedMeshVertex);
+        gfx::GFXVertexLayoutDescription layout;
+        layout.BindingPoint = 0;
+        layout.Stride = sizeof(SkinnedMeshVertex);
 
-        layout->Attributes.push_back({(int)EngineInputSemantic::POSITION,  gfx::GFXVertexInputDataFormat::R32G32B32_SFloat,    offsetof(SkinnedMeshVertex, Position)});
-        layout->Attributes.push_back({(int)EngineInputSemantic::NORMAL,    gfx::GFXVertexInputDataFormat::R32G32B32_SFloat,    offsetof(SkinnedMeshVertex, Normal)});
-        layout->Attributes.push_back({(int)EngineInputSemantic::TANGENT,   gfx::GFXVertexInputDataFormat::R32G32B32A32_SFloat, offsetof(SkinnedMeshVertex, Tangent)});
-        layout->Attributes.push_back({(int)EngineInputSemantic::COLOR,     gfx::GFXVertexInputDataFormat::R8G8B8A8_UNorm,     offsetof(SkinnedMeshVertex, Color)});
+        layout.Attributes.push_back({(int)EngineInputSemantic::POSITION,  offsetof(SkinnedMeshVertex, Position), gfx::GFXVertexInputDataFormat::R32G32B32_SFloat});
+        layout.Attributes.push_back({(int)EngineInputSemantic::NORMAL,    offsetof(SkinnedMeshVertex, Normal), gfx::GFXVertexInputDataFormat::R32G32B32_SFloat});
+        layout.Attributes.push_back({(int)EngineInputSemantic::TANGENT,   offsetof(SkinnedMeshVertex, Tangent), gfx::GFXVertexInputDataFormat::R32G32B32A32_SFloat});
+        layout.Attributes.push_back({(int)EngineInputSemantic::COLOR,     offsetof(SkinnedMeshVertex, Color), gfx::GFXVertexInputDataFormat::R8G8B8A8_UNorm});
 
-        layout->Attributes.push_back({(int)EngineInputSemantic::TEXCOORD0 + 0, gfx::GFXVertexInputDataFormat::R32G32_SFloat, offsetof(SkinnedMeshVertex, TexCoords[0])});
-        layout->Attributes.push_back({(int)EngineInputSemantic::TEXCOORD0 + 1, gfx::GFXVertexInputDataFormat::R32G32_SFloat, offsetof(SkinnedMeshVertex, TexCoords[1])});
-        layout->Attributes.push_back({(int)EngineInputSemantic::TEXCOORD0 + 2, gfx::GFXVertexInputDataFormat::R32G32_SFloat, offsetof(SkinnedMeshVertex, TexCoords[2])});
-        layout->Attributes.push_back({(int)EngineInputSemantic::TEXCOORD0 + 3, gfx::GFXVertexInputDataFormat::R32G32_SFloat, offsetof(SkinnedMeshVertex, TexCoords[3])});
-        layout->Attributes.push_back({(int)EngineInputSemantic::TEXCOORD0 + 4, gfx::GFXVertexInputDataFormat::R32G32_SFloat, offsetof(SkinnedMeshVertex, TexCoords[4])});
-        layout->Attributes.push_back({(int)EngineInputSemantic::TEXCOORD0 + 5, gfx::GFXVertexInputDataFormat::R32G32_SFloat, offsetof(SkinnedMeshVertex, TexCoords[5])});
-        layout->Attributes.push_back({(int)EngineInputSemantic::TEXCOORD0 + 6, gfx::GFXVertexInputDataFormat::R32G32_SFloat, offsetof(SkinnedMeshVertex, TexCoords[6])});
-        layout->Attributes.push_back({(int)EngineInputSemantic::TEXCOORD0 + 7, gfx::GFXVertexInputDataFormat::R32G32_SFloat, offsetof(SkinnedMeshVertex, TexCoords[7])});
+        layout.Attributes.push_back({(int)EngineInputSemantic::TEXCOORD0 + 0, (uint32_t)offsetof(SkinnedMeshVertex, TexCoords[0]), gfx::GFXVertexInputDataFormat::R32G32_SFloat});
+        layout.Attributes.push_back({(int)EngineInputSemantic::TEXCOORD0 + 1, (uint32_t)offsetof(SkinnedMeshVertex, TexCoords[1]), gfx::GFXVertexInputDataFormat::R32G32_SFloat});
+        layout.Attributes.push_back({(int)EngineInputSemantic::TEXCOORD0 + 2, (uint32_t)offsetof(SkinnedMeshVertex, TexCoords[2]), gfx::GFXVertexInputDataFormat::R32G32_SFloat});
+        layout.Attributes.push_back({(int)EngineInputSemantic::TEXCOORD0 + 3, (uint32_t)offsetof(SkinnedMeshVertex, TexCoords[3]), gfx::GFXVertexInputDataFormat::R32G32_SFloat});
+        layout.Attributes.push_back({(int)EngineInputSemantic::TEXCOORD0 + 4, (uint32_t)offsetof(SkinnedMeshVertex, TexCoords[4]), gfx::GFXVertexInputDataFormat::R32G32_SFloat});
+        layout.Attributes.push_back({(int)EngineInputSemantic::TEXCOORD0 + 5, (uint32_t)offsetof(SkinnedMeshVertex, TexCoords[5]), gfx::GFXVertexInputDataFormat::R32G32_SFloat});
+        layout.Attributes.push_back({(int)EngineInputSemantic::TEXCOORD0 + 6, (uint32_t)offsetof(SkinnedMeshVertex, TexCoords[6]), gfx::GFXVertexInputDataFormat::R32G32_SFloat});
+        layout.Attributes.push_back({(int)EngineInputSemantic::TEXCOORD0 + 7, (uint32_t)offsetof(SkinnedMeshVertex, TexCoords[7]), gfx::GFXVertexInputDataFormat::R32G32_SFloat});
 
-        layout->Attributes.push_back({(int)EngineInputSemantic::BLENDINDICES, gfx::GFXVertexInputDataFormat::R8G8B8A8_UInt,       offsetof(SkinnedMeshVertex, BoneIndices)});
-        layout->Attributes.push_back({(int)EngineInputSemantic::BLENDWEIGHT,  gfx::GFXVertexInputDataFormat::R32G32B32A32_SFloat, offsetof(SkinnedMeshVertex, BoneWeights)});
+        layout.Attributes.push_back({(int)EngineInputSemantic::BLENDINDICES, offsetof(SkinnedMeshVertex, BoneIndices), gfx::GFXVertexInputDataFormat::R8G8B8A8_UInt});
+        layout.Attributes.push_back({(int)EngineInputSemantic::BLENDWEIGHT,  offsetof(SkinnedMeshVertex, BoneWeights), gfx::GFXVertexInputDataFormat::R32G32B32A32_SFloat});
 
         return layout;
     }
 
-    gfx::GFXVertexLayoutDescription_sp SkinnedMesh::StaticGetVertexLayout()
+    gfx::GFXVertexLayoutDescription SkinnedMesh::StaticGetVertexLayout()
     {
-        static gfx::GFXVertexLayoutDescription_wp layout;
-        if (layout.expired())
-        {
-            auto newLayout = _GetSkinnedVertexLayout();
-            layout = newLayout;
-            return newLayout;
-        }
-        return layout.lock();
+        static gfx::GFXVertexLayoutDescription layout = _GetSkinnedVertexLayout();
+        return layout;
     }
 
     // -----------------------------------------------------------------------
     // GPU Resource
     // -----------------------------------------------------------------------
-    bool SkinnedMesh::CreateGPUResource()
+    bool SkinnedMesh::EnsureGPUResource()
     {
         if (m_isCreatedResource) return true;
         m_isCreatedResource = true;
 
-        auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
-        for (auto& section : m_sections)
-        {
-            auto verts = section.BuildInterleavedVertices();
-
-            gfx::GFXBufferDesc vDesc{};
-            vDesc.Usage       = gfx::GFXBufferUsage::Vertex;
-            vDesc.StorageType = gfx::GFXBufferMemoryPosition::DeviceLocal;
-            vDesc.BufferSize  = verts.size() * sizeof(SkinnedMeshVertex);
-            vDesc.ElementSize = sizeof(SkinnedMeshVertex);
-            auto vb = cmdList.CreateBuffer(vDesc);
-            cmdList.UploadBuffer(vb, verts.data(), verts.size() * sizeof(SkinnedMeshVertex));
-            m_vertexBuffers.push_back(vb);
-
-            gfx::GFXBufferDesc iDesc{};
-            iDesc.Usage       = gfx::GFXBufferUsage::Indices;
-            iDesc.StorageType = gfx::GFXBufferMemoryPosition::DeviceLocal;
-            iDesc.BufferSize  = section.GetIndicesAllocSize();
-            iDesc.ElementSize = sizeof(MeshIndicesType);
-            auto ib = cmdList.CreateBuffer(iDesc);
-            cmdList.UploadBuffer(ib, section.Indices.data(), section.GetIndicesAllocSize());
-            m_indicesBuffers.push_back(ib);
-        }
+        m_proxy = std::make_shared<rendering::MeshProxy>();
+        auto proxy = m_proxy;
+        auto sections = rendering::BuildMeshProxySections<SkinnedMeshSection, SkinnedMeshVertex>(m_sections);
+        Application::GetRenderThread()->EnqueueUpdate_AnyThread(
+            [proxy = std::move(proxy), sections = std::move(sections)](gfx::GFXResourceRegistry*) mutable
+            {
+                proxy->Init(std::move(sections));
+            });
         return true;
     }
 
@@ -150,17 +138,15 @@ namespace pulsar
     {
         if (!m_isCreatedResource) return;
         m_isCreatedResource = false;
-
-        auto& cmdList = Application::GetGfxApp()->GetImmediateCommandList();
-        for (auto& h : m_vertexBuffers)
-            cmdList.Destroy(h);
-        for (auto& h : m_indicesBuffers)
-            cmdList.Destroy(h);
-        m_vertexBuffers.clear();
-        m_indicesBuffers.clear();
-    }
-
-    bool SkinnedMesh::IsCreatedGPUResource() const { return m_isCreatedResource; }
+        if (auto proxy = std::move(m_proxy))
+        {
+            Application::GetRenderThread()->EnqueueDestroy_AnyThread(
+                [proxy = std::move(proxy)](gfx::GFXResourceRegistry*) mutable
+                {
+                    proxy->Release();
+                });
+        }
+    }    bool SkinnedMesh::IsCreatedGPUResource() const { return m_isCreatedResource; }
 
     // -----------------------------------------------------------------------
     // Serialize  （v2: SkeletonSerialize 以 GUID 引用方式存储）

@@ -15,13 +15,41 @@
 #include <imgui/imgui_impl_vulkan.h>
 #include <imgui/imgui_impl_sdl2.h>
 #include <gfx-vk/GFXVulkanApplication.h>
-#include <gfx-vk/GFXVulkanDescriptorManager.h>
 #include <gfx-vk/GFXVulkanCommandBuffer.h>
 #endif
 #include <imgui/imgui_impl_win32.h>
 
 namespace pulsar
 {
+
+    void ImGuiDrawDataSnapshot::Clear()
+    {
+        for (ImDrawList* list : m_clonedLists)
+            IM_DELETE(list);
+        m_clonedLists.clear();
+        m_drawData.CmdLists.clear();
+        m_valid = false;
+    }
+
+    void ImGuiDrawDataSnapshot::CopyFrom(ImDrawData* src)
+    {
+        Clear();
+        if (!src || !src->Valid)
+            return;
+
+        // Copy header fields; CmdLists is re-pointed to our owned clones below.
+        m_drawData = *src;
+        m_drawData.CmdLists.clear();
+
+        for (int i = 0; i < src->CmdListsCount; ++i)
+        {
+            ImDrawList* clone = src->CmdLists[i]->CloneOutput();
+            m_clonedLists.push_back(clone);
+            m_drawData.CmdLists.push_back(clone);
+        }
+        m_drawData.CmdListsCount = m_drawData.CmdLists.Size;
+        m_valid = true;
+    }
 
 
 
@@ -33,9 +61,7 @@ namespace pulsar
 
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-        io.ConfigFlags |= ImGuiWindowFlags_MenuBar;
         //io.ConfigFlags |= ImGuiConfigFlags_IsSRGB;
-        //io.ConfigFlags |= ImGuiWindowFlags_NoTitleBar;
         io.ConfigFlags &= ~ImGuiConfigFlags_ViewportsEnable;
 
         io.ConfigWindowsMoveFromTitleBarOnly = true;
@@ -49,7 +75,7 @@ namespace pulsar
             fontConfig.MergeMode = false;
             fontConfig.OversampleH = 2;
             fontConfig.OversampleV = 2;
-            fontConfig.GlyphExtraSpacing.x = 0.5f;
+            fontConfig.GlyphExtraAdvanceX = 0.5f;
             strcpy(fontConfig.Name, "ForkAwesome");
             static const ImWchar icon_ranges[] = { ICON_MIN_FK, ICON_MAX_FK, 0 };
             io.Fonts->AddFontFromMemoryTTF(FILE_forkawesome_webfont_ttf, sizeof(FILE_forkawesome_webfont_ttf), 13 * dpiScale, &fontConfig, icon_ranges);
@@ -60,7 +86,7 @@ namespace pulsar
             fontConfig.MergeMode = true;
             fontConfig.OversampleH = 2;
             fontConfig.OversampleV = 2;
-            fontConfig.GlyphExtraSpacing.x = 0.5f;
+            fontConfig.GlyphExtraAdvanceX = 0.5f;
             strcpy(fontConfig.Name, "DroidSans");
             io.Fonts->AddFontFromMemoryTTF(FILE_DroidSans_ttf, sizeof(FILE_DroidSans_ttf), 14.f * dpiScale, &fontConfig);
         }
@@ -153,7 +179,14 @@ namespace pulsar
 
             ImGui_ImplSDL2_InitForVulkan((SDL_Window*)m_app->GetWindow()->GetUserPoint());
 
+            VkFormat colorFormat = m_app->GetVulkanViewport()->GetVkSwapChainImageFormat();
+            VkPipelineRenderingCreateInfoKHR renderingInfo{};
+            renderingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR;
+            renderingInfo.colorAttachmentCount = 1;
+            renderingInfo.pColorAttachmentFormats = &colorFormat;
+
             ImGui_ImplVulkan_InitInfo init_info = {};
+            init_info.ApiVersion = VK_API_VERSION_1_3;
             init_info.Instance = m_app->GetVkInstance();
             init_info.PhysicalDevice = m_app->GetVkPhysicalDevice();
             init_info.Device = m_app->GetVkDevice();
@@ -161,37 +194,20 @@ namespace pulsar
             init_info.Queue = m_app->GetVkGraphicsQueue();
             init_info.PipelineCache = VK_NULL_HANDLE;
             init_info.MinImageCount = 2;
-            init_info.ImageCount = 2;
-            init_info.DescriptorPool = m_app->GetVulkanDescriptorManager()->GetCommonDescriptorSetPool()->GetVkDescriptorPool();
+            // frame slot count + 1, not 2: the backend defers texture destruction by
+            // UnusedFrames (counted on the game thread in ImGui::NewFrame) but destroys on
+            // the render thread. The game thread runs 1 frame ahead and the last reference
+            // may sit in the frame recording concurrently with the marking tick, so the
+            // deferral needs one frame of slack beyond the in-flight count for the
+            // frame-head timeline wait to provably cover the last referencing frame.
+            init_info.ImageCount = 3;
+            init_info.DescriptorPoolSize = 256;
+            init_info.UsePushDescriptor = true;
             init_info.Allocator = VK_NULL_HANDLE;
             init_info.UseDynamicRendering = true;
-            init_info.ColorAttachmentFormat = m_app->GetVulkanViewport()->GetVkSwapChainImageFormat();
+            init_info.PipelineInfoMain.PipelineRenderingCreateInfo = renderingInfo;
 
-            ImGui_ImplVulkan_Init(&init_info, VK_NULL_HANDLE);
-
-            {
-                gfx::GFXVulkanCommandBuffer font(m_app);
-                VkCommandBufferBeginInfo beginInfo{};
-                {
-                    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-                    beginInfo.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-                }
-                font.Begin();
-                ImGui_ImplVulkan_CreateFontsTexture(font.GetVkCommandBuffer());
-                font.End();
-                VkSubmitInfo submitInfo{};
-                {
-                    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-                    submitInfo.commandBufferCount = 1;
-                    submitInfo.pCommandBuffers = &font.GetVkCommandBuffer();
-                }
-
-                auto err = vkQueueSubmit(m_app->GetVkGraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE);
-                assert(err == VkResult::VK_SUCCESS);
-                err = vkQueueWaitIdle(m_app->GetVkGraphicsQueue());
-                assert(err == VkResult::VK_SUCCESS);
-                ImGui_ImplVulkan_DestroyFontUploadObjects();
-            }
+            ImGui_ImplVulkan_Init(&init_info);
 
         }
         virtual void NewFrame() override
@@ -213,14 +229,24 @@ namespace pulsar
         }
         virtual void Terminate() override
         {
+            // The backend owns raw Vulkan objects (font texture/view, sampler, pipeline,
+            // vertex buffers) outside the registry's deferred destruction: the last
+            // frame may still reference them, so the device must be idle first.
+            m_app->WaitDeviceIdle();
             ImGui_ImplVulkan_Shutdown();
             ImGui_ImplSDL2_Shutdown();
             ImGui::DestroyContext();
         }
-        virtual void Render(gfx::GFXCommandBuffer* cmd) override
+        virtual void PrepareDrawData(ImGuiDrawDataSnapshot& snapshot) override
         {
             ImGui::Render();
-            ImDrawData* draw_data = ImGui::GetDrawData();
+            snapshot.CopyFrom(ImGui::GetDrawData());
+        }
+        virtual void Render(gfx::GFXCommandBuffer* cmd, ImGuiDrawDataSnapshot& snapshot) override
+        {
+            ImDrawData* draw_data = snapshot.GetDrawData();
+            if (!draw_data)
+                return;
             const bool is_minimized = (draw_data->DisplaySize.x <= 0.0f || draw_data->DisplaySize.y <= 0.0f);
             if (!is_minimized)
             {

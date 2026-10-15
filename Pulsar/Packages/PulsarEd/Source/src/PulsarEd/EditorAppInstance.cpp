@@ -12,7 +12,9 @@
 #include "Shaders/ShaderHotReloadWatcher.h"
 #include "Utils/PrefabUtil.h"
 
-#include <Pulsar/Rendering/ShaderInstanceCache.h>
+#include <Pulsar/Rendering/ShaderProxy.h>
+#include <Pulsar/Rendering/RenderThread.h>
+#include <Pulsar/Rendering/DescriptorSetCache.h>
 #include <Pulsar/Rendering/RenderGraph/TransientRTPool.h>
 
 #include <fstream>
@@ -29,6 +31,7 @@
 #include <Pulsar/Assets/DisplayEncodingSettings.h>
 #include <Pulsar/ImGuiImpl.h>
 #include <Pulsar/Logger.h>
+#include <Pulsar/Profiler.h>
 #include <Pulsar/Physics3D/RigidBodyDynamics3DComponent.h>
 #include <Pulsar/Prefab.h>
 #include <Pulsar/Scene.h>
@@ -44,6 +47,7 @@
 #include <PulsarEd/Windows/EditorWindowManager.h>
 #include <filesystem>
 #include <gfx/GFXRenderPipeline.h>
+#include <gfx/GFXImage.h>
 #include <random>
 #include <utility>
 
@@ -305,16 +309,35 @@ namespace pulsared
          return;
     }
 
-    static void _RegisterIcon(Type* type, string_view path)
+    // Icons are decoded once on the main thread and wrapped in a Texture2D
+    // asset; the pool owns its GPU lifecycle from there.
+    static pulsar::RCPtr<pulsar::Texture2D> _LoadIconTexture(string_view path)
     {
         auto icon = FileUtil::ReadAllBytes(AssetDatabase::PackagePathToPhysicsPath(path));
-        AssetDatabase::IconPool->Register(index_string(type->GetName()), icon.data(), icon.size());
+        if (icon.empty())
+            return {};
+
+        int32_t width = 0, height = 0, channel = 0;
+        auto rgba = gfx::LoadImageFromMemory(icon.data(), icon.size(), &width, &height, &channel, 4);
+        if (rgba.empty() || width <= 0 || height <= 0)
+            return {};
+
+        auto tex = pulsar::NewAssetObject<pulsar::Texture2D>();
+        tex->FromNativeData(rgba.data(), rgba.size(), false, width, height, 4);
+        tex->SetCompressedFormat(pulsar::TextureCompressionFormat::BitmapRGBA8);
+        return tex;
+    }
+
+    static void _RegisterIcon(Type* type, string_view path)
+    {
+        if (auto tex = _LoadIconTexture(path))
+            AssetDatabase::IconPool->Register(index_string(type->GetName()), tex);
     }
 
     static void _RegisterIcon(string_view name, string_view path)
     {
-        auto icon = FileUtil::ReadAllBytes(AssetDatabase::PackagePathToPhysicsPath(path));
-        AssetDatabase::IconPool->Register(index_string(name), icon.data(), icon.size());
+        if (auto tex = _LoadIconTexture(path))
+            AssetDatabase::IconPool->Register(index_string(name), tex);
     }
 
     static std::filesystem::path _SearchUpFolder(std::filesystem::path p)
@@ -389,17 +412,17 @@ namespace pulsared
                 return cast<pulsar::Shader>(AssetDatabase::LoadAssetAtPath(assetPath));
             };
 
-            pulsar::ShaderInstanceCache::Instance().Initialize(
+            pulsar::BuiltinShaderPrograms::Instance().Initialize_AnyThread(
                 LoadBuiltinShader("Pulsar/Shaders/Pending"),
                 LoadBuiltinShader("Pulsar/Shaders/Error"));
 
-            Logger::Log("ShaderInstanceCache initialized");
+            Logger::Log("BuiltinShaderPrograms initialized");
         }
 
 
         // world
         Logger::Log("initialize world");
-        auto edWorld = new EditorWorld("MainWorld");
+        auto edWorld = new EditorWorld();
         edWorld->OnWorldBegin();
         edWorld->GetCurrentCamera()->GetTransform()->GetParent()->SetEuler({45.f,-45,0});
 
@@ -414,11 +437,8 @@ namespace pulsared
         m_gui->Initialize();
         renderPipeline->ImGuiObject = m_gui;
 
-        // TODO: setup layout
-        {
-            const auto defaultLayoutPath = AssetDatabase::PackagePathToPhysicsPath("PulsarEd/Layout/Default.ini");
-            m_gui->SetLayoutInfo(FileUtil::ReadAllText(defaultLayoutPath));
-        }
+        // imgui 自动管理布局 ini（imgui 1.90+ 哈希算法变了，内置 Default.ini 失效）
+        ImGui::GetIO().IniFilename = "imgui.ini";
 
         AutoRegisterAssetIcons();
         _RegisterIcon("WorkspaceWindow.Dirty", "PulsarEd/Icons/Star.png");
@@ -470,17 +490,20 @@ namespace pulsared
             m_shaderHotReloadWatcher = nullptr;
         }
 
-        // 在 World 和 GFX Device 销毁前清理 ShaderInstanceCache，
-        // 否则 GpuProgram 析构时 VkDevice 已经无效
-        pulsar::ShaderInstanceCache::Instance().Clear();
-        pulsar::TransientRTPool::Shutdown();
-
+        // 先拆 World：移除所有 proxy / RenderScene，drain 渲染线程并等 GPU 空闲。
+        // 此时再无 renderobject 引用 ShaderProgramInstance / 使用 TransientRT。
         if (m_world)
         {
             m_world->OnWorldEnd();
             delete m_world;
             m_world = nullptr;
         }
+
+        // World 拆完后清理：依赖顺序诚实。三者都需在 gfxApp->Terminate() 之前执行，
+        // 否则 GpuProgram / descriptor set / RT 析构时 VkDevice 已无效。
+        pulsar::DescriptorSetCache::Instance().Clear();
+        pulsar::BuiltinShaderPrograms::Instance().Clear_AnyThread();
+        pulsar::TransientRTPool::Shutdown();
 
         m_gui->Terminate();
         m_gui.reset();
@@ -531,48 +554,88 @@ namespace pulsared
             world->Tick(dt);
     }
 
-    void EditorAppInstance::OnBeginRender(float dt)
+    void EditorAppInstance::OnAppLoop(float dt)
     {
-        // 刷新异步 shader 编译回调（主线程）
-        if (auto* compileService = dynamic_cast<EditorShaderCompileService*>(pulsar::ShaderCompileServiceLocator::Get()))
+        PROFILE_SCOPE("EditorApp::OnAppLoop");
+
         {
-            compileService->FlushCallbacks();
+            PROFILE_SCOPE("ShaderCallbacks");
+            if (auto* compileService = dynamic_cast<EditorShaderCompileService*>(pulsar::ShaderCompileServiceLocator::Get()))
+            {
+                compileService->FlushCallbacks();
+            }
         }
 
         if (m_shaderHotReloadWatcher)
         {
+            PROFILE_SCOPE("ShaderHotReload");
             m_shaderHotReloadWatcher->Tick(dt);
         }
 
         if (!m_gui->IsMinimized())
         {
-            m_gui->NewFrame();
+            {
+                PROFILE_SCOPE("ImGuiNewFrame");
+                m_gui->NewFrame();
+            }
 
-            pulsared::EditorWindowManager::Draw(dt);
-            TickWorld(dt);
-            pulsared::EditorTickerManager::Ticker.Invoke(dt);
+            {
+                PROFILE_SCOPE("EditorWindows");
+                pulsared::EditorWindowManager::Draw(dt);
+            }
+            {
+                PROFILE_SCOPE("TickWorld");
+                TickWorld(dt);
+            }
+            {
+                PROFILE_SCOPE("EditorTickers");
+                pulsared::EditorTickerManager::Ticker.Invoke(dt);
+            }
 
             if (m_modalDialog)
             {
+                PROFILE_SCOPE("ModalDialog");
                 m_modalDialog->Tick(dt);
                 if (m_modalDialog->m_shouldClose)
                     m_modalDialog.reset();
             }
 
-            OnRenderTick.Invoke(dt);
+            {
+                PROFILE_SCOPE("OnRenderTick");
+                OnRenderTick.Invoke(dt);
+            }
 
-            m_gui->EndFrame();
+            {
+                PROFILE_SCOPE("ImGuiEndFrame");
+                m_gui->EndFrame();
+            }
+
+            {
+                PROFILE_SCOPE("PrepareDrawData");
+                ImGuiDrawDataSnapshot snapshot;
+                m_gui->PrepareDrawData(snapshot);
+                // Hand the snapshot over through the update queue: the lambda owns the
+                // payload, so no snapshot state is shared across threads at any point.
+                pulsar::Application::GetRenderThread()->EnqueueUpdate_AnyThread(
+                    [snapshot = std::move(snapshot)](gfx::GFXResourceRegistry*) mutable
+                    {
+                        if (auto* pipeline = static_cast<EditorRenderPipeline*>(pulsar::Application::GetGfxApp()->GetRenderPipeline()))
+                            pipeline->ImGuiDrawSnapshot = std::move(snapshot);
+                    });
+            }
+
         }
         else
         {
-            TickWorld(dt);
-            pulsared::EditorTickerManager::Ticker.Invoke(dt);
+            {
+                PROFILE_SCOPE("TickWorld");
+                TickWorld(dt);
+            }
+            {
+                PROFILE_SCOPE("EditorTickers");
+                pulsared::EditorTickerManager::Ticker.Invoke(dt);
+            }
         }
-    }
-
-    void EditorAppInstance::OnEndRender(float dt)
-    {
-        RuntimeObjectManager::TickGCollect();
     }
 
     bool EditorAppInstance::IsQuit()

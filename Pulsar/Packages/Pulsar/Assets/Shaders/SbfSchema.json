@@ -14,20 +14,6 @@
                 "type": "string"
             }
         },
-        "Interfaces": {
-            "type": "array",
-            "items": {
-                "type": "string",
-                "enum": [
-                    "RENDERER_STATICMESH",
-                    "RENDERER_INSTANCING",
-                    "RENDERER_SKINNEDMESH",
-                    "RENDERER_PARTICLE",
-                    "RENDERER_IMAGEPROCESS",
-                    "RENDERER_UI"
-                ]
-            }
-        },
         "Passes": {
             "type": "array",
             "items": {

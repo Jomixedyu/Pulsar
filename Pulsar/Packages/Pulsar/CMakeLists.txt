@@ -10,10 +10,10 @@ set(PUBLIC_MODULE
         jaudio
         uinput
         mikktspace
+        angelscript
 )
 set(PRIVATE_MODULE
-        DirectXTex
-        astc
+        TexCompress
         box2d
         SDL2lib
         Jolt
@@ -26,7 +26,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 endif ()
 
 if (WIN32)
-    add_compile_definitions(WIN32)
+  add_compile_definitions(WIN32)
 endif ()
 
 file(GLOB_RECURSE Pulsar_SRC "Source/src/*.h" "Source/src/*.hpp" "Source/src/*.cpp" "Source/src/*.natvis")
@@ -43,18 +43,20 @@ endif()
 # mimalloc: disable shared lib and tests for faster build
 set(MI_BUILD_SHARED OFF CACHE BOOL "" FORCE)
 set(MI_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-add_subdirectory("Source/third/mimalloc")
+add_subdirectory("Source/modules/mimalloc")
 
 set(AllModule ${PUBLIC_MODULE})
 list(APPEND AllModule ${PRIVATE_MODULE})
 
 foreach (module ${AllModule})
-    add_subdirectory("Source/third/${module}")
+    add_subdirectory("Source/modules/${module}")
 endforeach ()
 
 
 target_include_directories(PulsarLib PUBLIC "Source/src")
 target_include_directories(PulsarLib PUBLIC "Source/src/Pulsar")
+target_include_directories(PulsarLib PUBLIC "Source/modules/legit_profiler")
+target_include_directories(PulsarLib PUBLIC "Source/modules/imgui/include/imgui")
 
 foreach (module ${PUBLIC_MODULE})
     target_link_libraries(PulsarLib PUBLIC ${module})

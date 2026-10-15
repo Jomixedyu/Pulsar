@@ -1,0 +1,89 @@
+#pragma once
+#include "GFXResource.h"
+#include "GFXTextureView.h"
+#include "TextureClasses.h"
+#include <cstdint>
+#include <array>
+
+namespace gfx
+{
+    class GFXResourceRegistry;
+
+    struct GFXSamplerConfig
+    {
+        GFXSamplerFilter Filter = GFXSamplerFilter::Linear;
+        GFXSamplerAddressMode AddressMode = GFXSamplerAddressMode::Repeat;
+
+        bool operator==(const GFXSamplerConfig&) const = default;
+    };
+
+
+    struct GFXTextureCreateDesc
+    {
+        int32_t Width{};
+        int32_t Height{};
+        int32_t Depth{1};
+        GFXTextureFormat Format{};
+        GFXTextureDataType DataType{};
+        GFXSamplerConfig SamplerCfg{};
+        GFXTextureTargetType TargetType{};
+        uint32_t MipLevels{1};
+        uint32_t ArrayLayers{1};
+        uint32_t SampleCount{1};
+        bool IsTransientAttachment = false;
+    };
+
+    struct GFXTextureUpdateDesc
+    {
+        const uint8_t* ImageData{};
+        size_t DataLength{};
+
+    };
+
+    class GFXTexture : public GFXResource
+    {
+    public:
+        ~GFXTexture() override = default;
+        GFXResourceType GetResourceType() const override { return GFXResourceType::Texture; }
+    public:
+        virtual int32_t GetWidth() const { return m_width; }
+        virtual int32_t GetHeight() const { return m_height; }
+        virtual int32_t GetDepth() const { return m_depth; }
+        virtual size_t GetArrayCount() const { return m_arrayLayers; }
+        virtual size_t GetMipLevels() const { return m_mipLevels; }
+        virtual const type_info& GetClassId() const = 0;
+        virtual GFXTextureTargetType GetTargetType() const = 0;
+        virtual GFXTextureFormat GetFormat() const = 0;
+        virtual GFXTexture2DViewPtr Get2DView(size_t index = 0) = 0;
+        virtual uint32_t GetSampleCount() const { return 1; }
+        virtual const GFXSamplerConfig& GetSamplerConfig() const { return m_samplerConfig; }
+
+        // Opaque backend-specific bindable view handle (vulkan: the VkImageView;
+        // dx12 would be a SRV descriptor handle). Usable e.g. as imgui's ImTextureID
+        // with the push-descriptor backend path. 0 when the backend has no such handle.
+        virtual uint64_t GetNativeViewHandle() const { return 0; }
+
+        // Upload initial/new content. Implementation is backend-specific
+        // (staged transfer, unified-memory write, ...); callers never see the queue.
+        virtual void UpdateTexture(const GFXTextureUpdateDesc& desc) = 0;
+
+        std::array<float, 4>& GetTargetClearColor() { return m_targetClearColor; }
+        const std::array<float, 4>& GetTargetClearColor() const { return m_targetClearColor; }
+        void SetTargetClearColor(const std::array<float, 4>& color) { m_targetClearColor = color; }
+
+    protected:
+        GFXTexture(GFXResourceRegistry* registry,
+                   int32_t width, int32_t height, int32_t depth, GFXSamplerConfig cfg)
+            : GFXResource(registry), m_width(width), m_height(height), m_depth(depth), m_samplerConfig(cfg)
+        {
+        }
+
+        GFXSamplerConfig m_samplerConfig{};
+        int32_t m_width, m_height, m_depth;
+        size_t m_mipLevels{1};
+        size_t m_arrayLayers{1};
+        std::array<float, 4> m_targetClearColor{};
+    };
+    GFX_DECL_PTR(GFXTexture);
+
+} // namespace gfx

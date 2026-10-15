@@ -16,7 +16,7 @@ namespace pulsared
 
     void PrefabUtil::OpenPrefab(RCPtr<Prefab> prefab)
     {
-        auto world = new EditorWorld(prefab->GetName());
+        auto world = new EditorWorld();
         if (auto sceneEditor = SceneEditor::GetCurrent())
         {
             sceneEditor->PushPreviewWorld(std::unique_ptr<EditorWorld>{world});

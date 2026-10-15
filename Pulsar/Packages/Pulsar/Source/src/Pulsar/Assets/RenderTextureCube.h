@@ -1,6 +1,11 @@
 #pragma once
 #include "Texture.h"
 
+namespace pulsar::rendering
+{
+    class TextureProxy;
+}
+
 namespace pulsar
 {
     class RenderTextureCube : public Texture
@@ -9,11 +14,12 @@ namespace pulsar
         CORELIB_CLASS_ATTR(new CreateAssetAttribute);
     public:
         RenderTextureCube();
-        bool CreateGPUResource() override;
+        bool EnsureGPUResource() override;
         void DestroyGPUResource() override;
         bool IsCreatedGPUResource() const override;
         int32_t GetWidth() const override;
         int32_t GetHeight() const override;
+        gfx::GFXTexturePtr GetGfxTexture() const override;
 
         void PostEditChange(FieldInfo* info) override;
 
@@ -24,7 +30,7 @@ namespace pulsar
         CORELIB_REFL_DECL_FIELD(m_width);
         int32_t m_width;
 
-        gfx::GFXTexture_sp m_texture;
+        std::shared_ptr<rendering::TextureProxy> m_proxy;
         bool m_isCreated = false;
     };
 } // namespace pulsar

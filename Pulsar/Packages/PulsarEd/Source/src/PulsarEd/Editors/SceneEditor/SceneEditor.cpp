@@ -11,13 +11,13 @@
 #include "Pulsar/Components/DirectionalLightComponent.h"
 #include "Pulsar/Components/CameraComponent.h"
 #include "Pulsar/Components/PointLightComponent.h"
-#include "Pulsar/Components/SkyLightComponent.h"
 #include "Pulsar/Components/SphereShape3DComponent.h"
 #include "Pulsar/Components/StaticMeshRendererComponent.h"
 #include "Pulsar/Scene.h"
 #include "ToolWindows/FbxInfoViewer/FbxInfoViewer.h"
 #include "ToolWindows/MenuDebugTool.h"
 #include "ToolWindows/ObjectDebugTool.h"
+#include "ToolWindows/ProfilerTool.h"
 #include "ToolWindows/ShaderDebugTool.h"
 #include "ToolWindows/WorldDebugTool.h"
 #include "Editors/CommonPanel/ConsoleWindow.h"
@@ -134,14 +134,6 @@ namespace pulsared
             auto light3dMenu = mksptr(new MenuEntrySubMenu("Light3d"));
             menu->AddEntry(light3dMenu);
             {
-                auto entry = mksptr(new MenuEntryButton("Create Sky Light"));
-                light3dMenu->AddEntry(entry);
-                entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
-                    GetEdApp()->GetEditorWorld()->GetFocusScene()->NewNode("New Sky Light")
-                        ->AddComponent<SkyLightComponent>();
-                });
-            }
-            {
                 auto entry = mksptr(new MenuEntryButton("Create Directional Light"));
                 light3dMenu->AddEntry(entry);
                 entry->Action = MenuAction::FromLambda([](MenuContexts_rsp) {
@@ -254,6 +246,13 @@ namespace pulsared
                 menu->AddEntry(entry);
             }
             {
+                auto entry = mksptr(new MenuEntryButton("Profiler"));
+                entry->Action = MenuAction::FromRaw([](SPtr<MenuContexts> ctx) {
+                    ToolWindow::OpenToolWindow<ProfilerTool>();
+                });
+                menu->AddEntry(entry);
+            }
+            {
                 auto entry = mksptr(new MenuEntryButton("ShaderDebugTool"));
                 entry->Action = MenuAction::FromRaw([](SPtr<MenuContexts> ctx) {
                     ToolWindow::OpenToolWindow<ShaderDebugTool>();
@@ -325,7 +324,7 @@ namespace pulsared
         if (!PreviewWorldStackEmpty())
             return;
 
-        auto pieWorld = std::make_unique<EditorWorld>("PIE");
+        auto pieWorld = std::make_unique<EditorWorld>();
         PushPreviewWorld(std::move(pieWorld));
 
         auto* editorWorld = GetEdApp()->GetEditorWorld();

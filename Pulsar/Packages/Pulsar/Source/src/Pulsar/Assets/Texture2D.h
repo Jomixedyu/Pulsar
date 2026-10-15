@@ -5,6 +5,11 @@
 #include <Pulsar/AssetObject.h>
 #include <gfx/GFXTexture.h>
 
+namespace pulsar::rendering
+{
+    class TextureProxy;
+}
+
 
 
 
@@ -45,11 +50,12 @@ namespace pulsar
         void PostEditChange(FieldInfo* info) override;
     public:
         //IGPUResource
-        bool CreateGPUResource() override;
+        bool EnsureGPUResource() override;
         void DestroyGPUResource() override;
         bool IsCreatedGPUResource() const override;
 
-        std::shared_ptr<gfx::GFXTexture> GetGFXTexture() const override { return m_tex; }
+        gfx::GFXTexturePtr GetGfxTexture() const override;
+        std::shared_ptr<rendering::TextureProxy> GetTextureProxy() const override { return m_proxy; }
 
     public:
         bool IsSRGB() const;
@@ -73,10 +79,14 @@ namespace pulsar
         bool m_enableReadWrite{};
         gfx::GFXTextureFormat m_format{};
 
-        std::shared_ptr<gfx::GFXTexture> m_tex;
         bool m_init = false;
 
         bool m_isCreatedGPUResource = false;
+        std::shared_ptr<rendering::TextureProxy> m_proxy;
+
+        // Set by PostEditChange/FromNativeData; EnsureGPUResource rebuilds the
+        // proxy when dirty.
+        bool m_gpuResourceDirty = false;
 
         CORELIB_REFL_DECL_FIELD(m_compressionFormat);
         TextureCompressionFormat m_compressionFormat{};

@@ -33,9 +33,9 @@ namespace pulsar
         for (auto& k : keys) serFn(s, w, k);
     }
 
-    static void SerializeBoneAnimTrack(std::iostream& s, bool w, BoneAnimationTrack& t)
+    static void SerializeTransformAnimTrack(std::iostream& s, bool w, TransformAnimationTrack& t)
     {
-        sser::ReadWriteStream(s, w, t.BoneName);
+        sser::ReadWriteStream(s, w, t.TargetName);
         SerializeKeys(s, w, t.PositionKeys, SerializeAnimVector3Key);
         SerializeKeys(s, w, t.RotationKeys, SerializeAnimQuatKey);
         SerializeKeys(s, w, t.ScaleKeys,    SerializeAnimVector3Key);
@@ -67,15 +67,15 @@ namespace pulsar
         return self;
     }
 
-    SPtr<BoneAnimationTrack> AnimationClip::FindBoneTrack(const string& boneName) const
+    SPtr<TransformAnimationTrack> AnimationClip::FindTransformTrack(const string& targetName) const
     {
         for (auto& t : m_tracks)
         {
-            if (t->TrackType == AnimationTrackType::Bone)
+            if (t->TrackType == AnimationTrackType::Transform)
             {
-                auto boneTrack = sptr_cast<BoneAnimationTrack>(t);
-                if (boneTrack && boneTrack->BoneName == boneName)
-                    return boneTrack;
+                auto transformTrack = sptr_cast<TransformAnimationTrack>(t);
+                if (transformTrack && transformTrack->TargetName == targetName)
+                    return transformTrack;
             }
         }
         return nullptr;
@@ -116,8 +116,8 @@ namespace pulsar
             if (!isWrite)
             {
                 auto trackType = static_cast<AnimationTrackType>(typeInt);
-                if (trackType == AnimationTrackType::Bone)
-                    t = mksptr(new BoneAnimationTrack());
+                if (trackType == AnimationTrackType::Transform)
+                    t = mksptr(new TransformAnimationTrack());
                 else
                     t = mksptr(new PropertyAnimationTrack());
                 t->TrackType = trackType;
@@ -125,10 +125,10 @@ namespace pulsar
 
             sser::ReadWriteStream(stream, isWrite, t->Name);
 
-            if (t->TrackType == AnimationTrackType::Bone)
+            if (t->TrackType == AnimationTrackType::Transform)
             {
-                auto boneTrack = sptr_cast<BoneAnimationTrack>(t);
-                SerializeBoneAnimTrack(stream, isWrite, *boneTrack);
+                auto transformTrack = sptr_cast<TransformAnimationTrack>(t);
+                SerializeTransformAnimTrack(stream, isWrite, *transformTrack);
             }
             else
             {

@@ -16,11 +16,6 @@ namespace pulsar
         OnLightColorChanged();
     }
 
-    void LightComponent::MarkRenderingDirty()
-    {
-        auto manager = GetWorld()->GetLightManager();
-        manager->MarkDirty(manager->GetId(&m_runtimeLightData));
-    }
     void LightComponent::PostEditChange(FieldInfo* info)
     {
         base::PostEditChange(info);

@@ -1,0 +1,150 @@
+#pragma once
+#include "PrimitiveStruct.h"
+#include "SceneProxy.h"
+#include "ShaderConfig.h"
+
+#include <Pulsar/Assets/Material.h>
+#include <Pulsar/EngineMath.h>
+#include <gfx/GFXApplication.h>
+#include <gfx/GFXBuffer.h>
+
+namespace pulsar
+{
+    class PerRenderObjectDataManager;
+}
+
+namespace pulsar::rendering
+{
+
+    struct MeshBatchElement
+    {
+        gfx::GFXBufferPtr Vertex;
+        gfx::GFXBufferPtr Indices;
+        // Explicit draw count. 0 = fall back to the buffer's element count. Set this when the
+        // backing buffer may be larger than the live data (e.g. a reused, non-shrinking buffer)
+        // so the draw doesn't emit stale trailing vertices/indices.
+        uint32_t DrawCount = 0;
+    };
+
+    struct MeshBatch
+    {
+        array_list<MeshBatchElement> Elements;
+        gfx::GFXDescriptorSetLayoutPtr DescriptorSetLayout;
+        gfx::GFXDescriptorSetPtr ExtraDescriptorSet; // set2 (dummy or skinning)
+        std::shared_ptr<MaterialProxy> Material; // render-thread material mirror (resolved on game thread)
+        std::string VariantFeature; // Renderer-requested shader feature (e.g. "RENDERER_SKINNEDMESH")
+
+        gfx::GFXGraphicsPipelineState State{};
+        bool IsUsedIndices{};
+        bool IsWireframe{};
+        bool IsCastShadow{};
+        bool IsDepthTestDisabled{false};  // Gizmo 等需要始终可见的线条
+        bool IsReverseCulling{false};
+
+        // Optional per-batch render queue override (e.g. gizmo lines share the builtin
+        // VertexColor material but render in a different queue). Unset = material queue.
+        std::optional<ShaderPassRenderQueueType> QueueOverride;
+
+        int32_t Priority = 0;   // per-renderer render priority
+        float   Depth    = 0.f; // signed camera-space depth, filled by pipeline
+        uint32_t RenderObjectIndex = 0; // dynamic offset index for set1 binding3
+
+        size_t GetRenderState() const
+        {
+            constexpr size_t prime = 16777619;
+            return (2166136261 * prime
+                ^ std::hash<const void*>()(Material.get())) * prime
+                ^ State.GetHashCode() * prime;
+        }
+
+        gfx::GFXCullMode GetCullMode(gfx::GFXCullMode baseCullMode) const
+        {
+            if (IsReverseCulling)
+            {
+                if (baseCullMode == gfx::GFXCullMode::Front)
+                    return gfx::GFXCullMode::Back;
+                if (baseCullMode == gfx::GFXCullMode::Back)
+                    return gfx::GFXCullMode::Front;
+            }
+            return baseCullMode;
+        }
+
+        ShaderPassRenderQueueType GetQueue() const
+        {
+            if (QueueOverride)
+                return *QueueOverride;
+            return Material ? Material->GetQueue() : ShaderPassRenderQueueType::Opaque;
+        }
+
+        void Append(const MeshBatch& batch)
+        {
+            for (const auto& element : batch.Elements)
+            {
+                Elements.push_back(element);
+            }
+        }
+    };
+
+
+    class RenderObjectProxy : public SceneProxy
+    {
+    public:
+        static constexpr uint32_t kInvalidSlot = UINT32_MAX;
+
+        virtual ~RenderObjectProxy() = default;
+        void SetTransform(const Matrix4f& localToWorld);
+        virtual void OnChangedTransform() {}
+        void UpdateConstantBuffer()
+        {
+
+        }
+
+        void OnEnterScene() override {}
+        void OnLeaveScene() override {}
+
+        virtual array_list<MeshBatch> GetMeshBatches() = 0;
+        virtual std::string GetVariantFeature() const { return {}; }
+        virtual bool IsActive() const { return m_active; };
+
+        bool IsDeterminantNegative() const { return m_isLocalToWorldDeterminantNegative; }
+
+        // Returns world-space position (column 3 of LocalToWorld matrix)
+        Vector3f GetWorldPosition() const
+        {
+            const auto& col3 = m_perRenderObjectData.LocalToWorldMatrix.GetColumn(3);
+            return Vector3f{col3.x, col3.y, col3.z};
+        }
+
+        void SetRenderObjectIndex(uint32_t index) { m_renderObjectIndex = index; }
+        uint32_t GetRenderObjectIndex() const { return m_renderObjectIndex; }
+
+
+        void SetBounds(const BoxSphereBounds3f& bounds)
+        {
+            m_bounds = bounds;
+            m_hasBounds = bounds.Radius > 0.f;
+        }
+        void ClearBounds() { m_hasBounds = false; }
+        bool HasBounds() const { return m_hasBounds; }
+        BoxSphereBounds3f GetBounds() const { return m_bounds; }
+
+        void SetPerRenderObjectDataManager(PerRenderObjectDataManager* mgr) { m_pPerRenderObjectDataManager = mgr; }
+        PerRenderObjectDataManager* GetPerRenderObjectDataManager() const { return m_pPerRenderObjectDataManager; }
+
+        const PerRenderObjectData& GetPerRenderObjectData() const { return m_perRenderObjectData; }
+        void SetPerRenderObjectData(const PerRenderObjectData& data) { m_perRenderObjectData = data; }
+
+    public:
+
+    protected:
+        bool      m_active = false;
+        PerRenderObjectData  m_perRenderObjectData{};
+        bool      m_isLocalToWorldDeterminantNegative{};
+        int       m_lineWidth{1};
+        BoxSphereBounds3f m_bounds{};
+        bool      m_hasBounds = false;
+        uint32_t  m_renderObjectIndex = kInvalidSlot;
+        PerRenderObjectDataManager* m_pPerRenderObjectDataManager = nullptr;
+    };
+    CORELIB_DECL_SHORTSPTR(RenderObjectProxy);
+}

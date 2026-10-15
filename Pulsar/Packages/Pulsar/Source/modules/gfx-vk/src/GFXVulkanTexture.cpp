@@ -1,0 +1,188 @@
+#include "GFXVulkanTexture.h"
+#include "GFXVulkanTextureView.h"
+
+#include "ImageHelper.h"
+
+#include <cassert>
+#include <gfx-vk/BufferHelper.h>
+#include <gfx-vk/GFXVulkanCommandBuffer.h>
+#include <gfx-vk/GFXVulkanTexture.h>
+#include <gfx-vk/GFXVulkanResourceRegistry.h>
+#include <gfx/GFXImage.h>
+#include <stdexcept>
+
+namespace gfx
+{
+
+    GFXVulkanTexture::~GFXVulkanTexture()
+    {
+        if (m_inited)
+        {
+            assert(!m_isView || !m_isManaged);
+            if (!m_isView && m_isManaged)
+            {
+                if (auto* app = GetApplication())
+                {
+                    vkDestroyImage(app->GetVkDevice(), m_textureImage, nullptr);
+                    vkFreeMemory(app->GetVkDevice(), m_textureImageMemory, nullptr);
+                    if (m_textureImageView != VK_NULL_HANDLE)
+                    {
+                        vkDestroyImageView(app->GetVkDevice(), m_textureImageView, nullptr);
+                        m_textureImageView = VK_NULL_HANDLE;
+                    }
+                }
+            }
+            m_inited = false;
+        }
+    }
+
+
+    static VkImageLayout GetFinalImageLayout(GFXTextureTargetType type)
+    {
+        if (type == GFXTextureTargetType::ColorTarget)
+        {
+            return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        }
+        if (type == GFXTextureTargetType::DepthStencilTarget)
+        {
+            return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        }
+        if (type == GFXTextureTargetType::DepthTarget)
+        {
+            return VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+        }
+        if (type == GFXTextureTargetType::None)
+        {
+            return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        }
+        assert(false);
+        return {};
+    }
+
+    GFXVulkanTexture::GFXVulkanTexture(GFXResourceRegistry* registry, const GFXTextureCreateDesc& info)
+        : GFXTexture(registry, info.Width, info.Height, info.Depth, info.SamplerCfg),
+          m_isView(false), m_isManaged(true)
+    {
+        auto* app = GetApplication();
+        m_dataType = info.DataType;
+        m_imageFormat = BufferHelper::GetVkFormat(info.Format);
+        m_targetType = info.TargetType;
+        m_samples = static_cast<VkSampleCountFlagBits>(info.SampleCount);
+
+        if (info.IsTransientAttachment)
+        {
+            m_usageFlags = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT;
+            if (m_targetType == GFXTextureTargetType::ColorTarget)
+                m_usageFlags |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+            else if (m_targetType == GFXTextureTargetType::DepthTarget || m_targetType == GFXTextureTargetType::DepthStencilTarget)
+                m_usageFlags |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+        }
+        else
+        {
+            m_usageFlags = ImageHelper::GetImageUsageFlags(m_targetType);
+        }
+        m_aspectFlags = ImageHelper::GetAspectFlags(m_targetType);
+
+        auto createInfo = ImageHelper::ImageCreateInfoTexture2D(m_width, m_height, m_imageFormat, m_usageFlags, m_samples);
+        ImageHelper::CreateImage(app, &createInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_textureImage, m_textureImageMemory);
+
+        // Construction never touches the queue: the initial layout transition
+        // (and any initial upload) is queued by the registry onto the frame-head
+        // transfer flush.
+        m_targetFinalLayout = GetFinalImageLayout(m_targetType);
+        m_imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+        auto viewInfo = ImageHelper::ImageViewCreateInfoTexture2D(m_textureImage, m_imageFormat, m_aspectFlags);
+        m_textureImageView = ImageHelper::CreateImageView(app, &viewInfo);
+
+        m_inited = true;
+    }
+
+    GFXVulkanApplication* GFXVulkanTexture::GetApplication() const
+    {
+        auto* registry = static_cast<GFXVulkanResourceRegistry*>(GetResourceRegistry());
+        return registry ? registry->GetVulkanApplication() : nullptr;
+    }
+
+    GFXVulkanTexture::GFXVulkanTexture(
+        GFXResourceRegistry* registry, const GFXVulkanTextureProxyCreateInfo& info)
+        : base(registry, info.width, info.height, 1, {}),
+          m_textureImage(info.image), m_textureImageMemory(VK_NULL_HANDLE), m_imageFormat(info.format),
+          m_imageLayout(info.layout), m_targetType(info.usage), m_isView(true),
+          m_isManaged(info.IsManaged), m_targetFinalLayout(info.finalTargetLayout),
+          m_dataType(info.dataType)
+    {
+        m_usageFlags = ImageHelper::GetImageUsageFlags(m_targetType);
+        m_aspectFlags = ImageHelper::GetAspectFlags(info.usage);
+
+        m_textureImageView = info.view;
+        m_inited = true;
+    }
+
+    void GFXVulkanTexture::UpdateTexture(const GFXTextureUpdateDesc& desc)
+    {
+        if (!desc.ImageData || desc.DataLength == 0)
+            return;
+        // The app batches the copy into the frame-head transfer flush.
+        GetApplication()->RequestTextureUpload(this, desc.ImageData, desc.DataLength);
+    }
+    GFXTexture2DViewPtr GFXVulkanTexture::Get2DView(size_t index)
+    {
+        assert(m_dataType != GFXTextureDataType::None);
+        if (m_2dviews.contains(index))
+        {
+            return m_2dviews[index];
+        }
+
+        if (m_dataType == GFXTextureDataType::Texture2D)
+        {
+            m_2dviews[index] = gfxmksptr(new GFXVulkanTexture2DView(this, 0));
+        }
+        else if (m_dataType == GFXTextureDataType::TextureCube)
+        {
+            assert(false);
+        }
+        else if (m_dataType == GFXTextureDataType::Texture2DArray)
+        {
+            assert(false);
+        }
+
+        return m_2dviews[index];
+    }
+
+    GFXTextureFormat GFXVulkanTexture::GetFormat() const
+    {
+        return BufferHelper::GetTextureFormat(m_imageFormat);
+    }
+    void GFXVulkanTexture::SetImageLayout(VkImageLayout layout)
+    {
+        m_imageLayout = layout;
+    }
+
+    void GFXVulkanTexture::RecordUpload(VkCommandBuffer cmd, VkBuffer stagingBuffer, VkDeviceSize srcOffset)
+    {
+        TransitionLayout(cmd, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+        VkBufferImageCopy region{};
+        region.bufferOffset = srcOffset;
+        region.imageSubresource.aspectMask = m_aspectFlags;
+        region.imageSubresource.mipLevel = 0;
+        region.imageSubresource.baseArrayLayer = 0;
+        region.imageSubresource.layerCount = 1;
+        region.imageExtent = VkExtent3D{ static_cast<uint32_t>(m_width), static_cast<uint32_t>(m_height), 1 };
+        vkCmdCopyBufferToImage(cmd, stagingBuffer, m_textureImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+
+        TransitionLayout(cmd, m_targetFinalLayout);
+    }
+
+    void GFXVulkanTexture::TransitionLayout(VkCommandBuffer cmd, VkImageLayout layout)
+    {
+        if (m_imageLayout == layout)
+        {
+            return;
+        }
+        BufferHelper::TransitionImageLayout(cmd, this, layout);
+        m_imageLayout = layout;
+    }
+
+} // namespace gfx

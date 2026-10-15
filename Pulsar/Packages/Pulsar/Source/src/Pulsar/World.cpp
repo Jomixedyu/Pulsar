@@ -6,9 +6,13 @@
 #include <Pulsar/Scene.h>
 #include <Pulsar/Assets/NodeCollection.h>
 
+#include "Components/RenderComponent.h"
+#include "Components/SceneCaptureComponent.h"
 #include "Physics2D/PhysicsWorld2D.h"
 #include "Physics3D/PhysicsWorld3D.h"
 #include "Rendering/LightingData.h"
+#include "Rendering/RenderThread.h"
+#include "Rendering/SceneViewProxy.h"
 #include "Subsystems/Subsystem.h"
 #include "Subsystems/WorldSubsystem.h"
 
@@ -19,22 +23,31 @@ namespace pulsar
     {
         return gWorlds;
     }
-    World::World(string_view name)
-        : m_name(name), m_gizmosManager(this), m_inputContext(new InputContext())
+    World::World()
+        : m_gizmosManager(this), m_inputContext(new InputContext())
     {
         gWorlds.insert(this);
     }
 
+    string World::GetWorldName() const
+    {
+        if (auto scene = GetFocusScene())
+            return scene->GetName();
+        return {};
+    }
+
     World::~World()
     {
+        // Lifecycle is explicit: a begun world must be ended via OnWorldEnd before
+        // destruction (teardown can throw / dispatch, neither is safe in a dtor).
+        assert((!m_worldBegun || m_worldEnded) && "World destroyed without OnWorldEnd");
         delete m_inputContext;
         gWorlds.erase(this);
-        m_perRenderObjectDataManager.Destroy();
+        TeardownRenderScene();
     }
 
     void World::OnDuplicated(World* target)
     {
-        target->m_name = m_name + "_copy";
         for (size_t i = 1; i < m_scenes.size(); ++i)
         {
             target->LoadScene(InstantiateAsset(m_scenes[i]));
@@ -131,8 +144,6 @@ namespace pulsar
         }
         m_totalTime += dt;
 
-        m_lightManager->Update();
-
         m_gizmosManager.Draw();
 
         if (m_isPlaying && !m_isPaused)
@@ -154,6 +165,10 @@ namespace pulsar
         {
             m_simulateManager.SimulateTick(dt);
         }
+
+        // Extraction phase: runs unconditionally every frame (play or not), after all
+        // node ticks/tools/gizmos have mutated state. Drains the proxy-update list.
+        ResolveDirtyRenderStates();
     }
 
     bool World::IsSelectedNode(const ObjectPtr<Node>& node) const
@@ -191,6 +206,20 @@ namespace pulsar
     void World::SetFocusScene(RCPtr<NodeCollection> scene)
     {
         m_focusScene = scene;
+        SyncRenderDebugName();
+    }
+
+    void World::SyncRenderDebugName()
+    {
+        // The render thread must never read m_focusScene directly (game-thread state),
+        // so the display name is pushed to the render scene through the update queue.
+        if (!m_renderScene)
+            return;
+        Application::GetRenderThread()->EnqueueUpdate_AnyThread(
+            [scene = m_renderScene, name = GetWorldName()](gfx::GFXResourceRegistry*)
+            {
+                scene->SetDebugName(name);
+            });
     }
 
     void World::ChangeScene(RCPtr<NodeCollection> scene, bool clearResidentScene)
@@ -209,9 +238,11 @@ namespace pulsar
 
     void World::LoadScene(RCPtr<NodeCollection> scene)
     {
+        assert(scene && "LoadScene with an empty scene handle");
         m_scenes.push_back(scene);
         this->OnSceneLoading(scene);
         scene->BeginScene(this);
+        SyncRenderDebugName();
     }
 
     void World::UnloadScene(RCPtr<NodeCollection> scene)
@@ -235,6 +266,7 @@ namespace pulsar
         OnSceneUnloading(scene);
         scene->EndScene();
         m_scenes.erase(it);
+        SyncRenderDebugName();
     }
 
     void World::InitializeResidentScene()
@@ -262,32 +294,133 @@ namespace pulsar
     void World::OnUnloadingResidentScene(RCPtr<NodeCollection> scene)
     {
     }
-    void World::AddRenderObject(const rendering::RenderObject_sp& renderObject)
+    void World::AddRenderObject(const rendering::RenderObjectProxy_sp& ro)
     {
-        auto slot = m_perRenderObjectDataManager.AllocSlot();
-        renderObject->SetRenderObjectIndex(slot);
-        renderObject->SetPerRenderObjectDataManager(&m_perRenderObjectDataManager);
-        m_perRenderObjectDataManager.SetData(slot, renderObject->GetPerRenderObjectData());
-        renderObject->OnCreateResource();
-        m_renderObjects.insert(renderObject);
-    }
-    void World::RemoveRenderObject(rendering::RenderObject_rsp renderObject)
-    {
-        const auto it = m_renderObjects.find(renderObject);
-        if (it != m_renderObjects.end())
-        {
-            (*it)->OnDestroyResource();
-            auto slot = (*it)->GetRenderObjectIndex();
-            if (slot != rendering::RenderObject::kInvalidSlot)
+        if (!m_renderScene || !ro)
+            return;
+        Application::GetRenderThread()->EnqueueUpdate_AnyThread(
+            [scene = m_renderScene, p = ro](gfx::GFXResourceRegistry*)
             {
-                m_perRenderObjectDataManager.FreeSlot(slot);
-            }
-            m_renderObjects.erase(it);
+                scene->AddProxy(std::move(p));
+            });
+    }
+    void World::RemoveRenderObject(const rendering::RenderObjectProxy_sp& ro)
+    {
+        if (!m_renderScene || !ro)
+            return;
+        Application::GetRenderThread()->EnqueueUpdate_AnyThread(
+            [scene = m_renderScene, p = ro](gfx::GFXResourceRegistry*)
+            {
+                scene->RemoveProxy(p);
+            });
+    }
+    void World::RegisterProxy(RenderComponent* comp)
+    {
+        if (!m_renderScene || !comp)
+            return;
+        // Build the proxy from the component and store it back on the component.
+        auto proxy = comp->CreateSceneProxy();
+        comp->m_proxy = proxy;
+        if (!proxy)
+            return;
+
+        Application::GetRenderThread()->EnqueueUpdate_AnyThread(
+            [scene = m_renderScene, p = std::move(proxy)](gfx::GFXResourceRegistry*)
+            {
+                scene->AddProxy(std::move(p));
+            });
+    }
+    void World::UnregisterProxy(RenderComponent* comp)
+    {
+        if (!comp || !comp->m_proxy)
+            return;
+        auto proxy = std::move(comp->m_proxy);
+        comp->m_proxy.reset();
+        if (!m_renderScene)
+            return;
+
+        Application::GetRenderThread()->EnqueueUpdate_AnyThread(
+            [scene = m_renderScene, p = std::move(proxy)](gfx::GFXResourceRegistry*)
+            {
+                scene->RemoveProxy(p);
+            });
+    }
+    void World::UpdateSceneView(const SPtr<SceneViewProxy>& view, SceneViewData data)
+    {
+        if (!m_renderScene || !view)
+            return;
+        // Submission API: game thread only. The view proxy is kept alive by the
+        // render scene; the captured SPtr keeps it alive until the update runs.
+        Application::GetRenderThread()->EnqueueUpdate_AnyThread(
+            [view, data = std::move(data)](gfx::GFXResourceRegistry*) mutable
+            {
+                view->SetData(std::move(data));
+            });
+    }
+    void World::TeardownRenderScene()
+    {
+        if (!m_renderScene)
+            return;
+
+        // A frame may still be in flight reading this world's render scene; drain the
+        // render thread before transferring ownership to the destroy queue.
+        if (auto* rt = Application::GetRenderThread())
+            rt->DrainQueue_AnyThread();
+
+        // Having m_renderScene means the World is running with a render thread.
+        // Headless worlds do not create RenderScene and return above.
+        // Use the destroy queue so the scene is destroyed after previously queued proxy updates.
+        Application::GetRenderThread()->EnqueueDestroy_AnyThread(
+            [scene = std::move(m_renderScene)](gfx::GFXResourceRegistry*)
+            {
+                scene->Destroy();
+            });
+    }
+
+    void World::MarkRenderStateDirty(RenderComponent* comp)
+    {
+        // Dedup is guaranteed by RenderComponent::m_renderStateDirty (set before this
+        // is called), so a plain push_back never produces duplicates.
+        m_dirtyRenderComponents.push_back(ObjectPtr<RenderComponent>::UnsafeCreate(comp->GetObjectHandle()));
+    }
+
+
+    void World::ResolveDirtyRenderStates()
+    {
+        // Push the world-level time snapshot to the render scene every frame (it changes
+        // each tick), so renderers read it from the render thread instead of live World.
+        if (m_renderScene)
+        {
+            Application::GetRenderThread()->EnqueueUpdate_AnyThread(
+                [scene = m_renderScene, totalTime = m_totalTime, deltaTime = m_ticker.deltatime](gfx::GFXResourceRegistry*)
+                {
+                    scene->SetTime(totalTime, deltaTime);
+                });
+        }
+
+        if (m_dirtyRenderComponents.empty())
+            return;
+        // Move out so a ResolveRenderStateDirty() that re-marks dirty re-registers into a fresh
+        // list (processed next frame) rather than mutating the one we iterate.
+        auto pending = std::move(m_dirtyRenderComponents);
+        m_dirtyRenderComponents.clear();
+        for (auto& comp : pending)
+        {
+            if (!comp)
+                continue;
+            comp->m_renderStateDirty = false;
+            comp->ResolveRenderStateDirty();
         }
     }
 
     void World::OnWorldBegin()
     {
+        m_worldBegun = true;
+        if (!m_renderScene)
+        {
+            m_renderScene = std::make_unique<RenderScene>();
+        }
+        m_gizmosManager.Initialize();
         if (m_scenes.empty())
         {
             InitializeResidentScene();
@@ -296,8 +429,6 @@ namespace pulsar
 
         m_physicsWorld2D = new PhysicsWorld2D;
         m_physicsWorld3D = new PhysicsWorld3D;
-
-        m_lightManager = new LightManager;
 
         for (auto& item : SubsystemManager::GetAllSubsystems())
         {
@@ -338,10 +469,13 @@ namespace pulsar
         delete m_physicsWorld3D;
         m_physicsWorld3D = nullptr;
 
-        delete m_lightManager;
-        m_lightManager = nullptr;
+        TeardownRenderScene();
 
-        m_perRenderObjectDataManager.Destroy();
+        // Synchronous unload: drain proxy removals / RenderScene destroy, then wait for GPU idle.
+        if (auto* rt = Application::GetRenderThread())
+            rt->DrainQueue_AnyThread();
+
+        m_worldEnded = true;
     }
 
     void World::OnSceneLoading(RCPtr<NodeCollection> scene)

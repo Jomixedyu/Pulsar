@@ -1,0 +1,81 @@
+#pragma once
+#include <Pulsar/Rendering/ShaderPropertyLayout.h>
+
+#include <gfx/GFXGpuProgram.h>
+#include <gfx/GFXDescriptorSet.h>
+
+#include <CoreLib/Guid.h>
+
+#include <string>
+#include <vector>
+#include <functional>
+
+namespace pulsar
+{
+    struct ShaderVariantKey
+    {
+        guid_t m_shaderGuid;
+        std::string m_passName;
+        std::vector<std::string> m_features;
+
+        bool operator==(const ShaderVariantKey& other) const
+        {
+            return m_shaderGuid == other.m_shaderGuid
+                && m_passName == other.m_passName
+                && m_features == other.m_features;
+        }
+    };
+
+    struct ShaderVariantKeyHash
+    {
+        size_t operator()(const ShaderVariantKey& key) const
+        {
+            size_t h = std::hash<guid_t>{}(key.m_shaderGuid);
+            h ^= std::hash<std::string>{}(key.m_passName) + 0x9e3779b9 + (h << 6) + (h >> 2);
+            for (const auto& f : key.m_features)
+            {
+                h ^= std::hash<std::string>{}(f) + 0x9e3779b9 + (h << 6) + (h >> 2);
+            }
+            return h;
+        }
+    };
+
+    // One compiled shader stage. The code blob is opaque to the engine: it is
+    // whatever the compile service produced for the active backend (e.g.
+    // SPIR-V for Vulkan) and only the backend interprets it.
+    struct ShaderStageData
+    {
+        gfx::GFXGpuProgramStageFlags m_stage;
+        std::string m_entryName;
+        std::vector<uint8_t> m_code;
+    };
+
+    class ShaderProgram
+    {
+    public:
+        ShaderProgram() = default;
+        ~ShaderProgram() = default;
+        ShaderProgram(std::string shaderName,
+                      ShaderLayout layout,
+                      std::vector<gfx::GFXGpuProgramPtr> gpuPrograms)
+            : m_shaderName(std::move(shaderName))
+            , m_layout(std::move(layout))
+            , m_gpuPrograms(std::move(gpuPrograms))
+        {
+        }
+
+        const ShaderVariantKey& GetKey() const { return m_key; }
+        const std::string& GetShaderName() const { return m_shaderName; }
+        const ShaderLayout& GetLayout() const { return m_layout; }
+
+        const std::vector<gfx::GFXGpuProgramPtr>& GetGpuPrograms() const { return m_gpuPrograms; }
+
+    public:
+        ShaderVariantKey m_key;
+        std::string m_shaderName;   // human-readable name for debugging (e.g. "Pulsar/Shaders/PreviewImage.hlsl [PostProcess]")
+        ShaderLayout m_layout;
+
+    private:
+        std::vector<gfx::GFXGpuProgramPtr> m_gpuPrograms;
+    };
+}

@@ -2,7 +2,9 @@
 #include "Editors/AssetEditor/AssetEditor.h"
 #include "Editors/AssetEditor/AssetPreviewEditorWindow.h"
 #include "Pulsar/Assets/RenderTexture.h"
-#include "Pulsar/Assets/VolumeProfile.h"
+#include <Pulsar/Assets/ViewPipelineSettings.h>
+#include <Pulsar/Rendering/RenderGraph/Features/FullScreenRenderFeature.h>
+#include <Pulsar/Assets/Material.h>
 
 #include <Pulsar/Assets/Texture2D.h>
 
@@ -39,10 +41,8 @@ namespace pulsared
         bool m_enableChannelB{true};
         bool m_enableChannelA{true};
 
-        RCPtr<Material> m_ppMat;
-        ObjectPtr<Node> m_previewVolumeNode;
-        RCPtr<VolumeProfile> m_previewProfile;
-        SPtr<DisplayEncodingSettings> m_displayEncodingSettings;
+        RCPtr<ViewPipelineSettings> m_previewPipeline;
+        RCPtr<Material> m_previewMaterial;
     };
 
     inline SPtr<EditorWindow> TextureEditor::OnCreateEditorWindow()

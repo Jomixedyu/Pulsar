@@ -5,4 +5,6 @@
 //
 // mimalloc will also override malloc/free (MI_OVERRIDE=ON).
 
+#if !defined(_DEBUG)
 #include <mimalloc-new-delete.h>
+#endif

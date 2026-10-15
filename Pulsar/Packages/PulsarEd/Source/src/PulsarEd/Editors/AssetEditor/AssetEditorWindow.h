@@ -33,13 +33,24 @@ namespace pulsared
         virtual void OnDrawAssetEditor(float dt);
 
         RCPtr<AssetObject> GetAssetObject() const { return m_assetObject; }
-        void SetAssetObject(RCPtr<AssetObject> asset) { m_assetObject = asset; }
+        void SetAssetObject(RCPtr<AssetObject> asset)
+        {
+            m_assetObject = asset;
+            m_assetWindowDisplayName.clear();
+            if (m_assetObject)
+            {
+                m_assetWindowDisplayName = m_assetObject->GetName();
+                if (m_assetWindowDisplayName.empty())
+                    m_assetWindowDisplayName = m_assetObject->GetType()->GetShortName();
+            }
+        }
 
         void OnDrawImGui(float dt) override;
         void OnBuildMenuContexts(SPtr<MenuContexts> ctxs) override;
         virtual void OnRefreshMenuContexts();
     protected:
         RCPtr<AssetObject> m_assetObject;
+        string m_assetWindowDisplayName;
         MenuContexts_sp m_menuBarCtxs;
     };
 

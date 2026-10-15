@@ -2,9 +2,11 @@
 
 #include "Pulsar/Components/StaticMeshRendererComponent.h"
 
+#include "Pulsar/Application.h"
 #include "Pulsar/AssetManager.h"
 #include "Pulsar/Assets/StaticMesh.h"
 #include "Pulsar/Rendering/LineRenderObject.h"
+#include "Pulsar/Rendering/RenderThread.h"
 #include "PulsarEd/Editors/CommonPanel/SceneWindow.h"
 #include "PulsarEd/Windows/EditorWindowManager.h"
 
@@ -13,8 +15,6 @@ namespace pulsared
 
     void Grid3DComponent::BeginComponent()
     {
-        base::BeginComponent();
-
         int line_count = 20;
         float detail_distance = 1;
         float total_width = detail_distance * line_count;
@@ -77,30 +77,42 @@ namespace pulsared
         m_colors.push_back(jmath::MakeColor4b(0.f, 1, 0, 1));
         m_colors.push_back(jmath::MakeColor4b(0.f, 1, 0, 1));
 
-        m_renderObject = CreateRenderObject();
-        GetNode()->GetRuntimeWorld()->AddRenderObject(m_renderObject);
+        // Verts are ready: base::BeginComponent registers the proxy (CreateSceneProxy).
+        base::BeginComponent();
+        m_renderObject = sptr_static_cast<LineRenderObject>(m_proxy);
         OnTransformChanged();
     }
     void Grid3DComponent::EndComponent()
     {
-        base::EndComponent();
-        GetNode()->GetRuntimeWorld()->RemoveRenderObject(m_renderObject);
         m_renderObject.reset();
+        base::EndComponent();
     }
     void Grid3DComponent::OnTransformChanged()
     {
         base::OnTransformChanged();
-        m_renderObject->SetTransform(GetNode()->GetTransform()->GetLocalToWorldMatrix());
+        MarkRenderStateDirty();
+    }
+    void Grid3DComponent::ResolveRenderStateDirty()
+    {
+        if (!m_renderObject)
+            return;
+        Matrix4f localToWorld = GetNode()->GetTransform()->GetLocalToWorldMatrix();
+        auto ro = m_renderObject;
+        Application::GetRenderThread()->EnqueueUpdate_AnyThread(
+            [ro, localToWorld](gfx::GFXResourceRegistry*)
+            {
+                ro->SetTransform(localToWorld);
+            });
     }
 
-    SPtr<rendering::RenderObject> Grid3DComponent::CreateRenderObject()
+    SPtr<rendering::SceneProxy> Grid3DComponent::CreateSceneProxy()
     {
-        auto ro = new LineRenderObject();
+        auto ro = mksptr(new LineRenderObject());
         ro->SetDepthTestEnabled(true);
         ro->SetQueue(ShaderPassRenderQueueType::Opaque);
         ro->SetPoints(m_vert, m_colors);
 
-        return mksptr(ro);
+        return ro;
     }
 
 } // namespace pulsared

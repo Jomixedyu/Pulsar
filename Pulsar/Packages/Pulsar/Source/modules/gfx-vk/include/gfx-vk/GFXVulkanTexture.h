@@ -1,0 +1,94 @@
+#pragma once
+#include "VulkanInclude.h"
+
+#include <gfx/GFXTexture.h>
+#include <map>
+
+namespace gfx
+{
+    class GFXVulkanApplication;
+    class GFXResourceRegistry;
+
+    struct GFXVulkanTextureProxyCreateInfo
+    {
+        int width;
+        int height;
+        VkFormat format;
+        VkImage image;
+        GFXTextureTargetType usage;
+        VkImageLayout layout;
+        VkImageView view;
+        VkImageLayout finalTargetLayout;
+        GFXTextureDataType dataType;
+        bool IsManaged = false;
+    };
+
+
+
+    class GFXVulkanTexture : public GFXTexture
+    {
+        using base = GFXTexture;
+    public:
+        using DataDeleter = void(*)(uint8_t*);
+        virtual const type_info& GetClassId() const override { return typeid(GFXVulkanTexture); }
+
+    public:
+        virtual ~GFXVulkanTexture() override;
+
+        //create by pic data
+        GFXVulkanTexture(GFXResourceRegistry* registry = nullptr, const GFXTextureCreateDesc& info = {});
+
+        //view
+        GFXVulkanTexture(GFXResourceRegistry* registry, const GFXVulkanTextureProxyCreateInfo& info);
+
+
+        GFXVulkanTexture(const GFXVulkanTexture&) = delete;
+    public:
+
+        void UpdateTexture(const GFXTextureUpdateDesc& desc) override;
+        GFXTexture2DViewPtr Get2DView(size_t index) override;
+
+        VkImage GetVkImage() const { return m_textureImage; }
+        VkImageView GetVkImageView() const { return m_textureImageView; }
+        uint64_t GetNativeViewHandle() const override { return (uint64_t)m_textureImageView; }
+        VkFormat GetVkImageFormat() const { return m_imageFormat; }
+        VkImageLayout GetVkImageLayout() const { return m_imageLayout; }
+        VkImageLayout GetVkTargetFinalLayout() const { return m_targetFinalLayout; }
+        GFXTextureFormat GetFormat() const override;
+        VkImageAspectFlags GetVkAspectFlags() const { return m_aspectFlags; }
+        void SetImageLayout(VkImageLayout layout);
+
+        // Records the initial upload (transition + staging copy + final transition)
+        // into a transfer command buffer.
+        void RecordUpload(VkCommandBuffer cmd, VkBuffer staging, VkDeviceSize srcOffset);
+
+        bool IsTarget() const { return m_targetType != GFXTextureTargetType::None; }
+        GFXTextureTargetType GetTargetType() const override { return m_targetType; }
+        void TransitionLayout(VkCommandBuffer cmd, VkImageLayout layout);
+        uint32_t GetSampleCount() const override { return static_cast<uint32_t>(m_samples); }
+
+    protected:
+        VkImage m_textureImage{};
+        VkImageLayout m_imageLayout;
+        VkImageLayout m_targetFinalLayout;
+        VkDeviceMemory m_textureImageMemory{};
+        VkImageView m_textureImageView{};
+        VkFormat m_imageFormat;
+        VkImageAspectFlags m_aspectFlags{};
+        VkImageUsageFlags m_usageFlags{};
+        GFXTextureDataType m_dataType;
+        GFXTextureTargetType m_targetType;
+        VkSampleCountFlagBits m_samples = VK_SAMPLE_COUNT_1_BIT;
+
+        std::map<size_t, GFXTexture2DViewPtr> m_2dviews;
+
+        bool m_isView = false;
+        bool m_isManaged = false;
+        bool m_inited = false;
+
+    private:
+        GFXVulkanApplication* GetApplication() const;
+    };
+
+
+}

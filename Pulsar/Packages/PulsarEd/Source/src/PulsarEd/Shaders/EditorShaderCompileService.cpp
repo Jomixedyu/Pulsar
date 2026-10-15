@@ -14,6 +14,7 @@
 #include <sstream>
 #include <iomanip>
 #include <unordered_set>
+#include <gfx/GFXResourceRegistry.h>
 
 namespace pulsared
 {
@@ -135,12 +136,6 @@ namespace pulsared
             defines.push_back(passDefine);
         }
 
-        // Interface 宏: 原值直接作为宏名
-        if (!task.m_variantKey.m_interface.empty())
-        {
-            defines.push_back(task.m_variantKey.m_interface);
-        }
-
         // Features 宏: 每个字符串直接作为宏
         for (const auto& feature : task.m_variantKey.m_features)
         {
@@ -152,34 +147,63 @@ namespace pulsared
 
     void EditorShaderCompileService::ExtractLayout(
         const psc::ReflectedShaderResources& reflected,
-        pulsar::ShaderPropertyLayout& layout)
+        pulsar::ShaderLayout& layout)
     {
-        // 材质参数所在的 descriptor set（space0 = set 0）
-        constexpr uint32_t kMaterialDescSet = 0;
-
         // Convert psc::ShaderStageFlags to gfx::GFXGpuProgramStageFlags.
         // The two enums share the same bit values by design, so a static_cast is safe.
         auto toGfxStage = [](psc::ShaderStageFlags f) {
             return static_cast<gfx::GFXGpuProgramStageFlags>(static_cast<uint32_t>(f));
         };
+        auto mergeStage = [](gfx::GFXGpuProgramStageFlags a, gfx::GFXGpuProgramStageFlags b) {
+            return static_cast<gfx::GFXGpuProgramStageFlags>(
+                static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
+        };
+
+        // Map psc::TextureDimension to the gfx texture view dimensionality.
+        auto toGfxViewDimension = [](psc::TextureDimension d) {
+            switch (d)
+            {
+            case psc::TextureDimension::Tex2D:      return gfx::GFXTextureDataType::Texture2D;
+            case psc::TextureDimension::Tex2DArray: return gfx::GFXTextureDataType::Texture2DArray;
+            case psc::TextureDimension::Cube:       return gfx::GFXTextureDataType::TextureCube;
+            case psc::TextureDimension::Tex3D:      return gfx::GFXTextureDataType::Texture3D;
+            default:                                return gfx::GFXTextureDataType::None;
+            }
+        };
+
+        // Find an existing binding at (set, bindingPoint) or append a new one.
+        auto findOrAddBinding = [&](uint32_t set, uint32_t bindingPoint) -> pulsar::DescriptorBinding& {
+            pulsar::ShaderPropertySetLayout& setLayout = layout.FindOrAddSet(set);
+            for (auto& b : setLayout.m_bindings)
+            {
+                if (b.m_bindingPoint == bindingPoint)
+                    return b;
+            }
+            pulsar::DescriptorBinding binding{};
+            binding.m_bindingPoint = bindingPoint;
+            setLayout.m_bindings.push_back(std::move(binding));
+            return setLayout.m_bindings.back();
+        };
 
         for (const auto& ub : reflected.UniformBuffers)
         {
-            if (ub.Set != kMaterialDescSet)
-                continue;
-
-            layout.m_totalCBufferSize = std::max(layout.m_totalCBufferSize, ub.Size);
-            layout.m_cbufferBindingPoint = ub.Binding;
-
-            // Merge cbuffer stage flags across all SPIR-V stages
-            layout.m_cbufferStageFlags = static_cast<gfx::GFXGpuProgramStageFlags>(
-                static_cast<uint32_t>(layout.m_cbufferStageFlags) |
-                static_cast<uint32_t>(toGfxStage(ub.StageFlags)));
+            pulsar::DescriptorBinding& binding = findOrAddBinding(ub.Set, ub.Binding);
+            binding.m_name = ub.Name;
+            // RenderObjectBuffer (set1 b6) is bound per-draw via a dynamic UBO offset; HLSL
+            // cannot express that, so the engine tags it dynamic by its reflected name.
+            // TODO: hardcoding the buffer name here is fragile. Redesign so dynamic-UBO
+            // semantics come from an explicit HLSL annotation / naming convention / shader
+            // metadata instead of a hardcoded string match.
+            binding.m_type = (ub.Name == "RenderObjectBuffer")
+                ? gfx::GFXDescriptorType::ConstantBufferDynamic
+                : gfx::GFXDescriptorType::ConstantBuffer;
+            binding.m_size = std::max(binding.m_size, ub.Size);
+            binding.m_stageFlags = mergeStage(binding.m_stageFlags, toGfxStage(ub.StageFlags));
 
             for (const auto& member : ub.Members)
             {
                 bool found = false;
-                for (auto& existing : layout.m_constantEntries)
+                for (auto& existing : binding.m_members)
                 {
                     if (existing.m_name == member.Name)
                     {
@@ -189,7 +213,7 @@ namespace pulsared
                 }
                 if (!found)
                 {
-                    pulsar::CBufferEntry entry{};
+                    pulsar::BufferMember entry{};
                     entry.m_name   = member.Name;
                     entry.m_offset = member.Offset;
                     entry.m_size   = member.Size;
@@ -207,40 +231,20 @@ namespace pulsared
                             : pulsar::ShaderPropertyType::Float;
                     }
 
-                    layout.m_constantEntries.push_back(std::move(entry));
+                    binding.m_members.push_back(std::move(entry));
                 }
             }
         }
 
         for (const auto& img : reflected.SampledImages)
         {
-            if (img.Set != kMaterialDescSet)
-                continue;
-
-            auto gfxStage = toGfxStage(img.StageFlags);
-
-            bool found = false;
-            for (auto& existing : layout.m_textureEntries)
-            {
-                if (existing.m_name == img.Name)
-                {
-                    // Merge stage flags
-                    existing.m_stageFlags = static_cast<gfx::GFXGpuProgramStageFlags>(
-                        static_cast<uint32_t>(existing.m_stageFlags) |
-                        static_cast<uint32_t>(gfxStage));
-                    found = true;
-                    break;
-                }
-            }
-            if (!found)
-            {
-                pulsar::TextureEntry entry{};
-                entry.m_name = img.Name;
-                entry.m_bindingPoint = img.Binding;
-                entry.m_isCombinedImageSampler = img.IsCombined;
-                entry.m_stageFlags = gfxStage;
-                layout.m_textureEntries.push_back(std::move(entry));
-            }
+            pulsar::DescriptorBinding& binding = findOrAddBinding(img.Set, img.Binding);
+            binding.m_name = img.Name;
+            binding.m_type = img.IsCombined
+                ? gfx::GFXDescriptorType::CombinedImageSampler
+                : gfx::GFXDescriptorType::Texture2D;
+            binding.m_viewDimension = toGfxViewDimension(img.Dimension);
+            binding.m_stageFlags = mergeStage(binding.m_stageFlags, toGfxStage(img.StageFlags));
         }
     }
 
@@ -329,18 +333,14 @@ namespace pulsared
 
             auto defines = BuildDefines(task);
 
-            auto program = std::make_shared<pulsar::ShaderProgramResource>();
-            program->m_key = task.m_variantKey;
             // 拼一个可读名字，方便断点调试时识别是哪个 shader variant
             {
                 std::string name = hlslAssetPath;
                 if (!task.m_variantKey.m_passName.empty())
                     name += " [" + task.m_variantKey.m_passName;
-                if (!task.m_variantKey.m_interface.empty())
-                    name += "|" + task.m_variantKey.m_interface;
                 if (!task.m_variantKey.m_passName.empty())
                     name += "]";
-                program->m_shaderName = std::move(name);
+                result.m_shaderName = std::move(name);
             }
 
             // 从 guid 解析 HLSL 物理路径
@@ -373,7 +373,8 @@ namespace pulsared
             // 计算缓存 hash（source + defines）
             auto cacheHash = ComputeCacheHash(hlslSource, defines);
 
-            auto gfxApp = pulsar::Application::GetGfxApp();
+            // GPU programs are not created on this worker thread; the SPIR-V is
+            // staged and materialized on the render thread (see GetGpuPrograms).
 
             // 使用 CompilePass 将 VS + PS 放入同一 TProgram 编译，
             // 通过 HlslBindingResolver 保证跨 stage binding 编号一致。
@@ -394,15 +395,15 @@ namespace pulsared
                 auto& spirv = passResult.vsSpirv;
                 WriteToDiskCache(cacheHash, "vs", spirv);
 
-                auto gpuProgram = gfxApp->CreateGpuProgram(
-                    gfx::GFXGpuProgramStageFlags::Vertex,
-                    reinterpret_cast<const uint8_t*>(spirv.data()), spirv.size());
-                gpuProgram->SetEntryName(task.m_entries.m_vertex);
-                program->m_gpuPrograms.push_back(gpuProgram);
+                pulsar::ShaderStageData vsStage{};
+                vsStage.m_stage = gfx::GFXGpuProgramStageFlags::Vertex;
+                vsStage.m_entryName = task.m_entries.m_vertex;
+                vsStage.m_code.assign(spirv.begin(), spirv.end());
+                result.m_stages.push_back(std::move(vsStage));
 
                 // ReflectSpirvResources 只反射活跃变量，死绑定不会出现
                 auto reflected = psc::ReflectSpirvResources(spirv);
-                ExtractLayout(reflected, program->m_layout);
+                ExtractLayout(reflected, result.m_layout);
             }
 
             // PS SPIR-V — 创建 GpuProgram，并反射活跃资源合并入布局
@@ -411,19 +412,18 @@ namespace pulsared
                 auto& spirv = passResult.psSpirv;
                 WriteToDiskCache(cacheHash, "ps", spirv);
 
-                auto gpuProgram = gfxApp->CreateGpuProgram(
-                    gfx::GFXGpuProgramStageFlags::Fragment,
-                    reinterpret_cast<const uint8_t*>(spirv.data()), spirv.size());
-                gpuProgram->SetEntryName(task.m_entries.m_fragment);
-                program->m_gpuPrograms.push_back(gpuProgram);
+                pulsar::ShaderStageData psStage{};
+                psStage.m_stage = gfx::GFXGpuProgramStageFlags::Fragment;
+                psStage.m_entryName = task.m_entries.m_fragment;
+                psStage.m_code.assign(spirv.begin(), spirv.end());
+                result.m_stages.push_back(std::move(psStage));
 
                 // ExtractLayout 内部有名字去重，VS+PS 共同活跃的资源只记录一次
                 auto reflected = psc::ReflectSpirvResources(spirv);
-                ExtractLayout(reflected, program->m_layout);
+                ExtractLayout(reflected, result.m_layout);
             }
 
             result.m_success = true;
-            result.m_program = program;
 
             pulsar::Logger::Log("Shader compiled successfully: " + hlslAssetPath);
         }

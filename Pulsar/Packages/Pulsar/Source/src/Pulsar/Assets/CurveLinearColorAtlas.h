@@ -2,6 +2,11 @@
 #include "CurveLinearColor.h"
 #include "Texture2DBase.h"
 
+namespace pulsar::rendering
+{
+    class TextureProxy;
+}
+
 namespace pulsar
 {
     class CurveLinearColorAtlas : public Texture2DBase
@@ -12,12 +17,13 @@ namespace pulsar
         CurveLinearColorAtlas();
         void Serialize(AssetSerializer* s) override;
         void Generate();
-        bool CreateGPUResource() override;
+        bool EnsureGPUResource() override;
         void DestroyGPUResource() override;
         bool IsCreatedGPUResource() const override { return m_isCreatedGpuResource; }
         int32_t GetWidth() const override;
         int32_t GetHeight() const override;
-        std::shared_ptr<gfx::GFXTexture> GetGFXTexture() const override { return m_gfxTexture; }
+        gfx::GFXTexturePtr GetGfxTexture() const override;
+        std::shared_ptr<rendering::TextureProxy> GetTextureProxy() const override { return m_proxy; }
 
         void PostEditChange(FieldInfo* info) override;
         void OnNotifyObserver(ObjectHandle inDependency, DependencyObjectState msg) override;
@@ -38,7 +44,7 @@ namespace pulsar
         bool m_isCreatedGpuResource = false;
         array_list<Color4b> m_bitmap;
 
-        gfx::GFXTexture_sp m_gfxTexture;
+        std::shared_ptr<rendering::TextureProxy> m_proxy;
 
     };
 }

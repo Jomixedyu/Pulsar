@@ -4,12 +4,12 @@
 #include <Pulsar/IGPUResource.h>
 #include <Pulsar/AssetObject.h>
 #include <Pulsar/Assets/Material.h>
-#include <gfx/GFXHandle.h>
 #include "Pulsar/Rendering/PrimitiveStruct.h"
 
 namespace pulsar
 {
     class Texture2D;
+    namespace rendering { class MeshProxy; }
 
     using MeshIndicesType = uint32_t;
 
@@ -46,8 +46,9 @@ namespace pulsar
         constexpr static int32_t SerializeVersion = 2;
         StaticMesh() = default;
         ~StaticMesh() override;
+        void OnDestroy() override;
     public:
-        static gfx::GFXVertexLayoutDescription_sp StaticGetVertexLayout();
+        static gfx::GFXVertexLayoutDescription StaticGetVertexLayout();
 
         virtual void Serialize(AssetSerializer* s) override;
 
@@ -68,18 +69,17 @@ namespace pulsar
 
         BoxSphereBounds3f GetBounds() const { return m_bounds; }
     public:
-        bool CreateGPUResource() override;
+        bool EnsureGPUResource() override;
         void DestroyGPUResource() override;
         bool IsCreatedGPUResource() const override;
-        const array_list<gfx::BufferHandle>& GetGPUResourceVertexBuffers() const { return m_vertexBuffers; }
-        const array_list<gfx::BufferHandle>& GetGPUResourceIndicesBuffers() const { return m_indicesBuffers; }
+        // Render-side buffers live behind the proxy; usable right after EnsureGPUResource().
+        std::shared_ptr<rendering::MeshProxy> GetMeshProxy() const { return m_proxy; }
     protected: // serialization data
         array_list<StaticMeshSection> m_sections;
         array_list<string> m_materialNames;
     protected: // runtime data
         bool m_isCreatedResource = false;
-        array_list<gfx::BufferHandle> m_vertexBuffers;
-        array_list<gfx::BufferHandle> m_indicesBuffers;
+        std::shared_ptr<rendering::MeshProxy> m_proxy;
 
         BoxSphereBounds3f m_bounds{};
     };

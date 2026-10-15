@@ -1,6 +1,8 @@
 #include "Pulsar/Assets/CurveLinearColorAtlas.h"
 
 #include "Application.h"
+#include <Pulsar/Rendering/RenderThread.h>
+#include <Pulsar/Rendering/TextureProxy.h>
 
 namespace pulsar
 {
@@ -10,6 +12,7 @@ namespace pulsar
     {
         init_sptr_member(m_colorCurveAssets);
     }
+
     void CurveLinearColorAtlas::Serialize(AssetSerializer* s)
     {
         base::Serialize(s);
@@ -55,67 +58,97 @@ namespace pulsar
         for (int row = 0; row < curveCount; ++row)
         {
             auto curveAsset = m_colorCurveAssets->at(row).GetPtr();
+            if (!curveAsset)
+                continue;
 
-            if (curveAsset)
+            for (int column = 0; column < m_width; ++column)
             {
-                for (int column = 0; column < m_width; ++column)
-                {
-                    auto index = m_width * row + column;
-
-                    auto t = (float)column / (float)m_width;
-                    auto color = curveAsset->SampleColor(t);
-
-                    m_bitmap[index] = Color4b(uint8_t(color.r*255), uint8_t(color.g*255), uint8_t(color.b*255), uint8_t(color.a*255));
-                }
+                auto index = m_width * row + column;
+                auto t = (float)column / (float)m_width;
+                auto color = curveAsset->SampleColor(t);
+                m_bitmap[index] = Color4b(uint8_t(color.r * 255), uint8_t(color.g * 255), uint8_t(color.b * 255), uint8_t(color.a * 255));
             }
         }
 
-        // fill texture
         if (m_isCreatedGpuResource)
         {
+            array_list<Color4b> bitmapCopy = m_bitmap;
+            std::vector<uint8_t> data(
+                reinterpret_cast<const uint8_t*>(bitmapCopy.data()),
+                reinterpret_cast<const uint8_t*>(bitmapCopy.data() + bitmapCopy.size()));
+
             SamplerConfig cfg;
             cfg.Filter = GetSamplerFilter();
             cfg.AddressMode = GetSamplerAddressMode();
-            m_gfxTexture = Application::GetGfxApp()->CreateTexture2DFromMemory((uint8_t*)m_bitmap.data(), bitmapDataSize, m_width, m_height, gfx::GFXTextureFormat::R8G8B8A8_UNorm, cfg);
+
+            // Init is re-init safe: rebuild reuses the same proxy object.
+            if (!m_proxy)
+                m_proxy = std::make_shared<rendering::TextureProxy>();
+
+            auto proxy = m_proxy;
+            const int32_t w = m_width, h = m_height;
+            Application::GetRenderThread()->EnqueueUpdate_AnyThread(
+                [proxy = std::move(proxy), w, h, cfg, data = std::move(data)](gfx::GFXResourceRegistry*) mutable
+                {
+                    proxy->Init(w, h, gfx::GFXTextureFormat::R8G8B8A8_UNorm, cfg, std::move(data));
+                });
         }
+
         RuntimeObjectManager::NotifyDependencySource(GetObjectHandle(), DependencyObjectState::Modified);
     }
 
-    bool CurveLinearColorAtlas::CreateGPUResource()
+    gfx::GFXTexturePtr CurveLinearColorAtlas::GetGfxTexture() const
+    {
+        return m_proxy ? m_proxy->GetTexture() : nullptr;
+    }
+
+    bool CurveLinearColorAtlas::EnsureGPUResource()
     {
         if (m_isCreatedGpuResource)
         {
             return true;
         }
+
         m_isCreatedGpuResource = true;
         Generate();
-
         return true;
     }
+
     void CurveLinearColorAtlas::DestroyGPUResource()
     {
         if (!m_isCreatedGpuResource)
         {
             return;
         }
-        m_gfxTexture.reset();
+
+        if (auto proxy = std::move(m_proxy))
+        {
+            Application::GetRenderThread()->EnqueueDestroy_AnyThread(
+                [proxy = std::move(proxy)](gfx::GFXResourceRegistry*)
+                {
+                    proxy->Release();
+                });
+        }
+
         m_isCreatedGpuResource = false;
     }
+
     int32_t CurveLinearColorAtlas::GetWidth() const
     {
         return m_width;
     }
+
     int32_t CurveLinearColorAtlas::GetHeight() const
     {
         return m_height;
     }
+
     void CurveLinearColorAtlas::PostEditChange(FieldInfo* info)
     {
         base::PostEditChange(info);
         if (info->GetName() == NAMEOF(m_colorCurveAssets))
         {
             RebuildObserver();
-            // Generate();
         }
         Generate();
     }
@@ -127,7 +160,6 @@ namespace pulsar
         {
             Generate();
         }
-
     }
 
     void CurveLinearColorAtlas::GetSubscribeObserverHandles(array_list<ObjectHandle>& out)
@@ -138,6 +170,7 @@ namespace pulsar
             out.push_back(curve.GetHandle());
         }
     }
+
     void CurveLinearColorAtlas::OnCollectAssetDependencies(array_list<guid_t>& deps)
     {
         base::OnCollectAssetDependencies(deps);
@@ -149,4 +182,5 @@ namespace pulsar
             }
         }
     }
+
 } // namespace pulsar

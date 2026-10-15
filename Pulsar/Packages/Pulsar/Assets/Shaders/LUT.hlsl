@@ -5,9 +5,12 @@
 Texture2D    _LUTTex;
 SamplerState Sampler__LUTTex;
 
-float _Intensity;
-int   _LUTSize;
-int   _ColorSpace;
+cbuffer PerMaterial
+{
+    float _Intensity;
+    int   _LUTSize;
+    int   _ColorSpace;
+}
 
 void GetLut2dUV(float3 uvw, float size, float depth, out float2 outUV0, out float2 outUV1, out float outFrac)
 {

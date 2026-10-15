@@ -2,6 +2,7 @@
 #include <PulsarEd/Menus/MenuEntry.h>
 #include <PulsarEd/Windows/EdGuiWindow.h>
 #include <PulsarEd/Windows/EditorWindowManager.h>
+#include <Pulsar/Profiler.h>
 
 namespace pulsared
 {
@@ -11,6 +12,7 @@ namespace pulsared
         bool isOpened = true;
         ImGui::SetNextWindowSize(ImVec2{m_winSize.x, m_winSize.y});
         const auto winName = StringUtil::Concat(GetWindowDisplayName(), "###", GetWindowName());
+        PROFILE_SCOPE(winName);
 
         auto winClass = GetGuiWindowClass();
         ImGui::SetNextWindowClass(&winClass);

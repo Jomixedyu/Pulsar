@@ -1,6 +1,11 @@
 #pragma once
 #include "Texture.h"
 
+namespace pulsar::rendering
+{
+    class TextureProxy;
+}
+
 
 namespace pulsar
 {
@@ -9,14 +14,15 @@ namespace pulsar
         CORELIB_DEF_TYPE(AssemblyObject_pulsar, pulsar::TextureCube, Texture);
 
     public:
-        bool CreateGPUResource() override;
+        bool EnsureGPUResource() override;
         void DestroyGPUResource() override;
         bool IsCreatedGPUResource() const override { return m_isCreatedGPUResource; }
+        gfx::GFXTexturePtr GetGfxTexture() const override;
 
     public:
         array_list<uint8_t> m_originData;
 
-        gfx::GFXTexture_sp m_cube;
+        std::shared_ptr<rendering::TextureProxy> m_proxy;
 
         bool m_isCreatedGPUResource{};
 

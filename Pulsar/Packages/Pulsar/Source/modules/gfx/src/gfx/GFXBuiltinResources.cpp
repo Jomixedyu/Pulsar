@@ -1,0 +1,74 @@
+#include "gfx/GFXBuiltinResources.h"
+
+#include <vector>
+#include <cstdint>
+#include <gfx/GFXResourceRegistry.h>
+
+namespace gfx
+{
+    void GFXBuiltinResources::Initialize(GFXResourceRegistry* registry)
+    {
+        m_registry = registry;
+
+        // Shared zero buffer: device-local, usable as both UBO and SSBO, zero-filled once.
+        GFXBufferDesc bufferDesc{};
+        bufferDesc.Usage = OrFlag(GFXBufferUsage::ConstantBuffer, GFXBufferUsage::StructuredBuffer);
+        bufferDesc.StorageType = GFXBufferMemoryPosition::DeviceLocal;
+        bufferDesc.BufferSize = ZeroBufferSize;
+        bufferDesc.ElementSize = 1;
+        m_zeroBuffer = registry->CreateBuffer(bufferDesc);
+
+        // Device-local: the backend batches the zero fill into the frame-head flush.
+        std::vector<uint8_t> zeros(ZeroBufferSize, 0);
+        m_zeroBuffer->Update(zeros.data());
+
+        // 2x2 opaque-black RGBA8 texture.
+        const uint8_t black[2 * 2 * 4] = {
+            0, 0, 0, 255, 0, 0, 0, 255,
+            0, 0, 0, 255, 0, 0, 0, 255,
+        };
+        GFXSamplerConfig sampler{};
+        sampler.Filter = GFXSamplerFilter::Linear;
+        sampler.AddressMode = GFXSamplerAddressMode::Repeat;
+
+        GFXTextureCreateDesc blackDesc{};
+        blackDesc.Width = 2;
+        blackDesc.Height = 2;
+        blackDesc.Depth = 1;
+        blackDesc.Format = GFXTextureFormat::R8G8B8A8_UNorm;
+        blackDesc.SamplerCfg = sampler;
+        blackDesc.DataType = GFXTextureDataType::Texture2D;
+        m_black2D = registry->CreateTexture2D(blackDesc);
+        m_black2D->UpdateTexture({ black, sizeof(black) });
+        m_black2DView = m_black2D->Get2DView(0);
+
+        // Default sampler used when a texture is sampled but no sampler reflected.
+        m_defaultSampler = GetSampler(GFXSamplerConfig{});
+    }
+
+    GFXSampler* GFXBuiltinResources::GetSampler(const GFXSamplerConfig& config)
+    {
+        for (const auto& [cfg, sampler] : m_samplers)
+        {
+            if (cfg == config)
+            {
+                return sampler.get();
+            }
+        }
+
+        auto sampler = m_registry->CreateSampler(config);
+        auto* raw = sampler.get();
+        m_samplers.emplace_back(config, std::move(sampler));
+        return raw;
+    }
+
+    void GFXBuiltinResources::Terminate()
+    {
+        m_defaultSampler = nullptr;
+        m_samplers.clear();
+        m_black2DView.reset();
+        m_black2D.reset();
+        m_zeroBuffer.reset();
+        m_registry = nullptr;
+    }
+}

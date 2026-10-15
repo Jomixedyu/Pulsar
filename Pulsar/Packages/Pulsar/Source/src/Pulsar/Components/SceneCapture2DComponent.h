@@ -3,7 +3,6 @@
 #include "SceneCaptureComponent.h"
 #include <CoreLib/Attribute.h>
 #include <Pulsar/Assets/Texture2D.h>
-#include <gfx/GFXHandle.h>
 
 namespace pulsar
 {
@@ -16,9 +15,6 @@ namespace pulsar
         SceneCapture2DComponent();
 
         void OnDrawGizmo(GizmoPainter* painter, bool selected) override;
-
-        void BeginComponent() override;
-        void EndComponent() override;
 
         Matrix4f GetViewMat() const;
         Matrix4f GetProjectionMat() const;
@@ -41,9 +37,18 @@ namespace pulsar
         const RCPtr<RenderTexture>& GetRenderTexture() const { return m_renderTarget; }
 
         uint32_t GetMSAASamples() const { return m_msaaSamples; }
-        void SetMSAASamples(uint32_t value) { m_msaaSamples = value; }
+        void SetMSAASamples(uint32_t value)
+        {
+            m_msaaSamples = value;
+            m_renderDirtyRenderTarget = true;
+            MarkRenderStateDirty();
+        }
 
         void OnTransformChanged() override;
+
+        void PostEditChange(FieldInfo* info) override;
+
+        bool ExtractViewData(SceneViewData& outData) override;
 
 
     protected:
@@ -51,10 +56,6 @@ namespace pulsar
         void UpdateCBuffer();
 
     protected:
-        gfx::GFXDescriptorSetLayout_sp m_camDescriptorLayout;
-        gfx::GFXDescriptorSet_sp m_cameraDescriptorSet;
-        gfx::BufferHandle m_cameraDataBuffer;
-
         CORELIB_REFL_DECL_FIELD(m_fov);
         float m_fov{};
 
@@ -90,8 +91,5 @@ namespace pulsar
 
     protected:
         RCPtr<class Texture2D> m_gizmoTexture;
-
-        PerCaptureShaderParameter m_targetBuffer{};
-        // Task 7.5: m_sceneColor removed (was unused)
     };
 } // namespace pulsar

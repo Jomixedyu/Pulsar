@@ -3,7 +3,6 @@
 #include <CoreLib/Type.h>
 #include <gfx/GFXBuffer.h>
 #include <gfx/GFXDescriptorSet.h>
-#include <gfx/GFXHandle.h>
 
 namespace pulsar
 {
@@ -29,17 +28,17 @@ namespace pulsar
         void BeginFrame();
         void EndFrame();
 
-        gfx::GFXBuffer* GetBuffer() const;
-        gfx::BufferHandle GetBufferHandle() const { return m_buffer; }
-        gfx::GFXDescriptorSet_sp GetDummyExtraSet() const { return m_dummyExtraSet; }
-        gfx::GFXDescriptorSetLayout_sp GetDummyExtraLayout() const { return m_dummyExtraLayout; }
+        gfx::GFXBufferPtr GetBuffer() const { return m_buffer; }
+        gfx::GFXBuffer* GetBufferRaw() const { return m_buffer.get(); }
+        gfx::GFXDescriptorSetPtr GetDummyExtraSet() const { return m_dummyExtraSet; }
+        gfx::GFXDescriptorSetLayoutPtr GetDummyExtraLayout() const { return m_dummyExtraLayout; }
 
     private:
         void Grow(uint32_t newCapacity);
 
-        gfx::BufferHandle m_buffer;
-        gfx::GFXDescriptorSet_sp m_dummyExtraSet;
-        gfx::GFXDescriptorSetLayout_sp m_dummyExtraLayout;
+        gfx::GFXBufferPtr m_buffer;
+        gfx::GFXDescriptorSetPtr m_dummyExtraSet;
+        gfx::GFXDescriptorSetLayoutPtr m_dummyExtraLayout;
 
         array_list<PerRenderObjectData> m_cpuData;
         array_list<bool> m_slotUsed;

@@ -1,8 +1,5 @@
 {
     "$schema": "../../../Pulsar/Assets/Shaders/SbfSchema.json",
-    "Interfaces": [
-        "RENDERER_IMAGEPROCESS"
-    ],
     "Passes": [
         {
             "Name": "BloomDownsample",
@@ -10,7 +7,6 @@
                 "Vertex": "BlitVSMain",
                 "Fragment": "DownsamplePSMain"
             },
-            "Features": [],
             "GraphicsPipeline": {
                 "CullMode": "None",
                 "ZWriteEnabled": false,
@@ -23,7 +19,6 @@
                 "Vertex": "BlitVSMain",
                 "Fragment": "GaussFilterPSMain"
             },
-            "Features": [],
             "GraphicsPipeline": {
                 "CullMode": "None",
                 "ZWriteEnabled": false,
@@ -36,7 +31,6 @@
                 "Vertex": "BlitVSMain",
                 "Fragment": "CombinePSMain"
             },
-            "Features": [],
             "GraphicsPipeline": {
                 "CullMode": "None",
                 "ZWriteEnabled": false,
